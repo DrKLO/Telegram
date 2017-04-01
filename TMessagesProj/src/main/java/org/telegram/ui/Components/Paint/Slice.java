@@ -28,7 +28,7 @@ public class Slice {
             File outputDir = ApplicationLoader.applicationContext.getCacheDir();
             file = File.createTempFile("paint", ".bin", outputDir);
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
 
         if (file == null)
@@ -62,7 +62,7 @@ public class Slice {
 
             fos.close();
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 
@@ -101,7 +101,7 @@ public class Slice {
 
             return result;
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
 
         return null;

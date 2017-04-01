@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger.camera;
@@ -11,6 +11,7 @@ package org.telegram.messenger.camera;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Rect;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
@@ -30,11 +31,29 @@ public class CameraSession {
     private String currentFlashMode = Camera.Parameters.FLASH_MODE_OFF;
     private OrientationEventListener orientationEventListener;
     private int lastOrientation = -1;
+    private int lastDisplayOrientation = -1;
     private boolean isVideo;
     private final Size pictureSize;
     private final Size previewSize;
     private final int pictureFormat;
     private boolean initied;
+    private boolean meteringAreaSupported;
+    private int currentOrientation;
+    private int jpegOrientation;
+    private boolean sameTakePictureOrientation;
+
+    public static final int ORIENTATION_HYSTERESIS = 5;
+
+    private Camera.AutoFocusCallback autoFocusCallback = new Camera.AutoFocusCallback() {
+        @Override
+        public void onAutoFocus(boolean success, Camera camera) {
+            if (success) {
+
+            } else {
+
+            }
+        }
+    };
 
     public CameraSession(CameraInfo info, Size preview, Size picture, int format) {
         previewSize = preview;
@@ -48,16 +67,18 @@ public class CameraSession {
         orientationEventListener = new OrientationEventListener(ApplicationLoader.applicationContext) {
             @Override
             public void onOrientationChanged(int orientation) {
-                if (orientationEventListener == null || !initied) {
+                if (orientationEventListener == null || !initied || orientation == ORIENTATION_UNKNOWN) {
                     return;
                 }
+                jpegOrientation = roundOrientation(orientation, jpegOrientation);
                 WindowManager mgr = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
                 int rotation = mgr.getDefaultDisplay().getRotation();
-                if (lastOrientation != rotation) {
+                if (lastOrientation != jpegOrientation || rotation != lastDisplayOrientation) {
                     if (!isVideo) {
                         configurePhotoCamera();
                     }
-                    lastOrientation = rotation;
+                    lastDisplayOrientation = rotation;
+                    lastOrientation = jpegOrientation;
                 }
             }
         };
@@ -70,6 +91,20 @@ public class CameraSession {
         }
     }
 
+    private int roundOrientation(int orientation, int orientationHistory) {
+        boolean changeOrientation;
+        if (orientationHistory == OrientationEventListener.ORIENTATION_UNKNOWN) {
+            changeOrientation = true;
+        } else {
+            int dist = Math.abs(orientation - orientationHistory);
+            dist = Math.min( dist, 360 - dist );
+            changeOrientation = ( dist >= 45 + ORIENTATION_HYSTERESIS );
+        }
+        if (changeOrientation) {
+            return ((orientation + 45) / 90 * 90) % 360;
+        }
+        return orientationHistory;
+    }
 
     public void checkFlashMode(String mode) {
         ArrayList<String> modes = CameraController.getInstance().availableFlashModes;
@@ -116,6 +151,14 @@ public class CameraSession {
         return initied;
     }
 
+    public int getCurrentOrientation() {
+        return currentOrientation;
+    }
+
+    public boolean isSameTakePictureOrientation() {
+        return sameTakePictureOrientation;
+    }
+
     protected void configurePhotoCamera() {
         try {
             Camera camera = cameraInfo.camera;
@@ -125,7 +168,7 @@ public class CameraSession {
                 try {
                     params = camera.getParameters();
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
 
                 Camera.getCameraInfo(cameraInfo.getCameraId(), info);
@@ -163,36 +206,33 @@ public class CameraSession {
                     }
                     cameraDisplayOrientation = temp;
                 }
-                camera.setDisplayOrientation(cameraDisplayOrientation);
+                camera.setDisplayOrientation(currentOrientation = cameraDisplayOrientation);
 
                 if (params != null) {
                     params.setPreviewSize(previewSize.getWidth(), previewSize.getHeight());
                     params.setPictureSize(pictureSize.getWidth(), pictureSize.getHeight());
                     params.setPictureFormat(pictureFormat);
 
-                    String desiredMode;
-                /*if (focusMode == FocusMode.OFF) {
-                    desiredMode = Camera.Parameters.FOCUS_MODE_FIXED;
-                } else if (focusMode == FocusMode.EDOF) {
-                    desiredMode = Camera.Parameters.FOCUS_MODE_EDOF;
-                } else if (isVideo) {
-                    desiredMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO;
-                } else {
-                    desiredMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE;
-                }*/
-                    desiredMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE;
+                    String desiredMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE;
                     if (params.getSupportedFocusModes().contains(desiredMode)) {
                         params.setFocusMode(desiredMode);
                     }
 
-                    int outputOrientation;
-                    if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-                        outputOrientation = (360 - displayOrientation) % 360;
-                    } else {
-                        outputOrientation = displayOrientation;
+                    int outputOrientation = 0;
+                    if (jpegOrientation != OrientationEventListener.ORIENTATION_UNKNOWN) {
+                        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                            outputOrientation = (info.orientation - jpegOrientation + 360) % 360;
+                        } else {
+                            outputOrientation = (info.orientation + jpegOrientation) % 360;
+                        }
                     }
                     try {
                         params.setRotation(outputOrientation);
+                        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                            sameTakePictureOrientation = (360 - displayOrientation) % 360 == outputOrientation;
+                        } else {
+                            sameTakePictureOrientation = displayOrientation == outputOrientation;
+                        }
                     } catch (Exception e) {
                         //
                     }
@@ -202,10 +242,52 @@ public class CameraSession {
                     } catch (Exception e) {
                         //
                     }
+
+                    if (params.getMaxNumMeteringAreas() > 0) {
+                        meteringAreaSupported = true;
+                    }
                 }
             }
         } catch (Throwable e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
+        }
+    }
+
+    protected void focusToRect(Rect focusRect, Rect meteringRect) {
+        try {
+            Camera camera = cameraInfo.camera;
+            if (camera != null) {
+
+                camera.cancelAutoFocus();
+                Camera.Parameters parameters = null;
+                try {
+                    parameters = camera.getParameters();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+
+                if (parameters != null) {
+                    parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+                    ArrayList<Camera.Area> meteringAreas = new ArrayList<>();
+                    meteringAreas.add(new Camera.Area(focusRect, 1000));
+                    parameters.setFocusAreas(meteringAreas);
+
+                    if (meteringAreaSupported) {
+                        meteringAreas = new ArrayList<>();
+                        meteringAreas.add(new Camera.Area(meteringRect, 1000));
+                        parameters.setMeteringAreas(meteringAreas);
+                    }
+
+                    try {
+                        camera.setParameters(parameters);
+                        camera.autoFocus(autoFocusCallback);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 
@@ -277,6 +359,17 @@ public class CameraSession {
         }
 
         return displayOrientation;
+    }
+
+    public int getDisplayOrientation() {
+        try {
+            Camera.CameraInfo info = new Camera.CameraInfo();
+            Camera.getCameraInfo(cameraInfo.getCameraId(), info);
+            return getDisplayOrientation(info, true);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return 0;
     }
 
     public void destroy() {

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
@@ -58,7 +58,7 @@ public class SlidingTabView extends LinearLayout {
         tab.setTextColor(0xffffffff);
         tab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         tab.setTypeface(Typeface.DEFAULT_BOLD);
-        tab.setBackgroundDrawable(Theme.createBarSelectorDrawable(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, false));
+        tab.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, 0));
 
         tab.setOnClickListener(new OnClickListener() {
             @Override

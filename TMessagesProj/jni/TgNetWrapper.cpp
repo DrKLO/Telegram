@@ -26,6 +26,8 @@ jmethodID jclass_ConnectionsManager_onLogout;
 jmethodID jclass_ConnectionsManager_onConnectionStateChanged;
 jmethodID jclass_ConnectionsManager_onInternalPushReceived;
 jmethodID jclass_ConnectionsManager_onUpdateConfig;
+jmethodID jclass_ConnectionsManager_onBytesSent;
+jmethodID jclass_ConnectionsManager_onBytesReceived;
 
 jint createLoadOpetation(JNIEnv *env, jclass c, jint dc_id, jlong id, jlong volume_id, jlong access_hash, jint local_id, jbyteArray encKey, jbyteArray encIv, jstring extension, jint version, jint size, jstring dest, jstring temp, jobject delegate) {
     if (encKey != nullptr && encIv == nullptr || encKey == nullptr && encIv != nullptr || extension == nullptr || dest == nullptr || temp == nullptr) {
@@ -168,7 +170,7 @@ void sendRequest(JNIEnv *env, jclass c, jint object, jobject onComplete, jobject
     if (onQuickAck != nullptr) {
         onQuickAck = env->NewGlobalRef(onQuickAck);
     }
-    ConnectionsManager::getInstance().sendRequest(request, ([onComplete](TLObject *response, TL_error *error) {
+    ConnectionsManager::getInstance().sendRequest(request, ([onComplete](TLObject *response, TL_error *error, int32_t networkType) {
         TL_api_response *resp = (TL_api_response *) response;
         jint ptr = 0;
         jint errorCode = 0;
@@ -180,7 +182,7 @@ void sendRequest(JNIEnv *env, jclass c, jint object, jobject onComplete, jobject
             errorText = jniEnv->NewStringUTF(error->text.c_str());
         }
         if (onComplete != nullptr) {
-            jniEnv->CallVoidMethod(onComplete, jclass_RequestDelegateInternal_run, ptr, errorCode, errorText);
+            jniEnv->CallVoidMethod(onComplete, jclass_RequestDelegateInternal_run, ptr, errorCode, errorText, networkType);
         }
         if (errorText != nullptr) {
             jniEnv->DeleteLocalRef(errorText);
@@ -246,8 +248,8 @@ void setUseIpv6(JNIEnv *env, jclass c, bool value) {
     ConnectionsManager::getInstance().setUseIpv6(value);
 }
 
-void setNetworkAvailable(JNIEnv *env, jclass c, jboolean value) {
-    ConnectionsManager::getInstance().setNetworkAvailable(value);
+void setNetworkAvailable(JNIEnv *env, jclass c, jboolean value, jint networkType) {
+    ConnectionsManager::getInstance().setNetworkAvailable(value, networkType);
 }
 
 void setPushConnectionEnabled(JNIEnv *env, jclass c, jboolean value) {
@@ -289,9 +291,17 @@ class Delegate : public ConnectiosManagerDelegate {
     void onInternalPushReceived() {
         jniEnv->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onInternalPushReceived);
     }
+
+    void onBytesReceived(int32_t amount, int32_t networkType) {
+        jniEnv->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onBytesReceived, amount, networkType);
+    }
+
+    void onBytesSent(int32_t amount, int32_t networkType) {
+        jniEnv->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onBytesSent, amount, networkType);
+    }
 };
 
-void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring configPath, jstring logPath, jint userId, jboolean enablePushConnection) {
+void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring configPath, jstring logPath, jint userId, jboolean enablePushConnection, jboolean hasNetwork, jint networkType) {
     const char *deviceModelStr = env->GetStringUTFChars(deviceModel, 0);
     const char *systemVersionStr = env->GetStringUTFChars(systemVersion, 0);
     const char *appVersionStr = env->GetStringUTFChars(appVersion, 0);
@@ -299,7 +309,7 @@ void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring d
     const char *configPathStr = env->GetStringUTFChars(configPath, 0);
     const char *logPathStr = env->GetStringUTFChars(logPath, 0);
 
-    ConnectionsManager::getInstance().init(version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(configPathStr), std::string(logPathStr), userId, true, enablePushConnection);
+    ConnectionsManager::getInstance().init(version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(configPathStr), std::string(logPathStr), userId, true, enablePushConnection, hasNetwork, networkType);
 
     if (deviceModelStr != 0) {
         env->ReleaseStringUTFChars(deviceModel, deviceModelStr);
@@ -339,13 +349,13 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_applyDatacenterAddress", "(ILjava/lang/String;I)V", (void *) applyDatacenterAddress},
         {"native_getConnectionState", "()I", (void *) getConnectionState},
         {"native_setUserId", "(I)V", (void *) setUserId},
-        {"native_init", "(IIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZ)V", (void *) init},
+        {"native_init", "(IIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZZI)V", (void *) init},
         {"native_switchBackend", "()V", (void *) switchBackend},
         {"native_pauseNetwork", "()V", (void *) pauseNetwork},
         {"native_resumeNetwork", "(Z)V", (void *) resumeNetwork},
         {"native_updateDcSettings", "()V", (void *) updateDcSettings},
         {"native_setUseIpv6", "(Z)V", (void *) setUseIpv6},
-        {"native_setNetworkAvailable", "(Z)V", (void *) setNetworkAvailable},
+        {"native_setNetworkAvailable", "(ZI)V", (void *) setNetworkAvailable},
         {"native_setPushConnectionEnabled", "(Z)V", (void *) setPushConnectionEnabled},
         {"native_setJava", "(Z)V", (void *) setJava}
 };
@@ -381,7 +391,7 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     if (jclass_RequestDelegateInternal == 0) {
         return JNI_FALSE;
     }
-    jclass_RequestDelegateInternal_run = env->GetMethodID(jclass_RequestDelegateInternal, "run", "(IILjava/lang/String;)V");
+    jclass_RequestDelegateInternal_run = env->GetMethodID(jclass_RequestDelegateInternal, "run", "(IILjava/lang/String;I)V");
     if (jclass_RequestDelegateInternal_run == 0) {
         return JNI_FALSE;
     }
@@ -445,6 +455,14 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     }
     jclass_ConnectionsManager_onUpdateConfig = env->GetStaticMethodID(jclass_ConnectionsManager, "onUpdateConfig", "(I)V");
     if (jclass_ConnectionsManager_onUpdateConfig == 0) {
+        return JNI_FALSE;
+    }
+    jclass_ConnectionsManager_onBytesSent = env->GetStaticMethodID(jclass_ConnectionsManager, "onBytesSent", "(II)V");
+    if (jclass_ConnectionsManager_onBytesSent == 0) {
+        return JNI_FALSE;
+    }
+    jclass_ConnectionsManager_onBytesReceived = env->GetStaticMethodID(jclass_ConnectionsManager, "onBytesReceived", "(II)V");
+    if (jclass_ConnectionsManager_onBytesReceived == 0) {
         return JNI_FALSE;
     }
     ConnectionsManager::getInstance().setDelegate(new Delegate());

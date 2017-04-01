@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -94,14 +95,14 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         }
     }
 
-    public TextView addIconTabWithCounter(int resId) {
+    public TextView addIconTabWithCounter(Drawable drawable) {
         final int position = tabCount++;
         FrameLayout tab = new FrameLayout(getContext());
         tab.setFocusable(true);
         tabsContainer.addView(tab);
 
         ImageView imageView = new ImageView(getContext());
-        imageView.setImageResource(resId);
+        imageView.setImageDrawable(drawable);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         tab.setOnClickListener(new OnClickListener() {
             @Override
@@ -126,11 +127,11 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         return textView;
     }
 
-    public void addIconTab(int resId) {
+    public void addIconTab(Drawable drawable) {
         final int position = tabCount++;
         ImageView tab = new ImageView(getContext());
         tab.setFocusable(true);
-        tab.setImageResource(resId);
+        tab.setImageDrawable(drawable);
         tab.setScaleType(ImageView.ScaleType.CENTER);
         tab.setOnClickListener(new OnClickListener() {
             @Override

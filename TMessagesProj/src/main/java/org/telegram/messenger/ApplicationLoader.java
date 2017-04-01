@@ -3,11 +3,12 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.Application;
@@ -20,10 +21,6 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
-import android.graphics.Shader;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
@@ -42,110 +39,15 @@ import java.io.RandomAccessFile;
 
 public class ApplicationLoader extends Application {
 
-    private static Drawable cachedWallpaper;
-    private static int selectedColor;
-    private static boolean isCustomTheme;
-    private static final Object sync = new Object();
-
-    private static int serviceMessageColor;
-    private static int serviceSelectedMessageColor;
-
+    @SuppressLint("StaticFieldLeak")
     public static volatile Context applicationContext;
     public static volatile Handler applicationHandler;
     private static volatile boolean applicationInited = false;
 
     public static volatile boolean isScreenOn = false;
     public static volatile boolean mainInterfacePaused = true;
-
-    public static boolean isCustomTheme() {
-        return isCustomTheme;
-    }
-
-    public static int getSelectedColor() {
-        return selectedColor;
-    }
-
-    public static void reloadWallpaper() {
-        cachedWallpaper = null;
-        serviceMessageColor = 0;
-        ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit().remove("serviceMessageColor").commit();
-        loadWallpaper();
-    }
-
-    private static void calcBackgroundColor() {
-        int result[] = AndroidUtilities.calcDrawableColor(cachedWallpaper);
-        serviceMessageColor = result[0];
-        serviceSelectedMessageColor = result[1];
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        preferences.edit().putInt("serviceMessageColor", serviceMessageColor).putInt("serviceSelectedMessageColor", serviceSelectedMessageColor).commit();
-    }
-
-    public static int getServiceMessageColor() {
-        return serviceMessageColor;
-    }
-
-    public static int getServiceSelectedMessageColor() {
-        return serviceSelectedMessageColor;
-    }
-
-    public static void loadWallpaper() {
-        if (cachedWallpaper != null) {
-            return;
-        }
-        Utilities.searchQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                synchronized (sync) {
-                    int selectedColor = 0;
-                    try {
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                        int selectedBackground = preferences.getInt("selectedBackground", 1000001);
-                        selectedColor = preferences.getInt("selectedColor", 0);
-                        serviceMessageColor = preferences.getInt("serviceMessageColor", 0);
-                        serviceSelectedMessageColor = preferences.getInt("serviceSelectedMessageColor", 0);
-                        if (selectedColor == 0) {
-                            if (selectedBackground == 1000001) {
-                                cachedWallpaper = applicationContext.getResources().getDrawable(R.drawable.background_hd);
-                                isCustomTheme = false;
-                            } else {
-                                File toFile = new File(getFilesDirFixed(), "wallpaper.jpg");
-                                if (toFile.exists()) {
-                                    cachedWallpaper = Drawable.createFromPath(toFile.getAbsolutePath());
-                                    isCustomTheme = true;
-                                } else {
-                                    cachedWallpaper = applicationContext.getResources().getDrawable(R.drawable.background_hd);
-                                    isCustomTheme = false;
-                                }
-                            }
-                        }
-                    } catch (Throwable throwable) {
-                        //ignore
-                    }
-                    if (cachedWallpaper == null) {
-                        if (selectedColor == 0) {
-                            selectedColor = -2693905;
-                        }
-                        cachedWallpaper = new ColorDrawable(selectedColor);
-                    }
-                    if (serviceMessageColor == 0) {
-                        calcBackgroundColor();
-                    }
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.didSetNewWallpapper);
-                        }
-                    });
-                }
-            }
-        });
-    }
-
-    public static Drawable getCachedWallpaper() {
-        synchronized (sync) {
-            return cachedWallpaper;
-        }
-    }
+    public static volatile boolean mainInterfacePausedStageQueue = true;
+    public static volatile long mainInterfacePausedStageQueueTime;
 
     private static void convertConfig() {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("dataconfig", Context.MODE_PRIVATE);
@@ -172,7 +74,7 @@ public class ApplicationLoader extends Application {
                     }
                 }
             } catch (Exception e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
 
             try {
@@ -183,7 +85,7 @@ public class ApplicationLoader extends Application {
                 fileOutputStream.write(bytes);
                 fileOutputStream.close();
             } catch (Exception e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
             buffer.cleanup();
             preferences.edit().clear().commit();
@@ -203,7 +105,7 @@ public class ApplicationLoader extends Application {
             path.mkdirs();
             return path;
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return new File("/data/data/org.telegram.messenger/files");
     }
@@ -234,9 +136,9 @@ public class ApplicationLoader extends Application {
         try {
             PowerManager pm = (PowerManager)ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
             isScreenOn = pm.isScreenOn();
-            FileLog.e("tmessages", "screen state = " + isScreenOn);
+            FileLog.e("screen state = " + isScreenOn);
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
 
         UserConfig.loadConfig();
@@ -285,7 +187,7 @@ public class ApplicationLoader extends Application {
 
         ApplicationLoader app = (ApplicationLoader)ApplicationLoader.applicationContext;
         app.initPlayServices();
-        FileLog.e("tmessages", "app initied");
+        FileLog.e("app initied");
 
         ContactsController.getInstance().checkAppAccount();
         MediaController.getInstance();
@@ -359,19 +261,19 @@ public class ApplicationLoader extends Application {
             public void run() {
                 if (checkPlayServices()) {
                     if (UserConfig.pushString != null && UserConfig.pushString.length() != 0) {
-                        FileLog.d("tmessages", "GCM regId = " + UserConfig.pushString);
+                        FileLog.d("GCM regId = " + UserConfig.pushString);
                     } else {
-                        FileLog.d("tmessages", "GCM Registration not found.");
+                        FileLog.d("GCM Registration not found.");
                     }
 
                     //if (UserConfig.pushString == null || UserConfig.pushString.length() == 0) {
                     Intent intent = new Intent(applicationContext, GcmRegistrationIntentService.class);
                     startService(intent);
                     //} else {
-                    //    FileLog.d("tmessages", "GCM regId = " + UserConfig.pushString);
+                    //    FileLog.d("GCM regId = " + UserConfig.pushString);
                     //}
                 } else {
-                    FileLog.d("tmessages", "No valid Google Play Services APK found.");
+                    FileLog.d("No valid Google Play Services APK found.");
                 }
             }
         }, 1000);
@@ -383,9 +285,9 @@ public class ApplicationLoader extends Application {
             public void run() {
                 if (checkPlayServices()) {
                     if (UserConfig.pushString != null && UserConfig.pushString.length() != 0) {
-                        FileLog.d("tmessages", "GCM regId = " + UserConfig.pushString);
+                        FileLog.d("GCM regId = " + UserConfig.pushString);
                     } else {
-                        FileLog.d("tmessages", "GCM Registration not found.");
+                        FileLog.d("GCM Registration not found.");
                     }
                     try {
                         if (!FirebaseApp.getApps(ApplicationLoader.applicationContext).isEmpty()) {
@@ -395,10 +297,10 @@ public class ApplicationLoader extends Application {
                             }
                         }
                     } catch (Throwable e) {
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
                 } else {
-                    FileLog.d("tmessages", "No valid Google Play Services APK found.");
+                    FileLog.d("No valid Google Play Services APK found.");
                 }
             }
         }, 2000);
@@ -409,7 +311,7 @@ public class ApplicationLoader extends Application {
             int resultCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
             return resultCode == ConnectionResult.SUCCESS;
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return true;
 

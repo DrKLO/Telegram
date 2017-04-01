@@ -32,7 +32,7 @@
 #define MAX_PSEUDO 40
 #define LOG_MAX_PSEUDO 6
 
-#define MAX_PULSES 128
+#define CELT_MAX_PULSES 128
 
 #define MAX_FINE_BITS 8
 

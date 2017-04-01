@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Cells;
@@ -25,6 +25,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.query.StickersQuery;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class FeaturedStickerSetInfoCell extends FrameLayout {
@@ -33,12 +34,14 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
     private TextView infoTextView;
     private TextView addButton;
     private TLRPC.StickerSetCovered set;
+    private Drawable addDrawable;
+    private Drawable delDrawable;
 
     private boolean drawProgress;
     private float progressAlpha;
     private RectF rect = new RectF();
     private long lastUpdateTime;
-    private static Paint botProgressPaint;
+    private Paint botProgressPaint;
     private int angle;
     private boolean isInstalled;
     private boolean hasOnClick;
@@ -49,7 +52,7 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
 
         @Override
         public void draw(Canvas canvas) {
-            paint.setColor(0xff4da6ea);
+            paint.setColor(Theme.getColor(Theme.key_featuredStickers_unread));
             canvas.drawCircle(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(4), paint);
         }
 
@@ -82,16 +85,17 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
     public FeaturedStickerSetInfoCell(Context context, int left) {
         super(context);
 
-        if (botProgressPaint == null) {
-            botProgressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            botProgressPaint.setColor(0xffffffff);
-            botProgressPaint.setStrokeCap(Paint.Cap.ROUND);
-            botProgressPaint.setStyle(Paint.Style.STROKE);
-        }
+        delDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_delButton), Theme.getColor(Theme.key_featuredStickers_delButtonPressed));
+        addDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
+
+        botProgressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        botProgressPaint.setColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
+        botProgressPaint.setStrokeCap(Paint.Cap.ROUND);
+        botProgressPaint.setStyle(Paint.Style.STROKE);
         botProgressPaint.setStrokeWidth(AndroidUtilities.dp(2));
 
         nameTextView = new TextView(context);
-        nameTextView.setTextColor(0xff333333);
+        nameTextView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelTrendingTitle));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
@@ -99,7 +103,7 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, left, 8, 100, 0));
 
         infoTextView = new TextView(context);
-        infoTextView.setTextColor(0xff8a8a8a);
+        infoTextView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelTrendingDescription));
         infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         infoTextView.setEllipsize(TextUtils.TruncateAt.END);
         infoTextView.setSingleLine(true);
@@ -144,7 +148,7 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         };
         addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
         addButton.setGravity(Gravity.CENTER);
-        addButton.setTextColor(0xffffffff);
+        addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, 16, 14, 0));
@@ -152,7 +156,7 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(60), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(60), MeasureSpec.EXACTLY));
     }
 
     public void setAddOnClickListener(OnClickListener onClickListener) {
@@ -172,10 +176,10 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         if (hasOnClick) {
             addButton.setVisibility(VISIBLE);
             if (isInstalled = StickersQuery.isStickerPackInstalled(stickerSet.set.id)) {
-                addButton.setBackgroundResource(R.drawable.del_states);
+                addButton.setBackgroundDrawable(delDrawable);
                 addButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove).toUpperCase());
             } else {
-                addButton.setBackgroundResource(R.drawable.add_states);
+                addButton.setBackgroundDrawable(addDrawable);
                 addButton.setText(LocaleController.getString("Add", R.string.Add).toUpperCase());
             }
         } else {

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
@@ -29,6 +29,7 @@ import org.telegram.messenger.FileLog;
 import java.io.File;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
 
@@ -48,6 +49,10 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private boolean decoderCreated;
     private File path;
     private boolean recycleWithSecond;
+
+    private long lastFrameDecodeTime;
+
+    private RectF actualDrawRect = new RectF();
 
     private BitmapShader renderingShader;
     private BitmapShader nextRenderingShader;
@@ -90,6 +95,10 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                 nativePtr = 0;
             }
             if (nativePtr == 0) {
+                if (renderingBitmap != null) {
+                    renderingBitmap.recycle();
+                    renderingBitmap = null;
+                }
                 if (backgroundBitmap != null) {
                     backgroundBitmap.recycle();
                     backgroundBitmap = null;
@@ -111,6 +120,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
             } else if (parentView != null) {
                 parentView.invalidate();
             }
+            scheduleNextGetFrame();
         }
     };
 
@@ -127,17 +137,19 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                         try {
                             backgroundBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
                         } catch (Throwable e) {
-                            FileLog.e("tmessages", e);
+                            FileLog.e(e);
                         }
                         if (backgroundShader == null && backgroundBitmap != null && roundRadius != 0) {
                             backgroundShader = new BitmapShader(backgroundBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
                         }
                     }
                     if (backgroundBitmap != null) {
+                        lastFrameDecodeTime = System.currentTimeMillis();
                         getVideoFrame(nativePtr, backgroundBitmap, metaData);
+
                     }
                 } catch (Throwable e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
             AndroidUtilities.runOnUIThread(uiRunnable);
@@ -163,10 +175,6 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         }
     }
 
-    protected void postToDecodeQueue(Runnable runnable) {
-        executor.execute(runnable);
-    }
-
     public void setParentView(View view) {
         parentView = view;
     }
@@ -190,16 +198,16 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                 destroyDecoder(nativePtr);
                 nativePtr = 0;
             }
+            if (renderingBitmap != null) {
+                renderingBitmap.recycle();
+                renderingBitmap = null;
+            }
             if (nextRenderingBitmap != null) {
                 nextRenderingBitmap.recycle();
                 nextRenderingBitmap = null;
             }
         } else {
             destroyWhenDone = true;
-        }
-        if (renderingBitmap != null) {
-            renderingBitmap.recycle();
-            renderingBitmap = null;
         }
     }
 
@@ -231,17 +239,19 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
             return;
         }
         isRunning = true;
-        if (renderingBitmap == null) {
-            scheduleNextGetFrame();
-        }
+        scheduleNextGetFrame();
         runOnUiThread(mStartTask);
     }
 
     private void scheduleNextGetFrame() {
-        if (loadFrameTask != null || nativePtr == 0 && decoderCreated || destroyWhenDone) {
+        if (loadFrameTask != null || nativePtr == 0 && decoderCreated || destroyWhenDone || !isRunning) {
             return;
         }
-        postToDecodeQueue(loadFrameTask = loadFrameRunnable);
+        long ms = 0;
+        if (lastFrameDecodeTime != 0) {
+            ms = Math.min(invalidateAfter, Math.max(0, invalidateAfter - (System.currentTimeMillis() - lastFrameDecodeTime)));
+        }
+        executor.schedule(loadFrameTask = loadFrameRunnable, ms, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -275,17 +285,17 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         if (nativePtr == 0 && decoderCreated || destroyWhenDone) {
             return;
         }
+        long now = System.currentTimeMillis();
         if (isRunning) {
             if (renderingBitmap == null && nextRenderingBitmap == null) {
                 scheduleNextGetFrame();
-            } else if (Math.abs(System.currentTimeMillis() - lastFrameTime) >= invalidateAfter) {
+            } else if (Math.abs(now - lastFrameTime) >= invalidateAfter) {
                 if (nextRenderingBitmap != null) {
-                    scheduleNextGetFrame();
                     renderingBitmap = nextRenderingBitmap;
                     renderingShader = nextRenderingShader;
                     nextRenderingBitmap = null;
                     nextRenderingShader = null;
-                    lastFrameTime = System.currentTimeMillis();
+                    lastFrameTime = now;
                 }
             }
         }
@@ -331,7 +341,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                 }
                 renderingShader.setLocalMatrix(shaderMatrix);
 
-                canvas.drawRoundRect(roundRect, roundRadius, roundRadius, getPaint());
+                canvas.drawRoundRect(actualDrawRect, roundRadius, roundRadius, getPaint());
             } else {
                 canvas.translate(dstRect.left, dstRect.top);
                 if (metaData[2] == 90) {
@@ -348,7 +358,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                 canvas.drawBitmap(renderingBitmap, 0, 0, getPaint());
             }
             if (isRunning) {
-                uiHandler.postDelayed(mInvalidateTask, invalidateAfter);
+                long timeToNextFrame = Math.max(1, invalidateAfter - (now - lastFrameTime) - 17);
+                uiHandler.removeCallbacks(mInvalidateTask);
+                uiHandler.postDelayed(mInvalidateTask, Math.min(timeToNextFrame, invalidateAfter));
             }
         }
     }
@@ -370,6 +382,10 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
             return nextRenderingBitmap;
         }
         return null;
+    }
+
+    public void setActualDrawRect(int x, int y, int width, int height) {
+        actualDrawRect.set(x, y, x + width, y + height);
     }
 
     public void setRoundRadius(int value) {

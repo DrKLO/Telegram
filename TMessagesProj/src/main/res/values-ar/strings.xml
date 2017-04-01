@@ -41,7 +41,56 @@
     <string name="FirstName">الاسم الأول</string>
     <string name="LastName">اسم العائلة</string>
     <string name="CancelRegistration">إلغاء التسجيل</string>
+    <!--payments view-->
+    <string name="PaymentSuccessfullyPaid">لقد قمت بنجاح تحويل %1$s إلى %2$s لـ %3$s</string>
+    <string name="PaymentSuccessfullyPaidNoItem">لقد قمت بنجاح تحويل %1$s إلى %2$s</string>
+    <string name="PaymentCheckout">الدفع</string>
+    <string name="PaymentShippingMethod">طرق الشحن</string>
+    <string name="PaymentNoShippingMethod">المعذرة، لا يمكن التوصيل لعنوانك.</string>
+    <string name="PaymentShippingInfo">معلومات الشحن</string>
+    <string name="PaymentShippingAddress">عنوان الشحن</string>
+    <string name="PaymentShippingAddress1Placeholder">العنوان ١ (الشارع)</string>
+    <string name="PaymentShippingAddress2Placeholder">العنوان ٢ (الشارع)</string>
+    <string name="PaymentShippingCityPlaceholder">المدينة</string>
+    <string name="PaymentShippingStatePlaceholder">الولاية</string>
+    <string name="PaymentShippingCountry">الدولة</string>
+    <string name="PaymentShippingZipPlaceholder">الرمز البريدي</string>
+    <string name="PaymentShippingReceiver">المستقبل</string>
+    <string name="PaymentShippingName">الاسم الكامل</string>
+    <string name="PaymentShippingPhoneNumber">رقم الهاتف</string>
+    <string name="PaymentShippingEmailPlaceholder">البريد الالكتروني</string>
+    <string name="PaymentShippingSave">حفظ معلومات الشحن</string>
+    <string name="PaymentShippingSaveInfo">يمكنك حفظ معلومات الشحن لاستخدامها لاحقًا.</string>
+    <string name="PaymentCardInfo">معلومات الشحن</string>
+    <string name="PaymentCardTitle">بطاقة الدفع</string>
+    <string name="PaymentCardNumber">رقم البطاقة</string>
+    <string name="PaymentCardCvv">رمز الأمان (CVV)</string>
+    <string name="PaymentCardExpireDate">MM/YY</string>
+    <string name="PaymentBillingAddress">عنوان الدفع</string>
+    <string name="PaymentCardNameTitle">صاحب البطاقة</string>
+    <string name="PaymentCardName">الاسم</string>
+    <string name="PaymentCardSavePaymentInformation">حفظ معلومات الدفع</string>
+    <string name="PaymentCardSavePaymentInformationInfoLine1">يمكنك حفظ معلومات الدفع لاستخدامها لاحقًا.</string>
+    <string name="PaymentCardSavePaymentInformationInfoLine2">فضلًا قم بتفعيل *التحقق بخطوتين* للتفعيل.</string>
+    <string name="PaymentTransactionReview">مراجعة العملية</string>
+    <string name="PaymentTransactionMessage">هل حقًا ترغب في تحويل %1$s إلى البوت %2$s لـ %3$s؟</string>
+    <string name="PaymentTransactionTotal">الإجمالي</string>
+    <string name="PaymentInvoice">الفاتورة</string>
+    <string name="PaymentTestInvoice">الفاتورة التجريبية</string>
+    <string name="PaymentCheckoutPay">إدفع %1$s</string>
+    <string name="PaymentCheckoutMethod">وسيلة الدفع</string>
+    <string name="PaymentCheckoutName">الاسم</string>
+    <string name="PaymentCheckoutPhoneNumber">رقم الهاتف</string>
+    <string name="PaymentCheckoutEmail">عنوان التواصل</string>
+    <string name="PaymentCheckoutShippingMethod">طريقة الشحن</string>
+    <string name="PaymentReceipt">الفاتورة</string>
+    <string name="PaymentConfirmationNewCard">اختر بطاقة أخرى</string>
+    <string name="PaymentConfirmationMessage">بطاقتك %1$s مسجلة مسبقًا. لتتمكن من استخدامها، يرجى إدخال كلمة مرور التحقق بخطوتين.</string>
+    <string name="PaymentPrecheckoutFailed">المعذرة، تم إلغاء عملية الدفع من البوت.</string>
+    <string name="PaymentFailed">المعذرة، تم رفض عملية الدفع.</string>
+    <string name="PaymentConnectionFailed">تعذر الوصور إلى خادم الدفع. فضلًا تحقق من اتصال الانترنت وحاول مرة أخرى.</string>
     <!--chats view-->
+    <string name="NewConversationShortcut">محادثات جديدة</string>
     <string name="Settings">الإعدادات</string>
     <string name="Contacts">جهات الاتصال</string>
     <string name="NewGroup">مجموعة جديدة</string>
@@ -80,6 +129,16 @@
     <string name="LinkPreview">معاينة الرابط</string>
     <string name="Draft">مسودة</string>
     <string name="HistoryCleared">تم مسح السجل</string>
+    <string name="ArticleByAuthor">من %1$s</string>
+    <string name="ArticleDateByAuthor">%1$s من %2$s</string>
+    <string name="PreviewFeedback">اكتب رأيك بخصوص هذا الإستعراض</string>
+    <string name="SendStickerPreview">أرسل ملصق</string>
+    <string name="ViewPackPreview">استعرض الحزمة</string>
+    <string name="PinToTop">ثبت في الأعلى</string>
+    <string name="UnpinFromTop">إلغاء التثبيت</string>
+    <string name="Bold">عريض</string>
+    <string name="Italic">مائل</string>
+    <string name="Regular">طبيعي</string>
     <!--channels-->
     <string name="GroupType">نوع المجموعة</string>
     <string name="ChannelType">نوع القناة</string>
@@ -110,7 +169,7 @@
     <string name="ActionPinnedSticker">un1 ثبت ملصق</string>
     <string name="ActionPinnedVoice">un1 ثبت رسالة صوتية</string>
     <string name="ActionPinnedContact">un1 ثبت جهة اتصال</string>
-    <string name="ActionPinnedGame">un1 ثبت a %1$s</string>
+    <string name="ActionPinnedGame">un1 ثبت %1$s</string>
     <string name="ActionPinnedGeo">un1 ثبت خريطة</string>
     <string name="ActionPinnedGif">un1 ثبت صورة متحركة</string>
     <string name="ActionPinnedMusic">un1 ثبت مقطع صوتي</string>
@@ -173,7 +232,7 @@
     <string name="ActionChannelChangedPhoto">تم تغيير صورة القناة</string>
     <string name="ActionChannelRemovedPhoto">تم حذف صورة القناة</string>
     <string name="ActionChannelChangedTitle">تم تغيير اسم القناة إلى un2</string>
-    <string name="ChangePublicLimitReached">المعذرة، قمت بحجز معرفات عامة كثيرة .يمكنك إلغاء بعض روابط مجموعاتك وقنواتك القديمة، أو قم بجعلها خاصة.</string>
+    <string name="ChangePublicLimitReached">المعذرة، قمت بحجز معرفات عامة كثيرة. يمكنك إلغاء بعض روابط مجموعاتك وقنواتك القديمة، أو قم بجعلها خاصة.</string>
     <string name="ChannelModerator">المراقب</string>
     <string name="ChannelCreator">المنشئ</string>
     <string name="ChannelEditor">إداري</string>
@@ -267,11 +326,14 @@
     <string name="IsRecordingAudio">%1$s يقوم بتسجيل رسالة صوتية...</string>
     <string name="IsSendingAudio">%1$s يقوم بإرسال مقطع صوتي...</string>
     <string name="IsSendingPhoto">%1$s يقوم بإرسال صورة...</string>
+    <string name="InstantView">استعراض لحظي</string>
+    <string name="IsSendingGame">%1$s يلعب لعبة...</string>
     <string name="IsSendingVideo">%1$s يقوم بإرسال مقطع مرئي...</string>
     <string name="IsSendingFile">%1$s يقوم بإرسال ملف...</string>
     <string name="RecordingAudio">جاري تسجيل الرسالة الصوتية...</string>
     <string name="SendingAudio">جاري إرسال المقطع الصوتي...</string>
     <string name="SendingPhoto">جاري إرسال الصورة...</string>
+    <string name="SendingGame">يلعب لعبة...</string>
     <string name="SendingVideoStatus">جاري إرسال المقطع المرئي...</string>
     <string name="SendingFile">جاري إرسال الملف...</string>
     <string name="GotAQuestion">هل يوجد لديك سؤال\nحول تيليجرام؟</string>
@@ -307,6 +369,7 @@
     <string name="SaveToMusic">احفظ في الموسيقى</string>
     <string name="ShareFile">مشاركة</string>
     <string name="ApplyLocalizationFile">تطبيق ملف التعريب</string>
+    <string name="ApplyThemeFile">تطبيق ملف النمط</string>
     <string name="UnsupportedAttachment">المرفق غير مدعوم</string>
     <string name="SetTimer">عداد التدمير الذاتي</string>
     <string name="ServiceNotifications">إشعارات الخدمة</string>
@@ -323,8 +386,10 @@
     <string name="ReportSpamAlert">هل أنت متأكد من رغبتك في الإبلاغ عن هذا المستخدم كغير مرغوب به؟</string>
     <string name="ReportSpamAlertGroup">هل أنت متأكد من رغبتك في الإبلاغ عن هذه المجموعة كغير مرغوب بها؟</string>
     <string name="ReportSpamAlertChannel">هل أنت متأكد من رغبتك في الإبلاغ عن هذه القناة كغير مرغوب بها؟</string>
-    <string name="NobodyLikesSpam1">المعذرة، يمكنك فقط إرسال رسائل لمن يمتلك رقمك وتمتلك رقمه في الوقت الحالي.</string>
-    <string name="NobodyLikesSpam2">المعذرة، يمكنك فقط إضافة من يمتلك رقمك وتمتلك رقمه للمجموعة في الوقت الحالي.</string>
+    <string name="NobodyLikesSpam1">المعذرة، فقط يمكنك مراسلة جهات الاتصال المشتركة في الوقت الحالي.</string>
+    <string name="NobodyLikesSpam2">المعذرة، فقط يمكنك إضافة جهات الاتصال المشتركة للمجموعات في الوقت الحالي.</string>
+    <string name="NobodyLikesSpam3">لقد قمت بمراسلة أشخاص كثيرين اليوم من خارج جهات الاتصال لديك. فضلًا حاول مرة أخرى غدًا. ستتمكن من الرد اليوم إذا قام المستخدم بمراسلتك أولًا.</string>
+    <string name="NobodyLikesSpam4">لا يمكنك إضافة هذا المستخدم لأنك قمت بمراسلة أشخاص كثيرين اليوم من خارج جهات الاتصال لديك. فضلًا حاول مرة أخرى غدًا. يمكنك الطلب من عضو آخر إضافة هذا المستخدم للمجموعة.</string>
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq/can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">ملعومات إضافية</string>
     <string name="ShareSendTo">أرسل إلى...</string>
@@ -358,6 +423,10 @@
     <string name="ChatYourSelfDescription3">افتح هذه المحادثة من أي جهاز من أجهزتك</string>
     <string name="ChatYourSelfDescription4">استخدم البحث لتجد الأشياء بسرعة</string>
     <string name="ChatYourSelfTitle">مساحتك السحابية</string>
+    <string name="JumpToDate">اذهب لهذا التاريخ</string>
+    <string name="DeleteForUser">حذف لـ%1$s</string>
+    <string name="DeleteForAll">حذف لكافة الأعضاء</string>
+    <string name="TextCopied">تم نسخ النص للحافظة</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
@@ -451,11 +520,12 @@
     <string name="ALongTimeAgo">آخر ظهور خلال فترة طويلة</string>
     <string name="NewMessageTitle">رسالة جديدة</string>
     <!--group create view-->
-    <string name="SendMessageTo">إرسال الرسالة إلى...</string>
+    <string name="SendMessageTo">أضف أشخاص...</string>
     <string name="SoftUserLimitAlert">ستتمكن من إضافة أعضاء أكثر إذا انتهيت من إنشاء المجموعة وقمت بتحويلها إلى مجموعة خارقة.</string>
     <string name="EnterGroupNamePlaceholder">أدخل اسم للمجموعة</string>
     <string name="GroupName">اسم المجموعة</string>
-    <string name="MembersCount">%1$d/%2$d عضو</string>
+    <string name="MembersCount">تم اختيار %1$d من %2$d</string>
+    <string name="MembersCountZero">حتى %1$s</string>
     <string name="JoinToGroup">هل ترغب في الدخول للمحادثة \'%1$s\'؟</string>
     <string name="JoinToGroupErrorFull">المعذرة، هذه المجموعة ممتلئة.</string>
     <string name="JoinToGroupErrorNotExist">المعذرة، هذه المحادثة غير موجودة.</string>
@@ -507,12 +577,16 @@
     <string name="PhoneOther">آخر</string>
     <string name="PhoneMain">الرئيسية</string>
     <string name="StartEncryptedChat">إبدأ محادثة سرية</string>
+    <string name="GroupsInCommon">المجموعات المشتركة</string>
+    <string name="GroupsInCommonTitle">المجموعات المشتركة</string>
+    <string name="NoGroupsInCommon">لا توجد مجموعات مشتركة بعد</string>
     <string name="CreateEncryptedChatError">حدث خطأ.</string>
     <string name="EncryptionKey">مفتاح التشفير</string>
     <string name="MessageLifetime">عداد التدمير الذاتي</string>
     <string name="ShortMessageLifetimeForever">إيقاف</string>
     <string name="EncryptionKeyDescription">هذه الصورة والنص تم اشتقاقهم من مفتاح التشفير لهذه المحادثة السرية مع <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>إذا كانت مطابقة لما يظهر على جهاز <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> ، التشفير من البداية للنهاية مضمون.<![CDATA[<br><br>]]>للإستزادة، إطلع على telegram.org </string>
     <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
+    <string name="TapToEmojify">اضغط للتحويل لإيموجي</string>
     <string name="NumberUnknown">غير معروف</string>
     <string name="Info">معلومات</string>
     <string name="Phone">هاتف</string>
@@ -525,6 +599,7 @@
     <string name="UsernameInvalidLong">اسم المستخدم يجب ألا يتخطى ٣٢ حرف كحد أقصى.</string>
     <string name="UsernameInvalidStartNumber">المعذرة، اسم المستخدم لا يمكن أن يبدأ برقم.</string>
     <string name="UsernameHelp">يمكنك اختيار اسم مستخدم في <![CDATA[<b>]]>تيليجرام<![CDATA[</b>]]>. إذا قمت بذلك، سيستطيع الناس إيجادك باستخدام الاسم المستخدم والتواصل معك من دون معرفة رقمك.<![CDATA[<br><br>]]>يمكنك استخدام <![CDATA[<b>]]>حروف اللغة الإنجليزية<![CDATA[</b>]]>, <![CDATA[<b>]]>وأرقامها<![CDATA[</b>]]> و كذلك الخط. لا بد من استخدام <![CDATA[<b>]]>٥<![CDATA[</b>]]> حروف على الأقل.</string>
+    <string name="UsernameHelpLink">هذا الرابط يقوم بفتح محادثة معك في تيليجرام:\n%1$s</string>
     <string name="UsernameChecking">جارٍ مراجعة اسم المستخدم...</string>
     <string name="UsernameAvailable">%1$s متاح.</string>
     <string name="UsernameEmpty">لا يوجد</string>
@@ -561,6 +636,20 @@
     <string name="ArchivedStickersAlertInfo">تمت أرشفة بعض من حزم الملصقات الخاصة بك. يمكنك تفعيل هذه الحزم ان طريق إعدادات الملصقات.</string>
     <string name="ArchivedMasksAlertTitle">الأقنعة المؤرشفة</string>
     <string name="ArchivedMasksAlertInfo">تمت أرشفة بعض من حزم الأقنعة الخاصة بك. يمكنك تفعيل هذه الحزم ان طريق إعدادات الأقنعة.</string>
+    <!--theme view-->
+    <string name="Theme">نمط</string>
+    <string name="DeleteThemeAlert">هل أنت متأكد من رغبتك في حذف النمط؟</string>
+    <string name="IncorrectTheme">ملف النمط غير صحيح</string>
+    <string name="EnterThemeName">أدخل اسم النمط</string>
+    <string name="CloseEditor">أغلق المحرر</string>
+    <string name="SaveTheme">حفظ النمط</string>
+    <string name="NewTheme">نمط جديد</string>
+    <string name="ApplyTheme">تطبيق</string>
+    <string name="ThemePreview">معاينة النمط</string>
+    <string name="SelectColor">اختر لون</string>
+    <string name="CreateNewTheme">إنشاء نمط جديد</string>
+    <string name="CreateNewThemeHelp">اضغط على أيقونة الألوان لاستعراض قائمة الخيارات في كل شاشة - ثم قم بتعديلهم.</string>
+    <string name="CreateNewThemeInfo">يمكنك إنشاء النمط الخاص بك بتغيير الألوان داخل التطبيق. يمكنك دائمًا العودة لنمط تيليجرام الأصلي من هنا.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">تم تعيين كافة الإشعارات افتراضيا</string>
     <string name="TextSize">حجم نص الرسائل</string>
@@ -583,6 +672,27 @@
     <string name="ResetAllNotifications">إعادة تعيين كافة الإشعارات</string>
     <string name="UndoAllCustom">إعادة تعيين كافة إعدادات الإشعارات لجميع جهات الاتصال والمجموعات</string>
     <string name="NotificationsAndSounds">الإشعارات والأصوات</string>
+    <string name="CustomNotifications">الإشعارات مخصصة</string>
+    <string name="ProfilePopupNotification">الإشعارات المنبثقة</string>
+    <string name="ProfilePopupNotificationInfo">الرسائل الجديدة من هذا المستخدم ستظهر على شاشتك حتى عند عدم استخدامك لتيليجرام.</string>
+    <string name="NotificationsLed">LED</string>
+    <string name="NotificationsLedColor">اللون</string>
+    <string name="ColorBlue">أزرق</string>
+    <string name="ColorRed">أحمر</string>
+    <string name="ColorYellow">أصفر</string>
+    <string name="ColorGreen">أخضر</string>
+    <string name="ColorCyan">سماوي</string>
+    <string name="ColorWhite">أبيض</string>
+    <string name="ColorPink">وردي</string>
+    <string name="ColorViolet">بنفسجي</string>
+    <string name="ColorOrange">برتقالي</string>
+    <string name="NotificationsLedInfo">الـ LED هي إضاءة صغيرة تومض في بعض الأجهزة كإشعار برسالة جديدة.</string>
+    <string name="PriorityInfo">الإشعارات الأكثر أهمية ستعمل حتى عندما يكون جهازك في وضعية عدم الإزعاج.</string>
+    <string name="General">عام</string>
+    <string name="NotificationsOn">تشغيل</string>
+    <string name="NotificationsOff">إيقاف</string>
+    <string name="NotificationsTurnOn">تشغيل</string>
+    <string name="NotificationsTurnOff">إيقاف</string>
     <string name="BlockedUsers">جهات الاتصال المحظورة</string>
     <string name="LogOut">تسجيل خروج</string>
     <string name="NoSound">لا يوجد صوت</string>
@@ -597,7 +707,7 @@
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
     <string name="PinnedMessages">رسائل مثبتة</string>
     <string name="Language">اللغة</string>
-    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحن نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]> <![CDATA[<a href=\"https://telegram.org/faq/ar\">صفحة الأسئلة الأكثر شيوعًا</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
+    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحن نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]> <![CDATA[<a href="https://telegram.org/faq/ar">صفحة الأسئلة الأكثر شيوعًا</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
     <string name="AskButton">اسأل أحد المتطوعين</string>
     <string name="TelegramFaq">الأسئلة الشائعة عن تيليجرام</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/ar</string>
@@ -624,8 +734,6 @@
     <string name="BadgeNumber">عداد الشارات</string>
     <string name="Short">قصير</string>
     <string name="Long">طويل</string>
-    <string name="SystemDefault">النظام الإفتراضي</string>
-    <string name="SettingsDefault">الإعدادات الإفتراضية</string>
     <string name="AutomaticMediaDownload">تنزيل تلقائي للوسائط</string>
     <string name="WhenUsingMobileData">عند استخدام البيانات الخلوية</string>
     <string name="WhenConnectedOnWiFi">عند الاتصال بالشبكة اللاسلكية</string>
@@ -635,7 +743,11 @@
     <string name="RaiseToSpeak">ارفع الجهاز للتحدث</string>
     <string name="SaveToGallerySettings">حفظ في الجهاز</string>
     <string name="EditName">تعديل الاسم</string>
+    <string name="NotificationsCustomize">تخصيص</string>
+    <string name="NotificationsCustom">مخصص</string>
+    <string name="NotificationsEnableCustom">تفعيل الإشعارات مخصصة</string>
     <string name="NotificationsPriority">الأولوية</string>
+    <string name="NotificationsPrioritySettings">كما في الإعدادات</string>
     <string name="NotificationsPriorityDefault">افتراضي</string>
     <string name="NotificationsPriorityLow">منخفض</string>
     <string name="NotificationsPriorityHigh">مرتفع</string>
@@ -651,29 +763,32 @@
     <string name="NotificationsOther">آخر</string>
     <string name="NotificationsDisabled">تعطيل</string>
     <string name="VibrationDisabled">تعطيل</string>
+    <string name="PopupEnabled">مفعل</string>
+    <string name="PopupDisabled">معطل</string>
     <string name="LedDisabled">تعطيل</string>
     <string name="RepeatDisabled">إيقاف</string>
     <string name="InChatSound">الأصوات داخل المحادثات</string>
     <string name="SoundDefault">افتراضي</string>
     <string name="VibrationDefault">تلقائي</string>
     <string name="SmartNotifications">إشعارات ذكية</string>
+    <string name="SmartNotificationsInfo">%1$d / %2$s</string>
     <string name="SmartNotificationsDisabled">تعطيل</string>
-    <string name="SmartNotificationsInfo">أعلى صوت %1$s خلال %2$s</string>
-    <string name="SmartNotificationsSoundAtMost">أعلى صوت</string>
-    <string name="SmartNotificationsTimes">الأوقات</string>
-    <string name="SmartNotificationsWithin">خلال</string>
-    <string name="SmartNotificationsMinutes">دقائق</string>
+    <string name="SmartNotificationsAlert">تردد صوت التنبيه</string>
+    <string name="SmartNotificationsDetail">%1$s خلال %2$s</string>
     <string name="SecretWebPage">معاينة الرابط</string>
     <string name="SecretChat">المحادثات السرية</string>
     <string name="ChromeCustomTabs">علامات تبويب كروم المخصصة</string>
     <string name="ChromeCustomTabsInfo">فتح الروابط الخارجية داخل التطبيق</string>
     <string name="DirectShare">مشاركة مباشرة</string>
     <string name="DirectShareInfo">اظهار المحادثات الأخيرة في قائمة المشاركة</string>
-    <string name="Emoji">Emoji</string>
-    <string name="EmojiBigSize">Draw single big emoji</string>
-    <string name="EmojiUseDefault">Use system default emoji</string>
+    <string name="Emoji">ايموجي</string>
+    <string name="EmojiBigSize">ارسم ايموجي واحد كبير</string>
+    <string name="EmojiUseDefault">استخدم نظام الايموجي الافتراضي</string>
+    <string name="TelegramVersion">تيليجرام للأندرويد %1$s</string>
+    <string name="DebugMenu">قائمة المعالجة</string>
+    <string name="DebugMenuImportContacts">استيراد جهات الاتصال</string>
+    <string name="DebugMenuReloadContacts">إعادة تنزيل جهات الاتصال</string>
     <!--cache view-->
-    <string name="CacheSettings">إعدادات الذاكرة المخبئية</string>
     <string name="LocalDatabase">قاعدة البيانات على الجهاز</string>
     <string name="LocalDatabaseClear">هل ترغب في مسح الرسائل المحفوظة في الذاكرة المخبئية؟</string>
     <string name="LocalDatabaseInfo">مسح قاعدة البيانات على الجهاز سيحذف الرسائل التي تم تنزيلها على جهازك ويقوم بضغط قاعدة البيانات لتوفير مساحة على جهازك. تيليجرام يحتاج لبعض البيانات ليعمل، لذلك حجم قاعدة البيانات لن يصل إلى صفر.\n\nهذه العملية ربما تأخذ عدة دقائق لتتم.</string>
@@ -685,6 +800,7 @@
     <string name="LocalAudioCache">الرسائل الصوتية</string>
     <string name="LocalVideoCache">المقاطع المرئية</string>
     <string name="LocalMusicCache">الموسيقى</string>
+    <string name="LocalGifCache">الصور المتحركة</string>
     <string name="LocalCache">الملفات الأخرى</string>
     <string name="CacheEmpty">إفراغ</string>
     <string name="KeepMedia">الإحتفاظ بالوسائط</string>
@@ -722,6 +838,8 @@
     <string name="FingerprintInfo">قم بتأكيد البصمة للإستمرار</string>
     <string name="FingerprintHelp">حساس اللمس</string>
     <string name="FingerprintNotRecognized">لم يتم التعرف على البصمة. حاول مرة أخرى</string>
+    <string name="ScreenCapture">اسمح بتصوير الشاشة</string>
+    <string name="ScreenCaptureInfo">إذا تم التفعيل، ستتمكن من التقاط صور للشاشة داخل التطبيق، لكن النظام سيعرض محادثاتك في شاشة تعدد المهام حتى في حال تفعيل رمز المرور.\n\nربما تحتاج لإعادة تشغيل التطبيق لتفعيل هذا الخيار.</string>
     <!--media view-->
     <string name="DocumentsTitle">الملفات المشاركة</string>
     <string name="SharedMediaTitle">الوسائط المشتركة</string>
@@ -798,6 +916,7 @@
     <string name="AddCaption">أضف تعليق...</string>
     <string name="PhotoCaption">تعليق الصورة</string>
     <string name="VideoCaption">تعليق المقطع المرئي</string>
+    <string name="GifCaption">تعليق الصورة المتحركة</string>
     <string name="Caption">تعليق</string>
     <string name="PaintDraw">ارسم</string>
     <string name="PaintStickers">ملصقات</string>
@@ -807,6 +926,9 @@
     <string name="PaintDuplicate">تكرار</string>
     <string name="PaintOutlined">مرسوم</string>
     <string name="PaintRegular">طبيعي</string>
+    <string name="CropReset">إعادة تعيين</string>
+    <string name="CropOriginal">الأصل</string>
+    <string name="CropSquare">مربع</string>
     <!--password view-->
     <string name="TwoStepVerification">التحقق بخطوتين</string>
     <string name="SetAdditionalPassword">تعيين كلمة مرور إضافية</string>
@@ -857,6 +979,27 @@
     <string name="PasswordReset">تم تعطيل كلمة المرور</string>
     <string name="EnabledPasswordText">لقد قمت بتفعيل التحقق بخطوتين.\nعند محاولة تسجيل الدخول على حساب تيليجرام الخاص بك من جهاز جديد، سيتم طلب كلمة المرور التي اخترتها هنا منك.</string>
     <string name="PendingEmailText">البريد الإلكتروني لإسترداد الحساب %1$s غير فعّال بعد ويلزم تفعيله</string>
+    <!--data settings-->
+    <string name="DataSettings">البيانات والتخزين</string>
+    <string name="DataUsage">استخدام الشبكة والتخزين</string>
+    <string name="StorageUsage">استخدام التخزين</string>
+    <string name="MobileUsage">استخدام بيانات الجوال</string>
+    <string name="RoamingUsage">استخدام تجوال البيانات</string>
+    <string name="WiFiUsage">استخدام بيانات الواي فاي</string>
+    <string name="MessagesDataUsage">الرسائل والبيانات الأخرى</string>
+    <string name="CountSent">الصادر</string>
+    <string name="CountReceived">الوارد</string>
+    <string name="BytesSent">بايتات مرسلة</string>
+    <string name="BytesReceived">بايتات مستقبلة</string>
+    <string name="FilesDataUsage">ملفات</string>
+    <string name="CallsDataUsage">مكالمات</string>
+    <string name="OutgoingCalls">مكالمات صادرة</string>
+    <string name="IncomingCalls">مكالمات واردة</string>
+    <string name="CallsTotalTime">إجمالي الوقت</string>
+    <string name="TotalDataUsage">إجمالي</string>
+    <string name="ResetStatistics">مسح الإحصائيات</string>
+    <string name="NetworkUsageSince">استخدام خلوي منذ %1$s</string>
+    <string name="ResetStatisticsAlert">هل ترغب في مسح إحصائيات استخدامك؟</string>
     <!--privacy settings-->
     <string name="PrivacySettings">الخصوصية والأمان</string>
     <string name="PrivacyTitle">الخصوصية</string>
@@ -904,7 +1047,7 @@
     <!--edit video view-->
     <string name="EditVideo">تحرير الفيديو</string>
     <string name="SendingVideo">جارٍ إرسال المقطع المرئي...</string>
-    <string name="SendingGif">جاري إرسال الصورة المتحركة...</string>
+    <string name="SendingGif">جاري إرسال صورة متحركة...</string>
     <!--bot-->
     <string name="Bot">بوت</string>
     <string name="BotShare">مشاركة</string>
@@ -941,6 +1084,8 @@
     <string name="Set">تعيين</string>
     <string name="OK">موافق</string>
     <string name="Crop">قطع</string>
+    <string name="Yes">نعم</string>
+    <string name="No">لا</string>
     <!--messages-->
     <string name="ActionInviteYou">لقد قمت بالدخول للمجموعة باستخدام رابط الدعوة</string>
     <string name="ActionInviteUser">un1 قام بالدخول للمجموعة باستخدام رابط الدعوة</string>
@@ -987,6 +1132,7 @@
     <string name="FloodWait">محاولات كثيرة خاطئة، نرجو المحاولة لاحقًا</string>
     <string name="FloodWaitTime">محاولات كثيرة خاطئة، يرجى المحاولة خلال %1$s</string>
     <string name="InvalidCode">الرمز غير صحيح</string>
+    <string name="PhoneNumberFlood">المعذرة، قمت بحذف حسابك وإعادة إنشاؤه عدة مرات مؤخرًا. فضلًا انتظر لعدة أيام قبل محاولة إنشاء الحساب من جديد.</string>
     <string name="InvalidFirstName">الاسم الأول غير صحيح</string>
     <string name="InvalidLastName">اسم العائلة غير صحيح</string>
     <string name="Loading">جاري التحميل ...</string>
@@ -1038,16 +1184,20 @@
     <string name="EditMessageError">المعذرة، لا يمكنك التعديل على هذه الرسالة.</string>
     <string name="AllowReadSms">فصلًا قم بالسماح لتيليجرام باستقبال رسائل قصيرة ليتمكن من إدخال الرمز لك تلقائيًا.</string>
     <string name="AllowReadCall">فصلًا قم بالسماح لتيليجرام باستقبال اتصالات ليتمكن من إدخال الرمز لك تلقائيًا.</string>
+    <string name="AllowFillNumber">فصلًا قم بالسماح لتيليجرام باستقبال اتصالات ورسائل قصيرة ليتمكن من إدخال رقمك، إرسال رمز التفعيل إليك، وإدخال الرمز لك تلقائيًا.</string>
     <string name="AllowReadCallAndSms">فصلًا قم بالسماح لتيليجرام باستقبال اتصالات ورسائل قصيرة ليتمكن من إدخال الرمز لك تلقائيًا.</string>
     <string name="UserRestricted">المعذرة، لا يمكنك القيام بذلك.</string>
+    <string name="YouBlockedUser">المعذرة، لا يمكنك إضافة هذا المستخدم أو البوت للمجموعات بسبب أنك قمت بحظره. فضلًا قم بإزالة الحظر للإستمرار.</string>
     <string name="JoinGroup">انضم للمجموعة</string>
     <!--permissions-->
     <string name="PermissionContacts">تيليجرام يحتاج للسماح له بالوصول لجهات الاتصال الخاصة بك لتتمكن من محادثة أصدقائك من كافة أجهزتك.</string>
     <string name="PermissionStorage">تيليجرام يحتاج للسماح له بالوصول للذاكرة الخاصة بك لتتمكن من إرسال وحفظ الصور، المقاطع المرئية، الموسيقى وغيرها من الوسائط.</string>
     <string name="PermissionNoAudio">تيليجرام يحتاج للسماح له بالوصول للمايكروفون الخاص بك لتتمكن من إرسال رسائل صوتية.</string>
+    <string name="PermissionNoAudioVideo">تيليجرام يحتاج للسماح له بالوصول للمايكروفون الخاص بك لتتمكن من إرسال فيديوهات.</string>
     <string name="PermissionNoCamera">تيليجرام يحتاج للسماح له بالوصول للكاميرا لتتمكن من التقاط صور ومقاطع مرئية.</string>
     <string name="PermissionNoLocation">تيليجرام يحتاج للسماح له بالوصول لمكانك لتتمكن من مشاركته مع أصدقائك من خلاله.</string>
     <string name="PermissionNoLocationPosition">تيليجرام يحتاج صلاحية الحصول على موقعك.</string>
+    <string name="PermissionDrawAboveOtherApps">تيليجرام يحتاج الصلاحية ليقوم بتشغيل الفيديو داخل الشاشة بعد الخروج من التطبيق.</string>
     <string name="PermissionOpenSettings">الإعدادات</string>
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>
@@ -1065,6 +1215,66 @@
     <string name="Page6Message"><![CDATA[<b>تيليجرام</b>]]> يمكنك الوصول إلى الرسائل الخاصة بك من أجهزة متعددة.</string>
     <string name="Page7Message"><![CDATA[<b>تيليجرام</b>]]> الرسائل مشفرة بشكل قوي وتستطيع تدمير ذاتها</string>
     <string name="StartMessaging">إبدأ المراسلة</string>
+    <!--VoIP-->
+    <string name="AccountSettings">إعدادات الحساب</string>
+    <string name="VoipUseLessData">استخدم بيانات أقل للاتصال.</string>
+    <string name="VoipIncoming">مكالمات واردة</string>
+    <string name="VoipConnecting">جاري الإتصال</string>
+    <string name="VoipExchangingKeys">جاري مبادلة مفاتيح التشفير</string>
+    <string name="VoipWaiting">انتظار</string>
+    <string name="VoipRequesting">جاري الطلب</string>
+    <string name="VoipHangingUp">جاري إنهاء المكالمة</string>
+    <string name="VoipCallEnded">تم إنهاء المكالمة</string>
+    <string name="VoipFailed">فشل في الاتصال</string>
+    <string name="VoipRinging">يتم الاتصال</string>
+    <string name="VoipBusy">الخط مشغول</string>
+    <string name="VoipInCallBranding">مكالمة تيليجرام</string>
+    <string name="VoipOutgoingCall">مكالمة تيليجرام الحالية</string>
+    <string name="VoipEndCall">إنهاء المكالمة</string>
+    <string name="VoipOngoingAlertTitle">مكالمة أخرى نشطة</string>
+    <string name="VoipOngoingAlert">لديك حاليًا مكالمة نشطة مع <![CDATA[<b>%1$s</b>]]>. هل ترغب في إنهاء المكالمة وبدء مكالمة جديدة مع <![CDATA[<b>%2$s</b>]]>؟</string>
+    <string name="VoipNotificationSettings">مكالمات صوتية</string>
+    <string name="VoipSettingsRingtone">النغمة</string>
+    <string name="VoipRingtoneInfo">يمكنك تخصيص نغمة الاتصال عندما يتصل بك هذا المعرف من خلال تيليجرام.</string>
+    <string name="Calls">مكالمات</string>
+    <string name="WhoCanCallMe">من يستطيع الاتصال بي؟</string>
+    <string name="WhoCanCallMeInfo">يمكنك تحديد من يستطيع الاتصال بك.</string>
+    <string name="CustomCallInfo">هؤلاء المستخدمين بإمكانهم أو ليس بإمكانهم الاتصال بك بغض النظر عن الإعدادات أعلاه.</string>
+    <string name="UseLessDataNever">أبدًا</string>
+    <string name="UseLessDataOnMobile">فقط على البيانات الخلوية</string>
+    <string name="UseLessDataAlways">دائمًا</string>
+    <string name="VoipAnswerCall">رد</string>
+    <string name="VoipDeclineCall">رفض</string>
+    <string name="VoipOffline">أنت حاليًا غير متصل. يرجى الاتصال بالانترنت لتتمكن من إجراء مكالمات.</string>
+    <string name="VoipOfflineAirplane">لقد قمت بتفعيل وضع الطيران. يرجى تشغيل الواي فاي لتتمكن من إجراء اتصالات.</string>
+    <string name="VoipOfflineTitle">غير متصل</string>
+    <string name="VoipOfflineAirplaneTitle">وضع الطيران</string>
+    <string name="VoipOfflineOpenSettings">الإعدادات</string>
+    <string name="CallMessageOutgoing">مكالمات صادرة</string>
+    <string name="CallMessageIncoming">مكالمات واردة</string>
+    <string name="CallMessageIncomingMissed">مكالمات فائتة</string>
+    <string name="CallMessageOutgoingMissed">مكالمات ملغاة</string>
+    <string name="CallMessageIncomingDeclined">مكالمة مرفوضة</string>
+    <string name="CallMessageWithDuration">%1$s (%2$s)</string>
+    <string name="CallEncryptionKeyDescription">هذه الصورة والنص تم اشتقاقهم من مفتاح التشفير لهذه المحادثة السرية مع <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>إذا كانت مطابقة لما يظهر على جهاز <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> ، التشفير من البداية للنهاية مضمون.</string>
+    <string name="NoCallLog">لم تقم بإجراء أية مكالمة بعد.</string>
+    <string name="VoipPeerIncompatible">إصدار تيليجرام الخاص بـ<![CDATA[<b>]]>%1$s<![CDATA[</b>]]> غير متوافق. ينبغي عليه تحديث إصدارهم لتتمكن من الاتصال بهم.</string>
+    <string name="VoipPeerOutdated">تطبيق تيليجرام الخاص بـ<![CDATA[<b>]]>%1$s<![CDATA[</b>]]> لا يدعم المكالمات. ينبغي عليه تحديث تطبيقهم لتتمكن من الاتصال بهم.</string>
+    <string name="VoipRateCallAlert">فضلًا قم بتقييم جودة الاتصال في تيليجرام</string>
+    <string name="VoipFeedbackAlert">هل ترغب في ترك أية ملاحظات لتطوير خدمة المكالمات لدينا؟</string>
+    <string name="VoipNeedMicPermission">تيليجرام يحتاج للسماح له بالوصول للمايكروفون الخاص بك لتتمكن من إجراء مكالمات.</string>
+    <string name="VoipFeedbackCommentHint">أضف تعليق اختياري</string>
+    <string name="CallBack">أعد الاتصال بالرقم</string>
+    <string name="CallAgain">اتصل مرة أخرى</string>
+    <string name="DefaultRingtone">افتراضي</string>
+    <string name="ConfirmDeleteCallLog">هل أنت متأكد من رغبتك في حذف المكالمة من سجل المكالمات؟</string>
+    <string name="CallViaTelegram">مكالمة تيليجرام</string>
+    <string name="VoipAudioRoutingEarpiece">سماعة الأذن</string>
+    <string name="VoipAudioRoutingSpeaker">سماعة</string>
+    <string name="VoipAudioRoutingBluetooth">بلوتوث</string>
+    <string name="ReturnToCall">الرجوع للمكالمة</string>
+    <string name="CallNotAvailable">المعذرة، <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> لا يستقبل مكالمات.</string>
+    <string name="CallEmojiKeyTooltip">إذا كانت هذه الايموجيات مطابقة للتي تظهر على شاشة %1$s، فالمكالمة 100%% آمنة. </string>
     <!--plural-->
     <string name="Online_zero">%1$d متصل</string>
     <string name="Online_one">%1$d متصل</string>
@@ -1284,6 +1494,8 @@
     <string name="AndOther_many">و %1$d غيرهم</string>
     <string name="AndOther_other">و %1$d غيرهم</string>
     <!--date formatters-->
+    <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
+    <string name="formatterStats24H">MMM dd yyyy, HH:mm</string>
     <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">MMM dd</string>
     <string name="formatterYear">dd.MM.yy</string>

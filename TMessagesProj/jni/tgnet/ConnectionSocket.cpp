@@ -28,7 +28,7 @@
 
 ConnectionSocket::ConnectionSocket() {
     outgoingByteStream = new ByteStream();
-    lastEventTime = ConnectionsManager::getInstance().getCurrentTimeMillis();
+    lastEventTime = ConnectionsManager::getInstance().getCurrentTimeMonotonicMillis();
     eventObject = new EventObject(this, EventObjectTypeConnection);
 }
 
@@ -43,8 +43,10 @@ ConnectionSocket::~ConnectionSocket() {
     }
 }
 
-void ConnectionSocket::openConnection(std::string address, uint16_t port, bool ipv6) {
+void ConnectionSocket::openConnection(std::string address, uint16_t port, bool ipv6, int32_t networkType) {
+    currentNetworkType = networkType;
     int epolFd = ConnectionsManager::getInstance().epolFd;
+    ConnectionsManager::getInstance().attachConnection(this);
 
     if ((socketFd = socket(ipv6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0)) < 0) {
         DEBUG_E("connection(%p) can't create socket", this);
@@ -108,7 +110,7 @@ bool ConnectionSocket::checkSocketError() {
 }
 
 void ConnectionSocket::closeSocket(int reason) {
-    lastEventTime = ConnectionsManager::getInstance().getCurrentTimeMillis();
+    lastEventTime = ConnectionsManager::getInstance().getCurrentTimeMonotonicMillis();
     ConnectionsManager::getInstance().detachConnection(this);
     if (socketFd >= 0) {
         epoll_ctl(ConnectionsManager::getInstance().epolFd, EPOLL_CTL_DEL, socketFd, NULL);
@@ -140,7 +142,10 @@ void ConnectionSocket::onEvent(uint32_t events) {
                 }
                 if (readCount > 0) {
                     buffer->limit((uint32_t) readCount);
-                    lastEventTime = ConnectionsManager::getInstance().getCurrentTimeMillis();
+                    lastEventTime = ConnectionsManager::getInstance().getCurrentTimeMonotonicMillis();
+                    if (ConnectionsManager::getInstance().delegate != nullptr) {
+                        ConnectionsManager::getInstance().delegate->onBytesReceived(readCount, currentNetworkType);
+                    }
                     onReceivedData(buffer);
                 }
                 if (readCount != READ_BUFFER_SIZE) {
@@ -155,8 +160,7 @@ void ConnectionSocket::onEvent(uint32_t events) {
             return;
         } else {
             if (!onConnectedSent) {
-                ConnectionsManager::getInstance().attachConnection(this);
-                lastEventTime = ConnectionsManager::getInstance().getCurrentTimeMillis();
+                lastEventTime = ConnectionsManager::getInstance().getCurrentTimeMonotonicMillis();
                 onConnected();
                 onConnectedSent = true;
             }
@@ -173,6 +177,9 @@ void ConnectionSocket::onEvent(uint32_t events) {
                     closeSocket(1);
                     return;
                 } else {
+                    if (ConnectionsManager::getInstance().delegate != nullptr) {
+                        ConnectionsManager::getInstance().delegate->onBytesSent(sentLength, currentNetworkType);
+                    }
                     outgoingByteStream->discard((uint32_t) sentLength);
                     adjustWriteOp();
                 }
@@ -208,7 +215,7 @@ void ConnectionSocket::adjustWriteOp() {
 
 void ConnectionSocket::setTimeout(time_t time) {
     timeout = time;
-    lastEventTime = ConnectionsManager::getInstance().getCurrentTimeMillis();
+    lastEventTime = ConnectionsManager::getInstance().getCurrentTimeMonotonicMillis();
 }
 
 void ConnectionSocket::checkTimeout(int64_t now) {

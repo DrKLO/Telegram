@@ -59,6 +59,12 @@ extern opus_int64 celt_mips;
 #define SHR(a,b) SHR32(a,b)
 #define PSHR(a,b) PSHR32(a,b)
 
+/** Add two 32-bit values, ignore any overflows */
+#define ADD32_ovflw(a,b) (celt_mips+=2,(opus_val32)((opus_uint32)(a)+(opus_uint32)(b)))
+/** Subtract two 32-bit values, ignore any overflows  */
+#define SUB32_ovflw(a,b) (celt_mips+=2,(opus_val32)((opus_uint32)(a)-(opus_uint32)(b)))
+#define NEG32_ovflw(a) (celt_mips+=2,(opus_val32)(-(opus_uint32)(a)))
+
 static OPUS_INLINE short NEG16(int x)
 {
    int res;
@@ -227,6 +233,8 @@ static OPUS_INLINE int SHL32_(opus_int64 a, int shift, char *file, int line)
 #define VSHR32(a, shift) (((shift)>0) ? SHR32(a, shift) : SHL32(a, -(shift)))
 
 #define ROUND16(x,a) (celt_mips--,EXTRACT16(PSHR32((x),(a))))
+#define SROUND16(x,a) (celt_mips--,EXTRACT16(SATURATE(PSHR32(x,a), 32767)));
+
 #define HALF16(x)  (SHR16(x,1))
 #define HALF32(x)  (SHR32(x,1))
 
@@ -496,6 +504,7 @@ static OPUS_INLINE int MULT16_32_PX_(int a, opus_int64 b, int Q, char *file, int
 
 #define MULT16_32_Q15(a,b) MULT16_32_QX(a,b,15)
 #define MAC16_32_Q15(c,a,b) (celt_mips-=2,ADD32((c),MULT16_32_Q15((a),(b))))
+#define MAC16_32_Q16(c,a,b) (celt_mips-=2,ADD32((c),MULT16_32_Q16((a),(b))))
 
 static OPUS_INLINE int SATURATE(int a, int b)
 {
@@ -766,6 +775,16 @@ static OPUS_INLINE int DIV32_(opus_int64 a, opus_int64 b, char *file, int line)
    celt_mips+=70;
    return res;
 }
+
+static OPUS_INLINE opus_val16 SIG2WORD16_generic(celt_sig x)
+{
+   x = PSHR32(x, SIG_SHIFT);
+   x = MAX32(x, -32768);
+   x = MIN32(x, 32767);
+   return EXTRACT16(x);
+}
+#define SIG2WORD16(x) (SIG2WORD16_generic(x))
+
 
 #undef PRINT_MIPS
 #define PRINT_MIPS(file) do {fprintf (file, "total complexity = %llu MIPS\n", celt_mips);} while (0);

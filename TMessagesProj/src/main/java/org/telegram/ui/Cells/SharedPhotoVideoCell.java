@@ -3,12 +3,13 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Cells;
 
 import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
@@ -23,12 +24,12 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.LayoutHelper;
@@ -87,11 +88,12 @@ public class SharedPhotoVideoCell extends FrameLayout {
             videoInfoContainer.addView(videoTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 4, 0, 0, 1));
 
             selector = new View(context);
-            selector.setBackgroundResource(R.drawable.list_selector);
+            selector.setBackgroundDrawable(Theme.getSelectorDrawable(false));
             addView(selector, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
             checkBox = new CheckBox(context, R.drawable.round_check2);
             checkBox.setVisibility(INVISIBLE);
+            checkBox.setColor(Theme.getColor(Theme.key_checkbox), Theme.getColor(Theme.key_checkboxCheck));
             addView(checkBox, LayoutHelper.createFrame(22, 22, Gravity.RIGHT | Gravity.TOP, 0, 2, 2, 0));
         }
 
@@ -120,7 +122,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
                 animator.playTogether(ObjectAnimator.ofFloat(container, "scaleX", checked ? 0.85f : 1.0f),
                         ObjectAnimator.ofFloat(container, "scaleY", checked ? 0.85f : 1.0f));
                 animator.setDuration(200);
-                animator.addListener(new AnimatorListenerAdapterProxy() {
+                animator.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         if (animator != null && animator.equals(animation)) {
@@ -186,6 +188,12 @@ public class SharedPhotoVideoCell extends FrameLayout {
                     return false;
                 }
             });
+        }
+    }
+
+    public void updateCheckboxColor() {
+        for (int a = 0; a < 6; a++) {
+            photoVideoViews[a].checkBox.setColor(Theme.getColor(Theme.key_checkbox), Theme.getColor(Theme.key_checkboxCheck));
         }
     }
 

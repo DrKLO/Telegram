@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger;
@@ -85,17 +85,17 @@ public class FileLog {
         return "";
     }
 
-    public static void e(final String tag, final String message, final Throwable exception) {
+    public static void e(final String message, final Throwable exception) {
         if (!BuildVars.DEBUG_VERSION) {
             return;
         }
-        Log.e(tag, message, exception);
+        Log.e("tmessages", message, exception);
         if (getInstance().streamWriter != null) {
             getInstance().logQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + message + "\n");
+                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/tmessages: " + message + "\n");
                         getInstance().streamWriter.write(exception.toString());
                         getInstance().streamWriter.flush();
                     } catch (Exception e) {
@@ -106,17 +106,17 @@ public class FileLog {
         }
     }
 
-    public static void e(final String tag, final String message) {
+    public static void e(final String message) {
         if (!BuildVars.DEBUG_VERSION) {
             return;
         }
-        Log.e(tag, message);
+        Log.e("tmessages", message);
         if (getInstance().streamWriter != null) {
             getInstance().logQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + message + "\n");
+                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/tmessages: " + message + "\n");
                         getInstance().streamWriter.flush();
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -126,7 +126,7 @@ public class FileLog {
         }
     }
 
-    public static void e(final String tag, final Throwable e) {
+    public static void e(final Throwable e) {
         if (!BuildVars.DEBUG_VERSION) {
             return;
         }
@@ -136,10 +136,10 @@ public class FileLog {
                 @Override
                 public void run() {
                     try {
-                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + e + "\n");
+                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/tmessages: " + e + "\n");
                         StackTraceElement[] stack = e.getStackTrace();
                         for (int a = 0; a < stack.length; a++) {
-                            getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + stack[a] + "\n");
+                            getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/tmessages: " + stack[a] + "\n");
                         }
                         getInstance().streamWriter.flush();
                     } catch (Exception e) {
@@ -152,17 +152,17 @@ public class FileLog {
         }
     }
 
-    public static void d(final String tag, final String message) {
+    public static void d(final String message) {
         if (!BuildVars.DEBUG_VERSION) {
             return;
         }
-        Log.d(tag, message);
+        Log.d("tmessages", message);
         if (getInstance().streamWriter != null) {
             getInstance().logQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " D/" + tag + "﹕ " + message + "\n");
+                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " D/tmessages: " + message + "\n");
                         getInstance().streamWriter.flush();
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -172,17 +172,17 @@ public class FileLog {
         }
     }
 
-    public static void w(final String tag, final String message) {
+    public static void w(final String message) {
         if (!BuildVars.DEBUG_VERSION) {
             return;
         }
-        Log.w(tag, message);
+        Log.w("tmessages", message);
         if (getInstance().streamWriter != null) {
             getInstance().logQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " W/" + tag + ": " + message + "\n");
+                        getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " W/tmessages: " + message + "\n");
                         getInstance().streamWriter.flush();
                     } catch (Exception e) {
                         e.printStackTrace();

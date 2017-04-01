@@ -24,7 +24,7 @@ import java.util.Comparator;
 /**
  * A Sorted list implementation that can keep items in order and also notify for changes in the
  * list
- * such that it can be bound to a {@link android.support.v7.widget.RecyclerView.Adapter
+ * such that it can be bound to a {@link org.telegram.messenger.support.widget.RecyclerView.Adapter
  * RecyclerView.Adapter}.
  * <p>
  * It keeps items ordered using the {@link Callback#compare(Object, Object)} method and uses
@@ -145,7 +145,7 @@ public class SortedList<T> {
      * </p>
      * @param items Array of items to be added into the list.
      * @param mayModifyInput If true, SortedList is allowed to modify the input.
-     * @see {@link SortedList#addAll(T[] items)}.
+     * @see {@link SortedList#addAll(Object[] items)}.
      */
     public void addAll(T[] items, boolean mayModifyInput) {
         throwIfMerging();
@@ -681,7 +681,7 @@ public class SortedList<T> {
      * SortedList calls the callback methods on this class to notify changes about the underlying
      * data.
      */
-    public static abstract class Callback<T2> implements Comparator<T2> {
+    public static abstract class Callback<T2> implements Comparator<T2>, ListUpdateCallback {
 
         /**
          * Similar to {@link java.util.Comparator#compare(Object, Object)}, should compare two and
@@ -694,31 +694,8 @@ public class SortedList<T> {
          * first argument is less than, equal to, or greater than the
          * second.
          */
+        @Override
         abstract public int compare(T2 o1, T2 o2);
-
-        /**
-         * Called by the SortedList when an item is inserted at the given position.
-         *
-         * @param position The position of the new item.
-         * @param count    The number of items that have been added.
-         */
-        abstract public void onInserted(int position, int count);
-
-        /**
-         * Called by the SortedList when an item is removed from the given position.
-         *
-         * @param position The position of the item which has been removed.
-         * @param count    The number of items which have been removed.
-         */
-        abstract public void onRemoved(int position, int count);
-
-        /**
-         * Called by the SortedList when an item changes its position in the list.
-         *
-         * @param fromPosition The previous position of the item before the move.
-         * @param toPosition   The new position of the item.
-         */
-        abstract public void onMoved(int fromPosition, int toPosition);
 
         /**
          * Called by the SortedList when the item at the given position is updated.
@@ -727,6 +704,11 @@ public class SortedList<T> {
          * @param count    The number of items which has changed.
          */
         abstract public void onChanged(int position, int count);
+
+        @Override
+        public void onChanged(int position, int count, Object payload) {
+            onChanged(position, count);
+        }
 
         /**
          * Called by the SortedList when it wants to check whether two items have the same data
@@ -737,7 +719,7 @@ public class SortedList<T> {
          * so
          * that you can change its behavior depending on your UI.
          * <p>
-         * For example, if you are using SortedList with a {@link android.support.v7.widget.RecyclerView.Adapter
+         * For example, if you are using SortedList with a {@link org.telegram.messenger.support.widget.RecyclerView.Adapter
          * RecyclerView.Adapter}, you should
          * return whether the items' visual representations are the same or not.
          *
@@ -779,17 +761,8 @@ public class SortedList<T> {
      */
     public static class BatchedCallback<T2> extends Callback<T2> {
 
-        private final Callback<T2> mWrappedCallback;
-        static final int TYPE_NONE = 0;
-        static final int TYPE_ADD = 1;
-        static final int TYPE_REMOVE = 2;
-        static final int TYPE_CHANGE = 3;
-        static final int TYPE_MOVE = 4;
-
-        int mLastEventType = TYPE_NONE;
-        int mLastEventPosition = -1;
-        int mLastEventCount = -1;
-
+        final Callback<T2> mWrappedCallback;
+        private final BatchingListUpdateCallback mBatchingListUpdateCallback;
         /**
          * Creates a new BatchedCallback that wraps the provided Callback.
          *
@@ -799,6 +772,7 @@ public class SortedList<T> {
          */
         public BatchedCallback(Callback<T2> wrappedCallback) {
             mWrappedCallback = wrappedCallback;
+            mBatchingListUpdateCallback = new BatchingListUpdateCallback(mWrappedCallback);
         }
 
         @Override
@@ -808,51 +782,22 @@ public class SortedList<T> {
 
         @Override
         public void onInserted(int position, int count) {
-            if (mLastEventType == TYPE_ADD && position >= mLastEventPosition
-                    && position <= mLastEventPosition + mLastEventCount) {
-                mLastEventCount += count;
-                mLastEventPosition = Math.min(position, mLastEventPosition);
-                return;
-            }
-            dispatchLastEvent();
-            mLastEventPosition = position;
-            mLastEventCount = count;
-            mLastEventType = TYPE_ADD;
+            mBatchingListUpdateCallback.onInserted(position, count);
         }
 
         @Override
         public void onRemoved(int position, int count) {
-            if (mLastEventType == TYPE_REMOVE && mLastEventPosition == position) {
-                mLastEventCount += count;
-                return;
-            }
-            dispatchLastEvent();
-            mLastEventPosition = position;
-            mLastEventCount = count;
-            mLastEventType = TYPE_REMOVE;
+            mBatchingListUpdateCallback.onRemoved(position, count);
         }
 
         @Override
         public void onMoved(int fromPosition, int toPosition) {
-            dispatchLastEvent();//moves are not merged
-            mWrappedCallback.onMoved(fromPosition, toPosition);
+            mBatchingListUpdateCallback.onMoved(fromPosition, toPosition);
         }
 
         @Override
         public void onChanged(int position, int count) {
-            if (mLastEventType == TYPE_CHANGE &&
-                    !(position > mLastEventPosition + mLastEventCount
-                            || position + count < mLastEventPosition)) {
-                // take potential overlap into account
-                int previousEnd = mLastEventPosition + mLastEventCount;
-                mLastEventPosition = Math.min(position, mLastEventPosition);
-                mLastEventCount = Math.max(previousEnd, position + count) - mLastEventPosition;
-                return;
-            }
-            dispatchLastEvent();
-            mLastEventPosition = position;
-            mLastEventCount = count;
-            mLastEventType = TYPE_CHANGE;
+            mBatchingListUpdateCallback.onChanged(position, count, null);
         }
 
         @Override
@@ -865,27 +810,12 @@ public class SortedList<T> {
             return mWrappedCallback.areItemsTheSame(item1, item2);
         }
 
-
         /**
          * This method dispatches any pending event notifications to the wrapped Callback.
          * You <b>must</b> always call this method after you are done with editing the SortedList.
          */
         public void dispatchLastEvent() {
-            if (mLastEventType == TYPE_NONE) {
-                return;
-            }
-            switch (mLastEventType) {
-                case TYPE_ADD:
-                    mWrappedCallback.onInserted(mLastEventPosition, mLastEventCount);
-                    break;
-                case TYPE_REMOVE:
-                    mWrappedCallback.onRemoved(mLastEventPosition, mLastEventCount);
-                    break;
-                case TYPE_CHANGE:
-                    mWrappedCallback.onChanged(mLastEventPosition, mLastEventCount);
-                    break;
-            }
-            mLastEventType = TYPE_NONE;
+            mBatchingListUpdateCallback.dispatchLastEvent();
         }
     }
 }

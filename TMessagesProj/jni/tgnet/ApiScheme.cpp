@@ -135,6 +135,12 @@ void TL_config::readParams(NativeByteBuffer *stream, bool &error) {
     if ((flags & 1) != 0) {
         tmp_sessions = stream->readInt32(&error);
     }
+    pinned_dialogs_count_max = stream->readInt32(&error);
+    call_receive_timeout_ms = stream->readInt32(&error);
+    call_ring_timeout_ms = stream->readInt32(&error);
+    call_connect_timeout_ms = stream->readInt32(&error);
+    call_packet_timeout_ms = stream->readInt32(&error);
+    me_url_prefix = stream->readString(&error);
     magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
@@ -183,6 +189,12 @@ void TL_config::serializeToStream(NativeByteBuffer *stream) {
     if ((flags & 1) != 0) {
         stream->writeInt32(tmp_sessions);
     }
+    stream->writeInt32(pinned_dialogs_count_max);
+    stream->writeInt32(call_receive_timeout_ms);
+    stream->writeInt32(call_ring_timeout_ms);
+    stream->writeInt32(call_connect_timeout_ms);
+    stream->writeInt32(call_packet_timeout_ms);
+    stream->writeString(me_url_prefix);
     stream->writeInt32(0x1cb5c415);
     count = (uint32_t) disabled_features.size();
     stream->writeInt32(count);

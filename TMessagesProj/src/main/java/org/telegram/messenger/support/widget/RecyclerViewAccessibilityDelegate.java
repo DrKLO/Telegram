@@ -35,7 +35,7 @@ public class RecyclerViewAccessibilityDelegate extends AccessibilityDelegateComp
         mRecyclerView = recyclerView;
     }
 
-    private boolean shouldIgnore() {
+    boolean shouldIgnore() {
         return mRecyclerView.hasPendingAdapterUpdates();
     }
 
@@ -72,7 +72,12 @@ public class RecyclerViewAccessibilityDelegate extends AccessibilityDelegateComp
         }
     }
 
-    AccessibilityDelegateCompat getItemDelegate() {
+    /**
+     * Gets the AccessibilityDelegate for an individual item in the RecyclerView.
+     * A basic item delegate is provided by default, but you can override this
+     * method to provide a custom per-item delegate.
+     */
+    public AccessibilityDelegateCompat getItemDelegate() {
         return mItemDelegate;
     }
 

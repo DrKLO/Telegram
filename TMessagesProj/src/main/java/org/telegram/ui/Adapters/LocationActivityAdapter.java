@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Adapters;
@@ -15,13 +15,15 @@ import android.view.ViewGroup;
 
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.EmptyCell;
-import org.telegram.ui.Cells.GreySectionCell;
+import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.LocationCell;
 import org.telegram.ui.Cells.LocationLoadingCell;
 import org.telegram.ui.Cells.LocationPoweredCell;
 import org.telegram.ui.Cells.SendLocationCell;
+import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.Locale;
 
@@ -67,7 +69,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter {
     }
 
     @Override
-    public int getCount() {
+    public int getItemCount() {
         if (searching || !searching && places.isEmpty()) {
             return 4;
         }
@@ -75,58 +77,59 @@ public class LocationActivityAdapter extends BaseLocationAdapter {
     }
 
     @Override
-    public boolean isEmpty() {
-        return false;
-    }
-
-    @Override
-    public View getView(int i, View view, ViewGroup viewGroup) {
-        if (i == 0) {
-            if (view == null) {
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View view;
+        switch (viewType) {
+            case 0:
                 view = new EmptyCell(mContext);
-            }
-            ((EmptyCell) view).setHeight(overScrollHeight);
-        } else if (i == 1) {
-            if (view == null) {
+                break;
+            case 1:
                 view = new SendLocationCell(mContext);
-            }
-            sendLocationCell = (SendLocationCell) view;
-            updateCell();
-            return view;
-        } else if (i == 2) {
-            if (view == null) {
-                view = new GreySectionCell(mContext);
-            }
-            ((GreySectionCell) view).setText(LocaleController.getString("NearbyPlaces", R.string.NearbyPlaces));
-        } else if (searching || !searching && places.isEmpty()) {
-            if (view == null) {
-                view = new LocationLoadingCell(mContext);
-            }
-            ((LocationLoadingCell) view).setLoading(searching);
-        } else if (i == places.size() + 3) {
-            if (view == null) {
-                view = new LocationPoweredCell(mContext);
-            }
-        } else {
-            if (view == null) {
+                break;
+            case 2:
+                view = new GraySectionCell(mContext);
+                break;
+            case 3:
                 view = new LocationCell(mContext);
-            }
-            ((LocationCell) view).setLocation(places.get(i - 3), iconUrls.get(i - 3), true);
+                break;
+            case 4:
+                view = new LocationLoadingCell(mContext);
+                break;
+            case 5:
+            default:
+                view = new LocationPoweredCell(mContext);
+                break;
         }
-        return view;
+        return new RecyclerListView.Holder(view);
     }
 
     @Override
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        switch (holder.getItemViewType()) {
+            case 0:
+                ((EmptyCell) holder.itemView).setHeight(overScrollHeight);
+                break;
+            case 1:
+                sendLocationCell = (SendLocationCell) holder.itemView;
+                updateCell();
+                break;
+            case 2:
+                ((GraySectionCell) holder.itemView).setText(LocaleController.getString("NearbyPlaces", R.string.NearbyPlaces));
+                break;
+            case 3:
+                ((LocationCell) holder.itemView).setLocation(places.get(position - 3), iconUrls.get(position - 3), true);
+                break;
+            case 4:
+                ((LocationLoadingCell) holder.itemView).setLoading(searching);
+                break;
+        }
+    }
+
     public TLRPC.TL_messageMediaVenue getItem(int i) {
         if (i > 2 && i < places.size() + 3) {
             return places.get(i - 3);
         }
         return null;
-    }
-
-    @Override
-    public long getItemId(int i) {
-        return i;
     }
 
     @Override
@@ -146,22 +149,8 @@ public class LocationActivityAdapter extends BaseLocationAdapter {
     }
 
     @Override
-    public int getViewTypeCount() {
-        return 6;
-    }
-
-    @Override
-    public boolean areAllItemsEnabled() {
-        return false;
-    }
-
-    @Override
-    public boolean isEnabled(int position) {
+    public boolean isEnabled(RecyclerView.ViewHolder holder) {
+        int position = holder.getAdapterPosition();
         return !(position == 2 || position == 0 || position == 3 && (searching || !searching && places.isEmpty()) || position == places.size() + 3);
-    }
-
-    @Override
-    public boolean hasStableIds() {
-        return true;
     }
 }

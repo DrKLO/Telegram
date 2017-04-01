@@ -3,49 +3,34 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui;
 
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
-import android.text.Spannable;
-import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
-import android.text.style.ImageSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.AbsListView;
-import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
@@ -54,16 +39,16 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Adapters.ContactsAdapter;
-import org.telegram.ui.Adapters.SearchAdapter;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.AdminedChannelCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.LoadingCell;
@@ -71,22 +56,18 @@ import org.telegram.ui.Cells.RadioButtonCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextBlockCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.AvatarUpdater;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.ChipSpan;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LetterSectionsListView;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class ChannelCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, AvatarUpdater.AvatarUpdaterDelegate {
 
     private View doneButton;
     private EditText nameTextView;
-    private ProgressDialog progressDialog;
+    private AlertDialog progressDialog;
     private ShadowSectionCell sectionCell;
     private BackupImageView avatarImage;
     private AvatarDrawable avatarDrawable;
@@ -94,14 +75,18 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     private EditText descriptionTextView;
     private TLRPC.FileLocation avatar;
     private String nameToSet;
+    private LinearLayout linearLayout2;
+    private EditText editText;
 
     private LinearLayout linearLayout;
+    private LinearLayout adminnedChannelsLayout;
     private LinearLayout linkContainer;
     private LinearLayout publicContainer;
     private TextBlockCell privateContainer;
     private RadioButtonCell radioButtonCell1;
     private RadioButtonCell radioButtonCell2;
     private TextInfoPrivacyCell typeInfoCell;
+    private TextView helpTextView;
     private TextView checkTextView;
     private HeaderCell headerCell;
     private int checkReqId;
@@ -116,18 +101,6 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     private TextInfoPrivacyCell adminedInfoCell;
     private ArrayList<AdminedChannelCell> adminedChannelCells = new ArrayList<>();
     private LoadingCell loadingAdminedCell;
-
-    private ContactsAdapter listViewAdapter;
-    private TextView emptyTextView;
-    private LetterSectionsListView listView;
-    private SearchAdapter searchListViewAdapter;
-    private boolean searchWas;
-    private boolean searching;
-    private HashMap<Integer, ChipSpan> selectedContacts = new HashMap<>();
-    private ArrayList<ChipSpan> allSpans = new ArrayList<>();
-    private int beforeChangeIndex;
-    private boolean ignoreChange;
-    private CharSequence changeString;
 
     private int currentStep;
     private int chatId;
@@ -175,12 +148,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     @SuppressWarnings("unchecked")
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatDidCreated);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatDidFailCreate);
-        if (currentStep == 2) {
-            NotificationCenter.getInstance().addObserver(this, NotificationCenter.contactsDidLoaded);
-        } else if (currentStep == 1) {
+        if (currentStep == 1) {
             generateLink();
         }
         if (avatarUpdater != null) {
@@ -193,12 +163,8 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatDidCreated);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatDidFailCreate);
-        if (currentStep == 2) {
-            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
-        }
         if (avatarUpdater != null) {
             avatarUpdater.clear();
         }
@@ -213,9 +179,6 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
 
     @Override
     public View createView(Context context) {
-        searching = false;
-        searchWas = false;
-
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
 
@@ -240,7 +203,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                         donePressed = true;
                         if (avatarUpdater.uploadingAvatar != null) {
                             createAfterUpload = true;
-                            progressDialog = new ProgressDialog(getParentActivity());
+                            progressDialog = new AlertDialog(getParentActivity(), 1);
                             progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
                             progressDialog.setCanceledOnTouchOutside(false);
                             progressDialog.setCancelable(false);
@@ -253,7 +216,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                                     try {
                                         dialog.dismiss();
                                     } catch (Exception e) {
-                                        FileLog.e("tmessages", e);
+                                        FileLog.e(e);
                                     }
                                 }
                             });
@@ -261,7 +224,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                             return;
                         }
                         final int reqId = MessagesController.getInstance().createChat(nameTextView.getText().toString(), new ArrayList<Integer>(), descriptionTextView.getText().toString(), ChatObject.CHAT_TYPE_CHANNEL, ChannelCreateActivity.this);
-                        progressDialog = new ProgressDialog(getParentActivity());
+                        progressDialog = new AlertDialog(getParentActivity(), 1);
                         progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
                         progressDialog.setCanceledOnTouchOutside(false);
                         progressDialog.setCancelable(false);
@@ -273,7 +236,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                                 try {
                                     dialog.dismiss();
                                 } catch (Exception e) {
-                                    FileLog.e("tmessages", e);
+                                    FileLog.e(e);
                                 }
                             }
                         });
@@ -302,21 +265,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                         }
                         Bundle args = new Bundle();
                         args.putInt("step", 2);
-                        args.putInt("chat_id", chatId);
-                        presentFragment(new ChannelCreateActivity(args), true);
-                    } else {
-                        ArrayList<TLRPC.InputUser> result = new ArrayList<>();
-                        for (Integer uid : selectedContacts.keySet()) {
-                            TLRPC.InputUser user = MessagesController.getInputUser(MessagesController.getInstance().getUser(uid));
-                            if (user != null) {
-                                result.add(user);
-                            }
-                        }
-                        MessagesController.getInstance().addUsersToChannel(chatId, result, null);
-                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                        Bundle args2 = new Bundle();
-                        args2.putInt("chat_id", chatId);
-                        presentFragment(new ChatActivity(args2), true);
+                        args.putInt("chatId", chatId);
+                        args.putInt("chatType", ChatObject.CHAT_TYPE_CHANNEL);
+                        presentFragment(new GroupCreateActivity(args), true);
                     }
                 }
             }
@@ -325,27 +276,17 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
         ActionBarMenu menu = actionBar.createMenu();
         doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-        if (currentStep != 2) {
-            fragmentView = new ScrollView(context);
-            ScrollView scrollView = (ScrollView) fragmentView;
-            scrollView.setFillViewport(true);
-            linearLayout = new LinearLayout(context);
-            scrollView.addView(linearLayout, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        } else {
-            fragmentView = new LinearLayout(context);
-            fragmentView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    return true;
-                }
-            });
-            linearLayout = (LinearLayout) fragmentView;
-        }
+        fragmentView = new ScrollView(context);
+        ScrollView scrollView = (ScrollView) fragmentView;
+        scrollView.setFillViewport(true);
+        linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
+        scrollView.addView(linearLayout, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         if (currentStep == 0) {
             actionBar.setTitle(LocaleController.getString("NewChannel", R.string.NewChannel));
-            fragmentView.setBackgroundColor(0xffffffff);
+            fragmentView.setTag(Theme.key_windowBackgroundWhite);
+            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             FrameLayout frameLayout = new FrameLayout(context);
             linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -398,15 +339,16 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             nameTextView.setMaxLines(4);
             nameTextView.setGravity(Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
             nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            nameTextView.setHintTextColor(0xff979797);
+            nameTextView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+            nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             nameTextView.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             nameTextView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+            nameTextView.setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
             InputFilter[] inputFilters = new InputFilter[1];
             inputFilters[0] = new InputFilter.LengthFilter(100);
             nameTextView.setFilters(inputFilters);
             nameTextView.setPadding(0, 0, 0, AndroidUtilities.dp(8));
             AndroidUtilities.clearCursorDrawable(nameTextView);
-            nameTextView.setTextColor(0xff212121);
             frameLayout.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 16 : 96, 0, LocaleController.isRTL ? 96 : 16, 0));
             nameTextView.addTextChangedListener(new TextWatcher() {
                 @Override
@@ -428,8 +370,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
 
             descriptionTextView = new EditText(context);
             descriptionTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            descriptionTextView.setHintTextColor(0xff979797);
-            descriptionTextView.setTextColor(0xff212121);
+            descriptionTextView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+            descriptionTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            descriptionTextView.setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
             descriptionTextView.setPadding(0, 0, 0, AndroidUtilities.dp(6));
             descriptionTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             descriptionTextView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
@@ -467,24 +410,25 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 }
             });
 
-            TextView helpTextView = new TextView(context);
+            helpTextView = new TextView(context);
             helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            helpTextView.setTextColor(0xff6d6d72);
+            helpTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText8));
             helpTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             helpTextView.setText(LocaleController.getString("DescriptionInfo", R.string.DescriptionInfo));
             linearLayout.addView(helpTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 24, 10, 24, 20));
         } else if (currentStep == 1) {
             actionBar.setTitle(LocaleController.getString("ChannelSettings", R.string.ChannelSettings));
-            fragmentView.setBackgroundColor(0xfff0f0f0);
+            fragmentView.setTag(Theme.key_windowBackgroundGray);
+            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-            LinearLayout linearLayout2 = new LinearLayout(context);
+            linearLayout2 = new LinearLayout(context);
             linearLayout2.setOrientation(LinearLayout.VERTICAL);
-            linearLayout2.setBackgroundColor(0xffffffff);
+            linearLayout2.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             radioButtonCell1 = new RadioButtonCell(context);
-            radioButtonCell1.setBackgroundResource(R.drawable.list_selector);
-            radioButtonCell1.setTextAndValue(LocaleController.getString("ChannelPublic", R.string.ChannelPublic), LocaleController.getString("ChannelPublicInfo", R.string.ChannelPublicInfo), !isPrivate, false);
+            radioButtonCell1.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+            radioButtonCell1.setTextAndValue(LocaleController.getString("ChannelPublic", R.string.ChannelPublic), LocaleController.getString("ChannelPublicInfo", R.string.ChannelPublicInfo), !isPrivate);
             linearLayout2.addView(radioButtonCell1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             radioButtonCell1.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -498,8 +442,8 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             });
 
             radioButtonCell2 = new RadioButtonCell(context);
-            radioButtonCell2.setBackgroundResource(R.drawable.list_selector);
-            radioButtonCell2.setTextAndValue(LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate), LocaleController.getString("ChannelPrivateInfo", R.string.ChannelPrivateInfo), isPrivate, false);
+            radioButtonCell2.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+            radioButtonCell2.setTextAndValue(LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate), LocaleController.getString("ChannelPrivateInfo", R.string.ChannelPrivateInfo), isPrivate);
             linearLayout2.addView(radioButtonCell2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             radioButtonCell2.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -517,7 +461,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
 
             linkContainer = new LinearLayout(context);
             linkContainer.setOrientation(LinearLayout.VERTICAL);
-            linkContainer.setBackgroundColor(0xffffffff);
+            linkContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             linearLayout.addView(linkContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             headerCell = new HeaderCell(context);
@@ -527,11 +471,11 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             publicContainer.setOrientation(LinearLayout.HORIZONTAL);
             linkContainer.addView(publicContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 17, 7, 17, 0));
 
-            EditText editText = new EditText(context);
-            editText.setText("telegram.me/");
+            editText = new EditText(context);
+            editText.setText(MessagesController.getInstance().linkPrefix + "/");
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            editText.setHintTextColor(0xff979797);
-            editText.setTextColor(0xff212121);
+            editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+            editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             editText.setMaxLines(1);
             editText.setLines(1);
             editText.setEnabled(false);
@@ -544,8 +488,8 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
 
             nameTextView = new EditText(context);
             nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            nameTextView.setHintTextColor(0xff979797);
-            nameTextView.setTextColor(0xff212121);
+            nameTextView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+            nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             nameTextView.setMaxLines(1);
             nameTextView.setLines(1);
             nameTextView.setBackgroundDrawable(null);
@@ -574,7 +518,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             });
 
             privateContainer = new TextBlockCell(context);
-            privateContainer.setBackgroundResource(R.drawable.list_selector);
+            privateContainer.setBackgroundDrawable(Theme.getSelectorDrawable(false));
             linkContainer.addView(privateContainer);
             privateContainer.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -588,7 +532,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                         clipboard.setPrimaryClip(clip);
                         Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
                 }
             });
@@ -600,250 +544,22 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             linkContainer.addView(checkTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 17, 3, 17, 7));
 
             typeInfoCell = new TextInfoPrivacyCell(context);
-            typeInfoCell.setBackgroundResource(R.drawable.greydivider_bottom);
+            typeInfoCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
             linearLayout.addView(typeInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             loadingAdminedCell = new LoadingCell(context);
             linearLayout.addView(loadingAdminedCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+            adminnedChannelsLayout = new LinearLayout(context);
+            adminnedChannelsLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            adminnedChannelsLayout.setOrientation(LinearLayout.VERTICAL);
+            linearLayout.addView(adminnedChannelsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
             adminedInfoCell = new TextInfoPrivacyCell(context);
-            adminedInfoCell.setBackgroundResource(R.drawable.greydivider_bottom);
+            adminedInfoCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
             linearLayout.addView(adminedInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             updatePrivatePublic();
-        } else if (currentStep == 2) {
-            actionBar.setTitle(LocaleController.getString("ChannelAddMembers", R.string.ChannelAddMembers));
-            actionBar.setSubtitle(LocaleController.formatPluralString("Members", selectedContacts.size()));
-
-            searchListViewAdapter = new SearchAdapter(context, null, false, false, false, false);
-            searchListViewAdapter.setCheckedMap(selectedContacts);
-            searchListViewAdapter.setUseUserCell(true);
-            listViewAdapter = new ContactsAdapter(context, 1, false, null, false);
-            listViewAdapter.setCheckedMap(selectedContacts);
-
-            FrameLayout frameLayout = new FrameLayout(context);
-            linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-
-            nameTextView = new EditText(context);
-            nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            nameTextView.setHintTextColor(0xff979797);
-            nameTextView.setTextColor(0xff212121);
-            nameTextView.setInputType(InputType.TYPE_TEXT_VARIATION_FILTER | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-            nameTextView.setMinimumHeight(AndroidUtilities.dp(54));
-            nameTextView.setSingleLine(false);
-            nameTextView.setLines(2);
-            nameTextView.setMaxLines(2);
-            nameTextView.setVerticalScrollBarEnabled(true);
-            nameTextView.setHorizontalScrollBarEnabled(false);
-            nameTextView.setPadding(0, 0, 0, 0);
-            nameTextView.setHint(LocaleController.getString("AddMutual", R.string.AddMutual));
-            nameTextView.setTextIsSelectable(false);
-            nameTextView.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-            nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-            AndroidUtilities.clearCursorDrawable(nameTextView);
-            frameLayout.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 10, 0, 10, 0));
-
-            nameTextView.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence charSequence, int start, int count, int after) {
-                    if (!ignoreChange) {
-                        beforeChangeIndex = nameTextView.getSelectionStart();
-                        changeString = new SpannableString(charSequence);
-                    }
-                }
-
-                @Override
-                public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-
-                }
-
-                @Override
-                public void afterTextChanged(Editable editable) {
-                    if (!ignoreChange) {
-                        boolean search = false;
-                        int afterChangeIndex = nameTextView.getSelectionEnd();
-                        if (editable.toString().length() < changeString.toString().length()) {
-                            String deletedString = "";
-                            try {
-                                deletedString = changeString.toString().substring(afterChangeIndex, beforeChangeIndex);
-                            } catch (Exception e) {
-                                FileLog.e("tmessages", e);
-                            }
-                            if (deletedString.length() > 0) {
-                                if (searching && searchWas) {
-                                    search = true;
-                                }
-                                Spannable span = nameTextView.getText();
-                                for (int a = 0; a < allSpans.size(); a++) {
-                                    ChipSpan sp = allSpans.get(a);
-                                    if (span.getSpanStart(sp) == -1) {
-                                        allSpans.remove(sp);
-                                        selectedContacts.remove(sp.uid);
-                                    }
-                                }
-                                actionBar.setSubtitle(LocaleController.formatPluralString("Members", selectedContacts.size()));
-                                listView.invalidateViews();
-                            } else {
-                                search = true;
-                            }
-                        } else {
-                            search = true;
-                        }
-                        if (search) {
-                            String text = nameTextView.getText().toString().replace("<", "");
-                            if (text.length() != 0) {
-                                searching = true;
-                                searchWas = true;
-                                if (listView != null) {
-                                    listView.setAdapter(searchListViewAdapter);
-                                    searchListViewAdapter.notifyDataSetChanged();
-                                    listView.setFastScrollAlwaysVisible(false);
-                                    listView.setFastScrollEnabled(false);
-                                    listView.setVerticalScrollBarEnabled(true);
-                                }
-                                if (emptyTextView != null) {
-                                    emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
-                                }
-                                searchListViewAdapter.searchDialogs(text);
-                            } else {
-                                searchListViewAdapter.searchDialogs(null);
-                                searching = false;
-                                searchWas = false;
-                                listView.setAdapter(listViewAdapter);
-                                listViewAdapter.notifyDataSetChanged();
-                                listView.setFastScrollAlwaysVisible(true);
-                                listView.setFastScrollEnabled(true);
-                                listView.setVerticalScrollBarEnabled(false);
-                                emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
-                            }
-                        }
-                    }
-                }
-            });
-
-            LinearLayout emptyTextLayout = new LinearLayout(context);
-            emptyTextLayout.setVisibility(View.INVISIBLE);
-            emptyTextLayout.setOrientation(LinearLayout.VERTICAL);
-            linearLayout.addView(emptyTextLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-            emptyTextLayout.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    return true;
-                }
-            });
-
-            emptyTextView = new TextView(context);
-            emptyTextView.setTextColor(0xff808080);
-            emptyTextView.setTextSize(20);
-            emptyTextView.setGravity(Gravity.CENTER);
-            emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
-            emptyTextLayout.addView(emptyTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0.5f));
-
-            FrameLayout frameLayout2 = new FrameLayout(context);
-            emptyTextLayout.addView(frameLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0.5f));
-
-            listView = new LetterSectionsListView(context);
-            listView.setEmptyView(emptyTextLayout);
-            listView.setVerticalScrollBarEnabled(false);
-            listView.setDivider(null);
-            listView.setDividerHeight(0);
-            listView.setFastScrollEnabled(true);
-            listView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
-            listView.setAdapter(listViewAdapter);
-            listView.setFastScrollAlwaysVisible(true);
-            listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
-            linearLayout.addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    TLRPC.User user;
-                    if (searching && searchWas) {
-                        user = (TLRPC.User) searchListViewAdapter.getItem(i);
-                    } else {
-                        int section = listViewAdapter.getSectionForPosition(i);
-                        int row = listViewAdapter.getPositionInSectionForPosition(i);
-                        if (row < 0 || section < 0) {
-                            return;
-                        }
-                        user = (TLRPC.User) listViewAdapter.getItem(section, row);
-                    }
-                    if (user == null) {
-                        return;
-                    }
-
-                    boolean check = true;
-                    if (selectedContacts.containsKey(user.id)) {
-                        check = false;
-                        try {
-                            ChipSpan span = selectedContacts.get(user.id);
-                            selectedContacts.remove(user.id);
-                            SpannableStringBuilder text = new SpannableStringBuilder(nameTextView.getText());
-                            text.delete(text.getSpanStart(span), text.getSpanEnd(span));
-                            allSpans.remove(span);
-                            ignoreChange = true;
-                            nameTextView.setText(text);
-                            nameTextView.setSelection(text.length());
-                            ignoreChange = false;
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
-                        }
-                    } else {
-                        ignoreChange = true;
-                        ChipSpan span = createAndPutChipForUser(user);
-                        if (span != null) {
-                            span.uid = user.id;
-                        }
-                        ignoreChange = false;
-                        if (span == null) {
-                            return;
-                        }
-                    }
-                    actionBar.setSubtitle(LocaleController.formatPluralString("Members", selectedContacts.size()));
-                    if (searching || searchWas) {
-                        ignoreChange = true;
-                        SpannableStringBuilder ssb = new SpannableStringBuilder("");
-                        for (ImageSpan sp : allSpans) {
-                            ssb.append("<<");
-                            ssb.setSpan(sp, ssb.length() - 2, ssb.length(), SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        }
-                        nameTextView.setText(ssb);
-                        nameTextView.setSelection(ssb.length());
-                        ignoreChange = false;
-
-                        searchListViewAdapter.searchDialogs(null);
-                        searching = false;
-                        searchWas = false;
-                        listView.setAdapter(listViewAdapter);
-                        listViewAdapter.notifyDataSetChanged();
-                        listView.setFastScrollAlwaysVisible(true);
-                        listView.setFastScrollEnabled(true);
-                        listView.setVerticalScrollBarEnabled(false);
-                        emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
-                    } else {
-                        if (view instanceof UserCell) {
-                            ((UserCell) view).setChecked(check, true);
-                        }
-                    }
-                }
-            });
-            listView.setOnScrollListener(new AbsListView.OnScrollListener() {
-                @Override
-                public void onScrollStateChanged(AbsListView absListView, int i) {
-                    if (i == SCROLL_STATE_TOUCH_SCROLL) {
-                        AndroidUtilities.hideKeyboard(nameTextView);
-                    }
-                    if (listViewAdapter != null) {
-                        listViewAdapter.setIsScrolling(i != SCROLL_STATE_IDLE);
-                    }
-                }
-
-                @Override
-                public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-                    if (absListView.isFastScrollEnabled()) {
-                        AndroidUtilities.clearDrawableAnimation(absListView);
-                    }
-                }
-            });
         }
 
         return fragmentView;
@@ -879,32 +595,28 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
         }
         if (!isPrivate && !canCreatePublic) {
             typeInfoCell.setText(LocaleController.getString("ChangePublicLimitReached", R.string.ChangePublicLimitReached));
-            typeInfoCell.setTextColor(0xffcf3030);
+            typeInfoCell.setTag(Theme.key_windowBackgroundWhiteRedText4);
+            typeInfoCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
             linkContainer.setVisibility(View.GONE);
             sectionCell.setVisibility(View.GONE);
             if (loadingAdminedChannels) {
                 loadingAdminedCell.setVisibility(View.VISIBLE);
-                for (int a = 0; a < adminedChannelCells.size(); a++) {
-                    adminedChannelCells.get(a).setVisibility(View.GONE);
-                }
-                typeInfoCell.setBackgroundResource(R.drawable.greydivider_bottom);
+                adminnedChannelsLayout.setVisibility(View.GONE);
+                typeInfoCell.setBackgroundDrawable(Theme.getThemedDrawable(typeInfoCell.getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                 adminedInfoCell.setVisibility(View.GONE);
             } else {
-                typeInfoCell.setBackgroundResource(R.drawable.greydivider);
+                typeInfoCell.setBackgroundDrawable(Theme.getThemedDrawable(typeInfoCell.getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                 loadingAdminedCell.setVisibility(View.GONE);
-                for (int a = 0; a < adminedChannelCells.size(); a++) {
-                    adminedChannelCells.get(a).setVisibility(View.VISIBLE);
-                }
+                adminnedChannelsLayout.setVisibility(View.VISIBLE);
                 adminedInfoCell.setVisibility(View.VISIBLE);
             }
         } else {
-            typeInfoCell.setTextColor(0xff808080);
+            typeInfoCell.setTag(Theme.key_windowBackgroundWhiteGrayText4);
+            typeInfoCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
             sectionCell.setVisibility(View.VISIBLE);
             adminedInfoCell.setVisibility(View.GONE);
-            typeInfoCell.setBackgroundResource(R.drawable.greydivider_bottom);
-            for (int a = 0; a < adminedChannelCells.size(); a++) {
-                adminedChannelCells.get(a).setVisibility(View.GONE);
-            }
+            adminnedChannelsLayout.setVisibility(View.GONE);
+            typeInfoCell.setBackgroundDrawable(Theme.getThemedDrawable(typeInfoCell.getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
             linkContainer.setVisibility(View.VISIBLE);
             loadingAdminedCell.setVisibility(View.GONE);
             typeInfoCell.setText(isPrivate ? LocaleController.getString("ChannelPrivateLinkHelp", R.string.ChannelPrivateLinkHelp) : LocaleController.getString("ChannelUsernameHelp", R.string.ChannelUsernameHelp));
@@ -936,7 +648,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                             progressDialog = null;
                         }
                     } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
                     doneButton.performClick();
                 }
@@ -991,17 +703,12 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
 
     @Override
     public void didReceivedNotification(int id, final Object... args) {
-        if (id == NotificationCenter.updateInterfaces) {
-            int mask = (Integer)args[0];
-            if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
-                updateVisibleRows(mask);
-            }
-        } else if (id == NotificationCenter.chatDidFailCreate) {
+        if (id == NotificationCenter.chatDidFailCreate) {
             if (progressDialog != null) {
                 try {
                     progressDialog.dismiss();
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
             donePressed = false;
@@ -1010,7 +717,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 try {
                     progressDialog.dismiss();
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
             int chat_id = (Integer) args[0];
@@ -1022,10 +729,6 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 MessagesController.getInstance().changeChatAvatar(chat_id, uploadedAvatar);
             }
             presentFragment(new ChannelCreateActivity(bundle), true);
-        } else if (id == NotificationCenter.contactsDidLoaded) {
-            if (listViewAdapter != null) {
-                listViewAdapter.notifyDataSetChanged();
-            }
         }
     }
 
@@ -1062,9 +765,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                                         if (channel.megagroup) {
-                                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlert", R.string.RevokeLinkAlert, "telegram.me/" + channel.username, channel.title)));
+                                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlert", R.string.RevokeLinkAlert, MessagesController.getInstance().linkPrefix + "/" + channel.username, channel.title)));
                                         } else {
-                                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlertChannel", R.string.RevokeLinkAlertChannel, "telegram.me/" + channel.username, channel.title)));
+                                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlertChannel", R.string.RevokeLinkAlertChannel, MessagesController.getInstance().linkPrefix  + "/" + channel.username, channel.title)));
                                         }
                                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                                         builder.setPositiveButton(LocaleController.getString("RevokeButton", R.string.RevokeButton), new DialogInterface.OnClickListener() {
@@ -1097,7 +800,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                                 });
                                 adminedChannelCell.setChannel(res.chats.get(a), a == res.chats.size() - 1);
                                 adminedChannelCells.add(adminedChannelCell);
-                                linearLayout.addView(adminedChannelCell, linearLayout.getChildCount() - 1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 72));
+                                adminnedChannelsLayout.addView(adminedChannelCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 72));
                             }
                             updatePrivatePublic();
                         }
@@ -1125,36 +828,42 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
         if (name != null) {
             if (name.startsWith("_") || name.endsWith("_")) {
                 checkTextView.setText(LocaleController.getString("LinkInvalid", R.string.LinkInvalid));
-                checkTextView.setTextColor(0xffcf3030);
+                checkTextView.setTag(Theme.key_windowBackgroundWhiteRedText4);
+                checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
                 return false;
             }
             for (int a = 0; a < name.length(); a++) {
                 char ch = name.charAt(a);
                 if (a == 0 && ch >= '0' && ch <= '9') {
                     checkTextView.setText(LocaleController.getString("LinkInvalidStartNumber", R.string.LinkInvalidStartNumber));
-                    checkTextView.setTextColor(0xffcf3030);
+                    checkTextView.setTag(Theme.key_windowBackgroundWhiteRedText4);
+                    checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
                     return false;
                 }
                 if (!(ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == '_')) {
                     checkTextView.setText(LocaleController.getString("LinkInvalid", R.string.LinkInvalid));
-                    checkTextView.setTextColor(0xffcf3030);
+                    checkTextView.setTag(Theme.key_windowBackgroundWhiteRedText4);
+                    checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
                     return false;
                 }
             }
         }
         if (name == null || name.length() < 5) {
             checkTextView.setText(LocaleController.getString("LinkInvalidShort", R.string.LinkInvalidShort));
-            checkTextView.setTextColor(0xffcf3030);
+            checkTextView.setTag(Theme.key_windowBackgroundWhiteRedText4);
+            checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
             return false;
         }
         if (name.length() > 32) {
             checkTextView.setText(LocaleController.getString("LinkInvalidLong", R.string.LinkInvalidLong));
-            checkTextView.setTextColor(0xffcf3030);
+            checkTextView.setTag(Theme.key_windowBackgroundWhiteRedText4);
+            checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
             return false;
         }
 
         checkTextView.setText(LocaleController.getString("LinkChecking", R.string.LinkChecking));
-        checkTextView.setTextColor(0xff6d6d72);
+        checkTextView.setTag(Theme.key_windowBackgroundWhiteGrayText8);
+        checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText8));
         lastCheckName = name;
         checkRunnable = new Runnable() {
             @Override
@@ -1172,7 +881,8 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                                 if (lastCheckName != null && lastCheckName.equals(name)) {
                                     if (error == null && response instanceof TLRPC.TL_boolTrue) {
                                         checkTextView.setText(LocaleController.formatString("LinkAvailable", R.string.LinkAvailable, name));
-                                        checkTextView.setTextColor(0xff26972c);
+                                        checkTextView.setTag(Theme.key_windowBackgroundWhiteGreenText);
+                                        checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGreenText));
                                         lastNameAvailable = true;
                                     } else {
                                         if (error != null && error.text.equals("CHANNELS_ADMIN_PUBLIC_TOO_MUCH")) {
@@ -1181,7 +891,8 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                                         } else {
                                             checkTextView.setText(LocaleController.getString("LinkInUse", R.string.LinkInUse));
                                         }
-                                        checkTextView.setTextColor(0xffcf3030);
+                                        checkTextView.setTag(Theme.key_windowBackgroundWhiteRedText4);
+                                        checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
                                         lastNameAvailable = false;
                                     }
                                 }
@@ -1219,59 +930,88 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
         showDialog(builder.create());
     }
 
-    private void updateVisibleRows(int mask) {
-        if (listView == null) {
-            return;
-        }
-        int count = listView.getChildCount();
-        for (int a = 0; a < count; a++) {
-            View child = listView.getChildAt(a);
-            if (child instanceof UserCell) {
-                ((UserCell) child).update(mask);
+    @Override
+    public ThemeDescription[] getThemeDescriptions() {
+        ThemeDescription.ThemeDescriptionDelegate сellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
+            @Override
+            public void didSetColor(int color) {
+                if (adminnedChannelsLayout != null) {
+                    int count = adminnedChannelsLayout.getChildCount();
+                    for (int a = 0; a < count; a++) {
+                        View child = adminnedChannelsLayout.getChildAt(a);
+                        if (child instanceof AdminedChannelCell) {
+                            ((AdminedChannelCell) child).update();
+                        }
+                    }
+                }
+                if (avatarImage != null) {
+                    avatarDrawable.setInfo(5, nameTextView.length() > 0 ? nameTextView.getText().toString() : null, null, false);
+                    avatarImage.invalidate();
+                }
             }
-        }
-    }
+        };
 
-    private ChipSpan createAndPutChipForUser(TLRPC.User user) {
-        try {
-            LayoutInflater lf = (LayoutInflater) ApplicationLoader.applicationContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
-            View textView = lf.inflate(R.layout.group_create_bubble, null);
-            TextView text = (TextView)textView.findViewById(R.id.bubble_text_view);
-            String name = UserObject.getUserName(user);
-            if (name.length() == 0 && user.phone != null && user.phone.length() != 0) {
-                name = PhoneFormat.getInstance().format("+" + user.phone);
-            }
-            text.setText(name + ", ");
+        return new ThemeDescription[]{
+                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundGray),
 
-            int spec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
-            textView.measure(spec, spec);
-            textView.layout(0, 0, textView.getMeasuredWidth(), textView.getMeasuredHeight());
-            Bitmap b = Bitmap.createBitmap(textView.getWidth(), textView.getHeight(), Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(b);
-            canvas.translate(-textView.getScrollX(), -textView.getScrollY());
-            textView.draw(canvas);
-            textView.setDrawingCacheEnabled(true);
-            Bitmap cacheBmp = textView.getDrawingCache();
-            Bitmap viewBmp = cacheBmp.copy(Bitmap.Config.ARGB_8888, true);
-            textView.destroyDrawingCache();
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
 
-            final BitmapDrawable bmpDrawable = new BitmapDrawable(b);
-            bmpDrawable.setBounds(0, 0, b.getWidth(), b.getHeight());
+                new ThemeDescription(nameTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(nameTextView, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText),
+                new ThemeDescription(nameTextView, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField),
+                new ThemeDescription(nameTextView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated),
+                new ThemeDescription(descriptionTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(descriptionTextView, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText),
+                new ThemeDescription(descriptionTextView, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField),
+                new ThemeDescription(descriptionTextView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated),
+                new ThemeDescription(helpTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText8),
 
-            SpannableStringBuilder ssb = new SpannableStringBuilder("");
-            ChipSpan span = new ChipSpan(bmpDrawable, ImageSpan.ALIGN_BASELINE);
-            allSpans.add(span);
-            selectedContacts.put(user.id, span);
-            for (ImageSpan sp : allSpans) {
-                ssb.append("<<");
-                ssb.setSpan(sp, ssb.length() - 2, ssb.length(), SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
-            nameTextView.setText(ssb);
-            nameTextView.setSelection(ssb.length());
-            return span;
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
-        return null;
+                new ThemeDescription(linearLayout2, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(linkContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(sectionCell, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundGrayShadow),
+                new ThemeDescription(headerCell, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader),
+                new ThemeDescription(editText, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(editText, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText),
+                new ThemeDescription(checkTextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundWhiteRedText4),
+                new ThemeDescription(checkTextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText8),
+                new ThemeDescription(checkTextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundWhiteGreenText),
+
+                new ThemeDescription(typeInfoCell, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+                new ThemeDescription(typeInfoCell, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4),
+                new ThemeDescription(typeInfoCell, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteRedText4),
+
+                new ThemeDescription(adminedInfoCell, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+                new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(privateContainer, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+                new ThemeDescription(privateContainer, 0, new Class[]{TextBlockCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(loadingAdminedCell, 0, new Class[]{LoadingCell.class}, new String[]{"progressBar"}, null, null, null, Theme.key_progressCircle),
+                new ThemeDescription(radioButtonCell1, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+                new ThemeDescription(radioButtonCell1, ThemeDescription.FLAG_CHECKBOX, new Class[]{RadioButtonCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackground),
+                new ThemeDescription(radioButtonCell1, ThemeDescription.FLAG_CHECKBOXCHECK, new Class[]{RadioButtonCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackgroundChecked),
+                new ThemeDescription(radioButtonCell1, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{RadioButtonCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(radioButtonCell1, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{RadioButtonCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+                new ThemeDescription(radioButtonCell2, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+                new ThemeDescription(radioButtonCell2, ThemeDescription.FLAG_CHECKBOX, new Class[]{RadioButtonCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackground),
+                new ThemeDescription(radioButtonCell2, ThemeDescription.FLAG_CHECKBOXCHECK, new Class[]{RadioButtonCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackgroundChecked),
+                new ThemeDescription(radioButtonCell2, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{RadioButtonCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(radioButtonCell2, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{RadioButtonCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+
+                new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText),
+                new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_LINKCOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteLinkText),
+                new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"deleteButton"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, сellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
+                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
+                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),
+                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundGreen),
+                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundCyan),
+                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
+                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundPink),
+        };
     }
 }

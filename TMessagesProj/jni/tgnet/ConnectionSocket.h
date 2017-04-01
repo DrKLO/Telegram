@@ -25,7 +25,7 @@ public:
     virtual ~ConnectionSocket();
 
     void writeBuffer(NativeByteBuffer *buffer);
-    void openConnection(std::string address, uint16_t port, bool ipv6);
+    void openConnection(std::string address, uint16_t port, bool ipv6, int32_t networkType);
     void setTimeout(time_t timeout);
     bool isDisconnected();
     void dropConnection();
@@ -47,6 +47,7 @@ private:
     bool onConnectedSent = false;
     int64_t lastEventTime = 0;
     EventObject *eventObject;
+    int32_t currentNetworkType;
 
     bool checkSocketError();
     void closeSocket(int reason);

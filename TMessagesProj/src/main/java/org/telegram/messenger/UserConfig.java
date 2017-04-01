@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger;
@@ -16,6 +16,8 @@ import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Map;
 
 public class UserConfig {
 
@@ -34,6 +36,7 @@ public class UserConfig {
     public static boolean appLocked;
     public static int passcodeType;
     public static int autoLockIn = 60 * 60;
+    public static boolean allowScreenCapture;
     public static int lastPauseTime;
     public static boolean isWaitingForPasscodeEnter;
     public static boolean useFingerprint = true;
@@ -41,6 +44,9 @@ public class UserConfig {
     public static int lastContactsSyncTime;
     public static int lastHintsSyncTime;
     public static boolean draftsLoaded;
+    public static boolean notificationsConverted = true;
+    public static boolean pinnedDialogsLoaded = true;
+    public static TLRPC.TL_account_tmpPassword tmpPassword;
 
     public static int migrateOffsetId = -1;
     public static int migrateOffsetDate = -1;
@@ -86,6 +92,9 @@ public class UserConfig {
                 editor.putBoolean("useFingerprint", useFingerprint);
                 editor.putInt("lastHintsSyncTime", lastHintsSyncTime);
                 editor.putBoolean("draftsLoaded", draftsLoaded);
+                editor.putBoolean("notificationsConverted", notificationsConverted);
+                editor.putBoolean("allowScreenCapture", allowScreenCapture);
+                editor.putBoolean("pinnedDialogsLoaded", pinnedDialogsLoaded);
 
                 editor.putInt("migrateOffsetId", migrateOffsetId);
                 if (migrateOffsetId != -1) {
@@ -95,13 +104,22 @@ public class UserConfig {
                     editor.putInt("migrateOffsetChannelId", migrateOffsetChannelId);
                     editor.putLong("migrateOffsetAccess", migrateOffsetAccess);
                 }
+                if (tmpPassword != null) {
+                    SerializedData data = new SerializedData();
+                    tmpPassword.serializeToStream(data);
+                    String string = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
+                    editor.putString("tmpPassword", string);
+                    data.cleanup();
+                } else {
+                    editor.remove("tmpPassword");
+                }
 
                 if (currentUser != null) {
                     if (withFile) {
                         SerializedData data = new SerializedData();
                         currentUser.serializeToStream(data);
-                        String userString = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
-                        editor.putString("user", userString);
+                        String string = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
+                        editor.putString("user", string);
                         data.cleanup();
                     }
                 } else {
@@ -113,7 +131,7 @@ public class UserConfig {
                     oldFile.delete();
                 }
             } catch (Exception e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
         }
     }
@@ -201,7 +219,7 @@ public class UserConfig {
                         }
                     });
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             } else {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
@@ -223,6 +241,13 @@ public class UserConfig {
                 lastContactsSyncTime = preferences.getInt("lastContactsSyncTime", (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60);
                 lastHintsSyncTime = preferences.getInt("lastHintsSyncTime", (int) (System.currentTimeMillis() / 1000) - 25 * 60 * 60);
                 draftsLoaded = preferences.getBoolean("draftsLoaded", false);
+                notificationsConverted = preferences.getBoolean("notificationsConverted", false);
+                allowScreenCapture = preferences.getBoolean("allowScreenCapture", false);
+                pinnedDialogsLoaded = preferences.getBoolean("pinnedDialogsLoaded", false);
+
+                if (UserConfig.passcodeHash.length() > 0 && lastPauseTime == 0) {
+                    lastPauseTime = (int) (System.currentTimeMillis() / 1000 - 60 * 10);
+                }
 
                 migrateOffsetId = preferences.getInt("migrateOffsetId", 0);
                 if (migrateOffsetId != -1) {
@@ -233,11 +258,21 @@ public class UserConfig {
                     migrateOffsetAccess = preferences.getLong("migrateOffsetAccess", 0);
                 }
 
-                String user = preferences.getString("user", null);
-                if (user != null) {
-                    byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
-                    if (userBytes != null) {
-                        SerializedData data = new SerializedData(userBytes);
+                String string = preferences.getString("tmpPassword", null);
+                if (string != null) {
+                    byte[] bytes = Base64.decode(string, Base64.DEFAULT);
+                    if (bytes != null) {
+                        SerializedData data = new SerializedData(bytes);
+                        tmpPassword = TLRPC.TL_account_tmpPassword.TLdeserialize(data, data.readInt32(false), false);
+                        data.cleanup();
+                    }
+                }
+
+                string = preferences.getString("user", null);
+                if (string != null) {
+                    byte[] bytes = Base64.decode(string, Base64.DEFAULT);
+                    if (bytes != null) {
+                        SerializedData data = new SerializedData(bytes);
                         currentUser = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
                         data.cleanup();
                     }
@@ -247,6 +282,83 @@ public class UserConfig {
                     passcodeSalt = Base64.decode(passcodeSaltString, Base64.DEFAULT);
                 } else {
                     passcodeSalt = new byte[0];
+                }
+
+                if (!notificationsConverted) {
+                    try {
+                        ArrayList<Long> customDialogs = new ArrayList<>();
+                        preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
+                        Map<String, ?> all = preferences.getAll();
+                        String defaultSound = LocaleController.getString("SoundDefault", R.string.SoundDefault);
+                        int defaultVibrate = 0;
+                        int defaultPriority = 0;
+                        int defaultColor = 0;
+                        int defaultMaxCount = 2;
+                        int defaultMaxDelay = 3 * 60;
+                        for (Map.Entry<String, ?> entry : all.entrySet()) {
+                            String key = entry.getKey();
+                            if (key.startsWith("sound_")) {
+                                String value = (String) entry.getValue();
+                                if (!value.equals(defaultSound)) {
+                                    long dialogId = Utilities.parseLong(key);
+                                    if (!customDialogs.contains(dialogId)) {
+                                        customDialogs.add(dialogId);
+                                    }
+                                }
+                            } else if (key.startsWith("vibrate_")) {
+                                Integer value = (Integer) entry.getValue();
+                                if (value != defaultVibrate) {
+                                    long dialogId = Utilities.parseLong(key);
+                                    if (!customDialogs.contains(dialogId)) {
+                                        customDialogs.add(dialogId);
+                                    }
+                                }
+                            } else if (key.startsWith("priority_")) {
+                                Integer value = (Integer) entry.getValue();
+                                if (value != defaultPriority) {
+                                    long dialogId = Utilities.parseLong(key);
+                                    if (!customDialogs.contains(dialogId)) {
+                                        customDialogs.add(dialogId);
+                                    }
+                                }
+                            } else if (key.startsWith("color_")) {
+                                Integer value = (Integer) entry.getValue();
+                                if (value != defaultColor) {
+                                    long dialogId = Utilities.parseLong(key);
+                                    if (!customDialogs.contains(dialogId)) {
+                                        customDialogs.add(dialogId);
+                                    }
+                                }
+                            } else if (key.startsWith("smart_max_count_")) {
+                                Integer value = (Integer) entry.getValue();
+                                if (value != defaultMaxCount) {
+                                    long dialogId = Utilities.parseLong(key);
+                                    if (!customDialogs.contains(dialogId)) {
+                                        customDialogs.add(dialogId);
+                                    }
+                                }
+                            } else if (key.startsWith("smart_delay_")) {
+                                Integer value = (Integer) entry.getValue();
+                                if (value != defaultMaxDelay) {
+                                    long dialogId = Utilities.parseLong(key);
+                                    if (!customDialogs.contains(dialogId)) {
+                                        customDialogs.add(dialogId);
+                                    }
+                                }
+                            }
+                        }
+                        if (!customDialogs.isEmpty()) {
+                            SharedPreferences.Editor editor = preferences.edit();
+                            for (int a = 0; a < customDialogs.size(); a++) {
+                                editor.putBoolean("custom_" + customDialogs.get(a), true);
+                            }
+                            editor.commit();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    notificationsConverted = true;
+                    saveConfig(false);
                 }
             }
         }
@@ -267,7 +379,7 @@ public class UserConfig {
                     passcodeHash = Utilities.bytesToHex(Utilities.computeSHA256(bytes, 0, bytes.length));
                     saveConfig(false);
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
             return result;
@@ -281,7 +393,7 @@ public class UserConfig {
                 String hash = Utilities.bytesToHex(Utilities.computeSHA256(bytes, 0, bytes.length));
                 return passcodeHash.equals(hash);
             } catch (Exception e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
         }
         return false;
@@ -309,7 +421,10 @@ public class UserConfig {
         lastPauseTime = 0;
         useFingerprint = true;
         draftsLoaded = true;
+        notificationsConverted = true;
         isWaitingForPasscodeEnter = false;
+        allowScreenCapture = false;
+        pinnedDialogsLoaded = false;
         lastUpdateVersion = BuildVars.BUILD_VERSION_STRING;
         lastContactsSyncTime = (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60;
         lastHintsSyncTime = (int) (System.currentTimeMillis() / 1000) - 25 * 60 * 60;

@@ -95,7 +95,7 @@ void silk_find_LPC_FIX(
             silk_NLSF2A( a_tmp_Q12, NLSF0_Q15, psEncC->predictLPCOrder );
 
             /* Calculate residual energy with NLSF interpolation */
-            silk_LPC_analysis_filter( LPC_res, x, a_tmp_Q12, 2 * subfr_length, psEncC->predictLPCOrder );
+            silk_LPC_analysis_filter( LPC_res, x, a_tmp_Q12, 2 * subfr_length, psEncC->predictLPCOrder, psEncC->arch );
 
             silk_sum_sqr_shift( &res_nrg0, &rshift0, LPC_res + psEncC->predictLPCOrder,                subfr_length - psEncC->predictLPCOrder );
             silk_sum_sqr_shift( &res_nrg1, &rshift1, LPC_res + psEncC->predictLPCOrder + subfr_length, subfr_length - psEncC->predictLPCOrder );

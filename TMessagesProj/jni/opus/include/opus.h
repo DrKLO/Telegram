@@ -142,7 +142,7 @@ extern "C" {
   *
   * opus_encode() and opus_encode_float() return the number of bytes actually written to the packet.
   * The return value <b>can be negative</b>, which indicates that an error has occurred. If the return value
-  * is 1 byte, then the packet does not need to be transmitted (DTX).
+  * is 2 bytes or less, then the packet does not need to be transmitted (DTX).
   *
   * Once the encoder state if no longer needed, it can be destroyed with
   *
@@ -616,7 +616,10 @@ OPUS_EXPORT void opus_pcm_soft_clip(float *pcm, int frame_size, int channels, fl
   * merged. Splitting valid Opus packets is always guaranteed to succeed,
   * whereas merging valid packets only succeeds if all frames have the same
   * mode, bandwidth, and frame size, and when the total duration of the merged
-  * packet is no more than 120 ms.
+  * packet is no more than 120 ms. The 120 ms limit comes from the
+  * specification and limits decoder memory requirements at a point where
+  * framing overhead becomes negligible.
+  *
   * The repacketizer currently only operates on elementary Opus
   * streams. It will not manipualte multistream packets successfully, except in
   * the degenerate case where they consist of data from a single stream.

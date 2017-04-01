@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger;
@@ -144,6 +144,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 || (fileLocation != null && !(fileLocation instanceof TLRPC.TL_fileLocation)
                 && !(fileLocation instanceof TLRPC.TL_fileEncryptedLocation)
                 && !(fileLocation instanceof TLRPC.TL_document)
+                && !(fileLocation instanceof TLRPC.TL_webDocument)
                 && !(fileLocation instanceof TLRPC.TL_documentEncrypted))) {
             recycleBitmap(null, false);
             recycleBitmap(null, true);
@@ -185,6 +186,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             if (fileLocation instanceof TLRPC.FileLocation) {
                 TLRPC.FileLocation location = (TLRPC.FileLocation) fileLocation;
                 key = location.volume_id + "_" + location.local_id;
+            } else if (fileLocation instanceof TLRPC.TL_webDocument) {
+                TLRPC.TL_webDocument location = (TLRPC.TL_webDocument) fileLocation;
+                key = Utilities.MD5(location.url);
             } else {
                 TLRPC.Document location = (TLRPC.Document) fileLocation;
                 if (location.dc_id != 0) {
@@ -284,6 +288,10 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     public void setInvalidateAll(boolean value) {
         invalidateAll = value;
+    }
+
+    public Drawable getStaticThumb() {
+        return staticThumb;
     }
 
     public int getAnimatedOrientation() {
@@ -391,7 +399,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             if (hasFilter && !isPressed) {
                 if (shader != null) {
                     roundPaint.setColorFilter(null);
-                } else {
+                } else if (staticThumb != drawable) {
                     bitmapDrawable.setColorFilter(null);
                 }
             } else if (!hasFilter && isPressed) {
@@ -478,7 +486,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                             currentThumbKey = null;
                         }
                         setImage(currentImageLocation, currentHttpUrl, currentFilter, currentThumb, currentThumbLocation, currentThumbFilter, currentSize, currentExt, currentCacheOnly);
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
                     canvas.restore();
                 } else {
@@ -501,6 +509,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                             bitmapH /= scaleW;
                             drawRegion.set(imageX, imageY - (bitmapH - imageH) / 2, imageX + imageW, imageY + (bitmapH + imageH) / 2);
                         }
+                        if (bitmapDrawable instanceof AnimatedFileDrawable) {
+                            ((AnimatedFileDrawable) bitmapDrawable).setActualDrawRect(imageX, imageY, imageW, imageH);
+                        }
                         if (orientation % 360 == 90 || orientation % 360 == 270) {
                             int width = (drawRegion.right - drawRegion.left) / 2;
                             int height = (drawRegion.bottom - drawRegion.top) / 2;
@@ -523,7 +534,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                                     currentThumbKey = null;
                                 }
                                 setImage(currentImageLocation, currentHttpUrl, currentFilter, currentThumb, currentThumbLocation, currentThumbFilter, currentSize, currentExt, currentCacheOnly);
-                                FileLog.e("tmessages", e);
+                                FileLog.e(e);
                             }
                         }
 
@@ -538,6 +549,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                             }
                         }
                         drawRegion.set(imageX, imageY, imageX + imageW, imageY + imageH);
+                        if (bitmapDrawable instanceof AnimatedFileDrawable) {
+                            ((AnimatedFileDrawable) bitmapDrawable).setActualDrawRect(imageX, imageY, imageW, imageH);
+                        }
                         if (orientation % 360 == 90 || orientation % 360 == 270) {
                             int width = (drawRegion.right - drawRegion.left) / 2;
                             int height = (drawRegion.bottom - drawRegion.top) / 2;
@@ -560,7 +574,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                                     currentThumbKey = null;
                                 }
                                 setImage(currentImageLocation, currentHttpUrl, currentFilter, currentThumb, currentThumbLocation, currentThumbFilter, currentSize, currentExt, currentCacheOnly);
-                                FileLog.e("tmessages", e);
+                                FileLog.e(e);
                             }
                         }
                         canvas.restore();
@@ -575,7 +589,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                     drawable.setAlpha(alpha);
                     drawable.draw(canvas);
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
         }
@@ -657,7 +671,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 checkAlphaAnimation(animationNotReady);
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return false;
     }
@@ -741,6 +755,10 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             AnimatedFileDrawable fileDrawable = (AnimatedFileDrawable) currentImage;
             fileDrawable.setParentView(parentView);
         }
+    }
+
+    public void setImageY(int y) {
+        imageY = y;
     }
 
     public void setImageCoords(int x, int y, int width, int height) {

@@ -99,6 +99,6 @@ void silk_find_LPC_FLP(
         silk_A2NLSF_FLP( NLSF_Q15, a, psEncC->predictLPCOrder );
     }
 
-    silk_assert( psEncC->indices.NLSFInterpCoef_Q2 == 4 || 
+    silk_assert( psEncC->indices.NLSFInterpCoef_Q2 == 4 ||
         ( psEncC->useInterpolatedNLSFs && !psEncC->first_frame_after_reset && psEncC->nb_subfr == MAX_NB_SUBFR ) );
 }

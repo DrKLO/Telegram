@@ -319,14 +319,6 @@ static OPUS_INLINE opus_int32 silk_ADD_POS_SAT32(opus_int64 a, opus_int64 b){
     return(tmp);
 }
 
-#undef silk_ADD_POS_SAT64
-static OPUS_INLINE opus_int64 silk_ADD_POS_SAT64(opus_int64 a, opus_int64 b){
-    opus_int64 tmp;
-    ops_count += 1;
-    tmp = ((((a)+(b)) & 0x8000000000000000LL) ? silk_int64_MAX : ((a)+(b)));
-    return(tmp);
-}
-
 #undef    silk_LSHIFT8
 static OPUS_INLINE opus_int8 silk_LSHIFT8(opus_int8 a, opus_int32 shift){
     opus_int8 ret;

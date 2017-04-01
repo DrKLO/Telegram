@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger.video;
@@ -16,6 +16,7 @@ import com.coremedia.iso.BoxParser;
 import com.coremedia.iso.IsoFile;
 import com.coremedia.iso.IsoTypeWriter;
 import com.coremedia.iso.boxes.Box;
+import com.coremedia.iso.boxes.CompositionTimeToSample;
 import com.coremedia.iso.boxes.Container;
 import com.coremedia.iso.boxes.DataEntryUrlBox;
 import com.coremedia.iso.boxes.DataInformationBox;
@@ -90,7 +91,7 @@ public class MP4Builder {
         fos.flush();
     }
 
-    public boolean writeSampleData(int trackIndex, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo, boolean isAudio) throws Exception {
+    public boolean writeSampleData(int trackIndex, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo, boolean writeLength) throws Exception {
         if (writeNewMdat) {
             mdat.setContentSize(0);
             mdat.getBox(fc);
@@ -112,10 +113,10 @@ public class MP4Builder {
         }
 
         currentMp4Movie.addSample(trackIndex, dataOffset, bufferInfo);
-        byteBuf.position(bufferInfo.offset + (isAudio ? 0 : 4));
+        byteBuf.position(bufferInfo.offset + (!writeLength ? 0 : 4));
         byteBuf.limit(bufferInfo.offset + bufferInfo.size);
 
-        if (!isAudio) {
+        if (writeLength) {
             sizeBuffer.position(0);
             sizeBuffer.putInt(bufferInfo.size - 4);
             sizeBuffer.position(0);
@@ -160,8 +161,10 @@ public class MP4Builder {
     protected FileTypeBox createFileTypeBox() {
         LinkedList<String> minorBrands = new LinkedList<>();
         minorBrands.add("isom");
-        minorBrands.add("3gp4");
-        return new FileTypeBox("isom", 0, minorBrands);
+        minorBrands.add("iso2");
+        minorBrands.add("avc1");
+        minorBrands.add("mp41");
+        return new FileTypeBox("isom", 512, minorBrands);
     }
 
     private class InterleaveChunkMdat implements Box {
@@ -258,6 +261,7 @@ public class MP4Builder {
         long duration = 0;
 
         for (Track track : movie.getTracks()) {
+            track.prepare();
             long tracksDuration = track.getDuration() * movieTimeScale / track.getTimeScale();
             if (tracksDuration > duration) {
                 duration = tracksDuration;
@@ -336,6 +340,7 @@ public class MP4Builder {
 
         createStsd(track, stbl);
         createStts(track, stbl);
+        createCtts(track, stbl);
         createStss(track, stbl);
         createStsc(track, stbl);
         createStsz(track, stbl);
@@ -348,11 +353,35 @@ public class MP4Builder {
         stbl.addBox(track.getSampleDescriptionBox());
     }
 
+    protected void createCtts(Track track, SampleTableBox stbl) {
+        int[] sampleCompositions = track.getSampleCompositions();
+        if (sampleCompositions == null) {
+            return;
+        }
+        CompositionTimeToSample.Entry lastEntry = null;
+        List<CompositionTimeToSample.Entry> entries = new ArrayList<>();
+
+        for (int a = 0; a < sampleCompositions.length; a++) {
+            int offset = sampleCompositions[a];
+            if (lastEntry != null && lastEntry.getOffset() == offset) {
+                lastEntry.setCount(lastEntry.getCount() + 1);
+            } else {
+                lastEntry = new CompositionTimeToSample.Entry(1, offset);
+                entries.add(lastEntry);
+            }
+        }
+        CompositionTimeToSample ctts = new CompositionTimeToSample();
+        ctts.setEntries(entries);
+        stbl.addBox(ctts);
+    }
+
     protected void createStts(Track track, SampleTableBox stbl) {
         TimeToSampleBox.Entry lastEntry = null;
         List<TimeToSampleBox.Entry> entries = new ArrayList<>();
+        long[] deltas = track.getSampleDurations();
 
-        for (long delta : track.getSampleDurations()) {
+        for (int a = 0; a < deltas.length; a++) {
+            long delta = deltas[a];
             if (lastEntry != null && lastEntry.getDelta() == delta) {
                 lastEntry.setCount(lastEntry.getCount() + 1);
             } else {

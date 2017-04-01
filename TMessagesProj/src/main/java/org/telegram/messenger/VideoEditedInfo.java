@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger;
@@ -20,6 +20,8 @@ public class VideoEditedInfo {
     public int resultHeight;
     public int bitrate;
     public String originalPath;
+    public long estimatedSize;
+    public long estimatedDuration;
 
     public String getString() {
         return String.format(Locale.US, "-1_%d_%d_%d_%d_%d_%d_%d_%d_%s", startTime, endTime, rotationValue, originalWidth, originalHeight, bitrate, resultWidth, resultHeight, originalPath);
@@ -50,7 +52,7 @@ public class VideoEditedInfo {
             }
             return true;
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return false;
     }

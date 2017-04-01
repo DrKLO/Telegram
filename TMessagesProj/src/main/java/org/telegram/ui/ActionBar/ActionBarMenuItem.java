@@ -3,12 +3,14 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.ActionBar;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.os.Build;
 import android.text.Editable;
@@ -27,14 +29,17 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 public class ActionBarMenuItem extends FrameLayout {
 
@@ -81,17 +86,22 @@ public class ActionBarMenuItem extends FrameLayout {
     private boolean allowCloseAnimation = true;
     protected boolean overrideMenuClick;
     private boolean processedPopupClick;
+    private boolean layoutInScreen;
+    private static Method layoutInScreenMethod;
 
-    public ActionBarMenuItem(Context context, ActionBarMenu menu, int backgroundColor) {
+    public ActionBarMenuItem(Context context, ActionBarMenu menu, int backgroundColor, int iconColor) {
         super(context);
         if (backgroundColor != 0) {
-            setBackgroundDrawable(Theme.createBarSelectorDrawable(backgroundColor));
+            setBackgroundDrawable(Theme.createSelectorDrawable(backgroundColor));
         }
         parentMenu = menu;
 
         iconView = new ImageView(context);
         iconView.setScaleType(ImageView.ScaleType.CENTER);
         addView(iconView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        if (iconColor != 0) {
+            iconView.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+        }
     }
 
     @Override
@@ -182,11 +192,22 @@ public class ActionBarMenuItem extends FrameLayout {
         }
     }
 
+    public void setIconColor(int color) {
+        iconView.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+        if (clearButton != null) {
+            clearButton.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+        }
+    }
+
     public void setSubMenuOpenSide(int side) {
         subMenuOpenSide = side;
     }
 
-    public TextView addSubItem(int id, String text, int icon) {
+    public void setLayoutInScreen(boolean value) {
+        layoutInScreen = value;
+    }
+
+    public TextView addSubItem(int id, String text) {
         if (popupLayout == null) {
             rect = new Rect();
             location = new int[2];
@@ -215,8 +236,8 @@ public class ActionBarMenuItem extends FrameLayout {
             });
         }
         TextView textView = new TextView(getContext());
-        textView.setTextColor(0xff212121);
-        textView.setBackgroundResource(R.drawable.list_selector);
+        textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+        textView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
         if (!LocaleController.isRTL) {
             textView.setGravity(Gravity.CENTER_VERTICAL);
         } else {
@@ -227,14 +248,6 @@ public class ActionBarMenuItem extends FrameLayout {
         textView.setMinWidth(AndroidUtilities.dp(196));
         textView.setTag(id);
         textView.setText(text);
-        if (icon != 0) {
-            textView.setCompoundDrawablePadding(AndroidUtilities.dp(12));
-            if (!LocaleController.isRTL) {
-                textView.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(icon), null, null, null);
-            } else {
-                textView.setCompoundDrawablesWithIntrinsicBounds(null, null, getResources().getDrawable(icon), null);
-            }
-        }
         popupLayout.setShowedFromBotton(showFromBottom);
         popupLayout.addView(textView);
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) textView.getLayoutParams();
@@ -244,6 +257,7 @@ public class ActionBarMenuItem extends FrameLayout {
         layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(48);
         textView.setLayoutParams(layoutParams);
+
         textView.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -263,6 +277,26 @@ public class ActionBarMenuItem extends FrameLayout {
         });
         menuHeight += layoutParams.height;
         return textView;
+    }
+
+    protected void redrawPopup(int color) {
+        if (popupLayout != null) {
+            popupLayout.backgroundDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+            popupLayout.invalidate();
+        }
+    }
+
+    public void setPopupItemsColor(int color) {
+        if (popupLayout == null) {
+            return;
+        }
+        int count = popupLayout.linearLayout.getChildCount();
+        for (int a = 0; a < count; a++) {
+            View child = popupLayout.linearLayout.getChildAt(a);
+            if (child instanceof TextView) {
+                ((TextView) child).setTextColor(color);
+            }
+        }
     }
 
     public boolean hasSubMenu() {
@@ -290,6 +324,17 @@ public class ActionBarMenuItem extends FrameLayout {
             }
             popupWindow.setOutsideTouchable(true);
             popupWindow.setClippingEnabled(true);
+            if (layoutInScreen) {
+                try {
+                    if (layoutInScreenMethod == null) {
+                        layoutInScreenMethod = PopupWindow.class.getDeclaredMethod("setLayoutInScreenEnabled", boolean.class);
+                        layoutInScreenMethod.setAccessible(true);
+                    }
+                    layoutInScreenMethod.invoke(popupWindow, true);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
             popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
             popupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
             popupLayout.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), MeasureSpec.AT_MOST));
@@ -381,19 +426,13 @@ public class ActionBarMenuItem extends FrameLayout {
         }
         if (value && searchContainer == null) {
             searchContainer = new FrameLayout(getContext());
-            parentMenu.addView(searchContainer, 0);
-            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) searchContainer.getLayoutParams();
-            layoutParams.weight = 1;
-            layoutParams.width = 0;
-            layoutParams.height = LayoutHelper.MATCH_PARENT;
-            layoutParams.leftMargin = AndroidUtilities.dp(6);
-            searchContainer.setLayoutParams(layoutParams);
+            parentMenu.addView(searchContainer, 0, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 6, 0, 0, 0));
             searchContainer.setVisibility(GONE);
 
             searchField = new EditText(getContext());
             searchField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            searchField.setHintTextColor(0x88ffffff);
-            searchField.setTextColor(0xffffffff);
+            searchField.setHintTextColor(Theme.getColor(Theme.key_actionBarDefaultSearchPlaceholder));
+            searchField.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSearch));
             searchField.setSingleLine(true);
             searchField.setBackgroundResource(0);
             searchField.setPadding(0, 0, 0, 0);
@@ -459,16 +498,11 @@ public class ActionBarMenuItem extends FrameLayout {
             }
             searchField.setImeOptions(EditorInfo.IME_FLAG_NO_FULLSCREEN | EditorInfo.IME_ACTION_SEARCH);
             searchField.setTextIsSelectable(false);
-            searchContainer.addView(searchField);
-            FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) searchField.getLayoutParams();
-            layoutParams2.width = LayoutHelper.MATCH_PARENT;
-            layoutParams2.gravity = Gravity.CENTER_VERTICAL;
-            layoutParams2.height = AndroidUtilities.dp(36);
-            layoutParams2.rightMargin = AndroidUtilities.dp(48);
-            searchField.setLayoutParams(layoutParams2);
+            searchContainer.addView(searchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.CENTER_VERTICAL, 0, 0, 48, 0));
 
             clearButton = new ImageView(getContext());
             clearButton.setImageResource(R.drawable.ic_close_white);
+            clearButton.setColorFilter(new PorterDuffColorFilter(parentMenu.parentActionBar.itemsColor, PorterDuff.Mode.MULTIPLY));
             clearButton.setScaleType(ImageView.ScaleType.CENTER);
             clearButton.setOnClickListener(new OnClickListener() {
                 @Override
@@ -478,12 +512,7 @@ public class ActionBarMenuItem extends FrameLayout {
                     AndroidUtilities.showKeyboard(searchField);
                 }
             });
-            searchContainer.addView(clearButton);
-            layoutParams2 = (FrameLayout.LayoutParams) clearButton.getLayoutParams();
-            layoutParams2.width = AndroidUtilities.dp(48);
-            layoutParams2.gravity = Gravity.CENTER_VERTICAL | Gravity.RIGHT;
-            layoutParams2.height = LayoutHelper.MATCH_PARENT;
-            clearButton.setLayoutParams(layoutParams2);
+            searchContainer.addView(clearButton, LayoutHelper.createFrame(48, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL | Gravity.RIGHT));
         }
         isSearchField = value;
         return this;

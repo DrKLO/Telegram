@@ -41,7 +41,56 @@
     <string name="FirstName">First name (required)</string>
     <string name="LastName">Last name (optional)</string>
     <string name="CancelRegistration">Cancel registration</string>
+    <!--payments view-->
+    <string name="PaymentSuccessfullyPaid">You have just successfully transferred %1$s to %2$s for %3$s</string>
+    <string name="PaymentSuccessfullyPaidNoItem">You have just successfully transferred %1$s to %2$s</string>
+    <string name="PaymentCheckout">Checkout</string>
+    <string name="PaymentShippingMethod">Shipping methods</string>
+    <string name="PaymentNoShippingMethod">Sorry, it is not possible to deliver to your address.</string>
+    <string name="PaymentShippingInfo">Shipping information</string>
+    <string name="PaymentShippingAddress">Shipping address</string>
+    <string name="PaymentShippingAddress1Placeholder">Address 1 (Street)</string>
+    <string name="PaymentShippingAddress2Placeholder">Address 2 (Street)</string>
+    <string name="PaymentShippingCityPlaceholder">City</string>
+    <string name="PaymentShippingStatePlaceholder">State</string>
+    <string name="PaymentShippingCountry">Country</string>
+    <string name="PaymentShippingZipPlaceholder">Postcode</string>
+    <string name="PaymentShippingReceiver">Receiver</string>
+    <string name="PaymentShippingName">Full Name</string>
+    <string name="PaymentShippingPhoneNumber">Phone Number</string>
+    <string name="PaymentShippingEmailPlaceholder">E-Mail</string>
+    <string name="PaymentShippingSave">Save Shipping Information</string>
+    <string name="PaymentShippingSaveInfo">You can save your shipping info for future use.</string>
+    <string name="PaymentCardInfo">Payment info</string>
+    <string name="PaymentCardTitle">Payment card</string>
+    <string name="PaymentCardNumber">Card Number</string>
+    <string name="PaymentCardCvv">Security Code (CVV)</string>
+    <string name="PaymentCardExpireDate">MM/YY</string>
+    <string name="PaymentBillingAddress">Billing address</string>
+    <string name="PaymentCardNameTitle">Card holder</string>
+    <string name="PaymentCardName">Name Surname</string>
+    <string name="PaymentCardSavePaymentInformation">Save Payment Information</string>
+    <string name="PaymentCardSavePaymentInformationInfoLine1">You can save your payment info for future use.</string>
+    <string name="PaymentCardSavePaymentInformationInfoLine2">Please *turn on Two-Step Verification* to enable this.</string>
+    <string name="PaymentTransactionReview">Transaction Review</string>
+    <string name="PaymentTransactionMessage">Do you really want to transfer %1$s to the %2$s bot for %3$s?</string>
+    <string name="PaymentTransactionTotal">Total</string>
+    <string name="PaymentInvoice">INVOICE</string>
+    <string name="PaymentTestInvoice">TEST INVOICE</string>
+    <string name="PaymentCheckoutPay">PAY %1$s</string>
+    <string name="PaymentCheckoutMethod">Payment method</string>
+    <string name="PaymentCheckoutName">Name</string>
+    <string name="PaymentCheckoutPhoneNumber">Phone number</string>
+    <string name="PaymentCheckoutEmail">Contact address</string>
+    <string name="PaymentCheckoutShippingMethod">Shipping method</string>
+    <string name="PaymentReceipt">Receipt</string>
+    <string name="PaymentConfirmationNewCard">Choose a different card</string>
+    <string name="PaymentConfirmationMessage">Your card %1$s is on file. To pay with this card, please enter your 2-Step-Verification password.</string>
+    <string name="PaymentPrecheckoutFailed">Sorry, the payment was cancelled by the bot.</string>
+    <string name="PaymentFailed">Sorry, the payment was declined.</string>
+    <string name="PaymentConnectionFailed">Unable to reach payment server. Please check your internet connection and try again.</string>
     <!--chats view-->
+    <string name="NewConversationShortcut">New conversation</string>
     <string name="Settings">Settings</string>
     <string name="Contacts">Contacts</string>
     <string name="NewGroup">New Group</string>
@@ -80,6 +129,16 @@
     <string name="LinkPreview">Link preview</string>
     <string name="Draft">Draft</string>
     <string name="HistoryCleared">History was cleared</string>
+    <string name="ArticleByAuthor">by %1$s</string>
+    <string name="ArticleDateByAuthor">%1$s by %2$s</string>
+    <string name="PreviewFeedback">Leave feedback about this preview</string>
+    <string name="SendStickerPreview">Send Sticker</string>
+    <string name="ViewPackPreview">View Pack</string>
+    <string name="PinToTop">Pin to top</string>
+    <string name="UnpinFromTop">Unpin from top</string>
+    <string name="Bold">Bold</string>
+    <string name="Italic">Italic</string>
+    <string name="Regular">Regular</string>
     <!--channels-->
     <string name="GroupType">Group Type</string>
     <string name="ChannelType">Channel Type</string>
@@ -267,13 +326,14 @@
     <string name="IsRecordingAudio">%1$s is recording voice message...</string>
     <string name="IsSendingAudio">%1$s is sending audio...</string>
     <string name="IsSendingPhoto">%1$s is sending photo...</string>
-    <!--<string name="IsSendingGame">%1$s is playing a game...</string>-->
+    <string name="InstantView">INSTANT VIEW</string>
+    <string name="IsSendingGame">%1$s is playing a game...</string>
     <string name="IsSendingVideo">%1$s is sending video...</string>
     <string name="IsSendingFile">%1$s is sending file...</string>
     <string name="RecordingAudio">recording voice message...</string>
     <string name="SendingAudio">sending audio...</string>
     <string name="SendingPhoto">sending photo...</string>
-    <!--<string name="SendingGame">playing a game...</string>-->
+    <string name="SendingGame">playing a game...</string>
     <string name="SendingVideoStatus">sending video...</string>
     <string name="SendingFile">sending file...</string>
     <string name="GotAQuestion">Got a question\nabout CloudVeil Messenger?</string>
@@ -309,6 +369,7 @@
     <string name="SaveToMusic">Save to music</string>
     <string name="ShareFile">Share</string>
     <string name="ApplyLocalizationFile">Apply localization file</string>
+    <string name="ApplyThemeFile">Apply theme file</string>
     <string name="UnsupportedAttachment">Unsupported attachment</string>
     <string name="SetTimer">Set self-destruct timer</string>
     <string name="ServiceNotifications">Service notifications</string>
@@ -327,6 +388,8 @@
     <string name="ReportSpamAlertChannel">Are you sure you want to report spam from this channel?</string>
     <string name="NobodyLikesSpam1">Sorry, you can only send messages to mutual contacts at the moment.</string>
     <string name="NobodyLikesSpam2">Sorry, you can only add mutual contacts to groups at the moment.</string>
+    <string name="NobodyLikesSpam3">You have contacted too many non-contacts today, please try again tomorrow. You will be able to reply today if this user messages you first.</string>
+    <string name="NobodyLikesSpam4">You can\'t add this user because you have contacted too many non-contacts today. Please try again tomorrow. You can ask another member to add this user to the group.</string>
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">More info</string>
     <string name="ShareSendTo">Send to...</string>
@@ -360,6 +423,10 @@
     <string name="ChatYourSelfDescription3">Access this chat from any device</string>
     <string name="ChatYourSelfDescription4">Use search to quickly find things</string>
     <string name="ChatYourSelfTitle">Your cloud storage</string>
+    <string name="JumpToDate">Jump to Date</string>
+    <string name="DeleteForUser">Delete for %1$s</string>
+    <string name="DeleteForAll">Delete for all members</string>
+    <string name="TextCopied">Text copied to clipboard</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -453,11 +520,12 @@
     <string name="ALongTimeAgo">last seen a long time ago</string>
     <string name="NewMessageTitle">New Message</string>
     <!--group create view-->
-    <string name="SendMessageTo">Send message to...</string>
+    <string name="SendMessageTo">Add people...</string>
     <string name="SoftUserLimitAlert">You will be able to add more users after you finish creating the group and convert it to a supergroup.</string>
     <string name="EnterGroupNamePlaceholder">Enter group name</string>
     <string name="GroupName">Group name</string>
-    <string name="MembersCount">%1$d/%2$d members</string>
+    <string name="MembersCount">%1$d of %2$d selected</string>
+    <string name="MembersCountZero">up to %1$s</string>
     <string name="JoinToGroup">Do you want to join the chat \'%1$s\'?</string>
     <string name="JoinToGroupErrorFull">Sorry, this group is already full.</string>
     <string name="JoinToGroupErrorNotExist">Sorry, this chat does not seem to exist.</string>
@@ -509,12 +577,16 @@
     <string name="PhoneOther">Other</string>
     <string name="PhoneMain">Main</string>
     <string name="StartEncryptedChat">Start Secret Chat</string>
+    <string name="GroupsInCommon">Groups in Common</string>
+    <string name="GroupsInCommonTitle">Groups in common</string>
+    <string name="NoGroupsInCommon">No common groups yet</string>
     <string name="CreateEncryptedChatError">An error occurred.</string>
     <string name="EncryptionKey">Encryption Key</string>
     <string name="MessageLifetime">Self-Destruct Timer</string>
     <string name="ShortMessageLifetimeForever">Off</string>
     <string name="EncryptionKeyDescription">This image and text were derived from the encryption key for this secret chat with <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>If they look the same on <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> device, end-to-end encryption is guaranteed.<![CDATA[<br><br>]]>Learn more at telegram.org</string>
     <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
+    <string name="TapToEmojify">Tap to emojify</string>
     <string name="NumberUnknown">Unknown</string>
     <string name="Info">Info</string>
     <string name="Phone">Phone</string>
@@ -527,6 +599,7 @@
     <string name="UsernameInvalidLong">The username must not exceed 32 characters.</string>
     <string name="UsernameInvalidStartNumber">Sorry, a username can\'t start with a number.</string>
     <string name="UsernameHelp">You can choose a username on <![CDATA[<b>]]>CloudVeil Messenger<![CDATA[</b>]]>. If you do, other people will be able to find you by this username and contact you without knowing your phone number.<![CDATA[<br><br>]]>You can use <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> and underscores. Minimum length is <![CDATA[<b>]]>5<![CDATA[</b>]]> characters.</string>
+    <string name="UsernameHelpLink">This link opens a chat with you on Telegram:\n%1$s</string>
     <string name="UsernameChecking">Checking username...</string>
     <string name="UsernameAvailable">%1$s is available.</string>
     <string name="UsernameEmpty">None</string>
@@ -563,6 +636,20 @@
     <string name="ArchivedStickersAlertInfo">Some of your older sticker sets have been archived. You can reactivate them in the Stickers Settings.</string>
     <string name="ArchivedMasksAlertTitle">Archived masks</string>
     <string name="ArchivedMasksAlertInfo">Some of your older masks sets have been archived. You can reactivate them in the Masks Settings.</string>
+    <!--theme view-->
+    <string name="Theme">Theme</string>
+    <string name="DeleteThemeAlert">Are you sure you want to delete this theme?</string>
+    <string name="IncorrectTheme">Incorrect theme file</string>
+    <string name="EnterThemeName">Enter theme name</string>
+    <string name="CloseEditor">CLOSE EDITOR</string>
+    <string name="SaveTheme">SAVE THEME</string>
+    <string name="NewTheme">New Theme</string>
+    <string name="ApplyTheme">APPLY</string>
+    <string name="ThemePreview">Theme Preview</string>
+    <string name="SelectColor">Select color</string>
+    <string name="CreateNewTheme">Create New Theme</string>
+    <string name="CreateNewThemeHelp">Tap on the palette icon to view the list of elements on each screen - and edit them.</string>
+    <string name="CreateNewThemeInfo">You can create your own theme by changing colors within the app. You can always switch back to the default Telegram theme here.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
     <string name="TextSize">Messages Text Size</string>
@@ -585,6 +672,27 @@
     <string name="ResetAllNotifications">Reset All Notifications</string>
     <string name="UndoAllCustom">Undo all custom notification settings for all your contacts and groups</string>
     <string name="NotificationsAndSounds">Notifications and Sounds</string>
+    <string name="CustomNotifications">Custom Notifications</string>
+    <string name="ProfilePopupNotification">Popup notifications</string>
+    <string name="ProfilePopupNotificationInfo">New messages from this contact will appear on your screen when you are not using Telegram.</string>
+    <string name="NotificationsLed">LED</string>
+    <string name="NotificationsLedColor">Color</string>
+    <string name="ColorBlue">Blue</string>
+    <string name="ColorRed">Red</string>
+    <string name="ColorYellow">Yellow</string>
+    <string name="ColorGreen">Green</string>
+    <string name="ColorCyan">Cyan</string>
+    <string name="ColorWhite">White</string>
+    <string name="ColorPink">Pink</string>
+    <string name="ColorViolet">Violet</string>
+    <string name="ColorOrange">Orange</string>
+    <string name="NotificationsLedInfo">LED is a small blinking light on some devices that is used to indicate new messages.</string>
+    <string name="PriorityInfo">Higher priority notifications will work even if your phone is in Do Not Disturb mode.</string>
+    <string name="General">General</string>
+    <string name="NotificationsOn">On</string>
+    <string name="NotificationsOff">Off</string>
+    <string name="NotificationsTurnOn">Turn On</string>
+    <string name="NotificationsTurnOff">Turn Off</string>
     <string name="BlockedUsers">Blocked Users</string>
     <string name="LogOut">Log out</string>
     <string name="NoSound">No sound</string>
@@ -626,8 +734,6 @@
     <string name="BadgeNumber">Badge Counter</string>
     <string name="Short">Short</string>
     <string name="Long">Long</string>
-    <string name="SystemDefault">System default</string>
-    <string name="SettingsDefault">Settings default</string>
     <string name="AutomaticMediaDownload">Automatic media download</string>
     <string name="WhenUsingMobileData">When using mobile data</string>
     <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
@@ -637,7 +743,11 @@
     <string name="RaiseToSpeak">Raise to Speak</string>
     <string name="SaveToGallerySettings">Save to gallery</string>
     <string name="EditName">Edit name</string>
+    <string name="NotificationsCustomize">Customize</string>
+    <string name="NotificationsCustom">Custom</string>
+    <string name="NotificationsEnableCustom">Enable Custom Notifications</string>
     <string name="NotificationsPriority">Priority</string>
+    <string name="NotificationsPrioritySettings">Same as in Settings</string>
     <string name="NotificationsPriorityDefault">Default</string>
     <string name="NotificationsPriorityLow">Low</string>
     <string name="NotificationsPriorityHigh">High</string>
@@ -653,18 +763,18 @@
     <string name="NotificationsOther">Other</string>
     <string name="NotificationsDisabled">Disabled</string>
     <string name="VibrationDisabled">Disabled</string>
+    <string name="PopupEnabled">Enabled</string>
+    <string name="PopupDisabled">Disabled</string>
     <string name="LedDisabled">Disabled</string>
     <string name="RepeatDisabled">Off</string>
     <string name="InChatSound">In-Chat Sounds</string>
     <string name="SoundDefault">Default</string>
     <string name="VibrationDefault">Default</string>
     <string name="SmartNotifications">Smart Notifications</string>
+    <string name="SmartNotificationsInfo">%1$d / %2$s</string>
     <string name="SmartNotificationsDisabled">Disabled</string>
-    <string name="SmartNotificationsInfo">Sound at most %1$s within %2$s</string>
-    <string name="SmartNotificationsSoundAtMost">Sound at most</string>
-    <string name="SmartNotificationsTimes">times</string>
-    <string name="SmartNotificationsWithin">within</string>
-    <string name="SmartNotificationsMinutes">minutes</string>
+    <string name="SmartNotificationsAlert">Sound Alert Frequency</string>
+    <string name="SmartNotificationsDetail">%1$s within %2$s</string>
     <string name="SecretWebPage">Link Previews</string>
     <string name="SecretChat">Secret chats</string>
     <string name="ChromeCustomTabs">In-App Browser</string>
@@ -674,8 +784,11 @@
     <string name="Emoji">Emoji</string>
     <string name="EmojiBigSize">Draw single big emoji</string>
     <string name="EmojiUseDefault">Use system default emoji</string>
+    <string name="TelegramVersion">Telegram for Android %1$s</string>
+    <string name="DebugMenu">Debug Menu</string>
+    <string name="DebugMenuImportContacts">Import Contacts</string>
+    <string name="DebugMenuReloadContacts">Reload Contacts</string>
     <!--cache view-->
-    <string name="CacheSettings">Cache Settings</string>
     <string name="LocalDatabase">Local Database</string>
     <string name="LocalDatabaseClear">Clear cached text messages?</string>
     <string name="LocalDatabaseInfo">Clearing the local database will delete the texts of cached messages and compress the database to save internal disk space. CloudVeil Messenger needs some data to work, so database size will not reach zero.\n\nThis operation can take a few minutes to complete.</string>
@@ -687,6 +800,7 @@
     <string name="LocalAudioCache">Voice messages</string>
     <string name="LocalVideoCache">Videos</string>
     <string name="LocalMusicCache">Music</string>
+    <string name="LocalGifCache">GIFs</string>
     <string name="LocalCache">Other files</string>
     <string name="CacheEmpty">Empty</string>
     <string name="KeepMedia">Keep Media</string>
@@ -724,6 +838,8 @@
     <string name="FingerprintInfo">Confirm fingerprint to continue</string>
     <string name="FingerprintHelp">Touch sensor</string>
     <string name="FingerprintNotRecognized">Fingerprint not recognized. Try again</string>
+    <string name="ScreenCapture">Allow Screen Capture</string>
+    <string name="ScreenCaptureInfo">If enabled, you can take screenshots of the app, but the system will display your chats in the task switcher even when the passcode is on.\n\nYou may need to restart the app for this to take effect.</string>
     <!--media view-->
     <string name="DocumentsTitle">Shared Files</string>
     <string name="SharedMediaTitle">Shared Media</string>
@@ -800,6 +916,7 @@
     <string name="AddCaption">Add a caption...</string>
     <string name="PhotoCaption">Photo Caption</string>
     <string name="VideoCaption">Video Caption</string>
+    <string name="GifCaption">GIF Caption</string>
     <string name="Caption">Caption</string>
     <string name="PaintDraw">Draw</string>
     <string name="PaintStickers">Stickers</string>
@@ -809,6 +926,9 @@
     <string name="PaintDuplicate">Duplicate</string>
     <string name="PaintOutlined">Outlined</string>
     <string name="PaintRegular">Regular</string>
+    <string name="CropReset">Reset</string>
+    <string name="CropOriginal">Original</string>
+    <string name="CropSquare">Square</string>
     <!--password view-->
     <string name="TwoStepVerification">Two-Step Verification</string>
     <string name="SetAdditionalPassword">Set Additional Password</string>
@@ -859,6 +979,27 @@
     <string name="PasswordReset">Password deactivated</string>
     <string name="EnabledPasswordText">You have enabled Two-Step verification.\nYou\'ll need the password you set up here to log in to your CloudVeil Messenger account.</string>
     <string name="PendingEmailText">Your recovery e-mail %1$s is not yet active and pending confirmation.</string>
+    <!--data settings-->
+    <string name="DataSettings">Data and Storage</string>
+    <string name="DataUsage">Disk and network usage</string>
+    <string name="StorageUsage">Storage Usage</string>
+    <string name="MobileUsage">Mobile Data Usage</string>
+    <string name="RoamingUsage">Roaming Data Usage</string>
+    <string name="WiFiUsage">Wi-Fi Data Usage</string>
+    <string name="MessagesDataUsage">Messages and other data</string>
+    <string name="CountSent">Sent</string>
+    <string name="CountReceived">Received</string>
+    <string name="BytesSent">Bytes sent</string>
+    <string name="BytesReceived">Bytes received</string>
+    <string name="FilesDataUsage">Files</string>
+    <string name="CallsDataUsage">Calls</string>
+    <string name="OutgoingCalls">Outgoing calls</string>
+    <string name="IncomingCalls">Incoming calls</string>
+    <string name="CallsTotalTime">Total time</string>
+    <string name="TotalDataUsage">Total</string>
+    <string name="ResetStatistics">Reset Statistics</string>
+    <string name="NetworkUsageSince">Network usage since %1$s</string>
+    <string name="ResetStatisticsAlert">Do you want to reset your usage statistics?</string>
     <!--privacy settings-->
     <string name="PrivacySettings">Privacy and Security</string>
     <string name="PrivacyTitle">Privacy</string>
@@ -874,7 +1015,7 @@
     <string name="SecurityTitle">Security</string>
     <string name="DeleteAccountTitle">Account self-destructs</string>
     <string name="DeleteAccountIfAwayFor">If you\'re away for</string>
-    <string name="DeleteAccountHelp">If you do not log in at least once within this period, your account will be deleted along with all groups, messages and contacts.</string>
+    <string name="DeleteAccountHelp">If you do not come online at least once within this period, your account will be deleted along with all groups, messages and contacts.</string>
     <string name="DeleteAccountNowConfirmation">Delete your account?</string>
     <string name="LastSeenHelp">Change who can see your Last Seen time.</string>
     <string name="LastSeenTitle">Who can see your Last Seen time?</string>
@@ -906,7 +1047,7 @@
     <!--edit video view-->
     <string name="EditVideo">Edit Video</string>
     <string name="SendingVideo">Sending video...</string>
-    <string name="SendingGif">Sending gif...</string>
+    <string name="SendingGif">Sending GIF...</string>
     <!--bot-->
     <string name="Bot">bot</string>
     <string name="BotShare">Share</string>
@@ -943,6 +1084,8 @@
     <string name="Set">Set</string>
     <string name="OK">OK</string>
     <string name="Crop">CROP</string>
+    <string name="Yes">Yes</string>
+    <string name="No">No</string>
     <!--messages-->
     <string name="ActionInviteYou">You joined the group via invite link</string>
     <string name="ActionInviteUser">un1 joined the group via invite link</string>
@@ -989,6 +1132,7 @@
     <string name="FloodWait">Too many attempts, please try again later</string>
     <string name="FloodWaitTime">Too many attempts, please try again in %1$s</string>
     <string name="InvalidCode">Invalid code</string>
+    <string name="PhoneNumberFlood">Sorry, you have deleted and re-created your account too many times recently. Please wait for a few days before signing up again.</string>
     <string name="InvalidFirstName">Invalid first name</string>
     <string name="InvalidLastName">Invalid last name</string>
     <string name="Loading">Loading...</string>
@@ -1040,16 +1184,20 @@
     <string name="EditMessageError">Sorry, you can\'t edit this message.</string>
     <string name="AllowReadSms">Please allow CloudVeil Messenger to receive SMS so that we can automatically enter your code for you.</string>
     <string name="AllowReadCall">Please allow CloudVeil Messenger to receive calls so that we can automatically enter your code for you.</string>
+	<string name="AllowFillNumber">Please allow CloudVeil Messenger to receive calls and SMS so that we can fill in your phone number, send you a code, and enter it for you.</string>
     <string name="AllowReadCallAndSms">Please allow CloudVeil Messenger to receive calls and SMS so that we can automatically enter your code for you.</string>
     <string name="UserRestricted">Sorry, you are not allowed to do this.</string>
+    <string name="YouBlockedUser">Sorry, you can\'t add this user or bot to groups because you\'ve blocked them. Please unblock to proceed.</string>
     <string name="JoinGroup">JOIN GROUP</string>
     <!--permissions-->
     <string name="PermissionContacts">CloudVeil Messenger needs access to your contacts so that you can connect with your friends across all your devices.</string>
     <string name="PermissionStorage">CloudVeil Messenger needs access to your storage so that you can send and save photos, videos, music and other media.</string>
     <string name="PermissionNoAudio">CloudVeil Messenger needs access to your microphone so that you can send voice messages.</string>
+	<string name="PermissionNoAudioVideo">Telegram needs access to your microphone so that you can record videos.</string>
     <string name="PermissionNoCamera">CloudVeil Messenger needs access to your camera so that you can capture photos and videos.</string>
     <string name="PermissionNoLocation">CloudVeil Messenger needs access to your location so that you can share it with your friends.</string>
     <string name="PermissionNoLocationPosition">CloudVeil Messenger needs access to your location.</string>
+	<string name="PermissionDrawAboveOtherApps">Telegram needs access to draw above other apps to play videos in Picture-in-Picture mode.</string>
     <string name="PermissionOpenSettings">SETTINGS</string>
     <!--Intro view-->
     <string name="Page1Title">CloudVeil Messenger</string>
@@ -1067,6 +1215,66 @@
     <string name="Page6Message"><![CDATA[<b>CloudVeil Messenger</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices.</string>
     <string name="Page7Message"><![CDATA[<b>CloudVeil Messenger</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct.</string>
     <string name="StartMessaging">Start Messaging</string>
+    <!-- VoIP -->
+    <string name="AccountSettings">Account Settings</string>
+    <string name="VoipUseLessData">Use less data for calls</string>
+    <string name="VoipIncoming">Incoming call</string>
+    <string name="VoipConnecting">Connecting</string>
+    <string name="VoipExchangingKeys">Exchanging encryption keys</string>
+    <string name="VoipWaiting">Waiting</string>
+    <string name="VoipRequesting">Requesting</string>
+    <string name="VoipHangingUp">Hanging up</string>
+    <string name="VoipCallEnded">Call ended</string>
+    <string name="VoipFailed">Failed to connect</string>
+    <string name="VoipRinging">Ringing</string>
+    <string name="VoipBusy">Line busy</string>
+    <string name="VoipInCallBranding">Telegram Call</string>
+    <string name="VoipOutgoingCall">Ongoing Telegram call</string>
+    <string name="VoipEndCall">End call</string>
+    <string name="VoipOngoingAlertTitle">Another call in progress</string>
+    <string name="VoipOngoingAlert">You currently have an ongoing call with <![CDATA[<b>%1$s</b>]]>. Would you like to hang up on that call and start a new one with <![CDATA[<b>%2$s</b>]]>?</string>
+    <string name="VoipNotificationSettings">Voice calls</string>
+    <string name="VoipSettingsRingtone">Ringtone</string>
+    <string name="VoipRingtoneInfo">You can customize the ringtone used when this contact calls you on Telegram.</string>
+    <string name="Calls">Calls</string>
+    <string name="WhoCanCallMe">Who can call me?</string>
+    <string name="WhoCanCallMeInfo">You can restrict who can call you.</string>
+    <string name="CustomCallInfo">These users will or will not be able to call you regardless of the settings above.</string>
+    <string name="UseLessDataNever">Never</string>
+    <string name="UseLessDataOnMobile">Only on mobile data</string>
+    <string name="UseLessDataAlways">Always</string>
+    <string name="VoipAnswerCall">Answer</string>
+    <string name="VoipDeclineCall">Decline</string>
+    <string name="VoipOffline">You\'re currently offline. Please connect to the Internet in order to make calls.</string>
+    <string name="VoipOfflineAirplane">You currently have airplane mode enabled. Please turn it off or connect to Wi-Fi in order to make calls.</string>
+    <string name="VoipOfflineTitle">Offline</string>
+    <string name="VoipOfflineAirplaneTitle">Airplane Mode</string>
+    <string name="VoipOfflineOpenSettings">Settings</string>
+    <string name="CallMessageOutgoing">Outgoing Call</string>
+    <string name="CallMessageIncoming">Incoming Call</string>
+    <string name="CallMessageIncomingMissed">Missed Call</string>
+    <string name="CallMessageOutgoingMissed">Cancelled Call</string>
+	<string name="CallMessageIncomingDeclined">Declined Call</string>
+    <string name="CallMessageWithDuration">%1$s (%2$s)</string>
+    <string name="CallEncryptionKeyDescription">This image and text were derived from the encryption key for this call with <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>If they look the same on <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> device, end-to-end encryption is guaranteed.</string>
+    <string name="NoCallLog">You didn\'t make any calls yet.</string>
+    <string name="VoipPeerIncompatible"><![CDATA[<b>]]>%1$s<![CDATA[</b>]]>\'s app is using an incompatible protocol. They need to update their app before you can call them.</string>
+    <string name="VoipPeerOutdated"><![CDATA[<b>]]>%1$s<![CDATA[</b>]]>\'s app does not support calls. They need to update their app before you can call them.</string>
+    <string name="VoipRateCallAlert">Please rate the quality of your Telegram call</string>
+    <string name="VoipFeedbackAlert">Would you like to leave any feedback to help us improve the calling service?</string>
+    <string name="VoipNeedMicPermission">Telegram needs access to your microphone so that you can make calls.</string>
+    <string name="VoipFeedbackCommentHint">Add an optional comment</string>
+    <string name="CallBack">Call Back</string>
+    <string name="CallAgain">Call Again</string>
+    <string name="DefaultRingtone">Default</string>
+    <string name="ConfirmDeleteCallLog">Are you sure you want to delete this entry from the calls log?</string>
+    <string name="CallViaTelegram">Telegram Call</string>
+	<string name="VoipAudioRoutingEarpiece">Earpiece</string>
+    <string name="VoipAudioRoutingSpeaker">Speaker</string>
+    <string name="VoipAudioRoutingBluetooth">Bluetooth</string>
+    <string name="ReturnToCall">RETURN TO CALL</string>
+    <string name="CallNotAvailable">Sorry, <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> doesn\'t accept calls.</string>
+    <string name="CallEmojiKeyTooltip">If emoji on %1$s\'s screen are the same, this call is 100%% secure.</string>
     <!--plural-->
     <string name="Online_zero">%1$d online</string>
     <string name="Online_one">%1$d online</string>
@@ -1286,6 +1494,8 @@
     <string name="AndOther_many">and %1$d others</string>
     <string name="AndOther_other">and %1$d others</string>
     <!--date formatters-->
+    <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
+    <string name="formatterStats24H">MMM dd yyyy, HH:mm</string>
     <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">MMM dd</string>
     <string name="formatterYear">dd.MM.yy</string>

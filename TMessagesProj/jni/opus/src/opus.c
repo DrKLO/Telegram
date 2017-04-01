@@ -104,6 +104,10 @@ OPUS_EXPORT void opus_pcm_soft_clip(float *_x, int N, int C, float *declip_mem)
 
          /* Compute a such that maxval + a*maxval^2 = 1 */
          a=(maxval-1)/(maxval*maxval);
+         /* Slightly boost "a" by 2^-22. This is just enough to ensure -ffast-math
+            does not cause output values larger than +/-1, but small enough not
+            to matter even for 24-bit output.  */
+         a += a*2.4e-7;
          if (x[i*C]>0)
             a = -a;
          /* Apply soft clipping */
@@ -166,6 +170,27 @@ static int parse_size(const unsigned char *data, opus_int32 len, opus_int16 *siz
    }
 }
 
+int opus_packet_get_samples_per_frame(const unsigned char *data,
+      opus_int32 Fs)
+{
+   int audiosize;
+   if (data[0]&0x80)
+   {
+      audiosize = ((data[0]>>3)&0x3);
+      audiosize = (Fs<<audiosize)/400;
+   } else if ((data[0]&0x60) == 0x60)
+   {
+      audiosize = (data[0]&0x08) ? Fs/50 : Fs/100;
+   } else {
+      audiosize = ((data[0]>>3)&0x3);
+      if (audiosize == 3)
+         audiosize = Fs*60/1000;
+      else
+         audiosize = (Fs<<audiosize)/100;
+   }
+   return audiosize;
+}
+
 int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
       int self_delimited, unsigned char *out_toc,
       const unsigned char *frames[48], opus_int16 size[48],
@@ -180,8 +205,10 @@ int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
    opus_int32 pad = 0;
    const unsigned char *data0 = data;
 
-   if (size==NULL)
+   if (size==NULL || len<0)
       return OPUS_BAD_ARG;
+   if (len==0)
+      return OPUS_INVALID_PACKET;
 
    framesize = opus_packet_get_samples_per_frame(data, 48000);
 

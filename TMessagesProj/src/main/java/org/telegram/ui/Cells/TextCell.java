@@ -3,12 +3,14 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -17,6 +19,7 @@ import android.widget.ImageView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.SimpleTextView;
+import org.telegram.ui.ActionBar.Theme;
 
 public class TextCell extends FrameLayout {
 
@@ -29,24 +32,37 @@ public class TextCell extends FrameLayout {
         super(context);
 
         textView = new SimpleTextView(context);
-        textView.setTextColor(0xff212121);
+        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(16);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         addView(textView);
 
         valueTextView = new SimpleTextView(context);
-        valueTextView.setTextColor(0xff2f8cc9);
+        valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));
         valueTextView.setTextSize(16);
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
         addView(valueTextView);
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
+        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
         addView(imageView);
 
         valueImageView = new ImageView(context);
         valueImageView.setScaleType(ImageView.ScaleType.CENTER);
         addView(valueImageView);
+    }
+
+    public SimpleTextView getTextView() {
+        return textView;
+    }
+
+    public SimpleTextView getValueTextView() {
+        return valueTextView;
+    }
+
+    public ImageView getValueImageView() {
+        return valueImageView;
     }
 
     @Override

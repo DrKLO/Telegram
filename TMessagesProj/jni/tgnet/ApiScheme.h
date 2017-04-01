@@ -70,7 +70,7 @@ public:
 class TL_config : public TLObject {
 
 public:
-    static const uint32_t constructor = 0x9a6b2e2a;
+    static const uint32_t constructor = 0xcb601684;
 
     int32_t flags;
     int32_t date;
@@ -95,6 +95,12 @@ public:
     int32_t rating_e_decay;
     int32_t stickers_recent_limit;
     int32_t tmp_sessions;
+    int32_t pinned_dialogs_count_max;
+    int32_t call_receive_timeout_ms;
+    int32_t call_ring_timeout_ms;
+    int32_t call_connect_timeout_ms;
+    int32_t call_packet_timeout_ms;
+    std::string me_url_prefix;
     std::vector<std::unique_ptr<TL_disabledFeature>> disabled_features;
 
     static TL_config *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);

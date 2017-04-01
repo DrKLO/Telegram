@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger.query;
@@ -250,7 +250,7 @@ public class SharedMediaQuery {
                     state2.step();
                     state2.dispose();
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
         });
@@ -281,7 +281,7 @@ public class SharedMediaQuery {
                     }
                     processLoadedMediaCount(count, uid, type, classGuid, true);
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
         });
@@ -414,7 +414,7 @@ public class SharedMediaQuery {
                     res.messages.clear();
                     res.chats.clear();
                     res.users.clear();
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 } finally {
                     processLoadedMedia(res, uid, offset, count, max_id, type, true, classGuid, isChannel, topReached);
                 }
@@ -466,7 +466,7 @@ public class SharedMediaQuery {
                     }
                     MessagesStorage.getInstance().getDatabase().commitTransaction();
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
         });
@@ -494,7 +494,7 @@ public class SharedMediaQuery {
                     }
                     cursor.dispose();
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override

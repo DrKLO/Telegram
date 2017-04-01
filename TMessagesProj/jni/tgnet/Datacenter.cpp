@@ -28,17 +28,24 @@
 static std::vector<std::string> serverPublicKeys;
 static std::vector<uint64_t> serverPublicKeysFingerprints;
 static BN_CTX *bnContext;
+static SHA256_CTX sha256Ctx;
 
 Datacenter::Datacenter(uint32_t id) {
     datacenterId = id;
     for (uint32_t a = 0; a < DOWNLOAD_CONNECTIONS_COUNT; a++) {
+        uploadConnection[a] = nullptr;
+    }
+    for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
         downloadConnections[a] = nullptr;
     }
 }
 
 Datacenter::Datacenter(NativeByteBuffer *data) {
     for (uint32_t a = 0; a < DOWNLOAD_CONNECTIONS_COUNT; a++) {
-        downloadConnections[a] = nullptr; 
+        uploadConnection[a] = nullptr;
+    }
+    for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
+        downloadConnections[a] = nullptr;
     }
     uint32_t currentVersion = data->readUint32(nullptr);
     if (currentVersion >= 2 && currentVersion <= 5) {
@@ -340,6 +347,18 @@ void Datacenter::storeCurrentAddressAndPortNum() {
     buffer->reuse();
 }
 
+void Datacenter::resetAddressAndPortNum() {
+    currentPortNumIpv4 = 0;
+    currentAddressNumIpv4 = 0;
+    currentPortNumIpv6 = 0;
+    currentAddressNumIpv6 = 0;
+    currentPortNumIpv4Download = 0;
+    currentAddressNumIpv4Download = 0;
+    currentPortNumIpv6Download = 0;
+    currentAddressNumIpv6Download = 0;
+    storeCurrentAddressAndPortNum();
+}
+
 void Datacenter::replaceAddressesAndPorts(std::vector<std::string> &newAddresses, std::map<std::string, uint32_t> &newPorts, uint32_t flags) {
     std::vector<std::string> *addresses;
     if ((flags & 2) != 0) {
@@ -518,8 +537,10 @@ void Datacenter::suspendConnections() {
     if (genericConnection != nullptr) {
         genericConnection->suspendConnection();
     }
-    if (uploadConnection != nullptr) {
-        uploadConnection->suspendConnection();
+    for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
+        if (uploadConnection[a] != nullptr) {
+            uploadConnection[a]->suspendConnection();
+        }
     }
     for (uint32_t a = 0; a < DOWNLOAD_CONNECTIONS_COUNT; a++) {
         if (downloadConnections[a] != nullptr) {
@@ -532,8 +553,10 @@ void Datacenter::getSessions(std::vector<int64_t> &sessions) {
     if (genericConnection != nullptr) {
         sessions.push_back(genericConnection->getSissionId());
     }
-    if (uploadConnection != nullptr) {
-        sessions.push_back(uploadConnection->getSissionId());
+    for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
+        if (uploadConnection[a] != nullptr) {
+            sessions.push_back(uploadConnection[a]->getSissionId());
+        }
     }
     for (uint32_t a = 0; a < DOWNLOAD_CONNECTIONS_COUNT; a++) {
         if (downloadConnections[a] != nullptr) {
@@ -546,8 +569,10 @@ void Datacenter::recreateSessions() {
     if (genericConnection != nullptr) {
         genericConnection->recreateSession();
     }
-    if (uploadConnection != nullptr) {
-        uploadConnection->recreateSession();
+    for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
+        if (uploadConnection[a] != nullptr) {
+            uploadConnection[a]->recreateSession();
+        }
     }
     for (uint32_t a = 0; a < DOWNLOAD_CONNECTIONS_COUNT; a++) {
         if (downloadConnections[a] != nullptr) {
@@ -556,18 +581,18 @@ void Datacenter::recreateSessions() {
     }
 }
 
-Connection *Datacenter::createDownloadConnection(uint32_t num) {
+Connection *Datacenter::createDownloadConnection(uint8_t num) {
     if (downloadConnections[num] == nullptr) {
         downloadConnections[num] = new Connection(this, ConnectionTypeDownload);
     }
     return downloadConnections[num];
 }
 
-Connection *Datacenter::createUploadConnection() {
-    if (uploadConnection == nullptr) {
-        uploadConnection = new Connection(this, ConnectionTypeUpload);
+Connection *Datacenter::createUploadConnection(uint8_t num) {
+    if (uploadConnection[num] == nullptr) {
+        uploadConnection[num] = new Connection(this, ConnectionTypeUpload);
     }
-    return uploadConnection;
+    return uploadConnection[num];
 }
 
 Connection *Datacenter::createGenericConnection() {
@@ -1330,32 +1355,53 @@ void Datacenter::sendAckRequest(int64_t messageId) {
 
 inline void generateMessageKey(uint8_t *authKey, uint8_t *messageKey, uint8_t *result, bool incoming) {
     uint32_t x = incoming ? 8 : 0;
-
     static uint8_t sha[68];
+    switch (ConnectionsManager::getInstance().getMtProtoVersion()) {
+        case 2:
+            SHA256_Init(&sha256Ctx);
+            SHA256_Update(&sha256Ctx, messageKey, 16);
+            SHA256_Update(&sha256Ctx, authKey + x, 36);
+            SHA256_Final(sha, &sha256Ctx);
 
-    memcpy(sha + 20, messageKey, 16);
-    memcpy(sha + 20 + 16, authKey + x, 32);
-    SHA1(sha + 20, 48, sha);
-    memcpy(result, sha, 8);
-    memcpy(result + 32, sha + 8, 12);
+            SHA256_Init(&sha256Ctx);
+            SHA256_Update(&sha256Ctx, authKey + 40 + x, 36);
+            SHA256_Update(&sha256Ctx, messageKey, 16);
+            SHA256_Final(sha + 32, &sha256Ctx);
 
-    memcpy(sha + 20, authKey + 32 + x, 16);
-    memcpy(sha + 20 + 16, messageKey, 16);
-    memcpy(sha + 20 + 16 + 16, authKey + 48 + x, 16);
-    SHA1(sha + 20, 48, sha);
-    memcpy(result + 8, sha + 8, 12);
-    memcpy(result + 32 + 12, sha, 8);
+            memcpy(result, sha, 8);
+            memcpy(result + 8, sha + 32 + 8, 16);
+            memcpy(result + 8 + 16, sha + 24, 8);
 
-    memcpy(sha + 20, authKey + 64 + x, 32);
-    memcpy(sha + 20 + 32, messageKey, 16);
-    SHA1(sha + 20, 48, sha);
-    memcpy(result + 8 + 12, sha + 4, 12);
-    memcpy(result + 32 + 12 + 8, sha + 16, 4);
+            memcpy(result + 32, sha + 32, 8);
+            memcpy(result + 32 + 8, sha + 8, 16);
+            memcpy(result + 32 + 8 + 16, sha + 32 + 24, 8);
+            break;
+        default:
+            memcpy(sha + 20, messageKey, 16);
+            memcpy(sha + 20 + 16, authKey + x, 32);
+            SHA1(sha + 20, 48, sha);
+            memcpy(result, sha, 8);
+            memcpy(result + 32, sha + 8, 12);
 
-    memcpy(sha + 20, messageKey, 16);
-    memcpy(sha + 20 + 16, authKey + 96 + x, 32);
-    SHA1(sha + 20, 48, sha);
-    memcpy(result + 32 + 12 + 8 + 4, sha, 8);
+            memcpy(sha + 20, authKey + 32 + x, 16);
+            memcpy(sha + 20 + 16, messageKey, 16);
+            memcpy(sha + 20 + 16 + 16, authKey + 48 + x, 16);
+            SHA1(sha + 20, 48, sha);
+            memcpy(result + 8, sha + 8, 12);
+            memcpy(result + 32 + 12, sha, 8);
+
+            memcpy(sha + 20, authKey + 64 + x, 32);
+            memcpy(sha + 20 + 32, messageKey, 16);
+            SHA1(sha + 20, 48, sha);
+            memcpy(result + 8 + 12, sha + 4, 12);
+            memcpy(result + 32 + 12 + 8, sha + 16, 4);
+
+            memcpy(sha + 20, messageKey, 16);
+            memcpy(sha + 20 + 16, authKey + 96 + x, 32);
+            SHA1(sha + 20, 48, sha);
+            memcpy(result + 32 + 12 + 8 + 4, sha, 8);
+            break;
+    }
 }
 
 NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<NetworkMessage>> &requests, int32_t *quickAckId, Connection *connection) {
@@ -1414,17 +1460,20 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
         messageSeqNo = connection->generateMessageSeqNo(false);
     }
 
+    int32_t mtProtoVersion = ConnectionsManager::getInstance().getMtProtoVersion();
     uint32_t messageSize = messageBody->getObjectSize();
     uint32_t additionalSize = (32 + messageSize) % 16;
     if (additionalSize != 0) {
         additionalSize = 16 - additionalSize;
     }
+    if (mtProtoVersion == 2 && additionalSize < 12) {
+        additionalSize += 16;
+    }
     NativeByteBuffer *buffer = BuffersStorage::getInstance().getFreeBuffer(24 + 32 + messageSize + additionalSize);
     buffer->writeInt64(authKeyId);
     buffer->position(24);
 
-    int64_t serverSalt = getServerSalt();
-    buffer->writeInt64(serverSalt);
+    buffer->writeInt64(getServerSalt());
     buffer->writeInt64(connection->getSissionId());
     buffer->writeInt64(messageId);
     buffer->writeInt32(messageSeqNo);
@@ -1437,44 +1486,74 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
     if (additionalSize != 0) {
         RAND_bytes(buffer->bytes() + 24 + 32 + messageSize, additionalSize);
     }
-    static uint8_t messageKey[84];
-    SHA1(buffer->bytes() + 24, 32 + messageSize, messageKey);
-    memcpy(buffer->bytes() + 8, messageKey + 4, 16);
-
-    if (quickAckId != nullptr) {
-        *quickAckId = (((messageKey[0] & 0xff)) |
-                       ((messageKey[1] & 0xff) << 8) |
-                       ((messageKey[2] & 0xff) << 16) |
-                       ((messageKey[3] & 0xff) << 24)) & 0x7fffffff;
+    static uint8_t messageKey[96];
+    switch (mtProtoVersion) {
+        case 2: {
+            SHA256_Init(&sha256Ctx);
+            SHA256_Update(&sha256Ctx, authKey->bytes + 88, 32);
+            SHA256_Update(&sha256Ctx, buffer->bytes() + 24, 32 + messageSize + additionalSize);
+            SHA256_Final(messageKey, &sha256Ctx);
+            if (quickAckId != nullptr) {
+                *quickAckId = (((messageKey[0] & 0xff)) |
+                               ((messageKey[1] & 0xff) << 8) |
+                               ((messageKey[2] & 0xff) << 16) |
+                               ((messageKey[3] & 0xff) << 24)) & 0x7fffffff;
+            }
+            break;
+        }
+        default: {
+            SHA1(buffer->bytes() + 24, 32 + messageSize, messageKey + 4);
+            if (quickAckId != nullptr) {
+                *quickAckId = (((messageKey[4] & 0xff)) |
+                               ((messageKey[5] & 0xff) << 8) |
+                               ((messageKey[6] & 0xff) << 16) |
+                               ((messageKey[7] & 0xff) << 24)) & 0x7fffffff;
+            }
+            break;
+        }
     }
+    memcpy(buffer->bytes() + 8, messageKey + 8, 16);
 
-    generateMessageKey(authKey->bytes, messageKey + 4, messageKey + 20, false);
-    aesIgeEncryption(buffer->bytes() + 24, messageKey + 20, messageKey + 52, true, false, buffer->limit() - 24);
+    generateMessageKey(authKey->bytes, messageKey + 8, messageKey + 32, false);
+    aesIgeEncryption(buffer->bytes() + 24, messageKey + 32, messageKey + 64, true, false, buffer->limit() - 24);
 
     return buffer;
 }
 
 bool Datacenter::decryptServerResponse(int64_t keyId, uint8_t *key, uint8_t *data, uint32_t length) {
-    if (authKeyId != keyId || length % 16 != 0) {
-        return false;
+    bool error = false;
+    if (authKeyId != keyId) {
+        error = true;
     }
-    static uint8_t messageKey[84];
-    generateMessageKey(authKey->bytes, key, messageKey + 20, true);
-    aesIgeEncryption(data, messageKey + 20, messageKey + 52, false, false, length);
+    static uint8_t messageKey[96];
+    generateMessageKey(authKey->bytes, key, messageKey + 32, true);
+    aesIgeEncryption(data, messageKey + 32, messageKey + 64, false, false, length);
 
     uint32_t messageLength;
     memcpy(&messageLength, data + 28, sizeof(uint32_t));
     if (messageLength > length - 32) {
-        return false;
+        error = true;
     }
     messageLength += 32;
     if (messageLength > length) {
         messageLength = length;
     }
 
-    SHA1(data, messageLength, messageKey);
+    switch (ConnectionsManager::getInstance().getMtProtoVersion()) {
+        case 2: {
+            SHA256_Init(&sha256Ctx);
+            SHA256_Update(&sha256Ctx, authKey->bytes + 88 + 8, 32);
+            SHA256_Update(&sha256Ctx, data, length);
+            SHA256_Final(messageKey, &sha256Ctx);
+            break;
+        }
+        default: {
+            SHA1(data, messageLength, messageKey + 4);
+            break;
+        }
+    }
 
-    return memcmp(messageKey + 4, key, 16) == 0;
+    return memcmp(messageKey + 8, key, 16) == 0 && !error;
 }
 
 bool Datacenter::hasAuthKey() {
@@ -1482,7 +1561,7 @@ bool Datacenter::hasAuthKey() {
 }
 
 Connection *Datacenter::createConnectionByType(uint32_t connectionType) {
-    uint32_t connectionNum = connectionType >> 16;
+    uint8_t connectionNum = (uint8_t) (connectionType >> 16);
     connectionType = connectionType & 0x0000ffff;
     switch (connectionType) {
         case ConnectionTypeGeneric:
@@ -1490,7 +1569,7 @@ Connection *Datacenter::createConnectionByType(uint32_t connectionType) {
         case ConnectionTypeDownload:
             return createDownloadConnection(connectionNum);
         case ConnectionTypeUpload:
-            return createUploadConnection();
+            return createUploadConnection(connectionNum);
         case ConnectionTypePush:
             return createPushConnection();
         default:
@@ -1498,7 +1577,7 @@ Connection *Datacenter::createConnectionByType(uint32_t connectionType) {
     }
 }
 
-Connection *Datacenter::getDownloadConnection(uint32_t num, bool create) {
+Connection *Datacenter::getDownloadConnection(uint8_t num, bool create) {
     if (authKey == nullptr) {
         return nullptr;
     }
@@ -1508,14 +1587,14 @@ Connection *Datacenter::getDownloadConnection(uint32_t num, bool create) {
     return downloadConnections[num];
 }
 
-Connection *Datacenter::getUploadConnection(bool create) {
+Connection *Datacenter::getUploadConnection(uint8_t num, bool create) {
     if (authKey == nullptr) {
         return nullptr;
     }
     if (create) {
-        createUploadConnection()->connect();
+        createUploadConnection(num)->connect();
     }
-    return uploadConnection;
+    return uploadConnection[num];
 }
 
 Connection *Datacenter::getGenericConnection(bool create) {
@@ -1539,7 +1618,7 @@ Connection *Datacenter::getPushConnection(bool create) {
 }
 
 Connection *Datacenter::getConnectionByType(uint32_t connectionType, bool create) {
-    uint32_t connectionNum = connectionType >> 16;
+    uint8_t connectionNum = (uint8_t) (connectionType >> 16);
     connectionType = connectionType & 0x0000ffff;
     switch (connectionType) {
         case ConnectionTypeGeneric:
@@ -1547,7 +1626,7 @@ Connection *Datacenter::getConnectionByType(uint32_t connectionType, bool create
         case ConnectionTypeDownload:
             return getDownloadConnection(connectionNum, create);
         case ConnectionTypeUpload:
-            return getUploadConnection(create);
+            return getUploadConnection(connectionNum, create);
         case ConnectionTypePush:
             return getPushConnection(create);
         default:
@@ -1563,14 +1642,14 @@ void Datacenter::exportAuthorization() {
     TL_auth_exportAuthorization *request = new TL_auth_exportAuthorization();
     request->dc_id = datacenterId;
     DEBUG_D("dc%u begin export authorization", datacenterId);
-    ConnectionsManager::getInstance().sendRequest(request, [&](TLObject *response, TL_error *error) {
+    ConnectionsManager::getInstance().sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType) {
         if (error == nullptr) {
             TL_auth_exportedAuthorization *res = (TL_auth_exportedAuthorization *) response;
             TL_auth_importAuthorization *request2 = new TL_auth_importAuthorization();
             request2->bytes = std::move(res->bytes);
             request2->id = res->id;
             DEBUG_D("dc%u begin import authorization", datacenterId);
-            ConnectionsManager::getInstance().sendRequest(request2, [&](TLObject *response2, TL_error *error2) {
+            ConnectionsManager::getInstance().sendRequest(request2, [&](TLObject *response2, TL_error *error2, int32_t networkType) {
                 if (error2 == nullptr) {
                     authorized = true;
                     ConnectionsManager::getInstance().onDatacenterExportAuthorizationComplete(this);

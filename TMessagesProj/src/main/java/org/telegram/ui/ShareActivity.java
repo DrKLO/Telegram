@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui;
@@ -74,7 +74,7 @@ public class ShareActivity extends Activity {
         messageObject.messageOwner.with_my_score = true;
 
         try {
-            visibleDialog = new ShareAlert(this, messageObject, null, false, link);
+            visibleDialog = new ShareAlert(this, messageObject, null, false, link, false);
             visibleDialog.setCanceledOnTouchOutside(true);
             visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
                 @Override
@@ -87,7 +87,7 @@ public class ShareActivity extends Activity {
             });
             visibleDialog.show();
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
             finish();
         }
     }
@@ -101,7 +101,7 @@ public class ShareActivity extends Activity {
                 visibleDialog = null;
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 }

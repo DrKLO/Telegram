@@ -39,16 +39,24 @@ POSSIBILITY OF SUCH DAMAGE.
 /* first d output samples are set to zero  */
 /*******************************************/
 
+/* OPT: Using celt_fir() for this function should be faster, but it may cause
+   integer overflows in intermediate values (not final results), which the
+   current implementation silences by casting to unsigned. Enabling
+   this should be safe in pretty much all cases, even though it is not technically
+   C89-compliant. */
+#define USE_CELT_FIR 0
+
 void silk_LPC_analysis_filter(
     opus_int16                  *out,               /* O    Output signal                                               */
     const opus_int16            *in,                /* I    Input signal                                                */
     const opus_int16            *B,                 /* I    MA prediction coefficients, Q12 [order]                     */
     const opus_int32            len,                /* I    Signal length                                               */
-    const opus_int32            d                   /* I    Filter order                                                */
+    const opus_int32            d,                  /* I    Filter order                                                */
+    int                         arch                /* I    Run-time architecture                                       */
 )
 {
     opus_int   j;
-#ifdef FIXED_POINT
+#if USE_CELT_FIR
     opus_int16 mem[SILK_MAX_ORDER_LPC];
     opus_int16 num[SILK_MAX_ORDER_LPC];
 #else
@@ -61,7 +69,7 @@ void silk_LPC_analysis_filter(
     silk_assert( (d & 1) == 0 );
     silk_assert( d <= len );
 
-#ifdef FIXED_POINT
+#if USE_CELT_FIR
     silk_assert( d <= SILK_MAX_ORDER_LPC );
     for ( j = 0; j < d; j++ ) {
         num[ j ] = -B[ j ];
@@ -69,11 +77,12 @@ void silk_LPC_analysis_filter(
     for (j=0;j<d;j++) {
         mem[ j ] = in[ d - j - 1 ];
     }
-    celt_fir( in + d, num, out + d, len - d, d, mem );
+    celt_fir( in + d, num, out + d, len - d, d, mem, arch );
     for ( j = 0; j < d; j++ ) {
         out[ j ] = 0;
     }
 #else
+    (void)arch;
     for( ix = d; ix < len; ix++ ) {
         in_ptr = &in[ ix - 1 ];
 
