@@ -599,7 +599,7 @@
     <string name="UsernameInvalidLong">The username must not exceed 32 characters.</string>
     <string name="UsernameInvalidStartNumber">Sorry, a username can\'t start with a number.</string>
     <string name="UsernameHelp">You can choose a username on <![CDATA[<b>]]>CloudVeil Messenger<![CDATA[</b>]]>. If you do, other people will be able to find you by this username and contact you without knowing your phone number.<![CDATA[<br><br>]]>You can use <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> and underscores. Minimum length is <![CDATA[<b>]]>5<![CDATA[</b>]]> characters.</string>
-    <string name="UsernameHelpLink">This link opens a chat with you on Telegram:\n%1$s</string>
+    <string name="UsernameHelpLink">This link opens a chat with you on CloudVeil Messenger:\n%1$s</string>
     <string name="UsernameChecking">Checking username...</string>
     <string name="UsernameAvailable">%1$s is available.</string>
     <string name="UsernameEmpty">None</string>
@@ -674,7 +674,7 @@
     <string name="NotificationsAndSounds">Notifications and Sounds</string>
     <string name="CustomNotifications">Custom Notifications</string>
     <string name="ProfilePopupNotification">Popup notifications</string>
-    <string name="ProfilePopupNotificationInfo">New messages from this contact will appear on your screen when you are not using Telegram.</string>
+    <string name="ProfilePopupNotificationInfo">New messages from this contact will appear on your screen when you are not using CloudVeil Messenger.</string>
     <string name="NotificationsLed">LED</string>
     <string name="NotificationsLedColor">Color</string>
     <string name="ColorBlue">Blue</string>
@@ -786,7 +786,7 @@
     <string name="Emoji">Emoji</string>
     <string name="EmojiBigSize">Draw single big emoji</string>
     <string name="EmojiUseDefault">Use system default emoji</string>
-    <string name="TelegramVersion">Telegram for Android %1$s</string>
+    <string name="TelegramVersion">CloudVeil Messenger for Android %1$s</string>
     <string name="DebugMenu">Debug Menu</string>
     <string name="DebugMenuImportContacts">Import Contacts</string>
     <string name="DebugMenuReloadContacts">Reload Contacts</string>
@@ -1195,11 +1195,11 @@
     <string name="PermissionContacts">CloudVeil Messenger needs access to your contacts so that you can connect with your friends across all your devices.</string>
     <string name="PermissionStorage">CloudVeil Messenger needs access to your storage so that you can send and save photos, videos, music and other media.</string>
     <string name="PermissionNoAudio">CloudVeil Messenger needs access to your microphone so that you can send voice messages.</string>
-	<string name="PermissionNoAudioVideo">Telegram needs access to your microphone so that you can record videos.</string>
+	<string name="PermissionNoAudioVideo">CloudVeil Messenger needs access to your microphone so that you can record videos.</string>
     <string name="PermissionNoCamera">CloudVeil Messenger needs access to your camera so that you can capture photos and videos.</string>
     <string name="PermissionNoLocation">CloudVeil Messenger needs access to your location so that you can share it with your friends.</string>
     <string name="PermissionNoLocationPosition">CloudVeil Messenger needs access to your location.</string>
-	<string name="PermissionDrawAboveOtherApps">Telegram needs access to draw above other apps to play videos in Picture-in-Picture mode.</string>
+	<string name="PermissionDrawAboveOtherApps">CloudVeil Messenger needs access to draw above other apps to play videos in Picture-in-Picture mode.</string>
     <string name="PermissionOpenSettings">SETTINGS</string>
     <!--Intro view-->
     <string name="Page1Title">CloudVeil Messenger</string>
@@ -1237,7 +1237,7 @@
     <string name="VoipOngoingAlert">You currently have an ongoing call with <![CDATA[<b>%1$s</b>]]>. Would you like to hang up on that call and start a new one with <![CDATA[<b>%2$s</b>]]>?</string>
     <string name="VoipNotificationSettings">Voice calls</string>
     <string name="VoipSettingsRingtone">Ringtone</string>
-    <string name="VoipRingtoneInfo">You can customize the ringtone used when this contact calls you on Telegram.</string>
+    <string name="VoipRingtoneInfo">You can customize the ringtone used when this contact calls you on CloudVeil Messenger.</string>
     <string name="Calls">Calls</string>
     <string name="WhoCanCallMe">Who can call me?</string>
     <string name="WhoCanCallMeInfo">You can restrict who can call you.</string>
@@ -1262,15 +1262,15 @@
     <string name="NoCallLog">You didn\'t make any calls yet.</string>
     <string name="VoipPeerIncompatible"><![CDATA[<b>]]>%1$s<![CDATA[</b>]]>\'s app is using an incompatible protocol. They need to update their app before you can call them.</string>
     <string name="VoipPeerOutdated"><![CDATA[<b>]]>%1$s<![CDATA[</b>]]>\'s app does not support calls. They need to update their app before you can call them.</string>
-    <string name="VoipRateCallAlert">Please rate the quality of your Telegram call</string>
+    <string name="VoipRateCallAlert">Please rate the quality of your CloudVeil Messenger call</string>
     <string name="VoipFeedbackAlert">Would you like to leave any feedback to help us improve the calling service?</string>
-    <string name="VoipNeedMicPermission">Telegram needs access to your microphone so that you can make calls.</string>
+    <string name="VoipNeedMicPermission">CloudVeil Messenger needs access to your microphone so that you can make calls.</string>
     <string name="VoipFeedbackCommentHint">Add an optional comment</string>
     <string name="CallBack">Call Back</string>
     <string name="CallAgain">Call Again</string>
     <string name="DefaultRingtone">Default</string>
     <string name="ConfirmDeleteCallLog">Are you sure you want to delete this entry from the calls log?</string>
-    <string name="CallViaTelegram">Telegram Call</string>
+    <string name="CallViaTelegram">CloudVeil Messenger Call</string>
 	<string name="VoipAudioRoutingEarpiece">Earpiece</string>
     <string name="VoipAudioRoutingSpeaker">Speaker</string>
     <string name="VoipAudioRoutingBluetooth">Bluetooth</string>
