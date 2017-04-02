@@ -734,6 +734,8 @@
     <string name="BadgeNumber">Badge Counter</string>
     <string name="Short">Short</string>
     <string name="Long">Long</string>
+    <string name="SystemDefault">System Default</string>
+    <string name="SettingsDefault">CloudVeil Messenger</string>
     <string name="AutomaticMediaDownload">Automatic media download</string>
     <string name="WhenUsingMobileData">When using mobile data</string>
     <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
@@ -1228,8 +1230,8 @@
     <string name="VoipFailed">Failed to connect</string>
     <string name="VoipRinging">Ringing</string>
     <string name="VoipBusy">Line busy</string>
-    <string name="VoipInCallBranding">Telegram Call</string>
-    <string name="VoipOutgoingCall">Ongoing Telegram call</string>
+    <string name="VoipInCallBranding">CloudVeil Messenger Call</string>
+    <string name="VoipOutgoingCall">CloudVeil Messenger call</string>
     <string name="VoipEndCall">End call</string>
     <string name="VoipOngoingAlertTitle">Another call in progress</string>
     <string name="VoipOngoingAlert">You currently have an ongoing call with <![CDATA[<b>%1$s</b>]]>. Would you like to hang up on that call and start a new one with <![CDATA[<b>%2$s</b>]]>?</string>

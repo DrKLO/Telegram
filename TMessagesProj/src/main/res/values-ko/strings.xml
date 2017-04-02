@@ -734,6 +734,8 @@
     <string name="BadgeNumber">앱 아이콘에 알림 개수 표시</string>
     <string name="Short">짧게</string>
     <string name="Long">길게</string>
+    <string name="SystemDefault">System Default</string>
+    <string name="SettingsDefault">CloudVeil Messenger</string>
     <string name="AutomaticMediaDownload">사진/동영상 자동 다운로드</string>
     <string name="WhenUsingMobileData">모바일 데이터를 사용 중일 때</string>
     <string name="WhenConnectedOnWiFi">Wi-Fi에 연결 중일 때</string>

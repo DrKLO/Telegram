@@ -734,6 +734,8 @@
     <string name="BadgeNumber">عداد الشارات</string>
     <string name="Short">قصير</string>
     <string name="Long">طويل</string>
+    <string name="SystemDefault">System Default</string>
+    <string name="SettingsDefault">CloudVeil Messenger</string>
     <string name="AutomaticMediaDownload">تنزيل تلقائي للوسائط</string>
     <string name="WhenUsingMobileData">عند استخدام البيانات الخلوية</string>
     <string name="WhenConnectedOnWiFi">عند الاتصال بالشبكة اللاسلكية</string>

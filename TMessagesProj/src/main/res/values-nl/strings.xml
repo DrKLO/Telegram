@@ -734,6 +734,8 @@
     <string name="BadgeNumber">Badgenummer</string>
     <string name="Short">Kort</string>
     <string name="Long">Lang</string>
+    <string name="SystemDefault">System Default</string>
+    <string name="SettingsDefault">CloudVeil Messenger</string>
     <string name="AutomaticMediaDownload">Automatisch media downloaden</string>
     <string name="WhenUsingMobileData">Bij mobiele verbinding</string>
     <string name="WhenConnectedOnWiFi">Bij Wi-Fi-verbinding</string>

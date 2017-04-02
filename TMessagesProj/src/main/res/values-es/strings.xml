@@ -1230,7 +1230,7 @@
     <string name="VoipFailed">Conexión fallida</string>
     <string name="VoipRinging">Llamando</string>
     <string name="VoipBusy">Línea ocupada</string>
-    <string name="VoipInCallBranding">Llamada de Telegram</string>
+    <string name="VoipInCallBranding">CloudVeil Messenger</string>
     <string name="VoipOutgoingCall">Llamada de Telegram en curso</string>
     <string name="VoipEndCall">Finalizar llamada</string>
     <string name="VoipOngoingAlertTitle">Otra llamada en curso</string>

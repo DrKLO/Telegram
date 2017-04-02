@@ -734,6 +734,8 @@
     <string name="BadgeNumber">Contador no Ícone</string>
     <string name="Short">Curta</string>
     <string name="Long">Longa</string>
+    <string name="SystemDefault">System Default</string>
+    <string name="SettingsDefault">CloudVeil Messenger</string>
     <string name="AutomaticMediaDownload">Download automático de mídia</string>
     <string name="WhenUsingMobileData">Ao usar dados móveis</string>
     <string name="WhenConnectedOnWiFi">Quando conectado ao Wi-Fi</string>

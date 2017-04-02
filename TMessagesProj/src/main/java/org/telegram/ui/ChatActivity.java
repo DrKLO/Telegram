@@ -1193,8 +1193,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (currentUser != null && currentEncryptedChat == null && currentUser.bot) {
             //CloudVeil Start
             if (!Constants.LOCK_DISABLE_BOTS) {
-                headerItem.addSubItem(bot_settings, LocaleController.getString("BotSettings", R.string.BotSettings), 0);
-                headerItem.addSubItem(bot_help, LocaleController.getString("BotHelp", R.string.BotHelp), 0);
+                //headerItem.addSubItem(bot_settings, LocaleController.getString("BotSettings", R.string.BotSettings), 0);
+                //headerItem.addSubItem(bot_help, LocaleController.getString("BotHelp", R.string.BotHelp), 0);
                 updateBotButtons();
             }
             //CloudVeil End
@@ -2080,7 +2080,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         return;
                     }
                     int top;
-                    if (!Constants.LOCK_DISABLE_BOTSmentionsAdapter.isBotContext() && mentionsAdapter.isMediaLayout() && mentionsAdapter.getBotContextSwitch() == null) {
+                    if (!Constants.LOCK_DISABLE_BOTS && mentionsAdapter.isBotContext() && mentionsAdapter.isMediaLayout() && mentionsAdapter.getBotContextSwitch() == null) {
                         top = mentionListViewScrollOffsetY - AndroidUtilities.dp(4);
                     } else {
                         top = mentionListViewScrollOffsetY - AndroidUtilities.dp(2);
@@ -3100,7 +3100,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void checkBotCommands() {
-        /*CloudVeil Start
+        //CloudVeil Start
         URLSpanBotCommand.enabled = false;
         if (currentUser != null && currentUser.bot) {
             URLSpanBotCommand.enabled = true;
@@ -3139,7 +3139,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             floatingDateView.setAlpha(0.0f);
             floatingDateView.setTag(null);
         }
-        CloudVeil End */
     }
 
     public void processInlineBotContextPM(TLRPC.TL_inlineBotSwitchPM object) {
@@ -8328,9 +8327,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             item.setVisibility(View.GONE);
         }
         //CloudVeil End
-        if (editDoneItem != null) {
-            editDoneItem.setVisibility(View.GONE);
-        }
 
         actionBar.showActionMode();
         updatePinnedMessageView(true);

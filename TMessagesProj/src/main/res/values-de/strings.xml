@@ -1230,7 +1230,7 @@
     <string name="VoipFailed">Keine Verbindung möglich</string>
     <string name="VoipRinging">Es klingelt</string>
     <string name="VoipBusy">Besetzt</string>
-    <string name="VoipInCallBranding">Telegram Anruf</string>
+    <string name="VoipInCallBranding">CloudVeil Messenger</string>
     <string name="VoipOutgoingCall">Laufender Telegram Anruf</string>
     <string name="VoipEndCall">Anruf beenden</string>
     <string name="VoipOngoingAlertTitle">Ein anderer Anruf ist bereits aktiv</string>
