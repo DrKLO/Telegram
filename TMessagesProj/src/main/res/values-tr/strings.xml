@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- -->
+
+<resources>
+    <string name="AppName">Telegram</string>
+
+    <!--signin view-->
+    <string name="YourPhone">Telefonunuz</string>
+    <string name="StartText">Lütfen ülke kodunuzu onaylayın\nve telefon numaranızı girin.</string>
+    <string name="ChooseCountry">Bir ülke seçin</string>
+    <string name="WrongCountry">Yanlış ülke kodu</string>
+
+    <!--code enter view-->
+    <string name="YourCode">Kodunuz</string>
+    <string name="SentSmsCode">Telefonunuza bir etkinleştirme SMS mesajı gönderdik</string>
+    <string name="CallText">Sizi şu süre sonunda arayacağız:</string>
+    <string name="Calling">Sizi arıyoruz...</string>
+    <string name="Code">Kod</string>
+    <string name="WrongNumber">Numara yanlış mı?</string>
+
+    <!--signup view-->
+    <string name="YourName">Adınız</string>
+    <string name="RegisterText">Adınızı ve soyadınız belirleyin</string>
+    <!--<string name="RegisterText">Set up your name and picture</string>-->
+    <string name="FirstName">Adınız (gerekli)</string>
+    <string name="LastName">Soyadınız (isteğe bağlı)</string>
+    <string name="CancelRegistration">Kaydı iptal et</string>
+
+    <!--chats view-->
+    <string name="Chats">Sohbetler</string>
+    <string name="Search">Arama</string>
+    <string name="NewMessages">Yeni mesajlar</string>
+    <string name="Settings">Ayarlar</string>
+    <string name="Contacts">Kişiler</string>
+    <string name="NewGroup">Yeni Grup</string>
+    <string name="Yesterday">dün</string>
+    <string name="NoResult">Sonuç yok</string>
+    <string name="NoChats">Henüz sohbet yok...</string>
+    <string name="NoChatsHelp">Mesajlaşmaya başlamak için\nsağ üstteki mesaj simgesine dokunun\nveya Kişiler bölümüne geçin.</string>
+    <string name="WaitingForNetwork">Bağlantı bekleniyor...</string>
+    <string name="Connecting">Bağlanılıyor...</string>
+    <string name="Updating">Güncelleniyor...</string>
+    <string name="NewSecretChat">Yeni Gizli Sohbet</string>
+    <string name="AwaitingEncryption">%s kişisinin çevrimiçi olması bekleniyor...</string>
+    <string name="EncryptionRejected">Gizli sohbet iptal edildi</string>
+    <string name="EncryptionProcessing">Şifreleme anahtarları değiştiriliyor...</string>
+    <string name="EncryptedChatStartedOutgoing">%s gizli sohbetinize katıldı.</string>
+    <string name="EncryptedChatStartedIncoming">Gizli sohbete katıldınız.</string>
+    <string name="ClearHistory">Geçmişi Temizle</string>
+    <string name="DeleteChat">Siz ve Çık</string>
+    <string name="HiddenName">Gizli İsim</string>
+    <string name="SelectChat">Sohbet Seç</string>
+
+    <!--documents view-->
+    <string name="SelectFile">Dosya Seç</string>
+    <string name="FreeOfTotal">%1$s boş, %2$s toplam</string>
+    <string name="UnknownError">Bilinmeyen hata</string>
+    <string name="AccessError">Erişim hatası</string>
+    <string name="NoFiles">Henüz dosya yok...</string>
+    <string name="FileUploadLimit">Dosya boyutu %1$s değerinden büyük olmamalıdır</string>
+    <string name="NotMounted">Depolama bağlı değil</string>
+    <string name="UsbActive">Usb bağlantı etkin</string>
+    <string name="InternalStorage">Dahili Hafıza</string>
+    <string name="ExternalStorage">Harici Hafıza</string>
+    <string name="SystemRoot">Sistem Dizini</string>
+    <string name="SdCard">SD Kart</string>
+
+    <!--chat view-->
+    <string name="Invisible">görünmez</string>
+    <string name="Typing">yazıyor...</string>
+    <string name="Attach">Ekle</string>
+    <string name="IsTyping">yazıyor...</string>
+    <string name="AreTyping">yazıyorlar...</string>
+    <string name="AndMoreTyping">ve %d kişi daha</string>
+    <string name="GotAQuestion">Telegram ile ilgili\nsorunuz mu var?</string>
+    <string name="ChatTakePhoto">Fotoğraf çek</string>
+    <string name="ChatGallery">Galeri</string>
+    <string name="ChatLocation">Konum</string>
+    <string name="ChatVideo">Video</string>
+    <string name="ChatDocument">Belge</string>
+    <string name="NoMessages">Henüz mesaj gönderilmemiş...</string>
+    <string name="ViewPhoto">Fotoğrafı Görüntüle</string>
+    <string name="ViewLocation">Konumu Görüntüle</string>
+    <string name="ViewVideo">Videoyu Oynat</string>
+    <string name="ForwardedMessage">Mesajı ilet</string>
+    <string name="From">Kimden</string>
+    <string name="NoRecent">Yakın zamanda yok</string>
+    <string name="Members">üye</string>
+    <string name="Message">Mesaj</string>
+    <string name="TypeMessage">Mesajınızı girin</string>
+    <string name="DOWNLOAD">İndir</string>
+    <string name="Selected">Seçili:</string>
+    <string name="ShareMyContactInfo">KİŞİ BİLGİLERİMİ PAYLAŞ</string>
+    <string name="AddToContacts">KİŞİLERE EKLE</string>
+    <string name="EncryptedPlaceholderTitleIncoming">%s sizi bir gizli sohbete katılmaya davet etti.</string>
+    <string name="EncryptedPlaceholderTitleOutgoing">%s kişisini gizli sohbete katılmaya davet ettiniz.</string>
+    <string name="EncryptedDescriptionTitle">Gizli sohbetler:</string>
+    <string name="EncryptedDescription1">Uçtan uca şifreleme kullan</string>
+    <string name="EncryptedDescription2">Sunucularda iz bırakma</string>
+    <string name="EncryptedDescription3">Kendiliğinden imha zamanlayıcısı kur</string>
+    <string name="EncryptedDescription4">İletmeye izin verme</string>
+    <string name="OneNewMessage">%1$d yeni mesaj</string>
+    <string name="FewNewMessages">%1$d yeni mesaj</string>
+    <string name="YouWereKicked">Bu gruptan atıldınız</string>
+    <string name="YouLeft">Bu gruptan ayrıldınız</string>
+    <string name="DeleteThisGroup">Bu grubu sil</string>
+    <string name="SlideToCancel">İPTAL ETMEK İÇİN KAYDIRIN</string>
+
+    <!--notification-->
+    <string name="EncryptedChatRequested">Gizli sohbet istendi</string>
+    <string name="EncryptedChatAccepted">Gizli sohbet başladı</string>
+    <string name="MessageLifetimeChanged">%1$s kendiliğinden imha zamanlayıcısını %2$s olarak belirledi</string>
+    <string name="MessageLifetimeChangedOutgoing">Kendiliğinden imha zamanlayıcısını %1$s olarak belirlediniz</string>
+    <string name="MessageLifetimeRemoved">%1$s kendiliğinden imha zamanlayıcısını kapattı</string>
+    <string name="MessageLifetimeYouRemoved">Kendiliğinden imha zamanlayıcısını kapattınız</string>
+    <string name="MessageLifetime2s">2 saniye</string>
+    <string name="MessageLifetime5s">5 saniye</string>
+    <string name="MessageLifetime1m">1 dakika</string>
+    <string name="MessageLifetime1h">1 saat</string>
+    <string name="MessageLifetime1d">1 gün</string>
+    <string name="MessageLifetime1w">1 hafta</string>
+    <string name="YouHaveNewMessage">Yeni mesajınız var</string>
+    <string name="NotificationMessageText">%1$s: %2$s</string>
+    <string name="NotificationMessageNoText">%1$s size bir mesaj gönderdi</string>
+    <string name="NotificationMessagePhoto">%1$s size bir fotoğraf gönderdi</string>
+    <string name="NotificationMessageVideo">%1$s size bir video gönderdi</string>
+    <string name="NotificationMessageContact">%1$s sizinle bir kişi paylaştı</string>
+    <string name="NotificationMessageMap">%1$s size bir harita gönderdi</string>
+    <string name="NotificationMessageDocument">%1$s size bir belge gönderdi</string>
+    <string name="NotificationMessageAudio">%1$s size bir ses gönderdi</string>
+    <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
+    <string name="NotificationMessageGroupNoText">%1$s %2$s grubuna bir mesaj gönderdi</string>
+    <string name="NotificationMessageGroupPhoto">%1$s %2$s grubuna bir fotoğraf gönderdi</string>
+    <string name="NotificationMessageGroupVideo">%1$s %2$s grubuna bir video gönderdi</string>
+    <string name="NotificationMessageGroupContact">%1$s %2$s grubunda bir kişi paylaştı</string>
+    <string name="NotificationMessageGroupMap">%1$s %2$s grubuna bir harita gönderdi</string>
+    <string name="NotificationMessageGroupDocument">%1$s %2$s grubuna bir belge gönderdi</string>
+    <string name="NotificationMessageGroupAudio">%1$s %2$s grubuna bir ses gönderdi</string>
+    <string name="NotificationInvitedToGroup">%1$s sizi %2$s grubuna davet etti</string>
+    <string name="NotificationEditedGroupName">%1$s grubun adını %2$s olarak değiştirdi</string>
+    <string name="NotificationEditedGroupPhoto">%1$s grubun fotoğrafını %2$s olarak değiştirdi</string>
+    <string name="NotificationGroupAddMember">%1$s %3$s kişisini %2$s grubuna davet etti</string>
+    <string name="NotificationGroupKickMember">%1$s %3$s kişisini %2$s grubundan attı</string>
+    <string name="NotificationGroupKickYou">%1$s sizi %2$s grubundan attı</string>
+    <string name="NotificationGroupLeftMember">%1$s %2$s grubundan ayrıldı</string>
+    <string name="NotificationContactJoined">%1$s Telegram\'a katıldı!</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nHesabınıza %2$s tarihinde yeni bir cihazdan bağlanıldığını algıladık\n\nCihaz: %3$s\nKonum: %4$s\n\nBu siz değilseniz, Ayarlar - Diğer tüm oturumları kapat seçeneğini kullanabilirsiniz.\n\nTeşekkürler,\nTelegram Ekibi</string>
+    <string name="NotificationContactNewPhoto">%1$s profil fotoğrafını güncelledi</string>
+
+    <!--contacts view-->
+    <string name="SelectContact">Kişi Seç</string>
+    <string name="NoContacts">Henüz kişi yok</string>
+    <string name="InviteText">Hey, haydi Telegram\'a geçelim: http://telegram.org/dl2</string>
+    <string name="TodayAt">bugün şu zamanda</string>
+    <string name="YesterdayAt">dün şu zamanda</string>
+    <string name="OtherAt">şu zamanda</string>
+    <string name="Online">çevrimiçi</string>
+    <string name="Offline">çevrimdışı</string>
+    <string name="LastSeen">son görülme</string>
+    <string name="LastSeenDate">son görülme</string>
+    <string name="InviteFriends">Arkadaşlarınızı Davet Edin</string>
+
+    <!--group create view-->
+    <string name="SendMessageTo">Kişisine mesaj gönderin...</string>
+    <string name="EnterGroupNamePlaceholder">Grup adını girin</string>
+    <string name="MEMBER">ÜYE</string>
+    <string name="GroupName">Grup adı</string>
+    <string name="MEMBERS">ÜYELER</string>
+    <string name="AllContacts">TÜM KİŞİLER</string>
+
+    <!--group info view-->
+    <string name="EnterGroupNameTitle">GRUP ADINI GİRİN</string>
+    <string name="SharedMedia">Paylaşılan İçerik</string>
+    <string name="GroupInfo">Grup Bilgisi</string>
+    <string name="SHAREDMEDIA">PAYLAŞILAN İÇERİK</string>
+    <string name="SETTINGS">AYARLAR</string>
+    <string name="AddMember">Üye ekle</string>
+    <string name="DeleteAndExit">Sil ve gruptan ayrıl</string>
+    <string name="Notifications">Bildirimler</string>
+    <string name="KickFromGroup">Gruptan at</string>
+
+    <!--contact info view-->
+    <string name="ShareContact">Paylaş</string>
+    <string name="AddContact">Ekle</string>
+    <string name="BlockContact">Engelle</string>
+    <string name="EditContact">Düzenle</string>
+    <string name="DeleteContact">Sil</string>
+    <string name="PhoneHome">EV</string>
+    <string name="PhoneMobile">CEP TELEFONU</string>
+    <string name="PhoneWork">İŞ</string>
+    <string name="PhoneOther">DİĞER</string>
+    <string name="PhoneMain">ANA</string>
+    <string name="ContactInfo">Kişi Bilgisi</string>
+    <string name="PHONE">TELEFON</string>
+    <string name="StartEncryptedChat">Gizli Sohbet Başlat</string>
+    <string name="CreateEncryptedChatError">Bir hata oluştu.</string>
+    <string name="CreateEncryptedChatOutdatedError">%1$s kişisi ile gizli sohbet başlatılamadı.\n\n%2$s kişisi Telegram\'ın eski bir sürümünü kullanıyor ve önce güncellemesi gerek.</string>
+    <string name="SecretTitle">Gizli Sohbet</string>
+    <string name="EncryptionKey">Şifreleme Anahtarı</string>
+    <string name="MessageLifetime">Kendiliğinden İmha Zamanlayıcısı</string>
+    <string name="ShortMessageLifetimeForever">Kapalı</string>
+    <string name="ShortMessageLifetime2s">2s</string>
+    <string name="ShortMessageLifetime5s">5s</string>
+    <string name="ShortMessageLifetime1m">1d</string>
+    <string name="ShortMessageLifetime1h">1sa</string>
+    <string name="ShortMessageLifetime1d">1g</string>
+    <string name="ShortMessageLifetime1w">1h</string>
+    <string name="EncryptionKeyDescription">Bu resim <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> ile yapılan bu gizli konuşmanın şifreleme anahtarının bir görselleştirmesidir.<![CDATA[<br><br>]]>Eğer resim <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> kişisinin telefonunda da tamamen aynı görünüyorsa, sohbetiniz %%200 güvenli demektir.<![CDATA[<br><br>]]>Daha fazla bilgi için telegram.org</string>
+
+    <!--settings view-->
+    <string name="ResetNotificationsText">Tüm bildirim ayarlarını sıfırla</string>
+    <string name="TextSize">Mesajların Yazı Boyutu</string>
+    <string name="AskAQuestion">Soru Sorun</string>
+    <string name="EnableAnimations">Animasyonları Etkinleştir</string>
+    <string name="Unblock">Engeli kaldır</string>
+    <string name="UnblockText">Engeli kaldırmak için kullanıcıya dokunun ve bekleyin.</string>
+    <string name="NoBlocked">Henüz engelli kullanıcı yok</string>
+    <string name="YourPhoneNumber">TELEFON NUMARANIZ</string>
+    <string name="MessageNotifications">MESAJ BİLDİRİMLERİ</string>
+    <string name="Alert">Uyarı</string>
+    <string name="MessagePreview">Mesaj Önizlemesi</string>
+    <string name="GroupNotifications">GRUP BİLDİRİMLERİ</string>
+    <string name="Sound">Ses</string>
+    <string name="InAppNotifications">UYGULAMA İÇİ BİLDİRİMLER</string>
+    <string name="InAppSounds">Uygulama İçi Sesler</string>
+    <string name="InAppVibrate">Uygulama İçi Titreşim</string>
+    <string name="Vibrate">Titreşim</string>
+    <string name="InAppPreview">Uygulama İçi Önizleme</string>
+    <string name="Reset">Sıfırla</string>
+    <string name="ResetAllNotifications">Tüm Bildirimleri Sıfırla</string>
+    <string name="UndoAllCustom">Tüm kişi ve gruplarınız için yapılan bildirim ayarlarını geri alın</string>
+    <string name="NotificationsAndSounds">Bildirimler ve Sesler</string>
+    <string name="BlockedUsers">Engellenen Kullanıcılar</string>
+    <string name="SaveIncomingPhotos">Gelen Fotoğrafları Kaydet</string>
+    <string name="LogOut">Oturumu Kapat</string>
+    <string name="YourFirstNameAndLastName">ADINIZ VE SOYADINIZ</string>
+    <string name="NoSound">Ses yok</string>
+    <string name="Default">Varsayılan</string>
+    <string name="Support">DESTEK</string>
+    <string name="ChatBackground">Sohbet Arka Planı</string>
+    <string name="MessagesSettings">MESAJLAR</string>
+    <string name="SendByEnter">Giriş (Yeni satır) Tuşu ile Gönder</string>
+    <string name="TerminateAllSessions">Diğer tüm oturumları kapat</string>
+    <string name="AutomaticPhotoDownload">FOTOĞRAFLARI OTOMATİK İNDİR</string>
+    <string name="AutomaticPhotoDownloadGroups">Gruplar</string>
+    <string name="AutomaticPhotoDownloadPrivateChats">Kişisel Sohbetler</string>
+    <string name="Events">OLAYLAR</string>
+    <string name="ContactJoined">Kişi Telegram\'a Katıldığında</string>
+
+    <!--media view-->
+    <string name="NoMedia">Henüz paylaşılan içerik yok</string>
+    <string name="CancelDownload">İndirmeyi İptal Et</string>
+
+    <!--map view-->
+    <string name="MyLocation">Konumum</string>
+    <string name="Map">Harita</string>
+    <string name="Satellite">Uydu</string>
+    <string name="Hybrid">Hibrit (Uydu + Harita)</string>
+    <string name="MetersAway">m uzak</string>
+    <string name="KMetersAway">km uzak</string>
+    <string name="SendLocation">Konumu Gönder</string>
+    <string name="ShareLocation">Konumu Paylaş</string>
+
+    <!--photo gallery view-->
+    <string name="ShowAllMedia">Tüm içeriği göster</string>
+    <string name="SaveToGallery">Galeriye kaydet</string>
+    <string name="Of">/</string>
+    <string name="Gallery">Galeri</string>
+
+    <!--button titles-->
+    <string name="Next">İleri</string>
+    <string name="Back">Geri</string>
+    <string name="Done">Bitti</string>
+    <string name="Open">Aç</string>
+    <string name="Cancel">İptal</string>
+    <string name="Add">Ekle</string>
+    <string name="Edit">Düzenle</string>
+    <string name="Send">Gönder</string>
+    <string name="Call">Ara</string>
+    <string name="Copy">Kopyala</string>
+    <string name="Delete">Sil</string>
+    <string name="Forward">İlet</string>
+    <string name="Retry">Yeniden dene</string>
+    <string name="FromCamera">Kameradan</string>
+    <string name="FromGalley">Galeriden</string>
+    <string name="DeletePhoto">Fotoğrafı sil</string>
+    <string name="OpenPhoto">Fotoğrafı aç</string>
+    <string name="Set">Ayarla</string>
+    <string name="OK">Tamam</string>
+
+    <!--messages-->
+    <string name="ActionKickUser">un1 un2 kişisini attı</string>
+    <string name="ActionLeftUser">un1 gruptan ayrıldı</string>
+    <string name="ActionAddUser">un1 un2 kişisini ekledi</string>
+    <string name="ActionRemovedPhoto">un1 grup fotoğrafını sildi</string>
+    <string name="ActionChangedPhoto">un1 grup fotoğrafını değiştirdi</string>
+    <string name="ActionChangedTitle">un1 grup adını un2 olarak değiştirdi</string>
+    <string name="ActionCreateGroup">un1 grubu oluşturdu</string>
+    <string name="ActionYouKickUser">un2 kişisini attınız</string>
+    <string name="ActionYouLeftUser">Gruptan ayrıldınız</string>
+    <string name="ActionYouAddUser">un2 kişisini eklediniz</string>
+    <string name="ActionYouRemovedPhoto">Grup fotoğrafını sildiniz</string>
+    <string name="ActionYouChangedPhoto">Grup fotoğrafını değiştirdiniz</string>
+    <string name="ActionYouChangedTitle">Grup adını un2 olarak değiştirdiniz</string>
+    <string name="ActionYouCreateGroup">Grubu oluşturdunuz</string>
+    <string name="ActionKickUserYou">un1 sizi attı</string>
+    <string name="ActionAddUserYou">un1 sizi ekledi</string>
+    <string name="UnsuppotedMedia">Bu mesaj Telegram sürümünüz tarafından desteklenmiyor.</string>
+    <string name="AttachPhoto">Fotoğraf</string>
+    <string name="AttachVideo">Video</string>
+    <string name="AttachLocation">Konum</string>
+    <string name="AttachContact">Kişi</string>
+    <string name="AttachDocument">Belge</string>
+    <string name="AttachAudio">Ses</string>
+    <string name="FromYou">Siz</string>
+
+    <!--Alert messages-->
+    <string name="InvalidPhoneNumber">Geçersiz telefon numarası</string>
+    <string name="CodeExpired">Kodun süresi doldu, lütfen tekrar oturum açın</string>
+    <string name="FloodWait">Çok sayıda deneme, lütfen daha sonra tekrar deneyin</string>
+    <string name="InvalidCode">Geçersiz kod</string>
+    <string name="InvalidFirstName">Geçersiz ad</string>
+    <string name="InvalidLastName">Geçersiz soyad</string>
+    <string name="Loading">Yükleniyor...</string>
+    <string name="NoPlayerInstalled">Video oynatıcınız yok lütfen devam etmek için bir video oynatıcı yükleyin</string>
+    <string name="NoHandleAppInstalled">\'%1$s\' dosya türünü açabilecek bir uygulamanız yok, lütfen devam etmek için bir tane yükleyin</string>
+    <string name="InviteUser">Bu kullanıcı henüz Telegram kullanmıyor, davetiye gönderilsin mi?</string>
+    <string name="AreYouSure">Emin misiniz?</string>
+    <string name="AddContactQ">Kişiyi ekle?</string>
+    <string name="AddToTheGroup">%1$s kişisini gruba ekle?</string>
+    <string name="ForwardMessagesTo">Mesajları %1$s kişisine ilet?</string>
+    <string name="DeleteChatQuestion">Bu sohbeti sil?</string>
+
+    <!--Intro view-->
+    <string name="Page1Title">Telegram</string>
+    <string name="Page2Title">Hızlı</string>
+    <string name="Page3Title">Ücretsiz</string>
+    <string name="Page4Title">Güvenli</string>
+    <string name="Page5Title">Güçlü</string>
+    <string name="Page6Title">Bulut Tabanlı</string>
+    <string name="Page7Title">Kişisel</string>
+    <string name="Page1Message">Hızlı ve güvenli mesajlaşma dönemine hoş geldiniz</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> mesajlarınızı diğer<![CDATA[<br/>]]>uygulamalardan daha hızlı gönderir</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> her zaman ücretsizdir<![CDATA[<br/>]]>Reklam yok. Kayıt ücreti yok.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mesajlarınızı<![CDATA[<br/>]]>saldırganlara karşı korur</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]>\'da sohbetiniz ve<![CDATA[<br/>]]> içeriğiniz için sınır yoktur</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> mesajlarıza birden fazla<![CDATA[<br/>]]>cihazdan ulaşabilmenizi sağlar</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> mesajları güçlü bir şekilde<![CDATA[<br/>]]>şifrelenmiştir ve kendini imha edebilirler</string>
+    <string name="StartMessaging">Mesajlaşmaya Başlayın</string>
+
+    <!--Don't change this! Not for localization!-->
+    <string name="CacheTag">CACHE_TAG</string>
+</resources>
