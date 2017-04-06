@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- -->
+
+<resources>
+    <string name="AppName">Telegram</string>
+
+    <!--signin view-->
+    <string name="YourPhone">Seu número</string>
+    <string name="StartText">Confirme o código de seu país\ninforme seu número.</string>
+    <string name="ChooseCountry">Escolha um país</string>
+    <string name="WrongCountry">Código do país errado</string>
+
+    <!--code enter view-->
+    <string name="YourCode">Seu código</string>
+    <string name="SentSmsCode">Enviamos um SMS com o código de ativação para seu telefone</string>
+    <string name="CallText">Ligaremos para você em</string>
+    <string name="Calling">Ligando...</string>
+    <string name="Code">Código</string>
+    <string name="WrongNumber">Número errado?</string>
+
+    <!--signup view-->
+    <string name="YourName">Seu nome</string>
+    <string name="RegisterText">Informe seu nome e sobrenome</string>
+    <!--<string name="RegisterText">Set up your name and picture</string>-->
+    <string name="FirstName">Nome (requerido)</string>
+    <string name="LastName">Sobrenome (opcional)</string>
+    <string name="CancelRegistration">Cancelar registro</string>
+
+    <!--chats view-->
+    <string name="Chats">Conversas</string>
+    <string name="Search">Procura</string>
+    <string name="NewMessages">Novas mensagens</string>
+    <string name="Settings">Configurações</string>
+    <string name="Contacts">Contatos</string>
+    <string name="NewGroup">Novo grupo</string>
+    <string name="Yesterday">ontem</string>
+    <string name="NoResult">Sem resultados</string>
+    <string name="NoChats">Sem conversas...</string>
+    <string name="NoChatsHelp">Comece a escrever pressionando o botão Compor\nna parte superior direita\nou em Contatos.</string>
+    <string name="WaitingForNetwork">Aguardando conexão...</string>
+    <string name="Connecting">Conectando...</string>
+    <string name="Updating">Atualizando...</string>
+    <string name="NewSecretChat">Nova conversa secreta</string>
+    <string name="AwaitingEncryption">Aguardando por %s ficar online...</string>
+    <string name="EncryptionRejected">Conversa secreta cancelada</string>
+    <string name="EncryptionProcessing">Mudar chaves de criptografia...</string>
+    <string name="EncryptedChatStartedOutgoing">%s entrou na conversa secreta.</string>
+    <string name="EncryptedChatStartedIncoming">Você entrou em uma conversa secreta.</string>
+    <string name="ClearHistory">Limpar Histórico</string>
+    <string name="DeleteChat">Apagar e Sair</string>
+    <string name="HiddenName">Esconder Nome</string>
+    <string name="SelectChat">Selecione uma Conversa</string>
+
+    <!--documents view-->
+    <string name="SelectFile">Selecione arquivo</string>
+    <string name="FreeOfTotal">Livre %1$s de %2$s</string>
+    <string name="UnknownError">Erro desconhecido</string>
+    <string name="AccessError">Erro ao acessar</string>
+    <string name="NoFiles">Sem arquivos...</string>
+    <string name="FileUploadLimit">Arquivos não devem ser maiores que %1$s</string>
+    <string name="NotMounted">Sem armazenamento</string>
+    <string name="UsbActive">Tranferência USB ativa</string>
+    <string name="InternalStorage">Armazenamento interno</string>
+    <string name="ExternalStorage">Armazenamento externo</string>
+    <string name="SystemRoot">Administrador de sistema</string>
+    <string name="SdCard">Cartão SD</string>
+
+    <!--chat view-->
+    <string name="Invisible">invisível</string>
+    <string name="Typing">escrever...</string>
+    <string name="Attach">Anexo</string>
+    <string name="IsTyping">escrevendo...</string>
+    <string name="AreTyping">escrevendo...</string>
+    <string name="AndMoreTyping">e %d mais pessoas</string>
+    <string name="GotAQuestion">Tem alguma dúvida \nsobre Telegram?</string>
+    <string name="ChatTakePhoto">Foto</string>
+    <string name="ChatGallery">Galeria</string>
+    <string name="ChatLocation">Localização</string>
+    <string name="ChatVideo">Vídeo</string>
+    <string name="ChatDocument">Documento</string>
+    <string name="NoMessages">Sem mensagens...</string>
+    <string name="ViewPhoto">Ver foto</string>
+    <string name="ViewLocation">Ver localização</string>
+    <string name="ViewVideo">Tocar vídeo</string>
+    <string name="ForwardedMessage">Mensagens encaminhadas</string>
+    <string name="From">De</string>
+    <string name="NoRecent">Sem recentes</string>
+    <string name="Members">membros</string>
+    <string name="Message">Mensagens</string>
+    <string name="TypeMessage">Crie mensagens</string>
+    <string name="DOWNLOAD">Download</string>
+    <string name="Selected">Selecionado:</string>
+    <string name="ShareMyContactInfo">COMPARTILHE INFORMAÇÕES DOS MEUS CONTATOS</string>
+    <string name="AddToContacts">ADIOCIONE CONTATOS</string>
+    <string name="EncryptedPlaceholderTitleIncoming">%s convidou você para uma conversa secreta.</string>
+    <string name="EncryptedPlaceholderTitleOutgoing">Você convidou %s para uma conversa secreta.</string>
+    <string name="EncryptedDescriptionTitle">Conversas secretas:</string>
+    <string name="EncryptedDescription1">Use criptografia fim-a-fim</string>
+    <string name="EncryptedDescription2">Não deixei rastros em nossos servidores</string>
+    <string name="EncryptedDescription3">Tenha um temporizador de auto-destruição</string>
+    <string name="EncryptedDescription4">Não permitir encaminhamento</string>
+    <string name="OneNewMessage">%1$d nova mensagem</string>
+    <string name="FewNewMessages">%1$d novas mensagens</string>
+    <string name="YouWereKicked">Você foi retirado deste grupo</string>
+    <string name="YouLeft">Você saiu do deste grupo</string>
+    <string name="DeleteThisGroup">Apagar este Grupo</string>
+
+    <!--notification-->
+    <string name="EncryptedChatRequested">Pedidos de Conversas secretas</string>
+    <string name="EncryptedChatAccepted">Conversa secreta iniciada</string>
+    <string name="MessageLifetimeChanged">%1$s marque um temporizador de auto-destruição para %2$s</string>
+    <string name="MessageLifetimeChangedOutgoing">Você marcou um temporizador de auto-destruição para %1$s</string>
+    <string name="MessageLifetimeRemoved">%1$s temporizador de auto-destruição desabilitado</string>
+    <string name="MessageLifetimeYouRemoved">Você desabilitou temporizador de auto-destruição</string>
+    <string name="MessageLifetime2s">2 segundos</string>
+    <string name="MessageLifetime5s">5 segundos</string>
+    <string name="MessageLifetime1m">1 minuto</string>
+    <string name="MessageLifetime1h">1 hora</string>
+    <string name="MessageLifetime1d">1 dia</string>
+    <string name="MessageLifetime1w">1 semana</string>
+    <string name="YouHaveNewMessage">Você tem uma nova mensagem</string>
+    <string name="NotificationMessageText">%1$s: %2$s</string>
+    <string name="NotificationMessageNoText">%1$s mandou uma mensagem</string>
+    <string name="NotificationMessagePhoto">%1$s mandou uma foto</string>
+    <string name="NotificationMessageVideo">%1$s mandou um vídeo</string>
+    <string name="NotificationMessageContact">%1$s compartilhou um contato com você</string>
+    <string name="NotificationMessageMap">%1$s mandou um mapa</string>
+    <string name="NotificationMessageDocument">%1$s mandou um documento</string>
+    <string name="NotificationMessageAudio">%1$s mandou um áudio</string>
+    <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
+    <string name="NotificationMessageGroupNoText">%1$s mandou uma mensagem para o grupo %2$s</string>
+    <string name="NotificationMessageGroupPhoto">%1$s mandou uma foto para o grupo %2$s</string>
+    <string name="NotificationMessageGroupVideo">%1$s mandou um vídeo para o grupo %2$s</string>
+    <string name="NotificationMessageGroupContact">%1$s compartilhou contato no grupo %2$s</string>
+    <string name="NotificationMessageGroupMap">%1$s mandou um mapa para o grupo %2$s</string>
+    <string name="NotificationMessageGroupDocument">%1$s mandou um documento para o grupo %2$s</string>
+    <string name="NotificationMessageGroupAudio">%1$s mandou um áudio para o grupo %2$s</string>
+    <string name="NotificationInvitedToGroup">%1$s convidou você para o grupo %2$s</string>
+    <string name="NotificationEditedGroupName">%1$s Edite o nome do grupo %2$s</string>
+    <string name="NotificationEditedGroupPhoto">%1$s Edite a foto do grupo %2$s</string>
+    <string name="NotificationGroupAddMember">%1$s convide %3$s para o grupo %2$s</string>
+    <string name="NotificationGroupKickMember">%1$s expulse %3$s do grupo %2$s</string>
+    <string name="NotificationGroupKickYou">%1$s expulsou você do grupo %2$s</string>
+    <string name="NotificationGroupLeftMember">%1$s saiu do grupo %2$s</string>
+    <string name="NotificationContactJoined">%1$s participe do Telegram!</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nDetectamos um novo login na sua conta de um novo dispositivo %2$s\n\nDispositivo: %3$s\nLocalização: %4$s\n\nSe não for você, vá em Configurações – Deletar todas as sessões.\n\nObrigado,\nEquipe Telegram</string>
+    <string name="NotificationContactNewPhoto">%1$s atualizou a foto do perfil</string>
+
+    <!--contacts view-->
+    <string name="SelectContact">Selecione Contatos</string>
+    <string name="NoContacts">Sem contatos</string>
+    <string name="InviteText">Olá vamos mudar para Telegram: http://telegram.org/dl2</string>
+    <string name="TodayAt">hoje às</string>
+    <string name="YesterdayAt">ontem às</string>
+    <string name="OtherAt">às</string>
+    <string name="Online">online</string>
+    <string name="Offline">offline</string>
+    <string name="LastSeen">visto pela última vez</string>
+    <string name="LastSeenDate">visto pela última vez</string>
+    <string name="InviteFriends">Convidar amigos!</string>
+
+    <!--group create view-->
+    <string name="SendMessageTo">Enviar mensagens para...</string>
+    <string name="EnterGroupNamePlaceholder">Nome do grupo</string>
+    <string name="MEMBER">MEMBRO</string>
+    <string name="GroupName">Nome do Grupo</string>
+    <string name="MEMBERS">MEMBROS</string>
+    <string name="AllContacts">TODOS OS CONTATOS</string>
+
+    <!--group info view-->
+    <string name="EnterGroupNameTitle">NOME DO GRUPO</string>
+    <string name="SharedMedia">Mídia Compartilhada</string>
+    <string name="GroupInfo">Informações do groupo</string>
+    <string name="SHAREDMEDIA">MÍDIA COMPARTILHADA</string>
+    <string name="SETTINGS">CONFIGURAÇÕES</string>
+    <string name="AddMember">Adicionar membro</string>
+    <string name="DeleteAndExit">Apagar e sair do grupo</string>
+    <string name="Notifications">Notificações</string>
+    <string name="KickFromGroup">Expulsar do grupo</string>
+
+    <!--contact info view-->
+    <string name="ShareContact">Compartilhar</string>
+    <string name="AddContact">Adicionar</string>
+    <string name="BlockContact">Bloquear</string>
+    <string name="EditContact">Editar</string>
+    <string name="DeleteContact">Apagar</string>
+    <string name="PhoneHome">CASA</string>
+    <string name="PhoneMobile">CELULAR</string>
+    <string name="PhoneWork">TRABALHO</string>
+    <string name="PhoneOther">OUTRO</string>
+    <string name="PhoneMain">PRINCIPAL</string>
+    <string name="ContactInfo">Informação de Contato</string>
+    <string name="PHONE">TELEFONE</string>
+    <string name="StartEncryptedChat">Começar uma Conversa Secreta</string>
+    <string name="CreateEncryptedChatError">Ocorreu um erro.</string>
+    <string name="CreateEncryptedChatOutdatedError">Não foi possível criar uma conversa com %1$s.\n\n%2$s está usando uma versão antiga do Telegram é necessário atulizar primeiro.</string>
+    <string name="SecretTitle">Conversa Secreta</string>
+    <string name="EncryptionKey">Chaves de Criptografia</string>
+    <string name="MessageLifetime">Temporizador de Auto-Destruição</string>
+    <string name="ShortMessageLifetimeForever">Desligar</string>
+    <string name="ShortMessageLifetime2s">2s</string>
+    <string name="ShortMessageLifetime5s">5s</string>
+    <string name="ShortMessageLifetime1m">1m</string>
+    <string name="ShortMessageLifetime1h">1h</string>
+    <string name="ShortMessageLifetime1d">1d</string>
+    <string name="ShortMessageLifetime1w">1s</string>
+    <string name="EncryptionKeyDescription">Esta imagem é uma visualização da chave de criptografia para esta conversa secreta com<![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Se esta imagem se parece com a mesma em<![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> telefone, sua conversa está 200%% segura.<![CDATA[<br><br>]]>Aprenda mais em telegram.org</string>
+
+    <!--settings view-->
+    <string name="ResetNotificationsText">Resetar todas as configurações de notificação para o padrão</string>
+    <string name="TextSize">Tamanho da Mensagem de texto</string>
+    <string name="AskAQuestion">Faça uma Pergunta</string>
+    <string name="EnableAnimations">Habilitar animações</string>
+    <string name="Unblock">Desbloquear</string>
+    <string name="UnblockText">Toque e segure em um usuário para desbloquear.</string>
+    <string name="NoBlocked">Sem usuários bloqueados</string>
+    <string name="YourPhoneNumber">SEU NÚMERO</string>
+    <string name="MessageNotifications">NOTIFICAÇÕES DE MENSAGENS</string>
+    <string name="Alert">Alerta</string>
+    <string name="MessagePreview">Pré visualização de Mensagem</string>
+    <string name="GroupNotifications">NOTIFICAÇÃO DE GROUPOS</string>
+    <string name="Sound">Som</string>
+    <string name="InAppNotifications">NOTIFICAÇÕES DO APP</string>
+    <string name="InAppSounds">Som no app</string>
+    <string name="InAppVibrate">Vibrar no app</string>
+    <string name="Vibrate">Vibrar</string>
+    <string name="InAppPreview">Pré visualização no app</string>
+    <string name="Reset">RESETAR</string>
+    <string name="ResetAllNotifications">Resetar Todas as notificações</string>
+    <string name="UndoAllCustom">Desfazer todas as configurações de notificação personalizada para todos os seus contatos e grupos</string>
+    <string name="NotificationsAndSounds">Notificações e Sons</string>
+    <string name="BlockedUsers">Usuários Bloqueados</string>
+    <string name="SaveIncomingPhotos">Salvar fotos</string>
+    <string name="LogOut">Sair</string>
+    <string name="YourFirstNameAndLastName">NOME E SOBRENOME</string>
+    <string name="NoSound">Sem som</string>
+    <string name="Default">Padrão</string>
+    <string name="Support">SUPORTE</string>
+    <string name="ChatBackground">Papel de parede</string>
+    <string name="MessagesSettings">MENSAGEM</string>
+    <string name="SendByEnter">Envio com Enter</string>
+    <string name="TerminateAllSessions">Finalizar Todas as Outras Sessões</string>
+    <string name="AutomaticPhotoDownload">DOWNLOAD AUTOMATICO DE FOTO</string>
+    <string name="AutomaticPhotoDownloadGroups">Groupos</string>
+    <string name="AutomaticPhotoDownloadPrivateChats">Conversas Privadas</string>
+    <string name="Events">EVENTOS</string>
+    <string name="ContactJoined">Contato entro para Telegram</string>
+
+    <!--media view-->
+    <string name="NoMedia">Sem mídia compartilhada</string>
+    <string name="CancelDownload">Cancelar Download</string>
+
+    <!--map view-->
+    <string name="MyLocation">Minha Localização</string>
+    <string name="Map">Mapa</string>
+    <string name="Satellite">Satélite</string>
+    <string name="Hybrid">Híbrido</string>
+    <string name="MetersAway">m distante</string>
+    <string name="KMetersAway">km distante</string>
+    <string name="SendLocation">Manda Localização</string>
+    <string name="ShareLocation">Compartilhar Localização</string>
+
+    <!--photo gallery view-->
+    <string name="ShowAllMedia">Exibir todas as mídias</string>
+    <string name="SaveToGallery">Salvar em Galeria</string>
+    <string name="Of">de</string>
+    <string name="Gallery">Galeria</string>
+
+    <!--button titles-->
+    <string name="Next">Próximo</string>
+    <string name="Back">Voltar</string>
+    <string name="Done">Feito</string>
+    <string name="Open">Abrir</string>
+    <string name="Cancel">Cancelar</string>
+    <string name="Add">Adicionar</string>
+    <string name="Edit">Editar</string>
+    <string name="Send">Enviar</string>
+    <string name="Call">Ligar</string>
+    <string name="Copy">Copiar</string>
+    <string name="Delete">Apagar</string>
+    <string name="Forward">Avançar</string>
+    <string name="Retry">Tentar novamente</string>
+    <string name="FromCamera">Da camera</string>
+    <string name="FromGalley">Da galeria</string>
+    <string name="DeletePhoto">Apagar foto</string>
+    <string name="OpenPhoto">Abrir foto</string>
+    <string name="Set">Pronto</string>
+    <string name="OK">OK</string>
+
+    <!--messages-->
+    <string name="ActionKickUser">un1 expulsou un2</string>
+    <string name="ActionLeftUser">un1 saiu do grupo</string>
+    <string name="ActionAddUser">un1 adicionado un2</string>
+    <string name="ActionRemovedPhoto">un1 removeu foto do grupo</string>
+    <string name="ActionChangedPhoto">un1 trocou foto do grupo</string>
+    <string name="ActionChangedTitle">un1 trocou o nome do grupo para un2</string>
+    <string name="ActionCreateGroup">un1 criou o grupo</string>
+    <string name="ActionYouKickUser">Você expulsou un2</string>
+    <string name="ActionYouLeftUser">Você saiu do grupo</string>
+    <string name="ActionYouAddUser">Você adicionou un2</string>
+    <string name="ActionYouRemovedPhoto">Você removeu foto do grupo</string>
+    <string name="ActionYouChangedPhoto">Você mudou foto do grupo</string>
+    <string name="ActionYouChangedTitle">Você mudou o nome do grupo para un2</string>
+    <string name="ActionYouCreateGroup">Você criou o grupo</string>
+    <string name="ActionKickUserYou">un1 expulsou você</string>
+    <string name="ActionAddUserYou">un1 adicionou você</string>
+    <string name="UnsuppotedMedia">Esta mensagem não é suportada nesta versão do Telegram.</string>
+    <string name="AttachPhoto">Foto</string>
+    <string name="AttachVideo">Vídeo</string>
+    <string name="AttachLocation">Localização</string>
+    <string name="AttachContact">Contato</string>
+    <string name="AttachDocument">Documento</string>
+    <string name="AttachAudio">Áudio</string>
+    <string name="FromYou">Você</string>
+
+    <!--Alert messages-->
+    <string name="InvalidPhoneNumber">Número inválido</string>
+    <string name="CodeExpired">Código expirou, por favor faça login novamente!</string>
+    <string name="FloodWait">Tentativas excedidas, por favor, tente novamente mais tarde</string>
+    <string name="InvalidCode">Código inválido</string>
+    <string name="InvalidFirstName">Nome inválido</string>
+    <string name="InvalidLastName">Sobrenome inválido</string>
+    <string name="Loading">Carregando...</string>
+    <string name="NoPlayerInstalled">Você não tem um player de vídeo, instale um para continuar</string>
+    <string name="NoHandleAppInstalled">Você não tem qualquer aplicação que pode lidar com o tipo de mime \ '% 1 $ s \', instale um para continuar</string>
+    <string name="InviteUser">Este usuário não tem Telegram ainda, enviar um convite?</string>
+    <string name="AreYouSure">Tem certeza?</string>
+    <string name="AddContactQ">Adicionar contato?</string>
+    <string name="AddToTheGroup">Adiconar %1$s para o grupo?</string>
+    <string name="ForwardMessagesTo">Encaminhar mensagens para% 1 $ s?</string>
+    <string name="DeleteChatQuestion">Apagar esta Conversa?</string>
+
+    <!--Intro view-->
+    <string name="Page1Title">Telegram</string>
+    <string name="Page2Title">Rápido</string>
+    <string name="Page3Title">Grátis</string>
+    <string name="Page4Title">Seguro</string>
+    <string name="Page5Title">Poderoso</string>
+    <string name="Page6Title">Baseado em Nuvem</string>
+    <string name="Page7Title">Privado</string>
+    <string name="Page1Message">Bem-vindo à era das mensagens rápidas e seguras</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> entrega mensagens mais rapidamente do que<![CDATA[<br/>]]>qualquer outra aplicação</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> é livre para sempre. Livre de anúncios.<![CDATA[<br/>]]>Não há taxas de inscrição</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mantém suas mensagens seguras<![CDATA[<br/>]]>contra ataques de hackers</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> não tem limites para o tamanho de<![CDATA[<br/>]]>para suas mídias e conversas</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> permite-lhe acessar às suas mensagens<![CDATA[<br/>]]>de vários dispositivos</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> mensagens são fortemente criptografadas<![CDATA[<br/>]]>e podem se auto-destruir</string>
+    <string name="StartMessaging">Comece agora!</string>
+
+    <!--Don't change this! Not for localization!-->
+    <string name="CacheTag">CACHE_TAG</string>
+</resources>
