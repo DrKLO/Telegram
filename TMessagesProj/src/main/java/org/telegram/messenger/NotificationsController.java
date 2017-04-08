@@ -247,7 +247,7 @@ public class NotificationsController {
                             choosenSoundPath = preferences.getString("GlobalSoundPath", defaultPath);
                         }
                         needVibrate = preferences.getInt("vibrate_messages", 0);
-                        priority = preferences.getInt("priority_group", 1);
+                        priority = preferences.getInt("priority_messages", 1);
                         ledColor = preferences.getInt("MessagesLed", 0xff0000ff);
 
                         if (needVibrate == 4) {
@@ -1630,7 +1630,7 @@ public class NotificationsController {
                         choosenSoundPath = preferences.getString("GlobalSoundPath", defaultPath);
                     }
                     needVibrate = preferences.getInt("vibrate_messages", 0);
-                    priority = preferences.getInt("priority_group", 1);
+                    priority = preferences.getInt("priority_messages", 1);
                     ledColor = preferences.getInt("MessagesLed", 0xff0000ff);
                 }
                 if (custom) {
