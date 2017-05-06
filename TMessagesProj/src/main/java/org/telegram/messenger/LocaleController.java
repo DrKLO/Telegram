@@ -219,6 +219,14 @@ public class LocaleController {
         localeInfo.pathToFile = null;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
+        
+        ocaleInfo = new LocaleInfo();
+        localeInfo.name = "Čeština";
+        localeInfo.nameEnglish = "Czech";
+        localeInfo.shortName = "cs";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
 
         loadOtherLanguages();
 
