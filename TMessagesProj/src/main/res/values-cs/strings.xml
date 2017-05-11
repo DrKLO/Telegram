@@ -509,15 +509,15 @@
     <string name="TodayAt">v</string>
     <string name="YesterdayAt">včera v</string>
     <string name="Online">online</string>
-    <string name="LastSeen">naposledy viděn</string>
-    <string name="LastSeenDate">naposledy viděn</string>
-    <string name="LastSeenNow">naposledy viděn právě teď</string>
+    <string name="LastSeen">naposledy viděn(a)</string>
+    <string name="LastSeenDate">naposledy viděn(a)</string>
+    <string name="LastSeenNow">naposledy viděn(a) právě teď</string>
     <string name="InviteFriends">Pozvat Přátele</string>
     <string name="GlobalSearch">GLOBÁLNÍ VYHLEDÁVÁNÍ</string>
-    <string name="Lately">naposledy viděn nedávno</string>
-    <string name="WithinAWeek">naposledy viděn v posledním týdnu</string>
-    <string name="WithinAMonth">naposledy viděn v posledním měsíci</string>
-    <string name="ALongTimeAgo">naposledy viděn před dlouho dobou</string>
+    <string name="Lately">naposledy viděn(a) nedávno</string>
+    <string name="WithinAWeek">naposledy viděn(a) v posledním týdnu</string>
+    <string name="WithinAMonth">naposledy viděn(a) v posledním měsíci</string>
+    <string name="ALongTimeAgo">naposledy viděn(a) před dlouho dobou</string>
     <string name="NewMessageTitle">Nová zpráva</string>
     <!--group create view-->
     <string name="SendMessageTo">Přidat příjemce...</string>
@@ -1003,7 +1003,7 @@
     <!--privacy settings-->
     <string name="PrivacySettings">Soukromí a zabezpečení</string>
     <string name="PrivacyTitle">Soukromí</string>
-    <string name="PrivacyLastSeen">Naposledy Viděn</string>
+    <string name="PrivacyLastSeen">Naposledy Viděn(a)</string>
     <string name="LastSeenEverybody">Všichni</string>
     <string name="LastSeenContacts">Moje Kontakty</string>
     <string name="LastSeenNobody">Nikdo</string>
@@ -1186,7 +1186,7 @@
     <string name="AllowReadCall">Prosím, povol telegramu příjem hovorů, tak může automaticky vyplnit tvůj kód za tebe.</string>
     <string name="AllowFillNumber">Prosím, povol telegramu příjem hovorů a SMS, tak za tebe může vyplnit tvé telefonní číslo, zaslat kód a vyplnit ho.</string>
     <string name="AllowReadCallAndSms">Prosím, povol telegramu příjem hovorů a SMS, tak za tebe může automaticky vložit kód.</string>
-    <string name="UserRestricted">Bohužel, nejsi oprávněn toto udělat.</string>
+    <string name="UserRestricted">Bohužel, nejsi oprávněn(a) toto udělat.</string>
     <string name="YouBlockedUser">Bohužel, nemůžeš přidat tohoto uživatele nebo bota do skupiny, protože jsi je zablokoval. Nejdříve je musíš odblokovat.</string>
     <string name="JoinGroup">PŘIPOJIT KE SKUPINĚ</string>
     <!--permissions-->
@@ -1396,18 +1396,18 @@
     <string name="Points_few">%1$d</string>
     <string name="Points_many">%1$d</string>
     <string name="Points_other">%1$d</string>
-    <string name="LastSeenMinutes_zero">naposledy viděn před %1$d minutami</string>
-    <string name="LastSeenMinutes_one">naposledy viděn před %1$d minutou</string>
-    <string name="LastSeenMinutes_two">naposledy viděn před %1$d minutami</string>
-    <string name="LastSeenMinutes_few">naposledy viděn před %1$d minutami</string>
-    <string name="LastSeenMinutes_many">naposledy viděn před %1$d minutami</string>
-    <string name="LastSeenMinutes_other">naposledy viděn před %1$d minutami</string>
-    <string name="LastSeenHours_zero">naposledy viděn před %1$d hodinami</string>
-    <string name="LastSeenHours_one">naposledy viděn před %1$d hodinou</string>
-    <string name="LastSeenHours_two">naposledy viděn před %1$d hodinami</string>
-    <string name="LastSeenHours_few">naposledy viděn před %1$d hodinami</string>
-    <string name="LastSeenHours_many">naposledy viděn před %1$d hodinami</string>
-    <string name="LastSeenHours_other">naposledy viděn před %1$d hodinami</string>
+    <string name="LastSeenMinutes_zero">naposledy viděn(a) před %1$d minutami</string>
+    <string name="LastSeenMinutes_one">naposledy viděn(a) před %1$d minutou</string>
+    <string name="LastSeenMinutes_two">naposledy viděn(a) před %1$d minutami</string>
+    <string name="LastSeenMinutes_few">naposledy viděn(a) před %1$d minutami</string>
+    <string name="LastSeenMinutes_many">naposledy viděn(a) před %1$d minutami</string>
+    <string name="LastSeenMinutes_other">naposledy viděn(a) před %1$d minutami</string>
+    <string name="LastSeenHours_zero">naposledy viděn(a) před %1$d hodinami</string>
+    <string name="LastSeenHours_one">naposledy viděn(a) před %1$d hodinou</string>
+    <string name="LastSeenHours_two">naposledy viděn(a) před %1$d hodinami</string>
+    <string name="LastSeenHours_few">naposledy viděn(a) před %1$d hodinami</string>
+    <string name="LastSeenHours_many">naposledy viděn(a) před %1$d hodinami</string>
+    <string name="LastSeenHours_other">naposledy viděn(a) před %1$d hodinami</string>
     <string name="SecondsBold_zero"><![CDATA[<b>%1$d</b>]]> sekund</string>
     <string name="SecondsBold_one"><![CDATA[<b>%1$d</b>]]> sekunda</string>
     <string name="SecondsBold_two"><![CDATA[<b>%1$d</b>]]> sekundy</string>
