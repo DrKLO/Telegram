@@ -1497,11 +1497,11 @@
     <string name="formatterStats12H">dd. MMM yyyy, h:mm a</string>
     <string name="formatterStats24H">dd. MMM yyyy, HH:mm</string>
     <string name="formatterMonthYear">MMMM yyyy</string>
-    <string name="formatterMonth">dd MMM</string>
+    <string name="formatterMonth">dd. MMM</string>
     <string name="formatterYear">dd.MM.yy</string>
     <string name="formatterYearMax">dd.MM.yyyy</string>
-    <string name="chatDate">d MMMM</string>
-    <string name="chatFullDate">d MMMM, yyyy</string>
+    <string name="chatDate">d. MMMM</string>
+    <string name="chatFullDate">d. MMMM, yyyy</string>
     <string name="formatterWeek">EEE</string>
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
