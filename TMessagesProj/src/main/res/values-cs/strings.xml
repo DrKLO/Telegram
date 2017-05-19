@@ -1,7 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-
-
 <resources>
     <string name="AppName">Telegram</string>
     <string name="AppNameBeta">Telegram Beta</string>
@@ -74,13 +71,16 @@
     <string name="PaymentCardSavePaymentInformationInfoLine2">Pro toto je nutné zapnout *dvoufázovou verifikaci*.</string>
     <string name="PaymentTransactionReview">Přehled transakce</string>
     <string name="PaymentTransactionMessage">Opravdu chceš převést %1$s botu %2$s za %3$s?</string>
-    <string name="PaymentTransactionTotal">Celkem</string>
+    <string name="PaymentTransactionTotal">Celkem</string>   
+    <string name="PaymentWarning">Varování</string>
+    <string name="PaymentWarningText">Platby jdou přímo k vývojáři %1$s. Telegram nemůže poskytnout žádnou záruku, proto prosím postupuj dále na vlastní riziko. V případě problémů prosím kontaktuj vývojáře %2$s nebo svoji banku.</string>
     <string name="PaymentInvoice">FAKTURA</string>
     <string name="PaymentTestInvoice">TEST FAKTURY</string>
     <string name="PaymentCheckoutPay">ZAPLATIT %1$s</string>
     <string name="PaymentCheckoutMethod">Metoda platby</string>
     <string name="PaymentCheckoutName">Jméno</string>
     <string name="PaymentCheckoutPhoneNumber">Telefonní číslo</string>
+    <string name="PaymentCheckoutProvider">Platební služba</string>
     <string name="PaymentCheckoutEmail">Kontaktní adresa</string>
     <string name="PaymentCheckoutShippingMethod">Možnosti dopravy</string>
     <string name="PaymentReceipt">Účet</string>
@@ -129,6 +129,8 @@
     <string name="LinkPreview">Náhled odkazu</string>
     <string name="Draft">Draft</string>
     <string name="HistoryCleared">Historie byla vyčištěna</string>
+    <string name="HoldToAudio">Podrž pro nahrávání audia. Zmáčkni pro přepnutí na video.</string>
+    <string name="HoldToVideo">Podrž pro nahrávání videa. Zmáčkni pro přepnutí na audio.</string> 
     <string name="ArticleByAuthor">od %1$s</string>
     <string name="ArticleDateByAuthor">%1$s od %2$s</string>
     <string name="PreviewFeedback">Zanech zpětnou vazbu ohledně náhledu</string>
@@ -164,6 +166,7 @@
     <string name="ActionPinnedText">un1 přišpendlil(a) \"%1$s\"</string>
     <string name="ActionPinnedNoText">un1 přišpendlil(a) zprávu</string>
     <string name="ActionPinnedPhoto">un1 přišpendlil(a) obrázek</string>
+    <string name="ActionPinnedRound">un1 přišpendlil(a) videozprávu</string>
     <string name="ActionPinnedVideo">un1 přišpendlil(a) video</string>
     <string name="ActionPinnedFile">un1 přišpendlil(a) soubor</string>
     <string name="ActionPinnedSticker">un1 přišpendlil(a) samolepku</string>
@@ -265,6 +268,7 @@
     <string name="ChannelPhotoEditNotification">Kanál %1$s aktualizoval obrázek</string>
     <string name="ChannelMessageGroupNoText">%1$s poslal(a) zprávu do kanálu %2$s</string>
     <string name="ChannelMessageGroupPhoto">%1$s poslal(a) obrázek do kanálu %2$s</string>
+    <string name="ChannelMessageGroupRound">%1$s poslal(a) videozprávu do kanálu %2$s</string>
     <string name="ChannelMessageGroupVideo">%1$s poslal(a) video do kanálu %2$s</string>
     <string name="ChannelMessageGroupContact">%1$s sdílel(a) kontakt v kanálu %2$s</string>
     <string name="ChannelMessageGroupMap">%1$s poslal(a) polohu do kanálu %2$s</string>
@@ -277,6 +281,7 @@
     <string name="ChannelMessageNoText">%1$s poslal(a) zprávu</string>
     <string name="ChannelMessagePhoto">%1$s poslal(a) obrázek</string>
     <string name="ChannelMessageVideo">%1$s poslal(a) video</string>
+    <string name="ChannelMessageRound">%1$s poslal(a) videozprávu</string>
     <string name="ChannelMessageContact">%1$s poslal(a) kontakt</string>
     <string name="ChannelMessageMap">%1$s poslal(a) polohu</string>
     <string name="ChannelMessageDocument">%1$s poslal(a) soubor</string>
@@ -317,6 +322,7 @@
     <string name="SystemRoot">Kořenová složka systému</string>
     <string name="SdCard">SD Karta</string>
     <string name="Folder">Složka</string>
+    <string name="FontSize">Velikost písma</string>
     <string name="GalleryInfo">Pro zaslání obrázku bez komprese</string>
     <!--chat view-->
     <string name="Invisible">neviditelný</string>
@@ -324,6 +330,7 @@
     <string name="IsTyping">píše...</string>
     <string name="AreTyping">píší...</string>
     <string name="IsRecordingAudio">%1$s nahrává hlasovou zprávu...</string>
+    <string name="IsRecordingRound">%1$s nahrává videozprávu...</string>
     <string name="IsSendingAudio">%1$s posílá audio...</string>
     <string name="IsSendingPhoto">%1$s posílá obrázek...</string>
     <string name="InstantView">OKAMŽITÝ POHLED</string>
@@ -331,6 +338,7 @@
     <string name="IsSendingVideo">%1$s posílá video...</string>
     <string name="IsSendingFile">%1$s posílá soubor...</string>
     <string name="RecordingAudio">nahrává hlasovou zprávu...</string>
+    <string name="RecordingRound">nahrává videozprávu...</string>
     <string name="SendingAudio">posílá audio...</string>
     <string name="SendingPhoto">posílá obrázek...</string>
     <string name="SendingGame">hraje hru...</string>
@@ -363,7 +371,7 @@
     <string name="DeleteThisGroup">Smazat skupinu</string>
     <string name="DeleteThisChat">Smazat konverzaci</string>
     <string name="SlideToCancel">SLIDE PRO ZRUŠENÍ</string>
-    <string name="SaveToDownloads">Uložit do stahovaných</string>
+    <string name="SaveToDownloads">Uložit do stažených</string>
     <string name="SaveToGIFs">Uložit jako GIF</string>
     <string name="DeleteGif">Smazat GIF?</string>
     <string name="SaveToMusic">Uložit jako hudbu</string>
@@ -436,6 +444,7 @@
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageNoText">%1$s ti poslal(a) zprávu</string>
     <string name="NotificationMessagePhoto">%1$s ti poslal(a) obrázek</string>
+    <string name="NotificationMessageRound">%1$s ti poslal(a) videozprávu</string>
     <string name="NotificationMessageVideo">%1$s ti poslal(a) video</string>
     <string name="NotificationMessageContact">%1$s s tebou sdílel(a) kontakt</string>
     <string name="NotificationMessageMap">%1$s ti poslal(a) polohu</string>
@@ -449,6 +458,7 @@
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s poslal(a) zprávu do skupiny %2$s</string>
     <string name="NotificationMessageGroupPhoto">%1$s poslal(a) obrázek do skupiny %2$s</string>
+    <string name="NotificationMessageGroupRound">%1$s poslal(a) videozprávu do skupiny %2$s</string>
     <string name="NotificationMessageGroupVideo">%1$s poslal(a) video do skupiny %2$s</string>
     <string name="NotificationMessageGroupContact">%1$s sdílel(a) kontakt ve skupině %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s poslal(a) polohu do skupiny %2$s</string>
@@ -469,7 +479,7 @@
     <string name="NotificationGroupKickYou">%1$s tě odebral(a) ze skupiny %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s opustil(a) skupinu %2$s</string>
     <string name="NotificationContactJoined">%1$s nainstaloval(a) Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nZjistili jsme přihlášení k tvému účtu z nového zařízení z %2$s\n\nZařízení: %3$s\Poloha: %4$s\n\nPokud jsi to nebyl ty, může v Nastavení - Soukromí a Zabezpečení - Konekce ukončit tuto konekci.\n\nPokud si myslíš, že se někdo připojil(a) k tvému účtu proti tvé vůli, můžeš zapnout dvoufázovou verifikaci v nastavení Soukromí a Zabezpečení.\n\nS pozdravem,\nTým Telegramu</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nZjistili jsme přihlášení k tvému účtu z nového zařízení %2$s\n\nZařízení: %3$s\nPoloha: %4$s\n\nPokud jsi to nebyl ty, můžeš v Nastavení - Soukromí a Zabezpečení - Konekce ukončit tuto konekci.\n\nPokud si myslíš, že se někdo připojil(a) k tvému účtu proti tvé vůli, můžeš zapnout dvoufázovou verifikaci v nastavení Soukromí a Zabezpečení.\n\nS pozdravem,\nTým Telegramu</string>
     <string name="NotificationContactNewPhoto">%1$s aktualizoval(a) skupinový obrázek</string>
     <string name="NotificationInvitedToGroupByLink">%1$s tě připojil(a) do skupiny %2$s přes odkaz s pozvánkou</string>
     <string name="Reply">Odpovědět</string>
@@ -492,6 +502,8 @@
     <string name="NotificationActionPinnedTextChannel">%1$s přišpendlil(a) \"%2$s\"</string>
     <string name="NotificationActionPinnedNoTextChannel">%1$s přišpendlil(a) zprávu</string>
     <string name="NotificationActionPinnedPhotoChannel">%1$s přišpendlil(a) obrázek</string>
+    <string name="NotificationActionPinnedRound">%1$s přišpendlil(a) videozprávu do skupiny %2$s</string>
+    <string name="NotificationActionPinnedRoundChannel">%1$s přišpendlil(a) videozprávu</string>
     <string name="NotificationActionPinnedVideoChannel">%1$s přišpendlil(a) video</string>
     <string name="NotificationActionPinnedFileChannel">%1$s přišpendlil(a) soubor</string>
     <string name="NotificationActionPinnedStickerChannel">%1$s přišpendlil(a) samolepku</string>
@@ -682,12 +694,19 @@
     <string name="ColorYellow">Žlutá</string>
     <string name="ColorGreen">Zelená</string>
     <string name="ColorCyan">Tyrkysová</string>
+    <string name="ColorDark">Tmavá</string>
     <string name="ColorWhite">Bílá</string>
     <string name="ColorPink">Růžová</string>
     <string name="ColorViolet">Fialová</string>
     <string name="ColorOrange">Oranžová</string>
+    <string name="ColorSepia">Sépiová</string>
     <string name="NotificationsLedInfo">LED je malá blikající dioda, kterou některá zařízení používají na indikaci nových událostí.</string>
     <string name="PriorityInfo">Upozornění s vyšší prioritou budou na tvém telefonu fungovat, i když je v módu Nerušit.</string>
+    <string name="PrivacyClearPayment">Informace o platbě</string>
+    <string name="PrivacyClearShipping">Informace o dopravě</string>
+    <string name="PrivacyPayments">Platby</string>
+    <string name="PrivacyPaymentsClear">Vyčistit platby a informace o dopravě</string>
+    <string name="PrivacyPaymentsClearInfo">Můžeš vymazat své informace o dopravě a nařídit všem platebním službám, aby vymazaly uložené informace o tvých platebních kartách. Měj na paměti, že telegram informace o tvých kartách nikdy nikam neukládá.</string>    
     <string name="General">Obecné</string>
     <string name="NotificationsOn">Zapnuto</string>
     <string name="NotificationsOff">Vypnuto</string>
@@ -797,7 +816,7 @@
     <string name="CalculatingSize">Počítám...</string>
     <string name="LocalDocumentCache">Dokumenty</string>
     <string name="LocalPhotoCache">Obrázky</string>
-    <string name="LocalAudioCache">Hlasové zprávy</string>
+    <string name="LocalAudioCache">Audio/Video zprávy</string>
     <string name="LocalVideoCache">Videa</string>
     <string name="LocalMusicCache">Hudba</string>
     <string name="LocalGifCache">GIFy</string>
@@ -891,6 +910,7 @@
     <string name="Saturation">Saturace</string>
     <string name="Vignette">Vinětace</string>
     <string name="Shadows">Stíny</string>
+    <string name="ShareComment">Napsat komentář...</string>
     <string name="Grain">Zrnění</string>
     <string name="Sharpen">Ostrost</string>
     <string name="Fade">Ztmavení</string>
@@ -909,6 +929,9 @@
     <string name="AreYouSureDeletePhoto">Jsi si jistý, že chceš smazat tento obrázek?</string>
     <string name="AreYouSureDeleteVideo">Jsi si jistý, že chceš smazat toto video?</string>
     <string name="DiscardChanges">Zahodit změny?</string>
+    <string name="DiscardVideoMessageDescription">Opravdu chceš zastavit nahrávání a zahodit nahrávanou videozprávu?</string>
+    <string name="DiscardVideoMessageTitle">Zahodit videozprávu</string>
+    <string name="DiscardVoiceMessageAction">Zahodit</string>
     <string name="ClearSearch">Vyčistit historii hledání?</string>
     <string name="ClearButton">Vyčistit</string>
     <string name="PickerPhotos">Obrázky</string>
@@ -1072,6 +1095,7 @@
     <string name="Add">Přidat</string>
     <string name="Edit">Editovat</string>
     <string name="Send">Poslat</string>
+    <string name="SendAsFiles">Poslat jako soubory</string>
     <string name="Call">Volat</string>
     <string name="Copy">Kopírovat</string>
     <string name="Delete">Smazat</string>
@@ -1115,6 +1139,7 @@
     <string name="UnsupportedMedia">Tato zpráva není podporována tvojí verzi Telegramu. Pro zobrazení aktualizuj aplikaci na: https://telegram.org/update</string>
     <string name="AttachPhoto">Obrázek</string>
     <string name="AttachVideo">Video</string>
+    <string name="AttachRound">Videozpráva</string>
     <string name="AttachGif">GIF</string>
     <string name="AttachLocation">Poloha</string>
     <string name="AttachContact">Kontakt</string>
@@ -1436,7 +1461,7 @@
     <string name="ForwardedMessage_zero">%1$d přeposlaných zpráv</string>
     <string name="ForwardedMessage_one">Přeposlaná zpráva</string>
     <string name="ForwardedMessage_two">%1$d přeposlané zprávy</string>
-    <string name="ForwardedMessage_few">%1$d přeposlaných zpráv</string>
+    <string name="ForwardedMessage_few">%1$d přeposlané zprávy</string>
     <string name="ForwardedMessage_many">%1$d přeposlaných zpráv</string>
     <string name="ForwardedMessage_other">%1$d přeposlaných zpráv</string>
     <string name="ForwardedFile_zero">%1$d přeposlaných souborů</string>
@@ -1450,41 +1475,47 @@
     <string name="ForwardedPhoto_two">%1$d přeposlané obrázky</string>
     <string name="ForwardedPhoto_few">%1$d přeposlaných obrázků</string>
     <string name="ForwardedPhoto_many">%1$d přeposlaných obrázků</string>
-    <string name="ForwardedPhoto_other">%1$d přeposlaných obrázků</string>
+    <string name="ForwardedPhoto_other">%1$d přeposlaných obrázků</string>  
+    <string name="ForwardedRound_few">%1$d přeposlané videozprávy</string>
+    <string name="ForwardedRound_many">%1$d přeposlaných videozpráv</string>
+    <string name="ForwardedRound_one">Přeposlaná videozpráva</string>
+    <string name="ForwardedRound_other">%1$d přeposlaných videozpráv</string>
+    <string name="ForwardedRound_two">%1$d přeposlané videozprávy</string>
+    <string name="ForwardedRound_zero">%1$d přeposlaných videozpráv</string>  
     <string name="ForwardedVideo_zero">%1$d přeposlaných videí</string>
     <string name="ForwardedVideo_one">Přeposlané video</string>
     <string name="ForwardedVideo_two">%1$d přeposlané videa</string>
-    <string name="ForwardedVideo_few">%1$d přeposlaných videí</string>
+    <string name="ForwardedVideo_few">%1$d přeposlaná videa</string>
     <string name="ForwardedVideo_many">%1$d přeposlaných videí</string>
     <string name="ForwardedVideo_other">%1$d přeposlaných videí</string>
     <string name="ForwardedMusic_zero">%1$d přeposlaných písniček</string>
     <string name="ForwardedMusic_one">Přeposlaná písnička</string>
     <string name="ForwardedMusic_two">%1$d přeposlané písničky</string>
-    <string name="ForwardedMusic_few">%1$d přeposlaných písniček</string>
+    <string name="ForwardedMusic_few">%1$d přeposlané písničky</string>
     <string name="ForwardedMusic_many">%1$d přeposlaných písniček</string>
     <string name="ForwardedMusic_other">%1$d přeposlaných písniček</string>
     <string name="ForwardedAudio_zero">%1$d přeposlaných hlasových zpráv</string>
     <string name="ForwardedAudio_one">Přeposlaná hlasová zpráva</string>
     <string name="ForwardedAudio_two">%1$d přeposlané hlasové zprávy</string>
-    <string name="ForwardedAudio_few">%1$d přeposlaných hlasových zpráv</string>
+    <string name="ForwardedAudio_few">%1$d přeposlané hlasové zprávy</string>
     <string name="ForwardedAudio_many">%1$d přeposlaných hlasových zpráv</string>
     <string name="ForwardedAudio_other">%1$d přeposlaných hlasových zpráv</string>
     <string name="ForwardedLocation_zero">%1$d přeposlaných poloh</string>
     <string name="ForwardedLocation_one">Přeposlaná poloha</string>
     <string name="ForwardedLocation_two">%1$d přeposlané polohy</string>
-    <string name="ForwardedLocation_few">%1$d přeposlaných poloh</string>
+    <string name="ForwardedLocation_few">%1$d přeposlané polohy</string>
     <string name="ForwardedLocation_many">%1$d přeposlaných poloh</string>
     <string name="ForwardedLocation_other">%1$d přeposlaných poloh</string>
     <string name="ForwardedContact_zero">%1$d přeposlaných kontaktů</string>
     <string name="ForwardedContact_one">Přeposlaný kontakt</string>
     <string name="ForwardedContact_two">%1$d přeposlané kontakty</string>
-    <string name="ForwardedContact_few">%1$d přeposlaných kontaktů</string>
+    <string name="ForwardedContact_few">%1$d přeposlané kontakty</string>
     <string name="ForwardedContact_many">%1$d přeposlaných kontaktů</string>
     <string name="ForwardedContact_other">%1$d přeposlaných kontaktů</string>
     <string name="ForwardedSticker_zero">%1$d přeposlaných samolepek</string>
     <string name="ForwardedSticker_one">Přeposlaná samolepka</string>
     <string name="ForwardedSticker_two">%1$d přeposlané samolepky</string>
-    <string name="ForwardedSticker_few">%1$d přeposlaných samolepek</string>
+    <string name="ForwardedSticker_few">%1$d přeposlané samolepky</string>
     <string name="ForwardedSticker_many">%1$d přeposlaných samolepek</string>
     <string name="ForwardedSticker_other">%1$d přeposlaných samolepek</string>
     <string name="AndOther_zero">a %1$d dalších</string>
