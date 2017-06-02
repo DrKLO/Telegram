@@ -1163,7 +1163,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             emojiView = null;
         }
         allowStickers = value;
-        allowGifs = value2;
+        // always dissallow gifs
+        //allowGifs = value2;
+        allowGifs = false;
+
         setEmojiButtonImage();
     }
 

@@ -260,7 +260,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             if (type == 0) {
                 searchItem.getSearchField().setHint(LocaleController.getString("SearchImagesTitle", R.string.SearchImagesTitle));
             } else if (type == 1) {
-                searchItem.getSearchField().setHint(LocaleController.getString("SearchGifsTitle", R.string.SearchGifsTitle));
+                //searchItem.getSearchField().setHint(LocaleController.getString("SearchGifsTitle", R.string.SearchGifsTitle));
             }
         }
 
