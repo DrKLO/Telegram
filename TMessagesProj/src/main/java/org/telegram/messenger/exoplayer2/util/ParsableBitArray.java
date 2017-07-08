@@ -90,6 +90,16 @@ public final class ParsableBitArray {
   }
 
   /**
+   * Returns the current byte offset. Must only be called when the position is byte aligned.
+   *
+   * @throws IllegalStateException If the position isn't byte aligned.
+   */
+  public int getBytePosition() {
+    Assertions.checkState(bitOffset == 0);
+    return byteOffset;
+  }
+
+  /**
    * Sets the current bit offset.
    *
    * @param position The position to set.
@@ -175,6 +185,47 @@ public final class ParsableBitArray {
 
     assertValidOffset();
     return returnValue;
+  }
+
+  /**
+   * Aligns the position to the next byte boundary. Does nothing if the position is already aligned.
+   */
+  public void byteAlign() {
+    if (bitOffset == 0) {
+      return;
+    }
+    bitOffset = 0;
+    byteOffset++;
+    assertValidOffset();
+  }
+
+  /**
+   * Reads the next {@code length} bytes into {@code buffer}. Must only be called when the position
+   * is byte aligned.
+   *
+   * @see System#arraycopy(Object, int, Object, int, int)
+   * @param buffer The array into which the read data should be written.
+   * @param offset The offset in {@code buffer} at which the read data should be written.
+   * @param length The number of bytes to read.
+   * @throws IllegalStateException If the position isn't byte aligned.
+   */
+  public void readBytes(byte[] buffer, int offset, int length) {
+    Assertions.checkState(bitOffset == 0);
+    System.arraycopy(data, byteOffset, buffer, offset, length);
+    byteOffset += length;
+    assertValidOffset();
+  }
+
+  /**
+   * Skips the next {@code length} bytes. Must only be called when the position is byte aligned.
+   *
+   * @param length The number of bytes to read.
+   * @throws IllegalStateException If the position isn't byte aligned.
+   */
+  public void skipBytes(int length) {
+    Assertions.checkState(bitOffset == 0);
+    byteOffset += length;
+    assertValidOffset();
   }
 
   private void assertValidOffset() {

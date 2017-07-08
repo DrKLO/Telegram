@@ -19,6 +19,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.SystemClock;
 import org.telegram.messenger.exoplayer2.C;
+import org.telegram.messenger.exoplayer2.ExoPlayer;
 import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.Timeline;
 import org.telegram.messenger.exoplayer2.source.AdaptiveMediaSourceEventListener;
@@ -70,10 +71,10 @@ public final class SsMediaSource implements MediaSource,
   private final int minLoadableRetryCount;
   private final long livePresentationDelayMs;
   private final EventDispatcher eventDispatcher;
-  private final SsManifestParser manifestParser;
+  private final ParsingLoadable.Parser<? extends SsManifest> manifestParser;
   private final ArrayList<SsMediaPeriod> mediaPeriods;
 
-  private MediaSource.Listener sourceListener;
+  private Listener sourceListener;
   private DataSource manifestDataSource;
   private Loader manifestLoader;
   private LoaderErrorThrower manifestLoaderErrorThrower;
@@ -170,15 +171,17 @@ public final class SsMediaSource implements MediaSource,
    * @param eventListener A listener of events. May be null if delivery of events is not required.
    */
   public SsMediaSource(Uri manifestUri, DataSource.Factory manifestDataSourceFactory,
-      SsManifestParser manifestParser, SsChunkSource.Factory chunkSourceFactory,
-      int minLoadableRetryCount, long livePresentationDelayMs, Handler eventHandler,
+      ParsingLoadable.Parser<? extends SsManifest> manifestParser,
+      SsChunkSource.Factory chunkSourceFactory, int minLoadableRetryCount,
+      long livePresentationDelayMs, Handler eventHandler,
       AdaptiveMediaSourceEventListener eventListener) {
     this(null, manifestUri, manifestDataSourceFactory, manifestParser, chunkSourceFactory,
         minLoadableRetryCount, livePresentationDelayMs, eventHandler, eventListener);
   }
 
   private SsMediaSource(SsManifest manifest, Uri manifestUri,
-      DataSource.Factory manifestDataSourceFactory, SsManifestParser manifestParser,
+      DataSource.Factory manifestDataSourceFactory,
+      ParsingLoadable.Parser<? extends SsManifest> manifestParser,
       SsChunkSource.Factory chunkSourceFactory, int minLoadableRetryCount,
       long livePresentationDelayMs, Handler eventHandler,
       AdaptiveMediaSourceEventListener eventListener) {
@@ -199,7 +202,7 @@ public final class SsMediaSource implements MediaSource,
   // MediaSource implementation.
 
   @Override
-  public void prepareSource(MediaSource.Listener listener) {
+  public void prepareSource(ExoPlayer player, boolean isTopLevelSource, Listener listener) {
     sourceListener = listener;
     if (manifest != null) {
       manifestLoaderErrorThrower = new LoaderErrorThrower.Dummy();

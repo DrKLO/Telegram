@@ -177,7 +177,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
     private static final Pattern stmtVarPattern = Pattern.compile("var\\s");
     private static final Pattern stmtReturnPattern = Pattern.compile("return(?:\\s+|$)");
     private static final Pattern exprParensPattern = Pattern.compile("[()]");
-    private static final Pattern playerIdPattern = Pattern.compile(".*?-([a-zA-Z0-9_-]+)(?:/watch_as3|/html5player(?:-new)?|/base)?\\.([a-z]+)$");
+    private static final Pattern playerIdPattern = Pattern.compile(".*?-([a-zA-Z0-9_-]+)(?:/watch_as3|/html5player(?:-new)?|(?:/[a-z]{2}_[A-Z]{2})?/base)?\\.([a-z]+)$");
     private static final String exprName = "[a-zA-Z_$][a-zA-Z_$0-9]*";
 
     private abstract class function {
@@ -265,11 +265,20 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 //ignore
             }
 
-            matcher = Pattern.compile(String.format(Locale.US, "(%s)\\.([^(]+)(?:\\(+([^()]*)\\))?$", exprName)).matcher(expr);
+            matcher = Pattern.compile(String.format(Locale.US, "(%s)\\[(.+)\\]$", exprName)).matcher(expr);
+            if (matcher.find()) {
+                String val = matcher.group(1);
+                interpretExpression(matcher.group(2), localVars, allowRecursion - 1);
+                return;
+            }
+
+            matcher = Pattern.compile(String.format(Locale.US, "(%s)(?:\\.([^(]+)|\\[([^]]+)\\])\\s*(?:\\(+([^()]*)\\))?$", exprName)).matcher(expr);
             if (matcher.find()) {
                 String variable = matcher.group(1);
-                String member = matcher.group(2);
-                String arg_str = matcher.group(3);
+                String m1 = matcher.group(2);
+                String m2 = matcher.group(3);
+                String member = (TextUtils.isEmpty(m1) ? m2 : m1).replace("\"", "");
+                String arg_str = matcher.group(4);
                 if (localVars.get(variable) == null) {
                     extractObject(variable);
                 }
@@ -344,9 +353,10 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         }
 
         private HashMap<String, Object> extractObject(String objname) throws Exception {
+            String funcName =  "(?:[a-zA-Z$0-9]+|\"[a-zA-Z$0-9]+\"|'[a-zA-Z$0-9]+')";
             HashMap<String, Object> obj = new HashMap<>();
             //                                                                                         ?P<fields>
-            Matcher matcher = Pattern.compile(String.format(Locale.US, "(?:var\\s+)?%s\\s*=\\s*\\{\\s*(([a-zA-Z$0-9]+\\s*:\\s*function\\(.*?\\)\\s*\\{.*?\\}(?:,\\s*)?)*)\\}\\s*;", Pattern.quote(objname))).matcher(jsCode);
+            Matcher matcher = Pattern.compile(String.format(Locale.US, "(?:var\\s+)?%s\\s*=\\s*\\{\\s*((%s\\s*:\\s*function\\(.*?\\)\\s*\\{.*?\\}(?:,\\s*)?)*)\\}\\s*;", Pattern.quote(objname), funcName)).matcher(jsCode);
             String fields = null;
             while (matcher.find()) {
                 String code = matcher.group();
@@ -360,7 +370,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 break;
             }
             //                          ?P<key>                            ?P<args>     ?P<code>
-            matcher = Pattern.compile("([a-zA-Z$0-9]+)\\s*:\\s*function\\(([a-z,]+)\\)\\{([^}]+)\\}").matcher(fields);
+            matcher = Pattern.compile(String.format("(%s)\\s*:\\s*function\\(([a-z,]+)\\)\\{([^}]+)\\}", funcName)).matcher(fields);
             while (matcher.find()) {
                 String[] argnames = matcher.group(2).split(",");
                 buildFunction(argnames, matcher.group(3));

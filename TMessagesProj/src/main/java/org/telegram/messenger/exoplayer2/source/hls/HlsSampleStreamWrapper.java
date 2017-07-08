@@ -77,7 +77,6 @@ import java.util.LinkedList;
   private final HlsChunkSource chunkSource;
   private final Allocator allocator;
   private final Format muxedAudioFormat;
-  private final Format muxedCaptionFormat;
   private final int minLoadableRetryCount;
   private final Loader loader;
   private final EventDispatcher eventDispatcher;
@@ -112,23 +111,19 @@ import java.util.LinkedList;
    * @param chunkSource A {@link HlsChunkSource} from which chunks to load are obtained.
    * @param allocator An {@link Allocator} from which to obtain media buffer allocations.
    * @param positionUs The position from which to start loading media.
-   * @param muxedAudioFormat If HLS master playlist indicates that the stream contains muxed audio,
-   *     this is the audio {@link Format} as defined by the playlist.
-   * @param muxedCaptionFormat If HLS master playlist indicates that the stream contains muxed
-   *     captions, this is the audio {@link Format} as defined by the playlist.
+   * @param muxedAudioFormat Optional muxed audio {@link Format} as defined by the master playlist.
    * @param minLoadableRetryCount The minimum number of times that the source should retry a load
    *     before propagating an error.
    * @param eventDispatcher A dispatcher to notify of events.
    */
   public HlsSampleStreamWrapper(int trackType, Callback callback, HlsChunkSource chunkSource,
-      Allocator allocator, long positionUs, Format muxedAudioFormat, Format muxedCaptionFormat,
-      int minLoadableRetryCount, EventDispatcher eventDispatcher) {
+      Allocator allocator, long positionUs, Format muxedAudioFormat, int minLoadableRetryCount,
+      EventDispatcher eventDispatcher) {
     this.trackType = trackType;
     this.callback = callback;
     this.chunkSource = chunkSource;
     this.allocator = allocator;
     this.muxedAudioFormat = muxedAudioFormat;
-    this.muxedCaptionFormat = muxedCaptionFormat;
     this.minLoadableRetryCount = minLoadableRetryCount;
     this.eventDispatcher = eventDispatcher;
     loader = new Loader("Loader:HlsSampleStreamWrapper");
@@ -157,7 +152,7 @@ import java.util.LinkedList;
    * prepare.
    */
   public void prepareSingleTrack(Format format) {
-    track(0).format(format);
+    track(0, C.TRACK_TYPE_UNKNOWN).format(format);
     sampleQueuesBuilt = true;
     maybeFinishPrepare();
   }
@@ -183,6 +178,7 @@ import java.util.LinkedList;
       }
     }
     // Enable new tracks.
+    TrackSelection primaryTrackSelection = null;
     boolean selectedNewTracks = false;
     for (int i = 0; i < selections.length; i++) {
       if (streams[i] == null && selections[i] != null) {
@@ -190,6 +186,7 @@ import java.util.LinkedList;
         int group = trackGroups.indexOf(selection.getTrackGroup());
         setTrackGroupEnabledState(group, true);
         if (group == primaryTrackGroupIndex) {
+          primaryTrackSelection = selection;
           chunkSource.selectTracks(selection);
         }
         streams[i] = new HlsSampleStream(this, group);
@@ -204,6 +201,14 @@ import java.util.LinkedList;
       for (int i = 0; i < sampleQueueCount; i++) {
         if (!groupEnabledStates[i]) {
           sampleQueues.valueAt(i).disable();
+        }
+      }
+      if (primaryTrackSelection != null && !mediaChunks.isEmpty()) {
+        primaryTrackSelection.updateSelectedTrack(0);
+        int chunkIndex = chunkSource.getTrackGroup().indexOf(mediaChunks.getLast().trackFormat);
+        if (primaryTrackSelection.getSelectedIndexInTrackGroup() != chunkIndex) {
+          // The loaded preparation chunk does match the selection. We discard it.
+          seekTo(lastSeekPositionUs);
         }
       }
     }
@@ -266,21 +271,12 @@ import java.util.LinkedList;
     released = true;
   }
 
-  public long getLargestQueuedTimestampUs() {
-    long largestQueuedTimestampUs = Long.MIN_VALUE;
-    for (int i = 0; i < sampleQueues.size(); i++) {
-      largestQueuedTimestampUs = Math.max(largestQueuedTimestampUs,
-          sampleQueues.valueAt(i).getLargestQueuedTimestampUs());
-    }
-    return largestQueuedTimestampUs;
-  }
-
   public void setIsTimestampMaster(boolean isTimestampMaster) {
     chunkSource.setIsTimestampMaster(isTimestampMaster);
   }
 
-  public void onPlaylistLoadError(HlsUrl url, IOException error) {
-    chunkSource.onPlaylistLoadError(url, error);
+  public void onPlaylistBlacklisted(HlsUrl url, long blacklistMs) {
+    chunkSource.onPlaylistBlacklisted(url, blacklistMs);
   }
 
   // SampleStream implementation.
@@ -294,7 +290,8 @@ import java.util.LinkedList;
     chunkSource.maybeThrowError();
   }
 
-  /* package */ int readData(int group, FormatHolder formatHolder, DecoderInputBuffer buffer) {
+  /* package */ int readData(int group, FormatHolder formatHolder, DecoderInputBuffer buffer,
+      boolean requireFormat) {
     if (isPendingReset()) {
       return C.RESULT_NOTHING_READ;
     }
@@ -311,12 +308,17 @@ import java.util.LinkedList;
     }
     downstreamTrackFormat = trackFormat;
 
-    return sampleQueues.valueAt(group).readData(formatHolder, buffer, loadingFinished,
-        lastSeekPositionUs);
+    return sampleQueues.valueAt(group).readData(formatHolder, buffer, requireFormat,
+        loadingFinished, lastSeekPositionUs);
   }
 
-  /* package */ void skipToKeyframeBefore(int group, long timeUs) {
-    sampleQueues.valueAt(group).skipToKeyframeBefore(timeUs);
+  /* package */ void skipData(int group, long positionUs) {
+    DefaultTrackOutput sampleQueue = sampleQueues.valueAt(group);
+    if (loadingFinished && positionUs > sampleQueue.getLargestQueuedTimestampUs()) {
+      sampleQueue.skipAll();
+    } else {
+      sampleQueue.skipToKeyframeBefore(positionUs, true);
+    }
   }
 
   private boolean finishedReadingChunk(HlsMediaChunk chunk) {
@@ -466,7 +468,7 @@ import java.util.LinkedList;
   // ExtractorOutput implementation. Called by the loading thread.
 
   @Override
-  public DefaultTrackOutput track(int id) {
+  public DefaultTrackOutput track(int id, int type) {
     if (sampleQueues.indexOfKey(id) >= 0) {
       return sampleQueues.get(id);
     }
@@ -589,14 +591,8 @@ import java.util.LinkedList;
         trackGroups[i] = new TrackGroup(formats);
         primaryTrackGroupIndex = i;
       } else {
-        Format trackFormat = null;
-        if (primaryExtractorTrackType == PRIMARY_TYPE_VIDEO) {
-          if (MimeTypes.isAudio(sampleFormat.sampleMimeType)) {
-            trackFormat = muxedAudioFormat;
-          } else if (MimeTypes.APPLICATION_CEA608.equals(sampleFormat.sampleMimeType)) {
-            trackFormat = muxedCaptionFormat;
-          }
-        }
+        Format trackFormat = primaryExtractorTrackType == PRIMARY_TYPE_VIDEO
+            && MimeTypes.isAudio(sampleFormat.sampleMimeType) ? muxedAudioFormat : null;
         trackGroups[i] = new TrackGroup(deriveFormat(trackFormat, sampleFormat));
       }
     }

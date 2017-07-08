@@ -26,7 +26,6 @@ public final class PrivateCommand extends SpliceCommand {
 
   public final long ptsAdjustment;
   public final long identifier;
-
   public final byte[] commandBytes;
 
   private PrivateCommand(long identifier, byte[] commandBytes, long ptsAdjustment) {

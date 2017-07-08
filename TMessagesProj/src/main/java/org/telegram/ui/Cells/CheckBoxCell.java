@@ -79,6 +79,14 @@ public class CheckBoxCell extends FrameLayout {
         setWillNotDraw(!divider);
     }
 
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        textView.setAlpha(enabled ? 1.0f : 0.5f);
+        valueTextView.setAlpha(enabled ? 1.0f : 0.5f);
+        checkBox.setAlpha(enabled ? 1.0f : 0.5f);
+    }
+
     public void setChecked(boolean checked, boolean animated) {
         checkBox.setChecked(checked, animated);
     }

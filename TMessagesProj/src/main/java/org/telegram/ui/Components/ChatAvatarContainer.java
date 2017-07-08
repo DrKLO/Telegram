@@ -41,10 +41,7 @@ public class ChatAvatarContainer extends FrameLayout {
     private ImageView timeItem;
     private TimerDrawable timerDrawable;
     private ChatActivity parentFragment;
-    private TypingDotsDrawable typingDotsDrawable;
-    private RecordStatusDrawable recordStatusDrawable;
-    private SendingFileDrawable sendingFileDrawable;
-    private PlayingGameDrawable playingGameDrawable;
+    private StatusDrawable[] statusDrawables = new StatusDrawable[5];
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
 
     private int onlineCount = -1;
@@ -85,40 +82,42 @@ public class ChatAvatarContainer extends FrameLayout {
             });
         }
 
-        setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                TLRPC.User user = parentFragment.getCurrentUser();
-                TLRPC.Chat chat = parentFragment.getCurrentChat();
-                if (user != null) {
-                    Bundle args = new Bundle();
-                    args.putInt("user_id", user.id);
-                    if (timeItem != null) {
-                        args.putLong("dialog_id", parentFragment.getDialogId());
+        if (parentFragment != null) {
+            setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    TLRPC.User user = parentFragment.getCurrentUser();
+                    TLRPC.Chat chat = parentFragment.getCurrentChat();
+                    if (user != null) {
+                        Bundle args = new Bundle();
+                        args.putInt("user_id", user.id);
+                        if (timeItem != null) {
+                            args.putLong("dialog_id", parentFragment.getDialogId());
+                        }
+                        ProfileActivity fragment = new ProfileActivity(args);
+                        fragment.setPlayProfileAnimation(true);
+                        parentFragment.presentFragment(fragment);
+                    } else if (chat != null) {
+                        Bundle args = new Bundle();
+                        args.putInt("chat_id", chat.id);
+                        ProfileActivity fragment = new ProfileActivity(args);
+                        fragment.setChatInfo(parentFragment.getCurrentChatInfo());
+                        fragment.setPlayProfileAnimation(true);
+                        parentFragment.presentFragment(fragment);
                     }
-                    ProfileActivity fragment = new ProfileActivity(args);
-                    fragment.setPlayProfileAnimation(true);
-                    parentFragment.presentFragment(fragment);
-                } else if (chat != null) {
-                    Bundle args = new Bundle();
-                    args.putInt("chat_id", chat.id);
-                    ProfileActivity fragment = new ProfileActivity(args);
-                    fragment.setChatInfo(parentFragment.getCurrentChatInfo());
-                    fragment.setPlayProfileAnimation(true);
-                    parentFragment.presentFragment(fragment);
                 }
-            }
-        });
+            });
 
-        TLRPC.Chat chat = parentFragment.getCurrentChat();
-        typingDotsDrawable = new TypingDotsDrawable();
-        typingDotsDrawable.setIsChat(chat != null);
-        recordStatusDrawable = new RecordStatusDrawable();
-        recordStatusDrawable.setIsChat(chat != null);
-        sendingFileDrawable = new SendingFileDrawable();
-        sendingFileDrawable.setIsChat(chat != null);
-        playingGameDrawable = new PlayingGameDrawable();
-        playingGameDrawable.setIsChat(chat != null);
+            TLRPC.Chat chat = parentFragment.getCurrentChat();
+            statusDrawables[0] = new TypingDotsDrawable();
+            statusDrawables[1] = new RecordStatusDrawable();
+            statusDrawables[2] = new SendingFileDrawable();
+            statusDrawables[3] = new PlayingGameDrawable();
+            statusDrawables[4] = new RoundStatusDrawable();
+            for (int a = 0; a < statusDrawables.length; a++) {
+                statusDrawables[a].setIsChat(chat != null);
+            }
+        }
     }
 
     @Override
@@ -181,6 +180,10 @@ public class ChatAvatarContainer extends FrameLayout {
         titleTextView.setText(value);
     }
 
+    public void setSubtitle(CharSequence value) {
+        subtitleTextView.setText(value);
+    }
+
     public ImageView getTimeItem() {
         return timeItem;
     }
@@ -197,44 +200,29 @@ public class ChatAvatarContainer extends FrameLayout {
         if (start) {
             try {
                 Integer type = MessagesController.getInstance().printingStringsTypes.get(parentFragment.getDialogId());
-                if (type == 0) {
-                    subtitleTextView.setLeftDrawable(typingDotsDrawable);
-                    typingDotsDrawable.start();
-                    recordStatusDrawable.stop();
-                    sendingFileDrawable.stop();
-                    playingGameDrawable.stop();
-                } else if (type == 1) {
-                    subtitleTextView.setLeftDrawable(recordStatusDrawable);
-                    recordStatusDrawable.start();
-                    typingDotsDrawable.stop();
-                    sendingFileDrawable.stop();
-                    playingGameDrawable.stop();
-                } else if (type == 2) {
-                    subtitleTextView.setLeftDrawable(sendingFileDrawable);
-                    sendingFileDrawable.start();
-                    typingDotsDrawable.stop();
-                    recordStatusDrawable.stop();
-                    playingGameDrawable.stop();
-                } else if (type == 3) {
-                    subtitleTextView.setLeftDrawable(playingGameDrawable);
-                    playingGameDrawable.start();
-                    typingDotsDrawable.stop();
-                    recordStatusDrawable.stop();
-                    sendingFileDrawable.stop();
+                subtitleTextView.setLeftDrawable(statusDrawables[type]);
+                for (int a = 0; a < statusDrawables.length; a++) {
+                    if (a == type) {
+                        statusDrawables[a].start();
+                    } else {
+                        statusDrawables[a].stop();
+                    }
                 }
             } catch (Exception e) {
                 FileLog.e(e);
             }
         } else {
             subtitleTextView.setLeftDrawable(null);
-            typingDotsDrawable.stop();
-            recordStatusDrawable.stop();
-            sendingFileDrawable.stop();
-            playingGameDrawable.stop();
+            for (int a = 0; a < statusDrawables.length; a++) {
+                statusDrawables[a].stop();
+            }
         }
     }
 
     public void updateSubtitle() {
+        if (parentFragment == null) {
+            return;
+        }
         TLRPC.User user = parentFragment.getCurrentUser();
         TLRPC.Chat chat = parentFragment.getCurrentChat();
         CharSequence printString = MessagesController.getInstance().printingStrings.get(parentFragment.getDialogId());
@@ -249,7 +237,7 @@ public class ChatAvatarContainer extends FrameLayout {
                     if (info != null && info.participants_count != 0) {
                         if (chat.megagroup && info.participants_count <= 200) {
                             if (onlineCount > 1 && info.participants_count != 0) {
-                                subtitleTextView.setText(String.format("%s, %s", LocaleController.formatPluralString("Members", info.participants_count), LocaleController.formatPluralString("Online", onlineCount)));
+                                subtitleTextView.setText(String.format("%s, %s", LocaleController.formatPluralString("Members", info.participants_count), LocaleController.formatPluralString("OnlineCount", onlineCount)));
                             } else {
                                 subtitleTextView.setText(LocaleController.formatPluralString("Members", info.participants_count));
                             }
@@ -281,7 +269,7 @@ public class ChatAvatarContainer extends FrameLayout {
                             count = info.participants.participants.size();
                         }
                         if (onlineCount > 1 && count != 0) {
-                            subtitleTextView.setText(String.format("%s, %s", LocaleController.formatPluralString("Members", count), LocaleController.formatPluralString("Online", onlineCount)));
+                            subtitleTextView.setText(String.format("%s, %s", LocaleController.formatPluralString("Members", count), LocaleController.formatPluralString("OnlineCount", onlineCount)));
                         } else {
                             subtitleTextView.setText(LocaleController.formatPluralString("Members", count));
                         }
@@ -310,7 +298,21 @@ public class ChatAvatarContainer extends FrameLayout {
         }
     }
 
+    public void setChatAvatar(TLRPC.Chat chat) {
+        TLRPC.FileLocation newPhoto = null;
+        if (chat.photo != null) {
+            newPhoto = chat.photo.photo_small;
+        }
+        avatarDrawable.setInfo(chat);
+        if (avatarImageView != null) {
+            avatarImageView.setImage(newPhoto, "50_50", avatarDrawable);
+        }
+    }
+
     public void checkAndUpdateAvatar() {
+        if (parentFragment == null) {
+            return;
+        }
         TLRPC.FileLocation newPhoto = null;
         TLRPC.User user = parentFragment.getCurrentUser();
         TLRPC.Chat chat = parentFragment.getCurrentChat();
@@ -331,6 +333,9 @@ public class ChatAvatarContainer extends FrameLayout {
     }
 
     public void updateOnlineCount() {
+        if (parentFragment == null) {
+            return;
+        }
         onlineCount = 0;
         TLRPC.ChatFull info = parentFragment.getCurrentChatInfo();
         if (info == null) {

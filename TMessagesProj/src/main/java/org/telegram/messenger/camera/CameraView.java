@@ -51,6 +51,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private float focusProgress = 1.0f;
     private float innerAlpha;
     private float outerAlpha;
+    private boolean initialFrontface;
     private int cx;
     private int cy;
     private Paint outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -65,7 +66,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
     public CameraView(Context context, boolean frontface) {
         super(context, null);
-        isFrontface = frontface;
+        initialFrontface = isFrontface = frontface;
         textureView = new TextureView(context);
         textureView.setSurfaceTextureListener(this);
         addView(textureView);
@@ -132,14 +133,20 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         org.telegram.messenger.camera.Size aspectRatio;
         int wantedWidth;
         int wantedHeight;
-        if (Math.abs(screenSize - size4to3) < 0.1f) {
-            aspectRatio = new Size(4, 3);
-            wantedWidth = 1280;
-            wantedHeight = 960;
-        } else {
+        if (initialFrontface) {
             aspectRatio = new Size(16, 9);
-            wantedWidth = 1280;
-            wantedHeight = 720;
+            wantedWidth = 480;
+            wantedHeight = 270;
+        } else {
+            if (Math.abs(screenSize - size4to3) < 0.1f) {
+                aspectRatio = new Size(4, 3);
+                wantedWidth = 1280;
+                wantedHeight = 960;
+            } else {
+                aspectRatio = new Size(16, 9);
+                wantedWidth = 1280;
+                wantedHeight = 720;
+            }
         }
         if (textureView.getWidth() > 0 && textureView.getHeight() > 0) {
             int width = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);

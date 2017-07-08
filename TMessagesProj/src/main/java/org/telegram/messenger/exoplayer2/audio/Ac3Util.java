@@ -29,6 +29,44 @@ import java.nio.ByteBuffer;
 public final class Ac3Util {
 
   /**
+   * Holds sample format information as presented by a syncframe header.
+   */
+  public static final class Ac3SyncFrameInfo {
+
+    /**
+     * The sample mime type of the bitstream. One of {@link MimeTypes#AUDIO_AC3} and
+     * {@link MimeTypes#AUDIO_E_AC3}.
+     */
+    public final String mimeType;
+    /**
+     * The audio sampling rate in Hz.
+     */
+    public final int sampleRate;
+    /**
+     * The number of audio channels
+     */
+    public final int channelCount;
+    /**
+     * The size of the frame.
+     */
+    public final int frameSize;
+    /**
+     * Number of audio samples in the frame.
+     */
+    public final int sampleCount;
+
+    private Ac3SyncFrameInfo(String mimeType, int channelCount, int sampleRate, int frameSize,
+        int sampleCount) {
+      this.mimeType = mimeType;
+      this.channelCount = channelCount;
+      this.sampleRate = sampleRate;
+      this.frameSize = frameSize;
+      this.sampleCount = sampleCount;
+    }
+
+  }
+
+  /**
    * The number of new samples per (E-)AC-3 audio block.
    */
   private static final int AUDIO_SAMPLES_PER_AUDIO_BLOCK = 256;
@@ -114,62 +152,61 @@ public final class Ac3Util {
   }
 
   /**
-   * Returns the AC-3 format given {@code data} containing a syncframe. The reading position of
-   * {@code data} will be modified.
+   * Returns (E-)AC-3 format information given {@code data} containing a syncframe. The reading
+   * position of {@code data} will be modified.
    *
    * @param data The data to parse, positioned at the start of the syncframe.
-   * @param trackId The track identifier to set on the format, or null.
-   * @param language The language to set on the format.
-   * @param drmInitData {@link DrmInitData} to be included in the format.
-   * @return The AC-3 format parsed from data in the header.
+   * @return The (E-)AC-3 format data parsed from the header.
    */
-  public static Format parseAc3SyncframeFormat(ParsableBitArray data, String trackId,
-      String language, DrmInitData drmInitData) {
-    data.skipBits(16 + 16); // syncword, crc1
-    int fscod = data.readBits(2);
-    data.skipBits(6 + 5 + 3); // frmsizecod, bsid, bsmod
-    int acmod = data.readBits(3);
-    if ((acmod & 0x01) != 0 && acmod != 1) {
-      data.skipBits(2); // cmixlev
-    }
-    if ((acmod & 0x04) != 0) {
-      data.skipBits(2); // surmixlev
-    }
-    if (acmod == 2) {
-      data.skipBits(2); // dsurmod
-    }
-    boolean lfeon = data.readBit();
-    return Format.createAudioSampleFormat(trackId, MimeTypes.AUDIO_AC3, null, Format.NO_VALUE,
-        Format.NO_VALUE, CHANNEL_COUNT_BY_ACMOD[acmod] + (lfeon ? 1 : 0),
-        SAMPLE_RATE_BY_FSCOD[fscod], null, drmInitData, 0, language);
-  }
-
-  /**
-   * Returns the E-AC-3 format given {@code data} containing a syncframe. The reading position of
-   * {@code data} will be modified.
-   *
-   * @param data The data to parse, positioned at the start of the syncframe.
-   * @param trackId The track identifier to set on the format, or null.
-   * @param language The language to set on the format.
-   * @param drmInitData {@link DrmInitData} to be included in the format.
-   * @return The E-AC-3 format parsed from data in the header.
-   */
-  public static Format parseEac3SyncframeFormat(ParsableBitArray data, String trackId,
-      String language, DrmInitData drmInitData) {
-    data.skipBits(16 + 2 + 3 + 11); // syncword, strmtype, substreamid, frmsiz
+  public static Ac3SyncFrameInfo parseAc3SyncframeInfo(ParsableBitArray data) {
+    int initialPosition = data.getPosition();
+    data.skipBits(40);
+    boolean isEac3 = data.readBits(5) == 16;
+    data.setPosition(initialPosition);
+    String mimeType;
     int sampleRate;
-    int fscod = data.readBits(2);
-    if (fscod == 3) {
-      sampleRate = SAMPLE_RATE_BY_FSCOD2[data.readBits(2)];
-    } else {
-      data.skipBits(2); // numblkscod
+    int acmod;
+    int frameSize;
+    int sampleCount;
+    if (isEac3) {
+      mimeType = MimeTypes.AUDIO_E_AC3;
+      data.skipBits(16 + 2 + 3); // syncword, strmtype, substreamid
+      frameSize = (data.readBits(11) + 1) * 2;
+      int fscod = data.readBits(2);
+      int audioBlocks;
+      if (fscod == 3) {
+        sampleRate = SAMPLE_RATE_BY_FSCOD2[data.readBits(2)];
+        audioBlocks = 6;
+      } else {
+        int numblkscod = data.readBits(2);
+        audioBlocks = BLOCKS_PER_SYNCFRAME_BY_NUMBLKSCOD[numblkscod];
+        sampleRate = SAMPLE_RATE_BY_FSCOD[fscod];
+      }
+      sampleCount = AUDIO_SAMPLES_PER_AUDIO_BLOCK * audioBlocks;
+      acmod = data.readBits(3);
+    } else /* is AC-3 */ {
+      mimeType = MimeTypes.AUDIO_AC3;
+      data.skipBits(16 + 16); // syncword, crc1
+      int fscod = data.readBits(2);
+      int frmsizecod = data.readBits(6);
+      frameSize = getAc3SyncframeSize(fscod, frmsizecod);
+      data.skipBits(5 + 3); // bsid, bsmod
+      acmod = data.readBits(3);
+      if ((acmod & 0x01) != 0 && acmod != 1) {
+        data.skipBits(2); // cmixlev
+      }
+      if ((acmod & 0x04) != 0) {
+        data.skipBits(2); // surmixlev
+      }
+      if (acmod == 2) {
+        data.skipBits(2); // dsurmod
+      }
       sampleRate = SAMPLE_RATE_BY_FSCOD[fscod];
+      sampleCount = AC3_SYNCFRAME_AUDIO_SAMPLE_COUNT;
     }
-    int acmod = data.readBits(3);
     boolean lfeon = data.readBit();
-    return Format.createAudioSampleFormat(trackId, MimeTypes.AUDIO_E_AC3, null, Format.NO_VALUE,
-        Format.NO_VALUE, CHANNEL_COUNT_BY_ACMOD[acmod] + (lfeon ? 1 : 0), sampleRate, null,
-        drmInitData, 0, language);
+    int channelCount = CHANNEL_COUNT_BY_ACMOD[acmod] + (lfeon ? 1 : 0);
+    return new Ac3SyncFrameInfo(mimeType, channelCount, sampleRate, frameSize, sampleCount);
   }
 
   /**
@@ -188,16 +225,6 @@ public final class Ac3Util {
   }
 
   /**
-   * Returns the size in bytes of the given E-AC-3 syncframe.
-   *
-   * @param data The syncframe to parse.
-   * @return The syncframe size in bytes.
-   */
-  public static int parseEAc3SyncframeSize(byte[] data) {
-    return 2 * (((data[2] & 0x07) << 8) + (data[3] & 0xFF) + 1); // frmsiz
-  }
-
-  /**
    * Returns the number of audio samples in an AC-3 syncframe.
    */
   public static int getAc3SyncframeAudioSampleCount() {
@@ -205,22 +232,10 @@ public final class Ac3Util {
   }
 
   /**
-   * Returns the number of audio samples represented by the given E-AC-3 syncframe.
+   * Reads the number of audio samples represented by the given E-AC-3 syncframe. The buffer's
+   * position is not modified.
    *
-   * @param data The syncframe to parse.
-   * @return The number of audio samples represented by the syncframe.
-   */
-  public static int parseEAc3SyncframeAudioSampleCount(byte[] data) {
-    // See ETSI TS 102 366 subsection E.1.2.2.
-    return AUDIO_SAMPLES_PER_AUDIO_BLOCK * (((data[4] & 0xC0) >> 6) == 0x03 ? 6 // fscod
-        : BLOCKS_PER_SYNCFRAME_BY_NUMBLKSCOD[(data[4] & 0x30) >> 4]);
-  }
-
-  /**
-   * Like {@link #parseEAc3SyncframeAudioSampleCount(byte[])} but reads from a {@link ByteBuffer}.
-   * The buffer's position is not modified.
-   *
-   * @param buffer The {@link ByteBuffer} from which to read.
+   * @param buffer The {@link ByteBuffer} from which to read the syncframe.
    * @return The number of audio samples represented by the syncframe.
    */
   public static int parseEAc3SyncframeAudioSampleCount(ByteBuffer buffer) {

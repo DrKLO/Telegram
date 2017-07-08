@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.upstream;
 
+import android.support.annotation.NonNull;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.util.Assertions;
 import java.io.IOException;
@@ -67,24 +68,16 @@ public final class DataSourceInputStream extends InputStream {
   @Override
   public int read() throws IOException {
     int length = read(singleByteArray);
-    if (length == -1) {
-      return -1;
-    }
-    totalBytesRead++;
-    return singleByteArray[0] & 0xFF;
+    return length == -1 ? -1 : (singleByteArray[0] & 0xFF);
   }
 
   @Override
-  public int read(byte[] buffer) throws IOException {
-    int bytesRead = read(buffer, 0, buffer.length);
-    if (bytesRead != -1) {
-      totalBytesRead += bytesRead;
-    }
-    return bytesRead;
+  public int read(@NonNull byte[] buffer) throws IOException {
+    return read(buffer, 0, buffer.length);
   }
 
   @Override
-  public int read(byte[] buffer, int offset, int length) throws IOException {
+  public int read(@NonNull byte[] buffer, int offset, int length) throws IOException {
     Assertions.checkState(!closed);
     checkOpened();
     int bytesRead = dataSource.read(buffer, offset, length);
@@ -94,15 +87,6 @@ public final class DataSourceInputStream extends InputStream {
       totalBytesRead += bytesRead;
       return bytesRead;
     }
-  }
-
-  @Override
-  public long skip(long byteCount) throws IOException {
-    Assertions.checkState(!closed);
-    checkOpened();
-    long bytesSkipped = super.skip(byteCount);
-    totalBytesRead += bytesSkipped;
-    return bytesSkipped;
   }
 
   @Override

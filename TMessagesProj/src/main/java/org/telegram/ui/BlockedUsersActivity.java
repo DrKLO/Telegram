@@ -182,7 +182,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public void didSelectContact(final TLRPC.User user, String param) {
+    public void didSelectContact(final TLRPC.User user, String param, ContactsActivity activity) {
         if (user == null) {
             return;
         }

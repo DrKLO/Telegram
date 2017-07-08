@@ -32,7 +32,7 @@ import java.util.Comparator;
  * @see <a href="http://en.wikipedia.org/wiki/Moving_average">Wiki: Moving average</a>
  * @see <a href="http://en.wikipedia.org/wiki/Selection_algorithm">Wiki: Selection algorithm</a>
  */
-public final class SlidingPercentile {
+public class SlidingPercentile {
 
   // Orderings.
   private static final Comparator<Sample> INDEX_COMPARATOR = new Comparator<Sample>() {

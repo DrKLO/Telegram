@@ -160,6 +160,7 @@ public class LoginActivity extends BaseFragment {
         });
 
         ActionBarMenu menu = actionBar.createMenu();
+        actionBar.setAllowOverlayTitle(true);
         doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
         fragmentView = new ScrollView(context);
@@ -412,15 +413,24 @@ public class LoginActivity extends BaseFragment {
         showDialog(builder.create());
     }
 
-    private void needShowProgress() {
+    private void needShowProgress(final int reqiestId) {
         if (getParentActivity() == null || getParentActivity().isFinishing() || progressDialog != null) {
             return;
         }
-        progressDialog = new AlertDialog(getParentActivity(), 1);
-        progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), 1);
+        builder.setMessage(LocaleController.getString("Loading", R.string.Loading));
+        if (reqiestId != 0) {
+            builder.setPositiveButton(LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    ConnectionsManager.getInstance().cancelRequest(reqiestId, true);
+                    progressDialog = null;
+                }
+            });
+        }
+        progressDialog = builder.show();
         progressDialog.setCanceledOnTouchOutside(false);
         progressDialog.setCancelable(false);
-        progressDialog.show();
     }
 
     public void needHideProgress() {
@@ -1038,8 +1048,7 @@ public class LoginActivity extends BaseFragment {
             }
             params.putString("phoneFormated", phone);
             nextPressed = true;
-            needShowProgress();
-            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+            int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1072,6 +1081,7 @@ public class LoginActivity extends BaseFragment {
                     });
                 }
             }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagTryDifferentDc | ConnectionsManager.RequestFlagEnableUnauthorized);
+            needShowProgress(reqId);
         }
 
         public void fillNumber() {
@@ -1383,12 +1393,11 @@ public class LoginActivity extends BaseFragment {
             params.putString("phoneFormated", requestPhone);
 
             nextPressed = true;
-            needShowProgress();
 
             TLRPC.TL_auth_resendCode req = new TLRPC.TL_auth_resendCode();
             req.phone_number = requestPhone;
             req.phone_code_hash = phoneHash;
-            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+            int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1419,6 +1428,7 @@ public class LoginActivity extends BaseFragment {
                     });
                 }
             }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+            needShowProgress(0);
         }
 
         @Override
@@ -1677,8 +1687,7 @@ public class LoginActivity extends BaseFragment {
             req.phone_code = code;
             req.phone_code_hash = phoneHash;
             destroyTimer();
-            needShowProgress();
-            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+            int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1789,6 +1798,7 @@ public class LoginActivity extends BaseFragment {
                     });
                 }
             }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+            needShowProgress(0);
         }
 
         @Override
@@ -1971,7 +1981,7 @@ public class LoginActivity extends BaseFragment {
                 @Override
                 public void onClick(View view) {
                     if (has_recovery) {
-                        needShowProgress();
+                        needShowProgress(0);
                         TLRPC.TL_auth_requestPasswordRecovery req = new TLRPC.TL_auth_requestPasswordRecovery();
                         ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                             @Override
@@ -2044,7 +2054,7 @@ public class LoginActivity extends BaseFragment {
                     builder.setPositiveButton(LocaleController.getString("ResetMyAccountWarningReset", R.string.ResetMyAccountWarningReset), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            needShowProgress();
+                            needShowProgress(0);
                             TLRPC.TL_account_deleteAccount req = new TLRPC.TL_account_deleteAccount();
                             req.reason = "Forgot password";
                             ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
@@ -2164,7 +2174,7 @@ public class LoginActivity extends BaseFragment {
                 FileLog.e(e);
             }
 
-            needShowProgress();
+            needShowProgress(0);
             byte[] hash = new byte[current_salt.length * 2 + oldPasswordBytes.length];
             System.arraycopy(current_salt, 0, hash, 0, current_salt.length);
             System.arraycopy(oldPasswordBytes, 0, hash, current_salt.length, oldPasswordBytes.length);
@@ -2324,7 +2334,7 @@ public class LoginActivity extends BaseFragment {
                     builder.setPositiveButton(LocaleController.getString("ResetMyAccountWarningReset", R.string.ResetMyAccountWarningReset), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            needShowProgress();
+                            needShowProgress(0);
                             TLRPC.TL_account_deleteAccount req = new TLRPC.TL_account_deleteAccount();
                             req.reason = "Forgot password";
                             ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
@@ -2571,7 +2581,7 @@ public class LoginActivity extends BaseFragment {
                 onPasscodeError(false);
                 return;
             }
-            needShowProgress();
+            needShowProgress(0);
             TLRPC.TL_auth_recoverPassword req = new TLRPC.TL_auth_recoverPassword();
             req.code = code;
             ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
@@ -2791,7 +2801,7 @@ public class LoginActivity extends BaseFragment {
             req.phone_number = requestPhone;
             req.first_name = firstNameField.getText().toString();
             req.last_name = lastNameField.getText().toString();
-            needShowProgress();
+            needShowProgress(0);
             ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {

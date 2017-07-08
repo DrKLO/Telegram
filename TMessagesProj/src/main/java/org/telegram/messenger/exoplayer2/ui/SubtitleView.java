@@ -60,6 +60,7 @@ public final class SubtitleView extends View implements TextRenderer.Output {
   private int textSizeType;
   private float textSize;
   private boolean applyEmbeddedStyles;
+  private boolean applyEmbeddedFontSizes;
   private CaptionStyleCompat style;
   private float bottomPaddingFraction;
 
@@ -73,6 +74,7 @@ public final class SubtitleView extends View implements TextRenderer.Output {
     textSizeType = FRACTIONAL;
     textSize = DEFAULT_TEXT_SIZE_FRACTION;
     applyEmbeddedStyles = true;
+    applyEmbeddedFontSizes = true;
     style = CaptionStyleCompat.DEFAULT;
     bottomPaddingFraction = DEFAULT_BOTTOM_PADDING_FRACTION;
   }
@@ -166,14 +168,32 @@ public final class SubtitleView extends View implements TextRenderer.Output {
 
   /**
    * Sets whether styling embedded within the cues should be applied. Enabled by default.
+   * Overrides any setting made with {@link SubtitleView#setApplyEmbeddedFontSizes}.
    *
    * @param applyEmbeddedStyles Whether styling embedded within the cues should be applied.
    */
   public void setApplyEmbeddedStyles(boolean applyEmbeddedStyles) {
-    if (this.applyEmbeddedStyles == applyEmbeddedStyles) {
+    if (this.applyEmbeddedStyles == applyEmbeddedStyles
+        && this.applyEmbeddedFontSizes == applyEmbeddedStyles) {
       return;
     }
     this.applyEmbeddedStyles = applyEmbeddedStyles;
+    this.applyEmbeddedFontSizes = applyEmbeddedStyles;
+    // Invalidate to trigger drawing.
+    invalidate();
+  }
+
+  /**
+   * Sets whether font sizes embedded within the cues should be applied. Enabled by default.
+   * Only takes effect if {@link SubtitleView#setApplyEmbeddedStyles} is set to true.
+   *
+   * @param applyEmbeddedFontSizes Whether font sizes embedded within the cues should be applied.
+   */
+  public void setApplyEmbeddedFontSizes(boolean applyEmbeddedFontSizes) {
+    if (this.applyEmbeddedFontSizes == applyEmbeddedFontSizes) {
+      return;
+    }
+    this.applyEmbeddedFontSizes = applyEmbeddedFontSizes;
     // Invalidate to trigger drawing.
     invalidate();
   }
@@ -243,8 +263,8 @@ public final class SubtitleView extends View implements TextRenderer.Output {
     }
 
     for (int i = 0; i < cueCount; i++) {
-      painters.get(i).draw(cues.get(i), applyEmbeddedStyles, style, textSizePx,
-          bottomPaddingFraction, canvas, left, top, right, bottom);
+      painters.get(i).draw(cues.get(i), applyEmbeddedStyles, applyEmbeddedFontSizes, style,
+          textSizePx, bottomPaddingFraction, canvas, left, top, right, bottom);
     }
   }
 

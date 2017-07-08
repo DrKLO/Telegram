@@ -15,9 +15,10 @@
  */
 package org.telegram.messenger.exoplayer2.source.chunk;
 
+import android.util.SparseArray;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
-import org.telegram.messenger.exoplayer2.drm.DrmInitData;
+import org.telegram.messenger.exoplayer2.extractor.DummyTrackOutput;
 import org.telegram.messenger.exoplayer2.extractor.Extractor;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorInput;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
@@ -30,132 +31,165 @@ import java.io.IOException;
 /**
  * An {@link Extractor} wrapper for loading chunks containing a single track.
  * <p>
- * The wrapper allows switching of the {@link SingleTrackMetadataOutput} and {@link TrackOutput}
- * which receive parsed data.
+ * The wrapper allows switching of the {@link TrackOutput} that receives parsed data.
  */
-public final class ChunkExtractorWrapper implements ExtractorOutput, TrackOutput {
+public final class ChunkExtractorWrapper implements ExtractorOutput {
 
   /**
-   * Receives metadata associated with the track as extracted by the wrapped {@link Extractor}.
+   * Provides {@link TrackOutput} instances to be written to by the wrapper.
    */
-  public interface SingleTrackMetadataOutput {
+  public interface TrackOutputProvider {
 
     /**
-     * @see ExtractorOutput#seekMap(SeekMap)
+     * Called to get the {@link TrackOutput} for a specific track.
+     * <p>
+     * The same {@link TrackOutput} is returned if multiple calls are made with the same {@code id}.
+     *
+     * @param id A track identifier.
+     * @param type The type of the track. Typically one of the
+     *     {@link org.telegram.messenger.exoplayer2.C} {@code TRACK_TYPE_*} constants.
+     * @return The {@link TrackOutput} for the given track identifier.
      */
-    void seekMap(SeekMap seekMap);
+    TrackOutput track(int id, int type);
 
   }
 
-  private final Extractor extractor;
+  public final Extractor extractor;
+
   private final Format manifestFormat;
-  private final boolean preferManifestDrmInitData;
-  private final boolean resendFormatOnInit;
+  private final SparseArray<BindingTrackOutput> bindingTrackOutputs;
 
   private boolean extractorInitialized;
-  private SingleTrackMetadataOutput metadataOutput;
-  private TrackOutput trackOutput;
-  private Format sentFormat;
-
-  // Accessed only on the loader thread.
-  private boolean seenTrack;
-  private int seenTrackId;
+  private TrackOutputProvider trackOutputProvider;
+  private SeekMap seekMap;
+  private Format[] sampleFormats;
 
   /**
    * @param extractor The extractor to wrap.
    * @param manifestFormat A manifest defined {@link Format} whose data should be merged into any
    *     sample {@link Format} output from the {@link Extractor}.
-   * @param preferManifestDrmInitData Whether {@link DrmInitData} defined in {@code manifestFormat}
-   *     should be preferred when the sample and manifest {@link Format}s are merged.
-   * @param resendFormatOnInit Whether the extractor should resend the previous {@link Format} when
-   *     it is initialized via {@link #init(SingleTrackMetadataOutput, TrackOutput)}.
    */
-  public ChunkExtractorWrapper(Extractor extractor, Format manifestFormat,
-      boolean preferManifestDrmInitData, boolean resendFormatOnInit) {
+  public ChunkExtractorWrapper(Extractor extractor, Format manifestFormat) {
     this.extractor = extractor;
     this.manifestFormat = manifestFormat;
-    this.preferManifestDrmInitData = preferManifestDrmInitData;
-    this.resendFormatOnInit = resendFormatOnInit;
+    bindingTrackOutputs = new SparseArray<>();
   }
 
   /**
-   * Initializes the extractor to output to the provided {@link SingleTrackMetadataOutput} and
-   * {@link TrackOutput} instances, and configures it to receive data from a new chunk.
-   *
-   * @param metadataOutput The {@link SingleTrackMetadataOutput} that will receive metadata.
-   * @param trackOutput The {@link TrackOutput} that will receive sample data.
+   * Returns the {@link SeekMap} most recently output by the extractor, or null.
    */
-  public void init(SingleTrackMetadataOutput metadataOutput, TrackOutput trackOutput) {
-    this.metadataOutput = metadataOutput;
-    this.trackOutput = trackOutput;
+  public SeekMap getSeekMap() {
+    return seekMap;
+  }
+
+  /**
+   * Returns the sample {@link Format}s most recently output by the extractor, or null.
+   */
+  public Format[] getSampleFormats() {
+    return sampleFormats;
+  }
+
+  /**
+   * Initializes the extractor to output to the provided {@link TrackOutput}, and configures it to
+   * receive data from a new chunk.
+   *
+   * @param trackOutputProvider The provider of {@link TrackOutput}s that will receive sample data.
+   */
+  public void init(TrackOutputProvider trackOutputProvider) {
+    this.trackOutputProvider = trackOutputProvider;
     if (!extractorInitialized) {
       extractor.init(this);
       extractorInitialized = true;
     } else {
-      extractor.seek(0);
-      if (resendFormatOnInit && sentFormat != null) {
-        trackOutput.format(sentFormat);
+      extractor.seek(0, 0);
+      for (int i = 0; i < bindingTrackOutputs.size(); i++) {
+        bindingTrackOutputs.valueAt(i).bind(trackOutputProvider);
       }
     }
-  }
-
-  /**
-   * Reads from the provided {@link ExtractorInput}.
-   *
-   * @param input The {@link ExtractorInput} from which to read.
-   * @return One of {@link Extractor#RESULT_CONTINUE} and {@link Extractor#RESULT_END_OF_INPUT}.
-   * @throws IOException If an error occurred reading from the source.
-   * @throws InterruptedException If the thread was interrupted.
-   */
-  public int read(ExtractorInput input) throws IOException, InterruptedException {
-    int result = extractor.read(input, null);
-    Assertions.checkState(result != Extractor.RESULT_SEEK);
-    return result;
   }
 
   // ExtractorOutput implementation.
 
   @Override
-  public TrackOutput track(int id) {
-    Assertions.checkState(!seenTrack || seenTrackId == id);
-    seenTrack = true;
-    seenTrackId = id;
-    return this;
+  public TrackOutput track(int id, int type) {
+    BindingTrackOutput bindingTrackOutput = bindingTrackOutputs.get(id);
+    if (bindingTrackOutput == null) {
+      // Assert that if we're seeing a new track we have not seen endTracks.
+      Assertions.checkState(sampleFormats == null);
+      bindingTrackOutput = new BindingTrackOutput(id, type, manifestFormat);
+      bindingTrackOutput.bind(trackOutputProvider);
+      bindingTrackOutputs.put(id, bindingTrackOutput);
+    }
+    return bindingTrackOutput;
   }
 
   @Override
   public void endTracks() {
-    Assertions.checkState(seenTrack);
+    Format[] sampleFormats = new Format[bindingTrackOutputs.size()];
+    for (int i = 0; i < bindingTrackOutputs.size(); i++) {
+      sampleFormats[i] = bindingTrackOutputs.valueAt(i).sampleFormat;
+    }
+    this.sampleFormats = sampleFormats;
   }
 
   @Override
   public void seekMap(SeekMap seekMap) {
-    metadataOutput.seekMap(seekMap);
+    this.seekMap = seekMap;
   }
 
-  // TrackOutput implementation.
+  // Internal logic.
 
-  @Override
-  public void format(Format format) {
-    sentFormat = format.copyWithManifestFormatInfo(manifestFormat, preferManifestDrmInitData);
-    trackOutput.format(sentFormat);
-  }
+  private static final class BindingTrackOutput implements TrackOutput {
 
-  @Override
-  public int sampleData(ExtractorInput input, int length, boolean allowEndOfInput)
-      throws IOException, InterruptedException {
-    return trackOutput.sampleData(input, length, allowEndOfInput);
-  }
+    private final int id;
+    private final int type;
+    private final Format manifestFormat;
 
-  @Override
-  public void sampleData(ParsableByteArray data, int length) {
-    trackOutput.sampleData(data, length);
-  }
+    public Format sampleFormat;
+    private TrackOutput trackOutput;
 
-  @Override
-  public void sampleMetadata(long timeUs, @C.BufferFlags int flags, int size, int offset,
-      byte[] encryptionKey) {
-    trackOutput.sampleMetadata(timeUs, flags, size, offset, encryptionKey);
+    public BindingTrackOutput(int id, int type, Format manifestFormat) {
+      this.id = id;
+      this.type = type;
+      this.manifestFormat = manifestFormat;
+    }
+
+    public void bind(TrackOutputProvider trackOutputProvider) {
+      if (trackOutputProvider == null) {
+        trackOutput = new DummyTrackOutput();
+        return;
+      }
+      trackOutput = trackOutputProvider.track(id, type);
+      if (trackOutput != null) {
+        trackOutput.format(sampleFormat);
+      }
+    }
+
+    @Override
+    public void format(Format format) {
+      // TODO: This should only happen for the primary track. Additional metadata/text tracks need
+      // to be copied with different manifest derived formats.
+      sampleFormat = format.copyWithManifestFormatInfo(manifestFormat);
+      trackOutput.format(sampleFormat);
+    }
+
+    @Override
+    public int sampleData(ExtractorInput input, int length, boolean allowEndOfInput)
+        throws IOException, InterruptedException {
+      return trackOutput.sampleData(input, length, allowEndOfInput);
+    }
+
+    @Override
+    public void sampleData(ParsableByteArray data, int length) {
+      trackOutput.sampleData(data, length);
+    }
+
+    @Override
+    public void sampleMetadata(long timeUs, @C.BufferFlags int flags, int size, int offset,
+        byte[] encryptionKey) {
+      trackOutput.sampleMetadata(timeUs, flags, size, offset, encryptionKey);
+    }
+
   }
 
 }

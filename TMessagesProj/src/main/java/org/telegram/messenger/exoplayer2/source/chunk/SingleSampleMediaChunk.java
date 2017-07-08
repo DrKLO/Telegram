@@ -18,8 +18,8 @@ package org.telegram.messenger.exoplayer2.source.chunk;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.extractor.DefaultExtractorInput;
-import org.telegram.messenger.exoplayer2.extractor.DefaultTrackOutput;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorInput;
+import org.telegram.messenger.exoplayer2.extractor.TrackOutput;
 import org.telegram.messenger.exoplayer2.upstream.DataSource;
 import org.telegram.messenger.exoplayer2.upstream.DataSpec;
 import org.telegram.messenger.exoplayer2.util.Util;
@@ -30,6 +30,7 @@ import java.io.IOException;
  */
 public final class SingleSampleMediaChunk extends BaseMediaChunk {
 
+  private final int trackType;
   private final Format sampleFormat;
 
   private volatile int bytesLoaded;
@@ -45,14 +46,19 @@ public final class SingleSampleMediaChunk extends BaseMediaChunk {
    * @param startTimeUs The start time of the media contained by the chunk, in microseconds.
    * @param endTimeUs The end time of the media contained by the chunk, in microseconds.
    * @param chunkIndex The index of the chunk.
+   * @param trackType The type of the chunk. Typically one of the {@link C} {@code TRACK_TYPE_*}
+   *     constants.
+   * @param sampleFormat The {@link Format} of the sample in the chunk.
    */
   public SingleSampleMediaChunk(DataSource dataSource, DataSpec dataSpec, Format trackFormat,
       int trackSelectionReason, Object trackSelectionData, long startTimeUs, long endTimeUs,
-      int chunkIndex, Format sampleFormat) {
+      int chunkIndex, int trackType, Format sampleFormat) {
     super(dataSource, dataSpec, trackFormat, trackSelectionReason, trackSelectionData, startTimeUs,
         endTimeUs, chunkIndex);
+    this.trackType = trackType;
     this.sampleFormat = sampleFormat;
   }
+
 
   @Override
   public boolean isLoadCompleted() {
@@ -87,8 +93,10 @@ public final class SingleSampleMediaChunk extends BaseMediaChunk {
         length += bytesLoaded;
       }
       ExtractorInput extractorInput = new DefaultExtractorInput(dataSource, bytesLoaded, length);
-      DefaultTrackOutput trackOutput = getTrackOutput();
-      trackOutput.formatWithOffset(sampleFormat, 0);
+      BaseMediaChunkOutput output = getOutput();
+      output.setSampleOffsetUs(0);
+      TrackOutput trackOutput = output.track(0, trackType);
+      trackOutput.format(sampleFormat);
       // Load the sample data.
       int result = 0;
       while (result != C.RESULT_END_OF_INPUT) {
@@ -98,7 +106,7 @@ public final class SingleSampleMediaChunk extends BaseMediaChunk {
       int sampleSize = bytesLoaded;
       trackOutput.sampleMetadata(startTimeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
     } finally {
-      dataSource.close();
+      Util.closeQuietly(dataSource);
     }
     loadCompleted = true;
   }

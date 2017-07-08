@@ -26,7 +26,6 @@ import org.telegram.messenger.exoplayer2.extractor.SeekMap;
 import org.telegram.messenger.exoplayer2.extractor.ts.TsPayloadReader.TrackIdGenerator;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 import org.telegram.messenger.exoplayer2.util.Util;
-
 import java.io.IOException;
 
 /**
@@ -125,7 +124,7 @@ public final class Ac3Extractor implements Extractor {
   }
 
   @Override
-  public void seek(long position) {
+  public void seek(long position, long timeUs) {
     startedPacket = false;
     reader.seek();
   }

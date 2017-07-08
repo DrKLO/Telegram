@@ -614,16 +614,41 @@ public:
 class initConnection : public TLObject {
 
 public:
-    static const uint32_t constructor = 0x69796de9;
+    static const uint32_t constructor = 0xc7481da6;
 
     int32_t api_id;
     std::string device_model;
     std::string system_version;
     std::string app_version;
+    std::string system_lang_code;
+    std::string lang_pack;
     std::string lang_code;
     std::unique_ptr<TLObject> query;
 
     void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_ipPort : public TLObject {
+
+public:
+    std::string ipv4;
+    uint32_t port;
+
+    void readParams(NativeByteBuffer *stream, bool &error);
+};
+
+class TL_help_configSimple : public TLObject {
+
+public:
+    static const uint32_t constructor = 0xd997c3c5;
+
+    int32_t date;
+    int32_t expires;
+    uint32_t dc_id;
+    std::vector<std::unique_ptr<TL_ipPort>> ip_port_list;
+
+    static TL_help_configSimple *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    void readParams(NativeByteBuffer *stream, bool &error);
 };
 
 #endif

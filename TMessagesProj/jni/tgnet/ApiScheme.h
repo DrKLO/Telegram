@@ -45,12 +45,52 @@ public:
     static const uint32_t constructor = 0x5d8c6cc;
 
     int32_t flags;
+    bool ipv6;
+    bool media_only;
+    bool tcpo_only;
+    bool cdn;
+    bool isStatic;
     int32_t id;
     std::string ip_address;
     int32_t port;
 
     static TL_dcOption *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
     void readParams(NativeByteBuffer *stream, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_cdnPublicKey : public TLObject {
+
+public:
+    static const uint32_t constructor = 0xc982eaba;
+
+    int32_t dc_id;
+    std::string public_key;
+
+    static TL_cdnPublicKey *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    void readParams(NativeByteBuffer *stream, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_cdnConfig : public TLObject {
+
+public:
+    static const uint32_t constructor = 0x5725e40a;
+
+    std::vector<std::unique_ptr<TL_cdnPublicKey>> public_keys;
+
+    static TL_cdnConfig *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    void readParams(NativeByteBuffer *stream, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_help_getCdnConfig : public TLObject {
+
+public:
+    static const uint32_t constructor = 0x52029342;
+
+    bool isNeedLayer();
+    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -70,7 +110,7 @@ public:
 class TL_config : public TLObject {
 
 public:
-    static const uint32_t constructor = 0xcb601684;
+    static const uint32_t constructor = 0x7feec888;
 
     int32_t flags;
     int32_t date;
@@ -101,6 +141,8 @@ public:
     int32_t call_connect_timeout_ms;
     int32_t call_packet_timeout_ms;
     std::string me_url_prefix;
+    std::string suggested_lang_code;
+    int32_t lang_pack_version;
     std::vector<std::unique_ptr<TL_disabledFeature>> disabled_features;
 
     static TL_config *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
@@ -271,6 +313,7 @@ public:
     int32_t bot_info_version;
     std::string restriction_reason;
     std::string bot_inline_placeholder;
+    std::string lang_code;
 
     static User *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
 };
@@ -287,7 +330,7 @@ public:
 class TL_user : public User {
 
 public:
-    static const uint32_t constructor = 0xd10d979a;
+    static const uint32_t constructor = 0x2e13f4c3;
 
     void readParams(NativeByteBuffer *stream, bool &error);
     void serializeToStream(NativeByteBuffer *stream);

@@ -18,6 +18,7 @@ package org.telegram.messenger.exoplayer2.source;
 import android.util.Log;
 import android.util.Pair;
 import org.telegram.messenger.exoplayer2.C;
+import org.telegram.messenger.exoplayer2.ExoPlayer;
 import org.telegram.messenger.exoplayer2.Timeline;
 import org.telegram.messenger.exoplayer2.upstream.Allocator;
 import org.telegram.messenger.exoplayer2.util.Assertions;
@@ -27,6 +28,13 @@ import java.io.IOException;
  * Loops a {@link MediaSource}.
  */
 public final class LoopingMediaSource implements MediaSource {
+
+  /**
+   * The maximum number of periods that can be exposed by the source. The value of this constant is
+   * large enough to cause indefinite looping in practice (the total duration of the looping source
+   * will be approximately five years if the duration of each period is one second).
+   */
+  public static final int MAX_EXPOSED_PERIODS = 157680000;
 
   private static final String TAG = "LoopingMediaSource";
 
@@ -49,8 +57,8 @@ public final class LoopingMediaSource implements MediaSource {
    *
    * @param childSource The {@link MediaSource} to loop.
    * @param loopCount The desired number of loops. Must be strictly positive. The actual number of
-   *     loops will be capped at the maximum value that can achieved without causing the number of
-   *     periods exposed by the source to exceed {@link Integer#MAX_VALUE}.
+   *     loops will be capped at the maximum that can achieved without causing the number of
+   *     periods exposed by the source to exceed {@link #MAX_EXPOSED_PERIODS}.
    */
   public LoopingMediaSource(MediaSource childSource, int loopCount) {
     Assertions.checkArgument(loopCount > 0);
@@ -59,8 +67,8 @@ public final class LoopingMediaSource implements MediaSource {
   }
 
   @Override
-  public void prepareSource(final Listener listener) {
-    childSource.prepareSource(new Listener() {
+  public void prepareSource(ExoPlayer player, boolean isTopLevelSource, final Listener listener) {
+    childSource.prepareSource(player, false, new Listener() {
       @Override
       public void onSourceInfoRefreshed(Timeline timeline, Object manifest) {
         childPeriodCount = timeline.getPeriodCount();
@@ -100,8 +108,9 @@ public final class LoopingMediaSource implements MediaSource {
       this.childTimeline = childTimeline;
       childPeriodCount = childTimeline.getPeriodCount();
       childWindowCount = childTimeline.getWindowCount();
-      // This is the maximum number of loops that can be performed without overflow.
-      int maxLoopCount = Integer.MAX_VALUE / childPeriodCount;
+      // This is the maximum number of loops that can be performed without exceeding
+      // MAX_EXPOSED_PERIODS periods.
+      int maxLoopCount = MAX_EXPOSED_PERIODS / childPeriodCount;
       if (loopCount > maxLoopCount) {
         if (loopCount != Integer.MAX_VALUE) {
           Log.w(TAG, "Capped loops to avoid overflow: " + loopCount + " -> " + maxLoopCount);
@@ -157,6 +166,7 @@ public final class LoopingMediaSource implements MediaSource {
       int periodIndexOffset = loopCount * childPeriodCount;
       return childTimeline.getIndexOfPeriod(loopCountAndChildUid.second) + periodIndexOffset;
     }
+
   }
 
 }

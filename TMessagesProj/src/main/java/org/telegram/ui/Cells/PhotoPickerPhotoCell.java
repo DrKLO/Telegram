@@ -13,8 +13,12 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
@@ -27,7 +31,10 @@ public class PhotoPickerPhotoCell extends FrameLayout {
     public BackupImageView photoImage;
     public FrameLayout checkFrame;
     public CheckBox checkBox;
+    public TextView videoTextView;
+    public FrameLayout videoInfoContainer;
     private AnimatorSet animator;
+    private AnimatorSet animatorSet;
     public int itemWidth;
 
     public PhotoPickerPhotoCell(Context context) {
@@ -38,6 +45,20 @@ public class PhotoPickerPhotoCell extends FrameLayout {
 
         checkFrame = new FrameLayout(context);
         addView(checkFrame, LayoutHelper.createFrame(42, 42, Gravity.RIGHT | Gravity.TOP));
+
+        videoInfoContainer = new FrameLayout(context);
+        videoInfoContainer.setBackgroundResource(R.drawable.phototime);
+        videoInfoContainer.setPadding(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(3), 0);
+        addView(videoInfoContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 16, Gravity.BOTTOM | Gravity.LEFT));
+
+        ImageView imageView1 = new ImageView(context);
+        imageView1.setImageResource(R.drawable.ic_video);
+        videoInfoContainer.addView(imageView1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+
+        videoTextView = new TextView(context);
+        videoTextView.setTextColor(0xffffffff);
+        videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        videoInfoContainer.addView(videoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 18, -0.7f, 0, 0));
 
         checkBox = new CheckBox(context, R.drawable.checkbig);
         checkBox.setSize(30);
@@ -50,6 +71,28 @@ public class PhotoPickerPhotoCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY));
+    }
+
+    public void showCheck(boolean show) {
+        if (animatorSet != null) {
+            animatorSet.cancel();
+            animatorSet = null;
+        }
+        animatorSet = new AnimatorSet();
+        animatorSet.setInterpolator(new DecelerateInterpolator());
+        animatorSet.setDuration(180);
+        animatorSet.playTogether(
+                ObjectAnimator.ofFloat(videoInfoContainer, "alpha", show ? 1.0f : 0.0f),
+                ObjectAnimator.ofFloat(checkBox, "alpha", show ? 1.0f : 0.0f));
+        animatorSet.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (animation.equals(animatorSet)) {
+                    animatorSet = null;
+                }
+            }
+        });
+        animatorSet.start();
     }
 
     public void setChecked(final boolean checked, final boolean animated) {

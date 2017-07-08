@@ -82,6 +82,10 @@ public class NotificationCenter {
     public static final int didSetNewWallpapper = totalEvents++;
     public static final int archivedStickersCountDidLoaded = totalEvents++;
     public static final int paymentFinished = totalEvents++;
+    public static final int reloadInterface = totalEvents++;
+    public static final int suggestedLangpack = totalEvents++;
+    public static final int channelRightsUpdated = totalEvents++;
+    public static final int proxySettingsChanged = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
@@ -106,9 +110,10 @@ public class NotificationCenter {
     public static final int FileNewChunkAvailable = totalEvents++;
     public static final int FilePreparingFailed = totalEvents++;
 
-    public static final int audioProgressDidChanged = totalEvents++;
-    public static final int audioDidReset = totalEvents++;
-    public static final int audioPlayStateChanged = totalEvents++;
+    public static final int messagePlayingProgressDidChanged = totalEvents++;
+    public static final int messagePlayingDidReset = totalEvents++;
+    public static final int messagePlayingPlayStateChanged = totalEvents++;
+    public static final int messagePlayingDidStarted = totalEvents++;
     public static final int recordProgressChanged = totalEvents++;
     public static final int recordStarted = totalEvents++;
     public static final int recordStartError = totalEvents++;
@@ -116,7 +121,6 @@ public class NotificationCenter {
     public static final int screenshotTook = totalEvents++;
     public static final int albumsDidLoaded = totalEvents++;
     public static final int audioDidSent = totalEvents++;
-    public static final int audioDidStarted = totalEvents++;
     public static final int audioRouteChanged = totalEvents++;
 
     public static final int didStartedCall = totalEvents++;

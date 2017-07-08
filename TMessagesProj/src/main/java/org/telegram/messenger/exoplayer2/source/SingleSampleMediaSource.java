@@ -17,6 +17,7 @@ package org.telegram.messenger.exoplayer2.source;
 
 import android.net.Uri;
 import android.os.Handler;
+import org.telegram.messenger.exoplayer2.ExoPlayer;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.Timeline;
 import org.telegram.messenger.exoplayer2.upstream.Allocator;
@@ -84,7 +85,7 @@ public final class SingleSampleMediaSource implements MediaSource {
   // MediaSource implementation.
 
   @Override
-  public void prepareSource(MediaSource.Listener listener) {
+  public void prepareSource(ExoPlayer player, boolean isTopLevelSource, Listener listener) {
     listener.onSourceInfoRefreshed(timeline, null);
   }
 

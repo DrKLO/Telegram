@@ -155,10 +155,6 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
         return mSurface;
     }
 
-    public void changeFragmentShader(String fragmentShader) {
-        mTextureRender.changeFragmentShader(fragmentShader);
-    }
-
     public void awaitNewImage() {
         final int TIMEOUT_MS = 2500;
         synchronized (mFrameSyncObject) {

@@ -348,12 +348,12 @@ public class RecyclerListView extends RecyclerView {
                             letterLayout = new StaticLayout(newLetter, letterPaint, 1000, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                             oldLetterLayout = null;
                             if (letterLayout.getLineCount() > 0) {
+                                float lWidth = letterLayout.getLineWidth(0);
+                                float lleft = letterLayout.getLineLeft(0);
                                 if (LocaleController.isRTL) {
-                                    float lWidth = letterLayout.getLineWidth(0);
-                                    float lleft = letterLayout.getLineLeft(0);
-                                    textX = AndroidUtilities.dp(10) + (AndroidUtilities.dp(88) - (letterLayout.getLineWidth(0) - letterLayout.getLineLeft(0))) / 2;
+                                    textX = AndroidUtilities.dp(10) + (AndroidUtilities.dp(88) - letterLayout.getLineWidth(0)) / 2 - letterLayout.getLineLeft(0);
                                 } else {
-                                    textX = (AndroidUtilities.dp(88) - (letterLayout.getLineWidth(0) - letterLayout.getLineLeft(0))) / 2;
+                                    textX = (AndroidUtilities.dp(88) - letterLayout.getLineWidth(0)) / 2 - letterLayout.getLineLeft(0);
                                 }
                                 textY = (AndroidUtilities.dp(88) - letterLayout.getHeight()) / 2;
                             }
@@ -741,7 +741,7 @@ public class RecyclerListView extends RecyclerView {
                     onScrollListener.onScrolled(recyclerView, dx, dy);
                 }
                 if (selectorPosition != NO_POSITION) {
-                    selectorRect.offset(0, -dy);
+                    selectorRect.offset(-dx, -dy);
                     selectorDrawable.setBounds(selectorRect);
                     invalidate();
                 } else {
@@ -941,6 +941,9 @@ public class RecyclerListView extends RecyclerView {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent e) {
+        if (!isEnabled()) {
+            return false;
+        }
         if (disallowInterceptTouchEvents) {
             requestDisallowInterceptTouchEvent(true);
         }

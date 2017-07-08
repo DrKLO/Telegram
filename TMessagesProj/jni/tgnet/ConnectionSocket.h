@@ -24,9 +24,11 @@ public:
     ConnectionSocket();
     virtual ~ConnectionSocket();
 
+    void writeBuffer(uint8_t *data, uint32_t size);
     void writeBuffer(NativeByteBuffer *buffer);
     void openConnection(std::string address, uint16_t port, bool ipv6, int32_t networkType);
     void setTimeout(time_t timeout);
+    time_t getTimeout();
     bool isDisconnected();
     void dropConnection();
 
@@ -43,11 +45,16 @@ private:
     struct sockaddr_in socketAddress;
     struct sockaddr_in6 socketAddress6;
     int socketFd = -1;
-    time_t timeout = 15;
+    time_t timeout = 12;
     bool onConnectedSent = false;
     int64_t lastEventTime = 0;
     EventObject *eventObject;
     int32_t currentNetworkType;
+    bool isIpv6;
+    std::string currentAddress;
+    uint16_t currentPort;
+
+    uint8_t proxyAuthState;
 
     bool checkSocketError();
     void closeSocket(int reason);

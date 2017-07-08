@@ -6,6 +6,7 @@
     <application
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
+        android:roundIcon="@drawable/ic_launcher"
         android:label="@string/AppName"
         android:theme="@style/Theme.TMessages.Start"
         android:name=".ApplicationLoader"

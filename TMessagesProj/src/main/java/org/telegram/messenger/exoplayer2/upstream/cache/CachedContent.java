@@ -106,43 +106,49 @@ import java.util.TreeSet;
    * which defines the maximum extents of the hole in the cache.
    */
   public SimpleCacheSpan getSpan(long position) {
-    SimpleCacheSpan span = getSpanInternal(position);
-    if (!span.isCached) {
-      SimpleCacheSpan ceilEntry = cachedSpans.ceiling(span);
-      return ceilEntry == null ? SimpleCacheSpan.createOpenHole(key, position)
-          : SimpleCacheSpan.createClosedHole(key, position, ceilEntry.position - position);
+    SimpleCacheSpan lookupSpan = SimpleCacheSpan.createLookup(key, position);
+    SimpleCacheSpan floorSpan = cachedSpans.floor(lookupSpan);
+    if (floorSpan != null && floorSpan.position + floorSpan.length > position) {
+      return floorSpan;
     }
-    return span;
+    SimpleCacheSpan ceilSpan = cachedSpans.ceiling(lookupSpan);
+    return ceilSpan == null ? SimpleCacheSpan.createOpenHole(key, position)
+        : SimpleCacheSpan.createClosedHole(key, position, ceilSpan.position - position);
   }
 
-  /** Queries if a range is entirely available in the cache. */
-  public boolean isCached(long position, long length) {
-    SimpleCacheSpan floorSpan = getSpanInternal(position);
-    if (!floorSpan.isCached) {
+  /**
+   * Returns the length of the cached data block starting from the {@code position} to the block end
+   * up to {@code length} bytes. If the {@code position} isn't cached then -(the length of the gap
+   * to the next cached data up to {@code length} bytes) is returned.
+   *
+   * @param position The starting position of the data.
+   * @param length The maximum length of the data to be returned.
+   * @return the length of the cached or not cached data block length.
+   */
+  public long getCachedBytes(long position, long length) {
+    SimpleCacheSpan span = getSpan(position);
+    if (span.isHoleSpan()) {
       // We don't have a span covering the start of the queried region.
-      return false;
+      return -Math.min(span.isOpenEnded() ? Long.MAX_VALUE : span.length, length);
     }
     long queryEndPosition = position + length;
-    long currentEndPosition = floorSpan.position + floorSpan.length;
-    if (currentEndPosition >= queryEndPosition) {
-      // floorSpan covers the queried region.
-      return true;
-    }
-    for (SimpleCacheSpan next : cachedSpans.tailSet(floorSpan, false)) {
-      if (next.position > currentEndPosition) {
-        // There's a hole in the cache within the queried region.
-        return false;
-      }
-      // We expect currentEndPosition to always equal (next.position + next.length), but
-      // perform a max check anyway to guard against the existence of overlapping spans.
-      currentEndPosition = Math.max(currentEndPosition, next.position + next.length);
-      if (currentEndPosition >= queryEndPosition) {
-        // We've found spans covering the queried region.
-        return true;
+    long currentEndPosition = span.position + span.length;
+    if (currentEndPosition < queryEndPosition) {
+      for (SimpleCacheSpan next : cachedSpans.tailSet(span, false)) {
+        if (next.position > currentEndPosition) {
+          // There's a hole in the cache within the queried region.
+          break;
+        }
+        // We expect currentEndPosition to always equal (next.position + next.length), but
+        // perform a max check anyway to guard against the existence of overlapping spans.
+        currentEndPosition = Math.max(currentEndPosition, next.position + next.length);
+        if (currentEndPosition >= queryEndPosition) {
+          // We've found spans covering the queried region.
+          break;
+        }
       }
     }
-    // We ran out of spans before covering the queried region.
-    return false;
+    return Math.min(currentEndPosition - position, length);
   }
 
   /**
@@ -188,17 +194,6 @@ import java.util.TreeSet;
     result = 31 * result + key.hashCode();
     result = 31 * result + (int) (length ^ (length >>> 32));
     return result;
-  }
-
-  /**
-   * Returns the span containing the position. If there isn't one, it returns the lookup span it
-   * used for searching.
-   */
-  private SimpleCacheSpan getSpanInternal(long position) {
-    SimpleCacheSpan lookupSpan = SimpleCacheSpan.createLookup(key, position);
-    SimpleCacheSpan floorSpan = cachedSpans.floor(lookupSpan);
-    return floorSpan == null || floorSpan.position + floorSpan.length <= position ? lookupSpan
-        : floorSpan;
   }
 
 }

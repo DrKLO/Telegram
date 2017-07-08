@@ -16,7 +16,7 @@
 package org.telegram.messenger.exoplayer2.source.hls;
 
 import android.util.SparseArray;
-import org.telegram.messenger.exoplayer2.extractor.TimestampAdjuster;
+import org.telegram.messenger.exoplayer2.util.TimestampAdjuster;
 
 /**
  * Provides {@link TimestampAdjuster} instances for use during HLS playbacks.
@@ -36,13 +36,12 @@ public final class TimestampAdjusterProvider {
    * a chunk with a given discontinuity sequence.
    *
    * @param discontinuitySequence The chunk's discontinuity sequence.
-   * @param startTimeUs The chunk's start time.
    * @return A {@link TimestampAdjuster}.
    */
-  public TimestampAdjuster getAdjuster(int discontinuitySequence, long startTimeUs) {
+  public TimestampAdjuster getAdjuster(int discontinuitySequence) {
     TimestampAdjuster adjuster = timestampAdjusters.get(discontinuitySequence);
     if (adjuster == null) {
-      adjuster = new TimestampAdjuster(startTimeUs);
+      adjuster = new TimestampAdjuster(TimestampAdjuster.DO_NOT_OFFSET);
       timestampAdjusters.put(discontinuitySequence, adjuster);
     }
     return adjuster;

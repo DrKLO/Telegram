@@ -39,6 +39,7 @@ import org.telegram.ui.PhotoViewer;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class AvatarUpdater implements NotificationCenter.NotificationCenterDelegate, PhotoCropActivity.PhotoEditActivityDelegate {
 
@@ -66,7 +67,14 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void openCamera() {
+        if (parentFragment == null || parentFragment.getParentActivity() == null) {
+            return;
+        }
         try {
+            if (Build.VERSION.SDK_INT >= 23 && parentFragment.getParentActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                parentFragment.getParentActivity().requestPermissions(new String[]{Manifest.permission.CAMERA}, 19);
+                return;
+            }
             Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             File image = AndroidUtilities.generatePicturePath();
             if (image != null) {
@@ -95,7 +103,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
         PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(true, false, false, null);
         fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
             @Override
-            public void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos) {
+            public void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<MediaController.PhotoEntry> videos, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos) {
                 if (!photos.isEmpty()) {
                     Bitmap bitmap = ImageLoader.loadBitmap(photos.get(0), null, 800, 800, true);
                     processBitmap(bitmap);

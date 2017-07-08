@@ -49,7 +49,8 @@ public class AlertsCreator {
                 request instanceof TLRPC.TL_channels_editAdmin ||
                 request instanceof TLRPC.TL_channels_inviteToChannel ||
                 request instanceof TLRPC.TL_messages_addChatUser ||
-                request instanceof TLRPC.TL_messages_startBot) {
+                request instanceof TLRPC.TL_messages_startBot ||
+                request instanceof TLRPC.TL_channels_editBanned) {
             if (fragment != null) {
                 AlertsCreator.showAddUserAlert(error.text, fragment, (Boolean) args[0]);
             } else {
@@ -352,6 +353,21 @@ public class AlertsCreator {
         fragment.showDialog(builder.create(), true, null);
     }
 
+    public static void showSendMediaAlert(int result, final BaseFragment fragment) {
+        if (result == 0) {
+            return;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
+        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        if (result == 1) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedStickers", R.string.ErrorSendRestrictedStickers));
+        } else if (result == 2) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedMedia", R.string.ErrorSendRestrictedMedia));
+        }
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+        fragment.showDialog(builder.create(), true, null);
+    }
+
     public static void showAddUserAlert(String error, final BaseFragment fragment, boolean isChannel) {
         if (error == null || fragment == null || fragment.getParentActivity() == null) {
             return;
@@ -421,8 +437,18 @@ public class AlertsCreator {
             case "YOU_BLOCKED_USER":
                 builder.setMessage(LocaleController.getString("YouBlockedUser", R.string.YouBlockedUser));
                 break;
+            case "CHAT_ADMIN_BAN_REQUIRED":
+            case "USER_KICKED":
+                builder.setMessage(LocaleController.getString("AddAdminErrorBlacklisted", R.string.AddAdminErrorBlacklisted));
+                break;
+            case "CHAT_ADMIN_INVITE_REQUIRED":
+                builder.setMessage(LocaleController.getString("AddAdminErrorNotAMember", R.string.AddAdminErrorNotAMember));
+                break;
+            case "USER_ADMIN_INVALID":
+                builder.setMessage(LocaleController.getString("AddBannedErrorAdmin", R.string.AddBannedErrorAdmin));
+                break;
             default:
-                builder.setMessage(error);
+                builder.setMessage(LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error);
                 break;
         }
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);

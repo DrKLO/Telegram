@@ -99,7 +99,7 @@ public final class SinglePeriodTimeline extends Timeline {
   public Period getPeriod(int periodIndex, Period period, boolean setIds) {
     Assertions.checkIndex(periodIndex, 0, 1);
     Object id = setIds ? ID : null;
-    return period.set(id, id, 0, periodDurationUs, -windowPositionInPeriodUs);
+    return period.set(id, id, 0, periodDurationUs, -windowPositionInPeriodUs, false);
   }
 
   @Override

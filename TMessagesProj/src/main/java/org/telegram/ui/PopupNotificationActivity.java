@@ -65,9 +65,11 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PlayingGameDrawable;
 import org.telegram.ui.Components.PopupAudioView;
 import org.telegram.ui.Components.RecordStatusDrawable;
+import org.telegram.ui.Components.RoundStatusDrawable;
 import org.telegram.ui.Components.SendingFileDrawable;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.StatusDrawable;
 import org.telegram.ui.Components.TypingDotsDrawable;
 
 import java.io.File;
@@ -92,10 +94,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     private ArrayList<ViewGroup> imageViews = new ArrayList<>();
     private ArrayList<ViewGroup> audioViews = new ArrayList<>();
     private VelocityTracker velocityTracker = null;
-    private TypingDotsDrawable typingDotsDrawable;
-    private RecordStatusDrawable recordStatusDrawable;
-    private SendingFileDrawable sendingFileDrawable;
-    private PlayingGameDrawable playingGameDrawable;
+    private StatusDrawable[] statusDrawables = new StatusDrawable[5];
 
     private int classGuid;
     private TLRPC.User currentUser;
@@ -180,15 +179,16 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.appDidLogout);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.pushMessagesUpdated);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioProgressDidChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioDidReset);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingDidReset);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.contactsDidLoaded);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
 
-        typingDotsDrawable = new TypingDotsDrawable();
-        recordStatusDrawable = new RecordStatusDrawable();
-        sendingFileDrawable = new SendingFileDrawable();
-        playingGameDrawable = new PlayingGameDrawable();
+        statusDrawables[0] = new TypingDotsDrawable();
+        statusDrawables[1] = new RecordStatusDrawable();
+        statusDrawables[2] = new SendingFileDrawable();
+        statusDrawables[3] = new PlayingGameDrawable();
+        statusDrawables[4] = new RoundStatusDrawable();
 
         SizeNotifierFrameLayout contentView = new SizeNotifierFrameLayout(this) {
             @Override
@@ -321,6 +321,16 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
+            public void onSwitchRecordMode(boolean video) {
+
+            }
+
+            @Override
+            public void onPreAudioVideoRecord() {
+
+            }
+
+            @Override
             public void onMessageEditEnd(boolean loading) {
 
             }
@@ -359,6 +369,21 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
             @Override
             public void needStartRecordVideo(int state) {
+
+            }
+
+            @Override
+            public void needStartRecordAudio(int state) {
+
+            }
+
+            @Override
+            public void needChangeVideoPreviewState(int state, float seekProgress) {
+
+            }
+
+            @Override
+            public void needShowMediaBanHint() {
 
             }
         });
@@ -1161,34 +1186,14 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         if (start) {
             try {
                 Integer type = MessagesController.getInstance().printingStringsTypes.get(currentMessageObject.getDialogId());
-                if (type == 0) {
-                    onlineTextView.setCompoundDrawablesWithIntrinsicBounds(typingDotsDrawable, null, null, null);
-                    onlineTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
-                    typingDotsDrawable.start();
-                    recordStatusDrawable.stop();
-                    sendingFileDrawable.stop();
-                    playingGameDrawable.stop();
-                } else if (type == 1) {
-                    onlineTextView.setCompoundDrawablesWithIntrinsicBounds(recordStatusDrawable, null, null, null);
-                    onlineTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
-                    recordStatusDrawable.start();
-                    typingDotsDrawable.stop();
-                    sendingFileDrawable.stop();
-                    playingGameDrawable.stop();
-                } else if (type == 2) {
-                    onlineTextView.setCompoundDrawablesWithIntrinsicBounds(sendingFileDrawable, null, null, null);
-                    onlineTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
-                    sendingFileDrawable.start();
-                    typingDotsDrawable.stop();
-                    recordStatusDrawable.stop();
-                    playingGameDrawable.stop();
-                } else if (type == 3) {
-                    onlineTextView.setCompoundDrawablesWithIntrinsicBounds(playingGameDrawable, null, null, null);
-                    onlineTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
-                    playingGameDrawable.start();
-                    typingDotsDrawable.stop();
-                    recordStatusDrawable.stop();
-                    sendingFileDrawable.stop();
+                onlineTextView.setCompoundDrawablesWithIntrinsicBounds(statusDrawables[type], null, null, null);
+                onlineTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
+                for (int a = 0; a < statusDrawables.length; a++) {
+                    if (a == type) {
+                        statusDrawables[a].start();
+                    } else {
+                        statusDrawables[a].stop();
+                    }
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -1196,10 +1201,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         } else {
             onlineTextView.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
             onlineTextView.setCompoundDrawablePadding(0);
-            typingDotsDrawable.stop();
-            recordStatusDrawable.stop();
-            recordStatusDrawable.stop();
-            sendingFileDrawable.stop();
+            for (int a = 0; a < statusDrawables.length; a++) {
+                statusDrawables[a].stop();
+            }
         }
     }
 
@@ -1259,7 +1263,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     updateSubtitle();
                 }
             }
-        } else if (id == NotificationCenter.audioDidReset) {
+        } else if (id == NotificationCenter.messagePlayingDidReset) {
             Integer mid = (Integer) args[0];
             if (messageContainer != null) {
                 int count = messageContainer.getChildCount();
@@ -1274,7 +1278,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     }
                 }
             }
-        } else if (id == NotificationCenter.audioProgressDidChanged) {
+        } else if (id == NotificationCenter.messagePlayingProgressDidChanged) {
             Integer mid = (Integer) args[0];
             if (messageContainer != null) {
                 int count = messageContainer.getChildCount();
@@ -1330,8 +1334,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.appDidLogout);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.pushMessagesUpdated);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioProgressDidChanged);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidReset);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingDidReset);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
         if (chatActivityEnterView != null) {

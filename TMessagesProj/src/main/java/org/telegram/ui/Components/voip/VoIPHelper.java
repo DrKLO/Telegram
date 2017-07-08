@@ -3,26 +3,55 @@ package org.telegram.ui.Components.voip;
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.text.InputType;
+import android.text.TextUtils;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.CheckBoxCell;
+import org.telegram.ui.Components.BetterRatingView;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.VoIPActivity;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.Set;
 
 public class VoIPHelper{
 
 	private static long lastCallRequestTime=0;
+
+	private static final int VOIP_SUPPORT_ID=4244000;
 
 	public static void startCall(TLRPC.User user, final Activity activity, TLRPC.TL_userFull userFull){
 		if(userFull!=null && userFull.phone_calls_private){
@@ -137,5 +166,163 @@ public class VoIPHelper{
 				}
 			});
 		}
+	}
+
+	public static File getLogsDir(){
+		//File logsDir=new File(ApplicationLoader.applicationContext.getExternalCacheDir(), "voip_logs");
+		File logsDir=new File(ApplicationLoader.applicationContext.getCacheDir(), "voip_logs");
+		if(!logsDir.exists())
+			logsDir.mkdirs();
+		return logsDir;
+	}
+
+	public static boolean canRateCall(TLRPC.TL_messageActionPhoneCall call){
+		if(!(call.reason instanceof TLRPC.TL_phoneCallDiscardReasonBusy) && !(call.reason instanceof TLRPC.TL_phoneCallDiscardReasonMissed)){
+			SharedPreferences prefs=ApplicationLoader.applicationContext.getSharedPreferences("notifications", Context.MODE_PRIVATE);
+			Set<String> hashes=prefs.getStringSet("calls_access_hashes", (Set<String>)Collections.EMPTY_SET);
+			for(String hash:hashes){
+				String[] d=hash.split(" ");
+				if(d.length<2)
+					continue;
+				if(d[0].equals(call.call_id+"")){
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public static void showRateAlert(Context context, TLRPC.TL_messageActionPhoneCall call){
+		SharedPreferences prefs=context.getSharedPreferences("notifications", Context.MODE_PRIVATE);
+		Set<String> hashes=prefs.getStringSet("calls_access_hashes", (Set<String>)Collections.EMPTY_SET);
+		for(String hash:hashes){
+			String[] d=hash.split(" ");
+			if(d.length<2)
+				continue;
+			if(d[0].equals(call.call_id+"")){
+				try{
+					long accessHash=Long.parseLong(d[1]);
+					showRateAlert(context, null, call.call_id, accessHash);
+				}catch(Exception x){}
+				return;
+			}
+		}
+	}
+
+	public static void showRateAlert(final Context context, final Runnable onDismiss, final long callID, final long accessHash){
+		final File log=new File(getLogsDir(), callID+".log");
+		LinearLayout alertView=new LinearLayout(context);
+		alertView.setOrientation(LinearLayout.VERTICAL);
+
+		int pad = AndroidUtilities.dp(16);
+		alertView.setPadding(pad, pad, pad, 0);
+
+		TextView text = new TextView(context);
+		text.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+		text.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+		text.setGravity(Gravity.CENTER);
+		text.setText(LocaleController.getString("VoipRateCallAlert", R.string.VoipRateCallAlert));
+		alertView.addView(text);
+
+		final BetterRatingView bar = new BetterRatingView(context);
+		alertView.addView(bar, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 0));
+
+		final EditText commentBox = new EditText(context);
+		commentBox.setHint(LocaleController.getString("CallReportHint", R.string.CallReportHint));
+		commentBox.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+		commentBox.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+		commentBox.setHintTextColor(Theme.getColor(Theme.key_dialogTextHint));
+		commentBox.setBackgroundDrawable(Theme.createEditTextDrawable(context, true));
+		commentBox.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4));
+		commentBox.setTextSize(18);
+		commentBox.setVisibility(View.GONE);
+		alertView.addView(commentBox, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 8, 8, 8, 0));
+
+		final boolean[] includeLogs={true};
+		final CheckBoxCell checkbox=new CheckBoxCell(context, true);
+		View.OnClickListener checkClickListener=new View.OnClickListener(){
+			@Override
+			public void onClick(View v){
+				includeLogs[0]=!includeLogs[0];
+				checkbox.setChecked(includeLogs[0], true);
+			}
+		};
+		checkbox.setText(LocaleController.getString("CallReportIncludeLogs", R.string.CallReportIncludeLogs), null, true, false);
+		checkbox.setClipToPadding(false);
+		checkbox.setOnClickListener(checkClickListener);
+		alertView.addView(checkbox, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, -8, 0, -8, 0));
+
+		final TextView logsText = new TextView(context);
+		logsText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+		logsText.setTextColor(Theme.getColor(Theme.key_dialogTextGray3));
+		logsText.setText(LocaleController.getString("CallReportLogsExplain", R.string.CallReportLogsExplain));
+		logsText.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
+		logsText.setOnClickListener(checkClickListener);
+		alertView.addView(logsText);
+
+		checkbox.setVisibility(View.GONE);
+		logsText.setVisibility(View.GONE);
+		if(!log.exists()){
+			includeLogs[0]=false;
+		}
+
+		AlertDialog alert=new AlertDialog.Builder(context)
+				.setTitle(LocaleController.getString("CallMessageReportProblem", R.string.CallMessageReportProblem))
+				.setView(alertView)
+				.setPositiveButton(LocaleController.getString("Send", R.string.Send), new DialogInterface.OnClickListener(){
+					@Override
+					public void onClick(DialogInterface dialog, int which){
+						TLRPC.TL_phone_setCallRating req = new TLRPC.TL_phone_setCallRating();
+						req.rating = bar.getRating();
+						if (req.rating < 5)
+							req.comment = commentBox.getText().toString();
+						else
+							req.comment="";
+						req.peer = new TLRPC.TL_inputPhoneCall();
+						req.peer.access_hash = accessHash;
+						req.peer.id = callID;
+						ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+							@Override
+							public void run(TLObject response, TLRPC.TL_error error) {
+								if (response instanceof TLRPC.TL_updates) {
+									TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
+									MessagesController.getInstance().processUpdates(updates, false);
+									if(includeLogs[0] && log.exists()){
+										SendMessagesHelper.prepareSendingDocument(log.getAbsolutePath(), log.getAbsolutePath(), null, "text/plain", VOIP_SUPPORT_ID, null, null);
+										Toast.makeText(context, LocaleController.getString("CallReportSent", R.string.CallReportSent), Toast.LENGTH_LONG).show();
+									}
+								}
+							}
+						});
+						//SendMessagesHelper.getInstance().sendMessage(commentBox.getText().toString(), VOIP_SUPPORT_ID, null, null, true, null, null, null);
+					}
+				})
+				.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
+				.setOnDismissListener(new DialogInterface.OnDismissListener(){
+					@Override
+					public void onDismiss(DialogInterface dialog){
+						if(onDismiss!=null)
+							onDismiss.run();
+					}
+				})
+				.show();
+
+		final View btn = alert.getButton(DialogInterface.BUTTON_POSITIVE);
+		btn.setEnabled(false);
+		bar.setOnRatingChangeListener(new BetterRatingView.OnRatingChangeListener() {
+			@Override
+			public void onRatingChanged(int rating) {
+				btn.setEnabled(rating > 0);
+				commentBox.setHint(rating<4 ? LocaleController.getString("CallReportHint", R.string.CallReportHint) : LocaleController.getString("VoipFeedbackCommentHint", R.string.VoipFeedbackCommentHint));
+				commentBox.setVisibility(rating < 5 && rating > 0 ? View.VISIBLE : View.GONE);
+				if (commentBox.getVisibility() == View.GONE) {
+					((InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(commentBox.getWindowToken(), 0);
+				}
+				if(log.exists()){
+					checkbox.setVisibility(rating<4 ? View.VISIBLE : View.GONE);
+					logsText.setVisibility(rating<4 ? View.VISIBLE : View.GONE);
+				}
+			}
+		});
 	}
 }

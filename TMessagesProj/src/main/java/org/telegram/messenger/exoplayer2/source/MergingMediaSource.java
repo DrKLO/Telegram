@@ -16,6 +16,7 @@
 package org.telegram.messenger.exoplayer2.source;
 
 import android.support.annotation.IntDef;
+import org.telegram.messenger.exoplayer2.ExoPlayer;
 import org.telegram.messenger.exoplayer2.Timeline;
 import org.telegram.messenger.exoplayer2.upstream.Allocator;
 import java.io.IOException;
@@ -56,8 +57,7 @@ public final class MergingMediaSource implements MediaSource {
      * The reason the merge failed. One of {@link #REASON_WINDOWS_ARE_DYNAMIC} and
      * {@link #REASON_PERIOD_COUNT_MISMATCH}.
      */
-    @Reason
-    public final int reason;
+    @Reason public final int reason;
 
     /**
      * @param reason The reason the merge failed. One of {@link #REASON_WINDOWS_ARE_DYNAMIC} and
@@ -92,11 +92,11 @@ public final class MergingMediaSource implements MediaSource {
   }
 
   @Override
-  public void prepareSource(final Listener listener) {
+  public void prepareSource(ExoPlayer player, boolean isTopLevelSource, Listener listener) {
     this.listener = listener;
     for (int i = 0; i < mediaSources.length; i++) {
       final int sourceIndex = i;
-      mediaSources[sourceIndex].prepareSource(new Listener() {
+      mediaSources[sourceIndex].prepareSource(player, false, new Listener() {
         @Override
         public void onSourceInfoRefreshed(Timeline timeline, Object manifest) {
           handleSourceInfoRefreshed(sourceIndex, timeline, manifest);

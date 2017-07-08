@@ -76,6 +76,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private EmptyTextProgressView emptyView;
     private RecyclerListView listView;
     private SearchAdapter searchListViewAdapter;
+    private ActionBarMenuItem addItem;
 
     private boolean searchWas;
     private boolean searching;
@@ -87,6 +88,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean creatingChat;
     private boolean allowBots = true;
     private boolean needForwardCount = true;
+    private boolean needFinishFragment = true;
     private boolean addingToChannel;
     private int chat_id;
     private String selectAlertString = null;
@@ -102,7 +104,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private final static int add_button = 1;
 
     public interface ContactsActivityDelegate {
-        void didSelectContact(TLRPC.User user, String param);
+        void didSelectContact(TLRPC.User user, String param, ContactsActivity activity);
     }
 
     public ContactsActivity(Bundle args) {
@@ -127,6 +129,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             needForwardCount = arguments.getBoolean("needForwardCount", true);
             allowBots = arguments.getBoolean("allowBots", true);
             addingToChannel = arguments.getBoolean("addingToChannel", false);
+            needFinishFragment = arguments.getBoolean("needFinishFragment", true);
             chat_id = arguments.getInt("chat_id", 0);
         } else {
             needPhonebook = true;
@@ -185,10 +188,16 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             @Override
             public void onSearchExpand() {
                 searching = true;
+                if (addItem != null) {
+                    addItem.setVisibility(View.GONE);
+                }
             }
 
             @Override
             public void onSearchCollapse() {
+                if (addItem != null) {
+                    addItem.setVisibility(View.VISIBLE);
+                }
                 searchListViewAdapter.searchDialogs(null);
                 searching = false;
                 searchWas = false;
@@ -222,10 +231,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         });
         item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
         if (!createSecretChat && !returnAsResult) {
-            menu.addItem(add_button, R.drawable.add);
+            addItem = menu.addItem(add_button, R.drawable.add);
         }
 
-        searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch, false, false, allowBots);
+        searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch, false, false, allowBots, 0);
         listViewAdapter = new ContactsAdapter(context, onlyUsers ? 1 : 0, needPhonebook, ignoreUsers, chat_id != 0);
 
         fragmentView = new FrameLayout(context);
@@ -487,10 +496,12 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             }
         } else {
             if (delegate != null) {
-                delegate.didSelectContact(user, param);
+                delegate.didSelectContact(user, param, this);
                 delegate = null;
             }
-            finishFragment();
+            if (needFinishFragment) {
+                finishFragment();
+            }
         }
     }
 

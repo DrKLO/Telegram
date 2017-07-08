@@ -196,6 +196,14 @@ public class Browser {
     public static boolean isInternalUri(Uri uri) {
         String host = uri.getHost();
         host = host != null ? host.toLowerCase() : "";
-        return "tg".equals(uri.getScheme()) || "telegram.me".equals(host) || "t.me".equals(host) || "telegram.dog".equals(host);
+        if ("tg".equals(uri.getScheme())) {
+            return true;
+        } else if ("telegram.me".equals(host) || "t.me".equals(host) || "telegram.dog".equals(host) || "telesco.pe".equals(host)) {
+            String path = uri.getPath();
+            if (path != null && path.length() > 1) {
+                return true;
+            }
+        }
+        return false;
     }
 }

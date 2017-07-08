@@ -16,9 +16,11 @@ import android.view.TextureView;
 
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.exoplayer2.DefaultLoadControl;
+import org.telegram.messenger.exoplayer2.DefaultRenderersFactory;
 import org.telegram.messenger.exoplayer2.ExoPlaybackException;
 import org.telegram.messenger.exoplayer2.ExoPlayer;
 import org.telegram.messenger.exoplayer2.ExoPlayerFactory;
+import org.telegram.messenger.exoplayer2.PlaybackParameters;
 import org.telegram.messenger.exoplayer2.SimpleExoPlayer;
 import org.telegram.messenger.exoplayer2.Timeline;
 import org.telegram.messenger.exoplayer2.extractor.DefaultExtractorsFactory;
@@ -32,7 +34,7 @@ import org.telegram.messenger.exoplayer2.source.dash.DefaultDashChunkSource;
 import org.telegram.messenger.exoplayer2.source.hls.HlsMediaSource;
 import org.telegram.messenger.exoplayer2.source.smoothstreaming.DefaultSsChunkSource;
 import org.telegram.messenger.exoplayer2.source.smoothstreaming.SsMediaSource;
-import org.telegram.messenger.exoplayer2.trackselection.AdaptiveVideoTrackSelection;
+import org.telegram.messenger.exoplayer2.trackselection.AdaptiveTrackSelection;
 import org.telegram.messenger.exoplayer2.trackselection.DefaultTrackSelector;
 import org.telegram.messenger.exoplayer2.trackselection.MappingTrackSelector;
 import org.telegram.messenger.exoplayer2.trackselection.TrackSelection;
@@ -81,7 +83,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
 
         mainHandler = new Handler();
 
-        TrackSelection.Factory videoTrackSelectionFactory = new AdaptiveVideoTrackSelection.Factory(BANDWIDTH_METER);
+        TrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
         trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
 
         lastReportedPlaybackState = ExoPlayer.STATE_IDLE;
@@ -89,7 +91,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
 
     private void ensurePleyaerCreated() {
         if (player == null) {
-            player = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, trackSelector, new DefaultLoadControl(), null, SimpleExoPlayer.EXTENSION_RENDERER_MODE_OFF);
+            player = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, trackSelector, new DefaultLoadControl(), null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
             player.addListener(this);
             player.setVideoListener(this);
             player.setVideoTextureView(textureView);
@@ -168,6 +170,9 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     public void setTextureView(TextureView texture) {
+        if (textureView == texture) {
+            return;
+        }
         textureView = texture;
         if (player == null) {
             return;
@@ -205,6 +210,10 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         return player != null ? player.getCurrentPosition() : 0;
     }
 
+    public boolean isMuted() {
+        return player.getVolume() == 0.0f;
+    }
+
     public void setMute(boolean value) {
         if (player == null) {
             return;
@@ -214,6 +223,13 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         } else {
             player.setVolume(1.0f);
         }
+    }
+
+    public void setVolume(float volume) {
+        if (player == null) {
+            return;
+        }
+        player.setVolume(volume);
     }
 
     public void seekTo(long positionMs) {
@@ -241,6 +257,12 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
 
     public boolean isBuffering() {
         return player != null && lastReportedPlaybackState == ExoPlayer.STATE_BUFFERING;
+    }
+
+    public void setStreamType(int type) {
+        if (player != null) {
+            player.setAudioStreamType(type);
+        }
     }
 
     @Override
@@ -291,6 +313,11 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
         delegate.onSurfaceTextureUpdated(surfaceTexture);
+    }
+
+    @Override
+    public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
+
     }
 
     private void maybeReportPlayerState() {

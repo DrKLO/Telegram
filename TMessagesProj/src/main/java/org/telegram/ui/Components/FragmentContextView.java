@@ -18,6 +18,7 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
+import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -39,6 +40,7 @@ import org.telegram.messenger.voip.VoIPService;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.AudioPlayerActivity;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.VoIPActivity;
 
 public class FragmentContextView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
@@ -64,6 +66,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
         setTag(1);
         frameLayout = new FrameLayout(context);
+        frameLayout.setWillNotDraw(false);
         addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
 
         View shadow = new View(context);
@@ -77,10 +80,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         playButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (MediaController.getInstance().isAudioPaused()) {
-                    MediaController.getInstance().playAudio(MediaController.getInstance().getPlayingMessageObject());
+                if (MediaController.getInstance().isMessagePaused()) {
+                    MediaController.getInstance().playMessage(MediaController.getInstance().getPlayingMessageObject());
                 } else {
-                    MediaController.getInstance().pauseAudio(MediaController.getInstance().getPlayingMessageObject());
+                    MediaController.getInstance().pauseMessage(MediaController.getInstance().getPlayingMessageObject());
                 }
             }
         });
@@ -111,8 +114,38 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             public void onClick(View v) {
                 if (currentStyle == 0) {
                     MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
-                    if (messageObject != null && messageObject.isMusic() && fragment != null) {
-                        fragment.presentFragment(new AudioPlayerActivity());
+                    if (fragment != null && messageObject != null) {
+                        if (messageObject.isMusic()) {
+                            fragment.presentFragment(new AudioPlayerActivity());
+                        } else {
+                            long dialog_id = 0;
+                            if (fragment instanceof ChatActivity) {
+                                dialog_id = ((ChatActivity) fragment).getDialogId();
+                            }
+                            if (messageObject.getDialogId() == dialog_id) {
+                                ((ChatActivity) fragment).scrollToMessageId(messageObject.getId(), 0, false, 0, true);
+                            } else {
+                                dialog_id = messageObject.getDialogId();
+                                Bundle args = new Bundle();
+                                int lower_part = (int) dialog_id;
+                                int high_id = (int) (dialog_id >> 32);
+                                if (lower_part != 0) {
+                                    if (high_id == 1) {
+                                        args.putInt("chat_id", lower_part);
+                                    } else {
+                                        if (lower_part > 0) {
+                                            args.putInt("user_id", lower_part);
+                                        } else if (lower_part < 0) {
+                                            args.putInt("chat_id", -lower_part);
+                                        }
+                                    }
+                                } else {
+                                    args.putInt("enc_id", high_id);
+                                }
+                                args.putInt("message_id", messageObject.getId());
+                                fragment.presentFragment(new ChatActivity(args), fragment instanceof ChatActivity);
+                            }
+                        }
                     }
                 } else if (currentStyle == 1) {
                     Intent intent = new Intent(getContext(), VoIPActivity.class);
@@ -166,9 +199,9 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         topPadding = 0;
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidReset);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioPlayStateChanged);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidStarted);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingDidReset);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingDidStarted);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didStartedCall);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didEndedCall);
     }
@@ -176,9 +209,9 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioDidReset);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioPlayStateChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioDidStarted);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingDidReset);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingDidStarted);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.didStartedCall);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.didEndedCall);
         boolean callAvailable = VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().getCallState() != VoIPService.STATE_WAITING_INCOMING;
@@ -196,7 +229,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
     @Override
     public void didReceivedNotification(int id, Object... args) {
-        if (id == NotificationCenter.audioDidStarted || id == NotificationCenter.audioPlayStateChanged || id == NotificationCenter.audioDidReset || id == NotificationCenter.didEndedCall) {
+        if (id == NotificationCenter.messagePlayingDidStarted || id == NotificationCenter.messagePlayingPlayStateChanged || id == NotificationCenter.messagePlayingDidReset || id == NotificationCenter.didEndedCall) {
             checkPlayer(false);
         } else if (id == NotificationCenter.didStartedCall) {
             checkCall(false);
@@ -274,7 +307,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 visible = true;
                 setVisibility(VISIBLE);
             }
-            if (MediaController.getInstance().isAudioPaused()) {
+            if (MediaController.getInstance().isMessagePaused()) {
                 playButton.setImageResource(R.drawable.miniplayer_play);
             } else {
                 playButton.setImageResource(R.drawable.miniplayer_pause);
@@ -282,7 +315,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             if (lastMessageObject != messageObject || prevStyle != 0) {
                 lastMessageObject = messageObject;
                 SpannableStringBuilder stringBuilder;
-                if (lastMessageObject.isVoice()) {
+                if (lastMessageObject.isVoice() || lastMessageObject.isRoundVideo()) {
                     stringBuilder = new SpannableStringBuilder(String.format("%s %s", messageObject.getMusicAuthor(), messageObject.getMusicTitle()));
                     titleTextView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
                 } else {

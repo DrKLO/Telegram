@@ -24,12 +24,12 @@ import org.telegram.messenger.exoplayer2.extractor.ExtractorInput;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
 import org.telegram.messenger.exoplayer2.extractor.PositionHolder;
 import org.telegram.messenger.exoplayer2.extractor.SeekMap;
-import org.telegram.messenger.exoplayer2.extractor.TimestampAdjuster;
 import org.telegram.messenger.exoplayer2.extractor.TrackOutput;
 import org.telegram.messenger.exoplayer2.text.SubtitleDecoderException;
 import org.telegram.messenger.exoplayer2.text.webvtt.WebvttParserUtil;
 import org.telegram.messenger.exoplayer2.util.MimeTypes;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
+import org.telegram.messenger.exoplayer2.util.TimestampAdjuster;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.regex.Matcher;
@@ -79,7 +79,7 @@ import java.util.regex.Pattern;
   }
 
   @Override
-  public void seek(long position) {
+  public void seek(long position, long timeUs) {
     // This extractor is only used for the HLS use case, which should not call this method.
     throw new IllegalStateException();
   }
@@ -167,7 +167,7 @@ import java.util.regex.Pattern;
   }
 
   private TrackOutput buildTrackOutput(long subsampleOffsetUs) {
-    TrackOutput trackOutput = output.track(0);
+    TrackOutput trackOutput = output.track(0, C.TRACK_TYPE_TEXT);
     trackOutput.format(Format.createTextSampleFormat(null, MimeTypes.TEXT_VTT, null,
         Format.NO_VALUE, 0, language, null, subsampleOffsetUs));
     output.endTracks();

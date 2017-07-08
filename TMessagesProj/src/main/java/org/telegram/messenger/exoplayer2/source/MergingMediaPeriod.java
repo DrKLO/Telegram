@@ -129,6 +129,13 @@ import java.util.IdentityHashMap;
   }
 
   @Override
+  public void discardBuffer(long positionUs) {
+    for (MediaPeriod period : enabledPeriods) {
+      period.discardBuffer(positionUs);
+    }
+  }
+
+  @Override
   public boolean continueLoading(long positionUs) {
     return sequenceableLoader.continueLoading(positionUs);
   }

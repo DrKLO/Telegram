@@ -184,7 +184,7 @@ public class ThemeActivity extends BaseFragment {
                         Theme.ThemeInfo themeInfo = Theme.themes.get(position);
                         Theme.applyTheme(themeInfo);
                         if (parentLayout != null) {
-                            parentLayout.rebuildAllFragmentViews(false);
+                            parentLayout.rebuildAllFragmentViews(false, false);
                         }
                         finishFragment();
                     }
@@ -295,8 +295,7 @@ public class ThemeActivity extends BaseFragment {
                                     } else if (which == 1) {
                                         if (parentLayout != null) {
                                             Theme.applyTheme(themeInfo);
-                                            parentLayout.rebuildAllFragmentViews(true);
-                                            parentLayout.showLastFragment();
+                                            parentLayout.rebuildAllFragmentViews(true, true);
                                             new ThemeEditorView().show(getParentActivity(), themeInfo.name);
                                         }
                                     } else {
@@ -310,8 +309,7 @@ public class ThemeActivity extends BaseFragment {
                                             @Override
                                             public void onClick(DialogInterface dialogInterface, int i) {
                                                 if (Theme.deleteTheme(themeInfo)) {
-                                                    parentLayout.rebuildAllFragmentViews(true);
-                                                    parentLayout.showLastFragment();
+                                                    parentLayout.rebuildAllFragmentViews(true, true);
                                                 }
                                                 if (listAdapter != null) {
                                                     listAdapter.notifyDataSetChanged();

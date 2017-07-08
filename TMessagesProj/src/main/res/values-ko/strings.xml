@@ -6,8 +6,10 @@
     <string name="AppName">텔레그램</string>
     <string name="AppNameBeta">텔레그램 베타</string>
     <string name="LanguageName">한국어</string>
-    <string name="LanguageNameInEnglish">Korean</string>
+    <string name="English">한국어</string>
+    <string name="LanguageNameInEnglish">한국어</string>
     <string name="LanguageCode">ko</string>
+    <string name="ContinueOnThisLanguage">한국어로 진행</string>
     <!--signin view-->
     <string name="YourPhone">전화번호 입력</string>
     <string name="StartText">국가번호와 전화번호를 입력하세요. (대한민국 국가번호: 82)</string>
@@ -79,6 +81,7 @@
     <string name="PaymentTestInvoice">테스트 인보이스</string>
     <string name="PaymentCheckoutPay">%1$s 결제</string>
     <string name="PaymentCheckoutMethod">결제방법</string>
+    <string name="PaymentCheckoutProvider">결제 제공 업체</string>
     <string name="PaymentCheckoutName">이름</string>
     <string name="PaymentCheckoutPhoneNumber">전화번호</string>
     <string name="PaymentCheckoutEmail">연락주소</string>
@@ -89,6 +92,8 @@
     <string name="PaymentPrecheckoutFailed">죄송합니다, 결제가 봇에 의하여 거절되었습니다.</string>
     <string name="PaymentFailed">죄송합니다, 결제가 거절되었습니다.</string>
     <string name="PaymentConnectionFailed">결제 서버로 연결을 할 수 없습니다. 인터넷 연결을 확인해주시고 다시 시도해주세요.</string>
+    <string name="PaymentWarning">경고</string>
+    <string name="PaymentWarningText">신용카드 정보는 텔레그램이나 %1$s이 권한을 가지지 않습니다. 신용카드 정보는 %2$s 결제 시스템에서만 처리가 됩니다.\n\n결제는 %1$s 개발자에게 직접 됩니다. 텔레그램은 그 어떠한 보장도 하지 않음으로 진행시 위험을 감수 하셔야 합니다. 문제발생시, %1$s 개발자나 사용하시는 은행에게 문의를 부탁드립니다.</string>
     <!--chats view-->
     <string name="NewConversationShortcut">새로운 대화</string>
     <string name="Settings">설정</string>
@@ -100,6 +105,13 @@
     <string name="NoChatsHelp">대화를 시작하려면 우측 상단의\n초대하기 버튼을 누르거나\n메뉴 버튼을 눌러 보세요.</string>
     <string name="WaitingForNetwork">연결 대기 중...</string>
     <string name="Connecting">연결 중...</string>
+    <string name="ConnectingToProxy">프록시 연결 중...</string>
+    <string name="ConnectingToProxyTapToDisable">프록시를 비활성화하려면 여기를 탭하세요..</string>
+    <string name="ConnectingToProxyDisable">비활성화</string>
+    <string name="ConnectingToProxyEnable">활성화</string>
+    <string name="EnableProxyAlert">이 프록시를 비활성화 하겠습니까?</string>
+    <string name="EnableProxyAlert2">나중에 설정에서 프록시 서버를 변경 할 수 있습니다. (데이터 및 저장소)</string>
+    <string name="ConnectingToProxyDisableAlert">%1$s 프록시 서버를 비활성화 하겠습니까? 나중에 설정에서 변경 할 수 있습니다. (데이터 및 저장소)</string>
     <string name="Updating">업데이트 중...</string>
     <string name="NewSecretChat">비밀대화 시작</string>
     <string name="AwaitingEncryption">%s님을 기다리는 중...</string>
@@ -139,12 +151,14 @@
     <string name="Bold">굵게</string>
     <string name="Italic">기울림</string>
     <string name="Regular">일반</string>
+    <string name="ContactsPermissionAlert"><![CDATA[1]]>Telegram<![CDATA[1]]>에 권한을 부여하여 주소록에 있는 분들과 연결하세요.</string>
+    <string name="ContactsPermissionAlertNotNow">아직 안됨</string>
+    <string name="ContactsPermissionAlertContinue">계속</string>
     <!--channels-->
-    <string name="GroupType">그룹 종류</string>
-    <string name="ChannelType">채널 종류</string>
     <string name="ChannelTypePublic">공개</string>
     <string name="ChannelTypePrivate">비공개</string>
     <string name="SetAsAdmin">관리자로 지명</string>
+    <string name="NoBlockedUsers">차단한 사용자 없음</string>
     <string name="DescriptionInfoMega">그룹에 추가 설명을 제공 할 수 있습니다.</string>
     <string name="LeaveMega">그룹 나가기</string>
     <string name="DeleteMega">그룹 삭제</string>
@@ -152,7 +166,7 @@
     <string name="DeleteMegaMenu">그룹 삭제</string>
     <string name="MegaDeleteInfo">그룹에 있는 모든 메시지가 삭제됩니다.</string>
     <string name="MegaAdminsInfo">그룹방 관리를 도울 수 있는 관리자를 추가 할 수 있습니다. 길게 탭을하면 관리자 삭제가 가능합니다.</string>
-    <string name="MegaDeleteAlert">이 그룹방을 삭제하실 경우 모든 구성원과 메시지를 삭제를 하게되며 복구가 안됩니다. 그래도 그룹방을 삭제하시겠습니까?</string>
+    <string name="MegaDeleteAlert">이 그룹방을 삭제하실 경우 모든 구성원과 메시지를 삭제 하게되며 복구가 안됩니다. 그래도 그룹방을 삭제하시겠습니까?</string>
     <string name="ActionCreateMega">그룹 생성됨</string>
     <string name="MegaAddedBy">이 그룹방에 un1님이 초대하였습니다.</string>
     <string name="MegaLeaveAlert">정말 그룹방에서 나가겠습니까?</string>
@@ -168,6 +182,7 @@
     <string name="ActionPinnedFile">un1 님이 파일을 고정함</string>
     <string name="ActionPinnedSticker">un1 님이 스티커를 고정함</string>
     <string name="ActionPinnedVoice">un1 님이 음성메시지를 고정함</string>
+    <string name="ActionPinnedRound">un1 님이 영상메시지를 고정함</string>
     <string name="ActionPinnedContact">un1 님이 연락처를 고정함</string>
     <string name="ActionPinnedGame">un1 님이  %1$s 고정함</string>
     <string name="ActionPinnedGeo">un1 님이 위치를 고정함</string>
@@ -176,6 +191,7 @@
     <string name="ActionMigrateFromGroup">이 그룹방은 슈퍼그룹방으로 업그레이드 되었습니다.</string>
     <string name="ActionMigrateFromGroupNotify">%1$s 그룹방은 슈퍼그룹방으로 업그레이드 되었습니다.</string>
     <string name="NoBlockedGroup">그룹방에서 차단되어 퇴장당한 사용자는 관리자가 초대해야지만 그룹방에 입장이 가능합니다. 초대링크로는 초대가 되지 않습니다.</string>
+    <string name="NoBlockedChannel">그룹방에서 차단되어 퇴장당한 사용자는 관리자가 초대해야지만 그룹방에 입장이 가능합니다. 초대링크로는 초대가 되지 않습니다.</string>
     <string name="NewChannel">새 채널</string>
     <string name="EnterChannelName">채널명</string>
     <string name="AddMutual">채널에 친구 추가</string>
@@ -217,7 +233,9 @@
     <string name="LinkChecking">이름 확인 중..</string>
     <string name="LinkAvailable">%1$s은 사용 가능합니다.</string>
     <string name="ChannelMembers">구성원</string>
+    <string name="ChannelBlacklist">블랙리스트</string>
     <string name="ChannelBlockedUsers">차단된 사용자</string>
+    <string name="ChannelRestrictedUsers">제한된 사용자</string>
     <string name="ChannelAdministrators">관리자</string>
     <string name="ChannelDelete">채널 삭제</string>
     <string name="ChannelDeleteMenu">채널 삭제</string>
@@ -233,15 +251,17 @@
     <string name="ActionChannelRemovedPhoto">채널 사진 삭제됨</string>
     <string name="ActionChannelChangedTitle">채널명이 un2로 변경됨</string>
     <string name="ChangePublicLimitReached">죄송하지만, 너무 많은 공개아이디를 생성하였습니다. 기존 공개 채널 혹은 그룹방을 비공개로 전환하거나 삭제해주세요.</string>
-    <string name="ChannelModerator">관리자</string>
     <string name="ChannelCreator">생성자</string>
     <string name="ChannelEditor">관리자</string>
     <string name="ChannelMute">음소거</string>
     <string name="ChannelUnmute">음소거 취소</string>
     <string name="ChannelAddAdmin">관리자 추가</string>
+    <string name="ChannelBlockUser">사용자 차단</string>
+    <string name="Unban">차단해제</string>
+    <string name="UnbanText">차단을 해제하려면 대화상대를 길게 누르세요.</string>
     <string name="ChannelInviteViaLink">링크를 통해 초대</string>
     <string name="ChannelAddUserAdminAlert">%1$s님을 관리자로 추가하시겠습니까?</string>
-    <string name="ChannelRemoveUserAdmin">삭제</string>
+    <string name="ChannelRemoveUserAdmin">관리자 회수</string>
     <string name="ChannelMembersInfo">채널 관리자만 리스트를 볼 수 있습니다.</string>
     <string name="ChannelAdminNotParticipant">아직 이 유저가 채널에 입장하지 않았습니다. 초대하시겠습니까?</string>
     <string name="ChannelLinkInfo">텔레그램이 설치된 분들은 링크를 타고 채널에 참여가 가능합니다.</string>
@@ -271,6 +291,7 @@
     <string name="ChannelMessageGroupDocument">%1$s님이 %2$s 채널에 파일을 보냈습니다</string>
     <string name="ChannelMessageGroupGif">%1$s님이 %2$s 채널에 GIF파일을 보냈습니다</string>
     <string name="ChannelMessageGroupAudio">%1$s님이 %2$s 채널에 음성메시지를 보냈습니다</string>
+    <string name="ChannelMessageGroupRound">%1$s님이 %2$s 채널에 영상메시지를 보냈습니다</string>
     <string name="ChannelMessageGroupMusic">%1$s님이 %2$s 채널에 트랙을 보냈습니다</string>
     <string name="ChannelMessageGroupSticker">%1$s님이 %2$s 채널에 스티커를 보냈습니다</string>
     <string name="ChannelMessageGroupStickerEmoji">%1$s님이 %2$s 채널에 %3$s 스티커를 보냈습니다</string>
@@ -282,6 +303,7 @@
     <string name="ChannelMessageDocument">%1$s 님이 파일을 보냈습니다</string>
     <string name="ChannelMessageGIF">%1$s 님이 GIF파일을 보냈습니다</string>
     <string name="ChannelMessageAudio">%1$s님이 음성메시지를 보냈습니다</string>
+    <string name="ChannelMessageRound">%1$s님이 영상메시지를 보냈습니다</string>
     <string name="ChannelMessageMusic">%1$s님이 트랙을 보냈습니다</string>
     <string name="ChannelMessageSticker">%1$s님이 스티커를 보냈습니다</string>
     <string name="ChannelMessageStickerEmoji">%1$s님이 %2$s스티커를 작성하였습니다</string>
@@ -292,6 +314,110 @@
     <string name="ChannelNotifyMembersInfoOff">메시지 미알림 대상</string>
     <string name="ChannelSignMessages">메시지 서명</string>
     <string name="ChannelSignMessagesInfo">메시지 작성하는 관리자 추가</string>
+    <string name="EditAdmin">관리자 수정</string>
+    <string name="EditAdminWhatCanDo">관리자는 무엇을 할 수 있나요?</string>
+    <string name="EditAdminChangeChannelInfo">채널 정보 수정</string>
+    <string name="EditAdminChangeGroupInfo">그룹 정보 수정</string>
+    <string name="EditAdminPostMessages">메시지 작성</string>
+    <string name="EditAdminEditMessages">다른 사용자 메시지 수정</string>
+    <string name="EditAdminDeleteMessages">다른 사용자 메시지 삭제</string>
+    <string name="EditAdminGroupDeleteMessages">메시지 삭제</string>
+    <string name="EditAdminAddAdmins">새 관리자 추가</string>
+    <string name="EditAdminRemoveAdmin">관리자 회수</string>
+    <string name="EditAdminBanUsers">사용자 차단</string>
+    <string name="EditAdminAddUsers">사용자 추가</string>
+    <string name="EditAdminAddUsersViaLink">링크를 통하여 사용자 초대</string>
+    <string name="EditAdminPinMessages">메시지 고정</string>
+    <string name="EditAdminPromotedBy">%1$s 님이 추가</string>
+    <string name="EditAdminCantEdit">이 관리자의 권한을 수정할 수 없습니다.</string>
+    <string name="UserRestrictionsBy">%1$s 님이 제한함</string>
+    <string name="UserRestrictions">사용자 제한</string>
+    <string name="UserRestrictionsRead">메시지 읽기</string>
+    <string name="UserRestrictionsCanDo">이 사용자는 무엇을 할 수 있나요?</string>
+    <string name="UserRestrictionsSend">메시지 전송</string>
+    <string name="UserRestrictionsSendMedia">미디어 전송</string>
+    <string name="UserRestrictionsSendStickers">스티커 &amp; GIF 전송</string>
+    <string name="UserRestrictionsEmbedLinks">링크 저장</string>
+    <string name="UserRestrictionsUntil">다음까지 차단</string>
+    <string name="UserRestrictionsUntilForever">영원히</string>
+    <string name="UserRestrictionsUntilRemove">삭제</string>
+    <string name="UserRestrictionsBlock">그룹에서 차단 후 내보내기</string>
+    <string name="ManageGroup">그룹 관리</string>
+    <string name="ManageChannel">채널 관리</string>
+    <string name="ManageGroupMenu">그룹 관리</string>
+    <string name="ManageChannelMenu">채널 관리</string>
+    <!--event log-->
+    <string name="EventLog">최근 활동</string>
+    <string name="EventLogAllEvents">모든 활동</string>
+    <string name="EventLogSelectedEvents">선택한 활동</string>
+    <string name="EventLogAllAdmins">모든 관리자</string>
+    <string name="EventLogEmpty"><![CDATA[1]]>아직 이벤트가 없습니다.<![CDATA[1]]>\n\n그룹 사용자나 관리자가\n지난 48시간내에\n 아무런 활동이 없었습니다.</string>
+    <string name="EventLogEmptyChannel"><![CDATA[<b>]]>아직 이벤트가 없습니다.<![CDATA[</b>]]>\n\n이 채널 관리자는\n지난 48시간내에\n 아무런 활동이 없었습니다.</string>
+    <string name="EventLogEmptySearch"><![CDATA[<b>]]>이벤트를 찾을 수 없습니다.<![CDATA[</b>]]>\n\n검색한 이벤트를 찾을 수 없습니다.</string>
+    <string name="EventLogEmptyTextSearch">\'<![CDATA[1]]>%1$s<![CDATA[1]]>\' 에 대한 최근 이벤트를 찾을 수 없습니다.</string>
+    <string name="EventLogInfoTitle">최근 활동이란 무엇인가요?</string>
+    <string name="EventLogInfoDetail">그룹 사용자와 관리자의 지난 48시간동안 활동 리스트입니다.</string>
+    <string name="EventLogInfoDetailChannel">채널 관리자의 지난 48시간동안 활동 리스트입니다.</string>
+    <string name="EventLogEditedGroupTitle">un1님이 그룹명을 \"%1$s\" 로 변경하였습니다.</string>
+    <string name="EventLogEditedChannelTitle">un1님이 채널명을 \"%1$s\" 로 변경하였습니다.</string>
+    <string name="EventLogLeftGroup">un1님이 그룹에서 나갔습니다.</string>
+    <string name="EventLogLeftChannel">un1님이 채널에서 나갔습니다.</string>
+    <string name="EventLogAdded">un1님이 un2님을 초대했습니다</string>
+    <string name="EventLogGroupJoined">un1 님이 그룹에 참여했습니다</string>
+    <string name="EventLogChannelRestricted">%1$s 님이 차단됨</string>
+    <string name="EventLogChannelUnrestricted">%1$s 님이 차단해제됨</string>
+    <string name="EventLogChannelJoined">un1님이 채널에 참여했습니다.</string>
+    <string name="EventLogEditedGroupPhoto">un1님이 그룹 사진 을 새로 설정했습니다.</string>
+    <string name="EventLogEditedChannelPhoto">un1님이 채널 사진 을 새로 설정했습니다.</string>
+    <string name="EventLogRemovedWGroupPhoto">un1님이 그룹 사진 을 삭제했습니다.</string>
+    <string name="EventLogRemovedChannelPhoto">un1님이 채널 사진 을 삭제했습니다.</string>
+    <string name="EventLogEditedMessages">un1님이 이 메시지를 편집했습니다.</string>
+    <string name="EventLogEditedCaption">un1님이 캡션을 수정했습니다:</string>
+    <string name="EventLogOriginalMessages">원본 메시지</string>
+    <string name="EventLogOriginalCaption">원본 캡션</string>
+    <string name="EventLogOriginalCaptionEmpty">없음</string>
+    <string name="EventLogPinnedMessages">un1님이 이 메시지를 고정했습니다:</string>
+    <string name="EventLogUnpinnedMessages">un1 님이 메시지를 고정했습니다.</string>
+    <string name="EventLogDeletedMessages">un1님이 이 메시지를 삭제했습니다:</string>
+    <string name="EventLogChangedGroupLink">un1님이 그룹링크를 변경했습니다:</string>
+    <string name="EventLogChangedChannelLink">un1님이 채널링크를 변경했습니다:</string>
+    <string name="EventLogRemovedGroupLink">un1 님이 그룹링크를 삭제했습니다.</string>
+    <string name="EventLogRemovedChannelLink">un1님이 채널 링크를 삭제했습니다.</string>
+    <string name="EventLogPreviousLink">기존 링크</string>
+    <string name="EventLogEditedGroupDescription">un1님이 그룹정보를 변경했습니다:</string>
+    <string name="EventLogEditedChannelDescription">un1님이 채널정보를 변경했습니다:</string>
+    <string name="EventLogPreviousGroupDescription">기존 정보</string>
+    <string name="EventLogToggledInvitesOn">un1 님이 그룹 초대를 허용함</string>
+    <string name="EventLogToggledInvitesOff">un1 님이 그룹 초대를 불허함</string>
+    <string name="EventLogToggledSignaturesOn">un1님이 서명을 허용했습니다.</string>
+    <string name="EventLogToggledSignaturesOff">un1 님이 서명을 불허함</string>
+    <string name="EventLogRestrictedUntil">%1$s 님에 대한 제한을 변경했습니다.\n\n기한: %2$s</string>
+    <string name="EventLogRestrictedSendStickers">스티커 &amp; GIF 전송</string>
+    <string name="EventLogRestrictedSendMedia">미디어 전송</string>
+    <string name="EventLogRestrictedSendMessages">메시지 전송</string>
+    <string name="EventLogRestrictedSendEmbed">링크 저장</string>
+    <string name="EventLogRestrictedReadMessages">메시지 읽기</string>
+    <string name="EventLogPromoted">%1$s님의 권한을 수정했습니다.</string>
+    <string name="EventLogPromotedChangeChannelInfo">채널 정보 수정</string>
+    <string name="EventLogPromotedChangeGroupInfo">그룹 정보 수정</string>
+    <string name="EventLogPromotedPostMessages">메시지 작성</string>
+    <string name="EventLogPromotedEditMessages">메시지 수정</string>
+    <string name="EventLogPromotedDeleteMessages">메시지 삭제</string>
+    <string name="EventLogPromotedAddAdmins">관리자 추가</string>
+    <string name="EventLogPromotedBanUsers">사용자 차단</string>
+    <string name="EventLogPromotedAddUsers">사용자 추가</string>
+    <string name="EventLogPromotedPinMessages">메시지 고정</string>
+    <string name="EventLogFilterAll">모든 활동</string>
+    <string name="EventLogFilterNewRestrictions">새로운 제한</string>
+    <string name="EventLogFilterNewAdmins">새로운 관리자</string>
+    <string name="EventLogFilterNewMembers">새로운 사용자</string>
+    <string name="EventLogFilterGroupInfo">그룹 정보</string>
+    <string name="EventLogFilterChannelInfo">채널 정보</string>
+    <string name="EventLogFilterGroupSettings">그룹 설정</string>
+    <string name="EventLogFilterDeletedMessages">메시지 삭제</string>
+    <string name="EventLogFilterEditedMessages">메시지 수정</string>
+    <string name="EventLogFilterPinnedMessages">메시지 고정</string>
+    <string name="EventLogFilterLeavingMembers">퇴장한 사용자</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">새 단체 메시지 리스트</string>
     <string name="EnterListName">리스트 이름을 입력하세요</string>
@@ -324,13 +450,18 @@
     <string name="IsTyping">님이 입력 중...</string>
     <string name="AreTyping">님이 입력 중...</string>
     <string name="IsRecordingAudio">%1$s님이 음성메시지를 녹음중입니다...</string>
+    <string name="IsRecordingRound">%1$s님이 영상메시지를 녹화중입니다...</string>
     <string name="IsSendingAudio">%1$s님이 음성파일을 전송중입니다...</string>
     <string name="IsSendingPhoto">%1$s님이 사진 보내는 중...</string>
     <string name="InstantView">즉시 보기</string>
+    <string name="OpenGroup">공개 그룹</string>
+    <string name="OpenChannel">공개 채널</string>
+    <string name="InstantViewNightMode">밤시간에는 자동으로 어두운 테마가 작동됩니다</string>
     <string name="IsSendingGame">%1$s님이 게임을 플레이중입니다.</string>
     <string name="IsSendingVideo">%1$s님이 동영상 보내는 중...</string>
     <string name="IsSendingFile">%1$s님이 파일 보내는 중...</string>
-    <string name="RecordingAudio">음성메시지를 녹음 중입니다..</string>
+    <string name="RecordingAudio">영상메시지를 녹화중...</string>
+    <string name="RecordingRound">영상메시지를 녹화중...</string>
     <string name="SendingAudio">음성파일 전송 중..</string>
     <string name="SendingPhoto">사진 전송 중..</string>
     <string name="SendingGame">게임 플레이중...</string>
@@ -378,6 +509,8 @@
     <string name="OpenInExternalApp">다음으로 파일열기..</string>
     <string name="CopyUrl">URL 복사</string>
     <string name="SendItems">%1$s 전송</string>
+    <string name="SendAsFile">파일로 전송</string>
+    <string name="SendAsFiles">파일로 보내기</string>
     <string name="OpenUrlAlert">%1$s 링크를 여시겠습니까?</string>
     <string name="BotPermissionGameAlert">이 bot을 통하여 %1$s이 텔레그램 이름과 아이디를(전화번호 아님) 웹페이지로 전달하시기를 허락하시나요?</string>
     <string name="ReportSpam">스팸 신고</string>
@@ -393,6 +526,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">더 보기</string>
     <string name="ShareSendTo">다음에게 보내기..</string>
+    <string name="ShareComment">코멘트 쓰기..</string>
     <string name="TapHereGifs">저장된 GIF 파일을 보려면 탭하세요.</string>
     <string name="PinMessage">고정</string>
     <string name="PinNotify">모두에게 알림</string>
@@ -415,6 +549,7 @@
     <string name="TimeToEdit">%1$s</string>
     <string name="TimeToEditExpired">죄송합니다, 수정가능시간이 만료되었습니다.</string>
     <string name="AddShortcut">바로 가기 추가</string>
+    <string name="SearchMembers">사용자 검색</string>
     <string name="ShortcutAdded">홈에 바로가기 추가</string>
     <string name="ChatYourSelf">나와의 대화</string>
     <string name="ChatYourSelfName">나</string>
@@ -427,6 +562,21 @@
     <string name="DeleteForUser">%1$s 에게 삭제</string>
     <string name="DeleteForAll">모두에게 삭제</string>
     <string name="TextCopied">클립보드로 텍스트가 복하되었습니다.</string>
+    <string name="HoldToAudio">꾹 눌러 음성을 녹음하세요. 탭하여 영상으로 전환하세요.</string>
+    <string name="HoldToVideo">꾹 눌러 영상을 녹화하세요. 탭하여 음성으로 전환하세요.</string>
+    <string name="DiscardVoiceMessageTitle">음성 메시지 지우기</string>
+    <string name="DiscardVoiceMessageDescription">녹음을 중단하고 음성 메시지를 지우시겠습니까?</string>
+    <string name="DiscardVideoMessageTitle">영상 메시지 지우기</string>
+    <string name="DiscardVideoMessageDescription">녹화를 중단하고 영상 메시지를 지우시겠습니까?</string>
+    <string name="DiscardVoiceMessageAction">지우기</string>
+    <string name="AttachMediaRestricted">그룹 관리자가 회원님의 미디어 전송을 %1$s까지 제한했습니다.</string>
+    <string name="AttachInlineRestricted">그룹 관리자가 회원님의 인라인 명령어 전송을 %1$s까지 제한했습니다.</string>
+    <string name="AttachStickersRestricted">그룹 관리자가 회원님의 스티커 전송을 %1$s까지 제한했습니다.</string>
+    <string name="SendMessageRestricted">그룹 관리자가 회원님의 메시지 작성을 %1$s까지 제한했습니다.</string>
+    <string name="AttachMediaRestrictedForever">그룹 관리자가 회원님의 미디어 전송을 제한했습니다.</string>
+    <string name="AttachInlineRestrictedForever">그룹 관리자가 회원님의 인라인 명령어 전송을 제한했습니다.</string>
+    <string name="AttachStickersRestrictedForever">그룹 관리자가 회원님의 스티커 전송을 제한했습니다.</string>
+    <string name="SendMessageRestrictedForever">그룹 관리자가 회원님의 메시지 작성을 제한했습니다.</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s님이 자동삭제를 %2$s 후로 설정했습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동삭제를 %1$s 후로 설정했습니다</string>
@@ -443,6 +593,7 @@
     <string name="NotificationMessageDocument">%1$s님이 파일을 보냈습니다</string>
     <string name="NotificationMessageGif">%1$s 님께서 GIF파일을 보내셨습니다</string>
     <string name="NotificationMessageAudio">%1$s님이 음성메시지를 보냈습니다</string>
+    <string name="NotificationMessageRound">%1$s 님이 영상 메시지를 보냈습니다</string>
     <string name="NotificationMessageMusic">%1$s 님이 트랙을 보냈습니다</string>
     <string name="NotificationMessageSticker">%1$s님이 스티커를 보냈습니다</string>
     <string name="NotificationMessageStickerEmoji">%1$s님이 %2$s스티커를 보냈습니다</string>
@@ -456,12 +607,13 @@
     <string name="NotificationMessageGroupDocument">%1$s님이 %2$s 그룹에 파일을 보냈습니다</string>
     <string name="NotificationMessageGroupGif">%1$s 님께서 %2$s 그룹에 GIF파일을 보냈습니다</string>
     <string name="NotificationMessageGroupAudio">%1$s님이 %2$s 그룹에 음성메시지를 보냈습니다</string>
+    <string name="NotificationMessageGroupRound">%1$s 님이 %2$s 그룹에 영상 메시지를 보냈습니다</string>
     <string name="NotificationMessageGroupMusic">%1$s님이 %2$s 그룹에 트랙을 보냈습니다</string>
     <string name="NotificationMessageGroupSticker">%1$s님이 %2$s 그룹에 스티커를 보냈습니다</string>
     <string name="NotificationMessageGroupStickerEmoji">%1$s님이 %2$s 그룹에 %3$s 스티커를 보냈습니다</string>
     <string name="NotificationInvitedToGroup">%1$s님이 %2$s 그룹에 초대했습니다</string>
-    <string name="NotificationEditedGroupName">%1$s님이 그룹 이름을 %2$s 그룹으로 변경했습니다</string>
-    <string name="NotificationEditedGroupPhoto">%1$s님이 %2$s 그룹 사진을 변경했습니다</string>
+    <string name="NotificationEditedGroupName">%1$s 님이 %2$s 그룹명을 변경하였습니다.</string>
+    <string name="NotificationEditedGroupPhoto">%1$s 님이 %2$s 그룹 사진을 변경하였습니다.</string>
     <string name="NotificationGroupAddMember">%1$s님이 %3$s님을 %2$s 그룹에 초대했습니다</string>
     <string name="NotificationGroupAddSelf">%1$s 님이 %2$s 그룹으로 되돌아왔습니다</string>
     <string name="NotificationGroupAddSelfMega">%1$s 님이 %2$s 그룹에 참여했습니다</string>
@@ -485,6 +637,7 @@
     <string name="NotificationActionPinnedSticker">%1$s 님이 스티커를 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedStickerEmoji">%1$s 님이 %3$s 스티커를 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedVoice">%1$s 님이 음성메시지를 %2$s 그룹방에 고정함</string>
+    <string name="NotificationActionPinnedRound">%1$s 님이 영상메시지를 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedContact">%1$s 님이 연락처를 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedGeo">%1$s 님이 지도를 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedGif">%1$s 님이 GIF를 %2$s 그룹방에 고정함</string>
@@ -497,6 +650,7 @@
     <string name="NotificationActionPinnedStickerChannel">%1$s 님이 스티커를 고정함</string>
     <string name="NotificationActionPinnedStickerEmojiChannel">%1$s 님이 %2$s 스티커를 고정함</string>
     <string name="NotificationActionPinnedVoiceChannel">%1$s 님이 음성메시지를 고정함</string>
+    <string name="NotificationActionPinnedRoundChannel">%1$s 님이 영상메시지를 고정함</string>
     <string name="NotificationActionPinnedContactChannel">%1$s 님이 연락처를 고정함</string>
     <string name="NotificationActionPinnedGeoChannel">%1$s 님이 지도를 고정함</string>
     <string name="NotificationActionPinnedGifChannel">%1$s 님이 GIF를 고정함</string>
@@ -551,8 +705,10 @@
     <string name="SETTINGS">설정</string>
     <string name="AddMember">대화상대 추가</string>
     <string name="SetAdmins">관리자 설정</string>
+    <string name="BanFromTheGroup">그룹으로 부터 차단됨</string>
     <string name="DeleteAndExit">그룹에서 나가기</string>
     <string name="Notifications">알림</string>
+    <string name="KickFromSupergroup">사용자 제한</string>
     <string name="KickFromGroup">그룹에서 내보내기</string>
     <string name="UpgradeGroup">슈퍼그룹으로 업그레이드</string>
     <string name="ConvertGroup">슈퍼그룹으로 변환</string>
@@ -584,7 +740,7 @@
     <string name="EncryptionKey">암호화 키</string>
     <string name="MessageLifetime">자동삭제 타이머</string>
     <string name="ShortMessageLifetimeForever">해제</string>
-    <string name="EncryptionKeyDescription">이 이미지와 텍스트는 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]> 님과의 현재 비밀대화에 대한 비밀키에서 파생된 것입니다. 이 이미지와 텍스트가 <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]>  님의 휴대전화와 동일하다면 단말기간(end-to-end)의 암호화가 정상적으로 진행되고 있음을 보장합니다.<![CDATA[<br><br>]]> 자세한 사항은 telegram.org를 참고해 주세요.</string>
+    <string name="EncryptionKeyDescription">이 이미지와 텍스트는 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>님과의 비밀대화시 생성된 암호화키에서 파생되었습니다.\n\n이 이미지와 텍스트가 <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> 님의 휴대전화와 동일하다면 단말기간(end-to-end)의 암호화가 정상적으로 진행되고 있음을 보장합니다.\n\n더 자세한 사항은 telegram.org를 참고해 주세요.</string>
     <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
     <string name="TapToEmojify">탭을 하여 이모티콘화</string>
     <string name="NumberUnknown">알 수 없음</string>
@@ -598,14 +754,14 @@
     <string name="UsernameInvalidShort">아이디는 최소 다섯 글자 이상 입력해야 합니다.</string>
     <string name="UsernameInvalidLong">아이디는 최대 32자까지만 가능합니다.</string>
     <string name="UsernameInvalidStartNumber">아이디는 숫자로 시작할 수 없습니다.</string>
-    <string name="UsernameHelp">텔레그램 아이디를 설정할 수 있습니다. 아이디를 설정하면 회원님의 전화번호를 몰라도 아이디로 회원님을 찾아 대화를 나눌 수 있습니다.<![CDATA[<br><br>]]>아이디는 영문, 밑줄, 숫자로 (<![CDATA[<b>]]>a~z<![CDATA[</b>]]>, <![CDATA[<b>]]>_<![CDATA[</b>]]>, <![CDATA[<b>]]>0~9<![CDATA[</b>]]>) <![CDATA[<b>]]>다섯 글자<![CDATA[</b>]]> 이상으로 설정해 주세요.</string>
+    <string name="UsernameHelp"><![CDATA[<b>]]>텔레그램<![CDATA[</b>]]> 아이디를 설정할 수 있습니다. 아이디를 설정하면 회원님의 전화번호를 몰라도 아이디로 회원님을 찾아 대화를 나눌 수 있습니다.\n\n아이디는 <![CDATA[<b>]]>a-z<![CDATA[</b>]]>,<![CDATA[<b>]]>0-9<![CDATA[</b>]]>와 밑줄을 사용할 수 있습니다. 아이디의 최소단위는 <![CDATA[<b>]]>5<![CDATA[</b>]]>글자입니다.</string>
     <string name="UsernameHelpLink">이 링크는 다음 상대와 텔레그램 대화를 열게 됩니다:\n%1$s</string>
     <string name="UsernameChecking">아이디 확인 중...</string>
     <string name="UsernameAvailable">%1$s: 사용 가능합니다.</string>
     <string name="UsernameEmpty">없음</string>
     <string name="ErrorOccurred">오류가 발생했습니다.</string>
     <!--stickers view-->
-    <string name="Stickers">스티커</string>
+    <string name="StickersName">스티커</string>
     <string name="AddStickers">스티커 추가</string>
     <string name="AddMasks">마스크 추가</string>
     <string name="AddToStickers">스티커 추가</string>
@@ -638,6 +794,8 @@
     <string name="ArchivedMasksAlertInfo">오래된 마스크중 일부가 보관되어집니다. 마스크 설정에서 다시 재설정이 가능합니다.</string>
     <!--theme view-->
     <string name="Theme">테마</string>
+    <string name="ThemeDark">다크</string>
+    <string name="ThemeBlue">파랑</string>
     <string name="DeleteThemeAlert">이 테마를 삭제하시겠습니까?</string>
     <string name="IncorrectTheme">올바르지 않은 테마 파일</string>
     <string name="EnterThemeName">테마명을 입력하세요</string>
@@ -683,7 +841,10 @@
     <string name="ColorGreen">초록색</string>
     <string name="ColorCyan">청록색</string>
     <string name="ColorWhite">하얀색</string>
+    <string name="ColorSepia">세피아</string>
+    <string name="ColorDark">다크</string>
     <string name="ColorPink">핑크색</string>
+    <string name="FontSize">폰트 크기</string>
     <string name="ColorViolet">보라색</string>
     <string name="ColorOrange">주황색</string>
     <string name="NotificationsLedInfo">LED는 일부 기기에서 새로운 메시지가 수신될때 반짝입니는 빛입니다</string>
@@ -707,7 +868,8 @@
     <string name="ContactJoined">친구의 텔레그램 가입 알림</string>
     <string name="PinnedMessages">고정된 메시지</string>
     <string name="Language">언어</string>
-    <string name="AskAQuestionInfo">텔레그램에 관한 질문은 자원봉사자들이 답변해 드립니다. 신속한 답변을 위해 노력하지만 답변이 다소 늦을 수 있습니다.<![CDATA[<br><br>]]>일반적인 문제와 <![CDATA[<a href="https://telegram.org/faq/ko#g">해결방법</a>]]>에 대해서는 \'<![CDATA[<a href="https://telegram.org/faq/ko#a">자주 묻는 질문</a>]]>\'을 확인해 보세요.</string>
+    <string name="LanguageCustom">사용자 지정</string>
+    <string name="AskAQuestionInfo">텔레그램에 관한 질문은 자원봉사자들이 답변해 드립니다. 신속한 답변을 위해 노력하지만 답변이 다소 늦을 수 있습니다. 일반적인 문제와 해결방법에 대해서는<![CDATA[<a href="https://telegram.org/faq#general"> \'자주 묻는 질문\'</a>]]>을 확인해 보세요 : FAQ에는 <![CDATA[<a href="https://telegram.org/faq#troubleshooting">문제해결</a>]]> 관련된 정보와 팁이 있습니다.</string>
     <string name="AskButton">질문하기</string>
     <string name="TelegramFaq">자주 묻는 질문</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/ko</string>
@@ -788,6 +950,19 @@
     <string name="DebugMenu">디버그 메뉴</string>
     <string name="DebugMenuImportContacts">연락처 가져오기</string>
     <string name="DebugMenuReloadContacts">연락처 재동기화</string>
+    <string name="ChangeLanguageLater">나중에 설정에서 언어 변경이 가능합니다.</string>
+    <string name="ChooseYourLanguage">언어 선택</string>
+    <string name="ChooseYourLanguageOther">기타</string>
+    <string name="ProxySettings">프록시 설정</string>
+    <string name="Proxy">프록시</string>
+    <string name="UseProxySettings">프록시 설정 사용</string>
+    <string name="UseProxyAddress">서버</string>
+    <string name="UseProxyPassword">비밀번호</string>
+    <string name="UseProxyPort">포트</string>
+    <string name="UseProxyUsername">아이디</string>
+    <string name="UseProxyInfo">SOCKS5 프록시 설정</string>
+    <string name="UseProxyForCalls">Use proxy for calls</string>
+    <string name="UseProxyForCallsInfo">Proxy servers may degrade the quality of your calls.</string>
     <!--cache view-->
     <string name="LocalDatabase">로컬 데이터베이스</string>
     <string name="LocalDatabaseClear">캐시된 텍스트 메시지를 삭제하시겠습니까?</string>
@@ -797,7 +972,7 @@
     <string name="CalculatingSize">계산중...</string>
     <string name="LocalDocumentCache">문서</string>
     <string name="LocalPhotoCache">사진</string>
-    <string name="LocalAudioCache">음성 메시지</string>
+    <string name="LocalAudioCache">음성/영상 메시지</string>
     <string name="LocalVideoCache">동영상</string>
     <string name="LocalMusicCache">음악</string>
     <string name="LocalGifCache">GIF파일</string>
@@ -806,6 +981,8 @@
     <string name="KeepMedia">미디어 저장</string>
     <string name="KeepMediaInfo">이 기간 동안 클라우드 채팅방에서  <![CDATA[<b>접근하지 않은</b>]]> 사진이나 동영상, 기타 파일 등은 공간 절약을 위해 이 기기에서 삭제됩니다.\n\n모든 파일은 Telegram 클라우드에 여전히 남으며 필요하시면 언제든 다시 다운로드하실 수 있습니다.</string>
     <string name="KeepMediaForever">영원히</string>
+    <string name="AudioAutodownload">음성 메시지</string>
+    <string name="VideoMessagesAutodownload">음성 메시지</string>
     <!--sessions view-->
     <string name="SessionsTitle">활성화된 세션</string>
     <string name="CurrentSession">현재 세션</string>
@@ -838,8 +1015,8 @@
     <string name="FingerprintInfo">지문인식 후 진행해주세요</string>
     <string name="FingerprintHelp">터치 센서</string>
     <string name="FingerprintNotRecognized">지문인식이 실패하였습니다. 다시 시도해주세요.</string>
-    <string name="ScreenCapture">화면 캡춰 허용</string>
-    <string name="ScreenCaptureInfo">활성화시 앱내에서 화면 캡춰가 가능합니다. 다만, 화면전환시 잠금코드가 활성화 되어져 있더라도 대화내용이 뜰 수 있습니다.\n\n적용이 안될시, 앱 재시작이 필요할 수도 있습니다.</string>
+    <string name="ScreenCapture">화면 캡처 허용</string>
+    <string name="ScreenCaptureInfo">활성화시 앱내에서 화면 캡처가 가능합니다. 다만, 화면전환시 잠금코드가 활성화 되어져 있더라도 대화내용이 뜰 수 있습니다.\n\n적용이 안될시, 앱 재시작이 필요할 수도 있습니다.</string>
     <!--media view-->
     <string name="DocumentsTitle">공유한 파일</string>
     <string name="SharedMediaTitle">공유된 미디어</string>
@@ -870,7 +1047,7 @@
     <string name="Of">%1$d / %2$d</string>
     <string name="Gallery">앨범</string>
     <string name="AllPhotos">모든 사진</string>
-    <string name="AllVideo">모든 동영상</string>
+    <string name="AllMedia">모든 미디어</string>
     <string name="NoPhotos">사진이 없습니다.</string>
     <string name="NoVideo">동영상이 아직 없음</string>
     <string name="PleaseDownload">사진/동영상을 먼저 다운로드하세요</string>
@@ -1004,6 +1181,11 @@
     <string name="PrivacySettings">개인정보 및 보안</string>
     <string name="PrivacyTitle">개인정보</string>
     <string name="PrivacyLastSeen">마지막 접속</string>
+    <string name="PrivacyPayments">결제</string>
+    <string name="PrivacyPaymentsClear">결제 및 배송정보 초기화</string>
+    <string name="PrivacyPaymentsClearInfo">배송 정보를 삭제 및 결제사에게 저장된 신용카드 정보 삭제를 요청할 수 있습니다. 텔레그램 절대로 회원님의 신용카드 정보를 저장하지 않습니다.</string>
+    <string name="PrivacyClearShipping">배송 정보</string>
+    <string name="PrivacyClearPayment">결제정보</string>
     <string name="LastSeenEverybody">전체 공개</string>
     <string name="LastSeenContacts">내 대화상대</string>
     <string name="LastSeenNobody">비공개</string>
@@ -1044,6 +1226,8 @@
     <string name="InviteToGroupError">죄송합니다,  이 이용자는 개인 설정으로 인하여 그룹에 초대 할 수 없습니다.</string>
     <string name="InviteToChannelError">죄송합니다,  이 이용자는 개인 설정으로 인하여 채널에 초대 할 수 없습니다.</string>
     <string name="CreateGroupError">죄송합니다,  이 이용자들의 개인 설정으로 인하여 그룹을 생성 할 수 없습니다.</string>
+    <string name="PrivacyCallsP2PTitle">단-대-단</string>
+    <string name="PrivacyCallsP2PHelp">사용자의 아이피 주소 노출을 제한하기 위하여 모든 단-대-단 기능을 텔레그램 서버로 릴레이하지만, 음성 품질이 약간 저하됩니다.</string>
     <!--edit video view-->
     <string name="EditVideo">동영상 편집</string>
     <string name="SendingVideo">동영상 보내는 중...</string>
@@ -1121,6 +1305,7 @@
     <string name="AttachDocument">파일</string>
     <string name="AttachSticker">스티커</string>
     <string name="AttachAudio">음성 메시지</string>
+    <string name="AttachRound">영상 메시지</string>
     <string name="AttachGame">게임</string>
     <string name="FromYou">나</string>
     <string name="ActionTakeScreenshootYou">화면을 캡처했습니다!</string>
@@ -1189,6 +1374,11 @@
     <string name="UserRestricted">죄송합니다, 이 작업이 제한되었습니다.</string>
     <string name="YouBlockedUser">죄송합니다,  그룹에 이 이용자나 봇을 차단하였기 대문에 추가를 할 수 없습니다. 초대하시렴녀 차단해제를 부탁드립니다.</string>
     <string name="JoinGroup">그룹방 입장</string>
+    <string name="AddAdminErrorNotAMember">죄송합니다, 이 사용자는 이 그룹에 속해있지 않으며 초대가 되지 않기 때문에 관리자로 추가할 수 없습니다.</string>
+    <string name="AddAdminErrorBlacklisted">죄송합니다, 이 사용자는 블랙리스트에 있으며 해제가 가능하지 않기 떄문에 관리자로 추가할 수 없습니다.</string>
+    <string name="AddBannedErrorAdmin">죄송합니다, 이 사용자는 그룹의 관리자이며 해제권한이 없으시기 떄문에 차단할 수 없습니다.</string>
+    <string name="ErrorSendRestrictedStickers">죄송합니다, 그룹의 관리자가 회원님의 스티커 전송을 제한했습니다.</string>
+    <string name="ErrorSendRestrictedMedia">죄송합니다, 그룹의 관리자가 회원님의 미디어 전송을 제한했습니다.</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram은 여러 기기에서 친구와 메시지를 주고받을 수 있도록 회원님의 연락처 접근이 필요합니다.</string>
     <string name="PermissionStorage">Telegram은 사진, 비디오, 음악 및 다양한 미디어를 공유 및 저장하기 위하여 스토리지 접근이 필요합니다.</string>
@@ -1207,13 +1397,13 @@
     <string name="Page5Title">강력함</string>
     <string name="Page6Title">클라우드 기반</string>
     <string name="Page7Title">사생활 보호</string>
-    <string name="Page1Message">세상에서 가장 <![CDATA[<b>빠르고 안전한</b><br/><b>무료</b>]]> 메신저입니다.</string>
-    <string name="Page2Message"><![CDATA[<b>텔레그램</b>]]>은 어떤 메신저보다도<![CDATA[<br/>]]>빠르게 메시지를 전송합니다.</string>
-    <string name="Page3Message"><![CDATA[<b>텔레그램</b>]]>은 영원히 무료입니다.<![CDATA[<br/>]]>광고도 없고 이용료도 없습니다.</string>
-    <string name="Page4Message"><![CDATA[<b>텔레그램</b>]]>은 그 어떤 누구로부터도<![CDATA[<br/>]]>메시지를 안전하게 보호합니다.</string>
-    <string name="Page5Message"><![CDATA[<b>텔레그램</b>]]>은 대화나 미디어의<![CDATA[<br/>]]>용량에 제한이 없습니다.</string>
-    <string name="Page6Message"><![CDATA[<b>텔레그램</b>]]>은 다른 기기에서도<![CDATA[<br/>]]>동시에 사용할 수 있습니다.</string>
-    <string name="Page7Message"><![CDATA[<b>텔레그램</b>]]>은 메시지를 강력하게 암호화하며<![CDATA[<br/>]]>자동으로 삭제되게 할 수 있습니다.</string>
+    <string name="Page1Message">세상에서 가장 <![CDATA[<b>빠른</b>]]> 메신저입니다.\n <![CDATA[<b>무료</b>]]> 이며 <![CDATA[<b>안전합니다</b>]]>.</string>
+    <string name="Page2Message"><![CDATA[<b>텔레그램</b>]]>은 어떤 메신저보다도\n빠르게 메시지를 전송합니다.</string>
+    <string name="Page3Message"><![CDATA[<b>텔레그램</b>]]>은 영원히 무료입니다. \n광고도 없고 이용료도 없습니다.</string>
+    <string name="Page4Message"><![CDATA[<b>텔레그램</b>]]>은 그 어떤 누구로부터도\n메시지를 안전하게 보호합니다.</string>
+    <string name="Page5Message"><![CDATA[<b>텔레그램</b>]]>은 대화나 미디어의 용량에\n제한이 없습니다.</string>
+    <string name="Page6Message"><![CDATA[<b>텔레그램</b>]]>은 다른 기기에서도\n동시에 사용할 수 있습니다.</string>
+    <string name="Page7Message"><![CDATA[<b>텔레그램</b>]]>은 메시지를 강력하게 암호화하며\n자동으로 삭제되게 할 수 있습니다.</string>
     <string name="StartMessaging">시작하기</string>
     <!--VoIP-->
     <string name="AccountSettings">계정설정</string>
@@ -1256,7 +1446,7 @@
     <string name="CallMessageOutgoingMissed">취소된 전화</string>
     <string name="CallMessageIncomingDeclined">거절한 전화</string>
     <string name="CallMessageWithDuration">%1$s (%2$s)</string>
-    <string name="CallEncryptionKeyDescription">이 이미지와 텍스트는 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]> 님과의 현재 전화를 위하여 파생된 것입니다. 이 이미지와 텍스트가 <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> 님의 휴대전화와 동일하다면 단말기간(end-to-end)의 암호화가 정상적으로 진행되고 있음을 보장합니다.</string>
+    <string name="CallEncryptionKeyDescription">이 이미지와 텍스트는 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>님과의 통화시 생성된 암호화키에서 파생되었습니다.\n\n이 이미지와 텍스트가 <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> 님의 휴대전화와 동일하다면 단말기간(end-to-end)의 암호화가 정상적으로 진행되고 있음을 보장합니다.</string>
     <string name="NoCallLog">아직 전화 내역이 없습니다.</string>
     <string name="VoipPeerIncompatible"><![CDATA[<b>]]>%1$s<![CDATA[</b>]]>의 앱은 현재 호환되지 않은 프로토콜을 사용중입니다. 앱 업데이트가 필요합니다.</string>
     <string name="VoipPeerOutdated"><![CDATA[<b>]]>%1$s<![CDATA[</b>]]>은 현재 전화기능을 지원하고 있지 않습니다. 앱 업데이트 후에 전화가 가능합니다.</string>
@@ -1275,13 +1465,18 @@
     <string name="ReturnToCall">전화로 이동</string>
     <string name="CallNotAvailable">죄송합니다, <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> 님은 수신거부 상태입니다.</string>
     <string name="CallEmojiKeyTooltip">%1$s님과 이모티콘이 일치한다면, 이 통화는 100%% 안전합니다</string>
+    <string name="CallMessageReportProblem">전화 평가</string>
+    <string name="CallReportHint">무엇이 잘못됬나요?</string>
+    <string name="CallReportIncludeLogs">기술적 정보 포함</string>
+    <string name="CallReportLogsExplain">이 작업은 대화의 내용이 노출되지 않지만, 향 후 문제해결에 도움이 됩니다.</string>
+    <string name="CallReportSent">텔레그램 전화가 개선될 수 있도록 도와주셔서 감사합니다.</string>
     <!--plural-->
-    <string name="Online_zero">온라인 %1$d명</string>
-    <string name="Online_one">온라인 %1$d명</string>
-    <string name="Online_two">온라인 %1$d명</string>
-    <string name="Online_few">온라인 %1$d명</string>
-    <string name="Online_many">온라인 %1$d명</string>
-    <string name="Online_other">온라인 %1$d명</string>
+    <string name="OnlineCount_zero">온라인 %1$d명</string>
+    <string name="OnlineCount_one">온라인 %1$d명</string>
+    <string name="OnlineCount_two">온라인 %1$d명</string>
+    <string name="OnlineCount_few">온라인 %1$d명</string>
+    <string name="OnlineCount_many">온라인 %1$d명</string>
+    <string name="OnlineCount_other">온라인 %1$d명</string>
     <string name="Members_zero">대화상대 %1$d명</string>
     <string name="Members_one">대화상대 %1$d명</string>
     <string name="Members_two">대화상대 %1$d명</string>
@@ -1469,6 +1664,12 @@
     <string name="ForwardedAudio_few">%1$d 개의 전달된 음성메시지</string>
     <string name="ForwardedAudio_many">%1$d 개의 전달된 음성메시지</string>
     <string name="ForwardedAudio_other">%1$d 개의 전달된 음성 메시지</string>
+    <string name="ForwardedRound_zero">%1$d 개의 전달된 영상메시지</string>
+    <string name="ForwardedRound_one">전달된 영상 메시지</string>
+    <string name="ForwardedRound_two">%1$d 개의 전달된 영상메시지</string>
+    <string name="ForwardedRound_few">%1$d 개의 전달된 영상메시지</string>
+    <string name="ForwardedRound_many">%1$d 개의 전달된 영상메시지</string>
+    <string name="ForwardedRound_other">%1$d 개의 전달된 영상메시지</string>
     <string name="ForwardedLocation_zero">%1$d 개의 전달된 위치</string>
     <string name="ForwardedLocation_one">전달된 위치</string>
     <string name="ForwardedLocation_two">%1$d 개의 전달된 위치</string>
@@ -1496,6 +1697,10 @@
     <!--date formatters-->
     <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
     <string name="formatterStats24H">MMM dd yyyy, HH:mm</string>
+    <string name="formatterBannedUntil12H">MMM dd yyyy, h:mm a</string>
+    <string name="formatterBannedUntil24H">MMM dd yyyy, HH:mm</string>
+    <string name="formatterBannedUntilThisYear12H">MMM dd, h:mm a</string>
+    <string name="formatterBannedUntilThisYear24H">MMM dd, HH:mm</string>
     <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">M\'월\' d\'일\'</string>
     <string name="formatterYear">yyyy.MM.dd.</string>

@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.extractor.ogg;
 
+import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.extractor.Extractor;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorInput;
@@ -75,15 +76,15 @@ public class OggExtractor implements Extractor {
 
   @Override
   public void init(ExtractorOutput output) {
-    TrackOutput trackOutput = output.track(0);
+    TrackOutput trackOutput = output.track(0, C.TRACK_TYPE_AUDIO);
     output.endTracks();
     // TODO: fix the case if sniff() isn't called
     streamReader.init(output, trackOutput);
   }
 
   @Override
-  public void seek(long position) {
-    streamReader.seek(position);
+  public void seek(long position, long timeUs) {
+    streamReader.seek(position, timeUs);
   }
 
   @Override

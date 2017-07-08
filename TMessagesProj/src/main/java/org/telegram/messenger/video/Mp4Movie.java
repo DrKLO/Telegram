@@ -66,7 +66,7 @@ public class Mp4Movie {
         return cacheFile;
     }
 
-    public void addSample(int trackIndex, long offset, MediaCodec.BufferInfo bufferInfo) throws Exception {
+    public void addSample(int trackIndex, long offset, MediaCodec.BufferInfo bufferInfo) {
         if (trackIndex < 0 || trackIndex >= tracks.size()) {
             return;
         }
@@ -74,7 +74,7 @@ public class Mp4Movie {
         track.addSample(offset, bufferInfo);
     }
 
-    public int addTrack(MediaFormat mediaFormat, boolean isAudio) throws Exception {
+    public int addTrack(MediaFormat mediaFormat, boolean isAudio) {
         tracks.add(new Track(tracks.size(), mediaFormat, isAudio));
         return tracks.size() - 1;
     }

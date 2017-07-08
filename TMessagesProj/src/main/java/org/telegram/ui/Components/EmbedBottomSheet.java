@@ -267,6 +267,7 @@ public class EmbedBottomSheet extends BottomSheet {
             @Override
             public void onInitFailed() {
                 webView.setVisibility(View.VISIBLE);
+                webView.setKeepScreenOn(true);
                 videoView.setVisibility(View.INVISIBLE);
                 videoView.getControlsView().setVisibility(View.INVISIBLE);
                 videoView.getTextureView().setVisibility(View.INVISIBLE);
@@ -649,6 +650,7 @@ public class EmbedBottomSheet extends BottomSheet {
                 } else {
                     progressBar.setVisibility(View.VISIBLE);
                     webView.setVisibility(View.VISIBLE);
+                    webView.setKeepScreenOn(true);
                     videoView.setVisibility(View.INVISIBLE);
                     videoView.getControlsView().setVisibility(View.INVISIBLE);
                     videoView.getTextureView().setVisibility(View.INVISIBLE);

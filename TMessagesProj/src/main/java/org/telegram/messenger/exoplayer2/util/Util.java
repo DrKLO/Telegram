@@ -25,6 +25,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Display;
@@ -36,6 +37,7 @@ import org.telegram.messenger.exoplayer2.upstream.DataSource;
 import org.telegram.messenger.exoplayer2.upstream.DataSpec;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
@@ -44,6 +46,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Formatter;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
@@ -64,7 +67,7 @@ public final class Util {
    * overridden for local testing.
    */
   public static final int SDK_INT =
-      (Build.VERSION.SDK_INT == 23 && Build.VERSION.CODENAME.charAt(0) == 'N') ? 24
+      (Build.VERSION.SDK_INT == 25 && Build.VERSION.CODENAME.charAt(0) == 'O') ? 26
       : Build.VERSION.SDK_INT;
 
   /**
@@ -94,8 +97,8 @@ public final class Util {
   private static final String TAG = "Util";
   private static final Pattern XS_DATE_TIME_PATTERN = Pattern.compile(
       "(\\d\\d\\d\\d)\\-(\\d\\d)\\-(\\d\\d)[Tt]"
-      + "(\\d\\d):(\\d\\d):(\\d\\d)(\\.(\\d+))?"
-      + "([Zz]|((\\+|\\-)(\\d\\d):(\\d\\d)))?");
+      + "(\\d\\d):(\\d\\d):(\\d\\d)([\\.,](\\d+))?"
+      + "([Zz]|((\\+|\\-)(\\d\\d):?(\\d\\d)))?");
   private static final Pattern XS_DURATION_PATTERN =
       Pattern.compile("^(-)?P(([0-9]*)Y)?(([0-9]*)M)?(([0-9]*)D)?"
           + "(T(([0-9]*)H)?(([0-9]*)M)?(([0-9.]*)S)?)?$");
@@ -197,7 +200,7 @@ public final class Util {
   public static ExecutorService newSingleThreadExecutor(final String threadName) {
     return Executors.newSingleThreadExecutor(new ThreadFactory() {
       @Override
-      public Thread newThread(Runnable r) {
+      public Thread newThread(@NonNull Runnable r) {
         return new Thread(r, threadName);
       }
     });
@@ -255,6 +258,16 @@ public final class Util {
   }
 
   /**
+   * Returns whether the given character is a carriage return ('\r') or a line feed ('\n').
+   *
+   * @param c The character.
+   * @return Whether the given character is a linebreak.
+   */
+  public static boolean isLinebreak(int c) {
+    return c == '\n' || c == '\r';
+  }
+
+  /**
    * Converts text to lower case using {@link Locale#US}.
    *
    * @param text The text to convert.
@@ -299,110 +312,191 @@ public final class Util {
   }
 
   /**
-   * Returns the index of the largest value in an array that is less than (or optionally equal to)
-   * a specified value.
-   * <p>
-   * The search is performed using a binary search algorithm, so the array must be sorted.
+   * Constrains a value to the specified bounds.
    *
-   * @param a The array to search.
-   * @param value The value being searched for.
-   * @param inclusive If the value is present in the array, whether to return the corresponding
-   *     index. If false then the returned index corresponds to the largest value in the array that
-   *     is strictly less than the value.
-   * @param stayInBounds If true, then 0 will be returned in the case that the value is smaller than
-   *     the smallest value in the array. If false then -1 will be returned.
+   * @param value The value to constrain.
+   * @param min The lower bound.
+   * @param max The upper bound.
+   * @return The constrained value {@code Math.max(min, Math.min(value, max))}.
    */
-  public static int binarySearchFloor(int[] a, int value, boolean inclusive, boolean stayInBounds) {
-    int index = Arrays.binarySearch(a, value);
-    index = index < 0 ? -(index + 2) : (inclusive ? index : (index - 1));
-    return stayInBounds ? Math.max(0, index) : index;
+  public static long constrainValue(long value, long min, long max) {
+    return Math.max(min, Math.min(value, max));
   }
 
   /**
-   * Returns the index of the largest value in an array that is less than (or optionally equal to)
-   * a specified value.
-   * <p>
-   * The search is performed using a binary search algorithm, so the array must be sorted.
+   * Constrains a value to the specified bounds.
    *
-   * @param a The array to search.
+   * @param value The value to constrain.
+   * @param min The lower bound.
+   * @param max The upper bound.
+   * @return The constrained value {@code Math.max(min, Math.min(value, max))}.
+   */
+  public static float constrainValue(float value, float min, float max) {
+    return Math.max(min, Math.min(value, max));
+  }
+
+  /**
+   * Returns the index of the largest element in {@code array} that is less than (or optionally
+   * equal to) a specified {@code value}.
+   * <p>
+   * The search is performed using a binary search algorithm, so the array must be sorted. If the
+   * array contains multiple elements equal to {@code value} and {@code inclusive} is true, the
+   * index of the first one will be returned.
+   *
+   * @param array The array to search.
    * @param value The value being searched for.
    * @param inclusive If the value is present in the array, whether to return the corresponding
-   *     index. If false then the returned index corresponds to the largest value in the array that
-   *     is strictly less than the value.
+   *     index. If false then the returned index corresponds to the largest element strictly less
+   *     than the value.
    * @param stayInBounds If true, then 0 will be returned in the case that the value is smaller than
-   *     the smallest value in the array. If false then -1 will be returned.
+   *     the smallest element in the array. If false then -1 will be returned.
+   * @return The index of the largest element in {@code array} that is less than (or optionally
+   *     equal to) {@code value}.
    */
-  public static int binarySearchFloor(long[] a, long value, boolean inclusive,
+  public static int binarySearchFloor(int[] array, int value, boolean inclusive,
       boolean stayInBounds) {
-    int index = Arrays.binarySearch(a, value);
-    index = index < 0 ? -(index + 2) : (inclusive ? index : (index - 1));
+    int index = Arrays.binarySearch(array, value);
+    if (index < 0) {
+      index = -(index + 2);
+    } else {
+      while ((--index) >= 0 && array[index] == value) {}
+      if (inclusive) {
+        index++;
+      }
+    }
     return stayInBounds ? Math.max(0, index) : index;
   }
 
   /**
-   * Returns the index of the smallest value in an array that is greater than (or optionally equal
-   * to) a specified value.
+   * Returns the index of the largest element in {@code array} that is less than (or optionally
+   * equal to) a specified {@code value}.
    * <p>
-   * The search is performed using a binary search algorithm, so the array must be sorted.
+   * The search is performed using a binary search algorithm, so the array must be sorted. If the
+   * array contains multiple elements equal to {@code value} and {@code inclusive} is true, the
+   * index of the first one will be returned.
    *
-   * @param a The array to search.
+   * @param array The array to search.
    * @param value The value being searched for.
    * @param inclusive If the value is present in the array, whether to return the corresponding
-   *     index. If false then the returned index corresponds to the largest value in the array that
-   *     is strictly less than the value.
+   *     index. If false then the returned index corresponds to the largest element strictly less
+   *     than the value.
+   * @param stayInBounds If true, then 0 will be returned in the case that the value is smaller than
+   *     the smallest element in the array. If false then -1 will be returned.
+   * @return The index of the largest element in {@code array} that is less than (or optionally
+   *     equal to) {@code value}.
+   */
+  public static int binarySearchFloor(long[] array, long value, boolean inclusive,
+      boolean stayInBounds) {
+    int index = Arrays.binarySearch(array, value);
+    if (index < 0) {
+      index = -(index + 2);
+    } else {
+      while ((--index) >= 0 && array[index] == value) {}
+      if (inclusive) {
+        index++;
+      }
+    }
+    return stayInBounds ? Math.max(0, index) : index;
+  }
+
+  /**
+   * Returns the index of the smallest element in {@code array} that is greater than (or optionally
+   * equal to) a specified {@code value}.
+   * <p>
+   * The search is performed using a binary search algorithm, so the array must be sorted. If
+   * the array contains multiple elements equal to {@code value} and {@code inclusive} is true, the
+   * index of the last one will be returned.
+   *
+   * @param array The array to search.
+   * @param value The value being searched for.
+   * @param inclusive If the value is present in the array, whether to return the corresponding
+   *     index. If false then the returned index corresponds to the smallest element strictly
+   *     greater than the value.
    * @param stayInBounds If true, then {@code (a.length - 1)} will be returned in the case that the
-   *     value is greater than the largest value in the array. If false then {@code a.length} will
+   *     value is greater than the largest element in the array. If false then {@code a.length} will
    *     be returned.
+   * @return The index of the smallest element in {@code array} that is greater than (or optionally
+   *     equal to) {@code value}.
    */
-  public static int binarySearchCeil(long[] a, long value, boolean inclusive,
+  public static int binarySearchCeil(long[] array, long value, boolean inclusive,
       boolean stayInBounds) {
-    int index = Arrays.binarySearch(a, value);
-    index = index < 0 ? ~index : (inclusive ? index : (index + 1));
-    return stayInBounds ? Math.min(a.length - 1, index) : index;
+    int index = Arrays.binarySearch(array, value);
+    if (index < 0) {
+      index = ~index;
+    } else {
+      while ((++index) < array.length && array[index] == value) {}
+      if (inclusive) {
+        index--;
+      }
+    }
+    return stayInBounds ? Math.min(array.length - 1, index) : index;
   }
 
   /**
-   * Returns the index of the largest value in an list that is less than (or optionally equal to)
-   * a specified value.
+   * Returns the index of the largest element in {@code list} that is less than (or optionally equal
+   * to) a specified {@code value}.
    * <p>
-   * The search is performed using a binary search algorithm, so the list must be sorted.
+   * The search is performed using a binary search algorithm, so the list must be sorted. If the
+   * list contains multiple elements equal to {@code value} and {@code inclusive} is true, the
+   * index of the first one will be returned.
    *
    * @param <T> The type of values being searched.
    * @param list The list to search.
    * @param value The value being searched for.
    * @param inclusive If the value is present in the list, whether to return the corresponding
-   *     index. If false then the returned index corresponds to the largest value in the list that
-   *     is strictly less than the value.
+   *     index. If false then the returned index corresponds to the largest element strictly less
+   *     than the value.
    * @param stayInBounds If true, then 0 will be returned in the case that the value is smaller than
-   *     the smallest value in the list. If false then -1 will be returned.
+   *     the smallest element in the list. If false then -1 will be returned.
+   * @return The index of the largest element in {@code list} that is less than (or optionally equal
+   *     to) {@code value}.
    */
   public static <T> int binarySearchFloor(List<? extends Comparable<? super T>> list, T value,
       boolean inclusive, boolean stayInBounds) {
     int index = Collections.binarySearch(list, value);
-    index = index < 0 ? -(index + 2) : (inclusive ? index : (index - 1));
+    if (index < 0) {
+      index = -(index + 2);
+    } else {
+      while ((--index) >= 0 && list.get(index).compareTo(value) == 0) {}
+      if (inclusive) {
+        index++;
+      }
+    }
     return stayInBounds ? Math.max(0, index) : index;
   }
 
   /**
-   * Returns the index of the smallest value in an list that is greater than (or optionally equal
-   * to) a specified value.
+   * Returns the index of the smallest element in {@code list} that is greater than (or optionally
+   * equal to) a specified value.
    * <p>
-   * The search is performed using a binary search algorithm, so the list must be sorted.
+   * The search is performed using a binary search algorithm, so the list must be sorted. If the
+   * list contains multiple elements equal to {@code value} and {@code inclusive} is true, the
+   * index of the last one will be returned.
    *
    * @param <T> The type of values being searched.
    * @param list The list to search.
    * @param value The value being searched for.
    * @param inclusive If the value is present in the list, whether to return the corresponding
-   *     index. If false then the returned index corresponds to the smallest value in the list that
-   *     is strictly greater than the value.
+   *     index. If false then the returned index corresponds to the smallest element strictly
+   *     greater than the value.
    * @param stayInBounds If true, then {@code (list.size() - 1)} will be returned in the case that
-   *     the value is greater than the largest value in the list. If false then {@code list.size()}
-   *     will be returned.
+   *     the value is greater than the largest element in the list. If false then
+   *     {@code list.size()} will be returned.
+   * @return The index of the smallest element in {@code list} that is greater than (or optionally
+   *     equal to) {@code value}.
    */
   public static <T> int binarySearchCeil(List<? extends Comparable<? super T>> list, T value,
       boolean inclusive, boolean stayInBounds) {
     int index = Collections.binarySearch(list, value);
-    index = index < 0 ? ~index : (inclusive ? index : (index + 1));
+    if (index < 0) {
+      index = ~index;
+    } else {
+      int listSize = list.size();
+      while ((++index) < listSize && list.get(index).compareTo(value) == 0) {}
+      if (inclusive) {
+        index--;
+      }
+    }
     return stayInBounds ? Math.min(list.size() - 1, index) : index;
   }
 
@@ -672,7 +766,7 @@ public final class Util {
       versionName = "?";
     }
     return applicationName + "/" + versionName + " (Linux;Android " + Build.VERSION.RELEASE
-        + ") " + "ExoPlayerLib/" + ExoPlayerLibraryInfo.VERSION;
+        + ") " + ExoPlayerLibraryInfo.VERSION_SLASHY;
   }
 
   /**
@@ -701,6 +795,40 @@ public final class Util {
   }
 
   /**
+   * Returns the frame size for audio with {@code channelCount} channels in the specified encoding.
+   *
+   * @param pcmEncoding The encoding of the audio data.
+   * @param channelCount The channel count.
+   * @return The size of one audio frame in bytes.
+   */
+  public static int getPcmFrameSize(@C.PcmEncoding int pcmEncoding, int channelCount) {
+    switch (pcmEncoding) {
+      case C.ENCODING_PCM_8BIT:
+        return channelCount;
+      case C.ENCODING_PCM_16BIT:
+        return channelCount * 2;
+      case C.ENCODING_PCM_24BIT:
+        return channelCount * 3;
+      case C.ENCODING_PCM_32BIT:
+        return channelCount * 4;
+      default:
+        throw new IllegalArgumentException();
+    }
+  }
+
+  /**
+   * Makes a best guess to infer the type from a {@link Uri}.
+   *
+   * @param uri The {@link Uri}.
+   * @return The content type.
+   */
+  @C.ContentType
+  public static int inferContentType(Uri uri) {
+    String path = uri.getPath();
+    return path == null ? C.TYPE_OTHER : inferContentType(path);
+  }
+
+  /**
    * Makes a best guess to infer the type from a file name.
    *
    * @param fileName Name of the file. It can include the path of the file.
@@ -708,17 +836,38 @@ public final class Util {
    */
   @C.ContentType
   public static int inferContentType(String fileName) {
-    if (fileName == null) {
-      return C.TYPE_OTHER;
-    } else if (fileName.endsWith(".mpd")) {
+    fileName = fileName.toLowerCase();
+    if (fileName.endsWith(".mpd")) {
       return C.TYPE_DASH;
-    } else if (fileName.endsWith(".ism") || fileName.endsWith(".isml")) {
-      return C.TYPE_SS;
     } else if (fileName.endsWith(".m3u8")) {
       return C.TYPE_HLS;
+    } else if (fileName.endsWith(".ism") || fileName.endsWith(".isml")
+        || fileName.endsWith(".ism/manifest") || fileName.endsWith(".isml/manifest")) {
+      return C.TYPE_SS;
     } else {
       return C.TYPE_OTHER;
     }
+  }
+
+  /**
+   * Returns the specified millisecond time formatted as a string.
+   *
+   * @param builder The builder that {@code formatter} will write to.
+   * @param formatter The formatter.
+   * @param timeMs The time to format as a string, in milliseconds.
+   * @return The time formatted as a string.
+   */
+  public static String getStringForTime(StringBuilder builder, Formatter formatter, long timeMs) {
+    if (timeMs == C.TIME_UNSET) {
+      timeMs = 0;
+    }
+    long totalSeconds = (timeMs + 500) / 1000;
+    long seconds = totalSeconds % 60;
+    long minutes = (totalSeconds / 60) % 60;
+    long hours = totalSeconds / 3600;
+    builder.setLength(0);
+    return hours > 0 ? formatter.format("%d:%02d:%02d", hours, minutes, seconds).toString()
+        : formatter.format("%02d:%02d", minutes, seconds).toString();
   }
 
   /**
@@ -855,6 +1004,24 @@ public final class Util {
   @SuppressWarnings("unchecked")
   private static <T extends Throwable> void sneakyThrowInternal(Throwable t) throws T {
     throw (T) t;
+  }
+
+  /** Recursively deletes a directory and its content. */
+  public static void recursiveDelete(File fileOrDirectory) {
+    if (fileOrDirectory.isDirectory()) {
+      for (File child : fileOrDirectory.listFiles()) {
+        recursiveDelete(child);
+      }
+    }
+    fileOrDirectory.delete();
+  }
+
+  /** Creates an empty directory in the directory returned by {@link Context#getCacheDir()}. */
+  public static File createTempDirectory(Context context, String prefix) throws IOException {
+    File tempFile = File.createTempFile(prefix, null, context.getCacheDir());
+    tempFile.delete(); // Delete the temp file.
+    tempFile.mkdir(); // Create a directory with the same name.
+    return tempFile;
   }
 
   /**

@@ -9,6 +9,7 @@
 package org.telegram.ui.Components;
 
 import android.text.TextPaint;
+import android.text.style.WrapTogetherSpan;
 
 import org.telegram.ui.ActionBar.Theme;
 

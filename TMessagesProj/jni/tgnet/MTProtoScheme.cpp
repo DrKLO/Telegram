@@ -7,6 +7,7 @@
  */
 
 #include <memory.h>
+#include <arpa/inet.h>
 #include "MTProtoScheme.h"
 #include "ApiScheme.h"
 #include "FileLog.h"
@@ -852,6 +853,47 @@ void initConnection::serializeToStream(NativeByteBuffer *stream) {
     stream->writeString(device_model);
     stream->writeString(system_version);
     stream->writeString(app_version);
+    stream->writeString(system_lang_code);
+    stream->writeString(lang_pack);
     stream->writeString(lang_code);
     query->serializeToStream(stream);
+}
+
+void TL_ipPort::readParams(NativeByteBuffer *stream, bool &error) {
+    struct in_addr ip_addr;
+    ip_addr.s_addr = htonl(stream->readUint32(&error));
+    ipv4 = inet_ntoa(ip_addr);
+    port = stream->readUint32(&error);
+}
+
+TL_help_configSimple *TL_help_configSimple::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error) {
+    if (TL_help_configSimple::constructor != constructor) {
+        error = true;
+        DEBUG_E("can't parse magic %x in TL_help_configSimple", constructor);
+        return nullptr;
+    }
+    TL_help_configSimple *result = new TL_help_configSimple();
+    result->readParams(stream, error);
+    return result;
+}
+
+void TL_help_configSimple::readParams(NativeByteBuffer *stream, bool &error) {
+    date = stream->readInt32(&error);
+    expires = stream->readInt32(&error);
+    dc_id = stream->readUint32(&error);
+    int32_t magic = stream->readInt32(&error);
+    if (magic != 0x1cb5c415) {
+        error = true;
+        DEBUG_E("wrong Vector magic, got %x", magic);
+        return;
+    }
+    uint32_t count = stream->readUint32(&error);
+    for (uint32_t a = 0; a < count; a++) {
+        TL_ipPort *object = new TL_ipPort();
+        object->readParams(stream, error);
+        if (error) {
+            return;
+        }
+        ip_port_list.push_back(std::unique_ptr<TL_ipPort>(object));
+    }
 }

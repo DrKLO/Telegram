@@ -17,6 +17,7 @@ package org.telegram.messenger.exoplayer2.upstream.cache;
 
 import android.net.Uri;
 import android.support.annotation.IntDef;
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.upstream.DataSink;
 import org.telegram.messenger.exoplayer2.upstream.DataSource;
@@ -89,7 +90,7 @@ public final class CacheDataSource implements DataSource {
   private final DataSource cacheReadDataSource;
   private final DataSource cacheWriteDataSource;
   private final DataSource upstreamDataSource;
-  private final EventListener eventListener;
+  @Nullable private final EventListener eventListener;
 
   private final boolean blockOnCache;
   private final boolean ignoreCacheOnError;
@@ -142,13 +143,14 @@ public final class CacheDataSource implements DataSource {
    * @param cache The cache.
    * @param upstream A {@link DataSource} for reading data not in the cache.
    * @param cacheReadDataSource A {@link DataSource} for reading data from the cache.
-   * @param cacheWriteDataSink A {@link DataSink} for writing data to the cache.
+   * @param cacheWriteDataSink A {@link DataSink} for writing data to the cache. If null, cache is
+   *     accessed read-only.
    * @param flags A combination of {@link #FLAG_BLOCK_ON_CACHE} and {@link
    *     #FLAG_IGNORE_CACHE_ON_ERROR} or 0.
    * @param eventListener An optional {@link EventListener} to receive events.
    */
   public CacheDataSource(Cache cache, DataSource upstream, DataSource cacheReadDataSource,
-      DataSink cacheWriteDataSink, @Flags int flags, EventListener eventListener) {
+      DataSink cacheWriteDataSink, @Flags int flags, @Nullable EventListener eventListener) {
     this.cache = cache;
     this.cacheReadDataSource = cacheReadDataSource;
     this.blockOnCache = (flags & FLAG_BLOCK_ON_CACHE) != 0;
@@ -169,7 +171,7 @@ public final class CacheDataSource implements DataSource {
     try {
       uri = dataSpec.uri;
       flags = dataSpec.flags;
-      key = dataSpec.key != null ? dataSpec.key : uri.toString();
+      key = CacheUtil.getKey(dataSpec);
       readPosition = dataSpec.position;
       currentRequestIgnoresCache = (ignoreCacheOnError && seenCacheError)
           || (dataSpec.length == C.LENGTH_UNSET && ignoreCacheForUnsetLengthRequests);
@@ -179,6 +181,9 @@ public final class CacheDataSource implements DataSource {
         bytesRemaining = cache.getContentLength(key);
         if (bytesRemaining != C.LENGTH_UNSET) {
           bytesRemaining -= dataSpec.position;
+          if (bytesRemaining <= 0) {
+            throw new DataSourceException(DataSourceException.POSITION_OUT_OF_RANGE);
+          }
         }
       }
       openNextSource(true);
@@ -283,7 +288,6 @@ public final class CacheDataSource implements DataSource {
       currentDataSource = cacheReadDataSource;
     } else {
       // Data is not cached, and data is not locked, read from upstream with cache backing.
-      lockedSpan = span;
       long length;
       if (span.isOpenEnded()) {
         length = bytesRemaining;
@@ -294,8 +298,13 @@ public final class CacheDataSource implements DataSource {
         }
       }
       dataSpec = new DataSpec(uri, readPosition, length, key, flags);
-      currentDataSource = cacheWriteDataSource != null ? cacheWriteDataSource
-          : upstreamDataSource;
+      if (cacheWriteDataSource != null) {
+        currentDataSource = cacheWriteDataSource;
+        lockedSpan = span;
+      } else {
+        currentDataSource = upstreamDataSource;
+        cache.releaseHoleSpan(span);
+      }
     }
 
     currentRequestUnbounded = dataSpec.length == C.LENGTH_UNSET;
@@ -330,16 +339,16 @@ public final class CacheDataSource implements DataSource {
     // bytesRemaining == C.LENGTH_UNSET) and got a resolved length from open() request
     if (currentRequestUnbounded && currentBytesRemaining != C.LENGTH_UNSET) {
       bytesRemaining = currentBytesRemaining;
-      // If writing into cache
-      if (lockedSpan != null) {
-        setContentLength(dataSpec.position + bytesRemaining);
-      }
+      setContentLength(dataSpec.position + bytesRemaining);
     }
     return successful;
   }
 
   private void setContentLength(long length) throws IOException {
-    cache.setContentLength(key, length);
+    // If writing into cache
+    if (currentDataSource == cacheWriteDataSource) {
+      cache.setContentLength(key, length);
+    }
   }
 
   private void closeCurrentSource() throws IOException {

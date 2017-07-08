@@ -19,6 +19,7 @@ import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.upstream.DataSource;
 import org.telegram.messenger.exoplayer2.upstream.DataSpec;
+import org.telegram.messenger.exoplayer2.util.Util;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -96,7 +97,7 @@ public abstract class DataChunk extends Chunk {
         consume(data, limit);
       }
     } finally {
-      dataSource.close();
+      Util.closeQuietly(dataSource);
     }
   }
 

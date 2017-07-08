@@ -103,7 +103,9 @@ public final class NalUnitUtil {
     2f
   };
 
-  private static final int NAL_UNIT_TYPE_SPS = 7;
+  private static final int H264_NAL_UNIT_TYPE_SEI = 6; // Supplemental enhancement information
+  private static final int H264_NAL_UNIT_TYPE_SPS = 7; // Sequence parameter set
+  private static final int H265_NAL_UNIT_TYPE_PREFIX_SEI = 39;
 
   private static final Object scratchEscapePositionsLock = new Object();
 
@@ -176,7 +178,7 @@ public final class NalUnitUtil {
     while (offset + 1 < length) {
       int value = data.get(offset) & 0xFF;
       if (consecutiveZeros == 3) {
-        if (value == 1 && (data.get(offset + 1) & 0x1F) == NAL_UNIT_TYPE_SPS) {
+        if (value == 1 && (data.get(offset + 1) & 0x1F) == H264_NAL_UNIT_TYPE_SPS) {
           // Copy from this NAL unit onwards to the start of the buffer.
           ByteBuffer offsetData = data.duplicate();
           offsetData.position(offset - 3);
@@ -195,6 +197,21 @@ public final class NalUnitUtil {
     }
     // Empty the buffer if the SPS NAL unit was not found.
     data.clear();
+  }
+
+  /**
+   * Returns whether the NAL unit with the specified header contains supplemental enhancement
+   * information.
+   *
+   * @param mimeType The sample MIME type.
+   * @param nalUnitHeaderFirstByte The first byte of nal_unit().
+   * @return Whether the NAL unit with the specified header is an SEI NAL unit.
+   */
+  public static boolean isNalUnitSei(String mimeType, byte nalUnitHeaderFirstByte) {
+    return (MimeTypes.VIDEO_H264.equals(mimeType)
+        && (nalUnitHeaderFirstByte & 0x1F) == H264_NAL_UNIT_TYPE_SEI)
+        || (MimeTypes.VIDEO_H265.equals(mimeType)
+        && ((nalUnitHeaderFirstByte & 0x7E) >> 1) == H265_NAL_UNIT_TYPE_PREFIX_SEI);
   }
 
   /**
@@ -297,7 +314,8 @@ public final class NalUnitUtil {
       int frameCropRightOffset = data.readUnsignedExpGolombCodedInt();
       int frameCropTopOffset = data.readUnsignedExpGolombCodedInt();
       int frameCropBottomOffset = data.readUnsignedExpGolombCodedInt();
-      int cropUnitX, cropUnitY;
+      int cropUnitX;
+      int cropUnitY;
       if (chromaFormatIdc == 0) {
         cropUnitX = 1;
         cropUnitY = 2 - (frameMbsOnlyFlag ? 1 : 0);

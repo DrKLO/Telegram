@@ -332,6 +332,9 @@ import java.util.List;
       return new TrackSampleTable(offsets, sizes, maximumSize, timestamps, flags);
     }
 
+    // Omit any sample at the end point of an edit for audio tracks.
+    boolean omitClippedSample = track.type == C.TRACK_TYPE_AUDIO;
+
     // Count the number of samples after applying edits.
     int editedSampleCount = 0;
     int nextSampleIndex = 0;
@@ -342,7 +345,8 @@ import java.util.List;
         long duration = Util.scaleLargeTimestamp(track.editListDurations[i], track.timescale,
             track.movieTimescale);
         int startIndex = Util.binarySearchCeil(timestamps, mediaTime, true, true);
-        int endIndex = Util.binarySearchCeil(timestamps, mediaTime + duration, true, false);
+        int endIndex = Util.binarySearchCeil(timestamps, mediaTime + duration, omitClippedSample,
+            false);
         editedSampleCount += endIndex - startIndex;
         copyMetadata |= nextSampleIndex != startIndex;
         nextSampleIndex = endIndex;
@@ -365,7 +369,7 @@ import java.util.List;
         long endMediaTime = mediaTime + Util.scaleLargeTimestamp(duration, track.timescale,
             track.movieTimescale);
         int startIndex = Util.binarySearchCeil(timestamps, mediaTime, true, true);
-        int endIndex = Util.binarySearchCeil(timestamps, endMediaTime, true, false);
+        int endIndex = Util.binarySearchCeil(timestamps, endMediaTime, omitClippedSample, false);
         if (copyMetadata) {
           int count = endIndex - startIndex;
           System.arraycopy(offsets, startIndex, editedOffsets, sampleIndex, count);
@@ -604,26 +608,14 @@ import java.util.List;
           || childAtomType == Atom.TYPE_dtsh || childAtomType == Atom.TYPE_dtsl
           || childAtomType == Atom.TYPE_samr || childAtomType == Atom.TYPE_sawb
           || childAtomType == Atom.TYPE_lpcm || childAtomType == Atom.TYPE_sowt
-          || childAtomType == Atom.TYPE__mp3) {
+          || childAtomType == Atom.TYPE__mp3 || childAtomType == Atom.TYPE_alac) {
         parseAudioSampleEntry(stsd, childAtomType, childStartPosition, childAtomSize, trackId,
             language, isQuickTime, drmInitData, out, i);
-      } else if (childAtomType == Atom.TYPE_TTML) {
-        out.format = Format.createTextSampleFormat(Integer.toString(trackId),
-            MimeTypes.APPLICATION_TTML, null, Format.NO_VALUE, 0, language, drmInitData);
-      } else if (childAtomType == Atom.TYPE_tx3g) {
-        out.format = Format.createTextSampleFormat(Integer.toString(trackId),
-            MimeTypes.APPLICATION_TX3G, null, Format.NO_VALUE, 0, language, drmInitData);
-      } else if (childAtomType == Atom.TYPE_wvtt) {
-        out.format = Format.createTextSampleFormat(Integer.toString(trackId),
-            MimeTypes.APPLICATION_MP4VTT, null, Format.NO_VALUE, 0, language, drmInitData);
-      } else if (childAtomType == Atom.TYPE_stpp) {
-        out.format = Format.createTextSampleFormat(Integer.toString(trackId),
-            MimeTypes.APPLICATION_TTML, null, Format.NO_VALUE, 0, language, drmInitData,
-            0 /* subsample timing is absolute */);
-      } else if (childAtomType == Atom.TYPE_c608) {
-        out.format = Format.createTextSampleFormat(Integer.toString(trackId),
-            MimeTypes.APPLICATION_CEA608, null, Format.NO_VALUE, 0, language, drmInitData);
-        out.requiredSampleTransformation = Track.TRANSFORMATION_CEA608_CDAT;
+      } else if (childAtomType == Atom.TYPE_TTML || childAtomType == Atom.TYPE_tx3g
+          || childAtomType == Atom.TYPE_wvtt || childAtomType == Atom.TYPE_stpp
+          || childAtomType == Atom.TYPE_c608) {
+        parseTextSampleEntry(stsd, childAtomType, childStartPosition, childAtomSize, trackId,
+            language, drmInitData, out);
       } else if (childAtomType == Atom.TYPE_camm) {
         out.format = Format.createSampleFormat(Integer.toString(trackId),
             MimeTypes.APPLICATION_CAMERA_MOTION, null, Format.NO_VALUE, drmInitData);
@@ -633,12 +625,49 @@ import java.util.List;
     return out;
   }
 
+  private static void parseTextSampleEntry(ParsableByteArray parent, int atomType, int position,
+      int atomSize, int trackId, String language, DrmInitData drmInitData, StsdData out)
+      throws ParserException {
+    parent.setPosition(position + Atom.HEADER_SIZE + StsdData.STSD_HEADER_SIZE);
+
+    // Default values.
+    List<byte[]> initializationData = null;
+    long subsampleOffsetUs = Format.OFFSET_SAMPLE_RELATIVE;
+
+    String mimeType;
+    if (atomType == Atom.TYPE_TTML) {
+      mimeType = MimeTypes.APPLICATION_TTML;
+    } else if (atomType == Atom.TYPE_tx3g) {
+      mimeType = MimeTypes.APPLICATION_TX3G;
+      int sampleDescriptionLength = atomSize - Atom.HEADER_SIZE - 8;
+      byte[] sampleDescriptionData = new byte[sampleDescriptionLength];
+      parent.readBytes(sampleDescriptionData, 0, sampleDescriptionLength);
+      initializationData = Collections.singletonList(sampleDescriptionData);
+    } else if (atomType == Atom.TYPE_wvtt) {
+      mimeType = MimeTypes.APPLICATION_MP4VTT;
+    } else if (atomType == Atom.TYPE_stpp) {
+      mimeType = MimeTypes.APPLICATION_TTML;
+      subsampleOffsetUs = 0; // Subsample timing is absolute.
+    } else if (atomType == Atom.TYPE_c608) {
+      // Defined by the QuickTime File Format specification.
+      mimeType = MimeTypes.APPLICATION_MP4CEA608;
+      out.requiredSampleTransformation = Track.TRANSFORMATION_CEA608_CDAT;
+    } else {
+      // Never happens.
+      throw new IllegalStateException();
+    }
+
+    out.format = Format.createTextSampleFormat(Integer.toString(trackId), mimeType, null,
+        Format.NO_VALUE, 0, language, Format.NO_VALUE, drmInitData, subsampleOffsetUs,
+        initializationData);
+  }
+
   private static void parseVideoSampleEntry(ParsableByteArray parent, int atomType, int position,
       int size, int trackId, int rotationDegrees, DrmInitData drmInitData, StsdData out,
       int entryIndex) throws ParserException {
-    parent.setPosition(position + Atom.HEADER_SIZE);
+    parent.setPosition(position + Atom.HEADER_SIZE + StsdData.STSD_HEADER_SIZE);
 
-    parent.skipBytes(24);
+    parent.skipBytes(16);
     int width = parent.readUnsignedShort();
     int height = parent.readUnsignedShort();
     boolean pixelWidthHeightRatioFromPasp = false;
@@ -715,6 +744,9 @@ import java.util.List;
             case 2:
               stereoMode = C.STEREO_MODE_LEFT_RIGHT;
               break;
+            case 3:
+              stereoMode = C.STEREO_MODE_STEREO_MESH;
+              break;
             default:
               break;
           }
@@ -730,7 +762,7 @@ import java.util.List;
 
     out.format = Format.createVideoSampleFormat(Integer.toString(trackId), mimeType, null,
         Format.NO_VALUE, Format.NO_VALUE, width, height, Format.NO_VALUE, initializationData,
-        rotationDegrees, pixelWidthHeightRatio, projectionData, stereoMode, drmInitData);
+        rotationDegrees, pixelWidthHeightRatio, projectionData, stereoMode, null, drmInitData);
   }
 
   /**
@@ -776,15 +808,14 @@ import java.util.List;
   private static void parseAudioSampleEntry(ParsableByteArray parent, int atomType, int position,
       int size, int trackId, String language, boolean isQuickTime, DrmInitData drmInitData,
       StsdData out, int entryIndex) {
-    parent.setPosition(position + Atom.HEADER_SIZE);
+    parent.setPosition(position + Atom.HEADER_SIZE + StsdData.STSD_HEADER_SIZE);
 
     int quickTimeSoundDescriptionVersion = 0;
     if (isQuickTime) {
-      parent.skipBytes(8);
       quickTimeSoundDescriptionVersion = parent.readUnsignedShort();
       parent.skipBytes(6);
     } else {
-      parent.skipBytes(16);
+      parent.skipBytes(8);
     }
 
     int channelCount;
@@ -838,6 +869,8 @@ import java.util.List;
       mimeType = MimeTypes.AUDIO_RAW;
     } else if (atomType == Atom.TYPE__mp3) {
       mimeType = MimeTypes.AUDIO_MPEG;
+    } else if (atomType == Atom.TYPE_alac) {
+      mimeType = MimeTypes.AUDIO_ALAC;
     }
 
     byte[] initializationData = null;
@@ -875,6 +908,10 @@ import java.util.List;
         out.format = Format.createAudioSampleFormat(Integer.toString(trackId), mimeType, null,
             Format.NO_VALUE, Format.NO_VALUE, channelCount, sampleRate, null, drmInitData, 0,
             language);
+      } else if (childAtomType == Atom.TYPE_alac) {
+        initializationData = new byte[childAtomSize];
+        parent.setPosition(childPosition);
+        parent.readBytes(initializationData, 0, childAtomSize);
       }
       childPosition += childAtomSize;
     }
@@ -1162,6 +1199,8 @@ import java.util.List;
    * Holds data parsed from an stsd atom and its children.
    */
   private static final class StsdData {
+
+    public static final int STSD_HEADER_SIZE = 8;
 
     public final TrackEncryptionBox[] trackEncryptionBoxes;
 

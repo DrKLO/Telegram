@@ -152,7 +152,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (currentType == StickersQuery.TYPE_IMAGE) {
-            actionBar.setTitle(LocaleController.getString("Stickers", R.string.Stickers));
+            actionBar.setTitle(LocaleController.getString("StickersName", R.string.StickersName));
         } else {
             actionBar.setTitle(LocaleController.getString("Masks", R.string.Masks));
         }

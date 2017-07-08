@@ -56,8 +56,7 @@ public final class ExoPlaybackException extends Exception {
    * The type of the playback failure. One of {@link #TYPE_SOURCE}, {@link #TYPE_RENDERER} and
    * {@link #TYPE_UNEXPECTED}.
    */
-  @Type
-  public final int type;
+  @Type public final int type;
 
   /**
    * If {@link #type} is {@link #TYPE_RENDERER}, this is the index of the renderer.

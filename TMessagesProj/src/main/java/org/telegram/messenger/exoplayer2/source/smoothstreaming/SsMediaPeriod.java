@@ -137,6 +137,11 @@ import java.util.ArrayList;
   }
 
   @Override
+  public void discardBuffer(long positionUs) {
+    // Do nothing.
+  }
+
+  @Override
   public boolean continueLoading(long positionUs) {
     return sequenceableLoader.continueLoading(positionUs);
   }
@@ -185,8 +190,8 @@ import java.util.ArrayList;
     int streamElementIndex = trackGroups.indexOf(selection.getTrackGroup());
     SsChunkSource chunkSource = chunkSourceFactory.createChunkSource(manifestLoaderErrorThrower,
         manifest, streamElementIndex, selection, trackEncryptionBoxes);
-    return new ChunkSampleStream<>(manifest.streamElements[streamElementIndex].type, chunkSource,
-        this, allocator, positionUs, minLoadableRetryCount, eventDispatcher);
+    return new ChunkSampleStream<>(manifest.streamElements[streamElementIndex].type, null,
+        chunkSource, this, allocator, positionUs, minLoadableRetryCount, eventDispatcher);
   }
 
   private static TrackGroupArray buildTrackGroups(SsManifest manifest) {

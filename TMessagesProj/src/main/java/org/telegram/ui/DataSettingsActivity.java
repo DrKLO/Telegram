@@ -62,6 +62,9 @@ public class DataSettingsActivity extends BaseFragment {
     private int callsSectionRow;
     private int useLessDataForCallsRow;
     private int callsSection2Row;
+    private int proxySectionRow;
+    private int proxyRow;
+    private int proxySection2Row;
     private int rowCount;
 
     @Override
@@ -79,16 +82,19 @@ public class DataSettingsActivity extends BaseFragment {
         mobileUsageRow = rowCount++;
         wifiUsageRow = rowCount++;
         roamingUsageRow = rowCount++;
+        usageSection2Row = rowCount++;
         if (MessagesController.getInstance().callsEnabled) {
-            usageSection2Row = rowCount++;
             callsSectionRow = rowCount++;
             useLessDataForCallsRow = rowCount++;
+            callsSection2Row = rowCount++;
         } else {
-            usageSection2Row = -1;
+            callsSection2Row = -1;
             callsSectionRow = -1;
             useLessDataForCallsRow = -1;
         }
-        callsSection2Row = rowCount++;
+        proxySectionRow = rowCount++;
+        proxyRow = rowCount++;
+        proxySection2Row = rowCount++;
 
         return true;
     }
@@ -100,6 +106,7 @@ public class DataSettingsActivity extends BaseFragment {
         if (AndroidUtilities.isTablet()) {
             actionBar.setOccupyStatusBar(false);
         }
+        actionBar.setAllowOverlayTitle(true);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -127,7 +134,7 @@ public class DataSettingsActivity extends BaseFragment {
                     if (getParentActivity() == null) {
                         return;
                     }
-                    final boolean maskValues[] = new boolean[6];
+                    final boolean maskValues[] = new boolean[7];
                     BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
 
                     int mask = 0;
@@ -143,24 +150,27 @@ public class DataSettingsActivity extends BaseFragment {
                     builder.setApplyBottomPadding(false);
                     LinearLayout linearLayout = new LinearLayout(getParentActivity());
                     linearLayout.setOrientation(LinearLayout.VERTICAL);
-                    for (int a = 0; a < 6; a++) {
+                    for (int a = 0; a < 7; a++) {
                         String name = null;
                         if (a == 0) {
                             maskValues[a] = (mask & MediaController.AUTODOWNLOAD_MASK_PHOTO) != 0;
                             name = LocaleController.getString("LocalPhotoCache", R.string.LocalPhotoCache);
                         } else if (a == 1) {
                             maskValues[a] = (mask & MediaController.AUTODOWNLOAD_MASK_AUDIO) != 0;
-                            name = LocaleController.getString("LocalAudioCache", R.string.LocalAudioCache);
+                            name = LocaleController.getString("AudioAutodownload", R.string.AudioAutodownload);
                         } else if (a == 2) {
+                            maskValues[a] = (mask & MediaController.AUTODOWNLOAD_MASK_VIDEOMESSAGE) != 0;
+                            name = LocaleController.getString("VideoMessagesAutodownload", R.string.VideoMessagesAutodownload);
+                        } else if (a == 3) {
                             maskValues[a] = (mask & MediaController.AUTODOWNLOAD_MASK_VIDEO) != 0;
                             name = LocaleController.getString("LocalVideoCache", R.string.LocalVideoCache);
-                        } else if (a == 3) {
+                        } else if (a == 4) {
                             maskValues[a] = (mask & MediaController.AUTODOWNLOAD_MASK_DOCUMENT) != 0;
                             name = LocaleController.getString("FilesDataUsage", R.string.FilesDataUsage);
-                        } else if (a == 4) {
+                        } else if (a == 5) {
                             maskValues[a] = (mask & MediaController.AUTODOWNLOAD_MASK_MUSIC) != 0;
                             name = LocaleController.getString("AttachMusic", R.string.AttachMusic);
-                        } else if (a == 5) {
+                        } else if (a == 6) {
                             maskValues[a] = (mask & MediaController.AUTODOWNLOAD_MASK_GIF) != 0;
                             name = LocaleController.getString("LocalGifCache", R.string.LocalGifCache);
                         }
@@ -195,19 +205,21 @@ public class DataSettingsActivity extends BaseFragment {
                                 FileLog.e(e);
                             }
                             int newMask = 0;
-                            for (int a = 0; a < 6; a++) {
+                            for (int a = 0; a < 7; a++) {
                                 if (maskValues[a]) {
                                     if (a == 0) {
                                         newMask |= MediaController.AUTODOWNLOAD_MASK_PHOTO;
                                     } else if (a == 1) {
                                         newMask |= MediaController.AUTODOWNLOAD_MASK_AUDIO;
                                     } else if (a == 2) {
-                                        newMask |= MediaController.AUTODOWNLOAD_MASK_VIDEO;
+                                        newMask |= MediaController.AUTODOWNLOAD_MASK_VIDEOMESSAGE;
                                     } else if (a == 3) {
-                                        newMask |= MediaController.AUTODOWNLOAD_MASK_DOCUMENT;
+                                        newMask |= MediaController.AUTODOWNLOAD_MASK_VIDEO;
                                     } else if (a == 4) {
-                                        newMask |= MediaController.AUTODOWNLOAD_MASK_MUSIC;
+                                        newMask |= MediaController.AUTODOWNLOAD_MASK_DOCUMENT;
                                     } else if (a == 5) {
+                                        newMask |= MediaController.AUTODOWNLOAD_MASK_MUSIC;
+                                    } else if (a == 6) {
                                         newMask |= MediaController.AUTODOWNLOAD_MASK_GIF;
                                     }
                                 }
@@ -271,6 +283,8 @@ public class DataSettingsActivity extends BaseFragment {
                     presentFragment(new DataUsageActivity(2));
                 } else if (position == wifiUsageRow) {
                     presentFragment(new DataUsageActivity(1));
+                } else if (position == proxyRow) {
+                    presentFragment(new ProxySettingsActivity());
                 }
             }
         });
@@ -310,7 +324,7 @@ public class DataSettingsActivity extends BaseFragment {
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             switch (holder.getItemViewType()) {
                 case 0: {
-                    if (position == callsSection2Row || position == usageSection2Row && usageSection2Row == -1) {
+                    if (position == proxySection2Row) {
                         holder.itemView.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     } else {
                         holder.itemView.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
@@ -342,6 +356,8 @@ public class DataSettingsActivity extends BaseFragment {
                         textCell.setText(LocaleController.getString("RoamingUsage", R.string.RoamingUsage), false);
                     } else if (position == wifiUsageRow) {
                         textCell.setText(LocaleController.getString("WiFiUsage", R.string.WiFiUsage), true);
+                    } else if (position == proxyRow) {
+                        textCell.setText(LocaleController.getString("ProxySettings", R.string.ProxySettings), true);
                     }
                     break;
                 }
@@ -353,6 +369,8 @@ public class DataSettingsActivity extends BaseFragment {
                         headerCell.setText(LocaleController.getString("DataUsage", R.string.DataUsage));
                     } else if (position == callsSectionRow) {
                         headerCell.setText(LocaleController.getString("Calls", R.string.Calls));
+                    } else if (position == proxySectionRow) {
+                        headerCell.setText(LocaleController.getString("Proxy", R.string.Proxy));
                     }
                     break;
                 }
@@ -381,7 +399,13 @@ public class DataSettingsActivity extends BaseFragment {
                             if (text.length() != 0) {
                                 text += ", ";
                             }
-                            text += LocaleController.getString("LocalAudioCache", R.string.LocalAudioCache);
+                            text += LocaleController.getString("AudioAutodownload", R.string.AudioAutodownload);
+                        }
+                        if ((mask & MediaController.AUTODOWNLOAD_MASK_VIDEOMESSAGE) != 0) {
+                            if (text.length() != 0) {
+                                text += ", ";
+                            }
+                            text += LocaleController.getString("VideoMessagesAutodownload", R.string.VideoMessagesAutodownload);
                         }
                         if ((mask & MediaController.AUTODOWNLOAD_MASK_VIDEO) != 0) {
                             if (text.length() != 0) {
@@ -421,7 +445,7 @@ public class DataSettingsActivity extends BaseFragment {
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
             return position == wifiDownloadRow || position == mobileDownloadRow || position == roamingDownloadRow || position == storageUsageRow ||
-                    position == useLessDataForCallsRow || position == mobileUsageRow || position == roamingUsageRow || position == wifiUsageRow;
+                    position == useLessDataForCallsRow || position == mobileUsageRow || position == roamingUsageRow || position == wifiUsageRow || position == proxyRow;
         }
 
         @Override
@@ -450,13 +474,13 @@ public class DataSettingsActivity extends BaseFragment {
 
         @Override
         public int getItemViewType(int position) {
-            if (position == mediaDownloadSection2Row || position == usageSection2Row || position == callsSection2Row) {
+            if (position == mediaDownloadSection2Row || position == usageSection2Row || position == callsSection2Row || position == proxySection2Row) {
                 return 0;
-            } else if (position == storageUsageRow || position == useLessDataForCallsRow || position == roamingUsageRow || position == wifiUsageRow || position == mobileUsageRow) {
+            } else if (position == storageUsageRow || position == useLessDataForCallsRow || position == roamingUsageRow || position == wifiUsageRow || position == mobileUsageRow || position == proxyRow) {
                 return 1;
             } else if (position == wifiDownloadRow || position == mobileDownloadRow || position == roamingDownloadRow) {
                 return 3;
-            } else if (position == mediaDownloadSectionRow || position == callsSectionRow || position == usageSectionRow) {
+            } else if (position == mediaDownloadSectionRow || position == callsSectionRow || position == usageSectionRow || position == proxySectionRow) {
                 return 2;
             } else {
                 return 1;

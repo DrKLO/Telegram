@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.source;
 
+import org.telegram.messenger.exoplayer2.ExoPlayer;
 import org.telegram.messenger.exoplayer2.Timeline;
 import org.telegram.messenger.exoplayer2.upstream.Allocator;
 import java.io.IOException;
@@ -42,9 +43,14 @@ public interface MediaSource {
   /**
    * Starts preparation of the source.
    *
+   * @param player The player for which this source is being prepared.
+   * @param isTopLevelSource Whether this source has been passed directly to
+   *     {@link ExoPlayer#prepare(MediaSource)} or
+   *     {@link ExoPlayer#prepare(MediaSource, boolean, boolean)}. If {@code false}, this source is
+   *     being prepared by another source (e.g. {@link ConcatenatingMediaSource}) for composition.
    * @param listener The listener for source events.
    */
-  void prepareSource(Listener listener);
+  void prepareSource(ExoPlayer player, boolean isTopLevelSource, Listener listener);
 
   /**
    * Throws any pending error encountered while loading or refreshing source information.

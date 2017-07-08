@@ -17,6 +17,7 @@ package org.telegram.messenger.exoplayer2.source;
 
 import org.telegram.messenger.exoplayer2.C;
 
+// TODO: Clarify the requirements for implementing this interface [Internal ref: b/36250203].
 /**
  * A loader that can proceed in approximate synchronization with other loaders.
  */

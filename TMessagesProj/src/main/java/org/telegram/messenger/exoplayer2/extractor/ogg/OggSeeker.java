@@ -35,9 +35,10 @@ import java.io.IOException;
   /**
    * Initializes a seek operation.
    *
+   * @param timeUs The seek position in microseconds.
    * @return The granule position targeted by the seek.
    */
-  long startSeek();
+  long startSeek(long timeUs);
 
   /**
    * Reads data from the {@link ExtractorInput} to build the {@link SeekMap} or to continue a

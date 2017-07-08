@@ -692,10 +692,7 @@ public class VideoEditorActivity extends BaseFragment implements NotificationCen
                     }
                 }
                 if (delegate != null) {
-                    if (muteVideo) {
-
-                    }
-                    if (compressItem.getVisibility() == View.GONE || compressItem.getVisibility() == View.VISIBLE && selectedCompression == compressionsCount - 1) {
+                    if (!muteVideo && (compressItem.getVisibility() == View.GONE || compressItem.getVisibility() == View.VISIBLE && selectedCompression == compressionsCount - 1)) {
                         delegate.didFinishEditVideo(videoPath, startTime, endTime, originalWidth, originalHeight, rotationValue, originalWidth, originalHeight, muteVideo ? -1 : originalBitrate, estimatedSize, esimatedDuration, currentCaption != null ? currentCaption.toString() : null);
                     } else {
                         if (muteVideo) {
@@ -837,6 +834,16 @@ public class VideoEditorActivity extends BaseFragment implements NotificationCen
                 needSeek = true;
                 videoSeekBarView.setProgress(videoTimelineView.getLeftProgress());
                 updateVideoInfo();
+            }
+
+            @Override
+            public void didStartDragging() {
+
+            }
+
+            @Override
+            public void didStopDragging() {
+
             }
         });
         frameLayout.addView(videoTimelineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 67));
@@ -1588,6 +1595,7 @@ public class VideoEditorActivity extends BaseFragment implements NotificationCen
 
             Box boxTest = Path.getPath(isoFile, "/moov/trak/mdia/minf/stbl/stsd/mp4a/");
             if (boxTest == null) {
+                FileLog.d("audio track not found");
                 isMp4A = false;
             }
 
@@ -1597,6 +1605,7 @@ public class VideoEditorActivity extends BaseFragment implements NotificationCen
 
             boxTest = Path.getPath(isoFile, "/moov/trak/mdia/minf/stbl/stsd/avc1/");
             if (boxTest == null) {
+                FileLog.d("video track not found");
                 isAvc = false;
             }
 
@@ -1631,6 +1640,7 @@ public class VideoEditorActivity extends BaseFragment implements NotificationCen
                 }
             }
             if (trackHeaderBox == null) {
+                FileLog.d("video track header box not found");
                 return false;
             }
 
@@ -1652,6 +1662,7 @@ public class VideoEditorActivity extends BaseFragment implements NotificationCen
             updateWidthHeightBitrateForCompression();
 
             if (!isAvc && (resultWidth == originalWidth || resultHeight == originalHeight)) {
+                FileLog.d("video is not mp4");
                 return false;
             }
         } catch (Exception e) {

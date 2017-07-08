@@ -29,7 +29,8 @@ public interface DashChunkSource extends ChunkSource {
 
     DashChunkSource createDashChunkSource(LoaderErrorThrower manifestLoaderErrorThrower,
         DashManifest manifest, int periodIndex, int adaptationSetIndex,
-        TrackSelection trackSelection, long elapsedRealtimeOffsetMs);
+        TrackSelection trackSelection, long elapsedRealtimeOffsetMs,
+        boolean enableEventMessageTrack, boolean enableCea608Track);
 
   }
 

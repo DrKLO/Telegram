@@ -15,20 +15,31 @@
  */
 package org.telegram.messenger.exoplayer2.text.cea;
 
-import android.text.TextUtils;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.text.Layout.Alignment;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.CharacterStyle;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
+import android.text.style.UnderlineSpan;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.text.Cue;
 import org.telegram.messenger.exoplayer2.text.Subtitle;
 import org.telegram.messenger.exoplayer2.text.SubtitleDecoder;
 import org.telegram.messenger.exoplayer2.text.SubtitleInputBuffer;
+import org.telegram.messenger.exoplayer2.util.MimeTypes;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * A {@link SubtitleDecoder} for CEA-608 (also known as "line 21 captions" and "EIA-608").
  */
 public final class Cea608Decoder extends CeaDecoder {
-
-  private static final String TAG = "Cea608Decoder";
 
   private static final int CC_VALID_FLAG = 0x04;
   private static final int CC_TYPE_FLAG = 0x02;
@@ -38,19 +49,29 @@ public final class Cea608Decoder extends CeaDecoder {
   private static final int NTSC_CC_FIELD_2 = 0x01;
   private static final int CC_VALID_608_ID = 0x04;
 
-  private static final int PAYLOAD_TYPE_CC = 4;
-  private static final int COUNTRY_CODE = 0xB5;
-  private static final int PROVIDER_CODE = 0x31;
-  private static final int USER_ID = 0x47413934; // "GA94"
-  private static final int USER_DATA_TYPE_CODE = 0x3;
-
   private static final int CC_MODE_UNKNOWN = 0;
   private static final int CC_MODE_ROLL_UP = 1;
   private static final int CC_MODE_POP_ON = 2;
   private static final int CC_MODE_PAINT_ON = 3;
 
+  private static final int[] ROW_INDICES = new int[] {11, 1, 3, 12, 14, 5, 7, 9};
+  private static final int[] COLUMN_INDICES = new int[] {0, 4, 8, 12, 16, 20, 24, 28};
+  private static final int[] COLORS = new int[] {
+      Color.WHITE,
+      Color.GREEN,
+      Color.BLUE,
+      Color.CYAN,
+      Color.RED,
+      Color.YELLOW,
+      Color.MAGENTA,
+  };
+
   // The default number of rows to display in roll-up captions mode.
   private static final int DEFAULT_CAPTIONS_ROW_COUNT = 4;
+
+  // An implied first byte for packets that are only 2 bytes long, consisting of marker bits
+  // (0b11111) + valid bit (0b1) + NTSC field 1 type bits (0b00).
+  private static final byte CC_IMPLICIT_DATA_HEADER = (byte) 0xFC;
 
   /**
    * Command initiating pop-on style captioning. Subsequent data should be loaded into a
@@ -89,11 +110,9 @@ public final class Cea608Decoder extends CeaDecoder {
   private static final byte CTRL_ERASE_DISPLAYED_MEMORY = 0x2C;
   private static final byte CTRL_CARRIAGE_RETURN = 0x2D;
   private static final byte CTRL_ERASE_NON_DISPLAYED_MEMORY = 0x2E;
+  private static final byte CTRL_DELETE_TO_END_OF_ROW = 0x24;
 
   private static final byte CTRL_BACKSPACE = 0x21;
-
-  private static final byte CTRL_MISC_CHAN_1 = 0x14;
-  private static final byte CTRL_MISC_CHAN_2 = 0x1C;
 
   // Basic North American 608 CC char set, mostly ASCII. Indexed by (char-0x20).
   private static final int[] BASIC_CHARACTER_SET = new int[] {
@@ -164,25 +183,26 @@ public final class Cea608Decoder extends CeaDecoder {
   };
 
   private final ParsableByteArray ccData;
-
-  private final StringBuilder captionStringBuilder;
-
+  private final int packetLength;
   private final int selectedField;
+  private final LinkedList<CueBuilder> cueBuilders;
+
+  private CueBuilder currentCueBuilder;
+  private List<Cue> cues;
+  private List<Cue> lastCues;
 
   private int captionMode;
   private int captionRowCount;
-  private String captionString;
-
-  private String lastCaptionString;
 
   private boolean repeatableControlSet;
   private byte repeatableControlCc1;
   private byte repeatableControlCc2;
 
-  public Cea608Decoder(int accessibilityChannel) {
+  public Cea608Decoder(String mimeType, int accessibilityChannel) {
     ccData = new ParsableByteArray();
-
-    captionStringBuilder = new StringBuilder();
+    cueBuilders = new LinkedList<>();
+    currentCueBuilder = new CueBuilder(CC_MODE_UNKNOWN, DEFAULT_CAPTIONS_ROW_COUNT);
+    packetLength = MimeTypes.APPLICATION_MP4CEA608.equals(mimeType) ? 2 : 3;
     switch (accessibilityChannel) {
       case 3:
       case 4:
@@ -196,7 +216,7 @@ public final class Cea608Decoder extends CeaDecoder {
     }
 
     setCaptionMode(CC_MODE_UNKNOWN);
-    captionRowCount = DEFAULT_CAPTIONS_ROW_COUNT;
+    resetCueBuilders();
   }
 
   @Override
@@ -207,11 +227,11 @@ public final class Cea608Decoder extends CeaDecoder {
   @Override
   public void flush() {
     super.flush();
+    cues = null;
+    lastCues = null;
     setCaptionMode(CC_MODE_UNKNOWN);
+    resetCueBuilders();
     captionRowCount = DEFAULT_CAPTIONS_ROW_COUNT;
-    captionStringBuilder.setLength(0);
-    captionString = null;
-    lastCaptionString = null;
     repeatableControlSet = false;
     repeatableControlCc1 = 0;
     repeatableControlCc2 = 0;
@@ -224,13 +244,13 @@ public final class Cea608Decoder extends CeaDecoder {
 
   @Override
   protected boolean isNewSubtitleDataAvailable() {
-    return !TextUtils.equals(captionString, lastCaptionString);
+    return cues != lastCues;
   }
 
   @Override
   protected Subtitle createSubtitle() {
-    lastCaptionString = captionString;
-    return new CeaSubtitle(new Cue(captionString));
+    lastCues = cues;
+    return new CeaSubtitle(cues);
   }
 
   @Override
@@ -238,12 +258,16 @@ public final class Cea608Decoder extends CeaDecoder {
     ccData.reset(inputBuffer.data.array(), inputBuffer.data.limit());
     boolean captionDataProcessed = false;
     boolean isRepeatableControl = false;
-    while (ccData.bytesLeft() > 0) {
-      byte ccDataHeader = (byte) ccData.readUnsignedByte();
-      byte ccData1 = (byte) (ccData.readUnsignedByte() & 0x7F);
-      byte ccData2 = (byte) (ccData.readUnsignedByte() & 0x7F);
+    while (ccData.bytesLeft() >= packetLength) {
+      byte ccDataHeader = packetLength == 2 ? CC_IMPLICIT_DATA_HEADER
+          : (byte) ccData.readUnsignedByte();
+      byte ccData1 = (byte) (ccData.readUnsignedByte() & 0x7F); // strip the parity bit
+      byte ccData2 = (byte) (ccData.readUnsignedByte() & 0x7F); // strip the parity bit
 
       // Only examine valid CEA-608 packets
+      // TODO: We're currently ignoring the top 5 marker bits, which should all be 1s according
+      // to the CEA-608 specification. We need to determine if the data should be handled
+      // differently when that is not the case.
       if ((ccDataHeader & (CC_VALID_FLAG | CC_TYPE_FLAG)) != CC_VALID_608_ID) {
         continue;
       }
@@ -258,49 +282,47 @@ public final class Cea608Decoder extends CeaDecoder {
       if (ccData1 == 0 && ccData2 == 0) {
         continue;
       }
+
       // If we've reached this point then there is data to process; flag that work has been done.
       captionDataProcessed = true;
 
       // Special North American character set.
-      // ccData1 - P|0|0|1|C|0|0|1
-      // ccData2 - P|0|1|1|X|X|X|X
-      if ((ccData1 == 0x11 || ccData1 == 0x19) && ((ccData2 & 0x70) == 0x30)) {
-        // TODO: Make use of the channel bit
-        captionStringBuilder.append(getSpecialChar(ccData2));
+      // ccData1 - 0|0|0|1|C|0|0|1
+      // ccData2 - 0|0|1|1|X|X|X|X
+      if (((ccData1 & 0xF7) == 0x11) && ((ccData2 & 0xF0) == 0x30)) {
+        // TODO: Make use of the channel toggle
+        currentCueBuilder.append(getSpecialChar(ccData2));
         continue;
       }
 
       // Extended Western European character set.
-      // ccData1 - P|0|0|1|C|0|1|S
-      // ccData2 - P|0|1|X|X|X|X|X
-      if ((ccData2 & 0x60) == 0x20) {
-        // Extended Spanish/Miscellaneous and French character set (S = 0).
-        if (ccData1 == 0x12 || ccData1 == 0x1A) {
-          // TODO: Make use of the channel bit
-          backspace(); // Remove standard equivalent of the special extended char.
-          captionStringBuilder.append(getExtendedEsFrChar(ccData2));
-          continue;
+      // ccData1 - 0|0|0|1|C|0|1|S
+      // ccData2 - 0|0|1|X|X|X|X|X
+      if (((ccData1 & 0xF6) == 0x12) && (ccData2 & 0xE0) == 0x20) {
+        // TODO: Make use of the channel toggle
+        // Remove standard equivalent of the special extended char before appending new one
+        currentCueBuilder.backspace();
+        if ((ccData1 & 0x01) == 0x00) {
+          // Extended Spanish/Miscellaneous and French character set (S = 0).
+          currentCueBuilder.append(getExtendedEsFrChar(ccData2));
+        } else {
+          // Extended Portuguese and German/Danish character set (S = 1).
+          currentCueBuilder.append(getExtendedPtDeChar(ccData2));
         }
-
-        // Extended Portuguese and German/Danish character set (S = 1).
-        if (ccData1 == 0x13 || ccData1 == 0x1B) {
-          // TODO: Make use of the channel bit
-          backspace(); // Remove standard equivalent of the special extended char.
-          captionStringBuilder.append(getExtendedPtDeChar(ccData2));
-          continue;
-        }
+        continue;
       }
 
       // Control character.
-      if (ccData1 < 0x20) {
+      // ccData1 - 0|0|0|X|X|X|X|X
+      if ((ccData1 & 0xE0) == 0x00) {
         isRepeatableControl = handleCtrl(ccData1, ccData2);
         continue;
       }
 
       // Basic North American character set.
-      captionStringBuilder.append(getChar(ccData1));
-      if (ccData2 >= 0x20) {
-        captionStringBuilder.append(getChar(ccData2));
+      currentCueBuilder.append(getChar(ccData1));
+      if ((ccData2 & 0xE0) != 0x00) {
+        currentCueBuilder.append(getChar(ccData2));
       }
     }
 
@@ -309,32 +331,104 @@ public final class Cea608Decoder extends CeaDecoder {
         repeatableControlSet = false;
       }
       if (captionMode == CC_MODE_ROLL_UP || captionMode == CC_MODE_PAINT_ON) {
-        captionString = getDisplayCaption();
+        cues = getDisplayCues();
       }
     }
   }
 
   private boolean handleCtrl(byte cc1, byte cc2) {
     boolean isRepeatableControl = isRepeatable(cc1);
+
+    // Most control commands are sent twice in succession to ensure they are received properly.
+    // We don't want to process duplicate commands, so if we see the same repeatable command twice
+    // in a row, ignore the second one.
     if (isRepeatableControl) {
       if (repeatableControlSet
           && repeatableControlCc1 == cc1
           && repeatableControlCc2 == cc2) {
+        // This is a duplicate. Clear the repeatable control flag and return.
         repeatableControlSet = false;
         return true;
       } else {
+        // This is a repeatable command, but we haven't see it yet, so set the repeabable control
+        // flag (to ensure we ignore the next one should it be a duplicate) and continue processing
+        // the command.
         repeatableControlSet = true;
         repeatableControlCc1 = cc1;
         repeatableControlCc2 = cc2;
       }
     }
-    if (isMiscCode(cc1, cc2)) {
-      handleMiscCode(cc2);
+
+    if (isMidrowCtrlCode(cc1, cc2)) {
+      handleMidrowCtrl(cc2);
     } else if (isPreambleAddressCode(cc1, cc2)) {
-      // TODO: Add better handling of this with specific positioning.
-      maybeAppendNewline();
+      handlePreambleAddressCode(cc1, cc2);
+    } else if (isTabCtrlCode(cc1, cc2)) {
+      currentCueBuilder.setTab(cc2 - 0x20);
+    } else if (isMiscCode(cc1, cc2)) {
+      handleMiscCode(cc2);
     }
+
     return isRepeatableControl;
+  }
+
+  private void handleMidrowCtrl(byte cc2) {
+    // TODO: support the extended styles (i.e. backgrounds and transparencies)
+
+    // cc2 - 0|0|1|0|ATRBT|U
+    // ATRBT is the 3-byte encoded attribute, and U is the underline toggle
+    boolean isUnderlined = (cc2 & 0x01) == 0x01;
+    currentCueBuilder.setUnderline(isUnderlined);
+
+    int attribute = (cc2 >> 1) & 0x0F;
+    if (attribute == 0x07) {
+      currentCueBuilder.setMidrowStyle(new StyleSpan(Typeface.ITALIC), 2);
+      currentCueBuilder.setMidrowStyle(new ForegroundColorSpan(Color.WHITE), 1);
+    } else {
+      currentCueBuilder.setMidrowStyle(new ForegroundColorSpan(COLORS[attribute]), 1);
+    }
+  }
+
+  private void handlePreambleAddressCode(byte cc1, byte cc2) {
+    // cc1 - 0|0|0|1|C|E|ROW
+    // C is the channel toggle, E is the extended flag, and ROW is the encoded row
+    int row = ROW_INDICES[cc1 & 0x07];
+    // TODO: Make use of the channel toggle
+    // TODO: support the extended address and style
+
+    // cc2 - 0|1|N|ATTRBTE|U
+    // N is the next row down toggle, ATTRBTE is the 4-byte encoded attribute, and U is the
+    // underline toggle.
+    boolean nextRowDown = (cc2 & 0x20) != 0;
+    if (nextRowDown) {
+      row++;
+    }
+
+    if (row != currentCueBuilder.getRow()) {
+      if (captionMode != CC_MODE_ROLL_UP && !currentCueBuilder.isEmpty()) {
+        currentCueBuilder = new CueBuilder(captionMode, captionRowCount);
+        cueBuilders.add(currentCueBuilder);
+      }
+      currentCueBuilder.setRow(row);
+    }
+
+    if ((cc2 & 0x01) == 0x01) {
+      currentCueBuilder.setPreambleStyle(new UnderlineSpan());
+    }
+
+    // cc2 - 0|1|N|0|STYLE|U
+    // cc2 - 0|1|N|1|CURSR|U
+    int attribute = cc2 >> 1 & 0x0F;
+    if (attribute <= 0x07) {
+      if (attribute == 0x07) {
+        currentCueBuilder.setPreambleStyle(new StyleSpan(Typeface.ITALIC));
+        currentCueBuilder.setPreambleStyle(new ForegroundColorSpan(Color.WHITE));
+      } else {
+        currentCueBuilder.setPreambleStyle(new ForegroundColorSpan(COLORS[attribute]));
+      }
+    } else {
+      currentCueBuilder.setIndent(COLUMN_INDICES[attribute & 0x07]);
+    }
   }
 
   private void handleMiscCode(byte cc2) {
@@ -365,68 +459,43 @@ public final class Cea608Decoder extends CeaDecoder {
 
     switch (cc2) {
       case CTRL_ERASE_DISPLAYED_MEMORY:
-        captionString = null;
+        cues = null;
         if (captionMode == CC_MODE_ROLL_UP || captionMode == CC_MODE_PAINT_ON) {
-          captionStringBuilder.setLength(0);
+          resetCueBuilders();
         }
         break;
       case CTRL_ERASE_NON_DISPLAYED_MEMORY:
-        captionStringBuilder.setLength(0);
+        resetCueBuilders();
         break;
       case CTRL_END_OF_CAPTION:
-        captionString = getDisplayCaption();
-        captionStringBuilder.setLength(0);
+        cues = getDisplayCues();
+        resetCueBuilders();
         break;
       case CTRL_CARRIAGE_RETURN:
-        maybeAppendNewline();
-        break;
-      case CTRL_BACKSPACE:
-        if (captionStringBuilder.length() > 0) {
-          captionStringBuilder.setLength(captionStringBuilder.length() - 1);
+        // carriage returns only apply to rollup captions; don't bother if we don't have anything
+        // to add a carriage return to
+        if (captionMode == CC_MODE_ROLL_UP && !currentCueBuilder.isEmpty()) {
+          currentCueBuilder.rollUp();
         }
         break;
+      case CTRL_BACKSPACE:
+        currentCueBuilder.backspace();
+        break;
+      case CTRL_DELETE_TO_END_OF_ROW:
+        // TODO: implement
+        break;
     }
   }
 
-  private void backspace() {
-    if (captionStringBuilder.length() > 0) {
-      captionStringBuilder.setLength(captionStringBuilder.length() - 1);
+  private List<Cue> getDisplayCues() {
+    List<Cue> displayCues = new ArrayList<>();
+    for (int i = 0; i < cueBuilders.size(); i++) {
+      Cue cue = cueBuilders.get(i).build();
+      if (cue != null) {
+        displayCues.add(cue);
+      }
     }
-  }
-
-  private void maybeAppendNewline() {
-    int buildLength = captionStringBuilder.length();
-    if (buildLength > 0 && captionStringBuilder.charAt(buildLength - 1) != '\n') {
-      captionStringBuilder.append('\n');
-    }
-  }
-
-  private String getDisplayCaption() {
-    int buildLength = captionStringBuilder.length();
-    if (buildLength == 0) {
-      return null;
-    }
-
-    boolean endsWithNewline = captionStringBuilder.charAt(buildLength - 1) == '\n';
-    if (buildLength == 1 && endsWithNewline) {
-      return null;
-    }
-
-    int endIndex = endsWithNewline ? buildLength - 1 : buildLength;
-    if (captionMode != CC_MODE_ROLL_UP) {
-      return captionStringBuilder.substring(0, endIndex);
-    }
-
-    int startIndex = 0;
-    int searchBackwardFromIndex = endIndex;
-    for (int i = 0; i < captionRowCount && searchBackwardFromIndex != -1; i++) {
-      searchBackwardFromIndex = captionStringBuilder.lastIndexOf("\n", searchBackwardFromIndex - 1);
-    }
-    if (searchBackwardFromIndex != -1) {
-      startIndex = searchBackwardFromIndex + 1;
-    }
-    captionStringBuilder.delete(0, startIndex);
-    return captionStringBuilder.substring(0, endIndex - startIndex);
+    return displayCues;
   }
 
   private void setCaptionMode(int captionMode) {
@@ -434,13 +503,22 @@ public final class Cea608Decoder extends CeaDecoder {
       return;
     }
 
+    int oldCaptionMode = this.captionMode;
     this.captionMode = captionMode;
+
     // Clear the working memory.
-    captionStringBuilder.setLength(0);
-    if (captionMode == CC_MODE_ROLL_UP || captionMode == CC_MODE_UNKNOWN) {
-      // When switching to roll-up or unknown, we also need to clear the caption.
-      captionString = null;
+    resetCueBuilders();
+    if (oldCaptionMode == CC_MODE_PAINT_ON || captionMode == CC_MODE_ROLL_UP
+        || captionMode == CC_MODE_UNKNOWN) {
+      // When switching from paint-on or to roll-up or unknown, we also need to clear the caption.
+      cues = null;
     }
+  }
+
+  private void resetCueBuilders() {
+    currentCueBuilder.reset(captionMode, captionRowCount);
+    cueBuilders.clear();
+    cueBuilders.add(currentCueBuilder);
   }
 
   private static char getChar(byte ccData) {
@@ -449,7 +527,7 @@ public final class Cea608Decoder extends CeaDecoder {
   }
 
   private static char getSpecialChar(byte ccData) {
-    int index = ccData & 0xF;
+    int index = ccData & 0x0F;
     return (char) SPECIAL_CHARACTER_SET[index];
   }
 
@@ -463,42 +541,248 @@ public final class Cea608Decoder extends CeaDecoder {
     return (char) SPECIAL_PT_DE_CHARACTER_SET[index];
   }
 
-  private static boolean isMiscCode(byte cc1, byte cc2) {
-    return (cc1 == CTRL_MISC_CHAN_1 || cc1 == CTRL_MISC_CHAN_2)
-        && (cc2 >= 0x20 && cc2 <= 0x2F);
+  private static boolean isMidrowCtrlCode(byte cc1, byte cc2) {
+    // cc1 - 0|0|0|1|C|0|0|1
+    // cc2 - 0|0|1|0|X|X|X|X
+    return ((cc1 & 0xF7) == 0x11) && ((cc2 & 0xF0) == 0x20);
   }
 
   private static boolean isPreambleAddressCode(byte cc1, byte cc2) {
-    return (cc1 >= 0x10 && cc1 <= 0x1F) && (cc2 >= 0x40 && cc2 <= 0x7F);
+    // cc1 - 0|0|0|1|C|X|X|X
+    // cc2 - 0|1|X|X|X|X|X|X
+    return ((cc1 & 0xF0) == 0x10) && ((cc2 & 0xC0) == 0x40);
+  }
+
+  private static boolean isTabCtrlCode(byte cc1, byte cc2) {
+    // cc1 - 0|0|0|1|C|1|1|1
+    // cc2 - 0|0|1|0|0|0|0|1 to 0|0|1|0|0|0|1|1
+    return ((cc1 & 0xF7) == 0x17) && (cc2 >= 0x21 && cc2 <= 0x23);
+  }
+
+  private static boolean isMiscCode(byte cc1, byte cc2) {
+    // cc1 - 0|0|0|1|C|1|0|0
+    // cc2 - 0|0|1|0|X|X|X|X
+    return ((cc1 & 0xF7) == 0x14) && ((cc2 & 0xF0) == 0x20);
   }
 
   private static boolean isRepeatable(byte cc1) {
-    return cc1 >= 0x10 && cc1 <= 0x1F;
+    // cc1 - 0|0|0|1|X|X|X|X
+    return (cc1 & 0xF0) == 0x10;
   }
 
-  /**
-   * Inspects an sei message to determine whether it contains CEA-608.
-   * <p>
-   * The position of {@code payload} is left unchanged.
-   *
-   * @param payloadType The payload type of the message.
-   * @param payloadLength The length of the payload.
-   * @param payload A {@link ParsableByteArray} containing the payload.
-   * @return Whether the sei message contains CEA-608.
-   */
-  public static boolean isSeiMessageCea608(int payloadType, int payloadLength,
-      ParsableByteArray payload) {
-    if (payloadType != PAYLOAD_TYPE_CC || payloadLength < 8) {
-      return false;
+  private static class CueBuilder {
+
+    private static final int POSITION_UNSET = -1;
+
+    // 608 captions define a 15 row by 32 column screen grid. These constants convert from 608
+    // positions to normalized screen position.
+    private static final int SCREEN_CHARWIDTH = 32;
+    private static final int BASE_ROW = 15;
+
+    private final List<CharacterStyle> preambleStyles;
+    private final List<CueStyle> midrowStyles;
+    private final List<SpannableString> rolledUpCaptions;
+    private final SpannableStringBuilder captionStringBuilder;
+
+    private int row;
+    private int indent;
+    private int tabOffset;
+    private int captionMode;
+    private int captionRowCount;
+    private int underlineStartPosition;
+
+    public CueBuilder(int captionMode, int captionRowCount) {
+      preambleStyles = new ArrayList<>();
+      midrowStyles = new ArrayList<>();
+      rolledUpCaptions = new LinkedList<>();
+      captionStringBuilder = new SpannableStringBuilder();
+      reset(captionMode, captionRowCount);
     }
-    int startPosition = payload.getPosition();
-    int countryCode = payload.readUnsignedByte();
-    int providerCode = payload.readUnsignedShort();
-    int userIdentifier = payload.readInt();
-    int userDataTypeCode = payload.readUnsignedByte();
-    payload.setPosition(startPosition);
-    return countryCode == COUNTRY_CODE && providerCode == PROVIDER_CODE
-        && userIdentifier == USER_ID && userDataTypeCode == USER_DATA_TYPE_CODE;
+
+    public void reset(int captionMode, int captionRowCount) {
+      preambleStyles.clear();
+      midrowStyles.clear();
+      rolledUpCaptions.clear();
+      captionStringBuilder.clear();
+      row = BASE_ROW;
+      indent = 0;
+      tabOffset = 0;
+      this.captionMode = captionMode;
+      this.captionRowCount = captionRowCount;
+      underlineStartPosition = POSITION_UNSET;
+    }
+
+    public boolean isEmpty() {
+      return preambleStyles.isEmpty() && midrowStyles.isEmpty() && rolledUpCaptions.isEmpty()
+          && captionStringBuilder.length() == 0;
+    }
+
+    public void backspace() {
+      int length = captionStringBuilder.length();
+      if (length > 0) {
+        captionStringBuilder.delete(length - 1, length);
+      }
+    }
+
+    public int getRow() {
+      return row;
+    }
+
+    public void setRow(int row) {
+      this.row = row;
+    }
+
+    public void rollUp() {
+      rolledUpCaptions.add(buildSpannableString());
+      captionStringBuilder.clear();
+      preambleStyles.clear();
+      midrowStyles.clear();
+      underlineStartPosition = POSITION_UNSET;
+
+      int numRows = Math.min(captionRowCount, row);
+      while (rolledUpCaptions.size() >= numRows) {
+        rolledUpCaptions.remove(0);
+      }
+    }
+
+    public void setIndent(int indent) {
+      this.indent = indent;
+    }
+
+    public void setTab(int tabs) {
+      tabOffset = tabs;
+    }
+
+    public void setPreambleStyle(CharacterStyle style) {
+      preambleStyles.add(style);
+    }
+
+    public void setMidrowStyle(CharacterStyle style, int nextStyleIncrement) {
+      midrowStyles.add(new CueStyle(style, captionStringBuilder.length(), nextStyleIncrement));
+    }
+
+    public void setUnderline(boolean enabled) {
+      if (enabled) {
+        underlineStartPosition = captionStringBuilder.length();
+      } else if (underlineStartPosition != POSITION_UNSET) {
+        // underline spans won't overlap, so it's safe to modify the builder directly with them
+        captionStringBuilder.setSpan(new UnderlineSpan(), underlineStartPosition,
+            captionStringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        underlineStartPosition = POSITION_UNSET;
+      }
+    }
+
+    public void append(char text) {
+      captionStringBuilder.append(text);
+    }
+
+    public SpannableString buildSpannableString() {
+      int length = captionStringBuilder.length();
+
+      // preamble styles apply to the entire cue
+      for (int i = 0; i < preambleStyles.size(); i++) {
+        captionStringBuilder.setSpan(preambleStyles.get(i), 0, length,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
+
+      // midrow styles only apply to part of the cue, and after preamble styles
+      for (int i = 0; i < midrowStyles.size(); i++) {
+        CueStyle cueStyle = midrowStyles.get(i);
+        int end = (i < midrowStyles.size() - cueStyle.nextStyleIncrement)
+            ? midrowStyles.get(i + cueStyle.nextStyleIncrement).start
+            : length;
+        captionStringBuilder.setSpan(cueStyle.style, cueStyle.start, end,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
+
+      // special case for midrow underlines that went to the end of the cue
+      if (underlineStartPosition != POSITION_UNSET) {
+        captionStringBuilder.setSpan(new UnderlineSpan(), underlineStartPosition, length,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
+
+      return new SpannableString(captionStringBuilder);
+    }
+
+    public Cue build() {
+      SpannableStringBuilder cueString = new SpannableStringBuilder();
+      // Add any rolled up captions, separated by new lines.
+      for (int i = 0; i < rolledUpCaptions.size(); i++) {
+        cueString.append(rolledUpCaptions.get(i));
+        cueString.append('\n');
+      }
+      // Add the current line.
+      cueString.append(buildSpannableString());
+
+      if (cueString.length() == 0) {
+        // The cue is empty.
+        return null;
+      }
+
+      float position;
+      int positionAnchor;
+      // The number of empty columns before the start of the text, in the range [0-31].
+      int startPadding = indent + tabOffset;
+      // The number of empty columns after the end of the text, in the same range.
+      int endPadding = SCREEN_CHARWIDTH - startPadding - cueString.length();
+      int startEndPaddingDelta = startPadding - endPadding;
+      if (captionMode == CC_MODE_POP_ON && Math.abs(startEndPaddingDelta) < 3) {
+        // Treat approximately centered pop-on captions are middle aligned.
+        position = 0.5f;
+        positionAnchor = Cue.ANCHOR_TYPE_MIDDLE;
+      } else if (captionMode == CC_MODE_POP_ON && startEndPaddingDelta > 0) {
+        // Treat pop-on captions with less padding at the end than the start as end aligned.
+        position = (float) (SCREEN_CHARWIDTH - endPadding) / SCREEN_CHARWIDTH;
+        // Adjust the position to fit within the safe area.
+        position = position * 0.8f + 0.1f;
+        positionAnchor = Cue.ANCHOR_TYPE_END;
+      } else {
+        // For all other cases assume start aligned.
+        position = (float) startPadding / SCREEN_CHARWIDTH;
+        // Adjust the position to fit within the safe area.
+        position = position * 0.8f + 0.1f;
+        positionAnchor = Cue.ANCHOR_TYPE_START;
+      }
+
+      int lineAnchor;
+      int line;
+      // Note: Row indices are in the range [1-15].
+      if (captionMode == CC_MODE_ROLL_UP || row > (BASE_ROW / 2)) {
+        lineAnchor = Cue.ANCHOR_TYPE_END;
+        line = row - BASE_ROW;
+        // Two line adjustments. The first is because line indices from the bottom of the window
+        // start from -1 rather than 0. The second is a blank row to act as the safe area.
+        line -= 2;
+      } else {
+        lineAnchor = Cue.ANCHOR_TYPE_START;
+        // Line indices from the top of the window start from 0, but we want a blank row to act as
+        // the safe area. As a result no adjustment is necessary.
+        line = row;
+      }
+
+      return new Cue(cueString, Alignment.ALIGN_NORMAL, line, Cue.LINE_TYPE_NUMBER, lineAnchor,
+          position, positionAnchor, Cue.DIMEN_UNSET);
+    }
+
+    @Override
+    public String toString() {
+      return captionStringBuilder.toString();
+    }
+
+    private static class CueStyle {
+
+      public final CharacterStyle style;
+      public final int start;
+      public final int nextStyleIncrement;
+
+      public CueStyle(CharacterStyle style, int start, int nextStyleIncrement) {
+        this.style = style;
+        this.start = start;
+        this.nextStyleIncrement = nextStyleIncrement;
+      }
+
+    }
+
   }
 
 }

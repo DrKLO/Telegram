@@ -232,14 +232,23 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					return false;
 				}
 				final CallLogRow row = calls.get(position);
+				ArrayList<String> items=new ArrayList<String>();
+				items.add(LocaleController.getString("Delete", R.string.Delete));
+				if(VoIPHelper.canRateCall((TLRPC.TL_messageActionPhoneCall) row.calls.get(0).action))
+					items.add(LocaleController.getString("CallMessageReportProblem", R.string.CallMessageReportProblem));
 				new AlertDialog.Builder(getParentActivity())
 						.setTitle(LocaleController.getString("Calls", R.string.Calls))
-						.setItems(new String[]{
-								LocaleController.getString("Delete", R.string.Delete)
-						}, new DialogInterface.OnClickListener() {
+						.setItems(items.toArray(new String[items.size()]), new DialogInterface.OnClickListener() {
 							@Override
 							public void onClick(DialogInterface dialog, int which) {
-								confirmAndDelete(row);
+								switch(which){
+									case 0:
+										confirmAndDelete(row);
+										break;
+									case 1:
+										VoIPHelper.showRateAlert(getParentActivity(), (TLRPC.TL_messageActionPhoneCall) row.calls.get(0).action);
+										break;
+								}
 							}
 						})
 						.show();
@@ -330,7 +339,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				ContactsActivity contactsFragment = new ContactsActivity(args);
 				contactsFragment.setDelegate(new ContactsActivity.ContactsActivityDelegate() {
 					@Override
-					public void didSelectContact(TLRPC.User user, String param) {
+					public void didSelectContact(TLRPC.User user, String param, ContactsActivity activity) {
 						VoIPHelper.startCall(user, getParentActivity(), null);
 					}
 				});

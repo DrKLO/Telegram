@@ -67,6 +67,6 @@ public final class Size {
         return mHeight ^ ((mWidth << (Integer.SIZE / 2)) | (mWidth >>> (Integer.SIZE / 2)));
     }
 
-    private final int mWidth;
-    private final int mHeight;
+    public final int mWidth;
+    public final int mHeight;
 }

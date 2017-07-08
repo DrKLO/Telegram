@@ -45,7 +45,6 @@ import java.io.IOException;
 
   private int state;
   private long totalGranules;
-  private volatile long queriedGranule;
   private long positionBeforeSeekToEnd;
   private long targetGranule;
 
@@ -114,9 +113,9 @@ import java.io.IOException;
   }
 
   @Override
-  public long startSeek() {
+  public long startSeek(long timeUs) {
     Assertions.checkArgument(state == STATE_IDLE || state == STATE_SEEK);
-    targetGranule = queriedGranule;
+    targetGranule = timeUs == 0 ? 0 : streamReader.convertTimeToGranule(timeUs);
     state = STATE_SEEK;
     resetSeeking();
     return targetGranule;
@@ -222,11 +221,10 @@ import java.io.IOException;
     @Override
     public long getPosition(long timeUs) {
       if (timeUs == 0) {
-        queriedGranule = 0;
         return startPosition;
       }
-      queriedGranule = streamReader.convertTimeToGranule(timeUs);
-      return getEstimatedPosition(startPosition, queriedGranule, DEFAULT_OFFSET);
+      long granule = streamReader.convertTimeToGranule(timeUs);
+      return getEstimatedPosition(startPosition, granule, DEFAULT_OFFSET);
     }
 
     @Override

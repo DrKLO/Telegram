@@ -41,6 +41,10 @@ public class CameraInfo {
         return pictureSizes;
     }
 
+    public boolean isFrontface() {
+        return frontCamera != 0;
+    }
+
     /*private int getScore(CameraSelectionCriteria criteria) {
         int score = 10;
         if (criteria != null) {

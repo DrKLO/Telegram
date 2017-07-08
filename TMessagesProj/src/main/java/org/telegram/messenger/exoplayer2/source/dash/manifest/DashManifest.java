@@ -17,7 +17,9 @@ package org.telegram.messenger.exoplayer2.source.dash.manifest;
 
 import android.net.Uri;
 import org.telegram.messenger.exoplayer2.C;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -77,6 +79,66 @@ public class DashManifest {
 
   public final long getPeriodDurationUs(int index) {
     return C.msToUs(getPeriodDurationMs(index));
+  }
+
+  /**
+   * Creates a copy of this manifest which includes only the representations identified by the given
+   * keys.
+   *
+   * @param representationKeys List of keys for the representations to be included in the copy.
+   * @return A copy of this manifest with the selected representations.
+   * @throws IndexOutOfBoundsException If a key has an invalid index.
+   */
+  public final DashManifest copy(List<RepresentationKey> representationKeys) {
+    LinkedList<RepresentationKey> keys = new LinkedList<>(representationKeys);
+    Collections.sort(keys);
+    keys.add(new RepresentationKey(-1, -1, -1)); // Add a stopper key to the end
+
+    ArrayList<Period> copyPeriods = new ArrayList<>();
+    long shiftMs = 0;
+    for (int periodIndex = 0; periodIndex < getPeriodCount(); periodIndex++) {
+      if (keys.peek().periodIndex != periodIndex) {
+        // No representations selected in this period.
+        long periodDurationMs = getPeriodDurationMs(periodIndex);
+        if (periodDurationMs != C.TIME_UNSET) {
+          shiftMs += periodDurationMs;
+        }
+      } else {
+        Period period = getPeriod(periodIndex);
+        ArrayList<AdaptationSet> copyAdaptationSets =
+            copyAdaptationSets(period.adaptationSets, keys);
+        copyPeriods.add(new Period(period.id, period.startMs - shiftMs, copyAdaptationSets));
+      }
+    }
+    long newDuration = duration != C.TIME_UNSET ? duration - shiftMs : C.TIME_UNSET;
+    return new DashManifest(availabilityStartTime, newDuration, minBufferTime, dynamic,
+        minUpdatePeriod, timeShiftBufferDepth, suggestedPresentationDelay, utcTiming, location,
+        copyPeriods);
+  }
+
+  private static ArrayList<AdaptationSet> copyAdaptationSets(
+      List<AdaptationSet> adaptationSets, LinkedList<RepresentationKey> keys) {
+    RepresentationKey key = keys.poll();
+    int periodIndex = key.periodIndex;
+    ArrayList<AdaptationSet> copyAdaptationSets = new ArrayList<>();
+    do {
+      int adaptationSetIndex = key.adaptationSetIndex;
+      AdaptationSet adaptationSet = adaptationSets.get(adaptationSetIndex);
+
+      List<Representation> representations = adaptationSet.representations;
+      ArrayList<Representation> copyRepresentations = new ArrayList<>();
+      do {
+        Representation representation = representations.get(key.representationIndex);
+        copyRepresentations.add(representation);
+        key = keys.poll();
+      } while(key.periodIndex == periodIndex && key.adaptationSetIndex == adaptationSetIndex);
+
+      copyAdaptationSets.add(new AdaptationSet(adaptationSet.id, adaptationSet.type,
+          copyRepresentations, adaptationSet.accessibilityDescriptors));
+    } while(key.periodIndex == periodIndex);
+    // Add back the last key which doesn't belong to the period being processed
+    keys.addFirst(key);
+    return copyAdaptationSets;
   }
 
 }

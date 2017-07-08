@@ -202,6 +202,14 @@ public final class ParsableByteArray {
   }
 
   /**
+   * Peeks at the next char.
+   */
+  public char peekChar() {
+    return (char) ((data[position] & 0xFF) << 8
+        | (data[position + 1] & 0xFF));
+  }
+
+  /**
    * Reads the next byte as an unsigned value.
    */
   public int readUnsignedByte() {
@@ -424,24 +432,6 @@ public final class ParsableByteArray {
   }
 
   /**
-   * Reads the next {@code length} bytes as UTF-8 characters. A terminating NUL byte is ignored,
-   * if present.
-   *
-   * @param length The number of bytes to read.
-   * @return The string encoded by the bytes.
-   */
-  public String readNullTerminatedString(int length) {
-    int stringLength = length;
-    int lastIndex = position + length - 1;
-    if (lastIndex < limit && data[lastIndex] == 0) {
-      stringLength--;
-    }
-    String result = new String(data, position, stringLength, Charset.defaultCharset());
-    position += length;
-    return result;
-  }
-
-  /**
    * Reads the next {@code length} bytes as characters in the specified {@link Charset}.
    *
    * @param length The number of bytes to read.
@@ -455,21 +445,64 @@ public final class ParsableByteArray {
   }
 
   /**
+   * Reads the next {@code length} bytes as UTF-8 characters. A terminating NUL byte is discarded,
+   * if present.
+   *
+   * @param length The number of bytes to read.
+   * @return The string, not including any terminating NUL byte.
+   */
+  public String readNullTerminatedString(int length) {
+    if (length == 0) {
+      return "";
+    }
+    int stringLength = length;
+    int lastIndex = position + length - 1;
+    if (lastIndex < limit && data[lastIndex] == 0) {
+      stringLength--;
+    }
+    String result = new String(data, position, stringLength);
+    position += length;
+    return result;
+  }
+
+  /**
+   * Reads up to the next NUL byte (or the limit) as UTF-8 characters.
+   *
+   * @return The string not including any terminating NUL byte, or null if the end of the data has
+   *     already been reached.
+   */
+  public String readNullTerminatedString() {
+    if (bytesLeft() == 0) {
+      return null;
+    }
+    int stringLimit = position;
+    while (stringLimit < limit && data[stringLimit] != 0) {
+      stringLimit++;
+    }
+    String string = new String(data, position, stringLimit - position);
+    position = stringLimit;
+    if (position < limit) {
+      position++;
+    }
+    return string;
+  }
+
+  /**
    * Reads a line of text.
    * <p>
    * A line is considered to be terminated by any one of a carriage return ('\r'), a line feed
    * ('\n'), or a carriage return followed immediately by a line feed ('\r\n'). The system's default
    * charset (UTF-8) is used.
    *
-   * @return A String containing the contents of the line, not including any line-termination
-   *     characters, or null if the end of the stream has been reached.
+   * @return The line not including any line-termination characters, or null if the end of the data
+   *     has already been reached.
    */
   public String readLine() {
     if (bytesLeft() == 0) {
       return null;
     }
     int lineLimit = position;
-    while (lineLimit < limit && data[lineLimit] != '\n' && data[lineLimit] != '\r') {
+    while (lineLimit < limit && !Util.isLinebreak(data[lineLimit])) {
       lineLimit++;
     }
     if (lineLimit - position >= 3 && data[position] == (byte) 0xEF

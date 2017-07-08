@@ -40,6 +40,7 @@ import org.telegram.messenger.exoplayer2.upstream.Loader.Loadable;
 import org.telegram.messenger.exoplayer2.util.Assertions;
 import org.telegram.messenger.exoplayer2.util.ConditionVariable;
 import org.telegram.messenger.exoplayer2.util.MimeTypes;
+import org.telegram.messenger.exoplayer2.util.Util;
 import java.io.EOFException;
 import java.io.IOException;
 
@@ -62,6 +63,7 @@ import java.io.IOException;
   private final ExtractorMediaSource.EventListener eventListener;
   private final MediaSource.Listener sourceListener;
   private final Allocator allocator;
+  private final String customCacheKey;
   private final Loader loader;
   private final ExtractorHolder extractorHolder;
   private final ConditionVariable loadCondition;
@@ -101,11 +103,13 @@ import java.io.IOException;
    * @param eventListener A listener of events. May be null if delivery of events is not required.
    * @param sourceListener A listener to notify when the timeline has been loaded.
    * @param allocator An {@link Allocator} from which to obtain media buffer allocations.
+   * @param customCacheKey A custom key that uniquely identifies the original stream. Used for cache
+   *     indexing. May be null.
    */
   public ExtractorMediaPeriod(Uri uri, DataSource dataSource, Extractor[] extractors,
       int minLoadableRetryCount, Handler eventHandler,
       ExtractorMediaSource.EventListener eventListener, MediaSource.Listener sourceListener,
-      Allocator allocator) {
+      Allocator allocator, String customCacheKey) {
     this.uri = uri;
     this.dataSource = dataSource;
     this.minLoadableRetryCount = minLoadableRetryCount;
@@ -113,6 +117,7 @@ import java.io.IOException;
     this.eventListener = eventListener;
     this.sourceListener = sourceListener;
     this.allocator = allocator;
+    this.customCacheKey = customCacheKey;
     loader = new Loader("Loader:ExtractorMediaPeriod");
     extractorHolder = new ExtractorHolder(extractors, this);
     loadCondition = new ConditionVariable();
@@ -230,6 +235,11 @@ import java.io.IOException;
   }
 
   @Override
+  public void discardBuffer(long positionUs) {
+    // Do nothing.
+  }
+
+  @Override
   public boolean continueLoading(long playbackPositionUs) {
     if (loadingFinished || (prepared && enabledTrackCount == 0)) {
       return false;
@@ -244,7 +254,7 @@ import java.io.IOException;
 
   @Override
   public long getNextLoadPositionUs() {
-    return getBufferedPositionUs();
+    return enabledTrackCount == 0 ? C.TIME_END_OF_SOURCE : getBufferedPositionUs();
   }
 
   @Override
@@ -291,7 +301,7 @@ import java.io.IOException;
     boolean seekInsideBuffer = !isPendingReset();
     for (int i = 0; seekInsideBuffer && i < trackCount; i++) {
       if (trackEnabledStates[i]) {
-        seekInsideBuffer = sampleQueues.valueAt(i).skipToKeyframeBefore(positionUs);
+        seekInsideBuffer = sampleQueues.valueAt(i).skipToKeyframeBefore(positionUs, false);
       }
     }
     // If we failed to seek within the sample queues, we need to restart.
@@ -320,13 +330,23 @@ import java.io.IOException;
     loader.maybeThrowError();
   }
 
-  /* package */ int readData(int track, FormatHolder formatHolder, DecoderInputBuffer buffer) {
+  /* package */ int readData(int track, FormatHolder formatHolder, DecoderInputBuffer buffer,
+      boolean formatRequired) {
     if (notifyReset || isPendingReset()) {
       return C.RESULT_NOTHING_READ;
     }
 
-    return sampleQueues.valueAt(track).readData(formatHolder, buffer, loadingFinished,
-        lastSeekPositionUs);
+    return sampleQueues.valueAt(track).readData(formatHolder, buffer, formatRequired,
+        loadingFinished, lastSeekPositionUs);
+  }
+
+  /* package */ void skipData(int track, long positionUs) {
+    DefaultTrackOutput sampleQueue = sampleQueues.valueAt(track);
+    if (loadingFinished && positionUs > sampleQueue.getLargestQueuedTimestampUs()) {
+      sampleQueue.skipAll();
+    } else {
+      sampleQueue.skipToKeyframeBefore(positionUs, true);
+    }
   }
 
   // Loader.Callback implementation.
@@ -343,6 +363,7 @@ import java.io.IOException;
       sourceListener.onSourceInfoRefreshed(
           new SinglePeriodTimeline(durationUs, seekMap.isSeekable()), null);
     }
+    callback.onContinueLoadingRequested(this);
   }
 
   @Override
@@ -376,7 +397,7 @@ import java.io.IOException;
   // ExtractorOutput implementation. Called by the loading thread.
 
   @Override
-  public TrackOutput track(int id) {
+  public TrackOutput track(int id, int type) {
     DefaultTrackOutput trackOutput = sampleQueues.get(id);
     if (trackOutput == null) {
       trackOutput = new DefaultTrackOutput(allocator);
@@ -453,7 +474,7 @@ import java.io.IOException;
         pendingResetPositionUs = C.TIME_UNSET;
         return;
       }
-      loadable.setLoadPosition(seekMap.getPosition(pendingResetPositionUs));
+      loadable.setLoadPosition(seekMap.getPosition(pendingResetPositionUs), pendingResetPositionUs);
       pendingResetPositionUs = C.TIME_UNSET;
     }
     extractedSamplesCountAtStartOfLoad = getExtractedSamplesCount();
@@ -486,7 +507,7 @@ import java.io.IOException;
       for (int i = 0; i < trackCount; i++) {
         sampleQueues.valueAt(i).reset(!prepared || trackEnabledStates[i]);
       }
-      loadable.setLoadPosition(0);
+      loadable.setLoadPosition(0, 0);
     }
   }
 
@@ -514,7 +535,7 @@ import java.io.IOException;
   }
 
   private boolean isLoadableExceptionFatal(IOException e) {
-    return e instanceof ExtractorMediaSource.UnrecognizedInputFormatException;
+    return e instanceof UnrecognizedInputFormatException;
   }
 
   private void notifyLoadError(final IOException error) {
@@ -547,13 +568,14 @@ import java.io.IOException;
     }
 
     @Override
-    public int readData(FormatHolder formatHolder, DecoderInputBuffer buffer) {
-      return ExtractorMediaPeriod.this.readData(track, formatHolder, buffer);
+    public int readData(FormatHolder formatHolder, DecoderInputBuffer buffer,
+        boolean formatRequired) {
+      return ExtractorMediaPeriod.this.readData(track, formatHolder, buffer, formatRequired);
     }
 
     @Override
-    public void skipToKeyframeBefore(long timeUs) {
-      sampleQueues.valueAt(track).skipToKeyframeBefore(timeUs);
+    public void skipData(long positionUs) {
+      ExtractorMediaPeriod.this.skipData(track, positionUs);
     }
 
   }
@@ -578,6 +600,7 @@ import java.io.IOException;
     private volatile boolean loadCanceled;
 
     private boolean pendingExtractorSeek;
+    private long seekTimeUs;
     private long length;
 
     public ExtractingLoadable(Uri uri, DataSource dataSource, ExtractorHolder extractorHolder,
@@ -591,8 +614,9 @@ import java.io.IOException;
       this.length = C.LENGTH_UNSET;
     }
 
-    public void setLoadPosition(long position) {
+    public void setLoadPosition(long position, long timeUs) {
       positionHolder.position = position;
+      seekTimeUs = timeUs;
       pendingExtractorSeek = true;
     }
 
@@ -613,14 +637,14 @@ import java.io.IOException;
         ExtractorInput input = null;
         try {
           long position = positionHolder.position;
-          length = dataSource.open(new DataSpec(uri, position, C.LENGTH_UNSET, null));
+          length = dataSource.open(new DataSpec(uri, position, C.LENGTH_UNSET, customCacheKey));
           if (length != C.LENGTH_UNSET) {
             length += position;
           }
           input = new DefaultExtractorInput(dataSource, position, length);
-          Extractor extractor = extractorHolder.selectExtractor(input);
+          Extractor extractor = extractorHolder.selectExtractor(input, dataSource.getUri());
           if (pendingExtractorSeek) {
-            extractor.seek(position);
+            extractor.seek(position, seekTimeUs);
             pendingExtractorSeek = false;
           }
           while (result == Extractor.RESULT_CONTINUE && !loadCanceled) {
@@ -638,7 +662,7 @@ import java.io.IOException;
           } else if (input != null) {
             positionHolder.position = input.getPosition();
           }
-          dataSource.close();
+          Util.closeQuietly(dataSource);
         }
       }
     }
@@ -670,13 +694,13 @@ import java.io.IOException;
      * later calls.
      *
      * @param input The {@link ExtractorInput} from which data should be read.
+     * @param uri The {@link Uri} of the data.
      * @return An initialized extractor for reading {@code input}.
-     * @throws ExtractorMediaSource.UnrecognizedInputFormatException Thrown if the input format
-     *     could not be detected.
+     * @throws UnrecognizedInputFormatException Thrown if the input format could not be detected.
      * @throws IOException Thrown if the input could not be read.
      * @throws InterruptedException Thrown if the thread was interrupted.
      */
-    public Extractor selectExtractor(ExtractorInput input)
+    public Extractor selectExtractor(ExtractorInput input, Uri uri)
         throws IOException, InterruptedException {
       if (extractor != null) {
         return extractor;
@@ -694,7 +718,8 @@ import java.io.IOException;
         }
       }
       if (extractor == null) {
-        throw new ExtractorMediaSource.UnrecognizedInputFormatException(extractors);
+        throw new UnrecognizedInputFormatException("None of the available extractors ("
+            + Util.getCommaDelimitedSimpleClassNames(extractors) + ") could read the stream.", uri);
       }
       extractor.init(extractorOutput);
       return extractor;

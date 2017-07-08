@@ -57,8 +57,8 @@ import org.telegram.messenger.exoplayer2.source.dash.DashSegmentIndex;
   }
 
   @Override
-  public int getLastSegmentNum(long periodDurationUs) {
-    return 0;
+  public int getSegmentCount(long periodDurationUs) {
+    return 1;
   }
 
   @Override

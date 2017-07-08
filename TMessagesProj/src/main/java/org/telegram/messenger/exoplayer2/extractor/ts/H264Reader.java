@@ -33,12 +33,13 @@ import java.util.List;
 /**
  * Parses a continuous H264 byte stream and extracts individual frames.
  */
-/* package */ final class H264Reader implements ElementaryStreamReader {
+public final class H264Reader implements ElementaryStreamReader {
 
   private static final int NAL_UNIT_TYPE_SEI = 6; // Supplemental enhancement information
   private static final int NAL_UNIT_TYPE_SPS = 7; // Sequence parameter set
   private static final int NAL_UNIT_TYPE_PPS = 8; // Picture parameter set
 
+  private final SeiReader seiReader;
   private final boolean allowNonIdrKeyframes;
   private final boolean detectAccessUnits;
   private final NalUnitTargetBuffer sps;
@@ -47,8 +48,8 @@ import java.util.List;
   private long totalBytesWritten;
   private final boolean[] prefixFlags;
 
+  private String formatId;
   private TrackOutput output;
-  private SeiReader seiReader;
   private SampleReader sampleReader;
 
   // State that should not be reset on seek.
@@ -61,15 +62,17 @@ import java.util.List;
   private final ParsableByteArray seiWrapper;
 
   /**
+   * @param seiReader An SEI reader for consuming closed caption channels.
    * @param allowNonIdrKeyframes Whether to treat samples consisting of non-IDR I slices as
    *     synchronization samples (key-frames).
    * @param detectAccessUnits Whether to split the input stream into access units (samples) based on
    *     slice headers. Pass {@code false} if the stream contains access unit delimiters (AUDs).
    */
-  public H264Reader(boolean allowNonIdrKeyframes, boolean detectAccessUnits) {
-    prefixFlags = new boolean[3];
+  public H264Reader(SeiReader seiReader, boolean allowNonIdrKeyframes, boolean detectAccessUnits) {
+    this.seiReader = seiReader;
     this.allowNonIdrKeyframes = allowNonIdrKeyframes;
     this.detectAccessUnits = detectAccessUnits;
+    prefixFlags = new boolean[3];
     sps = new NalUnitTargetBuffer(NAL_UNIT_TYPE_SPS, 128);
     pps = new NalUnitTargetBuffer(NAL_UNIT_TYPE_PPS, 128);
     sei = new NalUnitTargetBuffer(NAL_UNIT_TYPE_SEI, 128);
@@ -88,9 +91,11 @@ import java.util.List;
 
   @Override
   public void createTracks(ExtractorOutput extractorOutput, TrackIdGenerator idGenerator) {
-    output = extractorOutput.track(idGenerator.getNextId());
+    idGenerator.generateNewId();
+    formatId = idGenerator.getFormatId();
+    output = extractorOutput.track(idGenerator.getTrackId(), C.TRACK_TYPE_VIDEO);
     sampleReader = new SampleReader(output, allowNonIdrKeyframes, detectAccessUnits);
-    seiReader = new SeiReader(extractorOutput.track(idGenerator.getNextId()));
+    seiReader.createTracks(extractorOutput, idGenerator);
   }
 
   @Override
@@ -175,7 +180,7 @@ import java.util.List;
           initializationData.add(Arrays.copyOf(pps.nalData, pps.nalLength));
           NalUnitUtil.SpsData spsData = NalUnitUtil.parseSpsNalUnit(sps.nalData, 3, sps.nalLength);
           NalUnitUtil.PpsData ppsData = NalUnitUtil.parsePpsNalUnit(pps.nalData, 3, pps.nalLength);
-          output.format(Format.createVideoSampleFormat(null, MimeTypes.VIDEO_H264, null,
+          output.format(Format.createVideoSampleFormat(formatId, MimeTypes.VIDEO_H264, null,
               Format.NO_VALUE, Format.NO_VALUE, spsData.width, spsData.height, Format.NO_VALUE,
               initializationData, Format.NO_VALUE, spsData.pixelWidthAspectRatio, null));
           hasOutputFormat = true;

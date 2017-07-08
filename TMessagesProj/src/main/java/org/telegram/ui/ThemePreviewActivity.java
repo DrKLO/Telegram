@@ -330,7 +330,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             @Override
             public void onClick(View v) {
                 Theme.applyPreviousTheme();
-                parentLayout.rebuildAllFragmentViews(false);
+                parentLayout.rebuildAllFragmentViews(false, false);
                 finishFragment();
             }
         });
@@ -348,7 +348,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             @Override
             public void onClick(View v) {
                 applied = true;
-                parentLayout.rebuildAllFragmentViews(false);
+                parentLayout.rebuildAllFragmentViews(false, false);
                 Theme.applyThemeFile(themeFile, applyingTheme.name, false);
                 finishFragment();
             }
@@ -383,7 +383,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
     @Override
     public boolean onBackPressed() {
         Theme.applyPreviousTheme();
-        parentLayout.rebuildAllFragmentViews(false);
+        parentLayout.rebuildAllFragmentViews(false, false);
         return super.onBackPressed();
     }
 
@@ -739,7 +739,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                     }
 
                     @Override
-                    public boolean needPlayAudio(MessageObject messageObject) {
+                    public boolean needPlayMessage(MessageObject messageObject) {
                         return false;
                     }
 
@@ -804,7 +804,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                     }
 
                     @Override
-                    public void didPressedInstantButton(ChatMessageCell cell) {
+                    public void didPressedInstantButton(ChatMessageCell cell, int type) {
 
                     }
                 });

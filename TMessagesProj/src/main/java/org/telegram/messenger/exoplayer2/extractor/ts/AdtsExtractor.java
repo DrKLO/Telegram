@@ -134,7 +134,7 @@ public final class AdtsExtractor implements Extractor {
   }
 
   @Override
-  public void seek(long position) {
+  public void seek(long position, long timeUs) {
     startedPacket = false;
     reader.seek();
   }
