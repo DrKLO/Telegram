@@ -15,11 +15,13 @@
  */
 package org.telegram.messenger.exoplayer2.trackselection;
 
-import android.util.Pair;
+import android.content.Context;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
+import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.ExoPlaybackException;
 import org.telegram.messenger.exoplayer2.RendererCapabilities;
+import org.telegram.messenger.exoplayer2.RendererConfiguration;
 import org.telegram.messenger.exoplayer2.source.TrackGroup;
 import org.telegram.messenger.exoplayer2.source.TrackGroupArray;
 import org.telegram.messenger.exoplayer2.util.Util;
@@ -81,12 +83,14 @@ public abstract class MappingTrackSelector extends TrackSelector {
 
   private final SparseArray<Map<TrackGroupArray, SelectionOverride>> selectionOverrides;
   private final SparseBooleanArray rendererDisabledFlags;
+  private int tunnelingAudioSessionId;
 
   private MappedTrackInfo currentMappedTrackInfo;
 
   public MappingTrackSelector() {
     selectionOverrides = new SparseArray<>();
     rendererDisabledFlags = new SparseBooleanArray();
+    tunnelingAudioSessionId = C.AUDIO_SESSION_ID_UNSET;
   }
 
   /**
@@ -138,8 +142,6 @@ public abstract class MappingTrackSelector extends TrackSelector {
    * @param groups The {@link TrackGroupArray} for which the override should be applied.
    * @param override The override.
    */
-  // TODO - Don't allow overrides that select unsupported tracks, unless some flag has been
-  // explicitly set by the user to indicate that they want this.
   public final void setSelectionOverride(int rendererIndex, TrackGroupArray groups,
       SelectionOverride override) {
     Map<TrackGroupArray, SelectionOverride> overrides = selectionOverrides.get(rendererIndex);
@@ -225,12 +227,28 @@ public abstract class MappingTrackSelector extends TrackSelector {
     invalidate();
   }
 
+  /**
+   * Enables or disables tunneling. To enable tunneling, pass an audio session id to use when in
+   * tunneling mode. Session ids can be generated using
+   * {@link C#generateAudioSessionIdV21(Context)}. To disable tunneling pass
+   * {@link C#AUDIO_SESSION_ID_UNSET}. Tunneling will only be activated if it's both enabled and
+   * supported by the audio and video renderers for the selected tracks.
+   *
+   * @param tunnelingAudioSessionId The audio session id to use when tunneling, or
+   *     {@link C#AUDIO_SESSION_ID_UNSET} to disable tunneling.
+   */
+  public void setTunnelingAudioSessionId(int tunnelingAudioSessionId) {
+    if (this.tunnelingAudioSessionId != tunnelingAudioSessionId) {
+      this.tunnelingAudioSessionId = tunnelingAudioSessionId;
+      invalidate();
+    }
+  }
+
   // TrackSelector implementation.
 
   @Override
-  public final Pair<TrackSelectionArray, Object> selectTracks(
-      RendererCapabilities[] rendererCapabilities, TrackGroupArray trackGroups)
-      throws ExoPlaybackException {
+  public final TrackSelectorResult selectTracks(RendererCapabilities[] rendererCapabilities,
+      TrackGroupArray trackGroups) throws ExoPlaybackException {
     // Structures into which data will be written during the selection. The extra item at the end
     // of each array is to store data associated with track groups that cannot be associated with
     // any renderer.
@@ -298,8 +316,20 @@ public abstract class MappingTrackSelector extends TrackSelector {
     MappedTrackInfo mappedTrackInfo = new MappedTrackInfo(rendererTrackTypes,
         rendererTrackGroupArrays, mixedMimeTypeAdaptationSupport, rendererFormatSupports,
         unassociatedTrackGroupArray);
-    return Pair.<TrackSelectionArray, Object>create(new TrackSelectionArray(trackSelections),
-        mappedTrackInfo);
+
+    // Initialize the renderer configurations to the default configuration for all renderers with
+    // selections, and null otherwise.
+    RendererConfiguration[] rendererConfigurations =
+        new RendererConfiguration[rendererCapabilities.length];
+    for (int i = 0; i < rendererCapabilities.length; i++) {
+      rendererConfigurations[i] = trackSelections[i] != null ? RendererConfiguration.DEFAULT : null;
+    }
+    // Configure audio and video renderers to use tunneling if appropriate.
+    maybeConfigureRenderersForTunneling(rendererCapabilities, rendererTrackGroupArrays,
+        rendererFormatSupports, rendererConfigurations, trackSelections, tunnelingAudioSessionId);
+
+    return new TrackSelectorResult(trackGroups, new TrackSelectionArray(trackSelections),
+        mappedTrackInfo, rendererConfigurations);
   }
 
   @Override
@@ -346,15 +376,16 @@ public abstract class MappingTrackSelector extends TrackSelector {
   private static int findRenderer(RendererCapabilities[] rendererCapabilities, TrackGroup group)
       throws ExoPlaybackException {
     int bestRendererIndex = rendererCapabilities.length;
-    int bestSupportLevel = RendererCapabilities.FORMAT_UNSUPPORTED_TYPE;
+    int bestFormatSupportLevel = RendererCapabilities.FORMAT_UNSUPPORTED_TYPE;
     for (int rendererIndex = 0; rendererIndex < rendererCapabilities.length; rendererIndex++) {
       RendererCapabilities rendererCapability = rendererCapabilities[rendererIndex];
       for (int trackIndex = 0; trackIndex < group.length; trackIndex++) {
-        int trackSupportLevel = rendererCapability.supportsFormat(group.getFormat(trackIndex));
-        if (trackSupportLevel > bestSupportLevel) {
+        int formatSupportLevel = rendererCapability.supportsFormat(group.getFormat(trackIndex))
+            & RendererCapabilities.FORMAT_SUPPORT_MASK;
+        if (formatSupportLevel > bestFormatSupportLevel) {
           bestRendererIndex = rendererIndex;
-          bestSupportLevel = trackSupportLevel;
-          if (bestSupportLevel == RendererCapabilities.FORMAT_HANDLED) {
+          bestFormatSupportLevel = formatSupportLevel;
+          if (bestFormatSupportLevel == RendererCapabilities.FORMAT_HANDLED) {
             // We can't do better.
             return bestRendererIndex;
           }
@@ -402,6 +433,94 @@ public abstract class MappingTrackSelector extends TrackSelector {
   }
 
   /**
+   * Determines whether tunneling should be enabled, replacing {@link RendererConfiguration}s in
+   * {@code rendererConfigurations} with configurations that enable tunneling on the appropriate
+   * renderers if so.
+   *
+   * @param rendererCapabilities The {@link RendererCapabilities} of the renderers for which
+   *     {@link TrackSelection}s are to be generated.
+   * @param rendererTrackGroupArrays An array of {@link TrackGroupArray}s where each entry
+   *     corresponds to the renderer of equal index in {@code renderers}.
+   * @param rendererFormatSupports Maps every available track to a specific level of support as
+   *     defined by the renderer {@code FORMAT_*} constants.
+   * @param rendererConfigurations The renderer configurations. Configurations may be replaced with
+   *     ones that enable tunneling as a result of this call.
+   * @param trackSelections The renderer track selections.
+   * @param tunnelingAudioSessionId The audio session id to use when tunneling, or
+   *     {@link C#AUDIO_SESSION_ID_UNSET} if tunneling should not be enabled.
+   */
+  private static void maybeConfigureRenderersForTunneling(
+      RendererCapabilities[] rendererCapabilities, TrackGroupArray[] rendererTrackGroupArrays,
+      int[][][] rendererFormatSupports, RendererConfiguration[] rendererConfigurations,
+      TrackSelection[] trackSelections, int tunnelingAudioSessionId) {
+    if (tunnelingAudioSessionId == C.AUDIO_SESSION_ID_UNSET) {
+      return;
+    }
+    // Check whether we can enable tunneling. To enable tunneling we require exactly one audio and
+    // one video renderer to support tunneling and have a selection.
+    int tunnelingAudioRendererIndex = -1;
+    int tunnelingVideoRendererIndex = -1;
+    boolean enableTunneling = true;
+    for (int i = 0; i < rendererCapabilities.length; i++) {
+      int rendererType = rendererCapabilities[i].getTrackType();
+      TrackSelection trackSelection = trackSelections[i];
+      if ((rendererType == C.TRACK_TYPE_AUDIO || rendererType == C.TRACK_TYPE_VIDEO)
+          && trackSelection != null) {
+        if (rendererSupportsTunneling(rendererFormatSupports[i], rendererTrackGroupArrays[i],
+            trackSelection)) {
+          if (rendererType == C.TRACK_TYPE_AUDIO) {
+            if (tunnelingAudioRendererIndex != -1) {
+              enableTunneling = false;
+              break;
+            } else {
+              tunnelingAudioRendererIndex = i;
+            }
+          } else {
+            if (tunnelingVideoRendererIndex != -1) {
+              enableTunneling = false;
+              break;
+            } else {
+              tunnelingVideoRendererIndex = i;
+            }
+          }
+        }
+      }
+    }
+    enableTunneling &= tunnelingAudioRendererIndex != -1 && tunnelingVideoRendererIndex != -1;
+    if (enableTunneling) {
+      RendererConfiguration tunnelingRendererConfiguration =
+          new RendererConfiguration(tunnelingAudioSessionId);
+      rendererConfigurations[tunnelingAudioRendererIndex] = tunnelingRendererConfiguration;
+      rendererConfigurations[tunnelingVideoRendererIndex] = tunnelingRendererConfiguration;
+    }
+  }
+
+  /**
+   * Returns whether a renderer supports tunneling for a {@link TrackSelection}.
+   *
+   * @param formatSupport The result of {@link RendererCapabilities#supportsFormat} for each
+   *     track, indexed by group index and track index (in that order).
+   * @param trackGroups The {@link TrackGroupArray}s for the renderer.
+   * @param selection The track selection.
+   * @return Whether the renderer supports tunneling for the {@link TrackSelection}.
+   */
+  private static boolean rendererSupportsTunneling(int[][] formatSupport,
+      TrackGroupArray trackGroups, TrackSelection selection) {
+    if (selection == null) {
+      return false;
+    }
+    int trackGroupIndex = trackGroups.indexOf(selection.getTrackGroup());
+    for (int i = 0; i < selection.length(); i++) {
+      int trackFormatSupport = formatSupport[trackGroupIndex][selection.getIndexInTrackGroup(i)];
+      if ((trackFormatSupport & RendererCapabilities.TUNNELING_SUPPORT_MASK)
+          != RendererCapabilities.TUNNELING_SUPPORTED) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
    * Provides track information for each renderer.
    */
   public static final class MappedTrackInfo {
@@ -411,13 +530,18 @@ public abstract class MappingTrackSelector extends TrackSelector {
      */
     public static final int RENDERER_SUPPORT_NO_TRACKS = 0;
     /**
-     * The renderer has associated tracks, but cannot play any of them.
+     * The renderer has associated tracks, but all are of unsupported types.
      */
-    public static final int RENDERER_SUPPORT_UNPLAYABLE_TRACKS = 1;
+    public static final int RENDERER_SUPPORT_UNSUPPORTED_TRACKS = 1;
     /**
-     * The renderer has associated tracks, and can play at least one of them.
+     * The renderer has associated tracks and at least one is of a supported type, but all of the
+     * tracks whose types are supported exceed the renderer's capabilities.
      */
-    public static final int RENDERER_SUPPORT_PLAYABLE_TRACKS = 2;
+    public static final int RENDERER_SUPPORT_EXCEEDS_CAPABILITIES_TRACKS = 2;
+    /**
+     * The renderer has associated tracks and can play at least one of them.
+     */
+    public static final int RENDERER_SUPPORT_PLAYABLE_TRACKS = 3;
 
     /**
      * The number of renderers to which tracks are mapped.
@@ -465,21 +589,49 @@ public abstract class MappingTrackSelector extends TrackSelector {
      *
      * @param rendererIndex The renderer index.
      * @return One of {@link #RENDERER_SUPPORT_PLAYABLE_TRACKS},
-     *     {@link #RENDERER_SUPPORT_UNPLAYABLE_TRACKS} and {@link #RENDERER_SUPPORT_NO_TRACKS}.
+     *     {@link #RENDERER_SUPPORT_EXCEEDS_CAPABILITIES_TRACKS},
+     *     {@link #RENDERER_SUPPORT_UNSUPPORTED_TRACKS} and {@link #RENDERER_SUPPORT_NO_TRACKS}.
      */
     public int getRendererSupport(int rendererIndex) {
-      boolean hasTracks = false;
+      int bestRendererSupport = RENDERER_SUPPORT_NO_TRACKS;
       int[][] rendererFormatSupport = formatSupport[rendererIndex];
       for (int i = 0; i < rendererFormatSupport.length; i++) {
         for (int j = 0; j < rendererFormatSupport[i].length; j++) {
-          hasTracks = true;
-          if ((rendererFormatSupport[i][j] & RendererCapabilities.FORMAT_SUPPORT_MASK)
-              == RendererCapabilities.FORMAT_HANDLED) {
-            return RENDERER_SUPPORT_PLAYABLE_TRACKS;
+          int trackRendererSupport;
+          switch (rendererFormatSupport[i][j] & RendererCapabilities.FORMAT_SUPPORT_MASK) {
+            case RendererCapabilities.FORMAT_HANDLED:
+              return RENDERER_SUPPORT_PLAYABLE_TRACKS;
+            case RendererCapabilities.FORMAT_EXCEEDS_CAPABILITIES:
+              trackRendererSupport = RENDERER_SUPPORT_EXCEEDS_CAPABILITIES_TRACKS;
+              break;
+            default:
+              trackRendererSupport = RENDERER_SUPPORT_UNSUPPORTED_TRACKS;
+              break;
           }
+          bestRendererSupport = Math.max(bestRendererSupport, trackRendererSupport);
         }
       }
-      return hasTracks ? RENDERER_SUPPORT_UNPLAYABLE_TRACKS : RENDERER_SUPPORT_NO_TRACKS;
+      return bestRendererSupport;
+    }
+
+    /**
+     * Returns the best level of support obtained from {@link #getRendererSupport(int)} for all
+     * renderers of the specified track type. If no renderers exist for the specified type then
+     * {@link #RENDERER_SUPPORT_NO_TRACKS} is returned.
+     *
+     * @param trackType The track type. One of the {@link C} {@code TRACK_TYPE_*} constants.
+     * @return One of {@link #RENDERER_SUPPORT_PLAYABLE_TRACKS},
+     *     {@link #RENDERER_SUPPORT_EXCEEDS_CAPABILITIES_TRACKS},
+     *     {@link #RENDERER_SUPPORT_UNSUPPORTED_TRACKS} and {@link #RENDERER_SUPPORT_NO_TRACKS}.
+     */
+    public int getTrackTypeRendererSupport(int trackType) {
+      int bestRendererSupport = RENDERER_SUPPORT_NO_TRACKS;
+      for (int i = 0; i < length; i++) {
+        if (rendererTrackTypes[i] == trackType) {
+          bestRendererSupport = Math.max(bestRendererSupport, getRendererSupport(i));
+        }
+      }
+      return bestRendererSupport;
     }
 
     /**
@@ -574,25 +726,6 @@ public abstract class MappingTrackSelector extends TrackSelector {
      */
     public TrackGroupArray getUnassociatedTrackGroups() {
       return unassociatedTrackGroups;
-    }
-
-    /**
-     * Returns true if tracks of the specified type exist and have been associated with renderers,
-     * but are all unplayable. Returns false in all other cases.
-     *
-     * @param trackType The track type.
-     * @return True if tracks of the specified type exist, if at least one renderer exists that
-     *     handles tracks of the specified type, and if all of the tracks if the specified type are
-     *     unplayable. False in all other cases.
-     */
-    public boolean hasOnlyUnplayableTracks(int trackType) {
-      int rendererSupport = RENDERER_SUPPORT_NO_TRACKS;
-      for (int i = 0; i < length; i++) {
-        if (rendererTrackTypes[i] == trackType) {
-          rendererSupport = Math.max(rendererSupport, getRendererSupport(i));
-        }
-      }
-      return rendererSupport == RENDERER_SUPPORT_UNPLAYABLE_TRACKS;
     }
 
   }

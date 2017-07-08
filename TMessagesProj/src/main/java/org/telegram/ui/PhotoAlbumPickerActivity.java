@@ -10,9 +10,6 @@ package org.telegram.ui;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.res.Configuration;
-import android.os.Build;
-import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -36,7 +33,6 @@ import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.PhotoPickerAlbumsCell;
@@ -52,13 +48,12 @@ import java.util.HashMap;
 public class PhotoAlbumPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     public interface PhotoAlbumPickerActivityDelegate {
-        void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos);
+        void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<MediaController.PhotoEntry> videos, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos);
         void didSelectVideo(String path, VideoEditedInfo info, long estimatedSize, long estimatedDuration, String caption);
         void startPhotoSelectActivity();
     }
 
     private ArrayList<MediaController.AlbumEntry> albumsSorted = null;
-    private ArrayList<MediaController.AlbumEntry> videoAlbumsSorted = null;
     private HashMap<Integer, MediaController.PhotoEntry> selectedPhotos = new HashMap<>();
     private HashMap<String, MediaController.SearchImage> selectedWebPhotos = new HashMap<>();
     private HashMap<String, MediaController.SearchImage> recentImagesWebKeys = new HashMap<>();
@@ -72,20 +67,14 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     private ListAdapter listAdapter;
     private FrameLayout progressView;
     private TextView emptyView;
-    private TextView dropDown;
-    private ActionBarMenuItem dropDownContainer;
     private PickerBottomLayout pickerBottomLayout;
     private boolean sendPressed;
     private boolean singlePhoto;
     private boolean allowGifs;
     private boolean allowCaption;
-    private int selectedMode;
     private ChatActivity chatActivity;
 
     private PhotoAlbumPickerActivityDelegate delegate;
-
-    private final static int item_photos = 2;
-    private final static int item_video = 3;
 
     public PhotoAlbumPickerActivity(boolean singlePhoto, boolean allowGifs, boolean allowCaption, ChatActivity chatActivity) {
         super();
@@ -130,22 +119,6 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                         finishFragment(false);
                         delegate.startPhotoSelectActivity();
                     }
-                } else if (id == item_photos) {
-                    if (selectedMode == 0) {
-                        return;
-                    }
-                    selectedMode = 0;
-                    dropDown.setText(LocaleController.getString("PickerPhotos", R.string.PickerPhotos));
-                    emptyView.setText(LocaleController.getString("NoPhotos", R.string.NoPhotos));
-                    listAdapter.notifyDataSetChanged();
-                } else if (id == item_video) {
-                    if (selectedMode == 1) {
-                        return;
-                    }
-                    selectedMode = 1;
-                    dropDown.setText(LocaleController.getString("PickerVideo", R.string.PickerVideo));
-                    emptyView.setText(LocaleController.getString("NoVideo", R.string.NoVideo));
-                    listAdapter.notifyDataSetChanged();
                 }
             }
         });
@@ -158,50 +131,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         FrameLayout frameLayout = (FrameLayout) fragmentView;
         frameLayout.setBackgroundColor(0xff000000);
 
-        if (!singlePhoto) {
-            selectedMode = 0;
-
-            dropDownContainer = new ActionBarMenuItem(context, menu, 0, 0);
-            dropDownContainer.setSubMenuOpenSide(1);
-            dropDownContainer.addSubItem(item_photos, LocaleController.getString("PickerPhotos", R.string.PickerPhotos));
-            dropDownContainer.addSubItem(item_video, LocaleController.getString("PickerVideo", R.string.PickerVideo));
-            actionBar.addView(dropDownContainer);
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) dropDownContainer.getLayoutParams();
-            layoutParams.height = LayoutHelper.MATCH_PARENT;
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.rightMargin = AndroidUtilities.dp(40);
-            layoutParams.leftMargin = AndroidUtilities.isTablet() ? AndroidUtilities.dp(64) : AndroidUtilities.dp(56);
-            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-            dropDownContainer.setLayoutParams(layoutParams);
-            dropDownContainer.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    dropDownContainer.toggleSubMenu();
-                }
-            });
-
-            dropDown = new TextView(context);
-            dropDown.setGravity(Gravity.LEFT);
-            dropDown.setSingleLine(true);
-            dropDown.setLines(1);
-            dropDown.setMaxLines(1);
-            dropDown.setEllipsize(TextUtils.TruncateAt.END);
-            dropDown.setTextColor(0xffffffff);
-            dropDown.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            dropDown.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_drop_down, 0);
-            dropDown.setCompoundDrawablePadding(AndroidUtilities.dp(4));
-            dropDown.setPadding(0, 0, AndroidUtilities.dp(10), 0);
-            dropDown.setText(LocaleController.getString("PickerPhotos", R.string.PickerPhotos));
-            dropDownContainer.addView(dropDown);
-            layoutParams = (FrameLayout.LayoutParams) dropDown.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.leftMargin = AndroidUtilities.dp(16);
-            layoutParams.gravity = Gravity.CENTER_VERTICAL;
-            dropDown.setLayoutParams(layoutParams);
-        } else {
-            actionBar.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
-        }
+        actionBar.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
 
         listView = new RecyclerListView(context);
         listView.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), AndroidUtilities.dp(4));
@@ -289,14 +219,6 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
-        if (dropDownContainer != null) {
-            dropDownContainer.closeSubMenu();
-        }
-    }
-
-    @Override
     public void onResume() {
         super.onResume();
         if (listAdapter != null) {
@@ -317,8 +239,11 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         if (id == NotificationCenter.albumsDidLoaded) {
             int guid = (Integer) args[0];
             if (classGuid == guid) {
-                albumsSorted = (ArrayList<MediaController.AlbumEntry>) args[1];
-                videoAlbumsSorted = (ArrayList<MediaController.AlbumEntry>) args[3];
+                if (singlePhoto) {
+                    albumsSorted = (ArrayList<MediaController.AlbumEntry>) args[2];
+                } else {
+                    albumsSorted = (ArrayList<MediaController.AlbumEntry>) args[1];
+                }
                 if (progressView != null) {
                     progressView.setVisibility(View.GONE);
                 }
@@ -360,11 +285,14 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         }
         sendPressed = true;
         ArrayList<String> photos = new ArrayList<>();
+        ArrayList<MediaController.PhotoEntry> videos = new ArrayList<>();
         ArrayList<String> captions = new ArrayList<>();
         ArrayList<ArrayList<TLRPC.InputDocument>> masks = new ArrayList<>();
         for (HashMap.Entry<Integer, MediaController.PhotoEntry> entry : selectedPhotos.entrySet()) {
             MediaController.PhotoEntry photoEntry = entry.getValue();
-            if (photoEntry.imagePath != null) {
+            if (photoEntry.isVideo) {
+                videos.add(photoEntry);
+            } else if (photoEntry.imagePath != null) {
                 photos.add(photoEntry.imagePath);
                 captions.add(photoEntry.caption != null ? photoEntry.caption.toString() : null);
                 masks.add(!photoEntry.stickers.isEmpty() ? new ArrayList<>(photoEntry.stickers) : null);
@@ -415,7 +343,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             MessagesStorage.getInstance().putWebRecent(recentGifImages);
         }
 
-        delegate.didSelectPhotos(photos, captions, masks, webPhotos);
+        delegate.didSelectPhotos(photos, captions, videos, masks, webPhotos);
     }
 
     private void fixLayout() {
@@ -446,20 +374,6 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             columnsCount = 4;
         }
         listAdapter.notifyDataSetChanged();
-
-        if (dropDownContainer != null) {
-            if (!AndroidUtilities.isTablet()) {
-                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) dropDownContainer.getLayoutParams();
-                layoutParams.topMargin = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
-                dropDownContainer.setLayoutParams(layoutParams);
-            }
-
-            if (!AndroidUtilities.isTablet() && ApplicationLoader.applicationContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                dropDown.setTextSize(18);
-            } else {
-                dropDown.setTextSize(20);
-            }
-        }
     }
 
     private void openPhotoPicker(MediaController.AlbumEntry albumEntry, int type) {
@@ -512,14 +426,10 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
         @Override
         public int getItemCount() {
-            if (singlePhoto || selectedMode == 0) {
-                if (singlePhoto) {
-                    return albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0;
-                }
-                return 1 + (albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0);
-            } else {
-                return (videoAlbumsSorted != null ? (int) Math.ceil(videoAlbumsSorted.size() / (float) columnsCount) : 0);
+            if (singlePhoto) {
+                return albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0;
             }
+            return 1 + (albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0);
         }
 
         @Override
@@ -560,25 +470,16 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 photoPickerAlbumsCell.setAlbumsCount(columnsCount);
                 for (int a = 0; a < columnsCount; a++) {
                     int index;
-                    if (singlePhoto || selectedMode == 1) {
+                    if (singlePhoto) {
                         index = position * columnsCount + a;
                     } else {
                         index = (position - 1) * columnsCount + a;
                     }
-                    if (singlePhoto || selectedMode == 0) {
-                        if (index < albumsSorted.size()) {
-                            MediaController.AlbumEntry albumEntry = albumsSorted.get(index);
-                            photoPickerAlbumsCell.setAlbum(a, albumEntry);
-                        } else {
-                            photoPickerAlbumsCell.setAlbum(a, null);
-                        }
+                    if (index < albumsSorted.size()) {
+                        MediaController.AlbumEntry albumEntry = albumsSorted.get(index);
+                        photoPickerAlbumsCell.setAlbum(a, albumEntry);
                     } else {
-                        if (index < videoAlbumsSorted.size()) {
-                            MediaController.AlbumEntry albumEntry = videoAlbumsSorted.get(index);
-                            photoPickerAlbumsCell.setAlbum(a, albumEntry);
-                        } else {
-                            photoPickerAlbumsCell.setAlbum(a, null);
-                        }
+                        photoPickerAlbumsCell.setAlbum(a, null);
                     }
                 }
                 photoPickerAlbumsCell.requestLayout();
@@ -587,7 +488,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
         @Override
         public int getItemViewType(int i) {
-            if (singlePhoto || selectedMode == 1) {
+            if (singlePhoto) {
                 return 0;
             }
             if (i == 0) {

@@ -16,6 +16,7 @@
 package org.telegram.messenger.exoplayer2.source;
 
 import org.telegram.messenger.exoplayer2.C;
+import org.telegram.messenger.exoplayer2.Timeline;
 import org.telegram.messenger.exoplayer2.trackselection.TrackSelection;
 import java.io.IOException;
 
@@ -47,6 +48,10 @@ public interface MediaPeriod extends SequenceableLoader {
    * <p>
    * {@code callback.onPrepared} is called when preparation completes. If preparation fails,
    * {@link #maybeThrowPrepareError()} will throw an {@link IOException}.
+   * <p>
+   * If preparation succeeds and results in a source timeline change (e.g. the period duration
+   * becoming known), {@link MediaSource.Listener#onSourceInfoRefreshed(Timeline, Object)} will be
+   * called before {@code callback.onPrepared}.
    *
    * @param callback Callback to receive updates from this period, including being notified when
    *     preparation completes.
@@ -100,6 +105,13 @@ public interface MediaPeriod extends SequenceableLoader {
       SampleStream[] streams, boolean[] streamResetFlags, long positionUs);
 
   /**
+   * Discards buffered media up to the specified position.
+   *
+   * @param positionUs The position in microseconds.
+   */
+  void discardBuffer(long positionUs);
+
+  /**
    * Attempts to read a discontinuity.
    * <p>
    * After this method has returned a value other than {@link C#TIME_UNSET}, all
@@ -132,5 +144,33 @@ public interface MediaPeriod extends SequenceableLoader {
    * @return The actual position to which the period was seeked, in microseconds.
    */
   long seekToUs(long positionUs);
+
+  // SequenceableLoader interface. Overridden to provide more specific documentation.
+
+  /**
+   * Returns the next load time, or {@link C#TIME_END_OF_SOURCE} if loading has finished.
+   * <p>
+   * This method should only be called after the period has been prepared. It may be called when no
+   * tracks are selected.
+   */
+  @Override
+  long getNextLoadPositionUs();
+
+  /**
+   * Attempts to continue loading.
+   * <p>
+   * This method may be called both during and after the period has been prepared.
+   * <p>
+   * A period may call {@link Callback#onContinueLoadingRequested(SequenceableLoader)} on the
+   * {@link Callback} passed to {@link #prepare(Callback)} to request that this method be called
+   * when the period is permitted to continue loading data. A period may do this both during and
+   * after preparation.
+   *
+   * @param positionUs The current playback position.
+   * @return True if progress was made, meaning that {@link #getNextLoadPositionUs()} will return
+   *     a different value than prior to the call. False otherwise.
+   */
+  @Override
+  boolean continueLoading(long positionUs);
 
 }

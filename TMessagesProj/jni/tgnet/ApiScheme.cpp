@@ -50,6 +50,11 @@ TL_dcOption *TL_dcOption::TLdeserialize(NativeByteBuffer *stream, uint32_t const
 
 void TL_dcOption::readParams(NativeByteBuffer *stream, bool &error) {
     flags = stream->readInt32(&error);
+    ipv6 = (flags & 1) != 0;
+    media_only = (flags & 2) != 0;
+    tcpo_only = (flags & 4) != 0;
+    cdn = (flags & 8) != 0;
+    isStatic = (flags & 16) != 0;
     id = stream->readInt32(&error);
     ip_address = stream->readString(&error);
     port = stream->readInt32(&error);
@@ -57,10 +62,87 @@ void TL_dcOption::readParams(NativeByteBuffer *stream, bool &error) {
 
 void TL_dcOption::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
+    flags = ipv6 ? (flags | 1) : (flags &~ 1);
+    flags = media_only ? (flags | 2) : (flags &~ 2);
+    flags = tcpo_only ? (flags | 4) : (flags &~ 4);
+    flags = cdn ? (flags | 8) : (flags &~ 8);
+    flags = isStatic ? (flags | 16) : (flags &~ 16);
     stream->writeInt32(flags);
     stream->writeInt32(id);
     stream->writeString(ip_address);
     stream->writeInt32(port);
+}
+
+TL_cdnPublicKey *TL_cdnPublicKey::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error) {
+    if (TL_cdnPublicKey::constructor != constructor) {
+        error = true;
+        DEBUG_E("can't parse magic %x in TL_cdnPublicKey", constructor);
+        return nullptr;
+    }
+    TL_cdnPublicKey *result = new TL_cdnPublicKey();
+    result->readParams(stream, error);
+    return result;
+}
+
+void TL_cdnPublicKey::readParams(NativeByteBuffer *stream, bool &error) {
+    dc_id = stream->readInt32(&error);
+    public_key = stream->readString(&error);
+}
+
+void TL_cdnPublicKey::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(dc_id);
+    stream->writeString(public_key);
+}
+
+TL_cdnConfig *TL_cdnConfig::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error) {
+    if (TL_cdnConfig::constructor != constructor) {
+        error = true;
+        DEBUG_E("can't parse magic %x in TL_cdnConfig", constructor);
+        return nullptr;
+    }
+    TL_cdnConfig *result = new TL_cdnConfig();
+    result->readParams(stream, error);
+    return result;
+}
+
+void TL_cdnConfig::readParams(NativeByteBuffer *stream, bool &error) {
+    int magic = stream->readInt32(&error);
+    if (magic != 0x1cb5c415) {
+        error = true;
+        DEBUG_E("wrong Vector magic, got %x", magic);
+        return;
+    }
+    int count = stream->readInt32(&error);
+    for (int a = 0; a < count; a++) {
+        TL_cdnPublicKey *object = TL_cdnPublicKey::TLdeserialize(stream, stream->readUint32(&error), error);
+        if (object == nullptr) {
+            return;
+        }
+        public_keys.push_back(std::unique_ptr<TL_cdnPublicKey>(object));
+    }
+}
+
+void TL_cdnConfig::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(0x1cb5c415);
+    int count = public_keys.size();
+    stream->writeInt32(count);
+    for (int a = 0; a < count; a++) {
+        public_keys[a]->serializeToStream(stream);
+    }
+}
+
+bool TL_help_getCdnConfig::isNeedLayer() {
+    return true;
+}
+
+TLObject *TL_help_getCdnConfig::deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, bool &error) {
+    return TL_cdnConfig::TLdeserialize(stream, constructor, error);
+}
+
+void TL_help_getCdnConfig::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
 }
 
 TL_disabledFeature *TL_disabledFeature::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error) {
@@ -141,6 +223,12 @@ void TL_config::readParams(NativeByteBuffer *stream, bool &error) {
     call_connect_timeout_ms = stream->readInt32(&error);
     call_packet_timeout_ms = stream->readInt32(&error);
     me_url_prefix = stream->readString(&error);
+    if ((flags & 4) != 0) {
+        suggested_lang_code = stream->readString(&error);
+    }
+    if ((flags & 4) != 0) {
+        lang_pack_version = stream->readInt32(&error);
+    }
     magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
@@ -195,6 +283,12 @@ void TL_config::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(call_connect_timeout_ms);
     stream->writeInt32(call_packet_timeout_ms);
     stream->writeString(me_url_prefix);
+    if ((flags & 4) != 0) {
+        stream->writeString(suggested_lang_code);
+    }
+    if ((flags & 4) != 0) {
+        stream->writeInt32(lang_pack_version);
+    }
     stream->writeInt32(0x1cb5c415);
     count = (uint32_t) disabled_features.size();
     stream->writeInt32(count);
@@ -235,7 +329,7 @@ User *User::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &
         case 0x200250ba:
             result = new TL_userEmpty();
             break;
-        case 0xd10d979a:
+        case 0x2e13f4c3:
             result = new TL_user();
             break;
         default:
@@ -289,6 +383,9 @@ void TL_user::readParams(NativeByteBuffer *stream, bool &error) {
     if ((flags & 524288) != 0) {
         bot_inline_placeholder = stream->readString(&error);
     }
+    if ((flags & 4194304) != 0) {
+        lang_code = stream->readString(&error);
+    }
 }
 
 void TL_user::serializeToStream(NativeByteBuffer *stream) {
@@ -324,6 +421,9 @@ void TL_user::serializeToStream(NativeByteBuffer *stream) {
     }
     if ((flags & 524288) != 0) {
         stream->writeString(bot_inline_placeholder);
+    }
+    if ((flags & 4194304) != 0) {
+        stream->writeString(lang_code);
     }
 }
 
@@ -640,7 +740,7 @@ TL_upload_file::~TL_upload_file() {
 }
 
 void TL_upload_file::readParams(NativeByteBuffer *stream, bool &error) {
-    type = std::unique_ptr<storage_FileType>(storage_FileType::TLdeserialize(stream, stream->readInt32(&error), error));
+    type = std::unique_ptr<storage_FileType>(storage_FileType::TLdeserialize(stream, stream->readUint32(&error), error));
     mtime = stream->readInt32(&error);
     bytes = stream->readByteBuffer(true, &error);
 }

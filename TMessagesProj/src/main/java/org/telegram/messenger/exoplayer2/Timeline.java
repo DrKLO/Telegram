@@ -262,9 +262,24 @@ public abstract class Timeline {
      */
     public int lastPeriodIndex;
 
-    private long defaultPositionUs;
-    private long durationUs;
-    private long positionInFirstPeriodUs;
+    /**
+     * The default position relative to the start of the window at which to begin playback, in
+     * microseconds. May be {@link C#TIME_UNSET} if and only if the window was populated with a
+     * non-zero default position projection, and if the specified projection cannot be performed
+     * whilst remaining within the bounds of the window.
+     */
+    public long defaultPositionUs;
+
+    /**
+     * The duration of this window in microseconds, or {@link C#TIME_UNSET} if unknown.
+     */
+    public long durationUs;
+
+    /**
+     * The position of the start of this window relative to the start of the first period belonging
+     * to it, in microseconds.
+     */
+    public long positionInFirstPeriodUs;
 
     /**
      * Sets the data held by this window.
@@ -363,19 +378,29 @@ public abstract class Timeline {
      */
     public int windowIndex;
 
-    private long durationUs;
+    /**
+     * The duration of this period in microseconds, or {@link C#TIME_UNSET} if unknown.
+     */
+    public long durationUs;
+
+    /**
+     * Whether this period contains an ad.
+     */
+    public boolean isAd;
+
     private long positionInWindowUs;
 
     /**
      * Sets the data held by this period.
      */
     public Period set(Object id, Object uid, int windowIndex, long durationUs,
-        long positionInWindowUs) {
+        long positionInWindowUs, boolean isAd) {
       this.id = id;
       this.uid = uid;
       this.windowIndex = windowIndex;
       this.durationUs = durationUs;
       this.positionInWindowUs = positionInWindowUs;
+      this.isAd = isAd;
       return this;
     }
 

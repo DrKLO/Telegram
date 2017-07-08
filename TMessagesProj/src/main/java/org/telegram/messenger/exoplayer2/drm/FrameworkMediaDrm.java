@@ -23,6 +23,7 @@ import android.media.MediaDrm;
 import android.media.NotProvisionedException;
 import android.media.ResourceBusyException;
 import android.media.UnsupportedSchemeException;
+import android.support.annotation.NonNull;
 import org.telegram.messenger.exoplayer2.util.Assertions;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,7 +63,8 @@ public final class FrameworkMediaDrm implements ExoMediaDrm<FrameworkMediaCrypto
       final ExoMediaDrm.OnEventListener<? super FrameworkMediaCrypto> listener) {
     mediaDrm.setOnEventListener(listener == null ? null : new MediaDrm.OnEventListener() {
       @Override
-      public void onEvent(MediaDrm md, byte[] sessionId, int event, int extra, byte[] data) {
+      public void onEvent(@NonNull MediaDrm md, byte[] sessionId, int event, int extra,
+          byte[] data) {
         listener.onEvent(FrameworkMediaDrm.this, sessionId, event, extra, data);
       }
     });

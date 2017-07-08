@@ -24,7 +24,7 @@ class TL_error;
 class Request {
 
 public:
-    Request(int32_t token, ConnectionType type, uint32_t flags, uint32_t datacenter, onCompleteFunc completeFunc, onQuickAckFunc quickAckFunc);
+    Request(int32_t token, ConnectionType type, uint32_t flags, uint32_t datacenter, onCompleteFunc completeFunc, onQuickAckFunc quickAckFunc, onWriteToSocketFunc writeToSocketFunc);
     ~Request();
 
     int64_t messageId = 0;
@@ -50,17 +50,20 @@ public:
     std::unique_ptr<TLObject> rpcRequest;
     onCompleteFunc onCompleteRequestCallback;
     onQuickAckFunc onQuickAckCallback;
+    onWriteToSocketFunc onWriteToSocketCallback;
 
     void addRespondMessageId(int64_t id);
     bool respondsToMessageId(int64_t id);
     void clear(bool time);
     void onComplete(TLObject *result, TL_error *error, int32_t networkType);
     void onQuickAck();
+    void onWriteToSocket();
     TLObject *getRpcRequest();
 
 #ifdef ANDROID
     jobject ptr1 = nullptr;
     jobject ptr2 = nullptr;
+    jobject ptr3 = nullptr;
 #endif
 
 private:

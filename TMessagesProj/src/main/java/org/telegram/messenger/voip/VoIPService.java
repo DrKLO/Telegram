@@ -83,6 +83,9 @@ import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 
 public class VoIPService extends Service implements VoIPController.ConnectionStateListener, SensorEventListener, AudioManager.OnAudioFocusChangeListener, NotificationCenter.NotificationCenterDelegate{
 
@@ -96,14 +99,16 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 	public static final int STATE_WAIT_INIT_ACK = 2;
 	public static final int STATE_ESTABLISHED = 3;
 	public static final int STATE_FAILED = 4;
-	public static final int STATE_HANGING_UP = 5;
-	public static final int STATE_ENDED = 6;
-	public static final int STATE_EXCHANGING_KEYS = 7;
-	public static final int STATE_WAITING = 8;
-	public static final int STATE_REQUESTING = 9;
-	public static final int STATE_WAITING_INCOMING = 10;
-	public static final int STATE_RINGING = 11;
-	public static final int STATE_BUSY = 12;
+	public static final int STATE_RECONNECTING = 5;
+
+	public static final int STATE_HANGING_UP = 10;
+	public static final int STATE_ENDED = 11;
+	public static final int STATE_EXCHANGING_KEYS = 12;
+	public static final int STATE_WAITING = 13;
+	public static final int STATE_REQUESTING = 14;
+	public static final int STATE_WAITING_INCOMING = 15;
+	public static final int STATE_RINGING = 16;
+	public static final int STATE_BUSY = 17;
 
 	public static final int DISCARD_REASON_HANGUP = 1;
 	public static final int DISCARD_REASON_DISCONNECT = 2;
@@ -158,7 +163,17 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 	private boolean isBtHeadsetConnected;
 	private boolean needSendDebugLog=false;
 	private boolean endCallAfterRequest=false;
+	private boolean wasEstablished;
 	private ArrayList<TLRPC.PhoneCall> pendingUpdates=new ArrayList<>();
+	private Runnable afterSoundRunnable=new Runnable(){
+		@Override
+		public void run(){
+			soundPool.release();
+			if(isBtHeadsetConnected)
+				((AudioManager)ApplicationLoader.applicationContext.getSystemService(AUDIO_SERVICE)).stopBluetoothSco();
+			((AudioManager)ApplicationLoader.applicationContext.getSystemService(AUDIO_SERVICE)).setSpeakerphoneOn(false);
+		}
+	};
 
 	public static final String ACTION_HEADSET_PLUG = "android.intent.action.HEADSET_PLUG";
 
@@ -284,8 +299,6 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 		try {
 			controller = new VoIPController();
 			controller.setConnectionStateListener(this);
-			controller.setConfig(MessagesController.getInstance().callPacketTimeout / 1000.0, MessagesController.getInstance().callConnectTimeout / 1000.0,
-					preferences.getInt("VoipDataSaving", VoIPController.DATA_SAVING_NEVER));
 
 			cpuWakelock = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "telegram-voip");
 			cpuWakelock.acquire();
@@ -383,9 +396,15 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 		}
 		cpuWakelock.release();
 		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-		if(isBtHeadsetConnected && !playingSound)
+		if(isBtHeadsetConnected && !playingSound){
 			am.stopBluetoothSco();
-		am.setMode(AudioManager.MODE_NORMAL);
+			am.setSpeakerphoneOn(false);
+		}
+		try{
+			am.setMode(AudioManager.MODE_NORMAL);
+		}catch(SecurityException x){
+			FileLog.e("Error setting audio more to normal", x);
+		}
 		am.unregisterMediaButtonEventReceiver(new ComponentName(this, VoIPMediaButtonReceiver.class));
 		if (haveAudioFocus)
 			am.abandonAudioFocus(this);
@@ -490,7 +509,8 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 					TLRPC.TL_phone_requestCall reqCall = new TLRPC.TL_phone_requestCall();
 					reqCall.user_id = MessagesController.getInputUser(user);
 					reqCall.protocol = new TLRPC.TL_phoneCallProtocol();
-					reqCall.protocol.udp_p2p = reqCall.protocol.udp_reflector = true;
+					reqCall.protocol.udp_p2p = true;
+					reqCall.protocol.udp_reflector = true;
 					reqCall.protocol.min_layer = CALL_MIN_LAYER;
 					reqCall.protocol.max_layer = CALL_MAX_LAYER;
 					VoIPService.this.g_a=g_a;
@@ -758,6 +778,7 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 
 	public void declineIncomingCall(int reason, final Runnable onDone) {
 		if(currentState==STATE_REQUESTING){
+			dispatchStateChanged(STATE_HANGING_UP);
 			endCallAfterRequest=true;
 			return;
 		}
@@ -796,24 +817,28 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 				break;
 		}
 		final boolean wasNotConnected=ConnectionsManager.getInstance().getConnectionState()!=ConnectionsManager.ConnectionStateConnected;
+		final Runnable stopper;
 		if(wasNotConnected){
 			if (onDone != null)
 				onDone.run();
 			callEnded();
+			stopper=null;
+		}else{
+			stopper=new Runnable(){
+				private boolean done=false;
+
+				@Override
+				public void run(){
+					if(done)
+						return;
+					done=true;
+					if(onDone!=null)
+						onDone.run();
+					callEnded();
+				}
+			};
+			AndroidUtilities.runOnUIThread(stopper, (int) (VoIPServerConfig.getDouble("hangup_ui_timeout", 5)*1000));
 		}
-		final Runnable stopper=new Runnable(){
-			private boolean done=false;
-			@Override
-			public void run(){
-				if(done)
-					return;
-				done=true;
-				if(onDone!=null)
-					onDone.run();
-				callEnded();
-			}
-		};
-		AndroidUtilities.runOnUIThread(stopper, (int)(VoIPServerConfig.getDouble("hangup_ui_timeout", 5)*1000));
 		ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
 			@Override
 			public void run(TLObject response, TLRPC.TL_error error) {
@@ -872,14 +897,7 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 				dispatchStateChanged(STATE_BUSY);
 				playingSound = true;
 				soundPool.play(spBusyId, 1, 1, 0, -1, 1);
-				AndroidUtilities.runOnUIThread(new Runnable() {
-					@Override
-					public void run() {
-						soundPool.release();
-						if(isBtHeadsetConnected)
-							((AudioManager)ApplicationLoader.applicationContext.getSystemService(AUDIO_SERVICE)).stopBluetoothSco();
-					}
-				}, 2500);
+				AndroidUtilities.runOnUIThread(afterSoundRunnable, 1500);
 				stopSelf();
 			} else {
 				callEnded();
@@ -988,6 +1006,12 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 	}
 
 	private void processAcceptedCall() {
+		if(!isProximityNear){
+			Vibrator vibrator=(Vibrator) getSystemService(VIBRATOR_SERVICE);
+			if(vibrator.hasVibrator())
+				vibrator.vibrate(100);
+		}
+
 		dispatchStateChanged(STATE_EXCHANGING_KEYS);
 		BigInteger p = new BigInteger(1, MessagesStorage.secretPBytes);
 		BigInteger i_authKey = new BigInteger(1, call.g_b);
@@ -1054,13 +1078,51 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 		}
 		try {
 			FileLog.d("InitCall: keyID=" + keyFingerprint);
+			SharedPreferences nprefs=getSharedPreferences("notifications", MODE_PRIVATE);
+			HashSet<String> hashes=new HashSet<>(nprefs.getStringSet("calls_access_hashes", Collections.EMPTY_SET));
+			hashes.add(call.id+" "+call.access_hash+" "+System.currentTimeMillis());
+			while(hashes.size()>20){
+				String oldest=null;
+				long oldestTime=Long.MAX_VALUE;
+				Iterator<String> itr=hashes.iterator();
+				while(itr.hasNext()){
+					String item=itr.next();
+					String[] s=item.split(" ");
+					if(s.length<2){
+						itr.remove();
+					}else{
+						try{
+							long t=Long.parseLong(s[2]);
+							if(t<oldestTime){
+								oldestTime=t;
+								oldest=item;
+							}
+						}catch(Exception x){
+							itr.remove();
+						}
+					}
+				}
+				if(oldest!=null)
+					hashes.remove(oldest);
+			}
+			nprefs.edit().putStringSet("calls_access_hashes", hashes).apply();
+			final SharedPreferences preferences = getSharedPreferences("mainconfig", MODE_PRIVATE);
+			controller.setConfig(MessagesController.getInstance().callPacketTimeout / 1000.0, MessagesController.getInstance().callConnectTimeout / 1000.0,
+					preferences.getInt("VoipDataSaving", VoIPController.DATA_SAVING_NEVER), call.id);
 			controller.setEncryptionKey(authKey, isOutgoing);
 			TLRPC.TL_phoneConnection[] endpoints = new TLRPC.TL_phoneConnection[1 + call.alternative_connections.size()];
 			endpoints[0] = call.connection;
 			for (int i = 0; i < call.alternative_connections.size(); i++)
 				endpoints[i + 1] = call.alternative_connections.get(i);
 
-			controller.setRemoteEndpoints(endpoints, call.protocol.udp_p2p);
+			controller.setRemoteEndpoints(endpoints, call.protocol.udp_p2p && getSharedPreferences("mainconfig", MODE_PRIVATE).getBoolean("calls_p2p", true));
+			SharedPreferences prefs=ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+			if(prefs.getBoolean("proxy_enabled", false) && prefs.getBoolean("proxy_enabled_calls", false)){
+				String server=prefs.getString("proxy_ip", null);
+				if(server!=null){
+					controller.setProxy(server, prefs.getInt("proxy_port", 0), prefs.getString("proxy_user", null), prefs.getString("proxy_pass", null));
+				}
+			}
 			controller.start();
 			updateNetworkType();
 			controller.connect();
@@ -1244,14 +1306,7 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 		if(errorCode!=VoIPController.ERROR_LOCALIZED && soundPool!=null){
 			playingSound=true;
 			soundPool.play(spFailedID, 1, 1, 0, 0, 1);
-			AndroidUtilities.runOnUIThread(new Runnable(){
-				@Override
-				public void run(){
-					soundPool.release();
-					if(isBtHeadsetConnected)
-						((AudioManager) ApplicationLoader.applicationContext.getSystemService(AUDIO_SERVICE)).stopBluetoothSco();
-				}
-			}, 1000);
+			AndroidUtilities.runOnUIThread(afterSoundRunnable, 1000);
 		}
 		stopSelf();
 	}
@@ -1262,14 +1317,7 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 		if (needPlayEndSound) {
 			playingSound = true;
 			soundPool.play(spEndId, 1, 1, 0, 0, 1);
-			AndroidUtilities.runOnUIThread(new Runnable() {
-				@Override
-				public void run() {
-					soundPool.release();
-					if(isBtHeadsetConnected)
-						((AudioManager)ApplicationLoader.applicationContext.getSystemService(AUDIO_SERVICE)).stopBluetoothSco();
-				}
-			}, 1000);
+			AndroidUtilities.runOnUIThread(afterSoundRunnable, 700);
 		}
 		if(timeoutRunnable!=null){
 			AndroidUtilities.cancelRunOnUIThread(timeoutRunnable);
@@ -1289,24 +1337,32 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 				soundPool.stop(spPlayID);
 				spPlayID = 0;
 			}
-			AndroidUtilities.runOnUIThread(new Runnable() {
-				@Override
-				public void run() {
-					if (controller == null)
-						return;
-					int netType = StatsController.TYPE_WIFI;
-					if (lastNetInfo != null) {
-						if (lastNetInfo.getType() == ConnectivityManager.TYPE_MOBILE)
-							netType = lastNetInfo.isRoaming() ? StatsController.TYPE_ROAMING : StatsController.TYPE_MOBILE;
+			if(!wasEstablished){
+				wasEstablished=true;
+				AndroidUtilities.runOnUIThread(new Runnable(){
+					@Override
+					public void run(){
+						if(controller==null)
+							return;
+						int netType=StatsController.TYPE_WIFI;
+						if(lastNetInfo!=null){
+							if(lastNetInfo.getType()==ConnectivityManager.TYPE_MOBILE)
+								netType=lastNetInfo.isRoaming() ? StatsController.TYPE_ROAMING : StatsController.TYPE_MOBILE;
+						}
+						StatsController.getInstance().incrementTotalCallsTime(netType, 5);
+						AndroidUtilities.runOnUIThread(this, 5000);
 					}
-					StatsController.getInstance().incrementTotalCallsTime(netType, 5);
-					AndroidUtilities.runOnUIThread(this, 5000);
-				}
-			}, 5000);
-			if (isOutgoing)
-				StatsController.getInstance().incrementSentItemsCount(getStatsNetworkType(), StatsController.TYPE_CALLS, 1);
-			else
-				StatsController.getInstance().incrementReceivedItemsCount(getStatsNetworkType(), StatsController.TYPE_CALLS, 1);
+				}, 5000);
+				if(isOutgoing)
+					StatsController.getInstance().incrementSentItemsCount(getStatsNetworkType(), StatsController.TYPE_CALLS, 1);
+				else
+					StatsController.getInstance().incrementReceivedItemsCount(getStatsNetworkType(), StatsController.TYPE_CALLS, 1);
+			}
+		}
+		if(newState==STATE_RECONNECTING){
+			if(spPlayID!=0)
+				soundPool.stop(spPlayID);
+			spPlayID=soundPool.play(spConnectingId, 1, 1, 0, -1, 1);
 		}
 		dispatchStateChanged(newState);
 	}

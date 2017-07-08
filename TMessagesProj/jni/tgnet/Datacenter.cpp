@@ -27,28 +27,33 @@
 
 static std::vector<std::string> serverPublicKeys;
 static std::vector<uint64_t> serverPublicKeysFingerprints;
-static BN_CTX *bnContext;
+static std::map<int32_t, std::string> cdnPublicKeys;
+static std::map<int32_t, uint64_t> cdnPublicKeysFingerprints;
+static std::vector<Datacenter *> cdnWaitingDatacenters;
+static bool loadingCdnKeys = false;
+static BN_CTX *bnContext = nullptr;
 static SHA256_CTX sha256Ctx;
+static Config *cdnConfig = nullptr;
 
 Datacenter::Datacenter(uint32_t id) {
     datacenterId = id;
-    for (uint32_t a = 0; a < DOWNLOAD_CONNECTIONS_COUNT; a++) {
+    for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
         uploadConnection[a] = nullptr;
     }
-    for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
-        downloadConnections[a] = nullptr;
+    for (uint32_t a = 0; a < DOWNLOAD_CONNECTIONS_COUNT; a++) {
+        downloadConnection[a] = nullptr;
     }
 }
 
 Datacenter::Datacenter(NativeByteBuffer *data) {
-    for (uint32_t a = 0; a < DOWNLOAD_CONNECTIONS_COUNT; a++) {
+    for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
         uploadConnection[a] = nullptr;
     }
-    for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
-        downloadConnections[a] = nullptr;
+    for (uint32_t a = 0; a < DOWNLOAD_CONNECTIONS_COUNT; a++) {
+        downloadConnection[a] = nullptr;
     }
     uint32_t currentVersion = data->readUint32(nullptr);
-    if (currentVersion >= 2 && currentVersion <= 5) {
+    if (currentVersion >= 2 && currentVersion <= 7) {
         datacenterId = data->readUint32(nullptr);
         if (currentVersion >= 3) {
             lastInitVersion = data->readUint32(nullptr);
@@ -56,28 +61,55 @@ Datacenter::Datacenter(NativeByteBuffer *data) {
         uint32_t len = data->readUint32(nullptr);
         for (uint32_t a = 0; a < len; a++) {
             std::string address = data->readString(nullptr);
-            addressesIpv4.push_back(address);
-            ports[address] = data->readUint32(nullptr);
+            uint32_t port = data->readUint32(nullptr);
+            int32_t flags;
+            if (currentVersion >= 7) {
+                flags = data->readInt32(nullptr);
+            } else {
+                flags = 0;
+            }
+            addressesIpv4.push_back(TcpAddress(address, port, flags));
         }
         if (currentVersion >= 5) {
             len = data->readUint32(nullptr);
             for (uint32_t a = 0; a < len; a++) {
                 std::string address = data->readString(nullptr);
-                addressesIpv6.push_back(address);
-                ports[address] = data->readUint32(nullptr);
+                uint32_t port = data->readUint32(nullptr);
+                int32_t flags;
+                if (currentVersion >= 7) {
+                    flags = data->readInt32(nullptr);
+                } else {
+                    flags = 0;
+                }
+                addressesIpv6.push_back(TcpAddress(address, port, flags));
             }
             len = data->readUint32(nullptr);
             for (uint32_t a = 0; a < len; a++) {
                 std::string address = data->readString(nullptr);
-                addressesIpv4Download.push_back(address);
-                ports[address] = data->readUint32(nullptr);
+                uint32_t port = data->readUint32(nullptr);
+                int32_t flags;
+                if (currentVersion >= 7) {
+                    flags = data->readInt32(nullptr);
+                } else {
+                    flags = 0;
+                }
+                addressesIpv4Download.push_back(TcpAddress(address, port, flags));
             }
             len = data->readUint32(nullptr);
             for (uint32_t a = 0; a < len; a++) {
                 std::string address = data->readString(nullptr);
-                addressesIpv6Download.push_back(address);
-                ports[address] = data->readUint32(nullptr);
+                uint32_t port = data->readUint32(nullptr);
+                int32_t flags;
+                if (currentVersion >= 7) {
+                    flags = data->readInt32(nullptr);
+                } else {
+                    flags = 0;
+                }
+                addressesIpv6Download.push_back(TcpAddress(address, port, flags));
             }
+        }
+        if (currentVersion >= 6) {
+            isCdnDatacenter = data->readBool(nullptr);
         }
         len = data->readUint32(nullptr);
         if (len != 0) {
@@ -108,7 +140,7 @@ Datacenter::Datacenter(NativeByteBuffer *data) {
     NativeByteBuffer *buffer = config->readConfig();
     if (buffer != nullptr) {
         uint32_t version = buffer->readUint32(nullptr);
-        if (version <= paramsConfigVersion) {
+        if (version >= 1) {
             currentPortNumIpv4 = buffer->readUint32(nullptr);
             currentAddressNumIpv4 = buffer->readUint32(nullptr);
             currentPortNumIpv6 = buffer->readUint32(nullptr);
@@ -133,28 +165,28 @@ Datacenter::Datacenter(NativeByteBuffer *data) {
 
 void Datacenter::switchTo443Port() {
     for (uint32_t a = 0; a < addressesIpv4.size(); a++) {
-        if (ports[addressesIpv4[a]] == 443) {
+        if (addressesIpv4[a].port == 443) {
             currentAddressNumIpv4 = a;
             currentPortNumIpv4 = 0;
             break;
         }
     }
     for (uint32_t a = 0; a < addressesIpv6.size(); a++) {
-        if (ports[addressesIpv6[a]] == 443) {
+        if (addressesIpv6[a].port == 443) {
             currentAddressNumIpv6 = a;
             currentPortNumIpv6 = 0;
             break;
         }
     }
     for (uint32_t a = 0; a < addressesIpv4Download.size(); a++) {
-        if (ports[addressesIpv4Download[a]] == 443) {
+        if (addressesIpv4Download[a].port == 443) {
             currentAddressNumIpv4Download = a;
             currentPortNumIpv4Download = 0;
             break;
         }
     }
     for (uint32_t a = 0; a < addressesIpv6Download.size(); a++) {
-        if (ports[addressesIpv6Download[a]] == 443) {
+        if (addressesIpv6Download[a].port == 443) {
             currentAddressNumIpv6Download = a;
             currentPortNumIpv6Download = 0;
             break;
@@ -164,9 +196,15 @@ void Datacenter::switchTo443Port() {
 
 std::string Datacenter::getCurrentAddress(uint32_t flags) {
     uint32_t currentAddressNum;
-    std::vector<std::string> *addresses;
-    if ((flags & 2) != 0) {
-        if ((flags & 1) != 0) {
+    std::vector<TcpAddress> *addresses;
+    if (flags == 0 && !hasAuthKey() && !addressesIpv4Temp.empty()) {
+        flags = TcpAddressFlagTemp;
+    }
+    if ((flags & TcpAddressFlagTemp) != 0) {
+        currentAddressNum = currentAddressNumIpv4Temp;
+        addresses = &addressesIpv4Temp;
+    } else if ((flags & TcpAddressFlagDownload) != 0) {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
             currentAddressNum = currentAddressNumIpv6Download;
             addresses = &addressesIpv6Download;
         } else {
@@ -174,7 +212,7 @@ std::string Datacenter::getCurrentAddress(uint32_t flags) {
             addresses = &addressesIpv4Download;
         }
     } else {
-        if ((flags & 1) != 0) {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
             currentAddressNum = currentAddressNumIpv6;
             addresses = &addressesIpv6;
         } else {
@@ -185,57 +223,111 @@ std::string Datacenter::getCurrentAddress(uint32_t flags) {
     if (addresses->empty()) {
         return std::string("");
     }
+    if ((flags & TcpAddressFlagStatic) != 0) {
+        for (std::vector<TcpAddress>::iterator iter = addresses->begin(); iter != addresses->end(); iter++) {
+            if ((iter->flags & TcpAddressFlagStatic) != 0) {
+                return iter->address;
+            }
+        }
+    }
     if (currentAddressNum >= addresses->size()) {
         currentAddressNum = 0;
-        if ((flags & 2) != 0) {
-            if ((flags & 1) != 0) {
+        if ((flags & TcpAddressFlagTemp) != 0) {
+            currentAddressNumIpv4Temp = currentAddressNum;
+        } else if ((flags & TcpAddressFlagDownload) != 0) {
+            if ((flags & TcpAddressFlagIpv6) != 0) {
                 currentAddressNumIpv6Download = currentAddressNum;
             } else {
                 currentAddressNumIpv4Download = currentAddressNum;
             }
         } else {
-            if ((flags & 1) != 0) {
+            if ((flags & TcpAddressFlagIpv6) != 0) {
                 currentAddressNumIpv6 = currentAddressNum;
             } else {
                 currentAddressNumIpv4 = currentAddressNum;
             }
         }
     }
-    return (*addresses)[currentAddressNum];
+    return (*addresses)[currentAddressNum].address;
 }
 
 int32_t Datacenter::getCurrentPort(uint32_t flags) {
-    if (ports.empty()) {
-        return overridePort == -1 ? 443 : overridePort;
-    }
-
-    const int32_t *portsArray = overridePort == 8888 ? defaultPorts8888 : defaultPorts;
-
+    uint32_t currentAddressNum;
     uint32_t currentPortNum;
-    if ((flags & 2) != 0) {
-        if ((flags & 1) != 0) {
+    std::vector<TcpAddress> *addresses;
+    if (flags == 0 && !hasAuthKey() && !addressesIpv4Temp.empty()) {
+        flags = TcpAddressFlagTemp;
+    }
+    if ((flags & TcpAddressFlagTemp) != 0) {
+        currentAddressNum = currentAddressNumIpv4Temp;
+        currentPortNum = currentPortNumIpv4Temp;
+        addresses = &addressesIpv4Temp;
+    } else if ((flags & TcpAddressFlagDownload) != 0) {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
+            currentAddressNum = currentAddressNumIpv6Download;
             currentPortNum = currentPortNumIpv6Download;
+            addresses = &addressesIpv6Download;
         } else {
+            currentAddressNum = currentAddressNumIpv4Download;
             currentPortNum = currentPortNumIpv4Download;
+            addresses = &addressesIpv4Download;
         }
     } else {
-        if ((flags & 1) != 0) {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
+            currentAddressNum = currentAddressNumIpv6;
             currentPortNum = currentPortNumIpv6;
+            addresses = &addressesIpv6;
         } else {
+            currentAddressNum = currentAddressNumIpv4;
             currentPortNum = currentPortNumIpv4;
+            addresses = &addressesIpv4;
         }
     }
+    if (addresses->empty()) {
+        return overridePort == -1 ? 443 : overridePort;
+    }
+    const int32_t *portsArray = overridePort == 8888 ? defaultPorts8888 : defaultPorts;
 
+    if ((flags & TcpAddressFlagStatic) != 0) {
+        uint32_t num = 0;
+        for (std::vector<TcpAddress>::iterator iter = addresses->begin(); iter != addresses->end(); iter++) {
+            if ((iter->flags & TcpAddressFlagStatic) != 0) {
+                currentAddressNum = num;
+                break;
+            }
+            num++;
+        }
+    }
+    if (currentAddressNum >= addresses->size()) {
+        currentAddressNum = 0;
+        if ((flags & TcpAddressFlagTemp) != 0) {
+            currentAddressNumIpv4Temp = currentAddressNum;
+        } else if ((flags & TcpAddressFlagDownload) != 0) {
+            if ((flags & TcpAddressFlagIpv6) != 0) {
+                currentAddressNumIpv6Download = currentAddressNum;
+            } else {
+                currentAddressNumIpv4Download = currentAddressNum;
+            }
+        } else {
+            if ((flags & TcpAddressFlagIpv6) != 0) {
+                currentAddressNumIpv6 = currentAddressNum;
+            } else {
+                currentAddressNumIpv4 = currentAddressNum;
+            }
+        }
+    }
     if (currentPortNum >= 11) {
         currentPortNum = 0;
-        if ((flags & 2) != 0) {
-            if ((flags & 1) != 0) {
+        if ((flags & TcpAddressFlagTemp) != 0) {
+            currentPortNumIpv4Temp = currentAddressNum;
+        } else if ((flags & TcpAddressFlagDownload) != 0) {
+            if ((flags & TcpAddressFlagIpv6) != 0) {
                 currentPortNumIpv6Download = currentPortNum;
             } else {
                 currentPortNumIpv4Download = currentPortNum;
             }
         } else {
-            if ((flags & 1) != 0) {
+            if ((flags & TcpAddressFlagIpv6) != 0) {
                 currentPortNumIpv6 = currentPortNum;
             } else {
                 currentPortNumIpv4 = currentPortNum;
@@ -247,40 +339,49 @@ int32_t Datacenter::getCurrentPort(uint32_t flags) {
         if (overridePort != -1) {
             return overridePort;
         }
-        std::string address = getCurrentAddress(flags);
-        return ports[address];
+        return ((*addresses) [currentAddressNum]).port;
     }
     return port;
 }
 
 void Datacenter::addAddressAndPort(std::string address, uint32_t port, uint32_t flags) {
-    std::vector<std::string> *addresses;
-    if ((flags & 2) != 0) {
-        if ((flags & 1) != 0) {
+    std::vector<TcpAddress> *addresses;
+    if ((flags & TcpAddressFlagTemp) != 0) {
+        addresses = &addressesIpv4Temp;
+    } else if ((flags & TcpAddressFlagDownload) != 0) {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
             addresses = &addressesIpv6Download;
         } else {
             addresses = &addressesIpv4Download;
         }
     } else {
-        if ((flags & 1) != 0) {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
             addresses = &addressesIpv6;
         } else {
             addresses = &addressesIpv4;
         }
     }
-    if (std::find(addresses->begin(), addresses->end(), address) != addresses->end()) {
-        return;
+    for (std::vector<TcpAddress>::iterator iter = addresses->begin(); iter != addresses->end(); iter++) {
+        if (iter->address == address && iter->port == port) {
+            return;
+        }
     }
-    addresses->push_back(address);
-    ports[address] = port;
+    addresses->push_back(TcpAddress(address, port, flags));
 }
 
 void Datacenter::nextAddressOrPort(uint32_t flags) {
     uint32_t currentPortNum;
     uint32_t currentAddressNum;
-    std::vector<std::string> *addresses;
-    if ((flags & 2) != 0) {
-        if ((flags & 1) != 0) {
+    std::vector<TcpAddress> *addresses;
+    if (flags == 0 && !hasAuthKey() && !addressesIpv4Temp.empty()) {
+        flags = TcpAddressFlagTemp;
+    }
+    if ((flags & TcpAddressFlagTemp) != 0) {
+        currentPortNum = currentPortNumIpv4Temp;
+        currentAddressNum = currentAddressNumIpv4Temp;
+        addresses = &addressesIpv4Temp;
+    } else if ((flags & TcpAddressFlagDownload) != 0) {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
             currentPortNum = currentPortNumIpv6Download;
             currentAddressNum = currentAddressNumIpv6Download;
             addresses = &addressesIpv6Download;
@@ -290,7 +391,7 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
             addresses = &addressesIpv4Download;
         }
     } else {
-        if ((flags & 1) != 0) {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
             currentPortNum = currentPortNumIpv6;
             currentAddressNum = currentAddressNumIpv6;
             addresses = &addressesIpv6;
@@ -310,8 +411,11 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
         }
         currentPortNum = 0;
     }
-    if ((flags & 2) != 0) {
-        if ((flags & 1) != 0) {
+    if ((flags & TcpAddressFlagTemp) != 0) {
+        currentPortNumIpv4Temp = currentPortNum;
+        currentAddressNumIpv4Temp = currentAddressNum;
+    } else if ((flags & TcpAddressFlagDownload) != 0) {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
             currentPortNumIpv6Download = currentPortNum;
             currentAddressNumIpv6Download = currentAddressNum;
         } else {
@@ -319,7 +423,7 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
             currentAddressNumIpv4Download = currentAddressNum;
         }
     } else {
-        if ((flags & 1) != 0) {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
             currentPortNumIpv6 = currentPortNum;
             currentAddressNumIpv6 = currentAddressNum;
         } else {
@@ -359,42 +463,21 @@ void Datacenter::resetAddressAndPortNum() {
     storeCurrentAddressAndPortNum();
 }
 
-void Datacenter::replaceAddressesAndPorts(std::vector<std::string> &newAddresses, std::map<std::string, uint32_t> &newPorts, uint32_t flags) {
-    std::vector<std::string> *addresses;
-    if ((flags & 2) != 0) {
-        if ((flags & 1) != 0) {
-            addresses = &addressesIpv6Download;
-        } else {
-            addresses = &addressesIpv4Download;
-        }
-    } else {
-        if ((flags & 1) != 0) {
-            addresses = &addressesIpv6;
-        } else {
-            addresses = &addressesIpv4;
-        }
-    }
-    size_t size = addresses->size();
-    for (uint32_t a = 0; a < size; a++) {
-        std::map<std::string, uint32_t>::iterator iter = ports.find((*addresses)[a]);
-        if (iter != ports.end()) {
-            ports.erase(iter);
-        }
-    }
-    if ((flags & 2) != 0) {
-        if ((flags & 1) != 0) {
+void Datacenter::replaceAddresses(std::vector<TcpAddress> &newAddresses, uint32_t flags) {
+    isCdnDatacenter = (flags & 8) != 0;
+    if ((flags & TcpAddressFlagDownload) != 0) {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
             addressesIpv6Download = newAddresses;
         } else {
             addressesIpv4Download = newAddresses;
         }
     } else {
-        if ((flags & 1) != 0) {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
             addressesIpv6 = newAddresses;
         } else {
             addressesIpv4 = newAddresses;
         }
     }
-    ports.insert(newPorts.begin(), newPorts.end());
 }
 
 void Datacenter::serializeToStream(NativeByteBuffer *stream) {
@@ -404,24 +487,29 @@ void Datacenter::serializeToStream(NativeByteBuffer *stream) {
     size_t size;
     stream->writeInt32((int32_t) (size = addressesIpv4.size()));
     for (uint32_t a = 0; a < size; a++) {
-        stream->writeString(addressesIpv4[a]);
-        stream->writeInt32(ports[addressesIpv4[a]]);
+        stream->writeString(addressesIpv4[a].address);
+        stream->writeInt32(addressesIpv4[a].port);
+        stream->writeInt32(addressesIpv4[a].flags);
     }
     stream->writeInt32((int32_t) (size = addressesIpv6.size()));
     for (uint32_t a = 0; a < size; a++) {
-        stream->writeString(addressesIpv6[a]);
-        stream->writeInt32(ports[addressesIpv6[a]]);
+        stream->writeString(addressesIpv6[a].address);
+        stream->writeInt32(addressesIpv6[a].port);
+        stream->writeInt32(addressesIpv6[a].flags);
     }
     stream->writeInt32((int32_t) (size = addressesIpv4Download.size()));
     for (uint32_t a = 0; a < size; a++) {
-        stream->writeString(addressesIpv4Download[a]);
-        stream->writeInt32(ports[addressesIpv4Download[a]]);
+        stream->writeString(addressesIpv4Download[a].address);
+        stream->writeInt32(addressesIpv4Download[a].port);
+        stream->writeInt32(addressesIpv4Download[a].flags);
     }
     stream->writeInt32((int32_t) (size = addressesIpv6Download.size()));
     for (uint32_t a = 0; a < size; a++) {
-        stream->writeString(addressesIpv6Download[a]);
-        stream->writeInt32(ports[addressesIpv6Download[a]]);
+        stream->writeString(addressesIpv6Download[a].address);
+        stream->writeInt32(addressesIpv6Download[a].port);
+        stream->writeInt32(addressesIpv6Download[a].flags);
     }
+    stream->writeBool(isCdnDatacenter);
     if (authKey != nullptr) {
         stream->writeInt32(authKey->length);
         stream->writeBytes(authKey);
@@ -439,7 +527,10 @@ void Datacenter::serializeToStream(NativeByteBuffer *stream) {
 }
 
 void Datacenter::clear() {
-    authKey = nullptr;
+    if (authKey != nullptr) {
+        delete authKey;
+        authKey = nullptr;
+    }
     authKeyId = 0;
     authorized = false;
     serverSalts.clear();
@@ -537,14 +628,17 @@ void Datacenter::suspendConnections() {
     if (genericConnection != nullptr) {
         genericConnection->suspendConnection();
     }
+    if (tempConnection != nullptr) {
+        tempConnection->suspendConnection();
+    }
     for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
         if (uploadConnection[a] != nullptr) {
             uploadConnection[a]->suspendConnection();
         }
     }
     for (uint32_t a = 0; a < DOWNLOAD_CONNECTIONS_COUNT; a++) {
-        if (downloadConnections[a] != nullptr) {
-            downloadConnections[a]->suspendConnection();
+        if (downloadConnection[a] != nullptr) {
+            downloadConnection[a]->suspendConnection();
         }
     }
 }
@@ -553,14 +647,17 @@ void Datacenter::getSessions(std::vector<int64_t> &sessions) {
     if (genericConnection != nullptr) {
         sessions.push_back(genericConnection->getSissionId());
     }
+    if (tempConnection != nullptr) {
+        sessions.push_back(tempConnection->getSissionId());
+    }
     for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
         if (uploadConnection[a] != nullptr) {
             sessions.push_back(uploadConnection[a]->getSissionId());
         }
     }
     for (uint32_t a = 0; a < DOWNLOAD_CONNECTIONS_COUNT; a++) {
-        if (downloadConnections[a] != nullptr) {
-            sessions.push_back(downloadConnections[a]->getSissionId());
+        if (downloadConnection[a] != nullptr) {
+            sessions.push_back(downloadConnection[a]->getSissionId());
         }
     }
 }
@@ -569,23 +666,26 @@ void Datacenter::recreateSessions() {
     if (genericConnection != nullptr) {
         genericConnection->recreateSession();
     }
+    if (tempConnection != nullptr) {
+        tempConnection->recreateSession();
+    }
     for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
         if (uploadConnection[a] != nullptr) {
             uploadConnection[a]->recreateSession();
         }
     }
     for (uint32_t a = 0; a < DOWNLOAD_CONNECTIONS_COUNT; a++) {
-        if (downloadConnections[a] != nullptr) {
-            downloadConnections[a]->recreateSession();
+        if (downloadConnection[a] != nullptr) {
+            downloadConnection[a]->recreateSession();
         }
     }
 }
 
 Connection *Datacenter::createDownloadConnection(uint8_t num) {
-    if (downloadConnections[num] == nullptr) {
-        downloadConnections[num] = new Connection(this, ConnectionTypeDownload);
+    if (downloadConnection[num] == nullptr) {
+        downloadConnection[num] = new Connection(this, ConnectionTypeDownload);
     }
-    return downloadConnections[num];
+    return downloadConnection[num];
 }
 
 Connection *Datacenter::createUploadConnection(uint8_t num) {
@@ -607,6 +707,13 @@ Connection *Datacenter::createPushConnection() {
         pushConnection = new Connection(this, ConnectionTypePush);
     }
     return pushConnection;
+}
+
+Connection *Datacenter::createTempConnection() {
+    if (tempConnection == nullptr) {
+        tempConnection = new Connection(this, ConnectionTypeTemp);
+    }
+    return tempConnection;
 }
 
 uint32_t Datacenter::getDatacenterId() {
@@ -908,61 +1015,6 @@ void Datacenter::aesIgeEncryption(uint8_t *buffer, uint8_t *key, uint8_t *iv, bo
     }
 }
 
-int32_t Datacenter::selectPublicKey(std::vector<int64_t> &fingerprints) {
-    if (serverPublicKeys.empty()) {
-        serverPublicKeys.push_back("-----BEGIN RSA PUBLIC KEY-----\n"
-                                           "MIIBCgKCAQEAwVACPi9w23mF3tBkdZz+zwrzKOaaQdr01vAbU4E1pvkfj4sqDsm6\n"
-                                           "lyDONS789sVoD/xCS9Y0hkkC3gtL1tSfTlgCMOOul9lcixlEKzwKENj1Yz/s7daS\n"
-                                           "an9tqw3bfUV/nqgbhGX81v/+7RFAEd+RwFnK7a+XYl9sluzHRyVVaTTveB2GazTw\n"
-                                           "Efzk2DWgkBluml8OREmvfraX3bkHZJTKX4EQSjBbbdJ2ZXIsRrYOXfaA+xayEGB+\n"
-                                           "8hdlLmAjbCVfaigxX0CDqWeR1yFL9kwd9P0NsZRPsmoqVwMbMu7mStFai6aIhc3n\n"
-                                           "Slv8kg9qv1m6XHVQY3PnEw+QQtqSIXklHwIDAQAB\n"
-                                           "-----END RSA PUBLIC KEY-----");
-        serverPublicKeysFingerprints.push_back(0xc3b42b026ce86b21LL);
-
-        serverPublicKeys.push_back("-----BEGIN RSA PUBLIC KEY-----\n"
-                                           "MIIBCgKCAQEAxq7aeLAqJR20tkQQMfRn+ocfrtMlJsQ2Uksfs7Xcoo77jAid0bRt\n"
-                                           "ksiVmT2HEIJUlRxfABoPBV8wY9zRTUMaMA654pUX41mhyVN+XoerGxFvrs9dF1Ru\n"
-                                           "vCHbI02dM2ppPvyytvvMoefRoL5BTcpAihFgm5xCaakgsJ/tH5oVl74CdhQw8J5L\n"
-                                           "xI/K++KJBUyZ26Uba1632cOiq05JBUW0Z2vWIOk4BLysk7+U9z+SxynKiZR3/xdi\n"
-                                           "XvFKk01R3BHV+GUKM2RYazpS/P8v7eyKhAbKxOdRcFpHLlVwfjyM1VlDQrEZxsMp\n"
-                                           "NTLYXb6Sce1Uov0YtNx5wEowlREH1WOTlwIDAQAB\n"
-                                           "-----END RSA PUBLIC KEY-----");
-        serverPublicKeysFingerprints.push_back(0x9a996a1db11c729bLL);
-
-        serverPublicKeys.push_back("-----BEGIN RSA PUBLIC KEY-----\n"
-                                           "MIIBCgKCAQEAsQZnSWVZNfClk29RcDTJQ76n8zZaiTGuUsi8sUhW8AS4PSbPKDm+\n"
-                                           "DyJgdHDWdIF3HBzl7DHeFrILuqTs0vfS7Pa2NW8nUBwiaYQmPtwEa4n7bTmBVGsB\n"
-                                           "1700/tz8wQWOLUlL2nMv+BPlDhxq4kmJCyJfgrIrHlX8sGPcPA4Y6Rwo0MSqYn3s\n"
-                                           "g1Pu5gOKlaT9HKmE6wn5Sut6IiBjWozrRQ6n5h2RXNtO7O2qCDqjgB2vBxhV7B+z\n"
-                                           "hRbLbCmW0tYMDsvPpX5M8fsO05svN+lKtCAuz1leFns8piZpptpSCFn7bWxiA9/f\n"
-                                           "x5x17D7pfah3Sy2pA+NDXyzSlGcKdaUmwQIDAQAB\n"
-                                           "-----END RSA PUBLIC KEY-----");
-        serverPublicKeysFingerprints.push_back(0xb05b2a6f70cdea78LL);
-
-        serverPublicKeys.push_back("-----BEGIN RSA PUBLIC KEY-----\n"
-                                           "MIIBCgKCAQEAwqjFW0pi4reKGbkc9pK83Eunwj/k0G8ZTioMMPbZmW99GivMibwa\n"
-                                           "xDM9RDWabEMyUtGoQC2ZcDeLWRK3W8jMP6dnEKAlvLkDLfC4fXYHzFO5KHEqF06i\n"
-                                           "qAqBdmI1iBGdQv/OQCBcbXIWCGDY2AsiqLhlGQfPOI7/vvKc188rTriocgUtoTUc\n"
-                                           "/n/sIUzkgwTqRyvWYynWARWzQg0I9olLBBC2q5RQJJlnYXZwyTL3y9tdb7zOHkks\n"
-                                           "WV9IMQmZmyZh/N7sMbGWQpt4NMchGpPGeJ2e5gHBjDnlIf2p1yZOYeUYrdbwcS0t\n"
-                                           "UiggS4UeE8TzIuXFQxw7fzEIlmhIaq3FnwIDAQAB\n"
-                                           "-----END RSA PUBLIC KEY-----");
-        serverPublicKeysFingerprints.push_back(0x71e025b6c76033e3LL);
-    }
-
-    size_t count1 = fingerprints.size();
-    size_t count2 = serverPublicKeysFingerprints.size();
-    for (uint32_t a = 0; a < count1; a++) {
-        for (uint32_t b = 0; b < count2; b++) {
-            if ((uint64_t) fingerprints[a] == serverPublicKeysFingerprints[b]) {
-                return b;
-            }
-        }
-    }
-    return -1;
-}
-
 void Datacenter::processHandshakeResponse(TLObject *message, int64_t messageId) {
     if (handshakeState == 0) {
         return;
@@ -977,10 +1029,86 @@ void Datacenter::processHandshakeResponse(TLObject *message, int64_t messageId) 
         handshakeState = 2;
         TL_resPQ *result = (TL_resPQ *) message;
         if (authNonce->isEqualTo(result->nonce.get())) {
-            int32_t keyIndex = selectPublicKey(result->server_public_key_fingerprints);
-            if (keyIndex < 0) {
-                DEBUG_E("dc%u handshake: can't find valid server public key", datacenterId);
-                beginHandshake(false);
+            std::string key;
+            int64_t keyFingerprint = 0;
+
+            size_t count1 = result->server_public_key_fingerprints.size();
+            if (isCdnDatacenter) {
+                std::map<int32_t, uint64_t>::iterator iter = cdnPublicKeysFingerprints.find(datacenterId);
+                if (iter != cdnPublicKeysFingerprints.end()) {
+                    for (uint32_t a = 0; a < count1; a++) {
+                        if ((uint64_t) result->server_public_key_fingerprints[a] == iter->second) {
+                            keyFingerprint = iter->second;
+                            key = cdnPublicKeys[datacenterId];
+                        }
+                    }
+                }
+            } else {
+                if (serverPublicKeys.empty()) {
+                    serverPublicKeys.push_back("-----BEGIN RSA PUBLIC KEY-----\n"
+                                                       "MIIBCgKCAQEAwVACPi9w23mF3tBkdZz+zwrzKOaaQdr01vAbU4E1pvkfj4sqDsm6\n"
+                                                       "lyDONS789sVoD/xCS9Y0hkkC3gtL1tSfTlgCMOOul9lcixlEKzwKENj1Yz/s7daS\n"
+                                                       "an9tqw3bfUV/nqgbhGX81v/+7RFAEd+RwFnK7a+XYl9sluzHRyVVaTTveB2GazTw\n"
+                                                       "Efzk2DWgkBluml8OREmvfraX3bkHZJTKX4EQSjBbbdJ2ZXIsRrYOXfaA+xayEGB+\n"
+                                                       "8hdlLmAjbCVfaigxX0CDqWeR1yFL9kwd9P0NsZRPsmoqVwMbMu7mStFai6aIhc3n\n"
+                                                       "Slv8kg9qv1m6XHVQY3PnEw+QQtqSIXklHwIDAQAB\n"
+                                                       "-----END RSA PUBLIC KEY-----");
+                    serverPublicKeysFingerprints.push_back(0xc3b42b026ce86b21LL);
+
+                    serverPublicKeys.push_back("-----BEGIN RSA PUBLIC KEY-----\n"
+                                                       "MIIBCgKCAQEAxq7aeLAqJR20tkQQMfRn+ocfrtMlJsQ2Uksfs7Xcoo77jAid0bRt\n"
+                                                       "ksiVmT2HEIJUlRxfABoPBV8wY9zRTUMaMA654pUX41mhyVN+XoerGxFvrs9dF1Ru\n"
+                                                       "vCHbI02dM2ppPvyytvvMoefRoL5BTcpAihFgm5xCaakgsJ/tH5oVl74CdhQw8J5L\n"
+                                                       "xI/K++KJBUyZ26Uba1632cOiq05JBUW0Z2vWIOk4BLysk7+U9z+SxynKiZR3/xdi\n"
+                                                       "XvFKk01R3BHV+GUKM2RYazpS/P8v7eyKhAbKxOdRcFpHLlVwfjyM1VlDQrEZxsMp\n"
+                                                       "NTLYXb6Sce1Uov0YtNx5wEowlREH1WOTlwIDAQAB\n"
+                                                       "-----END RSA PUBLIC KEY-----");
+                    serverPublicKeysFingerprints.push_back(0x9a996a1db11c729bLL);
+
+                    serverPublicKeys.push_back("-----BEGIN RSA PUBLIC KEY-----\n"
+                                                       "MIIBCgKCAQEAsQZnSWVZNfClk29RcDTJQ76n8zZaiTGuUsi8sUhW8AS4PSbPKDm+\n"
+                                                       "DyJgdHDWdIF3HBzl7DHeFrILuqTs0vfS7Pa2NW8nUBwiaYQmPtwEa4n7bTmBVGsB\n"
+                                                       "1700/tz8wQWOLUlL2nMv+BPlDhxq4kmJCyJfgrIrHlX8sGPcPA4Y6Rwo0MSqYn3s\n"
+                                                       "g1Pu5gOKlaT9HKmE6wn5Sut6IiBjWozrRQ6n5h2RXNtO7O2qCDqjgB2vBxhV7B+z\n"
+                                                       "hRbLbCmW0tYMDsvPpX5M8fsO05svN+lKtCAuz1leFns8piZpptpSCFn7bWxiA9/f\n"
+                                                       "x5x17D7pfah3Sy2pA+NDXyzSlGcKdaUmwQIDAQAB\n"
+                                                       "-----END RSA PUBLIC KEY-----");
+                    serverPublicKeysFingerprints.push_back(0xb05b2a6f70cdea78LL);
+
+                    serverPublicKeys.push_back("-----BEGIN RSA PUBLIC KEY-----\n"
+                                                       "MIIBCgKCAQEAwqjFW0pi4reKGbkc9pK83Eunwj/k0G8ZTioMMPbZmW99GivMibwa\n"
+                                                       "xDM9RDWabEMyUtGoQC2ZcDeLWRK3W8jMP6dnEKAlvLkDLfC4fXYHzFO5KHEqF06i\n"
+                                                       "qAqBdmI1iBGdQv/OQCBcbXIWCGDY2AsiqLhlGQfPOI7/vvKc188rTriocgUtoTUc\n"
+                                                       "/n/sIUzkgwTqRyvWYynWARWzQg0I9olLBBC2q5RQJJlnYXZwyTL3y9tdb7zOHkks\n"
+                                                       "WV9IMQmZmyZh/N7sMbGWQpt4NMchGpPGeJ2e5gHBjDnlIf2p1yZOYeUYrdbwcS0t\n"
+                                                       "UiggS4UeE8TzIuXFQxw7fzEIlmhIaq3FnwIDAQAB\n"
+                                                       "-----END RSA PUBLIC KEY-----");
+                    serverPublicKeysFingerprints.push_back(0x71e025b6c76033e3LL);
+                }
+
+                size_t count2 = serverPublicKeysFingerprints.size();
+                for (uint32_t a = 0; a < count1; a++) {
+                    for (uint32_t b = 0; b < count2; b++) {
+                        if ((uint64_t) result->server_public_key_fingerprints[a] == serverPublicKeysFingerprints[b]) {
+                            keyFingerprint = result->server_public_key_fingerprints[a];
+                            key = serverPublicKeys[a];
+                            break;
+                        }
+                    }
+                    if (keyFingerprint != 0) {
+                        break;
+                    }
+                }
+            }
+
+            if (keyFingerprint == 0) {
+                if (isCdnDatacenter) {
+                    DEBUG_D("dc%u handshake: can't find valid cdn server public key", datacenterId);
+                    loadCdnConfig(this);
+                } else {
+                    DEBUG_E("dc%u handshake: can't find valid server public key", datacenterId);
+                    beginHandshake(false);
+                }
                 return;
             }
 
@@ -1014,7 +1142,7 @@ void Datacenter::processHandshakeResponse(TLObject *message, int64_t messageId) 
             request->q->bytes[2] = (uint8_t) (q >> 8);
             request->q->bytes[1] = (uint8_t) (q >> 16);
             request->q->bytes[0] = (uint8_t) (q >> 24);
-            request->public_key_fingerprint = (int64_t) serverPublicKeysFingerprints[keyIndex];
+            request->public_key_fingerprint = keyFingerprint;
 
             TL_p_q_inner_data *innerData = new TL_p_q_inner_data();
             innerData->nonce = std::unique_ptr<ByteArray>(new ByteArray(authNonce));
@@ -1037,8 +1165,6 @@ void Datacenter::processHandshakeResponse(TLObject *message, int64_t messageId) 
             if (additionalSize != 0) {
                 RAND_bytes(innerDataBuffer->bytes() + SHA_DIGEST_LENGTH + innerDataSize, additionalSize);
             }
-
-            std::string &key = serverPublicKeys[keyIndex];
 
             BIO *keyBio = BIO_new(BIO_s_mem());
             BIO_write(keyBio, key.c_str(), (int) key.length());
@@ -1572,6 +1698,8 @@ Connection *Datacenter::createConnectionByType(uint32_t connectionType) {
             return createUploadConnection(connectionNum);
         case ConnectionTypePush:
             return createPushConnection();
+        case ConnectionTypeTemp:
+            return createTempConnection();
         default:
             return nullptr;
     }
@@ -1584,7 +1712,7 @@ Connection *Datacenter::getDownloadConnection(uint8_t num, bool create) {
     if (create) {
         createDownloadConnection(num)->connect();
     }
-    return downloadConnections[num];
+    return downloadConnection[num];
 }
 
 Connection *Datacenter::getUploadConnection(uint8_t num, bool create) {
@@ -1617,6 +1745,16 @@ Connection *Datacenter::getPushConnection(bool create) {
     return pushConnection;
 }
 
+Connection *Datacenter::getTempConnection(bool create) {
+    if (authKey == nullptr) {
+        return nullptr;
+    }
+    if (create) {
+        createTempConnection()->connect();
+    }
+    return tempConnection;
+}
+
 Connection *Datacenter::getConnectionByType(uint32_t connectionType, bool create) {
     uint8_t connectionNum = (uint8_t) (connectionType >> 16);
     connectionType = connectionType & 0x0000ffff;
@@ -1629,13 +1767,15 @@ Connection *Datacenter::getConnectionByType(uint32_t connectionType, bool create
             return getUploadConnection(connectionNum, create);
         case ConnectionTypePush:
             return getPushConnection(create);
+        case ConnectionTypeTemp:
+            return getTempConnection(create);
         default:
             return nullptr;
     }
 }
 
 void Datacenter::exportAuthorization() {
-    if (exportingAuthorization) {
+    if (exportingAuthorization || isCdnDatacenter) {
         return;
     }
     exportingAuthorization = true;
@@ -1667,4 +1807,202 @@ void Datacenter::exportAuthorization() {
 
 bool Datacenter::isExportingAuthorization() {
     return exportingAuthorization;
+}
+
+void Datacenter::saveCdnConfigInternal(NativeByteBuffer *buffer) {
+    buffer->writeInt32(1);
+    buffer->writeInt32(cdnPublicKeys.size());
+    for (std::map<int32_t, std::string>::iterator iter = cdnPublicKeys.begin(); iter != cdnPublicKeys.end(); iter++) {
+        buffer->writeInt32(iter->first);
+        buffer->writeString(iter->second);
+        buffer->writeInt64(cdnPublicKeysFingerprints[iter->first]);
+    }
+}
+
+void Datacenter::saveCdnConfig() {
+    if (cdnConfig == nullptr) {
+        cdnConfig = new Config("cdnkeys.dat");
+    }
+    static NativeByteBuffer *sizeCalculator = new NativeByteBuffer(true);
+    sizeCalculator->clearCapacity();
+    saveCdnConfigInternal(sizeCalculator);
+    NativeByteBuffer *buffer = BuffersStorage::getInstance().getFreeBuffer(sizeCalculator->capacity());
+    saveCdnConfigInternal(buffer);
+    cdnConfig->writeConfig(buffer);
+    buffer->reuse();
+}
+
+void Datacenter::loadCdnConfig(Datacenter *datacenter) {
+    if (std::find(cdnWaitingDatacenters.begin(), cdnWaitingDatacenters.end(), datacenter) != cdnWaitingDatacenters.end()) {
+        return;
+    }
+    cdnWaitingDatacenters.push_back(datacenter);
+    if (loadingCdnKeys) {
+        return;
+    }
+    if (cdnPublicKeysFingerprints.empty()) {
+        if (cdnConfig == nullptr) {
+            cdnConfig = new Config("cdnkeys.dat");
+        }
+        NativeByteBuffer *buffer = cdnConfig->readConfig();
+        if (buffer != nullptr) {
+            uint32_t version = buffer->readUint32(nullptr);
+            if (version >= 1) {
+                size_t count = buffer->readUint32(nullptr);
+                for (uint32_t a = 0; a < count; a++) {
+                    int dcId = buffer->readInt32(nullptr);
+                    cdnPublicKeys[dcId] = buffer->readString(nullptr);
+                    cdnPublicKeysFingerprints[dcId] = buffer->readUint64(nullptr);
+                }
+            }
+            buffer->reuse();
+            if (!cdnPublicKeysFingerprints.empty()) {
+                size_t count = cdnWaitingDatacenters.size();
+                for (uint32_t a = 0; a < count; a++) {
+                    cdnWaitingDatacenters[a]->beginHandshake(false);
+                }
+                cdnWaitingDatacenters.clear();
+                return;
+            }
+        }
+    }
+    loadingCdnKeys = true;
+    TL_help_getCdnConfig *request = new TL_help_getCdnConfig();
+
+    ConnectionsManager::getInstance().sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType) {
+        if (response != nullptr) {
+            TL_cdnConfig *config = (TL_cdnConfig *) response;
+            size_t count = config->public_keys.size();
+            BIO *keyBio = BIO_new(BIO_s_mem());
+            NativeByteBuffer *buffer = BuffersStorage::getInstance().getFreeBuffer(1024);
+            static uint8_t sha1Buffer[20];
+            for (uint32_t a = 0; a < count; a++) {
+                TL_cdnPublicKey *publicKey = config->public_keys[a].get();
+                cdnPublicKeys[publicKey->dc_id] = publicKey->public_key;
+
+                BIO_write(keyBio, publicKey->public_key.c_str(), (int) publicKey->public_key.length());
+                RSA *rsaKey = PEM_read_bio_RSAPublicKey(keyBio, NULL, NULL, NULL);
+
+                int nBytes = BN_num_bytes(rsaKey->n);
+                int eBytes = BN_num_bytes(rsaKey->e);
+                std::string nStr(nBytes, 0), eStr(eBytes, 0);
+                BN_bn2bin(rsaKey->n, (uint8_t *)&nStr[0]);
+                BN_bn2bin(rsaKey->e, (uint8_t *)&eStr[0]);
+                buffer->writeString(nStr);
+                buffer->writeString(eStr);
+                SHA1(buffer->bytes(), buffer->position(), sha1Buffer);
+                cdnPublicKeysFingerprints[publicKey->dc_id] = ((uint64_t) sha1Buffer[19]) << 56 |
+                                                              ((uint64_t) sha1Buffer[18]) << 48 |
+                                                              ((uint64_t) sha1Buffer[17]) << 40 |
+                                                              ((uint64_t) sha1Buffer[16]) << 32 |
+                                                              ((uint64_t) sha1Buffer[15]) << 24 |
+                                                              ((uint64_t) sha1Buffer[14]) << 16 |
+                                                              ((uint64_t) sha1Buffer[13]) << 8 |
+                                                              ((uint64_t) sha1Buffer[12]);
+                RSA_free(rsaKey);
+                if (a != count - 1) {
+                    buffer->position(0);
+                    BIO_reset(keyBio);
+                }
+            }
+            buffer->reuse();
+            BIO_free(keyBio);
+            count = cdnWaitingDatacenters.size();
+            for (uint32_t a = 0; a < count; a++) {
+                cdnWaitingDatacenters[a]->beginHandshake(false);
+            }
+            cdnWaitingDatacenters.clear();
+            saveCdnConfig();
+        }
+        loadingCdnKeys = false;
+    }, nullptr, RequestFlagEnableUnauthorized | RequestFlagWithoutLogin, DEFAULT_DATACENTER_ID, ConnectionTypeGeneric, true);
+}
+
+TL_help_configSimple *Datacenter::decodeSimpleConfig(NativeByteBuffer *buffer) {
+    TL_help_configSimple *result = nullptr;
+
+    static std::string public_key =
+            "-----BEGIN RSA PUBLIC KEY-----\n"
+                    "MIIBCgKCAQEAyr+18Rex2ohtVy8sroGPBwXD3DOoKCSpjDqYoXgCqB7ioln4eDCF\n"
+                    "fOBUlfXUEvM/fnKCpF46VkAftlb4VuPDeQSS/ZxZYEGqHaywlroVnXHIjgqoxiAd\n"
+                    "192xRGreuXIaUKmkwlM9JID9WS2jUsTpzQ91L8MEPLJ/4zrBwZua8W5fECwCCh2c\n"
+                    "9G5IzzBm+otMS/YKwmR1olzRCyEkyAEjXWqBI9Ftv5eG8m0VkBzOG655WIYdyV0H\n"
+                    "fDK/NWcvGqa0w/nriMD6mDjKOryamw0OP9QuYgMN0C9xMW9y8SmP4h92OAWodTYg\n"
+                    "Y1hZCxdv6cs5UnW9+PWvS+WIbkh+GaWYxwIDAQAB\n"
+                    "-----END RSA PUBLIC KEY-----";
+
+    BIO *keyBio = BIO_new(BIO_s_mem());
+    BIO_write(keyBio, public_key.c_str(), (int) public_key.length());
+
+    RSA *rsaKey = PEM_read_bio_RSAPublicKey(keyBio, NULL, NULL, NULL);
+    if (rsaKey == nullptr) {
+        if (rsaKey == nullptr) {
+            DEBUG_E("Invalid rsa public key");
+            return nullptr;
+        }
+    }
+
+    BIGNUM x, y;
+    uint8_t *bytes = buffer->bytes();
+    if (bnContext == nullptr) {
+        bnContext = BN_CTX_new();
+    }
+    BN_init(&x);
+    BN_init(&y);
+    BN_bin2bn(bytes, 256, &x);
+
+    if (BN_mod_exp(&y, &x, rsaKey->e, rsaKey->n, bnContext) == 1) {
+        uint8_t temp[256];
+        /*BN_bn2bin(&y, temp);
+        std::string res = "";
+        for (int a = 0; a < 256; a++) {
+            char buf[20];
+            sprintf(buf, "%x", temp[a]);
+            res += buf;
+        }
+        DEBUG_D("hex = %s", res.c_str());*/
+        unsigned l = 256 - BN_num_bytes(&y);
+        memset(bytes, 0, l);
+        if (BN_bn2bin(&y, bytes + l) == 256 - l) {
+            AES_KEY aeskey;
+            unsigned char iv[16];
+            memcpy(iv, bytes + 16, 16);
+            AES_set_decrypt_key(bytes, 256, &aeskey);
+            AES_cbc_encrypt(bytes + 32, bytes + 32, 256 - 32, &aeskey, iv, AES_DECRYPT);
+
+            EVP_MD_CTX ctx;
+            unsigned char sha256_out[32];
+            unsigned olen = 0;
+            EVP_MD_CTX_init(&ctx);
+            EVP_DigestInit_ex(&ctx, EVP_sha256(), NULL);
+            EVP_DigestUpdate(&ctx, bytes + 32, 256 - 32 - 16);
+            EVP_DigestFinal_ex(&ctx, sha256_out, &olen);
+            EVP_MD_CTX_cleanup(&ctx);
+            if (olen == 32) {
+                if (memcmp(bytes + 256 - 16, sha256_out, 16) == 0) {
+                    unsigned data_len = *(unsigned *) (bytes + 32);
+                    if (data_len && data_len <= 256 - 32 - 16 && !(data_len & 3)) {
+                        buffer->position(32 + 4);
+                        bool error = false;
+                        result = TL_help_configSimple::TLdeserialize(buffer, buffer->readUint32(&error), error);
+                        if (error) {
+                            if (result != nullptr) {
+                                delete result;
+                                result = nullptr;
+                            }
+                        }
+                    } else {
+                        DEBUG_E("TL data length field invalid - %d", data_len);
+                    }
+                } else {
+                    DEBUG_E("RSA signature check FAILED (SHA256 mismatch)");
+                }
+            }
+        }
+    }
+    BN_free(&x);
+    BN_free(&y);
+    RSA_free(rsaKey);
+    BIO_free(keyBio);
+    return result;
 }

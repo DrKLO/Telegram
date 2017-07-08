@@ -93,12 +93,14 @@ public interface Extractor {
    * position} in the stream. Valid random access positions are the start of the stream and
    * positions that can be obtained from any {@link SeekMap} passed to the {@link ExtractorOutput}.
    *
-   * @param position The seek position.
+   * @param position The byte offset in the stream from which data will be provided.
+   * @param timeUs The seek time in microseconds.
    */
-  void seek(long position);
+  void seek(long position, long timeUs);
 
   /**
    * Releases all kept resources.
    */
   void release();
+
 }

@@ -928,6 +928,8 @@ public class NotificationsController {
                             msg = LocaleController.formatString("NotificationMessageGame", R.string.NotificationMessageGame, name, messageObject.messageOwner.media.game.title);
                         } else if (messageObject.isVoice()) {
                             msg = LocaleController.formatString("NotificationMessageAudio", R.string.NotificationMessageAudio, name);
+                        } else if (messageObject.isRoundVideo()) {
+                            msg = LocaleController.formatString("NotificationMessageRound", R.string.NotificationMessageRound, name);
                         } else if (messageObject.isMusic()) {
                             msg = LocaleController.formatString("NotificationMessageMusic", R.string.NotificationMessageMusic, name);
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaContact) {
@@ -1086,6 +1088,12 @@ public class NotificationsController {
                                     } else {
                                         msg = LocaleController.formatString("NotificationActionPinnedVoiceChannel", R.string.NotificationActionPinnedVoiceChannel, chat.title);
                                     }
+                                } else if (object.isRoundVideo()) {
+                                    if (!ChatObject.isChannel(chat) || chat.megagroup) {
+                                        msg = LocaleController.formatString("NotificationActionPinnedRound", R.string.NotificationActionPinnedRound, name, chat.title);
+                                    } else {
+                                        msg = LocaleController.formatString("NotificationActionPinnedRoundChannel", R.string.NotificationActionPinnedRoundChannel, chat.title);
+                                    }
                                 } else if (object.isSticker()) {
                                     String emoji = messageObject.getStickerEmoji();
                                     if (emoji != null) {
@@ -1192,6 +1200,8 @@ public class NotificationsController {
                                 }
                             } else if (messageObject.isVoice()) {
                                 msg = LocaleController.formatString("ChannelMessageAudio", R.string.ChannelMessageAudio, name);
+                            } else if (messageObject.isRoundVideo()) {
+                                msg = LocaleController.formatString("ChannelMessageRound", R.string.ChannelMessageRound, name);
                             } else if (messageObject.isMusic()) {
                                 msg = LocaleController.formatString("ChannelMessageMusic", R.string.ChannelMessageMusic, name);
                             } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaContact) {
@@ -1241,6 +1251,8 @@ public class NotificationsController {
                                 }
                             } else if (messageObject.isVoice()) {
                                 msg = LocaleController.formatString("ChannelMessageGroupAudio", R.string.ChannelMessageGroupAudio, name, chat.title);
+                            } else if (messageObject.isRoundVideo()) {
+                                msg = LocaleController.formatString("ChannelMessageGroupRound", R.string.ChannelMessageGroupRound, name, chat.title);
                             } else if (messageObject.isMusic()) {
                                 msg = LocaleController.formatString("ChannelMessageGroupMusic", R.string.ChannelMessageGroupMusic, name, chat.title);
                             } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaContact) {
@@ -1291,6 +1303,8 @@ public class NotificationsController {
                             }
                         } else if (messageObject.isVoice()) {
                             msg = LocaleController.formatString("NotificationMessageGroupAudio", R.string.NotificationMessageGroupAudio, name, chat.title);
+                        } else if (messageObject.isRoundVideo()) {
+                            msg = LocaleController.formatString("NotificationMessageGroupRound", R.string.NotificationMessageGroupRound, name, chat.title);
                         } else if (messageObject.isMusic()) {
                             msg = LocaleController.formatString("NotificationMessageGroupMusic", R.string.NotificationMessageGroupMusic, name, chat.title);
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaContact) {

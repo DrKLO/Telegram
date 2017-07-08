@@ -65,10 +65,11 @@ public final class CacheDataSourceFactory implements DataSource.Factory {
   }
 
   @Override
-  public DataSource createDataSource() {
+  public CacheDataSource createDataSource() {
     return new CacheDataSource(cache, upstreamFactory.createDataSource(),
         cacheReadDataSourceFactory.createDataSource(),
-        cacheWriteDataSinkFactory.createDataSink(), flags, eventListener);
+        cacheWriteDataSinkFactory != null ? cacheWriteDataSinkFactory.createDataSink() : null,
+        flags, eventListener);
   }
 
 }

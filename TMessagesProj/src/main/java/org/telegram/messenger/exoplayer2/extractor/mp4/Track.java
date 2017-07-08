@@ -75,8 +75,7 @@ public final class Track {
    * One of {@code TRANSFORMATION_*}. Defines the transformation to apply before outputting each
    * sample.
    */
-  @Transformation
-  public final int sampleTransformation;
+  @Transformation public final int sampleTransformation;
 
   /**
    * Track encryption boxes for the different track sample descriptions. Entries may be null.
@@ -94,7 +93,7 @@ public final class Track {
   public final long[] editListMediaTimes;
 
   /**
-   * For H264 video tracks, the length in bytes of the NALUnitLength field in each sample. -1 for
+   * For H264 video tracks, the length in bytes of the NALUnitLength field in each sample. 0 for
    * other track types.
    */
   public final int nalUnitLengthFieldLength;

@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.extractor.flv;
 
+import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.extractor.Extractor;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorInput;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
@@ -126,7 +127,7 @@ public final class FlvExtractor implements Extractor, SeekMap {
   }
 
   @Override
-  public void seek(long position) {
+  public void seek(long position, long timeUs) {
     parserState = STATE_READING_FLV_HEADER;
     bytesToNextTagHeader = 0;
   }
@@ -183,10 +184,12 @@ public final class FlvExtractor implements Extractor, SeekMap {
     boolean hasAudio = (flags & 0x04) != 0;
     boolean hasVideo = (flags & 0x01) != 0;
     if (hasAudio && audioReader == null) {
-      audioReader = new AudioTagPayloadReader(extractorOutput.track(TAG_TYPE_AUDIO));
+      audioReader = new AudioTagPayloadReader(
+          extractorOutput.track(TAG_TYPE_AUDIO, C.TRACK_TYPE_AUDIO));
     }
     if (hasVideo && videoReader == null) {
-      videoReader = new VideoTagPayloadReader(extractorOutput.track(TAG_TYPE_VIDEO));
+      videoReader = new VideoTagPayloadReader(
+          extractorOutput.track(TAG_TYPE_VIDEO, C.TRACK_TYPE_VIDEO));
     }
     if (metadataReader == null) {
       metadataReader = new ScriptTagPayloadReader(null);

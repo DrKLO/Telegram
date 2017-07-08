@@ -8,13 +8,21 @@
 
 package org.telegram.ui.Cells;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Rect;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MediaController;
@@ -29,6 +37,9 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     private BackupImageView imageView;
     private FrameLayout checkFrame;
     private CheckBox checkBox;
+    private TextView videoTextView;
+    private FrameLayout videoInfoContainer;
+    private AnimatorSet animatorSet;
     private boolean isLast;
     private boolean pressed;
     private static Rect rect = new Rect();
@@ -47,6 +58,20 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         addView(imageView, LayoutHelper.createFrame(80, 80));
         checkFrame = new FrameLayout(context);
         addView(checkFrame, LayoutHelper.createFrame(42, 42, Gravity.LEFT | Gravity.TOP, 38, 0, 0, 0));
+
+        videoInfoContainer = new FrameLayout(context);
+        videoInfoContainer.setBackgroundResource(R.drawable.phototime);
+        videoInfoContainer.setPadding(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(3), 0);
+        addView(videoInfoContainer, LayoutHelper.createFrame(80, 16, Gravity.BOTTOM | Gravity.LEFT));
+
+        ImageView imageView1 = new ImageView(context);
+        imageView1.setImageResource(R.drawable.ic_video);
+        videoInfoContainer.addView(imageView1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+
+        videoTextView = new TextView(context);
+        videoTextView.setTextColor(0xffffffff);
+        videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        videoInfoContainer.addView(videoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 18, -0.7f, 0, 0));
 
         checkBox = new CheckBox(context, R.drawable.checkbig);
         checkBox.setSize(30);
@@ -74,6 +99,10 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         return checkBox;
     }
 
+    public View getVideoInfoContainer() {
+        return videoInfoContainer;
+    }
+
     public void setPhotoEntry(MediaController.PhotoEntry entry, boolean last) {
         pressed = false;
         photoEntry = entry;
@@ -81,8 +110,18 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         if (photoEntry.thumbPath != null) {
             imageView.setImage(photoEntry.thumbPath, null, getResources().getDrawable(R.drawable.nophotos));
         } else if (photoEntry.path != null) {
-            imageView.setOrientation(photoEntry.orientation, true);
-            imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, getResources().getDrawable(R.drawable.nophotos));
+            if (photoEntry.isVideo) {
+                imageView.setOrientation(0, true);
+                videoInfoContainer.setVisibility(VISIBLE);
+                int minutes = photoEntry.duration / 60;
+                int seconds = photoEntry.duration - minutes * 60;
+                videoTextView.setText(String.format("%d:%02d", minutes, seconds));
+                imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, getResources().getDrawable(R.drawable.nophotos));
+            } else {
+                videoInfoContainer.setVisibility(INVISIBLE);
+                imageView.setOrientation(photoEntry.orientation, true);
+                imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, getResources().getDrawable(R.drawable.nophotos));
+            }
         } else {
             imageView.setImageResource(R.drawable.nophotos);
         }
@@ -102,6 +141,28 @@ public class PhotoAttachPhotoCell extends FrameLayout {
 
     public void setDelegate(PhotoAttachPhotoCellDelegate delegate) {
         this.delegate = delegate;
+    }
+
+    public void showCheck(boolean show) {
+        if (animatorSet != null) {
+            animatorSet.cancel();
+            animatorSet = null;
+        }
+        animatorSet = new AnimatorSet();
+        animatorSet.setInterpolator(new DecelerateInterpolator());
+        animatorSet.setDuration(180);
+        animatorSet.playTogether(
+                ObjectAnimator.ofFloat(videoInfoContainer, "alpha", show ? 1.0f : 0.0f),
+                ObjectAnimator.ofFloat(checkBox, "alpha", show ? 1.0f : 0.0f));
+        animatorSet.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (animation.equals(animatorSet)) {
+                    animatorSet = null;
+                }
+            }
+        });
+        animatorSet.start();
     }
 
     @Override

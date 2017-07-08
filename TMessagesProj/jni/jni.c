@@ -56,6 +56,22 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *en
     (*env)->ReleaseByteArrayElements(env, iv, ivBuff, 0);
 }
 
+JNIEXPORT jint Java_org_telegram_messenger_Utilities_aesCtrDecryption(JNIEnv *env, jclass class, jobject buffer, jbyteArray key, jbyteArray iv, int offset, int length) {
+    jbyte *what = (*env)->GetDirectBufferAddress(env, buffer) + offset;
+    unsigned char *keyBuff = (unsigned char *)(*env)->GetByteArrayElements(env, key, NULL);
+    unsigned char *ivBuff = (unsigned char *)(*env)->GetByteArrayElements(env, iv, NULL);
+
+    AES_KEY akey;
+    unsigned int num = 0;
+    uint8_t count[16];
+    memset(count, 0, 16);
+    AES_set_encrypt_key(keyBuff, 32 * 8, &akey);
+    AES_ctr128_encrypt(what, what, length, &akey, ivBuff, count, &num);
+    (*env)->ReleaseByteArrayElements(env, key, keyBuff, JNI_ABORT);
+    (*env)->ReleaseByteArrayElements(env, iv, ivBuff, JNI_ABORT);
+    return num;
+}
+
 JNIEXPORT jstring Java_org_telegram_messenger_Utilities_readlink(JNIEnv *env, jclass class, jstring path) {
     static char buf[1000];
     char *fileName = (*env)->GetStringUTFChars(env, path, NULL);

@@ -32,7 +32,7 @@ public final class DataSpec {
    * The flags that apply to any request for data.
    */
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef(flag = true, value = {FLAG_ALLOW_GZIP})
+  @IntDef(flag = true, value = {FLAG_ALLOW_GZIP, FLAG_ALLOW_CACHING_UNKNOWN_LENGTH})
   public @interface Flags {}
   /**
    * Permits an underlying network stack to request that the server use gzip compression.
@@ -45,7 +45,12 @@ public final class DataSpec {
    * {@link DataSource#open(DataSpec)} will typically be {@link C#LENGTH_UNSET}. The data read from
    * {@link DataSource#read(byte[], int, int)} will be the decompressed data.
    */
-  public static final int FLAG_ALLOW_GZIP = 1;
+  public static final int FLAG_ALLOW_GZIP = 1 << 0;
+
+  /**
+   * Permits content to be cached even if its length can not be resolved.
+   */
+  public static final int FLAG_ALLOW_CACHING_UNKNOWN_LENGTH = 1 << 1;
 
   /**
    * The source from which data should be read.
@@ -76,10 +81,10 @@ public final class DataSpec {
    */
   public final String key;
   /**
-   * Request flags. Currently {@link #FLAG_ALLOW_GZIP} is the only supported flag.
+   * Request flags. Currently {@link #FLAG_ALLOW_GZIP} and
+   * {@link #FLAG_ALLOW_CACHING_UNKNOWN_LENGTH} are the only supported flags.
    */
-  @Flags
-  public final int flags;
+  @Flags public final int flags;
 
   /**
    * Construct a {@link DataSpec} for the given uri and with {@link #key} set to null.
@@ -165,6 +170,15 @@ public final class DataSpec {
     this.length = length;
     this.key = key;
     this.flags = flags;
+  }
+
+  /**
+   * Returns whether the given flag is set.
+   *
+   * @param flag Flag to be checked if it is set.
+   */
+  public boolean isFlagSet(@Flags int flag) {
+    return (this.flags & flag) == flag;
   }
 
   @Override

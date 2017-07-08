@@ -12,13 +12,14 @@
 #include "MTProtoScheme.h"
 #include "ConnectionsManager.h"
 
-Request::Request(int32_t token, ConnectionType type, uint32_t flags, uint32_t datacenter, onCompleteFunc completeFunc, onQuickAckFunc quickAckFunc) {
+Request::Request(int32_t token, ConnectionType type, uint32_t flags, uint32_t datacenter, onCompleteFunc completeFunc, onQuickAckFunc quickAckFunc, onWriteToSocketFunc writeToSocketFunc) {
     requestToken = token;
     connectionType = type;
     requestFlags = flags;
     datacenterId = datacenter;
     onCompleteRequestCallback = completeFunc;
     onQuickAckCallback = quickAckFunc;
+    onWriteToSocketCallback = writeToSocketFunc;
     dataType = (uint8_t) (requestFlags >> 24);
 }
 
@@ -31,6 +32,10 @@ Request::~Request() {
     if (ptr2 != nullptr) {
         jniEnv->DeleteGlobalRef(ptr2);
         ptr2 = nullptr;
+    }
+    if (ptr3 != nullptr) {
+        jniEnv->DeleteGlobalRef(ptr3);
+        ptr3 = nullptr;
     }
 #endif
 }
@@ -56,6 +61,12 @@ void Request::clear(bool time) {
 void Request::onComplete(TLObject *result, TL_error *error, int32_t networkType) {
     if (onCompleteRequestCallback != nullptr && (result != nullptr || error != nullptr)) {
         onCompleteRequestCallback(result, error, networkType);
+    }
+}
+
+void Request::onWriteToSocket() {
+    if (onWriteToSocketCallback != nullptr) {
+        onWriteToSocketCallback();
     }
 }
 

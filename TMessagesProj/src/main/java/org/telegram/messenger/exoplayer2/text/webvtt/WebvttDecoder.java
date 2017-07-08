@@ -54,7 +54,8 @@ public final class WebvttDecoder extends SimpleSubtitleDecoder {
   }
 
   @Override
-  protected WebvttSubtitle decode(byte[] bytes, int length) throws SubtitleDecoderException {
+  protected WebvttSubtitle decode(byte[] bytes, int length, boolean reset)
+      throws SubtitleDecoderException {
     parsableWebvttData.reset(bytes, length);
     // Initialization for consistent starting state.
     webvttCueBuilder.reset();

@@ -42,6 +42,7 @@ public class CheckBoxSquare extends View {
         rectF = new RectF();
         drawBitmap = Bitmap.createBitmap(AndroidUtilities.dp(18), AndroidUtilities.dp(18), Bitmap.Config.ARGB_4444);
         drawCanvas = new Canvas(drawBitmap);
+        isAlert = alert;
     }
 
     @Keep

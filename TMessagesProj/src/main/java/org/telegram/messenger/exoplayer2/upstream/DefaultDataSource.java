@@ -81,7 +81,7 @@ public final class DefaultDataSource implements DataSource {
       boolean allowCrossProtocolRedirects) {
     this(context, listener,
         new DefaultHttpDataSource(userAgent, null, listener, connectTimeoutMillis,
-            readTimeoutMillis, allowCrossProtocolRedirects));
+            readTimeoutMillis, allowCrossProtocolRedirects, null));
   }
 
   /**

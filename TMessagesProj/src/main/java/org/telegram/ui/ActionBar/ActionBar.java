@@ -57,6 +57,8 @@ public class ActionBar extends FrameLayout {
 
     private boolean allowOverlayTitle;
     private CharSequence lastTitle;
+    private CharSequence lastSubtitle;
+    private Runnable titleActionRunnable;
     private boolean castShadows = true;
 
     protected boolean isSearchFieldVisible;
@@ -70,6 +72,14 @@ public class ActionBar extends FrameLayout {
 
     public ActionBar(Context context) {
         super(context);
+        setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (titleActionRunnable != null) {
+                    titleActionRunnable.run();
+                }
+            }
+        });
     }
 
     private void createBackButtonImage() {
@@ -145,6 +155,7 @@ public class ActionBar extends FrameLayout {
             createSubtitleTextView();
         }
         if (subtitleTextView != null) {
+            lastSubtitle = value;
             subtitleTextView.setVisibility(!TextUtils.isEmpty(value) && !isSearchFieldVisible ? VISIBLE : GONE);
             subtitleTextView.setText(value);
         }
@@ -600,11 +611,11 @@ public class ActionBar extends FrameLayout {
         allowOverlayTitle = value;
     }
 
-    public void setTitleOverlayText(String text) {
+    public void setTitleOverlayText(String title, String subtitle, Runnable action) {
         if (!allowOverlayTitle || parentFragment.parentLayout == null) {
             return;
         }
-        CharSequence textToSet = text != null ? text : lastTitle;
+        CharSequence textToSet = title != null ? title : lastTitle;
         if (textToSet != null && titleTextView == null) {
             createTitleTextView();
         }
@@ -612,6 +623,15 @@ public class ActionBar extends FrameLayout {
             titleTextView.setVisibility(textToSet != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
             titleTextView.setText(textToSet);
         }
+        textToSet = subtitle != null ? subtitle : lastSubtitle;
+        if (textToSet != null && subtitleTextView == null) {
+            createSubtitleTextView();
+        }
+        if (subtitleTextView != null) {
+            subtitleTextView.setVisibility(!TextUtils.isEmpty(textToSet) && !isSearchFieldVisible ? VISIBLE : GONE);
+            subtitleTextView.setText(textToSet);
+        }
+        titleActionRunnable = action;
     }
 
     public boolean isSearchFieldVisible() {

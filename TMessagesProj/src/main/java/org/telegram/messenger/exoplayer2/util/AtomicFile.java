@@ -16,6 +16,7 @@
 
 package org.telegram.messenger.exoplayer2.util;
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 import java.io.File;
 import java.io.FileInputStream;
@@ -185,12 +186,12 @@ public final class AtomicFile {
     }
 
     @Override
-    public void write(byte[] b) throws IOException {
+    public void write(@NonNull byte[] b) throws IOException {
       fileOutputStream.write(b);
     }
 
     @Override
-    public void write(byte[] b, int off, int len) throws IOException {
+    public void write(@NonNull byte[] b, int off, int len) throws IOException {
       fileOutputStream.write(b, off, len);
     }
   }

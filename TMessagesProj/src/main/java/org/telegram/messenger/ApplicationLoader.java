@@ -143,24 +143,27 @@ public class ApplicationLoader extends Application {
 
         UserConfig.loadConfig();
         String deviceModel;
+        String systemLangCode;
         String langCode;
         String appVersion;
         String systemVersion;
         String configPath = getFilesDirFixed().toString();
 
         try {
+            systemLangCode = LocaleController.getSystemLocaleStringIso639();
             langCode = LocaleController.getLocaleStringIso639();
             deviceModel = Build.MANUFACTURER + Build.MODEL;
             PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
             appVersion = pInfo.versionName + " (" + pInfo.versionCode + ")";
             systemVersion = "SDK " + Build.VERSION.SDK_INT;
         } catch (Exception e) {
-            langCode = "en";
+            systemLangCode = "en";
+            langCode = "";
             deviceModel = "Android unknown";
             appVersion = "App version unknown";
             systemVersion = "SDK " + Build.VERSION.SDK_INT;
         }
-        if (langCode.trim().length() == 0) {
+        if (systemLangCode.trim().length() == 0) {
             langCode = "en";
         }
         if (deviceModel.trim().length() == 0) {
@@ -177,7 +180,7 @@ public class ApplicationLoader extends Application {
         boolean enablePushConnection = preferences.getBoolean("pushConnection", true);
 
         MessagesController.getInstance();
-        ConnectionsManager.getInstance().init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, configPath, FileLog.getNetworkLogPath(), UserConfig.getClientUserId(), enablePushConnection);
+        ConnectionsManager.getInstance().init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, FileLog.getNetworkLogPath(), UserConfig.getClientUserId(), enablePushConnection);
         if (UserConfig.getCurrentUser() != null) {
             MessagesController.getInstance().putUser(UserConfig.getCurrentUser(), true);
             ConnectionsManager.getInstance().applyCountryPortNumber(UserConfig.getCurrentUser().phone);

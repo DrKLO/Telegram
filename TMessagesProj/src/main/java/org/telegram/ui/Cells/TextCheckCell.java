@@ -127,6 +127,10 @@ public class TextCheckCell extends FrameLayout {
         checkBox.setChecked(checked);
     }
 
+    public boolean isChecked() {
+        return checkBox.isChecked();
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {

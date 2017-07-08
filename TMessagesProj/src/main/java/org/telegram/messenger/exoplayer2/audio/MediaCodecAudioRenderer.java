@@ -19,12 +19,12 @@ import android.annotation.TargetApi;
 import android.media.MediaCodec;
 import android.media.MediaCrypto;
 import android.media.MediaFormat;
-import android.media.PlaybackParams;
 import android.media.audiofx.Virtualizer;
 import android.os.Handler;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.ExoPlaybackException;
 import org.telegram.messenger.exoplayer2.Format;
+import org.telegram.messenger.exoplayer2.PlaybackParameters;
 import org.telegram.messenger.exoplayer2.audio.AudioRendererEventListener.EventDispatcher;
 import org.telegram.messenger.exoplayer2.drm.DrmSessionManager;
 import org.telegram.messenger.exoplayer2.drm.FrameworkMediaCrypto;
@@ -41,16 +41,16 @@ import java.nio.ByteBuffer;
  * Decodes and renders audio using {@link MediaCodec} and {@link AudioTrack}.
  */
 @TargetApi(16)
-public class MediaCodecAudioRenderer extends MediaCodecRenderer implements MediaClock,
-    AudioTrack.Listener {
+public class MediaCodecAudioRenderer extends MediaCodecRenderer implements MediaClock {
 
   private final EventDispatcher eventDispatcher;
   private final AudioTrack audioTrack;
 
   private boolean passthroughEnabled;
+  private boolean codecNeedsDiscardChannelsWorkaround;
   private android.media.MediaFormat passthroughMediaFormat;
   private int pcmEncoding;
-  private int audioSessionId;
+  private int channelCount;
   private long currentPositionUs;
   private boolean allowPositionDiscontinuity;
 
@@ -123,14 +123,16 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
    * @param eventListener A listener of events. May be null if delivery of events is not required.
    * @param audioCapabilities The audio capabilities for playback on this device. May be null if the
    *     default capabilities (no encoded audio passthrough support) should be assumed.
+   * @param audioProcessors Optional {@link AudioProcessor}s that will process PCM audio before
+   *     output.
    */
   public MediaCodecAudioRenderer(MediaCodecSelector mediaCodecSelector,
       DrmSessionManager<FrameworkMediaCrypto> drmSessionManager,
       boolean playClearSamplesWithoutKeys, Handler eventHandler,
-      AudioRendererEventListener eventListener, AudioCapabilities audioCapabilities) {
+      AudioRendererEventListener eventListener, AudioCapabilities audioCapabilities,
+      AudioProcessor... audioProcessors) {
     super(C.TRACK_TYPE_AUDIO, mediaCodecSelector, drmSessionManager, playClearSamplesWithoutKeys);
-    audioSessionId = AudioTrack.SESSION_ID_NOT_SET;
-    audioTrack = new AudioTrack(audioCapabilities, this);
+    audioTrack = new AudioTrack(audioCapabilities, audioProcessors, new AudioTrackListener());
     eventDispatcher = new EventDispatcher(eventHandler, eventListener);
   }
 
@@ -141,8 +143,9 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
     if (!MimeTypes.isAudio(mimeType)) {
       return FORMAT_UNSUPPORTED_TYPE;
     }
+    int tunnelingSupport = Util.SDK_INT >= 21 ? TUNNELING_SUPPORTED : TUNNELING_NOT_SUPPORTED;
     if (allowPassthrough(mimeType) && mediaCodecSelector.getPassthroughDecoderInfo() != null) {
-      return ADAPTIVE_NOT_SEAMLESS | FORMAT_HANDLED;
+      return ADAPTIVE_NOT_SEAMLESS | tunnelingSupport | FORMAT_HANDLED;
     }
     MediaCodecInfo decoderInfo = mediaCodecSelector.getDecoderInfo(mimeType, false);
     if (decoderInfo == null) {
@@ -155,7 +158,7 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
         && (format.channelCount == Format.NO_VALUE
         ||  decoderInfo.isAudioChannelCountSupportedV21(format.channelCount)));
     int formatSupport = decoderCapable ? FORMAT_HANDLED : FORMAT_EXCEEDS_CAPABILITIES;
-    return ADAPTIVE_NOT_SEAMLESS | formatSupport;
+    return ADAPTIVE_NOT_SEAMLESS | tunnelingSupport | formatSupport;
   }
 
   @Override
@@ -185,7 +188,9 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
   }
 
   @Override
-  protected void configureCodec(MediaCodec codec, Format format, MediaCrypto crypto) {
+  protected void configureCodec(MediaCodecInfo codecInfo, MediaCodec codec, Format format,
+      MediaCrypto crypto) {
+    codecNeedsDiscardChannelsWorkaround = codecNeedsDiscardChannelsWorkaround(codecInfo.name);
     if (passthroughEnabled) {
       // Override the MIME type used to configure the codec if we are using a passthrough decoder.
       passthroughMediaFormat = format.getFrameworkMediaFormatV16();
@@ -217,32 +222,59 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
     // output 16-bit PCM.
     pcmEncoding = MimeTypes.AUDIO_RAW.equals(newFormat.sampleMimeType) ? newFormat.pcmEncoding
         : C.ENCODING_PCM_16BIT;
+    channelCount = newFormat.channelCount;
   }
 
   @Override
-  protected void onOutputFormatChanged(MediaCodec codec, MediaFormat outputFormat) {
+  protected void onOutputFormatChanged(MediaCodec codec, MediaFormat outputFormat)
+      throws ExoPlaybackException {
     boolean passthrough = passthroughMediaFormat != null;
     String mimeType = passthrough ? passthroughMediaFormat.getString(MediaFormat.KEY_MIME)
         : MimeTypes.AUDIO_RAW;
     MediaFormat format = passthrough ? passthroughMediaFormat : outputFormat;
     int channelCount = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
     int sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-    audioTrack.configure(mimeType, channelCount, sampleRate, pcmEncoding, 0);
+    int[] channelMap;
+    if (codecNeedsDiscardChannelsWorkaround && channelCount == 6 && this.channelCount < 6) {
+      channelMap = new int[this.channelCount];
+      for (int i = 0; i < this.channelCount; i++) {
+        channelMap[i] = i;
+      }
+    } else {
+      channelMap = null;
+    }
+
+    try {
+      audioTrack.configure(mimeType, channelCount, sampleRate, pcmEncoding, 0, channelMap);
+    } catch (AudioTrack.ConfigurationException e) {
+      throw ExoPlaybackException.createForRenderer(e, getIndex());
+    }
   }
 
   /**
-   * Called when the audio session id becomes known. Once the id is known it will not change (and
-   * hence this method will not be called again) unless the renderer is disabled and then
-   * subsequently re-enabled.
-   * <p>
-   * The default implementation is a no-op. One reason for overriding this method would be to
-   * instantiate and enable a {@link Virtualizer} in order to spatialize the audio channels. For
-   * this use case, any {@link Virtualizer} instances should be released in {@link #onDisabled()}
-   * (if not before).
+   * Called when the audio session id becomes known. The default implementation is a no-op. One
+   * reason for overriding this method would be to instantiate and enable a {@link Virtualizer} in
+   * order to spatialize the audio channels. For this use case, any {@link Virtualizer} instances
+   * should be released in {@link #onDisabled()} (if not before).
    *
-   * @param audioSessionId The audio session id.
+   * @see AudioTrack.Listener#onAudioSessionId(int)
    */
   protected void onAudioSessionId(int audioSessionId) {
+    // Do nothing.
+  }
+
+  /**
+   * @see AudioTrack.Listener#onPositionDiscontinuity()
+   */
+  protected void onAudioTrackPositionDiscontinuity() {
+    // Do nothing.
+  }
+
+  /**
+   * @see AudioTrack.Listener#onUnderrun(int, long, long)
+   */
+  protected void onAudioTrackUnderrun(int bufferSize, long bufferSizeMs,
+      long elapsedSinceLastFeedMs) {
     // Do nothing.
   }
 
@@ -250,6 +282,12 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
   protected void onEnabled(boolean joining) throws ExoPlaybackException {
     super.onEnabled(joining);
     eventDispatcher.enabled(decoderCounters);
+    int tunnelingAudioSessionId = getConfiguration().tunnelingAudioSessionId;
+    if (tunnelingAudioSessionId != C.AUDIO_SESSION_ID_UNSET) {
+      audioTrack.enableTunnelingV21(tunnelingAudioSessionId);
+    } else {
+      audioTrack.disableTunneling();
+    }
   }
 
   @Override
@@ -274,7 +312,6 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
 
   @Override
   protected void onDisabled() {
-    audioSessionId = AudioTrack.SESSION_ID_NOT_SET;
     try {
       audioTrack.release();
     } finally {
@@ -289,7 +326,7 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
 
   @Override
   public boolean isEnded() {
-    return super.isEnded() && !audioTrack.hasPendingData();
+    return super.isEnded() && audioTrack.isEnded();
   }
 
   @Override
@@ -309,6 +346,16 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
   }
 
   @Override
+  public PlaybackParameters setPlaybackParameters(PlaybackParameters playbackParameters) {
+    return audioTrack.setPlaybackParameters(playbackParameters);
+  }
+
+  @Override
+  public PlaybackParameters getPlaybackParameters() {
+    return audioTrack.getPlaybackParameters();
+  }
+
+  @Override
   protected boolean processOutputBuffer(long positionUs, long elapsedRealtimeUs, MediaCodec codec,
       ByteBuffer buffer, int bufferIndex, int bufferFlags, long bufferPresentationTimeUs,
       boolean shouldSkip) throws ExoPlaybackException {
@@ -325,54 +372,25 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
       return true;
     }
 
-    if (!audioTrack.isInitialized()) {
-      // Initialize the AudioTrack now.
-      try {
-        if (audioSessionId == AudioTrack.SESSION_ID_NOT_SET) {
-          audioSessionId = audioTrack.initialize(AudioTrack.SESSION_ID_NOT_SET);
-          eventDispatcher.audioSessionId(audioSessionId);
-          onAudioSessionId(audioSessionId);
-        } else {
-          audioTrack.initialize(audioSessionId);
-        }
-      } catch (AudioTrack.InitializationException e) {
-        throw ExoPlaybackException.createForRenderer(e, getIndex());
-      }
-      if (getState() == STATE_STARTED) {
-        audioTrack.play();
-      }
-    }
-
-    int handleBufferResult;
     try {
-      handleBufferResult = audioTrack.handleBuffer(buffer, bufferPresentationTimeUs);
-    } catch (AudioTrack.WriteException e) {
+      if (audioTrack.handleBuffer(buffer, bufferPresentationTimeUs)) {
+        codec.releaseOutputBuffer(bufferIndex, false);
+        decoderCounters.renderedOutputBufferCount++;
+        return true;
+      }
+    } catch (AudioTrack.InitializationException | AudioTrack.WriteException e) {
       throw ExoPlaybackException.createForRenderer(e, getIndex());
     }
-
-    // If we are out of sync, allow currentPositionUs to jump backwards.
-    if ((handleBufferResult & AudioTrack.RESULT_POSITION_DISCONTINUITY) != 0) {
-      handleAudioTrackDiscontinuity();
-      allowPositionDiscontinuity = true;
-    }
-
-    // Release the buffer if it was consumed.
-    if ((handleBufferResult & AudioTrack.RESULT_BUFFER_CONSUMED) != 0) {
-      codec.releaseOutputBuffer(bufferIndex, false);
-      decoderCounters.renderedOutputBufferCount++;
-      return true;
-    }
-
     return false;
   }
 
   @Override
-  protected void onOutputStreamEnded() {
-    audioTrack.handleEndOfStream();
-  }
-
-  protected void handleAudioTrackDiscontinuity() {
-    // Do nothing
+  protected void renderToEndOfStream() throws ExoPlaybackException {
+    try {
+      audioTrack.playToEndOfStream();
+    } catch (AudioTrack.WriteException e) {
+      throw ExoPlaybackException.createForRenderer(e, getIndex());
+    }
   }
 
   @Override
@@ -381,14 +399,9 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
       case C.MSG_SET_VOLUME:
         audioTrack.setVolume((Float) message);
         break;
-      case C.MSG_SET_PLAYBACK_PARAMS:
-        audioTrack.setPlaybackParams((PlaybackParams) message);
-        break;
       case C.MSG_SET_STREAM_TYPE:
         @C.StreamType int streamType = (Integer) message;
-        if (audioTrack.setStreamType(streamType)) {
-          audioSessionId = AudioTrack.SESSION_ID_NOT_SET;
-        }
+        audioTrack.setStreamType(streamType);
         break;
       default:
         super.handleMessage(messageType, message);
@@ -396,11 +409,41 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
     }
   }
 
-  // AudioTrack.Listener implementation.
+  /**
+   * Returns whether the decoder is known to output six audio channels when provided with input with
+   * fewer than six channels.
+   * <p>
+   * See [Internal: b/35655036].
+   */
+  private static boolean codecNeedsDiscardChannelsWorkaround(String codecName) {
+    // The workaround applies to Samsung Galaxy S6 and Samsung Galaxy S7.
+    return Util.SDK_INT < 24 && "OMX.SEC.aac.dec".equals(codecName)
+        && "samsung".equals(Util.MANUFACTURER)
+        && (Util.DEVICE.startsWith("zeroflte") || Util.DEVICE.startsWith("herolte")
+        || Util.DEVICE.startsWith("heroqlte"));
+  }
 
-  @Override
-  public void onUnderrun(int bufferSize, long bufferSizeMs, long elapsedSinceLastFeedMs) {
-    eventDispatcher.audioTrackUnderrun(bufferSize, bufferSizeMs, elapsedSinceLastFeedMs);
+  private final class AudioTrackListener implements AudioTrack.Listener {
+
+    @Override
+    public void onAudioSessionId(int audioSessionId) {
+      eventDispatcher.audioSessionId(audioSessionId);
+      MediaCodecAudioRenderer.this.onAudioSessionId(audioSessionId);
+    }
+
+    @Override
+    public void onPositionDiscontinuity() {
+      onAudioTrackPositionDiscontinuity();
+      // We are out of sync so allow currentPositionUs to jump backwards.
+      MediaCodecAudioRenderer.this.allowPositionDiscontinuity = true;
+    }
+
+    @Override
+    public void onUnderrun(int bufferSize, long bufferSizeMs, long elapsedSinceLastFeedMs) {
+      eventDispatcher.audioTrackUnderrun(bufferSize, bufferSizeMs, elapsedSinceLastFeedMs);
+      onAudioTrackUnderrun(bufferSize, bufferSizeMs, elapsedSinceLastFeedMs);
+    }
+
   }
 
 }

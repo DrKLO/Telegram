@@ -33,12 +33,6 @@ public class TextureRenderer {
     private static final int TRIANGLE_VERTICES_DATA_STRIDE_BYTES = 5 * FLOAT_SIZE_BYTES;
     private static final int TRIANGLE_VERTICES_DATA_POS_OFFSET = 0;
     private static final int TRIANGLE_VERTICES_DATA_UV_OFFSET = 3;
-    private static final float[] mTriangleVerticesData = {
-            -1.0f, -1.0f, 0, 0.f, 0.f,
-            1.0f, -1.0f, 0, 1.f, 0.f,
-            -1.0f, 1.0f, 0, 0.f, 1.f,
-            1.0f, 1.0f, 0, 1.f, 1.f,
-    };
     private FloatBuffer mTriangleVertices;
 
     private static final String VERTEX_SHADER =
@@ -54,7 +48,7 @@ public class TextureRenderer {
 
     private static final String FRAGMENT_SHADER =
             "#extension GL_OES_EGL_image_external : require\n" +
-            "precision mediump float;\n" +
+            "precision highp float;\n" +
             "varying vec2 vTextureCoord;\n" +
             "uniform samplerExternalOES sTexture;\n" +
             "void main() {\n" +
@@ -63,16 +57,23 @@ public class TextureRenderer {
 
     private float[] mMVPMatrix = new float[16];
     private float[] mSTMatrix = new float[16];
-    private int mProgram;
     private int mTextureID = -12345;
+    private int mProgram;
     private int muMVPMatrixHandle;
     private int muSTMatrixHandle;
     private int maPositionHandle;
     private int maTextureHandle;
-    private int rotationAngle = 0;
+
+    private int rotationAngle;
 
     public TextureRenderer(int rotation) {
         rotationAngle = rotation;
+        float[] mTriangleVerticesData = {
+                -1.0f, -1.0f, 0, 0.f, 0.f,
+                1.0f, -1.0f, 0, 1.f, 0.f,
+                -1.0f, 1.0f, 0, 0.f, 1.f,
+                1.0f, 1.0f, 0, 1.f, 1.f,
+        };
         mTriangleVertices = ByteBuffer.allocateDirect(mTriangleVerticesData.length * FLOAT_SIZE_BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
         mTriangleVertices.put(mTriangleVerticesData).position(0);
         Matrix.setIdentityM(mSTMatrix, 0);
@@ -105,6 +106,7 @@ public class TextureRenderer {
         checkGlError("glVertexAttribPointer maTextureHandle");
         GLES20.glEnableVertexAttribArray(maTextureHandle);
         checkGlError("glEnableVertexAttribArray maTextureHandle");
+
         GLES20.glUniformMatrix4fv(muSTMatrixHandle, 1, false, mSTMatrix, 0);
         GLES20.glUniformMatrix4fv(muMVPMatrixHandle, 1, false, mMVPMatrix, 0);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
@@ -142,8 +144,8 @@ public class TextureRenderer {
         mTextureID = textures[0];
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, mTextureID);
         checkGlError("glBindTexture mTextureID");
-        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
-        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
         checkGlError("glTexParameter");
@@ -151,14 +153,6 @@ public class TextureRenderer {
         Matrix.setIdentityM(mMVPMatrix, 0);
         if (rotationAngle != 0) {
             Matrix.rotateM(mMVPMatrix, 0, rotationAngle, 0, 0, 1);
-        }
-    }
-
-    public void changeFragmentShader(String fragmentShader) {
-        GLES20.glDeleteProgram(mProgram);
-        mProgram = createProgram(VERTEX_SHADER, fragmentShader);
-        if (mProgram == 0) {
-            throw new RuntimeException("failed creating program");
         }
     }
 

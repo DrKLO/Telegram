@@ -34,9 +34,9 @@ public final class SubripDecoder extends SimpleSubtitleDecoder {
 
   private static final String TAG = "SubripDecoder";
 
-  private static final Pattern SUBRIP_TIMING_LINE = Pattern.compile("(\\S*)\\s*-->\\s*(\\S*)");
-  private static final Pattern SUBRIP_TIMESTAMP =
-      Pattern.compile("(?:(\\d+):)?(\\d+):(\\d+),(\\d+)");
+  private static final String SUBRIP_TIMECODE = "(?:(\\d+):)?(\\d+):(\\d+),(\\d+)";
+  private static final Pattern SUBRIP_TIMING_LINE =
+      Pattern.compile("\\s*(" + SUBRIP_TIMECODE + ")\\s*-->\\s*(" + SUBRIP_TIMECODE + ")?\\s*");
 
   private final StringBuilder textBuilder;
 
@@ -46,11 +46,10 @@ public final class SubripDecoder extends SimpleSubtitleDecoder {
   }
 
   @Override
-  protected SubripSubtitle decode(byte[] bytes, int length) {
+  protected SubripSubtitle decode(byte[] bytes, int length, boolean reset) {
     ArrayList<Cue> cues = new ArrayList<>();
     LongArray cueTimesUs = new LongArray();
     ParsableByteArray subripData = new ParsableByteArray(bytes, length);
-    boolean haveEndTimecode;
     String currentLine;
 
     while ((currentLine = subripData.readLine()) != null) {
@@ -68,15 +67,14 @@ public final class SubripDecoder extends SimpleSubtitleDecoder {
       }
 
       // Read and parse the timing line.
-      haveEndTimecode = false;
+      boolean haveEndTimecode = false;
       currentLine = subripData.readLine();
       Matcher matcher = SUBRIP_TIMING_LINE.matcher(currentLine);
-      if (matcher.find()) {
-        cueTimesUs.add(parseTimecode(matcher.group(1)));
-        String endTimecode = matcher.group(2);
-        if (!TextUtils.isEmpty(endTimecode)) {
+      if (matcher.matches()) {
+        cueTimesUs.add(parseTimecode(matcher, 1));
+        if (!TextUtils.isEmpty(matcher.group(6))) {
           haveEndTimecode = true;
-          cueTimesUs.add(parseTimecode(matcher.group(2)));
+          cueTimesUs.add(parseTimecode(matcher, 6));
         }
       } else {
         Log.w(TAG, "Skipping invalid timing: " + currentLine);
@@ -105,15 +103,11 @@ public final class SubripDecoder extends SimpleSubtitleDecoder {
     return new SubripSubtitle(cuesArray, cueTimesUsArray);
   }
 
-  private static long parseTimecode(String s) throws NumberFormatException {
-    Matcher matcher = SUBRIP_TIMESTAMP.matcher(s);
-    if (!matcher.matches()) {
-      throw new NumberFormatException("has invalid format");
-    }
-    long timestampMs = Long.parseLong(matcher.group(1)) * 60 * 60 * 1000;
-    timestampMs += Long.parseLong(matcher.group(2)) * 60 * 1000;
-    timestampMs += Long.parseLong(matcher.group(3)) * 1000;
-    timestampMs += Long.parseLong(matcher.group(4));
+  private static long parseTimecode(Matcher matcher, int groupOffset) {
+    long timestampMs = Long.parseLong(matcher.group(groupOffset + 1)) * 60 * 60 * 1000;
+    timestampMs += Long.parseLong(matcher.group(groupOffset + 2)) * 60 * 1000;
+    timestampMs += Long.parseLong(matcher.group(groupOffset + 3)) * 1000;
+    timestampMs += Long.parseLong(matcher.group(groupOffset + 4));
     return timestampMs * 1000;
   }
 

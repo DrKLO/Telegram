@@ -53,7 +53,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
 
         private BackupImageView imageView;
         private TextView videoTextView;
-        private LinearLayout videoInfoContainer;
+        private FrameLayout videoInfoContainer;
         private View selector;
         private CheckBox checkBox;
         private FrameLayout container;
@@ -70,22 +70,19 @@ public class SharedPhotoVideoCell extends FrameLayout {
             imageView.getImageReceiver().setShouldGenerateQualityThumb(true);
             container.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-            videoInfoContainer = new LinearLayout(context);
-            videoInfoContainer.setOrientation(LinearLayout.HORIZONTAL);
+            videoInfoContainer = new FrameLayout(context);
             videoInfoContainer.setBackgroundResource(R.drawable.phototime);
             videoInfoContainer.setPadding(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(3), 0);
-            videoInfoContainer.setGravity(Gravity.CENTER_VERTICAL);
             container.addView(videoInfoContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 16, Gravity.BOTTOM | Gravity.LEFT));
 
             ImageView imageView1 = new ImageView(context);
             imageView1.setImageResource(R.drawable.ic_video);
-            videoInfoContainer.addView(imageView1, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            videoInfoContainer.addView(imageView1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
             videoTextView = new TextView(context);
             videoTextView.setTextColor(0xffffffff);
             videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-            videoTextView.setGravity(Gravity.CENTER_VERTICAL);
-            videoInfoContainer.addView(videoTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 4, 0, 0, 1));
+            videoInfoContainer.addView(videoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 18, -0.7f, 0, 0));
 
             selector = new View(context);
             selector.setBackgroundDrawable(Theme.getSelectorDrawable(false));

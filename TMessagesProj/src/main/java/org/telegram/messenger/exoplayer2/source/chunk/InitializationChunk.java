@@ -20,28 +20,18 @@ import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.extractor.DefaultExtractorInput;
 import org.telegram.messenger.exoplayer2.extractor.Extractor;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorInput;
-import org.telegram.messenger.exoplayer2.extractor.SeekMap;
-import org.telegram.messenger.exoplayer2.extractor.TrackOutput;
-import org.telegram.messenger.exoplayer2.source.chunk.ChunkExtractorWrapper.SingleTrackMetadataOutput;
 import org.telegram.messenger.exoplayer2.upstream.DataSource;
 import org.telegram.messenger.exoplayer2.upstream.DataSpec;
-import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
+import org.telegram.messenger.exoplayer2.util.Assertions;
 import org.telegram.messenger.exoplayer2.util.Util;
 import java.io.IOException;
 
 /**
  * A {@link Chunk} that uses an {@link Extractor} to decode initialization data for single track.
  */
-public final class InitializationChunk extends Chunk implements SingleTrackMetadataOutput,
-    TrackOutput {
+public final class InitializationChunk extends Chunk {
 
   private final ChunkExtractorWrapper extractorWrapper;
-
-  // Initialization results. Set by the loader thread and read by any thread that knows loading
-  // has completed. These variables do not need to be volatile, since a memory barrier must occur
-  // for the reading thread to know that loading has completed.
-  private Format sampleFormat;
-  private SeekMap seekMap;
 
   private volatile int bytesLoaded;
   private volatile boolean loadCanceled;
@@ -67,55 +57,6 @@ public final class InitializationChunk extends Chunk implements SingleTrackMetad
     return bytesLoaded;
   }
 
-  /**
-   * Returns a {@link Format} parsed from the chunk, or null.
-   * <p>
-   * Should be called after loading has completed.
-   */
-  public Format getSampleFormat() {
-    return sampleFormat;
-  }
-
-  /**
-   * Returns a {@link SeekMap} parsed from the chunk, or null.
-   * <p>
-   * Should be called after loading has completed.
-   */
-  public SeekMap getSeekMap() {
-    return seekMap;
-  }
-
-  // SingleTrackMetadataOutput implementation.
-
-  @Override
-  public void seekMap(SeekMap seekMap) {
-    this.seekMap = seekMap;
-  }
-
-  // TrackOutput implementation.
-
-  @Override
-  public void format(Format format) {
-    this.sampleFormat = format;
-  }
-
-  @Override
-  public int sampleData(ExtractorInput input, int length, boolean allowEndOfInput)
-      throws IOException, InterruptedException {
-    throw new IllegalStateException("Unexpected sample data in initialization chunk");
-  }
-
-  @Override
-  public void sampleData(ParsableByteArray data, int length) {
-    throw new IllegalStateException("Unexpected sample data in initialization chunk");
-  }
-
-  @Override
-  public void sampleMetadata(long timeUs, @C.BufferFlags int flags, int size, int offset,
-      byte[] encryptionKey) {
-    throw new IllegalStateException("Unexpected sample data in initialization chunk");
-  }
-
   // Loadable implementation.
 
   @Override
@@ -137,20 +78,21 @@ public final class InitializationChunk extends Chunk implements SingleTrackMetad
       ExtractorInput input = new DefaultExtractorInput(dataSource,
           loadDataSpec.absoluteStreamPosition, dataSource.open(loadDataSpec));
       if (bytesLoaded == 0) {
-        // Set the target to ourselves.
-        extractorWrapper.init(this, this);
+        extractorWrapper.init(null);
       }
       // Load and decode the initialization data.
       try {
+        Extractor extractor = extractorWrapper.extractor;
         int result = Extractor.RESULT_CONTINUE;
         while (result == Extractor.RESULT_CONTINUE && !loadCanceled) {
-          result = extractorWrapper.read(input);
+          result = extractor.read(input, null);
         }
+        Assertions.checkState(result != Extractor.RESULT_SEEK);
       } finally {
         bytesLoaded = (int) (input.getPosition() - dataSpec.absoluteStreamPosition);
       }
     } finally {
-      dataSource.close();
+      Util.closeQuietly(dataSource);
     }
   }
 

@@ -18,6 +18,7 @@ package org.telegram.messenger.exoplayer2.extractor;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.metadata.Metadata;
 import org.telegram.messenger.exoplayer2.metadata.id3.CommentFrame;
+import org.telegram.messenger.exoplayer2.metadata.id3.Id3Decoder.FramePredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,6 +26,18 @@ import java.util.regex.Pattern;
  * Holder for gapless playback information.
  */
 public final class GaplessInfoHolder {
+
+  /**
+   * A {@link FramePredicate} suitable for use when decoding {@link Metadata} that will be passed
+   * to {@link #setFromMetadata(Metadata)}. Only frames that might contain gapless playback
+   * information are decoded.
+   */
+  public static final FramePredicate GAPLESS_INFO_ID3_FRAME_PREDICATE = new FramePredicate() {
+    @Override
+    public boolean evaluate(int majorVersion, int id0, int id1, int id2, int id3) {
+      return id0 == 'C' && id1 == 'O' && id2 == 'M' && (id3 == 'M' || majorVersion == 2);
+    }
+  };
 
   private static final String GAPLESS_COMMENT_ID = "iTunSMPB";
   private static final Pattern GAPLESS_COMMENT_PATTERN =

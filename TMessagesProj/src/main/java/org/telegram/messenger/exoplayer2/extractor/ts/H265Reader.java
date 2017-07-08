@@ -30,7 +30,7 @@ import java.util.Collections;
 /**
  * Parses a continuous H.265 byte stream and extracts individual frames.
  */
-/* package */ final class H265Reader implements ElementaryStreamReader {
+public final class H265Reader implements ElementaryStreamReader {
 
   private static final String TAG = "H265Reader";
 
@@ -44,9 +44,11 @@ import java.util.Collections;
   private static final int PREFIX_SEI_NUT = 39;
   private static final int SUFFIX_SEI_NUT = 40;
 
+  private final SeiReader seiReader;
+
+  private String formatId;
   private TrackOutput output;
   private SampleReader sampleReader;
-  private SeiReader seiReader;
 
   // State that should not be reset on seek.
   private boolean hasOutputFormat;
@@ -66,7 +68,11 @@ import java.util.Collections;
   // Scratch variables to avoid allocations.
   private final ParsableByteArray seiWrapper;
 
-  public H265Reader() {
+  /**
+   * @param seiReader An SEI reader for consuming closed caption channels.
+   */
+  public H265Reader(SeiReader seiReader) {
+    this.seiReader = seiReader;
     prefixFlags = new boolean[3];
     vps = new NalUnitTargetBuffer(VPS_NUT, 128);
     sps = new NalUnitTargetBuffer(SPS_NUT, 128);
@@ -90,9 +96,11 @@ import java.util.Collections;
 
   @Override
   public void createTracks(ExtractorOutput extractorOutput, TrackIdGenerator idGenerator) {
-    output = extractorOutput.track(idGenerator.getNextId());
+    idGenerator.generateNewId();
+    formatId = idGenerator.getFormatId();
+    output = extractorOutput.track(idGenerator.getTrackId(), C.TRACK_TYPE_VIDEO);
     sampleReader = new SampleReader(output);
-    seiReader = new SeiReader(extractorOutput.track(idGenerator.getNextId()));
+    seiReader.createTracks(extractorOutput, idGenerator);
   }
 
   @Override
@@ -183,7 +191,7 @@ import java.util.Collections;
       sps.endNalUnit(discardPadding);
       pps.endNalUnit(discardPadding);
       if (vps.isCompleted() && sps.isCompleted() && pps.isCompleted()) {
-        output.format(parseMediaFormat(vps, sps, pps));
+        output.format(parseMediaFormat(formatId, vps, sps, pps));
         hasOutputFormat = true;
       }
     }
@@ -205,8 +213,8 @@ import java.util.Collections;
     }
   }
 
-  private static Format parseMediaFormat(NalUnitTargetBuffer vps, NalUnitTargetBuffer sps,
-      NalUnitTargetBuffer pps) {
+  private static Format parseMediaFormat(String formatId, NalUnitTargetBuffer vps,
+      NalUnitTargetBuffer sps, NalUnitTargetBuffer pps) {
     // Build codec-specific data.
     byte[] csd = new byte[vps.nalLength + sps.nalLength + pps.nalLength];
     System.arraycopy(vps.nalData, 0, csd, 0, vps.nalLength);
@@ -311,7 +319,7 @@ import java.util.Collections;
       }
     }
 
-    return Format.createVideoSampleFormat(null, MimeTypes.VIDEO_H265, null, Format.NO_VALUE,
+    return Format.createVideoSampleFormat(formatId, MimeTypes.VIDEO_H265, null, Format.NO_VALUE,
         Format.NO_VALUE, picWidthInLumaSamples, picHeightInLumaSamples, Format.NO_VALUE,
         Collections.singletonList(csd), Format.NO_VALUE, pixelWidthHeightRatio, null);
   }

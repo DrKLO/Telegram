@@ -94,7 +94,8 @@ public final class TtmlDecoder extends SimpleSubtitleDecoder {
   }
 
   @Override
-  protected TtmlSubtitle decode(byte[] bytes, int length) throws SubtitleDecoderException {
+  protected TtmlSubtitle decode(byte[] bytes, int length, boolean reset)
+      throws SubtitleDecoderException {
     try {
       XmlPullParser xmlParser = xmlParserFactory.newPullParser();
       Map<String, TtmlStyle> globalStyles = new HashMap<>();

@@ -51,14 +51,16 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     private boolean onlyMutual;
     private boolean allowChats;
     private boolean allowBots;
+    private int channelId;
 
-    public SearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats, boolean bots) {
+    public SearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats, boolean bots, int searchChannelId) {
         mContext = context;
         ignoreUsers = arg1;
         onlyMutual = mutual;
         allowUsernameSearch = usernameSearch;
         allowChats = chats;
         allowBots = bots;
+        channelId = searchChannelId;
         searchAdapterHelper = new SearchAdapterHelper();
         searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
             @Override
@@ -93,7 +95,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
             searchResult.clear();
             searchResultNames.clear();
             if (allowUsernameSearch) {
-                searchAdapterHelper.queryServerSearch(null, allowChats, allowBots, true);
+                searchAdapterHelper.queryServerSearch(null, true, allowChats, allowBots, true, channelId, false);
             }
             notifyDataSetChanged();
         } else {
@@ -118,7 +120,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
             @Override
             public void run() {
                 if (allowUsernameSearch) {
-                    searchAdapterHelper.queryServerSearch(query, allowChats, allowBots, true);
+                    searchAdapterHelper.queryServerSearch(query, true, allowChats, allowBots, true, channelId, false);
                 }
                 final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>();
                 contactsCopy.addAll(ContactsController.getInstance().contacts);

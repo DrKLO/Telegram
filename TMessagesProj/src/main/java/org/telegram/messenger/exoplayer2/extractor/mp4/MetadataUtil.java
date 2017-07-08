@@ -188,7 +188,7 @@ import org.telegram.messenger.exoplayer2.util.Util;
     if (atomType == Atom.TYPE_data) {
       data.skipBytes(8); // version (1), flags (3), empty (4)
       String value = data.readNullTerminatedString(atomSize - 16);
-      return new TextInformationFrame(id, value);
+      return new TextInformationFrame(id, null, value);
     }
     Log.w(TAG, "Failed to parse text attribute: " + Atom.getAtomTypeString(type));
     return null;
@@ -213,7 +213,7 @@ import org.telegram.messenger.exoplayer2.util.Util;
       value = Math.min(1, value);
     }
     if (value >= 0) {
-      return isTextInformationFrame ? new TextInformationFrame(id, Integer.toString(value))
+      return isTextInformationFrame ? new TextInformationFrame(id, null, Integer.toString(value))
           : new CommentFrame(LANGUAGE_UNDEFINED, id, Integer.toString(value));
     }
     Log.w(TAG, "Failed to parse uint8 attribute: " + Atom.getAtomTypeString(type));
@@ -228,12 +228,12 @@ import org.telegram.messenger.exoplayer2.util.Util;
       data.skipBytes(10); // version (1), flags (3), empty (4), empty (2)
       int index = data.readUnsignedShort();
       if (index > 0) {
-        String description = "" + index;
+        String value = "" + index;
         int count = data.readUnsignedShort();
         if (count > 0) {
-          description += "/" + count;
+          value += "/" + count;
         }
-        return new TextInformationFrame(attributeName, description);
+        return new TextInformationFrame(attributeName, null, value);
       }
     }
     Log.w(TAG, "Failed to parse index/count attribute: " + Atom.getAtomTypeString(type));
@@ -245,7 +245,7 @@ import org.telegram.messenger.exoplayer2.util.Util;
     String genreString = (0 < genreCode && genreCode <= STANDARD_GENRES.length)
         ? STANDARD_GENRES[genreCode - 1] : null;
     if (genreString != null) {
-      return new TextInformationFrame("TCON", genreString);
+      return new TextInformationFrame("TCON", null, genreString);
     }
     Log.w(TAG, "Failed to parse standard genre code");
     return null;

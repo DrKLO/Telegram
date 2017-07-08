@@ -18,6 +18,7 @@
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:colorPrimaryDark">#426482</item>
         <item name="android:colorPrimary">#527da3</item>
+        <item name="android:navigationBarColor">#000000</item>
     </style>
 
     <style name="Theme.TMessages" parent="@android:style/Theme.Material.Light">
@@ -37,7 +38,10 @@
         <item name="android:colorControlActivated">#4991cc</item>
         <item name="android:datePickerStyle">@style/Theme.TMessages.DatePicker</item>
         <item name="android:datePickerDialogTheme">@style/Theme.TMessages.Dialog.Alert</item>
+        <item name="android:timePickerStyle">@style/Theme.TMessages.TimePicker</item>
+        <item name="android:timePickerDialogTheme">@style/Theme.TMessages.Dialog.Alert</item>
         <item name="android:calendarViewStyle">@style/Theme.TMessages.CalendarView</item>
+        <item name="android:navigationBarColor">#000000</item>
     </style>
 
     <style name="Theme.TMessages.PopupNotification" parent="Theme.TMessages">
@@ -47,6 +51,7 @@
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:colorPrimaryDark">#99000000</item>
+        <item name="android:navigationBarColor">#000000</item>
     </style>
 
     <style name="Theme.TMessages.Dialog.Alert" parent="android:style/Theme.Material.Light.Dialog.Alert">
@@ -108,6 +113,10 @@
     </style>
 
     <style name="Theme.TMessages.DatePicker" parent="@android:style/Widget.Material.Light.DatePicker">
+        <item name="android:headerBackground">#408bc8</item>
+    </style>
+
+    <style name="Theme.TMessages.TimePicker" parent="@android:style/Widget.Material.Light.TimePicker">
         <item name="android:headerBackground">#408bc8</item>
     </style>
 

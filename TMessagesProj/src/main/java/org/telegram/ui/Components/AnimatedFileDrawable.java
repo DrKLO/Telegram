@@ -47,6 +47,8 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private Bitmap backgroundBitmap;
     private boolean destroyWhenDone;
     private boolean decoderCreated;
+    private boolean decodeSingleFrame;
+    private boolean singleFrameDecoded;
     private File path;
     private boolean recycleWithSecond;
 
@@ -105,6 +107,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                 }
                 return;
             }
+            singleFrameDecoded = true;
             loadFrameTask = null;
             nextRenderingBitmap = backgroundBitmap;
             nextRenderingShader = backgroundShader;
@@ -186,6 +189,13 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         }
     }
 
+    public void setAllowDecodeSingleFrame(boolean value) {
+        decodeSingleFrame = value;
+        if (decodeSingleFrame) {
+            scheduleNextGetFrame();
+        }
+    }
+
     public void recycle() {
         if (secondParentView != null) {
             recycleWithSecond = true;
@@ -244,7 +254,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     }
 
     private void scheduleNextGetFrame() {
-        if (loadFrameTask != null || nativePtr == 0 && decoderCreated || destroyWhenDone || !isRunning) {
+        if (loadFrameTask != null || nativePtr == 0 && decoderCreated || destroyWhenDone || !isRunning && (!decodeSingleFrame || decodeSingleFrame && singleFrameDecoded)) {
             return;
         }
         long ms = 0;
@@ -298,6 +308,12 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                     lastFrameTime = now;
                 }
             }
+        } else if (!isRunning && decodeSingleFrame && Math.abs(now - lastFrameTime) >= invalidateAfter && nextRenderingBitmap != null) {
+            renderingBitmap = nextRenderingBitmap;
+            renderingShader = nextRenderingShader;
+            nextRenderingBitmap = null;
+            nextRenderingShader = null;
+            lastFrameTime = now;
         }
 
         if (renderingBitmap != null) {

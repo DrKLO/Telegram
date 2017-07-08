@@ -24,7 +24,7 @@ public class DispatchQueue extends Thread {
         start();
     }
 
-    private void sendMessage(Message msg, int delay) {
+    public void sendMessage(Message msg, int delay) {
         try {
             syncLatch.await();
             if (delay <= 0) {
@@ -72,10 +72,19 @@ public class DispatchQueue extends Thread {
         }
     }
 
+    public void handleMessage(Message inputMessage) {
+
+    }
+
     @Override
     public void run() {
         Looper.prepare();
-        handler = new Handler();
+        handler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                DispatchQueue.this.handleMessage(msg);
+            }
+        };
         syncLatch.countDown();
         Looper.loop();
     }

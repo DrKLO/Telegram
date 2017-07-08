@@ -156,19 +156,19 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
     @Override
     public boolean onFragmentCreate() {
         TAG = MediaController.getInstance().generateObserverTag();
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioDidReset);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioPlayStateChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioDidStarted);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioProgressDidChanged);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingDidReset);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingDidStarted);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidReset);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioPlayStateChanged);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidStarted);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioProgressDidChanged);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingDidReset);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingDidStarted);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
         MediaController.getInstance().removeLoadingFileObserver(this);
         super.onFragmentDestroy();
     }
@@ -285,10 +285,10 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
                 if (MediaController.getInstance().isDownloadingCurrentMessage()) {
                     return;
                 }
-                if (MediaController.getInstance().isAudioPaused()) {
-                    MediaController.getInstance().playAudio(MediaController.getInstance().getPlayingMessageObject());
+                if (MediaController.getInstance().isMessagePaused()) {
+                    MediaController.getInstance().playMessage(MediaController.getInstance().getPlayingMessageObject());
                 } else {
-                    MediaController.getInstance().pauseAudio(MediaController.getInstance().getPlayingMessageObject());
+                    MediaController.getInstance().pauseMessage(MediaController.getInstance().getPlayingMessageObject());
                 }
             }
         });
@@ -325,9 +325,9 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
 
     @Override
     public void didReceivedNotification(int id, Object... args) {
-        if (id == NotificationCenter.audioDidStarted || id == NotificationCenter.audioPlayStateChanged || id == NotificationCenter.audioDidReset) {
-            updateTitle(id == NotificationCenter.audioDidReset && (Boolean) args[1]);
-        } else if (id == NotificationCenter.audioProgressDidChanged) {
+        if (id == NotificationCenter.messagePlayingDidStarted || id == NotificationCenter.messagePlayingPlayStateChanged || id == NotificationCenter.messagePlayingDidReset) {
+            updateTitle(id == NotificationCenter.messagePlayingDidReset && (Boolean) args[1]);
+        } else if (id == NotificationCenter.messagePlayingProgressDidChanged) {
             MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
             if (messageObject != null && messageObject.isMusic()) {
                 updateProgress(messageObject);
@@ -446,7 +446,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
             checkIfMusicDownloaded(messageObject);
             updateProgress(messageObject);
 
-            if (MediaController.getInstance().isAudioPaused()) {
+            if (MediaController.getInstance().isMessagePaused()) {
                 playButton.setImageDrawable(Theme.createSimpleSelectorDrawable(playButton.getContext(), R.drawable.pl_play, Theme.getColor(Theme.key_player_button), Theme.getColor(Theme.key_player_buttonActive)));
             } else {
                 playButton.setImageDrawable(Theme.createSimpleSelectorDrawable(playButton.getContext(), R.drawable.pl_pause, Theme.getColor(Theme.key_player_button), Theme.getColor(Theme.key_player_buttonActive)));

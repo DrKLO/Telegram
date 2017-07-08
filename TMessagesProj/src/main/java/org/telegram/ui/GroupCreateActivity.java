@@ -89,7 +89,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
     private int chatId;
 
-    private int maxCount = 5000;
+    private int maxCount = MessagesController.getInstance().maxMegagroupCount;
     private int chatType = ChatObject.CHAT_TYPE_CHAT;
     private boolean isAlwaysShare;
     private boolean isNeverShare;
@@ -942,7 +942,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
         @Override
         public void onViewRecycled(RecyclerView.ViewHolder holder) {
-            if (holder.getItemViewType() == 1) {
+            if (holder.itemView instanceof GroupCreateUserCell) {
                 ((GroupCreateUserCell) holder.itemView).recycle();
             }
         }
@@ -963,7 +963,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (query == null) {
                 searchResult.clear();
                 searchResultNames.clear();
-                searchAdapterHelper.queryServerSearch(null, false, false, false);
+                searchAdapterHelper.queryServerSearch(null, true, false, false, false, 0, false);
                 notifyDataSetChanged();
             } else {
                 searchTimer = new Timer();
@@ -980,7 +980,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
-                                searchAdapterHelper.queryServerSearch(query, false, false, false);
+                                searchAdapterHelper.queryServerSearch(query, true, false, false, false, 0, false);
                                 Utilities.searchQueue.postRunnable(new Runnable() {
                                     @Override
                                     public void run() {

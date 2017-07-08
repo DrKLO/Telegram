@@ -25,7 +25,6 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.Px;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -1373,6 +1372,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 new ThemeDescription(fragmentContextView, 0, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_returnToCallText),
 
                 new ThemeDescription(null, 0, null, null, null, null, Theme.key_dialogBackground),
+                new ThemeDescription(null, 0, null, null, null, null, Theme.key_dialogBackgroundGray),
                 new ThemeDescription(null, 0, null, null, null, null, Theme.key_dialogTextBlack),
                 new ThemeDescription(null, 0, null, null, null, null, Theme.key_dialogTextLink),
                 new ThemeDescription(null, 0, null, null, null, null, Theme.key_dialogLinkSelection),

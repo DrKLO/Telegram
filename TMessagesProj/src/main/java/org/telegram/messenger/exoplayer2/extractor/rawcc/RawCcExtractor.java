@@ -65,7 +65,7 @@ public final class RawCcExtractor implements Extractor {
   @Override
   public void init(ExtractorOutput output) {
     output.seekMap(new SeekMap.Unseekable(C.TIME_UNSET));
-    trackOutput = output.track(0);
+    trackOutput = output.track(0, C.TRACK_TYPE_TEXT);
     output.endTracks();
     trackOutput.format(format);
   }
@@ -83,8 +83,11 @@ public final class RawCcExtractor implements Extractor {
     while (true) {
       switch (parserState) {
         case STATE_READING_HEADER:
-          parseHeader(input);
-          parserState = STATE_READING_TIMESTAMP_AND_COUNT;
+          if (parseHeader(input)) {
+            parserState = STATE_READING_TIMESTAMP_AND_COUNT;
+          } else {
+            return RESULT_END_OF_INPUT;
+          }
           break;
         case STATE_READING_TIMESTAMP_AND_COUNT:
           if (parseTimestampAndSampleCount(input)) {
@@ -105,7 +108,7 @@ public final class RawCcExtractor implements Extractor {
   }
 
   @Override
-  public void seek(long position) {
+  public void seek(long position, long timeUs) {
     parserState = STATE_READING_HEADER;
   }
 
@@ -114,14 +117,18 @@ public final class RawCcExtractor implements Extractor {
     // Do nothing
   }
 
-  private void parseHeader(ExtractorInput input) throws IOException, InterruptedException {
+  private boolean parseHeader(ExtractorInput input) throws IOException, InterruptedException {
     dataScratch.reset();
-    input.readFully(dataScratch.data, 0, HEADER_SIZE);
-    if (dataScratch.readInt() != HEADER_ID) {
-      throw new IOException("Input not RawCC");
+    if (input.readFully(dataScratch.data, 0, HEADER_SIZE, true)) {
+      if (dataScratch.readInt() != HEADER_ID) {
+        throw new IOException("Input not RawCC");
+      }
+      version = dataScratch.readUnsignedByte();
+      // no versions use the flag fields yet
+      return true;
+    } else {
+      return false;
     }
-    version = dataScratch.readUnsignedByte();
-    // no versions use the flag fields yet
   }
 
   private boolean parseTimestampAndSampleCount(ExtractorInput input) throws IOException,

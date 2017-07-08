@@ -35,6 +35,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.LetterDrawable;
 import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.PhotoViewer;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -75,6 +76,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
 
     private TLRPC.BotInlineResult inlineResult;
     private TLRPC.Document documentAttach;
+    private TLRPC.PhotoSize currentPhotoObject;
     private int documentAttachType;
     private boolean mediaWebpage;
     private MessageObject currentMessageObject;
@@ -107,6 +109,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
         descriptionLayout = null;
         titleLayout = null;
         linkLayout = null;
+        currentPhotoObject = null;
         linkY = AndroidUtilities.dp(27);
 
         if (inlineResult == null && documentAttach == null) {
@@ -117,7 +120,6 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
         int viewWidth = MeasureSpec.getSize(widthMeasureSpec);
         int maxWidth = viewWidth - AndroidUtilities.dp(AndroidUtilities.leftBaseline) - AndroidUtilities.dp(8);
 
-        TLRPC.PhotoSize currentPhotoObject = null;
         TLRPC.PhotoSize currentPhotoObjectThumb = null;
         ArrayList<TLRPC.PhotoSize> photoThumbs = null;
         String url = null;
@@ -517,13 +519,13 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
     private void didPressedButton() {
         if (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC) {
             if (buttonState == 0) {
-                if (MediaController.getInstance().playAudio(currentMessageObject)) {
+                if (MediaController.getInstance().playMessage(currentMessageObject)) {
                     buttonState = 1;
                     radialProgress.setBackground(getDrawableForCurrentState(), false, false);
                     invalidate();
                 }
             } else if (buttonState == 1) {
-                boolean result = MediaController.getInstance().pauseAudio(currentMessageObject);
+                boolean result = MediaController.getInstance().pauseMessage(currentMessageObject);
                 if (result) {
                     buttonState = 0;
                     radialProgress.setBackground(getDrawableForCurrentState(), false, false);
@@ -620,6 +622,9 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
             }
         }
         if (drawLinkImageView) {
+            if (inlineResult != null) {
+                linkImageView.setVisible(!PhotoViewer.getInstance().isShowingImage(inlineResult), false);
+            }
             canvas.save();
             if (scaled && scale != 0.8f || !scaled && scale != 1.0f) {
                 long newTime = System.currentTimeMillis();
@@ -687,7 +692,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
                     fileName = FileLoader.getAttachFileName(inlineResult.document);
                     cacheFile = FileLoader.getPathToAttach(inlineResult.document);
                 } else if (inlineResult.photo instanceof TLRPC.TL_photo) {
-                    TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(inlineResult.photo.sizes, AndroidUtilities.getPhotoSize(), true);
+                    currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(inlineResult.photo.sizes, AndroidUtilities.getPhotoSize(), true);
                     fileName = FileLoader.getAttachFileName(currentPhotoObject);
                     cacheFile = FileLoader.getPathToAttach(currentPhotoObject);
                 } else if (inlineResult.content_url != null) {
@@ -743,8 +748,8 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
         } else {
             MediaController.getInstance().removeLoadingFileObserver(this);
             if (documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC || documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO) {
-                boolean playing = MediaController.getInstance().isPlayingAudio(currentMessageObject);
-                if (!playing || playing && MediaController.getInstance().isAudioPaused()) {
+                boolean playing = MediaController.getInstance().isPlayingMessage(currentMessageObject);
+                if (!playing || playing && MediaController.getInstance().isMessagePaused()) {
                     buttonState = 0;
                 } else {
                     buttonState = 1;

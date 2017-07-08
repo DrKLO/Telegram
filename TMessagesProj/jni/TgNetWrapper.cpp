@@ -13,6 +13,9 @@ jmethodID jclass_RequestDelegateInternal_run;
 jclass jclass_QuickAckDelegate;
 jmethodID jclass_QuickAckDelegate_run;
 
+jclass jclass_WriteToSocketDelegate;
+jmethodID jclass_WriteToSocketDelegate_run;
+
 jclass jclass_FileLoadOperationDelegate;
 jmethodID jclass_FileLoadOperationDelegate_onFinished;
 jmethodID jclass_FileLoadOperationDelegate_onFailed;
@@ -28,6 +31,7 @@ jmethodID jclass_ConnectionsManager_onInternalPushReceived;
 jmethodID jclass_ConnectionsManager_onUpdateConfig;
 jmethodID jclass_ConnectionsManager_onBytesSent;
 jmethodID jclass_ConnectionsManager_onBytesReceived;
+jmethodID jclass_ConnectionsManager_onRequestNewServerIpAndPort;
 
 jint createLoadOpetation(JNIEnv *env, jclass c, jint dc_id, jlong id, jlong volume_id, jlong access_hash, jint local_id, jbyteArray encKey, jbyteArray encIv, jstring extension, jint version, jint size, jstring dest, jstring temp, jobject delegate) {
     if (encKey != nullptr && encIv == nullptr || encKey == nullptr && encIv != nullptr || extension == nullptr || dest == nullptr || temp == nullptr) {
@@ -157,11 +161,15 @@ jint getCurrentTime(JNIEnv *env, jclass c) {
     return ConnectionsManager::getInstance().getCurrentTime();
 }
 
+jint isTestBackend(JNIEnv *env, jclass c) {
+    return ConnectionsManager::getInstance().isTestBackend() ? 1 : 0;
+}
+
 jint getTimeDifference(JNIEnv *env, jclass c) {
     return ConnectionsManager::getInstance().getTimeDifference();
 }
 
-void sendRequest(JNIEnv *env, jclass c, jint object, jobject onComplete, jobject onQuickAck, jint flags, jint datacenterId, jint connetionType, jboolean immediate, jint token) {
+void sendRequest(JNIEnv *env, jclass c, jint object, jobject onComplete, jobject onQuickAck, jobject onWriteToSocket, jint flags, jint datacenterId, jint connetionType, jboolean immediate, jint token) {
     TL_api_request *request = new TL_api_request();
     request->request = (NativeByteBuffer *) object;
     if (onComplete != nullptr) {
@@ -169,6 +177,9 @@ void sendRequest(JNIEnv *env, jclass c, jint object, jobject onComplete, jobject
     }
     if (onQuickAck != nullptr) {
         onQuickAck = env->NewGlobalRef(onQuickAck);
+    }
+    if (onWriteToSocket != nullptr) {
+        onWriteToSocket = env->NewGlobalRef(onWriteToSocket);
     }
     ConnectionsManager::getInstance().sendRequest(request, ([onComplete](TLObject *response, TL_error *error, int32_t networkType) {
         TL_api_response *resp = (TL_api_response *) response;
@@ -191,7 +202,11 @@ void sendRequest(JNIEnv *env, jclass c, jint object, jobject onComplete, jobject
         if (onQuickAck != nullptr) {
             jniEnv->CallVoidMethod(onQuickAck, jclass_QuickAckDelegate_run);
         }
-    }), flags, datacenterId, (ConnectionType) connetionType, immediate, token, onComplete, onQuickAck);
+    }), ([onWriteToSocket] {
+        if (onWriteToSocket != nullptr) {
+            jniEnv->CallVoidMethod(onWriteToSocket, jclass_WriteToSocketDelegate_run);
+        }
+    }), flags, datacenterId, (ConnectionType) connetionType, immediate, token, onComplete, onQuickAck, onWriteToSocket);
 }
 
 void cancelRequest(JNIEnv *env, jclass c, jint token, jboolean notifyServer) {
@@ -220,6 +235,24 @@ void applyDatacenterAddress(JNIEnv *env, jclass c, jint datacenterId, jstring ip
     }
 }
 
+void setProxySettings(JNIEnv *env, jclass c, jstring address, jint port, jstring username, jstring password) {
+    const char *addressStr = env->GetStringUTFChars(address, 0);
+    const char *usernameStr = env->GetStringUTFChars(username, 0);
+    const char *passwordStr = env->GetStringUTFChars(password, 0);
+
+    ConnectionsManager::getInstance().setProxySettings(addressStr, (uint16_t) port, usernameStr, passwordStr);
+
+    if (addressStr != 0) {
+        env->ReleaseStringUTFChars(address, addressStr);
+    }
+    if (usernameStr != 0) {
+        env->ReleaseStringUTFChars(username, usernameStr);
+    }
+    if (passwordStr != 0) {
+        env->ReleaseStringUTFChars(password, passwordStr);
+    }
+}
+
 jint getConnectionState(JNIEnv *env, jclass c) {
     return ConnectionsManager::getInstance().getConnectionState();
 }
@@ -241,7 +274,7 @@ void resumeNetwork(JNIEnv *env, jclass c, jboolean partial) {
 }
 
 void updateDcSettings(JNIEnv *env, jclass c) {
-    ConnectionsManager::getInstance().updateDcSettings(0);
+    ConnectionsManager::getInstance().updateDcSettings(0, false);
 }
 
 void setUseIpv6(JNIEnv *env, jclass c, bool value) {
@@ -254,6 +287,10 @@ void setNetworkAvailable(JNIEnv *env, jclass c, jboolean value, jint networkType
 
 void setPushConnectionEnabled(JNIEnv *env, jclass c, jboolean value) {
     ConnectionsManager::getInstance().setPushConnectionEnabled(value);
+}
+
+void applyDnsConfig(JNIEnv *env, jclass c, jint address) {
+    ConnectionsManager::getInstance().applyDnsConfig((NativeByteBuffer *) address);
 }
 
 class Delegate : public ConnectiosManagerDelegate {
@@ -299,17 +336,32 @@ class Delegate : public ConnectiosManagerDelegate {
     void onBytesSent(int32_t amount, int32_t networkType) {
         jniEnv->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onBytesSent, amount, networkType);
     }
+
+    void onRequestNewServerIpAndPort(int32_t second) {
+        jniEnv->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onRequestNewServerIpAndPort, second);
+    }
 };
 
-void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring configPath, jstring logPath, jint userId, jboolean enablePushConnection, jboolean hasNetwork, jint networkType) {
+void setLangCode(JNIEnv *env, jclass c, jstring langCode) {
+    const char *langCodeStr = env->GetStringUTFChars(langCode, 0);
+
+    ConnectionsManager::getInstance().setLangCode(std::string(langCodeStr));
+
+    if (langCodeStr != 0) {
+        env->ReleaseStringUTFChars(langCode, langCodeStr);
+    }
+}
+
+void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring systemLangCode, jstring configPath, jstring logPath, jint userId, jboolean enablePushConnection, jboolean hasNetwork, jint networkType) {
     const char *deviceModelStr = env->GetStringUTFChars(deviceModel, 0);
     const char *systemVersionStr = env->GetStringUTFChars(systemVersion, 0);
     const char *appVersionStr = env->GetStringUTFChars(appVersion, 0);
     const char *langCodeStr = env->GetStringUTFChars(langCode, 0);
+    const char *systemLangCodeStr = env->GetStringUTFChars(systemLangCode, 0);
     const char *configPathStr = env->GetStringUTFChars(configPath, 0);
     const char *logPathStr = env->GetStringUTFChars(logPath, 0);
 
-    ConnectionsManager::getInstance().init(version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(configPathStr), std::string(logPathStr), userId, true, enablePushConnection, hasNetwork, networkType);
+    ConnectionsManager::getInstance().init(version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(systemLangCodeStr), std::string(configPathStr), std::string(logPathStr), userId, true, enablePushConnection, hasNetwork, networkType);
 
     if (deviceModelStr != 0) {
         env->ReleaseStringUTFChars(deviceModel, deviceModelStr);
@@ -322,6 +374,9 @@ void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring d
     }
     if (langCodeStr != 0) {
         env->ReleaseStringUTFChars(langCode, langCodeStr);
+    }
+    if (systemLangCodeStr != 0) {
+        env->ReleaseStringUTFChars(systemLangCode, systemLangCodeStr);
     }
     if (configPathStr != 0) {
         env->ReleaseStringUTFChars(configPath, configPathStr);
@@ -340,16 +395,19 @@ static const char *ConnectionsManagerClassPathName = "org/telegram/tgnet/Connect
 static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_getCurrentTimeMillis", "()J", (void *) getCurrentTimeMillis},
         {"native_getCurrentTime", "()I", (void *) getCurrentTime},
+        {"native_isTestBackend", "()I", (void *) isTestBackend},
         {"native_getTimeDifference", "()I", (void *) getTimeDifference},
-        {"native_sendRequest", "(ILorg/telegram/tgnet/RequestDelegateInternal;Lorg/telegram/tgnet/QuickAckDelegate;IIIZI)V", (void *) sendRequest},
+        {"native_sendRequest", "(ILorg/telegram/tgnet/RequestDelegateInternal;Lorg/telegram/tgnet/QuickAckDelegate;Lorg/telegram/tgnet/WriteToSocketDelegate;IIIZI)V", (void *) sendRequest},
         {"native_cancelRequest", "(IZ)V", (void *) cancelRequest},
         {"native_cleanUp", "()V", (void *) cleanUp},
         {"native_cancelRequestsForGuid", "(I)V", (void *) cancelRequestsForGuid},
         {"native_bindRequestToGuid", "(II)V", (void *) bindRequestToGuid},
         {"native_applyDatacenterAddress", "(ILjava/lang/String;I)V", (void *) applyDatacenterAddress},
+        {"native_setProxySettings", "(Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V", (void *) setProxySettings},
         {"native_getConnectionState", "()I", (void *) getConnectionState},
         {"native_setUserId", "(I)V", (void *) setUserId},
-        {"native_init", "(IIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZZI)V", (void *) init},
+        {"native_init", "(IIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZZI)V", (void *) init},
+        {"native_setLangCode", "(Ljava/lang/String;)V", (void *) setLangCode},
         {"native_switchBackend", "()V", (void *) switchBackend},
         {"native_pauseNetwork", "()V", (void *) pauseNetwork},
         {"native_resumeNetwork", "(Z)V", (void *) resumeNetwork},
@@ -357,7 +415,8 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_setUseIpv6", "(Z)V", (void *) setUseIpv6},
         {"native_setNetworkAvailable", "(ZI)V", (void *) setNetworkAvailable},
         {"native_setPushConnectionEnabled", "(Z)V", (void *) setPushConnectionEnabled},
-        {"native_setJava", "(Z)V", (void *) setJava}
+        {"native_setJava", "(Z)V", (void *) setJava},
+        {"native_applyDnsConfig", "(I)V", (void *) applyDnsConfig}
 };
 
 inline int registerNativeMethods(JNIEnv *env, const char *className, JNINativeMethod *methods, int methodsCount) {
@@ -402,6 +461,15 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     }
     jclass_QuickAckDelegate_run = env->GetMethodID(jclass_QuickAckDelegate, "run", "()V");
     if (jclass_QuickAckDelegate_run == 0) {
+        return JNI_FALSE;
+    }
+
+    jclass_WriteToSocketDelegate = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/WriteToSocketDelegate"));
+    if (jclass_WriteToSocketDelegate == 0) {
+        return JNI_FALSE;
+    }
+    jclass_WriteToSocketDelegate_run = env->GetMethodID(jclass_WriteToSocketDelegate, "run", "()V");
+    if (jclass_WriteToSocketDelegate_run == 0) {
         return JNI_FALSE;
     }
 
@@ -463,6 +531,10 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     }
     jclass_ConnectionsManager_onBytesReceived = env->GetStaticMethodID(jclass_ConnectionsManager, "onBytesReceived", "(II)V");
     if (jclass_ConnectionsManager_onBytesReceived == 0) {
+        return JNI_FALSE;
+    }
+    jclass_ConnectionsManager_onRequestNewServerIpAndPort = env->GetStaticMethodID(jclass_ConnectionsManager, "onRequestNewServerIpAndPort", "(I)V");
+    if (jclass_ConnectionsManager_onRequestNewServerIpAndPort == 0) {
         return JNI_FALSE;
     }
     ConnectionsManager::getInstance().setDelegate(new Delegate());

@@ -8,6 +8,8 @@
 
 package org.telegram.messenger.voip;
 
+import android.app.Activity;
+import android.content.SharedPreferences;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.NoiseSuppressor;
 import android.os.Build;
@@ -16,9 +18,13 @@ import android.os.SystemClock;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.voip.VoIPHelper;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Locale;
 
 public class VoIPController {
@@ -40,6 +46,7 @@ public class VoIPController {
 	public static final int STATE_WAIT_INIT_ACK = 2;
 	public static final int STATE_ESTABLISHED = 3;
 	public static final int STATE_FAILED = 4;
+	public static final int STATE_RECONNECTING = 5;
 
 	public static final int DATA_SAVING_NEVER=0;
 	public static final int DATA_SAVING_MOBILE=1;
@@ -122,7 +129,8 @@ public class VoIPController {
 	}
 
 	private void handleStateChange(int state) {
-		callStartTime = SystemClock.elapsedRealtime();
+		if(state==STATE_ESTABLISHED && callStartTime==0)
+			callStartTime = SystemClock.elapsedRealtime();
 		if (listener != null) {
 			listener.onConnectionStateChanged(state);
 		}
@@ -142,7 +150,7 @@ public class VoIPController {
 		nativeSetMicMute(nativeInst, mute);
 	}
 
-	public void setConfig(double recvTimeout, double initTimeout, int dataSavingOption){
+	public void setConfig(double recvTimeout, double initTimeout, int dataSavingOption, long callID){
 		ensureNativeInstance();
 		boolean sysAecAvailable=false, sysNsAvailable=false;
 		if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.JELLY_BEAN){
@@ -153,10 +161,12 @@ public class VoIPController {
 
 			}
 		}
+		SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+		boolean dump = preferences.getBoolean("dbg_dump_call_stats", false);
 		nativeSetConfig(nativeInst, recvTimeout, initTimeout, dataSavingOption,
 				Build.VERSION.SDK_INT<Build.VERSION_CODES.JELLY_BEAN || !(sysAecAvailable && VoIPServerConfig.getBoolean("use_system_aec", true)),
 				Build.VERSION.SDK_INT<Build.VERSION_CODES.JELLY_BEAN || !(sysNsAvailable && VoIPServerConfig.getBoolean("use_system_ns", true)),
-				true, BuildConfig.DEBUG ? getLogFilePath() : null);
+				true, BuildConfig.DEBUG ? getLogFilePath("voip") : getLogFilePath(callID), BuildConfig.DEBUG && dump ? getLogFilePath("voipStats") : null);
 	}
 
 	public void debugCtl(int request, int param){
@@ -185,17 +195,43 @@ public class VoIPController {
 		return nativeGetVersion();
 	}
 
-	private String getLogFilePath(){
+	private String getLogFilePath(String name){
 		Calendar c=Calendar.getInstance();
 		return new File(ApplicationLoader.applicationContext.getExternalFilesDir(null),
-				String.format(Locale.US, "logs/%02d_%02d_%04d_%02d_%02d_%02d_voip.txt",
+				String.format(Locale.US, "logs/%02d_%02d_%04d_%02d_%02d_%02d_%s.txt",
 						c.get(Calendar.DATE), c.get(Calendar.MONTH)+1, c.get(Calendar.YEAR),
-						c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND))).getAbsolutePath();
+						c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND), name)).getAbsolutePath();
+	}
+
+	private String getLogFilePath(long callID){
+		File dir=VoIPHelper.getLogsDir();
+		if(!BuildConfig.DEBUG){
+			File[] _logs=dir.listFiles();
+			ArrayList<File> logs=new ArrayList<>();
+			logs.addAll(Arrays.asList(_logs));
+			while(logs.size()>20){
+				File oldest=logs.get(0);
+				for(File file : logs){
+					if(file.getName().endsWith(".log") && file.lastModified()<oldest.lastModified())
+						oldest=file;
+				}
+				oldest.delete();
+				logs.remove(oldest);
+			}
+		}
+		return new File(dir, callID+".log").getAbsolutePath();
 	}
 
 	public String getDebugLog(){
 		ensureNativeInstance();
 		return nativeGetDebugLog(nativeInst);
+	}
+
+	public void setProxy(String address, int port, String username, String password){
+		ensureNativeInstance();
+		if(address==null)
+			throw new NullPointerException("address can't be null");
+		nativeSetProxy(nativeInst, address, port, username, password);
 	}
 
 	private native long nativeInit(int systemVersion);
@@ -208,8 +244,9 @@ public class VoIPController {
 	private native void nativeSetMicMute(long inst, boolean mute);
 	private native void nativeDebugCtl(long inst, int request, int param);
 	private native void nativeGetStats(long inst, Stats stats);
-	private native void nativeSetConfig(long inst, double recvTimeout, double initTimeout, int dataSavingOption, boolean enableAEC, boolean enableNS, boolean enableAGC, String logFilePath);
+	private native void nativeSetConfig(long inst, double recvTimeout, double initTimeout, int dataSavingOption, boolean enableAEC, boolean enableNS, boolean enableAGC, String logFilePath, String statsDumpPath);
 	private native void nativeSetEncryptionKey(long inst, byte[] key, boolean isOutgoing);
+	private native void nativeSetProxy(long inst, String address, int port, String username, String password);
 	private native long nativeGetPreferredRelayID(long inst);
 	private native int nativeGetLastError(long inst);
 	private native String nativeGetDebugString(long inst);

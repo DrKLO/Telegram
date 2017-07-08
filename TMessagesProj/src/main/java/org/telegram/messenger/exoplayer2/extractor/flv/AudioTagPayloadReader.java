@@ -29,21 +29,20 @@ import java.util.Collections;
  */
 /* package */ final class AudioTagPayloadReader extends TagPayloadReader {
 
-  // Audio format
+  private static final int AUDIO_FORMAT_MP3 = 2;
+  private static final int AUDIO_FORMAT_ALAW = 7;
+  private static final int AUDIO_FORMAT_ULAW = 8;
   private static final int AUDIO_FORMAT_AAC = 10;
 
-  // AAC PACKET TYPE
   private static final int AAC_PACKET_TYPE_SEQUENCE_HEADER = 0;
   private static final int AAC_PACKET_TYPE_AAC_RAW = 1;
 
-  // SAMPLING RATES
-  private static final int[] AUDIO_SAMPLING_RATE_TABLE = new int[] {
-      5500, 11000, 22000, 44000
-  };
+  private static final int[] AUDIO_SAMPLING_RATE_TABLE = new int[] {5512, 11025, 22050, 44100};
 
   // State variables
   private boolean hasParsedAudioDataHeader;
   private boolean hasOutputFormat;
+  private int audioFormat;
 
   public AudioTagPayloadReader(TrackOutput output) {
     super(output);
@@ -58,13 +57,23 @@ import java.util.Collections;
   protected boolean parseHeader(ParsableByteArray data) throws UnsupportedFormatException {
     if (!hasParsedAudioDataHeader) {
       int header = data.readUnsignedByte();
-      int audioFormat = (header >> 4) & 0x0F;
-      int sampleRateIndex = (header >> 2) & 0x03;
-      if (sampleRateIndex < 0 || sampleRateIndex >= AUDIO_SAMPLING_RATE_TABLE.length) {
-        throw new UnsupportedFormatException("Invalid sample rate index: " + sampleRateIndex);
-      }
-      // TODO: Add support for MP3 and PCM.
-      if (audioFormat != AUDIO_FORMAT_AAC) {
+      audioFormat = (header >> 4) & 0x0F;
+      if (audioFormat == AUDIO_FORMAT_MP3) {
+        int sampleRateIndex = (header >> 2) & 0x03;
+        int sampleRate = AUDIO_SAMPLING_RATE_TABLE[sampleRateIndex];
+        Format format = Format.createAudioSampleFormat(null, MimeTypes.AUDIO_MPEG, null,
+            Format.NO_VALUE, Format.NO_VALUE, 1, sampleRate, null, null, 0, null);
+        output.format(format);
+        hasOutputFormat = true;
+      } else if (audioFormat == AUDIO_FORMAT_ALAW || audioFormat == AUDIO_FORMAT_ULAW) {
+        String type = audioFormat == AUDIO_FORMAT_ALAW ? MimeTypes.AUDIO_ALAW
+            : MimeTypes.AUDIO_ULAW;
+        int pcmEncoding = (header & 0x01) == 1 ? C.ENCODING_PCM_16BIT : C.ENCODING_PCM_8BIT;
+        Format format = Format.createAudioSampleFormat(null, type, null, Format.NO_VALUE,
+            Format.NO_VALUE, 1, 8000, pcmEncoding, null, null, 0, null);
+        output.format(format);
+        hasOutputFormat = true;
+      } else if (audioFormat != AUDIO_FORMAT_AAC) {
         throw new UnsupportedFormatException("Audio format not supported: " + audioFormat);
       }
       hasParsedAudioDataHeader = true;
@@ -77,23 +86,28 @@ import java.util.Collections;
 
   @Override
   protected void parsePayload(ParsableByteArray data, long timeUs) {
-    int packetType = data.readUnsignedByte();
-    // Parse sequence header just in case it was not done before.
-    if (packetType == AAC_PACKET_TYPE_SEQUENCE_HEADER && !hasOutputFormat) {
-      byte[] audioSpecifiConfig = new byte[data.bytesLeft()];
-      data.readBytes(audioSpecifiConfig, 0, audioSpecifiConfig.length);
-      Pair<Integer, Integer> audioParams = CodecSpecificDataUtil.parseAacAudioSpecificConfig(
-          audioSpecifiConfig);
-      Format format = Format.createAudioSampleFormat(null, MimeTypes.AUDIO_AAC, null,
-          Format.NO_VALUE, Format.NO_VALUE, audioParams.second, audioParams.first,
-          Collections.singletonList(audioSpecifiConfig), null, 0, null);
-      output.format(format);
-      hasOutputFormat = true;
-    } else if (packetType == AAC_PACKET_TYPE_AAC_RAW) {
-      // Sample audio AAC frames
-      int bytesToWrite = data.bytesLeft();
-      output.sampleData(data, bytesToWrite);
-      output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, bytesToWrite, 0, null);
+    if (audioFormat == AUDIO_FORMAT_MP3) {
+      int sampleSize = data.bytesLeft();
+      output.sampleData(data, sampleSize);
+      output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+    } else {
+      int packetType = data.readUnsignedByte();
+      if (packetType == AAC_PACKET_TYPE_SEQUENCE_HEADER && !hasOutputFormat) {
+        // Parse the sequence header.
+        byte[] audioSpecificConfig = new byte[data.bytesLeft()];
+        data.readBytes(audioSpecificConfig, 0, audioSpecificConfig.length);
+        Pair<Integer, Integer> audioParams = CodecSpecificDataUtil.parseAacAudioSpecificConfig(
+            audioSpecificConfig);
+        Format format = Format.createAudioSampleFormat(null, MimeTypes.AUDIO_AAC, null,
+            Format.NO_VALUE, Format.NO_VALUE, audioParams.second, audioParams.first,
+            Collections.singletonList(audioSpecificConfig), null, 0, null);
+        output.format(format);
+        hasOutputFormat = true;
+      } else if (audioFormat != AUDIO_FORMAT_AAC || packetType == AAC_PACKET_TYPE_AAC_RAW) {
+        int sampleSize = data.bytesLeft();
+        output.sampleData(data, sampleSize);
+        output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+      }
     }
   }
 

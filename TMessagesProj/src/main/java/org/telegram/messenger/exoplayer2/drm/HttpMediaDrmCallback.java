@@ -24,6 +24,8 @@ import org.telegram.messenger.exoplayer2.drm.ExoMediaDrm.ProvisionRequest;
 import org.telegram.messenger.exoplayer2.upstream.DataSourceInputStream;
 import org.telegram.messenger.exoplayer2.upstream.DataSpec;
 import org.telegram.messenger.exoplayer2.upstream.HttpDataSource;
+import org.telegram.messenger.exoplayer2.upstream.HttpDataSource.Factory;
+import org.telegram.messenger.exoplayer2.util.Assertions;
 import org.telegram.messenger.exoplayer2.util.Util;
 import java.io.IOException;
 import java.util.HashMap;
@@ -57,21 +59,62 @@ public final class HttpMediaDrmCallback implements MediaDrmCallback {
   }
 
   /**
+   * @deprecated Use {@link HttpMediaDrmCallback#HttpMediaDrmCallback(String, Factory)}. Request
+   *     properties can be set by calling {@link #setKeyRequestProperty(String, String)}.
    * @param defaultUrl The default license URL.
    * @param dataSourceFactory A factory from which to obtain {@link HttpDataSource} instances.
    * @param keyRequestProperties Request properties to set when making key requests, or null.
    */
+  @Deprecated
   public HttpMediaDrmCallback(String defaultUrl, HttpDataSource.Factory dataSourceFactory,
       Map<String, String> keyRequestProperties) {
     this.dataSourceFactory = dataSourceFactory;
     this.defaultUrl = defaultUrl;
-    this.keyRequestProperties = keyRequestProperties;
+    this.keyRequestProperties = new HashMap<>();
+    if (keyRequestProperties != null) {
+      this.keyRequestProperties.putAll(keyRequestProperties);
+    }
+  }
+
+  /**
+   * Sets a header for key requests made by the callback.
+   *
+   * @param name The name of the header field.
+   * @param value The value of the field.
+   */
+  public void setKeyRequestProperty(String name, String value) {
+    Assertions.checkNotNull(name);
+    Assertions.checkNotNull(value);
+    synchronized (keyRequestProperties) {
+      keyRequestProperties.put(name, value);
+    }
+  }
+
+  /**
+   * Clears a header for key requests made by the callback.
+   *
+   * @param name The name of the header field.
+   */
+  public void clearKeyRequestProperty(String name) {
+    Assertions.checkNotNull(name);
+    synchronized (keyRequestProperties) {
+      keyRequestProperties.remove(name);
+    }
+  }
+
+  /**
+   * Clears all headers for key requests made by the callback.
+   */
+  public void clearAllKeyRequestProperties() {
+    synchronized (keyRequestProperties) {
+      keyRequestProperties.clear();
+    }
   }
 
   @Override
   public byte[] executeProvisionRequest(UUID uuid, ProvisionRequest request) throws IOException {
     String url = request.getDefaultUrl() + "&signedRequest=" + new String(request.getData());
-    return executePost(url, new byte[0], null);
+    return executePost(dataSourceFactory, url, new byte[0], null);
   }
 
   @Override
@@ -85,14 +128,14 @@ public final class HttpMediaDrmCallback implements MediaDrmCallback {
     if (C.PLAYREADY_UUID.equals(uuid)) {
       requestProperties.putAll(PLAYREADY_KEY_REQUEST_PROPERTIES);
     }
-    if (keyRequestProperties != null) {
+    synchronized (keyRequestProperties) {
       requestProperties.putAll(keyRequestProperties);
     }
-    return executePost(url, request.getData(), requestProperties);
+    return executePost(dataSourceFactory, url, request.getData(), requestProperties);
   }
 
-  private byte[] executePost(String url, byte[] data, Map<String, String> requestProperties)
-      throws IOException {
+  private static byte[] executePost(HttpDataSource.Factory dataSourceFactory, String url,
+      byte[] data, Map<String, String> requestProperties) throws IOException {
     HttpDataSource dataSource = dataSourceFactory.createDataSource();
     if (requestProperties != null) {
       for (Map.Entry<String, String> requestProperty : requestProperties.entrySet()) {
@@ -105,7 +148,7 @@ public final class HttpMediaDrmCallback implements MediaDrmCallback {
     try {
       return Util.toByteArray(inputStream);
     } finally {
-      inputStream.close();
+      Util.closeQuietly(inputStream);
     }
   }
 

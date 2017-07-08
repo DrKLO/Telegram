@@ -32,27 +32,46 @@ public class AudioRecordJNI {
 	private AutomaticGainControl agc;
 	private NoiseSuppressor ns;
 	private AcousticEchoCanceler aec;
+	private boolean needResampling=false;
 
 	public AudioRecordJNI(long nativeInst) {
 		this.nativeInst = nativeInst;
 	}
 
-	private int getBufferSize(int min) {
-		return Math.max(AudioRecord.getMinBufferSize(48000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT), min);
+	private int getBufferSize(int min, int sampleRate) {
+		return Math.max(AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT), min);
 	}
 
 	public void init(int sampleRate, int bitsPerSample, int channels, int bufferSize) {
 		if (audioRecord != null) {
 			throw new IllegalStateException("already inited");
 		}
-		int size = getBufferSize(bufferSize);
 		this.bufferSize = bufferSize;
+		boolean res=tryInit(MediaRecorder.AudioSource.VOICE_COMMUNICATION, 48000);
+		if(!res)
+			tryInit(MediaRecorder.AudioSource.MIC, 48000);
+		if(!res)
+			tryInit(MediaRecorder.AudioSource.VOICE_COMMUNICATION, 44100);
+		if(!res)
+			tryInit(MediaRecorder.AudioSource.MIC, 44100);
+		buffer = ByteBuffer.allocateDirect(bufferSize);
+	}
+
+	private boolean tryInit(int source, int sampleRate){
+		if(audioRecord!=null){
+			try{
+				audioRecord.release();
+			}catch(Exception x){}
+		}
+		FileLog.d("Trying to initialize AudioRecord with source="+source+" and sample rate="+sampleRate);
+		int size = getBufferSize(bufferSize, 48000);
 		try{
-			audioRecord=new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION, sampleRate, channels==1 ? AudioFormat.CHANNEL_IN_MONO : AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT, size);
+			audioRecord=new AudioRecord(source, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, size);
 		}catch(Exception x){
 			FileLog.e("AudioRecord init failed!", x);
 		}
-		buffer = ByteBuffer.allocateDirect(bufferSize);
+		needResampling=sampleRate!=48000;
+		return audioRecord!=null && audioRecord.getState()==AudioRecord.STATE_INITIALIZED;
 	}
 
 	public void stop() {
@@ -145,12 +164,18 @@ public class AudioRecordJNI {
 			throw new IllegalStateException("thread already started");
 		}
 		running = true;
+		final ByteBuffer tmpBuf=needResampling ? ByteBuffer.allocateDirect(882*2) : null;
 		thread = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				while (running) {
 					try {
-						audioRecord.read(buffer, 960*2);
+						if(!needResampling){
+							audioRecord.read(buffer, 960*2);
+						}else{
+							audioRecord.read(tmpBuf, 882*2);
+							Resampler.convert44to48(tmpBuf, buffer);
+						}
 						if (!running) {
 							audioRecord.stop();
 							break;

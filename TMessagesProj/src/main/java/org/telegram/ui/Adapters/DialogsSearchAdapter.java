@@ -412,8 +412,6 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         });
     }
 
-
-
     public void putRecentSearch(final long did, TLObject object) {
         RecentSearchObject recentSearchObject = recentSearchObjectsById.get(did);
         if (recentSearchObject == null) {
@@ -836,7 +834,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             searchResultNames.clear();
             searchResultHashtags.clear();
             if (needMessagesSearch != 2) {
-                searchAdapterHelper.queryServerSearch(null, true, true, true);
+                searchAdapterHelper.queryServerSearch(null, true, true, true, true, 0, false);
             }
             searchMessagesInternal(null);
             notifyDataSetChanged();
@@ -880,7 +878,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         @Override
                         public void run() {
                             if (needMessagesSearch != 2) {
-                                searchAdapterHelper.queryServerSearch(query, true, true, true);
+                                searchAdapterHelper.queryServerSearch(query, true, true, true, true, 0, false);
                             }
                             searchMessagesInternal(query);
                         }

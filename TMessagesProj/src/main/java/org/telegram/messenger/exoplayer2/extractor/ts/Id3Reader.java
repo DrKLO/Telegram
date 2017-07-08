@@ -27,7 +27,7 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 /**
  * Parses ID3 data and extracts individual text information frames.
  */
-/* package */ final class Id3Reader implements ElementaryStreamReader {
+public final class Id3Reader implements ElementaryStreamReader {
 
   private static final String TAG = "Id3Reader";
 
@@ -56,9 +56,10 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 
   @Override
   public void createTracks(ExtractorOutput extractorOutput, TrackIdGenerator idGenerator) {
-    output = extractorOutput.track(idGenerator.getNextId());
-    output.format(Format.createSampleFormat(null, MimeTypes.APPLICATION_ID3, null, Format.NO_VALUE,
-        null));
+    idGenerator.generateNewId();
+    output = extractorOutput.track(idGenerator.getTrackId(), C.TRACK_TYPE_METADATA);
+    output.format(Format.createSampleFormat(idGenerator.getFormatId(), MimeTypes.APPLICATION_ID3,
+        null, Format.NO_VALUE, null));
   }
 
   @Override

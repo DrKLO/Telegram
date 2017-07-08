@@ -6,8 +6,10 @@
     <string name="AppName">تيليجرام</string>
     <string name="AppNameBeta">نسخة تيليجرام التجريبية</string>
     <string name="LanguageName">العربية</string>
+    <string name="English">الإنجليزية</string>
     <string name="LanguageNameInEnglish">Arabic</string>
     <string name="LanguageCode">ar</string>
+    <string name="ContinueOnThisLanguage">استمر بالعربية</string>
     <!--signin view-->
     <string name="YourPhone">رقم هاتفك المحمول</string>
     <string name="StartText">يرجى التحقق من صحة رمز بلدك وإدخال رقم هاتفك المحمول.</string>
@@ -79,6 +81,7 @@
     <string name="PaymentTestInvoice">الفاتورة التجريبية</string>
     <string name="PaymentCheckoutPay">إدفع %1$s</string>
     <string name="PaymentCheckoutMethod">وسيلة الدفع</string>
+    <string name="PaymentCheckoutProvider">مزود عملية الدفع</string>
     <string name="PaymentCheckoutName">الاسم</string>
     <string name="PaymentCheckoutPhoneNumber">رقم الهاتف</string>
     <string name="PaymentCheckoutEmail">عنوان التواصل</string>
@@ -89,6 +92,8 @@
     <string name="PaymentPrecheckoutFailed">المعذرة، تم إلغاء عملية الدفع من البوت.</string>
     <string name="PaymentFailed">المعذرة، تم رفض عملية الدفع.</string>
     <string name="PaymentConnectionFailed">تعذر الوصور إلى خادم الدفع. فضلًا تحقق من اتصال الانترنت وحاول مرة أخرى.</string>
+    <string name="PaymentWarning">تحذير</string>
+    <string name="PaymentWarningText">لا يمتلك تيليجرام، ولا %1$s صلاحيات الوصول إلى معلومات بطاقتك الإئتمانية. تفاصيل البطاقات الإئتمانية تتم معالجتها مباشرة عن طريق نظام الدفع, %2$s.\n\nالدفعات تذهب لشكل مباشر إلى مطور %1$s. تيليجرام لا يوفر أية ضمانات، لذلك استمر على مسؤوليتك. في حال وجود مشاكل، تواصل مع مطور %1$s أو البنك الخاص بك.</string>
     <!--chats view-->
     <string name="NewConversationShortcut">محادثات جديدة</string>
     <string name="Settings">الإعدادات</string>
@@ -100,6 +105,13 @@
     <string name="NoChatsHelp">إبدأ المراسلة بالضغط على\nأيقونة النقاط في أعلى يمين الشاشة\nأو اذهب لقسم جهات الاتصال.</string>
     <string name="WaitingForNetwork">في إنتظار الشبكة...</string>
     <string name="Connecting">جاري الاتصال...</string>
+    <string name="ConnectingToProxy">جاري الاتصال بالبروكسي...</string>
+    <string name="ConnectingToProxyTapToDisable">اضغط لتعطيل البروكسي...</string>
+    <string name="ConnectingToProxyDisable">تعطيل</string>
+    <string name="ConnectingToProxyEnable">تفعيل</string>
+    <string name="EnableProxyAlert">هل أنت متأكد من رغبتك في تفعيل هذا البروكسي؟</string>
+    <string name="EnableProxyAlert2">يمكنك تغيير خادم البروكسي لاحقًا عن طريق الإعدادات (البيانات والتخزين)</string>
+    <string name="ConnectingToProxyDisableAlert">هل أنت متأكد من رغبتك في تعطيل البروكسي %1$s؟ يمكنك إعادة تفعيله لاحقًا عن طريق الإعدادات (البيانات والتخزين).</string>
     <string name="Updating">جاري التحديث...</string>
     <string name="NewSecretChat">محادثة سرية جديدة</string>
     <string name="AwaitingEncryption">في إنتظار اتصال %s … </string>
@@ -139,12 +151,14 @@
     <string name="Bold">عريض</string>
     <string name="Italic">مائل</string>
     <string name="Regular">طبيعي</string>
+    <string name="ContactsPermissionAlert">لتستطيع التواصل بشكل سلس مع الجميع، قم بالسماح لـ <![CDATA[<b>]]>تيليجرام<![CDATA[</b>]]> بالوصول إلى جهات الاتصال الخاصة بك.</string>
+    <string name="ContactsPermissionAlertNotNow">ليس الآن</string>
+    <string name="ContactsPermissionAlertContinue">الاستمرار</string>
     <!--channels-->
-    <string name="GroupType">نوع المجموعة</string>
-    <string name="ChannelType">نوع القناة</string>
     <string name="ChannelTypePublic">عامة</string>
     <string name="ChannelTypePrivate">خاصة</string>
     <string name="SetAsAdmin">ترقية ليكون مشرف</string>
+    <string name="NoBlockedUsers">لا يوجد مستخدمين محظورين</string>
     <string name="DescriptionInfoMega">يمكنك كتابة وصف اختياري لمجموعتك.</string>
     <string name="LeaveMega">مغادرة المجموعة</string>
     <string name="DeleteMega">حذف المجموعة</string>
@@ -168,6 +182,7 @@
     <string name="ActionPinnedFile">un1 ثبت ملف</string>
     <string name="ActionPinnedSticker">un1 ثبت ملصق</string>
     <string name="ActionPinnedVoice">un1 ثبت رسالة صوتية</string>
+    <string name="ActionPinnedRound">un1 ثبت رسالة مرئية</string>
     <string name="ActionPinnedContact">un1 ثبت جهة اتصال</string>
     <string name="ActionPinnedGame">un1 ثبت %1$s</string>
     <string name="ActionPinnedGeo">un1 ثبت خريطة</string>
@@ -176,6 +191,7 @@
     <string name="ActionMigrateFromGroup">تم ترقية هذه المجموعة لتصبح مجموعة خارقة</string>
     <string name="ActionMigrateFromGroupNotify">تم ترقية المجموعة %1$s لتصبح مجموعة خارقة</string>
     <string name="NoBlockedGroup">أعضاء القائمة السوداء هم أعضاء تم حذفهم من المجموعة ولا يمكنهم العودة لها إلى بدعوة من المشرف. روابط الدعوة لن تمكنهم من العودة للمجموعة.</string>
+    <string name="NoBlockedChannel">أعضاء القائمة السوداء هم أعضاء تم حذفهم من القناة ولا يمكنهم العودة لها إلى بدعوة من المشرف. روابط الدعوة لن تمكنهم من العودة للقناة.</string>
     <string name="NewChannel">قناة جديدة</string>
     <string name="EnterChannelName">اسم القناة</string>
     <string name="AddMutual">إضافة جهات اتصال لقناتك</string>
@@ -217,7 +233,9 @@
     <string name="LinkChecking">جاري مراجعة الاسم...</string>
     <string name="LinkAvailable">%1$s متاح.</string>
     <string name="ChannelMembers">أعضاء</string>
-    <string name="ChannelBlockedUsers">جهات الاتصال المحظورة</string>
+    <string name="ChannelBlacklist">قائمة المحظورين</string>
+    <string name="ChannelBlockedUsers">المستخدمون المحظورون</string>
+    <string name="ChannelRestrictedUsers">المستخدمون المقيدون</string>
     <string name="ChannelAdministrators">الإداريون</string>
     <string name="ChannelDelete">حذف القناة</string>
     <string name="ChannelDeleteMenu">حذف القناة</string>
@@ -233,15 +251,17 @@
     <string name="ActionChannelRemovedPhoto">تم حذف صورة القناة</string>
     <string name="ActionChannelChangedTitle">تم تغيير اسم القناة إلى un2</string>
     <string name="ChangePublicLimitReached">المعذرة، قمت بحجز معرفات عامة كثيرة. يمكنك إلغاء بعض روابط مجموعاتك وقنواتك القديمة، أو قم بجعلها خاصة.</string>
-    <string name="ChannelModerator">المراقب</string>
     <string name="ChannelCreator">المنشئ</string>
     <string name="ChannelEditor">إداري</string>
     <string name="ChannelMute">الصامت</string>
     <string name="ChannelUnmute">إلغاء الصامت</string>
-    <string name="ChannelAddAdmin">إضافة إداري</string>
+    <string name="ChannelAddAdmin">إضافة مشرف</string>
+    <string name="ChannelBlockUser">حظر المستخدم</string>
+    <string name="Unban">ألغ الحظر</string>
+    <string name="UnbanText">اضغط بإستمرار على المستخدم لإلغاء الحظر</string>
     <string name="ChannelInviteViaLink">استخدم رابط دعوة</string>
     <string name="ChannelAddUserAdminAlert">هل أنت متأكد من رغبتك في تعيين %1$s كإداري؟</string>
-    <string name="ChannelRemoveUserAdmin">حذف</string>
+    <string name="ChannelRemoveUserAdmin">إزالة المشرف</string>
     <string name="ChannelMembersInfo">فقط الإداريّون يمكنهم مشاهدة هذه القائمة.</string>
     <string name="ChannelAdminNotParticipant">هذا المستخدم لم يقم بالدخول إلى القناة بعد. فضلًا، هل ترغب في دعوتهم؟</string>
     <string name="ChannelLinkInfo">أي شخص يمتلك تيليجرام على جهازه سيمكنه الدخول لقناتك باستخدام هذا الرابط.</string>
@@ -271,6 +291,7 @@
     <string name="ChannelMessageGroupDocument">%1$s  قام بإرسال ملف للقناة %2$s</string>
     <string name="ChannelMessageGroupGif">%1$s أرسل صورة متحركة للقناة %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s أرسل رسالة صوتية للقناة %2$s</string>
+    <string name="ChannelMessageGroupRound">%1$s أرسل رسالة مرئية للقناة %2$s</string>
     <string name="ChannelMessageGroupMusic">%1$s  قام بإرسال مقطع صوتي للقناة %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s  قام بإرسال ملصق للقناة %2$s</string>
     <string name="ChannelMessageGroupStickerEmoji">%1$s أرسل %3$s ملصق للقناة %2$s</string>
@@ -282,6 +303,7 @@
     <string name="ChannelMessageDocument">%1$s أرسل ملف</string>
     <string name="ChannelMessageGIF">%1$s قام بنشر صورة متحركة</string>
     <string name="ChannelMessageAudio">%1$s أرسل رسالة صوتية</string>
+    <string name="ChannelMessageRound">%1$s أرسل رسالة مرئية</string>
     <string name="ChannelMessageMusic">%1$s أرسل مقطع صوتي</string>
     <string name="ChannelMessageSticker">%1$s أرسل ملصق</string>
     <string name="ChannelMessageStickerEmoji">%1$s أرسل %2$s ملصق</string>
@@ -292,6 +314,110 @@
     <string name="ChannelNotifyMembersInfoOff">لن يتم إشعار الأعضاء عند إرسال الرسائل.</string>
     <string name="ChannelSignMessages">وقّع الرسائل</string>
     <string name="ChannelSignMessagesInfo">قم بإضافة أسماء المشرفين للرسائل التي يرسلونها.</string>
+    <string name="EditAdmin">عدل على المشرف</string>
+    <string name="EditAdminWhatCanDo">ماذا يستطيع المشرف عمله؟</string>
+    <string name="EditAdminChangeChannelInfo">غير معلومات القناة</string>
+    <string name="EditAdminChangeGroupInfo">غير معلومات المجموعة</string>
+    <string name="EditAdminPostMessages">انشر رسالة</string>
+    <string name="EditAdminEditMessages">عدل على رسائل الآخرين</string>
+    <string name="EditAdminDeleteMessages">احذف رسائل الآخرين</string>
+    <string name="EditAdminGroupDeleteMessages">حذف الرسائل</string>
+    <string name="EditAdminAddAdmins">إضافة مشرفين جدد</string>
+    <string name="EditAdminRemoveAdmin">إزالة المشرف</string>
+    <string name="EditAdminBanUsers">حظر مستخدمين</string>
+    <string name="EditAdminAddUsers">إضافة مستخدمين</string>
+    <string name="EditAdminAddUsersViaLink">دعوة مستخدمين من خلال الرابط</string>
+    <string name="EditAdminPinMessages">ثبت رسائل</string>
+    <string name="EditAdminPromotedBy">تمت الإضافة بواسطة %1$s</string>
+    <string name="EditAdminCantEdit">لا يمكنك التعديل على حقوق هذا المشرف.</string>
+    <string name="UserRestrictionsBy">تم التقييد بواسطة %1$s</string>
+    <string name="UserRestrictions">قيود المستخدم</string>
+    <string name="UserRestrictionsRead">اقرأ رسائل</string>
+    <string name="UserRestrictionsCanDo">ماذا يستطيع هذا المستخدم عمله؟</string>
+    <string name="UserRestrictionsSend">أرسل رسائل</string>
+    <string name="UserRestrictionsSendMedia">أرسل وسائط</string>
+    <string name="UserRestrictionsSendStickers">أرسل ملصقات وصور متحركة</string>
+    <string name="UserRestrictionsEmbedLinks">ضمن روابط</string>
+    <string name="UserRestrictionsUntil">محظور حتى</string>
+    <string name="UserRestrictionsUntilForever">إلى الأبد</string>
+    <string name="UserRestrictionsUntilRemove">حذف</string>
+    <string name="UserRestrictionsBlock">حظر وإخراج من المجموعة</string>
+    <string name="ManageGroup">أدر المجموعة</string>
+    <string name="ManageChannel">أدر القناة</string>
+    <string name="ManageGroupMenu">أدر المجموعة</string>
+    <string name="ManageChannelMenu">أدر القناة</string>
+    <!--event log-->
+    <string name="EventLog">الأفعال الحديثة</string>
+    <string name="EventLogAllEvents">كافة الأحداث</string>
+    <string name="EventLogSelectedEvents">الأحداث المختارة</string>
+    <string name="EventLogAllAdmins">كافة المشرفين</string>
+    <string name="EventLogEmpty"><![CDATA[1]]>لا توجد أحداث هنا بعد<![CDATA[1]]>\n\nأعضاء المجموعة ومشرفيها\nلم يقوموا بأي عمليات\nخلال 48 ساعة الماضية.</string>
+    <string name="EventLogEmptyChannel"><![CDATA[1]]>لا توجد أحداث هنا بعد<![CDATA[1]]>\n\nمشرفي القناة\nلم يقوموا بأي عمليات\nخلال 48 ساعة الماضية.</string>
+    <string name="EventLogEmptySearch"><![CDATA[<b>]]>لم يتم العثور على أحداث <![CDATA[</b>]]>\n\nلا توجد أحداث مؤخرًا تحتوي على ما بحثت عنه.</string>
+    <string name="EventLogEmptyTextSearch">لا توجد أحداث مؤخرًا تحتوي على \'<![CDATA[<b>]]>%1$s<![CDATA[</b>]]>\' تم العثور عليها.</string>
+    <string name="EventLogInfoTitle">What is the Recent Actions?</string>
+    <string name="EventLogInfoDetail">هذه قائمة بجميع العمليات التي قام بها أعضاء المجموعة ومشرفيها خلال 48 ساعة.</string>
+    <string name="EventLogInfoDetailChannel">هذه قائمة بجميع العمليات التي قام بها أعضاء القناة ومشرفيها خلال 48 ساعة.</string>
+    <string name="EventLogEditedGroupTitle">un1 قام بتغيير اسم المجموعة إلى \"%1$s\"</string>
+    <string name="EventLogEditedChannelTitle">un1 قام بتغيير اسم القناة إلى \"%1$s\"</string>
+    <string name="EventLogLeftGroup">un1 غادر المجموعة</string>
+    <string name="EventLogLeftChannel">un1 غادر القناة</string>
+    <string name="EventLogAdded">un1 قام بإضافة un2</string>
+    <string name="EventLogGroupJoined">un1 انضم للمجموعة</string>
+    <string name="EventLogChannelRestricted">حظر %1$s</string>
+    <string name="EventLogChannelUnrestricted">ألغى حظر %1$s</string>
+    <string name="EventLogChannelJoined">un1 قام بالدخول للقناة</string>
+    <string name="EventLogEditedGroupPhoto">un1 قام بتعيين صورة مجموعة جديدة</string>
+    <string name="EventLogEditedChannelPhoto">un1 قام بتعيين صورة قناة جديدة</string>
+    <string name="EventLogRemovedWGroupPhoto">un1 قام بحذف صورة المجموعة</string>
+    <string name="EventLogRemovedChannelPhoto">un1 قام بحذف صورة القناة</string>
+    <string name="EventLogEditedMessages">un1 قام بالتعديل على هذه رسالة:</string>
+    <string name="EventLogEditedCaption">un1 قام بالتعديل على التعليق:</string>
+    <string name="EventLogOriginalMessages">الرسالة الأصلية</string>
+    <string name="EventLogOriginalCaption">التعليق الأصلي</string>
+    <string name="EventLogOriginalCaptionEmpty">إفراغ</string>
+    <string name="EventLogPinnedMessages">un1 ثبت هذه رسالة:</string>
+    <string name="EventLogUnpinnedMessages">un1  ألغى تثبيت رسالة</string>
+    <string name="EventLogDeletedMessages">un1 حذف هذه رسالة:</string>
+    <string name="EventLogChangedGroupLink">un1 غير رابط المجموعة:</string>
+    <string name="EventLogChangedChannelLink">un1 غير رابط القناة:</string>
+    <string name="EventLogRemovedGroupLink">un1 قام بحذف رابط المجموعة</string>
+    <string name="EventLogRemovedChannelLink">un1 قام بحذف رابط القناة</string>
+    <string name="EventLogPreviousLink">الرابط السابق</string>
+    <string name="EventLogEditedGroupDescription">un1 عدل وصف المجموعة:</string>
+    <string name="EventLogEditedChannelDescription">un1 عدل وصف القناة:</string>
+    <string name="EventLogPreviousGroupDescription">الوصف السابق</string>
+    <string name="EventLogToggledInvitesOn">un1 فعل دعوات المجموعة</string>
+    <string name="EventLogToggledInvitesOff">un1 عطل الدعوات</string>
+    <string name="EventLogToggledSignaturesOn">un1 فعل التواقيع</string>
+    <string name="EventLogToggledSignaturesOff">un1 عطل التواقيع</string>
+    <string name="EventLogRestrictedUntil">غير القيود الخاصة بـ %1$s\n\nلمدة: %2$s</string>
+    <string name="EventLogRestrictedSendStickers">أرسل ملصقات وصور متحركة</string>
+    <string name="EventLogRestrictedSendMedia">أرسل وسائط</string>
+    <string name="EventLogRestrictedSendMessages">أرسل رسائل</string>
+    <string name="EventLogRestrictedSendEmbed">ضمن روابط</string>
+    <string name="EventLogRestrictedReadMessages">اقرأ رسائل</string>
+    <string name="EventLogPromoted">غير صلاحيات %1$s</string>
+    <string name="EventLogPromotedChangeChannelInfo">غير معلومات القناة</string>
+    <string name="EventLogPromotedChangeGroupInfo">غير معلومات المجموعة</string>
+    <string name="EventLogPromotedPostMessages">انشر رسائل</string>
+    <string name="EventLogPromotedEditMessages">تعديل الرسائل</string>
+    <string name="EventLogPromotedDeleteMessages">حذف الرسائل</string>
+    <string name="EventLogPromotedAddAdmins">إضافة مشرفين</string>
+    <string name="EventLogPromotedBanUsers">حظر مستخدمين</string>
+    <string name="EventLogPromotedAddUsers">إضافة مستخدمين</string>
+    <string name="EventLogPromotedPinMessages">ثبت رسائل</string>
+    <string name="EventLogFilterAll">كافة الأحداث</string>
+    <string name="EventLogFilterNewRestrictions">قيد جديد</string>
+    <string name="EventLogFilterNewAdmins">مشرفون جدد</string>
+    <string name="EventLogFilterNewMembers">أعضاء جدد</string>
+    <string name="EventLogFilterGroupInfo">معلومات المجموعة</string>
+    <string name="EventLogFilterChannelInfo">معلومات القناة</string>
+    <string name="EventLogFilterGroupSettings">إعدادات المجموعة</string>
+    <string name="EventLogFilterDeletedMessages">رسائل محذوفة</string>
+    <string name="EventLogFilterEditedMessages">تعديل الرسائل</string>
+    <string name="EventLogFilterPinnedMessages">رسائل مثبتة</string>
+    <string name="EventLogFilterLeavingMembers">الأعضاء المغادرين</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">رسالة جماعية جديدة</string>
     <string name="EnterListName">أدخل اسم القائمة</string>
@@ -324,13 +450,18 @@
     <string name="IsTyping">يكتب… </string>
     <string name="AreTyping">يكتبون… </string>
     <string name="IsRecordingAudio">%1$s يقوم بتسجيل رسالة صوتية...</string>
+    <string name="IsRecordingRound">%1$s يقوم بتسجيل رسالة مرئية...</string>
     <string name="IsSendingAudio">%1$s يقوم بإرسال مقطع صوتي...</string>
     <string name="IsSendingPhoto">%1$s يقوم بإرسال صورة...</string>
     <string name="InstantView">استعراض لحظي</string>
+    <string name="OpenGroup">افتح مجموعة</string>
+    <string name="OpenChannel">افتح قناة</string>
+    <string name="InstantViewNightMode">النمط الداكن سيتم تفعيله تلقائيًا في الليل</string>
     <string name="IsSendingGame">%1$s يلعب لعبة...</string>
     <string name="IsSendingVideo">%1$s يقوم بإرسال مقطع مرئي...</string>
     <string name="IsSendingFile">%1$s يقوم بإرسال ملف...</string>
-    <string name="RecordingAudio">جاري تسجيل الرسالة الصوتية...</string>
+    <string name="RecordingAudio">جاري تسجيل رسالة صوتية...</string>
+    <string name="RecordingRound">جاري تسجيل رسالة مرئية...</string>
     <string name="SendingAudio">جاري إرسال المقطع الصوتي...</string>
     <string name="SendingPhoto">جاري إرسال الصورة...</string>
     <string name="SendingGame">يلعب لعبة...</string>
@@ -378,6 +509,8 @@
     <string name="OpenInExternalApp">افتح باستخدام...</string>
     <string name="CopyUrl">انسخ الرابط</string>
     <string name="SendItems">أرسل %1$s</string>
+    <string name="SendAsFile">أرسل كملف</string>
+    <string name="SendAsFiles">أرسل كملفات</string>
     <string name="OpenUrlAlert">هل ترغب في فتح الرابط باستخدام %1$s ؟</string>
     <string name="BotPermissionGameAlert">هل ترغب في السماح لـ %1$s ليرسل معرفك (ليس رقم هاتفك) الخاص بتيليجرام واسمك للصفحات التي تفتحها من خلال هذا البوت؟</string>
     <string name="ReportSpam">الإبلاغ عن الرسائل المزعجة</string>
@@ -393,6 +526,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq/can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">ملعومات إضافية</string>
     <string name="ShareSendTo">أرسل إلى...</string>
+    <string name="ShareComment">اكتب ملاحظة</string>
     <string name="TapHereGifs">اضغط هنا للوصول للصور المتحركة المحفوظة</string>
     <string name="PinMessage">تثبيت</string>
     <string name="PinNotify">أشعر جميع الأعضاء</string>
@@ -415,6 +549,7 @@
     <string name="TimeToEdit">%1$s</string>
     <string name="TimeToEditExpired">المعذرة، انتهت مدة التعديل على الرسائل.</string>
     <string name="AddShortcut">إضافة اختصار</string>
+    <string name="SearchMembers">ابحث عن أعضاء</string>
     <string name="ShortcutAdded">تمت إضافة اختصار للشاشة الرئيسية</string>
     <string name="ChatYourSelf">تحدث مع نفسك</string>
     <string name="ChatYourSelfName">أنت</string>
@@ -427,6 +562,21 @@
     <string name="DeleteForUser">حذف لـ%1$s</string>
     <string name="DeleteForAll">حذف لكافة الأعضاء</string>
     <string name="TextCopied">تم نسخ النص للحافظة</string>
+    <string name="HoldToAudio">اضغط باستمرار لتسجيل صوتي. اضغط مرة واحدة للتحويل للفيديو.</string>
+    <string name="HoldToVideo">اضغط باستمرار لتسجيل فيديو. اضغط مرة واحدة للتحويل للصوتي.</string>
+    <string name="DiscardVoiceMessageTitle">تجاهل الرسالة الصوتية</string>
+    <string name="DiscardVoiceMessageDescription">هل أنت متأكد من رغبتك في إيقاف التسجيل وتجاهل الرسالة الصوتية؟</string>
+    <string name="DiscardVideoMessageTitle">تجاهل الرسالة المرئية</string>
+    <string name="DiscardVideoMessageDescription">هل أنت متأكد من رغبتك في إيقاف التسجيل وتجاهل الرسالة المرئية؟</string>
+    <string name="DiscardVoiceMessageAction">تجاهل</string>
+    <string name="AttachMediaRestricted">مشرفو هذه المجموعة قاموا بوضع قيد يمنعك من إرسال الوسائط هنا حتى %1$s</string>
+    <string name="AttachInlineRestricted">مشرفو هذه المجموعة قاموا بوضع قيد يمنعك من إرسال محتوى في نفس السطر هنا حتى %1$s</string>
+    <string name="AttachStickersRestricted">مشرفو هذه المجموعة قاموا بوضع قيد يمنعك من إرسال الملصقات هنا حتى %1$s</string>
+    <string name="SendMessageRestricted">مشرفو هذه المجموعة قاموا بوضع قيد يمنعك من الكتابة هنا حتى %1$s</string>
+    <string name="AttachMediaRestrictedForever">مشرفو هذه المجموعة قاموا بوضع قيد يمنعك من إرسال الوسائط هنا</string>
+    <string name="AttachInlineRestrictedForever">مشرفو هذه المجموعة قاموا بوضع قيد يمنعك من إرسال محتوى في نفس السطر هنا</string>
+    <string name="AttachStickersRestrictedForever">مشرفو هذه المجموعة قاموا بوضع قيد يمنعك من إرسال الملصقات هنا</string>
+    <string name="SendMessageRestrictedForever">مشرفو هذه المجموعة قاموا بوضع قيد يمنعك من الكتابة هنا</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
@@ -443,6 +593,7 @@
     <string name="NotificationMessageDocument">%1$s قام بإرسال ملف لك</string>
     <string name="NotificationMessageGif">%1$s أرسل لك صورة متحركة</string>
     <string name="NotificationMessageAudio">%1$s قام بإرسال رسالة صوتية</string>
+    <string name="NotificationMessageRound">%1$s قام بإرسال رسالة مرئية لك</string>
     <string name="NotificationMessageMusic">%1$s أرسل مقطع صوتي لك</string>
     <string name="NotificationMessageSticker">%1$s قام بإرسال ملصق</string>
     <string name="NotificationMessageStickerEmoji">%1$s قام بإرسال %2$s ملصق</string>
@@ -456,12 +607,13 @@
     <string name="NotificationMessageGroupDocument">%1$s قام بإرسال ملف للمجموعة %2$s</string>
     <string name="NotificationMessageGroupGif">%1$s أرسل صورة متحركة للمجموعة %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s أرسل رسالة صوتية للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupRound">%1$s قام بإرسال رسالة مرئية للمجموعة %2$s</string>
     <string name="NotificationMessageGroupMusic">%1$s أرسل مقطع صوتي للمجموعة %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s قام بإرسال ملصق للمجموعة %2$s</string>
     <string name="NotificationMessageGroupStickerEmoji">%1$s أرسل %3$s ملصق للمجموعة %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s قام بدعوتك للمجموعة %2$s</string>
-    <string name="NotificationEditedGroupName">%1$s قام بتعديل اسم المجموعة %2$s</string>
-    <string name="NotificationEditedGroupPhoto">%1$s قام بتغيير صورة المجموعة %2$s</string>
+    <string name="NotificationEditedGroupName">%1$s انضم للمجموعة %2$s</string>
+    <string name="NotificationEditedGroupPhoto">%1$s غير صورة المجموعة %2$s</string>
     <string name="NotificationGroupAddMember">%1$s قام بدعوة %3$s للمجموعة %2$s</string>
     <string name="NotificationGroupAddSelf">%1$s عاد إلى المجموعة %2$s</string>
     <string name="NotificationGroupAddSelfMega">%1$s انضم للمجموعة %2$s</string>
@@ -485,6 +637,7 @@
     <string name="NotificationActionPinnedSticker">%1$s ثبت ملصق في المجموعة %2$s</string>
     <string name="NotificationActionPinnedStickerEmoji">%1$s قام بتثبيت %3$s ملصق في المجموعة %2$s</string>
     <string name="NotificationActionPinnedVoice">%1$s ثبت رسالة صوتية في المجموعة %2$s</string>
+    <string name="NotificationActionPinnedRound">%1$s ثبت رسالة مرئية في المجموعة %2$s</string>
     <string name="NotificationActionPinnedContact">%1$s ثبت جهة اتصال في المجموعة %2$s</string>
     <string name="NotificationActionPinnedGeo">%1$s ثبت خريطة في المجموعة %2$s</string>
     <string name="NotificationActionPinnedGif">%1$s ثبت صورة متحركة في المجموعة %2$s</string>
@@ -497,6 +650,7 @@
     <string name="NotificationActionPinnedStickerChannel">%1$s ثبت ملصق</string>
     <string name="NotificationActionPinnedStickerEmojiChannel">%1$s قام بتثبيت %2$s ملصق</string>
     <string name="NotificationActionPinnedVoiceChannel">%1$s ثبت رسالة صوتية</string>
+    <string name="NotificationActionPinnedRoundChannel">%1$s ثبت رسالة مرئية</string>
     <string name="NotificationActionPinnedContactChannel">%1$s ثبت جهة اتصال</string>
     <string name="NotificationActionPinnedGeoChannel">%1$s ثبت خريطة</string>
     <string name="NotificationActionPinnedGifChannel">%1$s ثبت صورة متحركة</string>
@@ -551,8 +705,10 @@
     <string name="SETTINGS">الإعدادات</string>
     <string name="AddMember">إضافة مشارك</string>
     <string name="SetAdmins">تعيين كمشرف</string>
+    <string name="BanFromTheGroup">حظر من المجموعة</string>
     <string name="DeleteAndExit">مغادرة المجموعة وحذفها</string>
     <string name="Notifications">الإشعارات</string>
+    <string name="KickFromSupergroup">قيد المستخدم</string>
     <string name="KickFromGroup">إخراج من المجموعة</string>
     <string name="UpgradeGroup">قم بالتحديث لمجموعة خارقة</string>
     <string name="ConvertGroup">التحويل إلى مجموعة خارقة</string>
@@ -584,7 +740,7 @@
     <string name="EncryptionKey">مفتاح التشفير</string>
     <string name="MessageLifetime">عداد التدمير الذاتي</string>
     <string name="ShortMessageLifetimeForever">إيقاف</string>
-    <string name="EncryptionKeyDescription">هذه الصورة والنص تم اشتقاقهم من مفتاح التشفير لهذه المحادثة السرية مع <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>إذا كانت مطابقة لما يظهر على جهاز <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> ، التشفير من البداية للنهاية مضمون.<![CDATA[<br><br>]]>للإستزادة، إطلع على telegram.org </string>
+    <string name="EncryptionKeyDescription">هذه الصورة والنص تم اشتقاقهم من مفتاح التشفير لهذه المحادثة السرية مع <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nإذا كانت مطابقة لما يظهر على جهاز <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> ، التشفير من البداية للنهاية مضمون.\n\nللاستزادة، اطلع على telegram.org</string>
     <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
     <string name="TapToEmojify">اضغط للتحويل لإيموجي</string>
     <string name="NumberUnknown">غير معروف</string>
@@ -598,14 +754,14 @@
     <string name="UsernameInvalidShort">سم المستخدم يجب أن يتكوّن من ٥ حروف على الأقل.</string>
     <string name="UsernameInvalidLong">اسم المستخدم يجب ألا يتخطى ٣٢ حرف كحد أقصى.</string>
     <string name="UsernameInvalidStartNumber">المعذرة، اسم المستخدم لا يمكن أن يبدأ برقم.</string>
-    <string name="UsernameHelp">يمكنك اختيار اسم مستخدم في <![CDATA[<b>]]>تيليجرام<![CDATA[</b>]]>. إذا قمت بذلك، سيستطيع الناس إيجادك باستخدام الاسم المستخدم والتواصل معك من دون معرفة رقمك.<![CDATA[<br><br>]]>يمكنك استخدام <![CDATA[<b>]]>حروف اللغة الإنجليزية<![CDATA[</b>]]>, <![CDATA[<b>]]>وأرقامها<![CDATA[</b>]]> و كذلك الخط. لا بد من استخدام <![CDATA[<b>]]>٥<![CDATA[</b>]]> حروف على الأقل.</string>
+    <string name="UsernameHelp">يمكنك اختيار اسم مستخدم في <![CDATA[<b>]]>تيليجرام<![CDATA[</b>]]>. إذا قمت بذلك، سيستطيع الناس إيجادك باستخدام الاسم المستخدم والتواصل معك من دون معرفة رقمك.\n\nتستطيع استخدام <![CDATA[<b>]]>حروف اللغة الإنجليزية<![CDATA[</b>]]>, <![CDATA[<b>]]>وأرقامها <![CDATA[</b>]]> وكذلك الخط. لا بد من استخدام <![CDATA[<b>]]>٥<![CDATA[</b>]]> حروف على الأقل..</string>
     <string name="UsernameHelpLink">هذا الرابط يقوم بفتح محادثة معك في تيليجرام:\n%1$s</string>
     <string name="UsernameChecking">جارٍ مراجعة اسم المستخدم...</string>
     <string name="UsernameAvailable">%1$s متاح.</string>
     <string name="UsernameEmpty">لا يوجد</string>
     <string name="ErrorOccurred">حدث خطأ.</string>
     <!--stickers view-->
-    <string name="Stickers">ملصقات</string>
+    <string name="StickersName">ملصقات</string>
     <string name="AddStickers">إضافة ملصق</string>
     <string name="AddMasks">إضافة أقنعة</string>
     <string name="AddToStickers">إضافة إلى الملصقات</string>
@@ -638,6 +794,8 @@
     <string name="ArchivedMasksAlertInfo">تمت أرشفة بعض من حزم الأقنعة الخاصة بك. يمكنك تفعيل هذه الحزم ان طريق إعدادات الأقنعة.</string>
     <!--theme view-->
     <string name="Theme">نمط</string>
+    <string name="ThemeDark">داكن</string>
+    <string name="ThemeBlue">أزرق</string>
     <string name="DeleteThemeAlert">هل أنت متأكد من رغبتك في حذف النمط؟</string>
     <string name="IncorrectTheme">ملف النمط غير صحيح</string>
     <string name="EnterThemeName">أدخل اسم النمط</string>
@@ -683,7 +841,10 @@
     <string name="ColorGreen">أخضر</string>
     <string name="ColorCyan">سماوي</string>
     <string name="ColorWhite">أبيض</string>
+    <string name="ColorSepia">بني داكن</string>
+    <string name="ColorDark">داكن</string>
     <string name="ColorPink">وردي</string>
+    <string name="FontSize">حجم النص</string>
     <string name="ColorViolet">بنفسجي</string>
     <string name="ColorOrange">برتقالي</string>
     <string name="NotificationsLedInfo">الـ LED هي إضاءة صغيرة تومض في بعض الأجهزة كإشعار برسالة جديدة.</string>
@@ -707,7 +868,8 @@
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
     <string name="PinnedMessages">رسائل مثبتة</string>
     <string name="Language">اللغة</string>
-    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحن نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]> <![CDATA[<a href="https://telegram.org/faq/ar">صفحة الأسئلة الأكثر شيوعًا</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
+    <string name="LanguageCustom">مخصص</string>
+    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحن نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.\n\nيرجى الإطلاع على <![CDATA[<a href="https://telegram.org/faq#general">صفحة الأسئلة الأكثر شيوعًا</a>]]>: يوجد بها إجابات لمعظم الأسئلة و <![CDATA[<a href="https://telegram.org/faq#troubleshooting">حلول للمشاكل و</a>]]>.</string>
     <string name="AskButton">اسأل أحد المتطوعين</string>
     <string name="TelegramFaq">الأسئلة الشائعة عن تيليجرام</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/ar</string>
@@ -788,6 +950,19 @@
     <string name="DebugMenu">قائمة المعالجة</string>
     <string name="DebugMenuImportContacts">استيراد جهات الاتصال</string>
     <string name="DebugMenuReloadContacts">إعادة تنزيل جهات الاتصال</string>
+    <string name="ChangeLanguageLater">يمكنك تغيير اللغة الخاصة بك من الإعدادات لاحقًا.</string>
+    <string name="ChooseYourLanguage">اختر لغتك</string>
+    <string name="ChooseYourLanguageOther">أخرى</string>
+    <string name="ProxySettings">إعدادات البروكسي</string>
+    <string name="Proxy">بروكسي</string>
+    <string name="UseProxySettings">استخدم إعدادات البروكسي</string>
+    <string name="UseProxyAddress">الخادم</string>
+    <string name="UseProxyPassword">كلمة المرور</string>
+    <string name="UseProxyPort">المنفذ</string>
+    <string name="UseProxyUsername">اسم المستخدم</string>
+    <string name="UseProxyInfo">إعدادات بروكسي SOCKS 5</string>
+    <string name="UseProxyForCalls">Use proxy for calls</string>
+    <string name="UseProxyForCallsInfo">Proxy servers may degrade the quality of your calls.</string>
     <!--cache view-->
     <string name="LocalDatabase">قاعدة البيانات على الجهاز</string>
     <string name="LocalDatabaseClear">هل ترغب في مسح الرسائل المحفوظة في الذاكرة المخبئية؟</string>
@@ -797,7 +972,7 @@
     <string name="CalculatingSize">جاري الحساب...</string>
     <string name="LocalDocumentCache">المستندات</string>
     <string name="LocalPhotoCache">الصور</string>
-    <string name="LocalAudioCache">الرسائل الصوتية</string>
+    <string name="LocalAudioCache">رسالة صوتية/مرئية</string>
     <string name="LocalVideoCache">المقاطع المرئية</string>
     <string name="LocalMusicCache">الموسيقى</string>
     <string name="LocalGifCache">الصور المتحركة</string>
@@ -806,6 +981,8 @@
     <string name="KeepMedia">الإحتفاظ بالوسائط</string>
     <string name="KeepMediaInfo">الصور، المقاطع المرئية، وجميع الملفات المحفوظة في خوادمنا التي لم <![CDATA[<b> تستخدمها </b>]]> خلال هذه المدة سيتم حذفها لتوفير المساحة. ملفات الوسائط ستبقى في خوادم تيليجرام ويمكنك إعادة تنزيلها متى ما احتجتها مرة أخرى.</string>
     <string name="KeepMediaForever">إلى الأبد</string>
+    <string name="AudioAutodownload">الرسائل الصوتية</string>
+    <string name="VideoMessagesAutodownload">الرسائل المرئية</string>
     <!--sessions view-->
     <string name="SessionsTitle">الأجهزة المسجّل دخول منها</string>
     <string name="CurrentSession">الجهاز الحالي</string>
@@ -869,8 +1046,8 @@
     <string name="SaveToGallery">حفظ في الجهاز</string>
     <string name="Of">%1$d من %2$d</string>
     <string name="Gallery">الألبوم</string>
-    <string name="AllPhotos">جميع الصور</string>
-    <string name="AllVideo">كافة المقاطع المرئية</string>
+    <string name="AllPhotos">كافة الصور</string>
+    <string name="AllMedia">كافة الوسائط</string>
     <string name="NoPhotos">لا توجد صور حتى الآن</string>
     <string name="NoVideo">لا يوجد مقاطع مرئية بعد</string>
     <string name="PleaseDownload">فضلًا، قم بتنزيل الوسائط أولًا</string>
@@ -1004,6 +1181,11 @@
     <string name="PrivacySettings">الخصوصية والأمان</string>
     <string name="PrivacyTitle">الخصوصية</string>
     <string name="PrivacyLastSeen">آخر ظهور</string>
+    <string name="PrivacyPayments">عمليات الدفع</string>
+    <string name="PrivacyPaymentsClear">مسح معلومات عملية الدفع والشحن</string>
+    <string name="PrivacyPaymentsClearInfo">يمكنك حذف معلومات الشحن الخاصة بك والطلب من جميع موفري خدمة الدفع حذف بطاقاتك الإئتمانية المسجلة. يرجى الأخذ بالعلم أن تيليجرام لا يقوم بتاتًا بحفظ بيانات بطاقتك الإئتمانية.</string>
+    <string name="PrivacyClearShipping">معلومات الشحن</string>
+    <string name="PrivacyClearPayment">معلومات عملية الدفع</string>
     <string name="LastSeenEverybody">الجميع</string>
     <string name="LastSeenContacts">جهات الاتصال الخاصة بي</string>
     <string name="LastSeenNobody">لا أحد</string>
@@ -1044,6 +1226,8 @@
     <string name="InviteToGroupError">المعذرة، لا يمكنك إضافة هذا المستخدم للمجموعات بسبب إعدادات الخصوصية المتعلقة به.</string>
     <string name="InviteToChannelError">المعذرة، لا يمكنك إضافة هذا المستخدم للقنوات بسبب إعدادات الخصوصية المتعلقة به.</string>
     <string name="CreateGroupError">المعذرة، لا يمكنك إنشاء مجموعة مع هؤلاء المستخدمين نظرًا لإعدادات الخصوصية المتعلقة بهم.</string>
+    <string name="PrivacyCallsP2PTitle">الند للند</string>
+    <string name="PrivacyCallsP2PHelp">تعطيل الند للند سيجعل جميع المكالمات تعتمد على خوادم تيليجرام لتجنب الإفصاح عن الـ IP الخاص لك، لكن يقوم بتنزيل جودة الصوت قليلًا.</string>
     <!--edit video view-->
     <string name="EditVideo">تحرير الفيديو</string>
     <string name="SendingVideo">جارٍ إرسال المقطع المرئي...</string>
@@ -1121,6 +1305,7 @@
     <string name="AttachDocument">ملف</string>
     <string name="AttachSticker">ملصق</string>
     <string name="AttachAudio">رسالة صوتية</string>
+    <string name="AttachRound">رسالة مرئية</string>
     <string name="AttachGame">لعبة</string>
     <string name="FromYou">أنت</string>
     <string name="ActionTakeScreenshootYou">أنت أخذت لقطة للشاشة !</string>
@@ -1189,6 +1374,11 @@
     <string name="UserRestricted">المعذرة، لا يمكنك القيام بذلك.</string>
     <string name="YouBlockedUser">المعذرة، لا يمكنك إضافة هذا المستخدم أو البوت للمجموعات بسبب أنك قمت بحظره. فضلًا قم بإزالة الحظر للإستمرار.</string>
     <string name="JoinGroup">انضم للمجموعة</string>
+    <string name="AddAdminErrorNotAMember">المعذرة، لا يمكنك إضافة هذا المستخدم كمشرف لأنه ليس عضوًا في هذه المجموعة وغير مسموح لك دعوته.</string>
+    <string name="AddAdminErrorBlacklisted">المعذرة، لا يمكنك إضافة هذا المستخدم كمشرف لأنه في قائمة المحظورين ولا يمكنك رفع الحظر عنه.</string>
+    <string name="AddBannedErrorAdmin">المعذرة، لا يمكنك حظر هذا المستخدم لأنه مشرف في هذه المجموعة ولا يمكنك تغيير ذلك.</string>
+    <string name="ErrorSendRestrictedStickers">المعذرة، مشرفو هذه المجموعة قاموا بوضع قيد يمنعك من إرسال الملصقات.</string>
+    <string name="ErrorSendRestrictedMedia">المعذرة، مشرفو هذه المجموعة قاموا بوضع قيد يمنعك من إرسال الوسائط.</string>
     <!--permissions-->
     <string name="PermissionContacts">تيليجرام يحتاج للسماح له بالوصول لجهات الاتصال الخاصة بك لتتمكن من محادثة أصدقائك من كافة أجهزتك.</string>
     <string name="PermissionStorage">تيليجرام يحتاج للسماح له بالوصول للذاكرة الخاصة بك لتتمكن من إرسال وحفظ الصور، المقاطع المرئية، الموسيقى وغيرها من الوسائط.</string>
@@ -1207,13 +1397,13 @@
     <string name="Page5Title">قوي</string>
     <string name="Page6Title">مرتبط بالسحاب</string>
     <string name="Page7Title">خصوصي</string>
-    <string name="Page1Message">أسرع تطبيق مراسلة في العالم. <![CDATA[<br/>]]>كما أنه مجاني و آمن.</string>
-    <string name="Page2Message"><![CDATA[<b>تيليجرام</b>]]> يوصل الرسائل أسرع من أي تطبيق آخر.</string>
-    <string name="Page3Message"><![CDATA[<b>تيليجرام</b>]]> مجاني للأبد. بدون أية إعلانات. وبدون رسوم إشتراك.</string>
-    <string name="Page4Message"><![CDATA[<b>تيليجرام</b>]]>  يحمي الرسائل الخاصة بك من هجمات المخترقين.</string>
-    <string name="Page5Message"><![CDATA[<b>تيليجرام</b>]]>  لا يفرض عليك حدود لحجم الوسائط والمحادثات.</string>
-    <string name="Page6Message"><![CDATA[<b>تيليجرام</b>]]> يمكنك الوصول إلى الرسائل الخاصة بك من أجهزة متعددة.</string>
-    <string name="Page7Message"><![CDATA[<b>تيليجرام</b>]]> الرسائل مشفرة بشكل قوي وتستطيع تدمير ذاتها</string>
+    <string name="Page1Message">تيليجرام هو <![CDATA[<b>أسرع</b>]]> تطبيق مراسلة في العالم.\n,وهو كذلك <![CDATA[<b>مجاني</b>]]> و <![CDATA[<b>آمن</b>]]>.</string>
+    <string name="Page2Message"><![CDATA[<b>تيليجرام</b>]]> يوصل الرّسائل أسرع من\nأي تطبيق آخر.</string>
+    <string name="Page3Message"><![CDATA[<b>تيليجرام</b>]]> مجّاني دائماً. لا إعلانات.\nدون رسوم إشتراك.</string>
+    <string name="Page4Message"><![CDATA[<b>تيليجرام</b>]]> يحمي الرسائل الخاصة بك\nمن هجمات المخترقين.</string>
+    <string name="Page5Message"><![CDATA[<b>تيليجرام</b>]]> لا يفرض حدوداً على حجم\nمحادثاتك و وسائطك.</string>
+    <string name="Page6Message"><![CDATA[<b>تيليجرام</b>]]> يمكنك من الوصول إلى الرسائل الخاصة بك\nمن أجهزة متعددة.</string>
+    <string name="Page7Message">رسائل <![CDATA[<b>تيليجرام</b>]]> مشفرة بشكل قوي\nوتستطيع تدمير ذاتها.</string>
     <string name="StartMessaging">إبدأ المراسلة</string>
     <!--VoIP-->
     <string name="AccountSettings">إعدادات الحساب</string>
@@ -1256,7 +1446,7 @@
     <string name="CallMessageOutgoingMissed">مكالمات ملغاة</string>
     <string name="CallMessageIncomingDeclined">مكالمة مرفوضة</string>
     <string name="CallMessageWithDuration">%1$s (%2$s)</string>
-    <string name="CallEncryptionKeyDescription">هذه الصورة والنص تم اشتقاقهم من مفتاح التشفير لهذه المحادثة السرية مع <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>إذا كانت مطابقة لما يظهر على جهاز <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> ، التشفير من البداية للنهاية مضمون.</string>
+    <string name="CallEncryptionKeyDescription">هذه الصورة والنص تم اشتقاقهم من مفتاح التشفير لهذه المحادثة السرية مع <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nإذا كانت مطابقة لما يظهر على جهاز <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> ، التشفير من البداية للنهاية مضمون.</string>
     <string name="NoCallLog">لم تقم بإجراء أية مكالمة بعد.</string>
     <string name="VoipPeerIncompatible">إصدار تيليجرام الخاص بـ<![CDATA[<b>]]>%1$s<![CDATA[</b>]]> غير متوافق. ينبغي عليه تحديث إصدارهم لتتمكن من الاتصال بهم.</string>
     <string name="VoipPeerOutdated">تطبيق تيليجرام الخاص بـ<![CDATA[<b>]]>%1$s<![CDATA[</b>]]> لا يدعم المكالمات. ينبغي عليه تحديث تطبيقهم لتتمكن من الاتصال بهم.</string>
@@ -1275,13 +1465,18 @@
     <string name="ReturnToCall">الرجوع للمكالمة</string>
     <string name="CallNotAvailable">المعذرة، <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> لا يستقبل مكالمات.</string>
     <string name="CallEmojiKeyTooltip">إذا كانت هذه الايموجيات مطابقة للتي تظهر على شاشة %1$s، فالمكالمة 100%% آمنة. </string>
+    <string name="CallMessageReportProblem">قيم المكالمة</string>
+    <string name="CallReportHint">ماذا حدث؟</string>
+    <string name="CallReportIncludeLogs">أرفق المعلومات التقنية</string>
+    <string name="CallReportLogsExplain">هذا لن يفصح عن محتوى محادثتك، لكن سيساعد في حل المشكلة بشكل أسرع.</string>
+    <string name="CallReportSent">شكرًا لمساعدتك في جعل مكالمة تيليجرام أفضل.</string>
     <!--plural-->
-    <string name="Online_zero">%1$d متصل</string>
-    <string name="Online_one">%1$d متصل</string>
-    <string name="Online_two">%1$d متصل</string>
-    <string name="Online_few">%1$d متصل</string>
-    <string name="Online_many">%1$d متصل</string>
-    <string name="Online_other">%1$d متصل</string>
+    <string name="OnlineCount_zero">%1$d متصل</string>
+    <string name="OnlineCount_one">%1$d متصل</string>
+    <string name="OnlineCount_two">%1$d متصل</string>
+    <string name="OnlineCount_few">%1$d متصل</string>
+    <string name="OnlineCount_many">%1$d متصل</string>
+    <string name="OnlineCount_other">%1$d متصل</string>
     <string name="Members_zero">%1$d أعضاء</string>
     <string name="Members_one">%1$d عضو</string>
     <string name="Members_two">%1$d عضوان</string>
@@ -1469,6 +1664,12 @@
     <string name="ForwardedAudio_few">%1$d رسالة صوتية معاد توجيهها</string>
     <string name="ForwardedAudio_many">%1$d رسالة صوتية معاد توجيهها</string>
     <string name="ForwardedAudio_other">%1$d رسالة صوتية معاد توجيهها</string>
+    <string name="ForwardedRound_zero">%1$d رسالة مرئية معاد توجيهها</string>
+    <string name="ForwardedRound_one">رسالة مرئية معاد توجيهها</string>
+    <string name="ForwardedRound_two">%1$d رسالة مرئية معاد توجيهها</string>
+    <string name="ForwardedRound_few">%1$d رسالة مرئية معاد توجيهها</string>
+    <string name="ForwardedRound_many">%1$d رسالة مرئية معاد توجيهها</string>
+    <string name="ForwardedRound_other">%1$d رسالة مرئية معاد توجيهها</string>
     <string name="ForwardedLocation_zero">%1$d موقع معاد توجيهه</string>
     <string name="ForwardedLocation_one">موقع معاد توجيهه</string>
     <string name="ForwardedLocation_two">%1$d موقع معاد توجيهه</string>
@@ -1496,6 +1697,10 @@
     <!--date formatters-->
     <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
     <string name="formatterStats24H">MMM dd yyyy, HH:mm</string>
+    <string name="formatterBannedUntil12H">MMM dd yyyy, h:mm a</string>
+    <string name="formatterBannedUntil24H">MMM dd yyyy, HH:mm</string>
+    <string name="formatterBannedUntilThisYear12H">MMM dd, h:mm a</string>
+    <string name="formatterBannedUntilThisYear24H">MMM dd, HH:mm</string>
     <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">MMM dd</string>
     <string name="formatterYear">dd.MM.yy</string>

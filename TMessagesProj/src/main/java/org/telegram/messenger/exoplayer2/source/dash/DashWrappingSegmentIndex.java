@@ -22,15 +22,14 @@ import org.telegram.messenger.exoplayer2.source.dash.manifest.RangedUri;
  * An implementation of {@link DashSegmentIndex} that wraps a {@link ChunkIndex} parsed from a
  * media stream.
  */
-/* package */ final class DashWrappingSegmentIndex implements DashSegmentIndex {
+public final class DashWrappingSegmentIndex implements DashSegmentIndex {
 
   private final ChunkIndex chunkIndex;
 
   /**
    * @param chunkIndex The {@link ChunkIndex} to wrap.
-   * @param uri The URI where the data is located.
    */
-  public DashWrappingSegmentIndex(ChunkIndex chunkIndex, String uri) {
+  public DashWrappingSegmentIndex(ChunkIndex chunkIndex) {
     this.chunkIndex = chunkIndex;
   }
 
@@ -40,8 +39,8 @@ import org.telegram.messenger.exoplayer2.source.dash.manifest.RangedUri;
   }
 
   @Override
-  public int getLastSegmentNum(long periodDurationUs) {
-    return chunkIndex.length - 1;
+  public int getSegmentCount(long periodDurationUs) {
+    return chunkIndex.length;
   }
 
   @Override

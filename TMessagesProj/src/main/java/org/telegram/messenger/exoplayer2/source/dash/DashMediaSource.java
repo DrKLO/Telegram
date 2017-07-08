@@ -21,6 +21,7 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.util.SparseArray;
 import org.telegram.messenger.exoplayer2.C;
+import org.telegram.messenger.exoplayer2.ExoPlayer;
 import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.Timeline;
 import org.telegram.messenger.exoplayer2.source.AdaptiveMediaSourceEventListener;
@@ -87,14 +88,14 @@ public final class DashMediaSource implements MediaSource {
   private final int minLoadableRetryCount;
   private final long livePresentationDelayMs;
   private final EventDispatcher eventDispatcher;
-  private final DashManifestParser manifestParser;
+  private final ParsingLoadable.Parser<? extends DashManifest> manifestParser;
   private final ManifestCallback manifestCallback;
   private final Object manifestUriLock;
   private final SparseArray<DashMediaPeriod> periodsById;
   private final Runnable refreshManifestRunnable;
   private final Runnable simulateManifestRefreshRunnable;
 
-  private MediaSource.Listener sourceListener;
+  private Listener sourceListener;
   private DataSource dataSource;
   private Loader loader;
   private LoaderErrorThrower loaderErrorThrower;
@@ -199,15 +200,17 @@ public final class DashMediaSource implements MediaSource {
    * @param eventListener A listener of events. May be null if delivery of events is not required.
    */
   public DashMediaSource(Uri manifestUri, DataSource.Factory manifestDataSourceFactory,
-      DashManifestParser manifestParser, DashChunkSource.Factory chunkSourceFactory,
-      int minLoadableRetryCount, long livePresentationDelayMs, Handler eventHandler,
+      ParsingLoadable.Parser<? extends DashManifest> manifestParser,
+      DashChunkSource.Factory chunkSourceFactory, int minLoadableRetryCount,
+      long livePresentationDelayMs, Handler eventHandler,
       AdaptiveMediaSourceEventListener eventListener) {
     this(null, manifestUri, manifestDataSourceFactory, manifestParser, chunkSourceFactory,
         minLoadableRetryCount, livePresentationDelayMs, eventHandler, eventListener);
   }
 
   private DashMediaSource(DashManifest manifest, Uri manifestUri,
-      DataSource.Factory manifestDataSourceFactory, DashManifestParser manifestParser,
+      DataSource.Factory manifestDataSourceFactory,
+      ParsingLoadable.Parser<? extends DashManifest> manifestParser,
       DashChunkSource.Factory chunkSourceFactory, int minLoadableRetryCount,
       long livePresentationDelayMs, Handler eventHandler,
       AdaptiveMediaSourceEventListener eventListener) {
@@ -258,7 +261,7 @@ public final class DashMediaSource implements MediaSource {
   // MediaSource implementation.
 
   @Override
-  public void prepareSource(MediaSource.Listener listener) {
+  public void prepareSource(ExoPlayer player, boolean isTopLevelSource, Listener listener) {
     sourceListener = listener;
     if (sideloadedManifest) {
       loaderErrorThrower = new LoaderErrorThrower.Dummy();
@@ -571,22 +574,28 @@ public final class DashMediaSource implements MediaSource {
       long availableStartTimeUs = 0;
       long availableEndTimeUs = Long.MAX_VALUE;
       boolean isIndexExplicit = false;
+      boolean seenEmptyIndex = false;
       for (int i = 0; i < adaptationSetCount; i++) {
         DashSegmentIndex index = period.adaptationSets.get(i).representations.get(0).getIndex();
         if (index == null) {
           return new PeriodSeekInfo(true, 0, durationUs);
         }
-        int firstSegmentNum = index.getFirstSegmentNum();
-        int lastSegmentNum = index.getLastSegmentNum(durationUs);
         isIndexExplicit |= index.isExplicit();
-        long adaptationSetAvailableStartTimeUs = index.getTimeUs(firstSegmentNum);
-        availableStartTimeUs = Math.max(availableStartTimeUs, adaptationSetAvailableStartTimeUs);
-        if (lastSegmentNum != DashSegmentIndex.INDEX_UNBOUNDED) {
-          long adaptationSetAvailableEndTimeUs = index.getTimeUs(lastSegmentNum)
-              + index.getDurationUs(lastSegmentNum, durationUs);
-          availableEndTimeUs = Math.min(availableEndTimeUs, adaptationSetAvailableEndTimeUs);
-        } else {
-          // The available end time is unmodified, because this index is unbounded.
+        int segmentCount = index.getSegmentCount(durationUs);
+        if (segmentCount == 0) {
+          seenEmptyIndex = true;
+          availableStartTimeUs = 0;
+          availableEndTimeUs = 0;
+        } else if (!seenEmptyIndex) {
+          int firstSegmentNum = index.getFirstSegmentNum();
+          long adaptationSetAvailableStartTimeUs = index.getTimeUs(firstSegmentNum);
+          availableStartTimeUs = Math.max(availableStartTimeUs, adaptationSetAvailableStartTimeUs);
+          if (segmentCount != DashSegmentIndex.INDEX_UNBOUNDED) {
+            int lastSegmentNum = firstSegmentNum + segmentCount - 1;
+            long adaptationSetAvailableEndTimeUs = index.getTimeUs(lastSegmentNum)
+                + index.getDurationUs(lastSegmentNum, durationUs);
+            availableEndTimeUs = Math.min(availableEndTimeUs, adaptationSetAvailableEndTimeUs);
+          }
         }
       }
       return new PeriodSeekInfo(isIndexExplicit, availableStartTimeUs, availableEndTimeUs);
@@ -641,7 +650,7 @@ public final class DashMediaSource implements MediaSource {
           + Assertions.checkIndex(periodIndex, 0, manifest.getPeriodCount()) : null;
       return period.set(id, uid, 0, manifest.getPeriodDurationUs(periodIndex),
           C.msToUs(manifest.getPeriod(periodIndex).startMs - manifest.getPeriod(0).startMs)
-              - offsetInFirstPeriodUs);
+              - offsetInFirstPeriodUs, false);
     }
 
     @Override
@@ -703,8 +712,8 @@ public final class DashMediaSource implements MediaSource {
       // not correspond to the start of a segment in both, but this is an edge case.
       DashSegmentIndex snapIndex = period.adaptationSets.get(videoAdaptationSetIndex)
           .representations.get(0).getIndex();
-      if (snapIndex == null) {
-        // Video adaptation set does not include an index for snapping.
+      if (snapIndex == null || snapIndex.getSegmentCount(periodDurationUs) == 0) {
+        // Video adaptation set does not include a non-empty index for snapping.
         return windowDefaultStartPositionUs;
       }
       int segmentNum = snapIndex.getSegmentNum(defaultStartPositionInPeriodUs, periodDurationUs);

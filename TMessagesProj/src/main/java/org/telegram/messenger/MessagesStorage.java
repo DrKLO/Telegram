@@ -4008,7 +4008,8 @@ public class MessagesStorage {
         if (message instanceof TLRPC.TL_message_secret && (
                 message.media instanceof TLRPC.TL_messageMediaPhoto && message.ttl > 0 && message.ttl <= 60 ||
                         MessageObject.isVoiceMessage(message) ||
-                        MessageObject.isVideoMessage(message))) {
+                        MessageObject.isVideoMessage(message) ||
+                        MessageObject.isRoundVideoMessage(message))) {
             return 1;
         } else if (message.media instanceof TLRPC.TL_messageMediaPhoto || MessageObject.isVideoMessage(message)) {
             return 0;
@@ -4437,9 +4438,17 @@ public class MessagesStorage {
                         long id = 0;
                         TLRPC.MessageMedia object = null;
                         if (MessageObject.isVoiceMessage(message)) {
-                            if ((downloadMask & MediaController.AUTODOWNLOAD_MASK_AUDIO) != 0 && message.media.document.size < 1024 * 1024 * 5) {
+                            if ((downloadMask & MediaController.AUTODOWNLOAD_MASK_AUDIO) != 0 && message.media.document.size < 1024 * 1024 * 2) {
                                 id = message.media.document.id;
                                 type = MediaController.AUTODOWNLOAD_MASK_AUDIO;
+                                object = new TLRPC.TL_messageMediaDocument();
+                                object.caption = "";
+                                object.document = message.media.document;
+                            }
+                        } else if (MessageObject.isRoundVideoMessage(message)) {
+                            if ((downloadMask & MediaController.AUTODOWNLOAD_MASK_VIDEOMESSAGE) != 0 && message.media.document.size < 1024 * 1024 * 5) {
+                                id = message.media.document.id;
+                                type = MediaController.AUTODOWNLOAD_MASK_VIDEOMESSAGE;
                                 object = new TLRPC.TL_messageMediaDocument();
                                 object.caption = "";
                                 object.document = message.media.document;
@@ -6056,36 +6065,9 @@ public class MessagesStorage {
                     }
                     cursor.dispose();
                     if (!unpinnedDialogs.isEmpty()) {
-                        int minDate = 0;
-                        cursor = database.queryFinalized("SELECT min(date), min(date_i) FROM dialogs WHERE (date != 0 OR date_i != 0) AND pinned = 0");
-                        if (cursor.next()) {
-                            int date = cursor.intValue(0);
-                            int date_i = cursor.intValue(1);
-                            if (date != 0 && date_i != 0) {
-                                minDate = Math.min(date, date_i);
-                            } else if (date == 0) {
-                                minDate = date_i;
-                            } else {
-                                minDate = date;
-                            }
-                        }
-                        cursor.dispose();
-
                         SQLitePreparedStatement state = database.executeFast("UPDATE dialogs SET pinned = ? WHERE did = ?");
                         for (int a = 0; a < unpinnedDialogs.size(); a++) {
                             long did = unpinnedDialogs.get(a);
-
-                            int dialogDate = 0;
-                            cursor = database.queryFinalized("SELECT date FROM dialogs WHERE did = " + did);
-                            if (cursor.next()) {
-                                dialogDate = cursor.intValue(0);
-                            }
-                            cursor.dispose();
-
-                            if (dialogDate <= minDate) {
-                                database.executeFast("DELETE FROM dialogs WHERE did = " + did).stepThis().dispose();
-                                continue;
-                            }
                             state.requery();
                             state.bindInteger(1, 0);
                             state.bindLong(2, did);
@@ -6105,24 +6087,6 @@ public class MessagesStorage {
             @Override
             public void run() {
                 try {
-                    if (pinned == 0 && (int) did != 0) {
-                        int dialogDate = 0;
-                        int minDate = 0;
-                        SQLiteCursor cursor = database.queryFinalized("SELECT date FROM dialogs WHERE did = " + did);
-                        if (cursor.next()) {
-                            dialogDate = cursor.intValue(0);
-                        }
-                        cursor.dispose();
-                        cursor = database.queryFinalized("SELECT min(date) FROM dialogs WHERE date != 0 AND pinned = 0");
-                        if (cursor.next()) {
-                            minDate = cursor.intValue(0);
-                        }
-                        cursor.dispose();
-                        if (dialogDate <= minDate) {
-                            database.executeFast("DELETE FROM dialogs WHERE did = " + did).stepThis().dispose();
-                            return;
-                        }
-                    }
                     SQLitePreparedStatement state = database.executeFast("UPDATE dialogs SET pinned = ? WHERE did = ?");
                     state.bindInteger(1, pinned);
                     state.bindLong(2, did);

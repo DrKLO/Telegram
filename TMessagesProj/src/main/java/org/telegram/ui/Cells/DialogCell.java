@@ -353,7 +353,7 @@ public class DialogCell extends BaseCell {
             if (isDialogCell) {
                 draftMessage = DraftQuery.getDraft(currentDialogId);
                 if (draftMessage != null && (TextUtils.isEmpty(draftMessage.message) && draftMessage.reply_to_msg_id == 0 || lastDate > draftMessage.date && unreadCount != 0) ||
-                        ChatObject.isChannel(chat) && !chat.megagroup && !chat.creator && !chat.editor ||
+                        ChatObject.isChannel(chat) && !chat.megagroup && !chat.creator && (chat.admin_rights == null || !chat.admin_rights.post_messages) ||
                         chat != null && (chat.left || chat.kicked)) {
                     draftMessage = null;
                 }
@@ -766,7 +766,7 @@ public class DialogCell extends BaseCell {
             return MessagesController.getInstance().dialogs;
         } else if (dialogsType == 1) {
             return MessagesController.getInstance().dialogsServerOnly;
-        }  else if (dialogsType == 2) {
+        } else if (dialogsType == 2) {
             return MessagesController.getInstance().dialogsGroupsOnly;
         }
         return null;

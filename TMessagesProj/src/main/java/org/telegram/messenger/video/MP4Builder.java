@@ -132,11 +132,11 @@ public class MP4Builder {
         return flush;
     }
 
-    public int addTrack(MediaFormat mediaFormat, boolean isAudio) throws Exception {
+    public int addTrack(MediaFormat mediaFormat, boolean isAudio) {
         return currentMp4Movie.addTrack(mediaFormat, isAudio);
     }
 
-    public void finishMovie(boolean error) throws Exception {
+    public void finishMovie() throws Exception {
         if (mdat.getContentSize() != 0) {
             flushCurrentMdat();
         }

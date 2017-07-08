@@ -26,7 +26,7 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 /**
  * Parses a continuous DTS byte stream and extracts individual samples.
  */
-/* package */ final class DtsReader implements ElementaryStreamReader {
+public final class DtsReader implements ElementaryStreamReader {
 
   private static final int STATE_FINDING_SYNC = 0;
   private static final int STATE_READING_HEADER = 1;
@@ -39,6 +39,7 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
   private final ParsableByteArray headerScratchBytes;
   private final String language;
 
+  private String formatId;
   private TrackOutput output;
 
   private int state;
@@ -79,7 +80,9 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 
   @Override
   public void createTracks(ExtractorOutput extractorOutput, TrackIdGenerator idGenerator) {
-    output = extractorOutput.track(idGenerator.getNextId());
+    idGenerator.generateNewId();
+    formatId = idGenerator.getFormatId();
+    output = extractorOutput.track(idGenerator.getTrackId(), C.TRACK_TYPE_AUDIO);
   }
 
   @Override
@@ -165,7 +168,7 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
   private void parseHeader() {
     byte[] frameData = headerScratchBytes.data;
     if (format == null) {
-      format = DtsUtil.parseDtsFormat(frameData, null, language, null);
+      format = DtsUtil.parseDtsFormat(frameData, formatId, language, null);
       output.format(format);
     }
     sampleSize = DtsUtil.getDtsFrameSize(frameData);

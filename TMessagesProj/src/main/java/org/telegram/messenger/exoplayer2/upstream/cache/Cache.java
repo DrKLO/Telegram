@@ -199,6 +199,18 @@ public interface Cache {
   boolean isCached(String key, long position, long length);
 
   /**
+   * Returns the length of the cached data block starting from the {@code position} to the block end
+   * up to {@code length} bytes. If the {@code position} isn't cached then -(the length of the gap
+   * to the next cached data up to {@code length} bytes) is returned.
+   *
+   * @param key The cache key for the data.
+   * @param position The starting position of the data.
+   * @param length The maximum length of the data to be returned.
+   * @return the length of the cached or not cached data block length.
+   */
+  long getCachedBytes(String key, long position, long length);
+
+  /**
    * Sets the content length for the given key.
    *
    * @param key The cache key for the data.

@@ -31,17 +31,17 @@ public class MusicPlayerReceiver extends BroadcastReceiver {
             switch (keyEvent.getKeyCode()) {
                 case KeyEvent.KEYCODE_HEADSETHOOK:
                 case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
-                    if (MediaController.getInstance().isAudioPaused()) {
-                        MediaController.getInstance().playAudio(MediaController.getInstance().getPlayingMessageObject());
+                    if (MediaController.getInstance().isMessagePaused()) {
+                        MediaController.getInstance().playMessage(MediaController.getInstance().getPlayingMessageObject());
                     } else {
-                        MediaController.getInstance().pauseAudio(MediaController.getInstance().getPlayingMessageObject());
+                        MediaController.getInstance().pauseMessage(MediaController.getInstance().getPlayingMessageObject());
                     }
                     break;
                 case KeyEvent.KEYCODE_MEDIA_PLAY:
-                    MediaController.getInstance().playAudio(MediaController.getInstance().getPlayingMessageObject());
+                    MediaController.getInstance().playMessage(MediaController.getInstance().getPlayingMessageObject());
                     break;
                 case KeyEvent.KEYCODE_MEDIA_PAUSE:
-                    MediaController.getInstance().pauseAudio(MediaController.getInstance().getPlayingMessageObject());
+                    MediaController.getInstance().pauseMessage(MediaController.getInstance().getPlayingMessageObject());
                     break;
                 case KeyEvent.KEYCODE_MEDIA_STOP:
                     break;
@@ -54,9 +54,9 @@ public class MusicPlayerReceiver extends BroadcastReceiver {
             }
         } else {
             if (intent.getAction().equals(MusicPlayerService.NOTIFY_PLAY)) {
-                MediaController.getInstance().playAudio(MediaController.getInstance().getPlayingMessageObject());
+                MediaController.getInstance().playMessage(MediaController.getInstance().getPlayingMessageObject());
             } else if (intent.getAction().equals(MusicPlayerService.NOTIFY_PAUSE) || intent.getAction().equals(android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY)) {
-                MediaController.getInstance().pauseAudio(MediaController.getInstance().getPlayingMessageObject());
+                MediaController.getInstance().pauseMessage(MediaController.getInstance().getPlayingMessageObject());
             } else if (intent.getAction().equals(MusicPlayerService.NOTIFY_NEXT)) {
                 MediaController.getInstance().playNextMessage();
             } else if (intent.getAction().equals(MusicPlayerService.NOTIFY_CLOSE)) {

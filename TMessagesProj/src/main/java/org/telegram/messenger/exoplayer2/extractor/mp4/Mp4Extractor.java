@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.extractor.mp4;
 
+import android.support.annotation.IntDef;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.ParserException;
@@ -33,6 +34,8 @@ import org.telegram.messenger.exoplayer2.util.NalUnitUtil;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 import org.telegram.messenger.exoplayer2.util.Util;
 import java.io.IOException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -54,11 +57,15 @@ public final class Mp4Extractor implements Extractor, SeekMap {
 
   };
 
-  // Parser states.
-  private static final int STATE_AFTER_SEEK = 0;
-  private static final int STATE_READING_ATOM_HEADER = 1;
-  private static final int STATE_READING_ATOM_PAYLOAD = 2;
-  private static final int STATE_READING_SAMPLE = 3;
+  /**
+   * Parser states.
+   */
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({STATE_READING_ATOM_HEADER, STATE_READING_ATOM_PAYLOAD, STATE_READING_SAMPLE})
+  private @interface State {}
+  private static final int STATE_READING_ATOM_HEADER = 0;
+  private static final int STATE_READING_ATOM_PAYLOAD = 1;
+  private static final int STATE_READING_SAMPLE = 2;
 
   // Brand stored in the ftyp atom for QuickTime media.
   private static final int BRAND_QUICKTIME = Util.getIntegerCodeForString("qt  ");
@@ -76,7 +83,7 @@ public final class Mp4Extractor implements Extractor, SeekMap {
   private final ParsableByteArray atomHeader;
   private final Stack<ContainerAtom> containerAtoms;
 
-  private int parserState;
+  @State private int parserState;
   private int atomType;
   private long atomSize;
   private int atomHeaderBytesRead;
@@ -96,7 +103,6 @@ public final class Mp4Extractor implements Extractor, SeekMap {
     containerAtoms = new Stack<>();
     nalStartCode = new ParsableByteArray(NalUnitUtil.NAL_START_CODE);
     nalLength = new ParsableByteArray(4);
-    enterReadingAtomHeaderState();
   }
 
   @Override
@@ -110,12 +116,16 @@ public final class Mp4Extractor implements Extractor, SeekMap {
   }
 
   @Override
-  public void seek(long position) {
+  public void seek(long position, long timeUs) {
     containerAtoms.clear();
     atomHeaderBytesRead = 0;
     sampleBytesWritten = 0;
     sampleCurrentNalBytesRemaining = 0;
-    parserState = STATE_AFTER_SEEK;
+    if (position == 0) {
+      enterReadingAtomHeaderState();
+    } else if (tracks != null) {
+      updateSampleIndices(timeUs);
+    }
   }
 
   @Override
@@ -128,13 +138,6 @@ public final class Mp4Extractor implements Extractor, SeekMap {
       throws IOException, InterruptedException {
     while (true) {
       switch (parserState) {
-        case STATE_AFTER_SEEK:
-          if (input.getPosition() == 0) {
-            enterReadingAtomHeaderState();
-          } else {
-            parserState = STATE_READING_SAMPLE;
-          }
-          break;
         case STATE_READING_ATOM_HEADER:
           if (!readAtomHeader(input)) {
             return RESULT_END_OF_INPUT;
@@ -145,8 +148,10 @@ public final class Mp4Extractor implements Extractor, SeekMap {
             return RESULT_SEEK;
           }
           break;
-        default:
+        case STATE_READING_SAMPLE:
           return readSample(input, seekPosition);
+        default:
+          throw new IllegalStateException();
       }
     }
   }
@@ -173,8 +178,6 @@ public final class Mp4Extractor implements Extractor, SeekMap {
         // Handle the case where the requested time is before the first synchronization sample.
         sampleIndex = sampleTable.getIndexOfLaterOrEqualSynchronizationSample(timeUs);
       }
-      track.sampleIndex = sampleIndex;
-
       long offset = sampleTable.offsets[sampleIndex];
       if (offset < earliestSamplePosition) {
         earliestSamplePosition = offset;
@@ -340,7 +343,8 @@ public final class Mp4Extractor implements Extractor, SeekMap {
         continue;
       }
 
-      Mp4Track mp4Track = new Mp4Track(track, trackSampleTable, extractorOutput.track(i));
+      Mp4Track mp4Track = new Mp4Track(track, trackSampleTable,
+          extractorOutput.track(i, track.type));
       // Each sample has up to three bytes of overhead for the start code that replaces its length.
       // Allow ten source samples per output sample, like the platform extractor.
       int maxInputSize = trackSampleTable.maximumSize + 3 * 10;
@@ -476,6 +480,21 @@ public final class Mp4Extractor implements Extractor, SeekMap {
     }
 
     return earliestSampleTrackIndex;
+  }
+
+  /**
+   * Updates every track's sample index to point its latest sync sample before/at {@code timeUs}.
+   */
+  private void updateSampleIndices(long timeUs) {
+    for (Mp4Track track : tracks) {
+      TrackSampleTable sampleTable = track.sampleTable;
+      int sampleIndex = sampleTable.getIndexOfEarlierOrEqualSynchronizationSample(timeUs);
+      if (sampleIndex == C.INDEX_UNSET) {
+        // Handle the case where the requested time is before the first synchronization sample.
+        sampleIndex = sampleTable.getIndexOfLaterOrEqualSynchronizationSample(timeUs);
+      }
+      track.sampleIndex = sampleIndex;
+    }
   }
 
   /**

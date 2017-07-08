@@ -1656,7 +1656,7 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager imple
                 updateRemainingSpans(currentSpan, mLayoutState.mLayoutDirection, targetLine);
             }
             recycle(recycler, mLayoutState);
-            if (mLayoutState.mStopInFocusable && view.isFocusable()) {
+            if (mLayoutState.mStopInFocusable && view.hasFocusable()) {
                 if (lp.mFullSpan) {
                     mRemainingSpans.clear();
                 } else {
@@ -2268,6 +2268,7 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager imple
                 return view;
             }
         }
+
         // either could not find from the desired span or prev view is full span.
         // traverse all spans
         if (preferLastSpan(layoutDir)) {
@@ -2282,6 +2283,44 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager imple
                 View view = mSpans[i].getFocusableViewAfter(referenceChildPosition, layoutDir);
                 if (view != null && view != directChild) {
                     return view;
+                }
+            }
+        }
+
+        // Could not find any focusable views from any of the existing spans. Now start the search
+        // to find the best unfocusable candidate to become visible on the screen next. The search
+        // is done in the same fashion: first, check the views in the desired span and if no
+        // candidate is found, traverse the views in all the remaining spans.
+        boolean shouldSearchFromStart = !mReverseLayout == (layoutDir == LayoutState.LAYOUT_START);
+        View unfocusableCandidate = null;
+        if (!prevFocusFullSpan) {
+            unfocusableCandidate = findViewByPosition(shouldSearchFromStart
+                    ? prevFocusSpan.findFirstPartiallyVisibleItemPosition() :
+                    prevFocusSpan.findLastPartiallyVisibleItemPosition());
+            if (unfocusableCandidate != null && unfocusableCandidate != directChild) {
+                return unfocusableCandidate;
+            }
+        }
+
+        if (preferLastSpan(layoutDir)) {
+            for (int i = mSpanCount - 1; i >= 0; i--) {
+                if (i == prevFocusSpan.mIndex) {
+                    continue;
+                }
+                unfocusableCandidate = findViewByPosition(shouldSearchFromStart
+                        ? mSpans[i].findFirstPartiallyVisibleItemPosition() :
+                        mSpans[i].findLastPartiallyVisibleItemPosition());
+                if (unfocusableCandidate != null && unfocusableCandidate != directChild) {
+                    return unfocusableCandidate;
+                }
+            }
+        } else {
+            for (int i = 0; i < mSpanCount; i++) {
+                unfocusableCandidate = findViewByPosition(shouldSearchFromStart
+                        ? mSpans[i].findFirstPartiallyVisibleItemPosition() :
+                        mSpans[i].findLastPartiallyVisibleItemPosition());
+                if (unfocusableCandidate != null && unfocusableCandidate != directChild) {
+                    return unfocusableCandidate;
                 }
             }
         }
@@ -2606,6 +2645,12 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager imple
                     : findOneVisibleChild(0, mViews.size(), false);
         }
 
+        public int findFirstPartiallyVisibleItemPosition() {
+            return mReverseLayout
+                    ? findOnePartiallyVisibleChild(mViews.size() - 1, -1, true)
+                    : findOnePartiallyVisibleChild(0, mViews.size(), true);
+        }
+
         public int findFirstCompletelyVisibleItemPosition() {
             return mReverseLayout
                     ? findOneVisibleChild(mViews.size() - 1, -1, true)
@@ -2618,13 +2663,45 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager imple
                     : findOneVisibleChild(mViews.size() - 1, -1, false);
         }
 
+        public int findLastPartiallyVisibleItemPosition() {
+            return mReverseLayout
+                    ? findOnePartiallyVisibleChild(0, mViews.size(), true)
+                    : findOnePartiallyVisibleChild(mViews.size() - 1, -1, true);
+        }
+
         public int findLastCompletelyVisibleItemPosition() {
             return mReverseLayout
                     ? findOneVisibleChild(0, mViews.size(), true)
                     : findOneVisibleChild(mViews.size() - 1, -1, true);
         }
 
-        int findOneVisibleChild(int fromIndex, int toIndex, boolean completelyVisible) {
+        /**
+         * Returns the first view within this span that is partially or fully visible. Partially
+         * visible refers to a view that overlaps but is not fully contained within RV's padded
+         * bounded area. This view returned can be defined to have an area of overlap strictly
+         * greater than zero if acceptEndPointInclusion is false. If true, the view's endpoint
+         * inclusion is enough to consider it partially visible. The latter case can then refer to
+         * an out-of-bounds view positioned right at the top (or bottom) boundaries of RV's padded
+         * area. This is used e.g. inside
+         * {@link #onFocusSearchFailed(View, int, RecyclerView.Recycler, RecyclerView.State)} for
+         * calculating the next unfocusable child to become visible on the screen.
+         * @param fromIndex The child position index to start the search from.
+         * @param toIndex The child position index to end the search at.
+         * @param completelyVisible True if we have to only consider completely visible views,
+         *                          false otherwise.
+         * @param acceptCompletelyVisible True if we can consider both partially or fully visible
+         *                                views, false, if only a partially visible child should be
+         *                                returned.
+         * @param acceptEndPointInclusion If the view's endpoint intersection with RV's padded
+         *                                bounded area is enough to consider it partially visible,
+         *                                false otherwise
+         * @return The adapter position of the first view that's either partially or fully visible.
+         * {@link RecyclerView#NO_POSITION} if no such view is found.
+         */
+        int findOnePartiallyOrCompletelyVisibleChild(int fromIndex, int toIndex,
+                boolean completelyVisible,
+                boolean acceptCompletelyVisible,
+                boolean acceptEndPointInclusion) {
             final int start = mPrimaryOrientation.getStartAfterPadding();
             final int end = mPrimaryOrientation.getEndAfterPadding();
             final int next = toIndex > fromIndex ? 1 : -1;
@@ -2632,17 +2709,38 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager imple
                 final View child = mViews.get(i);
                 final int childStart = mPrimaryOrientation.getDecoratedStart(child);
                 final int childEnd = mPrimaryOrientation.getDecoratedEnd(child);
-                if (childStart < end && childEnd > start) {
-                    if (completelyVisible) {
+                boolean childStartInclusion = acceptEndPointInclusion ? (childStart <= end)
+                        : (childStart < end);
+                boolean childEndInclusion = acceptEndPointInclusion ? (childEnd >= start)
+                        : (childEnd > start);
+                if (childStartInclusion && childEndInclusion) {
+                    if (completelyVisible && acceptCompletelyVisible) {
+                        // the child has to be completely visible to be returned.
                         if (childStart >= start && childEnd <= end) {
                             return getPosition(child);
                         }
-                    } else {
+                    } else if (acceptCompletelyVisible) {
+                        // can return either a partially or completely visible child.
+                        return getPosition(child);
+                    } else if (childStart < start || childEnd > end) {
+                        // should return a partially visible child if exists and a completely
+                        // visible child is not acceptable in this case.
                         return getPosition(child);
                     }
                 }
             }
             return NO_POSITION;
+        }
+
+        int findOneVisibleChild(int fromIndex, int toIndex, boolean completelyVisible) {
+            return findOnePartiallyOrCompletelyVisibleChild(fromIndex, toIndex, completelyVisible,
+                    true, false);
+        }
+
+        int findOnePartiallyVisibleChild(int fromIndex, int toIndex,
+                boolean acceptEndPointInclusion) {
+            return findOnePartiallyOrCompletelyVisibleChild(fromIndex, toIndex, false, false,
+                    acceptEndPointInclusion);
         }
 
         /**
@@ -2654,8 +2752,11 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager imple
                 final int limit = mViews.size();
                 for (int i = 0; i < limit; i++) {
                     final View view = mViews.get(i);
-                    if (view.isFocusable() &&
-                            (getPosition(view) > referenceChildPosition == mReverseLayout) ) {
+                    if ((mReverseLayout && getPosition(view) <= referenceChildPosition)
+                            || (!mReverseLayout && getPosition(view) >= referenceChildPosition)) {
+                        break;
+                    }
+                    if (view.hasFocusable()) {
                         candidate = view;
                     } else {
                         break;
@@ -2664,8 +2765,11 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager imple
             } else {
                 for (int i = mViews.size() - 1; i >= 0; i--) {
                     final View view = mViews.get(i);
-                    if (view.isFocusable() &&
-                            (getPosition(view) > referenceChildPosition == !mReverseLayout)) {
+                    if ((mReverseLayout && getPosition(view) >= referenceChildPosition)
+                            || (!mReverseLayout && getPosition(view) <= referenceChildPosition)) {
+                        break;
+                    }
+                    if (view.hasFocusable()) {
                         candidate = view;
                     } else {
                         break;

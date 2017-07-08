@@ -8,6 +8,10 @@
 
 package org.telegram.ui.Components;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
@@ -46,6 +50,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.EmojiData;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.query.StickersQuery;
@@ -576,6 +581,9 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private TrendingGridAdapter trendingGridAdapter;
     private RecyclerListView.OnItemClickListener stickersOnItemClickListener;
     private PagerSlidingTabStrip pagerSlidingTabStrip;
+    private TextView mediaBanTooltip;
+
+    private int currentChatId;
 
     private HashMap<Long, TLRPC.StickerSetCovered> installingStickerSets = new HashMap<>();
     private HashMap<Long, TLRPC.StickerSetCovered> removingStickerSets = new HashMap<>();
@@ -1086,6 +1094,15 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         emojiGrids.get(0).setEmptyView(textView);
 
         addView(pager, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
+
+        mediaBanTooltip = new CorrectlyMeasuringTextView(context);
+        mediaBanTooltip.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(3), Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
+        mediaBanTooltip.setTextColor(Theme.getColor(Theme.key_chat_gifSaveHintText));
+        mediaBanTooltip.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(7), AndroidUtilities.dp(8), AndroidUtilities.dp(7));
+        mediaBanTooltip.setGravity(Gravity.CENTER_VERTICAL);
+        mediaBanTooltip.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        mediaBanTooltip.setVisibility(INVISIBLE);
+        addView(mediaBanTooltip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 30, 48 + 5, 5, 0));
 
         emojiSize = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 40 : 32);
         pickerView = new EmojiColorPickerView(context);
@@ -1609,6 +1626,9 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
     public void onOpen(boolean forceEmoji) {
         if (stickersTab != null) {
+            if (currentPage != 0 && currentChatId != 0) {
+                currentPage = 0;
+            }
             if (currentPage == 0 || forceEmoji) {
                 if (pager.getCurrentItem() == 6) {
                     pager.setCurrentItem(0, !forceEmoji);
@@ -1724,6 +1744,71 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 updateStickerTabs();
             }
         }
+    }
+
+    public void setStickersBanned(boolean value, int chatId) {
+        if (value) {
+            currentChatId = chatId;
+        } else {
+            currentChatId = 0;
+        }
+        View view = pagerSlidingTabStrip.getTab(6);
+        if (view != null) {
+            view.setAlpha(currentChatId != 0 ? 0.5f : 1.0f);
+            if (currentChatId != 0 && pager.getCurrentItem() == 6) {
+                pager.setCurrentItem(0);
+            }
+        }
+    }
+
+    public void showStickerBanHint() {
+        if (mediaBanTooltip.getVisibility() == VISIBLE) {
+            return;
+        }
+        TLRPC.Chat chat = MessagesController.getInstance().getChat(currentChatId);
+        if (chat == null || chat.banned_rights == null) {
+            return;
+        }
+
+        if (AndroidUtilities.isBannedForever(chat.banned_rights.until_date)) {
+            mediaBanTooltip.setText(LocaleController.getString("AttachStickersRestrictedForever", R.string.AttachStickersRestrictedForever));
+        } else {
+            mediaBanTooltip.setText(LocaleController.formatString("AttachStickersRestricted", R.string.AttachStickersRestricted, LocaleController.formatDateForBan(chat.banned_rights.until_date)));
+        }
+        mediaBanTooltip.setVisibility(View.VISIBLE);
+        AnimatorSet AnimatorSet = new AnimatorSet();
+        AnimatorSet.playTogether(
+                ObjectAnimator.ofFloat(mediaBanTooltip, "alpha", 0.0f, 1.0f)
+        );
+        AnimatorSet.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mediaBanTooltip == null) {
+                            return;
+                        }
+                        AnimatorSet AnimatorSet = new AnimatorSet();
+                        AnimatorSet.playTogether(
+                                ObjectAnimator.ofFloat(mediaBanTooltip, "alpha", 0.0f)
+                        );
+                        AnimatorSet.addListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                if (mediaBanTooltip != null) {
+                                    mediaBanTooltip.setVisibility(View.INVISIBLE);
+                                }
+                            }
+                        });
+                        AnimatorSet.setDuration(300);
+                        AnimatorSet.start();
+                    }
+                }, 5000);
+            }
+        });
+        AnimatorSet.setDuration(300);
+        AnimatorSet.start();
     }
 
     private void updateVisibleTrendingSets() {
@@ -2192,6 +2277,15 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 view = views.get(position);
             }
             viewGroup.removeView(view);
+        }
+
+        @Override
+        public boolean canScrollToTab(int position) {
+            if (position == 6 && currentChatId != 0) {
+                showStickerBanHint();
+                return false;
+            }
+            return true;
         }
 
         public int getCount() {

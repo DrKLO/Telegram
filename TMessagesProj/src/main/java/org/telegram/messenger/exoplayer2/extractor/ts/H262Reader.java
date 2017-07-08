@@ -30,13 +30,14 @@ import java.util.Collections;
 /**
  * Parses a continuous H262 byte stream and extracts individual frames.
  */
-/* package */ final class H262Reader implements ElementaryStreamReader {
+public final class H262Reader implements ElementaryStreamReader {
 
   private static final int START_PICTURE = 0x00;
   private static final int START_SEQUENCE_HEADER = 0xB3;
   private static final int START_EXTENSION = 0xB5;
   private static final int START_GROUP = 0xB8;
 
+  private String formatId;
   private TrackOutput output;
 
   // Maps (frame_rate_code - 1) indices to values, as defined in ITU-T H.262 Table 6-4.
@@ -78,7 +79,9 @@ import java.util.Collections;
 
   @Override
   public void createTracks(ExtractorOutput extractorOutput, TrackIdGenerator idGenerator) {
-    output = extractorOutput.track(idGenerator.getNextId());
+    idGenerator.generateNewId();
+    formatId = idGenerator.getFormatId();
+    output = extractorOutput.track(idGenerator.getTrackId(), C.TRACK_TYPE_VIDEO);
   }
 
   @Override
@@ -126,7 +129,7 @@ import java.util.Collections;
         int bytesAlreadyPassed = lengthToStartCode < 0 ? -lengthToStartCode : 0;
         if (csdBuffer.onStartCode(startCodeValue, bytesAlreadyPassed)) {
           // The csd data is complete, so we can decode and output the media format.
-          Pair<Format, Long> result = parseCsdBuffer(csdBuffer);
+          Pair<Format, Long> result = parseCsdBuffer(csdBuffer, formatId);
           output.format(result.first);
           frameDurationUs = result.second;
           hasOutputFormat = true;
@@ -166,10 +169,11 @@ import java.util.Collections;
    * Parses the {@link Format} and frame duration from a csd buffer.
    *
    * @param csdBuffer The csd buffer.
+   * @param formatId The id for the generated format. May be null.
    * @return A pair consisting of the {@link Format} and the frame duration in microseconds, or
    *     0 if the duration could not be determined.
    */
-  private static Pair<Format, Long> parseCsdBuffer(CsdBuffer csdBuffer) {
+  private static Pair<Format, Long> parseCsdBuffer(CsdBuffer csdBuffer, String formatId) {
     byte[] csdData = Arrays.copyOf(csdBuffer.data, csdBuffer.length);
 
     int firstByte = csdData[4] & 0xFF;
@@ -195,7 +199,7 @@ import java.util.Collections;
         break;
     }
 
-    Format format = Format.createVideoSampleFormat(null, MimeTypes.VIDEO_MPEG2, null,
+    Format format = Format.createVideoSampleFormat(formatId, MimeTypes.VIDEO_MPEG2, null,
         Format.NO_VALUE, Format.NO_VALUE, width, height, Format.NO_VALUE,
         Collections.singletonList(csdData), Format.NO_VALUE, pixelWidthHeightRatio, null);
 

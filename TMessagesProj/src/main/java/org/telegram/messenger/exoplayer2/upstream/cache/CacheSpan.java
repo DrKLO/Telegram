@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.upstream.cache;
 
+import android.support.annotation.NonNull;
 import org.telegram.messenger.exoplayer2.C;
 import java.io.File;
 
@@ -95,7 +96,7 @@ public class CacheSpan implements Comparable<CacheSpan> {
   }
 
   @Override
-  public int compareTo(CacheSpan another) {
+  public int compareTo(@NonNull CacheSpan another) {
     if (!key.equals(another.key)) {
       return key.compareTo(another.key);
     }

@@ -16,19 +16,16 @@
 package org.telegram.messenger.exoplayer2.source.chunk;
 
 import org.telegram.messenger.exoplayer2.Format;
-import org.telegram.messenger.exoplayer2.extractor.DefaultTrackOutput;
 import org.telegram.messenger.exoplayer2.upstream.DataSource;
 import org.telegram.messenger.exoplayer2.upstream.DataSpec;
 
 /**
- * A base implementation of {@link MediaChunk}, for chunks that contain a single track.
- * <p>
- * Loaded samples are output to a {@link DefaultTrackOutput}.
+ * A base implementation of {@link MediaChunk} that outputs to a {@link BaseMediaChunkOutput}.
  */
 public abstract class BaseMediaChunk extends MediaChunk {
 
-  private DefaultTrackOutput trackOutput;
-  private int firstSampleIndex;
+  private BaseMediaChunkOutput output;
+  private int[] firstSampleIndices;
 
   /**
    * @param dataSource The source from which the data should be loaded.
@@ -48,29 +45,29 @@ public abstract class BaseMediaChunk extends MediaChunk {
   }
 
   /**
-   * Initializes the chunk for loading, setting the {@link DefaultTrackOutput} that will receive
+   * Initializes the chunk for loading, setting the {@link BaseMediaChunkOutput} that will receive
    * samples as they are loaded.
    *
-   * @param trackOutput The output that will receive the loaded samples.
+   * @param output The output that will receive the loaded media samples.
    */
-  public void init(DefaultTrackOutput trackOutput) {
-    this.trackOutput = trackOutput;
-    this.firstSampleIndex = trackOutput.getWriteIndex();
+  public void init(BaseMediaChunkOutput output) {
+    this.output = output;
+    firstSampleIndices = output.getWriteIndices();
   }
 
   /**
-   * Returns the index of the first sample in the output that was passed to
-   * {@link #init(DefaultTrackOutput)} that will originate from this chunk.
+   * Returns the index of the first sample in the specified track of the output that will originate
+   * from this chunk.
    */
-  public final int getFirstSampleIndex() {
-    return firstSampleIndex;
+  public final int getFirstSampleIndex(int trackIndex) {
+    return firstSampleIndices[trackIndex];
   }
 
   /**
-   * Returns the track output most recently passed to {@link #init(DefaultTrackOutput)}.
+   * Returns the output most recently passed to {@link #init(BaseMediaChunkOutput)}.
    */
-  protected final DefaultTrackOutput getTrackOutput() {
-    return trackOutput;
+  protected final BaseMediaChunkOutput getOutput() {
+    return output;
   }
 
 }

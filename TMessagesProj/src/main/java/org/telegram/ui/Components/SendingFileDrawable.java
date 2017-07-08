@@ -10,12 +10,11 @@ package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
-import android.graphics.drawable.Drawable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
-public class SendingFileDrawable extends Drawable {
+public class SendingFileDrawable extends StatusDrawable {
 
     private boolean isChat = false;
     private long lastUpdateTime = 0;

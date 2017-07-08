@@ -11,9 +11,11 @@ package org.telegram.ui;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -33,8 +35,10 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
@@ -63,10 +67,18 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int deleteAccountSectionRow;
     private int deleteAccountRow;
     private int deleteAccountDetailRow;
+    private int paymentsSectionRow;
+    private int paymentsClearRow;
+    private int paymentsDetailRow;
     private int secretSectionRow;
     private int secretWebpageRow;
     private int secretDetailRow;
+    private int callsSectionRow;
+    private int callsP2PRow;
+    private int callsDetailRow;
     private int rowCount;
+
+    private boolean clear[] = new boolean[2];
 
     @Override
     public boolean onFragmentCreate() {
@@ -93,6 +105,9 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         deleteAccountSectionRow = rowCount++;
         deleteAccountRow = rowCount++;
         deleteAccountDetailRow = rowCount++;
+        paymentsSectionRow = rowCount++;
+        paymentsClearRow = rowCount++;
+        paymentsDetailRow = rowCount++;
         if (MessagesController.getInstance().secretWebpagePreview != 1) {
             secretSectionRow = rowCount++;
             secretWebpageRow = rowCount++;
@@ -101,6 +116,15 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             secretSectionRow = -1;
             secretWebpageRow = -1;
             secretDetailRow = -1;
+        }
+        if(MessagesController.getInstance().callsEnabled){
+            callsSectionRow=rowCount++;
+            callsP2PRow=rowCount++;
+            callsDetailRow=rowCount++;
+        }else{
+            callsSectionRow=-1;
+            callsP2PRow=-1;
+            callsDetailRow=-1;
         }
 
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.privacyRulesUpdated);
@@ -229,6 +253,73 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     if (view instanceof TextCheckCell) {
                         ((TextCheckCell) view).setChecked(MessagesController.getInstance().secretWebpagePreview == 1);
                     }
+                } else if (position == callsP2PRow) {
+                    SharedPreferences prefs=getParentActivity().getSharedPreferences("mainconfig", Context.MODE_PRIVATE);
+					boolean enableP2p=!prefs.getBoolean("calls_p2p", true);
+                    prefs.edit().putBoolean("calls_p2p", enableP2p).commit();
+                    if (view instanceof TextCheckCell) {
+                        ((TextCheckCell) view).setChecked(enableP2p);
+                    }
+                } else if (position == paymentsClearRow) {
+                    BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+                    builder.setApplyTopPadding(false);
+                    builder.setApplyBottomPadding(false);
+                    LinearLayout linearLayout = new LinearLayout(getParentActivity());
+                    linearLayout.setOrientation(LinearLayout.VERTICAL);
+                    for (int a = 0; a < 2; a++) {
+                        String name = null;
+                        if (a == 0) {
+                            name = LocaleController.getString("PrivacyClearShipping", R.string.PrivacyClearShipping);
+                        } else if (a == 1) {
+                            name = LocaleController.getString("PrivacyClearPayment", R.string.PrivacyClearPayment);
+                        }
+                        clear[a] = true;
+                        CheckBoxCell checkBoxCell = new CheckBoxCell(getParentActivity(), true);
+                        checkBoxCell.setTag(a);
+                        checkBoxCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+                        linearLayout.addView(checkBoxCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+                        checkBoxCell.setText(name, null, true, true);
+                        checkBoxCell.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                        checkBoxCell.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                CheckBoxCell cell = (CheckBoxCell) v;
+                                int num = (Integer) cell.getTag();
+                                clear[num] = !clear[num];
+                                cell.setChecked(clear[num], true);
+                            }
+                        });
+                    }
+                    BottomSheet.BottomSheetCell cell = new BottomSheet.BottomSheetCell(getParentActivity(), 1);
+                    cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+                    cell.setTextAndIcon(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), 0);
+                    cell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
+                    cell.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            try {
+                                if (visibleDialog != null) {
+                                    visibleDialog.dismiss();
+                                }
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                            TLRPC.TL_payments_clearSavedInfo req = new TLRPC.TL_payments_clearSavedInfo();
+                            req.credentials = clear[1];
+                            req.info = clear[0];
+                            UserConfig.tmpPassword = null;
+                            UserConfig.saveConfig(false);
+                            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                                @Override
+                                public void run(TLObject response, TLRPC.TL_error error) {
+
+                                }
+                            });
+                        }
+                    });
+                    linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+                    builder.setCustomView(linearLayout);
+                    showDialog(builder.create());
                 }
             }
         });
@@ -318,7 +409,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     position == groupsRow && !ContactsController.getInstance().getLoadingGroupInfo() ||
                     position == lastSeenRow && !ContactsController.getInstance().getLoadingLastSeenInfo() ||
                     position == callsRow && !ContactsController.getInstance().getLoadingCallsInfo() ||
-                    position == deleteAccountRow && !ContactsController.getInstance().getLoadingDeleteInfo();
+                    position == deleteAccountRow && !ContactsController.getInstance().getLoadingDeleteInfo() ||
+                    position == paymentsClearRow || position == callsP2PRow;
         }
 
         @Override
@@ -402,13 +494,15 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                             }
                         }
                         textCell.setTextAndValue(LocaleController.getString("DeleteAccountIfAwayFor", R.string.DeleteAccountIfAwayFor), value, false);
+                    } else if (position == paymentsClearRow) {
+                        textCell.setText(LocaleController.getString("PrivacyPaymentsClear", R.string.PrivacyPaymentsClear), false);
                     }
                     break;
                 case 1:
                     TextInfoPrivacyCell privacyCell = (TextInfoPrivacyCell) holder.itemView;
                     if (position == deleteAccountDetailRow) {
                         privacyCell.setText(LocaleController.getString("DeleteAccountHelp", R.string.DeleteAccountHelp));
-                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, secretSectionRow == -1 ? R.drawable.greydivider_bottom : R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     } else if (position == groupsDetailRow) {
                         privacyCell.setText(LocaleController.getString("GroupsAndChannelsHelp", R.string.GroupsAndChannelsHelp));
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
@@ -417,6 +511,12 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     } else if (position == secretDetailRow) {
                         privacyCell.setText("");
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, callsSectionRow == -1 ? R.drawable.greydivider_bottom : R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    } else if (position == paymentsDetailRow) {
+                        privacyCell.setText(LocaleController.getString("PrivacyPaymentsClearInfo", R.string.PrivacyPaymentsClearInfo));
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, secretSectionRow == -1 && callsSectionRow == -1 ? R.drawable.greydivider_bottom : R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    } else if (position == callsDetailRow) {
+                        privacyCell.setText(LocaleController.getString("PrivacyCallsP2PHelp", R.string.PrivacyCallsP2PHelp));
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     }
                     break;
@@ -430,12 +530,19 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         headerCell.setText(LocaleController.getString("DeleteAccountTitle", R.string.DeleteAccountTitle));
                     } else if (position == secretSectionRow) {
                         headerCell.setText(LocaleController.getString("SecretChat", R.string.SecretChat));
+                    } else if (position == paymentsSectionRow) {
+                        headerCell.setText(LocaleController.getString("PrivacyPayments", R.string.PrivacyPayments));
+                    } else if (position == callsSectionRow) {
+                        headerCell.setText(LocaleController.getString("Calls", R.string.Calls));
                     }
                     break;
                 case 3:
                     TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
                     if (position == secretWebpageRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("SecretWebPage", R.string.SecretWebPage), MessagesController.getInstance().secretWebpagePreview == 1, true);
+                    } else if (position == callsP2PRow) {
+                        SharedPreferences prefs=getParentActivity().getSharedPreferences("mainconfig", Context.MODE_PRIVATE);
+                        textCheckCell.setTextAndCheck(LocaleController.getString("PrivacyCallsP2PTitle", R.string.PrivacyCallsP2PTitle), prefs.getBoolean("calls_p2p", true), true);
                     }
                     break;
             }
@@ -443,13 +550,13 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
         @Override
         public int getItemViewType(int position) {
-            if (position == lastSeenRow || position == blockedRow || position == deleteAccountRow || position == sessionsRow || position == passwordRow || position == passcodeRow || position == groupsRow) {
+            if (position == lastSeenRow || position == blockedRow || position == deleteAccountRow || position == sessionsRow || position == passwordRow || position == passcodeRow || position == groupsRow || position == paymentsClearRow) {
                 return 0;
-            } else if (position == deleteAccountDetailRow || position == groupsDetailRow || position == sessionsDetailRow || position == secretDetailRow) {
+            } else if (position == deleteAccountDetailRow || position == groupsDetailRow || position == sessionsDetailRow || position == secretDetailRow || position == paymentsDetailRow || position==callsDetailRow) {
                 return 1;
-            } else if (position == securitySectionRow || position == deleteAccountSectionRow || position == privacySectionRow || position == secretSectionRow) {
+            } else if (position == securitySectionRow || position == deleteAccountSectionRow || position == privacySectionRow || position == secretSectionRow || position == paymentsSectionRow || position==callsSectionRow) {
                 return 2;
-            } else if (position == secretWebpageRow) {
+            } else if (position == secretWebpageRow || position==callsP2PRow) {
                 return 3;
             }
             return 0;

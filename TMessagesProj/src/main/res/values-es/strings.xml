@@ -6,8 +6,10 @@
     <string name="AppName">Telegram</string>
     <string name="AppNameBeta">Telegram Beta</string>
     <string name="LanguageName">Español</string>
+    <string name="English">Inglés</string>
     <string name="LanguageNameInEnglish">Spanish</string>
     <string name="LanguageCode">es</string>
+    <string name="ContinueOnThisLanguage">Seguir en inglés</string>
     <!--signin view-->
     <string name="YourPhone">Tu teléfono</string>
     <string name="StartText">Por favor, confirma tu código de país y pon tu número de teléfono.</string>
@@ -79,6 +81,7 @@
     <string name="PaymentTestInvoice">PROBAR FACTURA</string>
     <string name="PaymentCheckoutPay">PAGAR %1$s</string>
     <string name="PaymentCheckoutMethod">Forma de pago</string>
+    <string name="PaymentCheckoutProvider">Proveedor de pago</string>
     <string name="PaymentCheckoutName">Nombre</string>
     <string name="PaymentCheckoutPhoneNumber">Número de teléfono</string>
     <string name="PaymentCheckoutEmail">Dirección de contacto</string>
@@ -89,6 +92,8 @@
     <string name="PaymentPrecheckoutFailed">Lo sentimos, el pago fue cancelado por el bot.</string>
     <string name="PaymentFailed">Lo sentimos, el pago fue rechazado.</string>
     <string name="PaymentConnectionFailed">No es posible acceder al servidor de pago. Por favor, revisa tu conexión a internet y reinténtalo.</string>
+    <string name="PaymentWarning">Advertencia</string>
+    <string name="PaymentWarningText">Ni Telegram, ni %1$s tendrán acceso a la información de tu tarjeta de crédito. Los detalles de la tarjeta de crédito serán manejados sólo por el sistema de pago, %2$s.\n\nLos pagos irán directamente al desarrollador de %1$s. Telegram no puede entregar garantías, así que es bajo tu propio riesgo. En caso de problemas, contacta al desarrollador de %1$s o a tu banco.</string>
     <!--chats view-->
     <string name="NewConversationShortcut">Nuevo chat</string>
     <string name="Settings">Ajustes</string>
@@ -100,6 +105,13 @@
     <string name="NoChatsHelp">Envía mensajes tocando el botón para\nredactar, en la parte inferior derecha,\no pulsa el botón menú para más opciones.</string>
     <string name="WaitingForNetwork">Esperando red...</string>
     <string name="Connecting">Conectando...</string>
+    <string name="ConnectingToProxy">Conectando al proxy...</string>
+    <string name="ConnectingToProxyTapToDisable">Toca aquí para desactivarlo...</string>
+    <string name="ConnectingToProxyDisable">Desactivar</string>
+    <string name="ConnectingToProxyEnable">Activar</string>
+    <string name="EnableProxyAlert">¿Quieres activar este proxy?</string>
+    <string name="EnableProxyAlert2">Puedes cambiar tu servidor proxy más tarde en los Ajustes (Datos y almacenamiento).</string>
+    <string name="ConnectingToProxyDisableAlert">¿Quieres desactivar el servidor proxy %1$s? Puedes volver a activarlo más tarde en los Ajustes (Datos y almacenamiento).</string>
     <string name="Updating">Actualizando...</string>
     <string name="NewSecretChat">Nuevo chat secreto</string>
     <string name="AwaitingEncryption">Esperando que %s se conecte...</string>
@@ -139,12 +151,14 @@
     <string name="Bold">Negrita</string>
     <string name="Italic">Cursiva</string>
     <string name="Regular">Normal</string>
+    <string name="ContactsPermissionAlert">Para conectarte sin problemas con todas las personas que conoces, permite a <![CDATA[<b>]]>Telegram<![CDATA[</b>]]> acceder a tus contactos.</string>
+    <string name="ContactsPermissionAlertNotNow">AHORA NO</string>
+    <string name="ContactsPermissionAlertContinue">SEGUIR</string>
     <!--channels-->
-    <string name="GroupType">Tipo de grupo</string>
-    <string name="ChannelType">Tipo de canal</string>
     <string name="ChannelTypePublic">Público</string>
     <string name="ChannelTypePrivate">Privado</string>
-    <string name="SetAsAdmin">Nombrar como administrador</string>
+    <string name="SetAsAdmin">Ascender a administrador</string>
+    <string name="NoBlockedUsers">Sin suspendidos</string>
     <string name="DescriptionInfoMega">Puedes poner una descripción para tu grupo.</string>
     <string name="LeaveMega">Salir del grupo</string>
     <string name="DeleteMega">Eliminar grupo</string>
@@ -168,6 +182,7 @@
     <string name="ActionPinnedFile">un1 ancló un archivo</string>
     <string name="ActionPinnedSticker">un1 ancló un sticker</string>
     <string name="ActionPinnedVoice">un1 ancló un mensaje de voz</string>
+    <string name="ActionPinnedRound">un1 ancló un videomensaje</string>
     <string name="ActionPinnedContact">un1 ancló un contacto</string>
     <string name="ActionPinnedGame">un1 ancló %1$s</string>
     <string name="ActionPinnedGeo">un1 ancló un mapa</string>
@@ -176,6 +191,7 @@
     <string name="ActionMigrateFromGroup">Este grupo fue convertido en un supergrupo</string>
     <string name="ActionMigrateFromGroupNotify">%1$s fue convertido en un supergrupo</string>
     <string name="NoBlockedGroup">Los usuarios suspendidos son eliminados del grupo y sólo pueden volver si son invitados por un administrador. Los enlaces de invitación no funcionan para ellos.</string>
+    <string name="NoBlockedChannel">Los usuarios suspendidos son eliminados del canal y sólo pueden volver si son invitados por un administrador. Los enlaces de invitación no funcionan para ellos.</string>
     <string name="NewChannel">Nuevo canal</string>
     <string name="EnterChannelName">Nombre del canal</string>
     <string name="AddMutual">Añadir contactos a tu canal</string>
@@ -217,7 +233,9 @@
     <string name="LinkChecking">Verificando nombre...</string>
     <string name="LinkAvailable">%1$s está disponible.</string>
     <string name="ChannelMembers">Miembros</string>
-    <string name="ChannelBlockedUsers">Suspendidos</string>
+    <string name="ChannelBlacklist">Suspendidos</string>
+    <string name="ChannelBlockedUsers">Usuarios suspendidos</string>
+    <string name="ChannelRestrictedUsers">Usuarios restringidos</string>
     <string name="ChannelAdministrators">Administradores</string>
     <string name="ChannelDelete">Eliminar canal</string>
     <string name="ChannelDeleteMenu">Eliminar canal</string>
@@ -233,15 +251,17 @@
     <string name="ActionChannelRemovedPhoto">Foto del canal eliminada</string>
     <string name="ActionChannelChangedTitle">Nombre del canal cambiado a un2</string>
     <string name="ChangePublicLimitReached">Lo sentimos, tienes demasiados alias públicos. Puedes anular el enlace de uno de tus grupos o canales anteriores, o crear uno privado.</string>
-    <string name="ChannelModerator">Moderador</string>
     <string name="ChannelCreator">Creador</string>
     <string name="ChannelEditor">Administrador</string>
     <string name="ChannelMute">SILENCIAR</string>
     <string name="ChannelUnmute">NO SILENCIAR</string>
     <string name="ChannelAddAdmin">Añadir administrador</string>
+    <string name="ChannelBlockUser">Suspender usuario</string>
+    <string name="Unban">Quitar suspensión</string>
+    <string name="UnbanText">Toca y mantén sobre un usuario para quitar su suspensión.</string>
     <string name="ChannelInviteViaLink">Invitar con un enlace</string>
     <string name="ChannelAddUserAdminAlert">¿Quieres nombrar a %1$s como administrador?</string>
-    <string name="ChannelRemoveUserAdmin">Eliminar</string>
+    <string name="ChannelRemoveUserAdmin">Eliminar administrador</string>
     <string name="ChannelMembersInfo">Sólo los administradores del canal pueden ver esta lista.</string>
     <string name="ChannelAdminNotParticipant">Este usuario aún no se ha unido al canal. ¿Quieres invitarlo?</string>
     <string name="ChannelLinkInfo">Cualquiera que tenga Telegram instalada podrá unirse a tu canal siguiendo este enlace.</string>
@@ -271,6 +291,7 @@
     <string name="ChannelMessageGroupDocument">%1$s envió un archivo al canal %2$s</string>
     <string name="ChannelMessageGroupGif">%1$s envió un GIF al canal %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s envió un mensaje de voz al canal %2$s</string>
+    <string name="ChannelMessageGroupRound">%1$s envió un videomensaje al canal %2$s</string>
     <string name="ChannelMessageGroupMusic">%1$s envió una pista al canal %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s envió un sticker al canal %2$s</string>
     <string name="ChannelMessageGroupStickerEmoji">%1$s envió un %3$s sticker al canal %2$s</string>
@@ -282,6 +303,7 @@
     <string name="ChannelMessageDocument">%1$s publicó un archivo</string>
     <string name="ChannelMessageGIF">%1$s publicó un GIF</string>
     <string name="ChannelMessageAudio">%1$s publicó un mensaje de voz</string>
+    <string name="ChannelMessageRound">%1$s publicó un videomensaje</string>
     <string name="ChannelMessageMusic">%1$s publicó una pista</string>
     <string name="ChannelMessageSticker">%1$s publicó un sticker</string>
     <string name="ChannelMessageStickerEmoji">%1$s publicó un %2$s sticker</string>
@@ -292,6 +314,110 @@
     <string name="ChannelNotifyMembersInfoOff">Tu publicación no será notificada</string>
     <string name="ChannelSignMessages">Firmar los mensajes</string>
     <string name="ChannelSignMessagesInfo">Añadir los nombres de los administradores a sus publicaciones.</string>
+    <string name="EditAdmin">Editar administrador</string>
+    <string name="EditAdminWhatCanDo">¿Qué puede hacer este administrador?</string>
+    <string name="EditAdminChangeChannelInfo">Cambiar información del canal</string>
+    <string name="EditAdminChangeGroupInfo">Cambiar información del grupo</string>
+    <string name="EditAdminPostMessages">Publicar mensajes</string>
+    <string name="EditAdminEditMessages">Editar mensajes de otros</string>
+    <string name="EditAdminDeleteMessages">Eliminar mensajes de otros</string>
+    <string name="EditAdminGroupDeleteMessages">Eliminar mensajes</string>
+    <string name="EditAdminAddAdmins">Añadir administradores</string>
+    <string name="EditAdminRemoveAdmin">Eliminar administrador</string>
+    <string name="EditAdminBanUsers">Suspender usuarios</string>
+    <string name="EditAdminAddUsers">Añadir usuarios</string>
+    <string name="EditAdminAddUsersViaLink">Invitar con un enlace</string>
+    <string name="EditAdminPinMessages">Anclar mensajes</string>
+    <string name="EditAdminPromotedBy">Añadido por %1$s</string>
+    <string name="EditAdminCantEdit">No puedes editar los privilegios de este administrador.</string>
+    <string name="UserRestrictionsBy">Restringido por %1$s</string>
+    <string name="UserRestrictions">Restricciones</string>
+    <string name="UserRestrictionsRead">Leer mensajes</string>
+    <string name="UserRestrictionsCanDo">¿Qué puede hacer este usuario?</string>
+    <string name="UserRestrictionsSend">Enviar mensajes</string>
+    <string name="UserRestrictionsSendMedia">Enviar multimedia</string>
+    <string name="UserRestrictionsSendStickers">Enviar stickers y GIF</string>
+    <string name="UserRestrictionsEmbedLinks">Vista previa de enlaces</string>
+    <string name="UserRestrictionsUntil">Suspendido hasta</string>
+    <string name="UserRestrictionsUntilForever">Siempre</string>
+    <string name="UserRestrictionsUntilRemove">Eliminar</string>
+    <string name="UserRestrictionsBlock">Suspender y eliminar del grupo</string>
+    <string name="ManageGroup">Administrar grupo</string>
+    <string name="ManageChannel">Administrar canal</string>
+    <string name="ManageGroupMenu">Administrar grupo</string>
+    <string name="ManageChannelMenu">Administrar canal</string>
+    <!--event log-->
+    <string name="EventLog">Acciones recientes</string>
+    <string name="EventLogAllEvents">Todas las acciones</string>
+    <string name="EventLogSelectedEvents">Acciones seleccionadas</string>
+    <string name="EventLogAllAdmins">Todos los administradores</string>
+    <string name="EventLogEmpty"><![CDATA[<b>]]>Aún no hay eventos<![CDATA[</b>]]>\n\nLos administradores del grupo\nno han realizado acciones de servicio\nen las últimas 48 horas.</string>
+    <string name="EventLogEmptyChannel"><![CDATA[<b>]]>Aún no hay eventos<![CDATA[</b>]]>\n\nLos administradores del canal\nno han realizado acciones de servicio\nen las últimas 48 horas.</string>
+    <string name="EventLogEmptySearch"><![CDATA[<b>]]>No se encontraron acciones<![CDATA[</b>]]>\n\nNo se encontraron acciones recientes\nque coincidan con tu solicitud.</string>
+    <string name="EventLogEmptyTextSearch">No se encontraron acciones recientes que contengan \'<![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.</string>
+    <string name="EventLogInfoTitle">¿Qué son las acciones recientes?</string>
+    <string name="EventLogInfoDetail">Esta es una lista de las acciones de servicio realizadas por los miembros y administradores del grupo en las últimas 48 horas.</string>
+    <string name="EventLogInfoDetailChannel">Esta es una lista de las acciones de servicio realizadas por los administradores del canal en las últimas 48 horas.</string>
+    <string name="EventLogEditedGroupTitle">un1 renombró el grupo a “%1$s”</string>
+    <string name="EventLogEditedChannelTitle">un1 renombró el canal a “%1$s”</string>
+    <string name="EventLogLeftGroup">un1 dejó el grupo</string>
+    <string name="EventLogLeftChannel">un1 dejó el canal</string>
+    <string name="EventLogAdded">un1 añadió a un2</string>
+    <string name="EventLogGroupJoined">un1 se unió al grupo</string>
+    <string name="EventLogChannelRestricted">suspendió a %1$s</string>
+    <string name="EventLogChannelUnrestricted">quitó la suspensión a %1$s</string>
+    <string name="EventLogChannelJoined">un1 se unió al canal</string>
+    <string name="EventLogEditedGroupPhoto">un1 puso una nueva foto del grupo</string>
+    <string name="EventLogEditedChannelPhoto">un1 puso una nueva foto del canal</string>
+    <string name="EventLogRemovedWGroupPhoto">un1 eliminó la foto del grupo</string>
+    <string name="EventLogRemovedChannelPhoto">un1 eliminó la foto del canal</string>
+    <string name="EventLogEditedMessages">un1 editó este mensaje:</string>
+    <string name="EventLogEditedCaption">un1 editó un comentario:</string>
+    <string name="EventLogOriginalMessages">Mensaje original</string>
+    <string name="EventLogOriginalCaption">Comentario original</string>
+    <string name="EventLogOriginalCaptionEmpty">Vacío</string>
+    <string name="EventLogPinnedMessages">un1 ancló este mensaje:</string>
+    <string name="EventLogUnpinnedMessages">un1 desancló un mensaje</string>
+    <string name="EventLogDeletedMessages">un1 eliminó este mensaje:</string>
+    <string name="EventLogChangedGroupLink">un1 cambió el enlace del grupo:</string>
+    <string name="EventLogChangedChannelLink">un1 cambió el enlace del canal:</string>
+    <string name="EventLogRemovedGroupLink">un1 eliminó el enlace del grupo</string>
+    <string name="EventLogRemovedChannelLink">un1 eliminó el enlace del canal</string>
+    <string name="EventLogPreviousLink">Enlace anterior</string>
+    <string name="EventLogEditedGroupDescription">un1 editó la descripción del grupo:</string>
+    <string name="EventLogEditedChannelDescription">un1 editó la descripción del canal:</string>
+    <string name="EventLogPreviousGroupDescription">Descripción anterior</string>
+    <string name="EventLogToggledInvitesOn">un1 activó las invitaciones</string>
+    <string name="EventLogToggledInvitesOff">un1 desactivó las invitaciones</string>
+    <string name="EventLogToggledSignaturesOn">un1 activó las firmas</string>
+    <string name="EventLogToggledSignaturesOff">un1 desactivó las firmas</string>
+    <string name="EventLogRestrictedUntil">cambió las restricciones para %1$s\n\nDuración: %2$s</string>
+    <string name="EventLogRestrictedSendStickers">Enviar stickers y GIF</string>
+    <string name="EventLogRestrictedSendMedia">Enviar multimedia</string>
+    <string name="EventLogRestrictedSendMessages">Enviar mensajes</string>
+    <string name="EventLogRestrictedSendEmbed">Vista previa de enlaces</string>
+    <string name="EventLogRestrictedReadMessages">Leer mensajes</string>
+    <string name="EventLogPromoted">cambió los privilegios de %1$s</string>
+    <string name="EventLogPromotedChangeChannelInfo">Cambiar la información del canal</string>
+    <string name="EventLogPromotedChangeGroupInfo">Cambiar la información del grupo</string>
+    <string name="EventLogPromotedPostMessages">Publicar mensajes</string>
+    <string name="EventLogPromotedEditMessages">Editar mensajes</string>
+    <string name="EventLogPromotedDeleteMessages">Eliminar mensajes</string>
+    <string name="EventLogPromotedAddAdmins">Añadir administradores</string>
+    <string name="EventLogPromotedBanUsers">Suspender usuarios</string>
+    <string name="EventLogPromotedAddUsers">Añadir usuarios</string>
+    <string name="EventLogPromotedPinMessages">Anclar mensajes</string>
+    <string name="EventLogFilterAll">Todas las acciones</string>
+    <string name="EventLogFilterNewRestrictions">Nuevas restricciones</string>
+    <string name="EventLogFilterNewAdmins">Nuevos administradores</string>
+    <string name="EventLogFilterNewMembers">Nuevos miembros</string>
+    <string name="EventLogFilterGroupInfo">Información del grupo</string>
+    <string name="EventLogFilterChannelInfo">Información del canal</string>
+    <string name="EventLogFilterGroupSettings">Ajustes del grupo</string>
+    <string name="EventLogFilterDeletedMessages">Mensajes eliminados</string>
+    <string name="EventLogFilterEditedMessages">Mensajes editados</string>
+    <string name="EventLogFilterPinnedMessages">Mensajes anclados</string>
+    <string name="EventLogFilterLeavingMembers">Miembros que se fueron</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nueva difusión</string>
     <string name="EnterListName">Nombre de la lista</string>
@@ -324,13 +450,18 @@
     <string name="IsTyping">está escribiendo...</string>
     <string name="AreTyping">están escribiendo...</string>
     <string name="IsRecordingAudio">%1$s está grabando un mensaje de voz...</string>
+    <string name="IsRecordingRound">%1$s está grabando un videomensaje...</string>
     <string name="IsSendingAudio">%1$s está enviando un audio...</string>
     <string name="IsSendingPhoto">%1$s está enviando una foto...</string>
     <string name="InstantView">VISTA RÁPIDA</string>
+    <string name="OpenGroup">ABRIR GRUPO</string>
+    <string name="OpenChannel">ABRIR CANAL</string>
+    <string name="InstantViewNightMode">El tema oscuro se usará automáticamente en la noche</string>
     <string name="IsSendingGame">%1$s está jugando...</string>
     <string name="IsSendingVideo">%1$s está enviando un vídeo...</string>
     <string name="IsSendingFile">%1$s está enviando un archivo...</string>
-    <string name="RecordingAudio">grabando mensaje de voz...</string>
+    <string name="RecordingAudio">grabando un mensaje de voz...</string>
+    <string name="RecordingRound">grabando un videomensaje...</string>
     <string name="SendingAudio">enviando audio...</string>
     <string name="SendingPhoto">enviando foto...</string>
     <string name="SendingGame">jugando...</string>
@@ -378,6 +509,8 @@
     <string name="OpenInExternalApp">Abrir en...</string>
     <string name="CopyUrl">Copiar URL</string>
     <string name="SendItems">Enviar %1$s</string>
+    <string name="SendAsFile">Enviar como archivo</string>
+    <string name="SendAsFiles">Como archivo</string>
     <string name="OpenUrlAlert">¿Abrir %1$s?</string>
     <string name="BotPermissionGameAlert">¿Permites a %1$s entregar tu nombre e id de Telegram (no tu número de teléfono) a los sitios web que abres a través de este bot?</string>
     <string name="ReportSpam">REPORTAR SPAM</string>
@@ -393,6 +526,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq/es#no-puedo-enviar-mensajes-a-quienes-no-son-mis-contactos</string>
     <string name="MoreInfo">Más información</string>
     <string name="ShareSendTo">Enviar a...</string>
+    <string name="ShareComment">Escribe un comentario...</string>
     <string name="TapHereGifs">Toca y ve los GIF guardados</string>
     <string name="PinMessage">Anclar</string>
     <string name="PinNotify">Notificar a los miembros</string>
@@ -415,6 +549,7 @@
     <string name="TimeToEdit">%1$s</string>
     <string name="TimeToEditExpired">Terminó el tiempo de edición.</string>
     <string name="AddShortcut">Añadir acceso directo</string>
+    <string name="SearchMembers">Buscar miembros</string>
     <string name="ShortcutAdded">Acceso directo añadido al escritorio</string>
     <string name="ChatYourSelf">chat contigo</string>
     <string name="ChatYourSelfName">Tú</string>
@@ -427,6 +562,21 @@
     <string name="DeleteForUser">Eliminar para %1$s</string>
     <string name="DeleteForAll">Eliminar para todos</string>
     <string name="TextCopied">Texto copiado al portapapeles</string>
+    <string name="HoldToAudio">Mantén para grabar audio. Toca para vídeo.</string>
+    <string name="HoldToVideo">Mantén para grabar vídeo. Toca para audio.</string>
+    <string name="DiscardVoiceMessageTitle">Descartar mensaje de voz</string>
+    <string name="DiscardVoiceMessageDescription">¿Quieres detener la grabación y descartar tu mensaje de voz?</string>
+    <string name="DiscardVideoMessageTitle">Descartar videomensaje</string>
+    <string name="DiscardVideoMessageDescription">¿Quieres detener la grabación y descartar tu videomensaje?</string>
+    <string name="DiscardVoiceMessageAction">Descartar</string>
+    <string name="AttachMediaRestricted">Los administradores del grupo han restringido que envíes multimedia hasta el %1$s</string>
+    <string name="AttachInlineRestricted">Los administradores del grupo han restringido que envíes contenido integrado hasta el %1$s</string>
+    <string name="AttachStickersRestricted">Los administradores del grupo han restringido que envíes stickers hasta el %1$s</string>
+    <string name="SendMessageRestricted">Los administradores del grupo han restringido que escribas hasta el %1$s</string>
+    <string name="AttachMediaRestrictedForever">Los administradores del grupo han restringido que envíes multimedia</string>
+    <string name="AttachInlineRestrictedForever">Los administradores del grupo han restringido que envíes contenido integrado</string>
+    <string name="AttachStickersRestrictedForever">Los administradores del grupo han restringido que envíes stickers</string>
+    <string name="SendMessageRestrictedForever">Los administradores del grupo han restringido que escribas</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s activó la autodestrucción en %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Activaste la autodestrucción en %1$s</string>
@@ -443,6 +593,7 @@
     <string name="NotificationMessageDocument">%1$s te envió un archivo</string>
     <string name="NotificationMessageGif">%1$s te envió un GIF</string>
     <string name="NotificationMessageAudio">%1$s te envió un mensaje de voz</string>
+    <string name="NotificationMessageRound">%1$s te envió un videomensaje</string>
     <string name="NotificationMessageMusic">%1$s te envió una pista</string>
     <string name="NotificationMessageSticker">%1$s te envió un sticker</string>
     <string name="NotificationMessageStickerEmoji">%1$s te envió un %2$s sticker</string>
@@ -456,11 +607,12 @@
     <string name="NotificationMessageGroupDocument">%1$s envió un archivo al grupo %2$s</string>
     <string name="NotificationMessageGroupGif">%1$s envió un GIF al grupo %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s envió un mensaje de voz al grupo %2$s</string>
+    <string name="NotificationMessageGroupRound">%1$s envió un videomensaje al grupo %2$s</string>
     <string name="NotificationMessageGroupMusic">%1$s envió una pista al grupo %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s envió un sticker al grupo %2$s</string>
     <string name="NotificationMessageGroupStickerEmoji">%1$s envió un %3$s sticker al grupo %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s te invitó al grupo %2$s</string>
-    <string name="NotificationEditedGroupName">%1$s cambió el nombre del grupo %2$s</string>
+    <string name="NotificationEditedGroupName">%1$s renombró el grupo %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s cambió la foto del grupo %2$s</string>
     <string name="NotificationGroupAddMember">%1$s invitó a %3$s al grupo %2$s</string>
     <string name="NotificationGroupAddSelf">%1$s volvió al grupo %2$s</string>
@@ -485,6 +637,7 @@
     <string name="NotificationActionPinnedSticker">%1$s ancló un sticker en el grupo %2$s</string>
     <string name="NotificationActionPinnedStickerEmoji">%1$s ancló un %3$s sticker en el grupo %2$s</string>
     <string name="NotificationActionPinnedVoice">%1$s ancló un mensaje de voz en el grupo %2$s</string>
+    <string name="NotificationActionPinnedRound">%1$s ancló un videomensaje en el grupo %2$s</string>
     <string name="NotificationActionPinnedContact">%1$s ancló un contacto en el grupo %2$s</string>
     <string name="NotificationActionPinnedGeo">%1$s ancló un mapa en el grupo %2$s</string>
     <string name="NotificationActionPinnedGif">%1$s ancló un GIF en el grupo %2$s</string>
@@ -497,6 +650,7 @@
     <string name="NotificationActionPinnedStickerChannel">%1$s ancló un sticker</string>
     <string name="NotificationActionPinnedStickerEmojiChannel">%1$s ancló un %2$s sticker</string>
     <string name="NotificationActionPinnedVoiceChannel">%1$s ancló un mensaje de voz</string>
+    <string name="NotificationActionPinnedRoundChannel">%1$s ancló un videomensaje</string>
     <string name="NotificationActionPinnedContactChannel">%1$s ancló un contacto</string>
     <string name="NotificationActionPinnedGeoChannel">%1$s ancló un mapa</string>
     <string name="NotificationActionPinnedGifChannel">%1$s ancló un GIF</string>
@@ -551,8 +705,10 @@
     <string name="SETTINGS">Ajustes</string>
     <string name="AddMember">Añadir miembro</string>
     <string name="SetAdmins">Nombrar administradores</string>
+    <string name="BanFromTheGroup">SUSPENDER DEL GRUPO</string>
     <string name="DeleteAndExit">Eliminar y salir del grupo</string>
     <string name="Notifications">Notificaciones</string>
+    <string name="KickFromSupergroup">Restringir usuario</string>
     <string name="KickFromGroup">Eliminar del grupo</string>
     <string name="UpgradeGroup">Convertir en supergrupo</string>
     <string name="ConvertGroup">Convertir en supergrupo</string>
@@ -584,7 +740,7 @@
     <string name="EncryptionKey">Clave de cifrado</string>
     <string name="MessageLifetime">Autodestrucción</string>
     <string name="ShortMessageLifetimeForever">Apagada</string>
-    <string name="EncryptionKeyDescription">El texto e imagen derivan de la clave de cifrado para el chat secreto creado con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si se ven igual en el dispositivo de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, el cifrado end-to-end está garantizado.<![CDATA[<br><br>]]>Conoce más en telegram.org</string>
+    <string name="EncryptionKeyDescription">El texto e imagen derivan de la clave de cifrado para el chat secreto creado con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nSi se ven igual en el dispositivo de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, el cifrado end-to-end está garantizado.\n\nConoce más en telegram.org</string>
     <string name="EncryptionKeyLink">https://telegram.org/faq/es#chats-secretos</string>
     <string name="TapToEmojify">Toca para ver emojis</string>
     <string name="NumberUnknown">Desconocido</string>
@@ -598,14 +754,14 @@
     <string name="UsernameInvalidShort">Un alias debe tener al menos 5 caracteres.</string>
     <string name="UsernameInvalidLong">El alias no debe exceder los 32 caracteres.</string>
     <string name="UsernameInvalidStartNumber">Lo sentimos, un alias no puede comenzar con un número.</string>
-    <string name="UsernameHelp">Puedes elegir un alias en <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Si lo haces, otras personas te podrán encontrar por ese alias y contactarte sin saber tu número de teléfono.<![CDATA[<br><br>]]>Puedes usar <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> y guiones bajos. La longitud mínima es de <![CDATA[<b>]]>5<![CDATA[</b>]]> caracteres.</string>
+    <string name="UsernameHelp">Puedes elegir un alias en <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Si lo haces, otras personas te podrán encontrar por ese alias y contactarte sin saber tu número de teléfono.\n\nPuedes usar <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> y guiones bajos. La longitud mínima es de <![CDATA[<b>]]>5<![CDATA[</b>]]> caracteres.</string>
     <string name="UsernameHelpLink">Este enlace abre un chat contigo en Telegram:\n%1$s</string>
     <string name="UsernameChecking">Verificando alias...</string>
     <string name="UsernameAvailable">%1$s está disponible.</string>
     <string name="UsernameEmpty">Ninguno</string>
     <string name="ErrorOccurred">Ocurrió un error.</string>
     <!--stickers view-->
-    <string name="Stickers">Stickers</string>
+    <string name="StickersName">Stickers</string>
     <string name="AddStickers">Añadir stickers</string>
     <string name="AddMasks">Añadir máscaras</string>
     <string name="AddToStickers">Añadir a stickers</string>
@@ -638,6 +794,8 @@
     <string name="ArchivedMasksAlertInfo">Algunos de tus packs de máscaras más viejos fueron archivados. Puedes reactivarlos desde los ajustes de máscaras.</string>
     <!--theme view-->
     <string name="Theme">Tema</string>
+    <string name="ThemeDark">Oscuro</string>
+    <string name="ThemeBlue">Azul</string>
     <string name="DeleteThemeAlert">¿Quieres eliminar este tema?</string>
     <string name="IncorrectTheme">Archivo de tema incorrecto</string>
     <string name="EnterThemeName">Pon el nombre del tema</string>
@@ -683,7 +841,10 @@
     <string name="ColorGreen">Verde</string>
     <string name="ColorCyan">Cian</string>
     <string name="ColorWhite">Blanco</string>
+    <string name="ColorSepia">Sepia</string>
+    <string name="ColorDark">Oscuro</string>
     <string name="ColorPink">Rosa</string>
+    <string name="FontSize">Tamaño del texto</string>
     <string name="ColorViolet">Violeta</string>
     <string name="ColorOrange">Naranja</string>
     <string name="NotificationsLedInfo">LED es una pequeña luz que parpadea en algunos dispositivos para señalar los mensajes nuevos.</string>
@@ -707,7 +868,8 @@
     <string name="ContactJoined">Un contacto se unió a Telegram</string>
     <string name="PinnedMessages">Mensajes anclados</string>
     <string name="Language">Idioma</string>
-    <string name="AskAQuestionInfo">Por favor, considera que el soporte de Telegram está hecho por voluntarios. Respondemos lo antes posible, pero puede tomar tiempo.<![CDATA[<br><br>]]>Por favor, mira las <![CDATA[<a href="https://telegram.org/faq/es">preguntas frecuentes de Telegram</a>]]>: tienen respuestas para la mayoría de las preguntas y <![CDATA[<a href="https://telegram.org/faq/es#solucin-de-problemas">soluciones a problemas</a>]]>.</string>
+    <string name="LanguageCustom">Personalizado</string>
+    <string name="AskAQuestionInfo">Por favor, considera que el soporte de Telegram está hecho por voluntarios. Respondemos lo antes posible, pero puede tomar tiempo.\n\nPor favor, mira las <![CDATA[<a href="https://telegram.org/faq#general">preguntas frecuentes de Telegram</a>]]>: tienen respuestas para la mayoría de las preguntas y <![CDATA[<a href="https://telegram.org/faq#troubleshooting">soluciones a problemas</a>]]>.</string>
     <string name="AskButton">Preguntar</string>
     <string name="TelegramFaq">Preguntas frecuentes</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/es</string>
@@ -734,7 +896,7 @@
     <string name="BadgeNumber">Globo en el ícono</string>
     <string name="Short">Cortas</string>
     <string name="Long">Largas</string>
-    <string name="AutomaticMediaDownload">Descarga automática de multimedia</string>
+    <string name="AutomaticMediaDownload">Autodescarga de multimedia</string>
     <string name="WhenUsingMobileData">Con uso de datos móviles</string>
     <string name="WhenConnectedOnWiFi">Con conexión a Wi-Fi</string>
     <string name="WhenRoaming">Con itinerancia de datos</string>
@@ -788,6 +950,19 @@
     <string name="DebugMenu">Menú de depuración</string>
     <string name="DebugMenuImportContacts">Importar contactos</string>
     <string name="DebugMenuReloadContacts">Recargar contactos</string>
+    <string name="ChangeLanguageLater">Puedes cambiar el idioma después, en Ajustes.</string>
+    <string name="ChooseYourLanguage">Elige tu idioma</string>
+    <string name="ChooseYourLanguageOther">Otro</string>
+    <string name="ProxySettings">Ajustes de proxy</string>
+    <string name="Proxy">Proxy</string>
+    <string name="UseProxySettings">Usar ajustes de proxy</string>
+    <string name="UseProxyAddress">Servidor</string>
+    <string name="UseProxyPassword">Contraseña</string>
+    <string name="UseProxyPort">Puerto</string>
+    <string name="UseProxyUsername">Alias</string>
+    <string name="UseProxyInfo">Ajustes de proxy SOCKS5</string>
+    <string name="UseProxyForCalls">Usar proxy para llamadas</string>
+    <string name="UseProxyForCallsInfo">El proxy puede disminuir la calidad de tus llamadas.</string>
     <!--cache view-->
     <string name="LocalDatabase">Base de datos local</string>
     <string name="LocalDatabaseClear">¿Eliminar los mensajes en la caché?</string>
@@ -797,7 +972,7 @@
     <string name="CalculatingSize">Calculando...</string>
     <string name="LocalDocumentCache">Archivos</string>
     <string name="LocalPhotoCache">Fotos</string>
-    <string name="LocalAudioCache">Mensajes de voz</string>
+    <string name="LocalAudioCache">Mensajes de voz/vídeo</string>
     <string name="LocalVideoCache">Vídeos</string>
     <string name="LocalMusicCache">Música</string>
     <string name="LocalGifCache">GIF</string>
@@ -806,6 +981,8 @@
     <string name="KeepMedia">Conservar multimedia</string>
     <string name="KeepMediaInfo">Las fotos, los vídeos y los archivos de los chats en la nube a los que <![CDATA[<b>no accedas</b>]]> durante ese periodo de tiempo se eliminarán del dispositivo para liberar espacio.\n\nToda la multimedia permanecerá en la nube de Telegram y podrás volver a descargarla si la necesitas.</string>
     <string name="KeepMediaForever">Siempre</string>
+    <string name="AudioAutodownload">Mensajes de voz</string>
+    <string name="VideoMessagesAutodownload">Videomensajes</string>
     <!--sessions view-->
     <string name="SessionsTitle">Sesiones activas</string>
     <string name="CurrentSession">Sesión actual</string>
@@ -830,7 +1007,7 @@
     <string name="ReEnterYourPasscode">Pon, otra vez, tu nuevo código</string>
     <string name="InvalidPasscode">Código de acceso inválido</string>
     <string name="PasscodeDoNotMatch">Los códigos de acceso no coinciden</string>
-    <string name="AutoLock">Bloqueo automático</string>
+    <string name="AutoLock">Autobloqueo</string>
     <string name="AutoLockInfo">El bloqueo se activará transcurrido este tiempo.</string>
     <string name="AutoLockInTime">en %1$s</string>
     <string name="AutoLockDisabled">Desactivado</string>
@@ -870,7 +1047,7 @@
     <string name="Of">%1$d de %2$d</string>
     <string name="Gallery">Galería</string>
     <string name="AllPhotos">Todas las fotos</string>
-    <string name="AllVideo">Todos los vídeos</string>
+    <string name="AllMedia">Toda la multimedia</string>
     <string name="NoPhotos">Aún no hay fotos</string>
     <string name="NoVideo">Aún sin vídeos</string>
     <string name="PleaseDownload">Por favor, primero descarga la multimedia</string>
@@ -1004,6 +1181,11 @@
     <string name="PrivacySettings">Privacidad y seguridad</string>
     <string name="PrivacyTitle">Privacidad</string>
     <string name="PrivacyLastSeen">Última conexión</string>
+    <string name="PrivacyPayments">Pagos</string>
+    <string name="PrivacyPaymentsClear">Eliminar información de pago</string>
+    <string name="PrivacyPaymentsClearInfo">Puedes eliminar tu información de envío y forzar a todos los proveedores de pago a eliminar tus tarjetas de crédito guardadas. Telegram nunca almacena tus datos de tarjetas de crédito.</string>
+    <string name="PrivacyClearShipping">Información de envío</string>
+    <string name="PrivacyClearPayment">Información de pago</string>
     <string name="LastSeenEverybody">Todos</string>
     <string name="LastSeenContacts">Mis contactos</string>
     <string name="LastSeenNobody">Nadie</string>
@@ -1044,6 +1226,8 @@
     <string name="InviteToGroupError">No puedes añadir este usuario a grupos debido a sus ajustes de privacidad.</string>
     <string name="InviteToChannelError">No puedes añadir este usuario a canales debido a sus ajustes de privacidad.</string>
     <string name="CreateGroupError">No puedes crear un grupo con estos usuarios debido a sus ajustes de privacidad.</string>
+    <string name="PrivacyCallsP2PTitle">Peer-to-Peer</string>
+    <string name="PrivacyCallsP2PHelp">Al desactivar peer-to-peer todas las llamadas pasarán por los servidores de Telegram para evitar dar conocer tu dirección IP, pero disminuirá ligeramente la calidad de audio.</string>
     <!--edit video view-->
     <string name="EditVideo">Editar vídeo</string>
     <string name="SendingVideo">Enviando vídeo...</string>
@@ -1121,6 +1305,7 @@
     <string name="AttachDocument">Archivo</string>
     <string name="AttachSticker">Sticker</string>
     <string name="AttachAudio">Mensaje de voz</string>
+    <string name="AttachRound">Videomensaje</string>
     <string name="AttachGame">Juego</string>
     <string name="FromYou">Tú</string>
     <string name="ActionTakeScreenshootYou">¡Hiciste una captura de pantalla!</string>
@@ -1149,7 +1334,7 @@
     <string name="SendMessagesTo">¿Enviar mensajes a %1$s?</string>
     <string name="SendGameTo">¿Compartir el juego con %1$s?</string>
     <string name="SendContactTo">¿Enviar contacto a %1$s?</string>
-    <string name="AreYouSureLogout">¿Quieres cerrar sesión?\n\nConsidera que puedes usar Telegram en todos tus dispositivos a la vez.\n\nRecuerda que, al cerrar sesión, eliminas todos tus chats secretos.</string>
+    <string name="AreYouSureLogout">¿Quieres cerrar sesión?\n\nRecuerda que puedes usar Telegram en todos tus dispositivos a la vez.\n\nNo olvides que, al cerrar sesión, eliminas todos tus chats secretos.</string>
     <string name="AreYouSureSessions">¿Quieres terminar todas las otras sesiones?</string>
     <string name="AreYouSureDeleteAndExit">¿Quieres eliminar y salir del grupo?</string>
     <string name="AreYouSureDeleteThisChat">¿Quieres eliminar este chat?</string>
@@ -1189,6 +1374,11 @@
     <string name="UserRestricted">Lo sentimos, no estás autorizado para hacer esto.</string>
     <string name="YouBlockedUser">No puedes añadir a este usuario o bot al grupo porque lo has bloqueado. Por favor, desbloquéalo para continuar.</string>
     <string name="JoinGroup">UNIRME AL GRUPO</string>
+    <string name="AddAdminErrorNotAMember">No puedes añadir a este usuario como administrador porque no es un miembro de este grupo y no puedes invitarlo.</string>
+    <string name="AddAdminErrorBlacklisted">No puedes añadir a este usuario como administrador porque está en la lista de suspendidos y no puedes quitar su suspensión.</string>
+    <string name="AddBannedErrorAdmin">No puedes suspender a este usuario porque es un administrador del grupo y no puedes degradarlo.</string>
+    <string name="ErrorSendRestrictedStickers">Los administradores del grupo han restringido que envíes stickers.</string>
+    <string name="ErrorSendRestrictedMedia">Los administradores del grupo han restringido que envíes multimedia.</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram necesita el acceso a tus contactos, para que puedas comunicarte con ellos en todos tus dispositivos.</string>
     <string name="PermissionStorage">Telegram necesita acceso a tu almacenamiento, para que puedas enviar y guardar fotos, vídeos, música y otros archivos.</string>
@@ -1207,14 +1397,14 @@
     <string name="Page5Title">Poderosa</string>
     <string name="Page6Title">Basada en la nube</string>
     <string name="Page7Title">Privada</string>
-    <string name="Page1Message">La aplicación de mensajería más<![CDATA[<br/><b>veloz</b>]]> del mundo. Es <![CDATA[<b>gratis</b>]]> y <![CDATA[<b>segura</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> entrega mensajes más<![CDATA[<br/>]]>rápido que cualquier otra aplicación.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> es gratis para siempre.<![CDATA[<br/>]]>Sin publicidad ni suscripciones.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mantiene tus mensajes<![CDATA[<br/>]]>a salvo del ataque de hackers.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> no tiene límites en<![CDATA[<br/>]]>el tamaño de tus chats y archivos.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> te permite acceder a tus<![CDATA[<br/>]]>mensajes desde múltiples dispositivos.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> posee mensajes fuertemente<![CDATA[<br/>]]>cifrados y se pueden autodestruir.</string>
-    <string name="StartMessaging">Empieza a conversar</string>
+    <string name="Page1Message">La aplicación de mensajería más <![CDATA[<b>veloz</b>]]> del mundo.\nEs <![CDATA[<b>gratis</b>]]> y <![CDATA[<b>segura</b>]]>.</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> entrega mensajes más rápido\nque cualquier otra aplicación.</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> es gratis para siempre. Sin publicidad.\nSin suscripciones.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> mantiene tus mensajes\na salvo del ataque de hackers.</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> no tiene límites en el\ntamaño de tus chats y archivos.</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> te permite acceder a tus mensajes\ndesde múltiples dispositivos.</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> posee mensajes fuertemente\ncifrados y se pueden autodestruir.</string>
+    <string name="StartMessaging">Comenzar</string>
     <!--VoIP-->
     <string name="AccountSettings">Ajustes de la cuenta</string>
     <string name="VoipUseLessData">Usar menos datos</string>
@@ -1256,7 +1446,7 @@
     <string name="CallMessageOutgoingMissed">Llamada cancelada</string>
     <string name="CallMessageIncomingDeclined">Llamada rechazada</string>
     <string name="CallMessageWithDuration">%1$s (%2$s)</string>
-    <string name="CallEncryptionKeyDescription">El texto e imagen derivan de la clave de cifrado para la llamada con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si se ven igual en el dispositivo de <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> el cifrado end-to-end está garantizado.</string>
+    <string name="CallEncryptionKeyDescription">El texto e imagen derivan de la clave de cifrado para la llamada con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nSi se ven igual en el dispositivo de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> el cifrado end-to-end está garantizado.</string>
     <string name="NoCallLog">Aún no has realizado llamadas.</string>
     <string name="VoipPeerIncompatible">La app de <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> está usando un protocolo incompatible. Necesita actualizar la app para poder llamar.</string>
     <string name="VoipPeerOutdated">La app de <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> no soporta llamadas. Necesita actualizar la app para poder llamar.</string>
@@ -1274,14 +1464,19 @@
     <string name="VoipAudioRoutingBluetooth">Bluetooth</string>
     <string name="ReturnToCall">VOLVER A LA LLAMADA</string>
     <string name="CallNotAvailable">Lo sentimos, <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> no acepta llamadas.</string>
-    <string name="CallEmojiKeyTooltip">Si estos emojis son los mismos en la pantalla de %1$s, esta llamada es 100%% segura.</string>
+    <string name="CallEmojiKeyTooltip">Si los emojis son los mismos para %1$s, la llamada es 100%% segura.</string>
+    <string name="CallMessageReportProblem">Evalúa esta llamada</string>
+    <string name="CallReportHint">¿Qué ocurrió?</string>
+    <string name="CallReportIncludeLogs">Incluir información técnica</string>
+    <string name="CallReportLogsExplain">Esto no revelará los contenidos de tu conversación, pero nos ayudará a resolver el problema más pronto.</string>
+    <string name="CallReportSent">Gracias por ayudarnos a mejorar las llamadas de Telegram.</string>
     <!--plural-->
-    <string name="Online_zero">%1$d en línea</string>
-    <string name="Online_one">%1$d en línea</string>
-    <string name="Online_two">%1$d en línea</string>
-    <string name="Online_few">%1$d en línea</string>
-    <string name="Online_many">%1$d en línea</string>
-    <string name="Online_other">%1$d en línea</string>
+    <string name="OnlineCount_zero">%1$d en línea</string>
+    <string name="OnlineCount_one">%1$d en línea</string>
+    <string name="OnlineCount_two">%1$d en línea</string>
+    <string name="OnlineCount_few">%1$d en línea</string>
+    <string name="OnlineCount_many">%1$d en línea</string>
+    <string name="OnlineCount_other">%1$d en línea</string>
     <string name="Members_zero">%1$d miembros</string>
     <string name="Members_one">%1$d miembro</string>
     <string name="Members_two">%1$d miembros</string>
@@ -1469,6 +1664,12 @@
     <string name="ForwardedAudio_few">%1$d mensajes de voz reenviados</string>
     <string name="ForwardedAudio_many">%1$d mensajes de voz reenviados</string>
     <string name="ForwardedAudio_other">%1$d mensajes de voz reenviados</string>
+    <string name="ForwardedRound_zero">%1$d reenvió videomensajes</string>
+    <string name="ForwardedRound_one">Videomensaje reenviado</string>
+    <string name="ForwardedRound_two">%1$d videomensajes reenviados</string>
+    <string name="ForwardedRound_few">%1$d videomensajes reenviados</string>
+    <string name="ForwardedRound_many">%1$d videomensajes reenviados</string>
+    <string name="ForwardedRound_other">%1$d videomensajes reenviados</string>
     <string name="ForwardedLocation_zero">%1$d ubicaciones adjuntas</string>
     <string name="ForwardedLocation_one">Ubicación adjunta</string>
     <string name="ForwardedLocation_two">%1$d ubicaciones adjuntas</string>
@@ -1496,6 +1697,10 @@
     <!--date formatters-->
     <string name="formatterStats12H">dd MMM yyyy, h:mm a</string>
     <string name="formatterStats24H">dd MMM yyyy, HH:mm</string>
+    <string name="formatterBannedUntil12H">dd MMM yyyy, h:mm a</string>
+    <string name="formatterBannedUntil24H">dd MMM yyyy, HH:mm</string>
+    <string name="formatterBannedUntilThisYear12H">dd MMM, h:mm a</string>
+    <string name="formatterBannedUntilThisYear24H">dd MMM, HH:mm</string>
     <string name="formatterMonthYear">MMMM \'de\' yyyy</string>
     <string name="formatterMonth">dd \'de\' MMM</string>
     <string name="formatterYear">dd.MM.yy</string>

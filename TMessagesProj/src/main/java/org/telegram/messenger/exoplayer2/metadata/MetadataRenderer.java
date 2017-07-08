@@ -24,9 +24,8 @@ import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.ExoPlaybackException;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.FormatHolder;
-import org.telegram.messenger.exoplayer2.decoder.DecoderInputBuffer;
 import org.telegram.messenger.exoplayer2.util.Assertions;
-import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * A renderer for metadata.
@@ -48,16 +47,23 @@ public final class MetadataRenderer extends BaseRenderer implements Callback {
   }
 
   private static final int MSG_INVOKE_RENDERER = 0;
+  // TODO: Holding multiple pending metadata objects is temporary mitigation against
+  // https://github.com/google/ExoPlayer/issues/1874
+  // It should be removed once this issue has been addressed.
+  private static final int MAX_PENDING_METADATA_COUNT = 5;
 
-  private final MetadataDecoder metadataDecoder;
+  private final MetadataDecoderFactory decoderFactory;
   private final Output output;
   private final Handler outputHandler;
   private final FormatHolder formatHolder;
-  private final DecoderInputBuffer buffer;
+  private final MetadataInputBuffer buffer;
+  private final Metadata[] pendingMetadata;
+  private final long[] pendingMetadataTimestamps;
 
+  private int pendingMetadataIndex;
+  private int pendingMetadataCount;
+  private MetadataDecoder decoder;
   private boolean inputStreamEnded;
-  private long pendingMetadataTimestamp;
-  private Metadata pendingMetadata;
 
   /**
    * @param output The output.
@@ -66,43 +72,68 @@ public final class MetadataRenderer extends BaseRenderer implements Callback {
    *     looper associated with the application's main thread, which can be obtained using
    *     {@link android.app.Activity#getMainLooper()}. Null may be passed if the output should be
    *     called directly on the player's internal rendering thread.
-   * @param metadataDecoder A decoder for the metadata.
    */
-  public MetadataRenderer(Output output, Looper outputLooper, MetadataDecoder metadataDecoder) {
+  public MetadataRenderer(Output output, Looper outputLooper) {
+    this(output, outputLooper, MetadataDecoderFactory.DEFAULT);
+  }
+
+  /**
+   * @param output The output.
+   * @param outputLooper The looper associated with the thread on which the output should be called.
+   *     If the output makes use of standard Android UI components, then this should normally be the
+   *     looper associated with the application's main thread, which can be obtained using
+   *     {@link android.app.Activity#getMainLooper()}. Null may be passed if the output should be
+   *     called directly on the player's internal rendering thread.
+   * @param decoderFactory A factory from which to obtain {@link MetadataDecoder} instances.
+   */
+  public MetadataRenderer(Output output, Looper outputLooper,
+      MetadataDecoderFactory decoderFactory) {
     super(C.TRACK_TYPE_METADATA);
     this.output = Assertions.checkNotNull(output);
     this.outputHandler = outputLooper == null ? null : new Handler(outputLooper, this);
-    this.metadataDecoder = Assertions.checkNotNull(metadataDecoder);
+    this.decoderFactory = Assertions.checkNotNull(decoderFactory);
     formatHolder = new FormatHolder();
-    buffer = new DecoderInputBuffer(DecoderInputBuffer.BUFFER_REPLACEMENT_MODE_NORMAL);
+    buffer = new MetadataInputBuffer();
+    pendingMetadata = new Metadata[MAX_PENDING_METADATA_COUNT];
+    pendingMetadataTimestamps = new long[MAX_PENDING_METADATA_COUNT];
   }
 
   @Override
   public int supportsFormat(Format format) {
-    return metadataDecoder.canDecode(format.sampleMimeType) ? FORMAT_HANDLED
-        : FORMAT_UNSUPPORTED_TYPE;
+    return decoderFactory.supportsFormat(format) ? FORMAT_HANDLED : FORMAT_UNSUPPORTED_TYPE;
+  }
+
+  @Override
+  protected void onStreamChanged(Format[] formats) throws ExoPlaybackException {
+    decoder = decoderFactory.createDecoder(formats[0]);
   }
 
   @Override
   protected void onPositionReset(long positionUs, boolean joining) {
-    pendingMetadata = null;
+    flushPendingMetadata();
     inputStreamEnded = false;
   }
 
   @Override
   public void render(long positionUs, long elapsedRealtimeUs) throws ExoPlaybackException {
-    if (!inputStreamEnded && pendingMetadata == null) {
+    if (!inputStreamEnded && pendingMetadataCount < MAX_PENDING_METADATA_COUNT) {
       buffer.clear();
-      int result = readSource(formatHolder, buffer);
+      int result = readSource(formatHolder, buffer, false);
       if (result == C.RESULT_BUFFER_READ) {
         if (buffer.isEndOfStream()) {
           inputStreamEnded = true;
+        } else if (buffer.isDecodeOnly()) {
+          // Do nothing. Note this assumes that all metadata buffers can be decoded independently.
+          // If we ever need to support a metadata format where this is not the case, we'll need to
+          // pass the buffer to the decoder and discard the output.
         } else {
-          pendingMetadataTimestamp = buffer.timeUs;
+          buffer.subsampleOffsetUs = formatHolder.format.subsampleOffsetUs;
+          buffer.flip();
           try {
-            buffer.flip();
-            ByteBuffer bufferData = buffer.data;
-            pendingMetadata = metadataDecoder.decode(bufferData.array(), bufferData.limit());
+            int index = (pendingMetadataIndex + pendingMetadataCount) % MAX_PENDING_METADATA_COUNT;
+            pendingMetadata[index] = decoder.decode(buffer);
+            pendingMetadataTimestamps[index] = buffer.timeUs;
+            pendingMetadataCount++;
           } catch (MetadataDecoderException e) {
             throw ExoPlaybackException.createForRenderer(e, getIndex());
           }
@@ -110,15 +141,18 @@ public final class MetadataRenderer extends BaseRenderer implements Callback {
       }
     }
 
-    if (pendingMetadata != null && pendingMetadataTimestamp <= positionUs) {
-      invokeRenderer(pendingMetadata);
-      pendingMetadata = null;
+    if (pendingMetadataCount > 0 && pendingMetadataTimestamps[pendingMetadataIndex] <= positionUs) {
+      invokeRenderer(pendingMetadata[pendingMetadataIndex]);
+      pendingMetadata[pendingMetadataIndex] = null;
+      pendingMetadataIndex = (pendingMetadataIndex + 1) % MAX_PENDING_METADATA_COUNT;
+      pendingMetadataCount--;
     }
   }
 
   @Override
   protected void onDisabled() {
-    pendingMetadata = null;
+    flushPendingMetadata();
+    decoder = null;
     super.onDisabled();
   }
 
@@ -140,6 +174,12 @@ public final class MetadataRenderer extends BaseRenderer implements Callback {
     }
   }
 
+  private void flushPendingMetadata() {
+    Arrays.fill(pendingMetadata, null);
+    pendingMetadataIndex = 0;
+    pendingMetadataCount = 0;
+  }
+
   @SuppressWarnings("unchecked")
   @Override
   public boolean handleMessage(Message msg) {
@@ -147,8 +187,10 @@ public final class MetadataRenderer extends BaseRenderer implements Callback {
       case MSG_INVOKE_RENDERER:
         invokeRendererInternal((Metadata) msg.obj);
         return true;
+      default:
+        // Should never happen.
+        throw new IllegalStateException();
     }
-    return false;
   }
 
   private void invokeRendererInternal(Metadata metadata) {

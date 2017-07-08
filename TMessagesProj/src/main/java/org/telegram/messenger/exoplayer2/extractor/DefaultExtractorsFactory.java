@@ -15,141 +15,132 @@
  */
 package org.telegram.messenger.exoplayer2.extractor;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.telegram.messenger.exoplayer2.extractor.flv.FlvExtractor;
+import org.telegram.messenger.exoplayer2.extractor.mkv.MatroskaExtractor;
+import org.telegram.messenger.exoplayer2.extractor.mp3.Mp3Extractor;
+import org.telegram.messenger.exoplayer2.extractor.mp4.FragmentedMp4Extractor;
+import org.telegram.messenger.exoplayer2.extractor.mp4.Mp4Extractor;
+import org.telegram.messenger.exoplayer2.extractor.ogg.OggExtractor;
+import org.telegram.messenger.exoplayer2.extractor.ts.Ac3Extractor;
+import org.telegram.messenger.exoplayer2.extractor.ts.AdtsExtractor;
+import org.telegram.messenger.exoplayer2.extractor.ts.DefaultTsPayloadReaderFactory;
+import org.telegram.messenger.exoplayer2.extractor.ts.PsExtractor;
+import org.telegram.messenger.exoplayer2.extractor.ts.TsExtractor;
+import org.telegram.messenger.exoplayer2.extractor.wav.WavExtractor;
+import java.lang.reflect.Constructor;
 
 /**
  * An {@link ExtractorsFactory} that provides an array of extractors for the following formats:
  *
  * <ul>
- * <li>MP4, including M4A ({@link org.telegram.messenger.exoplayer2.extractor.mp4.Mp4Extractor})</li>
- * <li>fMP4 ({@link org.telegram.messenger.exoplayer2.extractor.mp4.FragmentedMp4Extractor})</li>
- * <li>Matroska and WebM ({@link org.telegram.messenger.exoplayer2.extractor.mkv.MatroskaExtractor})
- * </li>
- * <li>Ogg Vorbis/FLAC ({@link org.telegram.messenger.exoplayer2.extractor.ogg.OggExtractor}</li>
- * <li>MP3 ({@link org.telegram.messenger.exoplayer2.extractor.mp3.Mp3Extractor})</li>
- * <li>AAC ({@link org.telegram.messenger.exoplayer2.extractor.ts.AdtsExtractor})</li>
- * <li>MPEG TS ({@link org.telegram.messenger.exoplayer2.extractor.ts.TsExtractor})</li>
- * <li>MPEG PS ({@link org.telegram.messenger.exoplayer2.extractor.ts.PsExtractor})</li>
- * <li>FLV ({@link org.telegram.messenger.exoplayer2.extractor.flv.FlvExtractor})</li>
- * <li>WAV ({@link org.telegram.messenger.exoplayer2.extractor.wav.WavExtractor})</li>
+ * <li>MP4, including M4A ({@link Mp4Extractor})</li>
+ * <li>fMP4 ({@link FragmentedMp4Extractor})</li>
+ * <li>Matroska and WebM ({@link MatroskaExtractor})</li>
+ * <li>Ogg Vorbis/FLAC ({@link OggExtractor}</li>
+ * <li>MP3 ({@link Mp3Extractor})</li>
+ * <li>AAC ({@link AdtsExtractor})</li>
+ * <li>MPEG TS ({@link TsExtractor})</li>
+ * <li>MPEG PS ({@link PsExtractor})</li>
+ * <li>FLV ({@link FlvExtractor})</li>
+ * <li>WAV ({@link WavExtractor})</li>
+ * <li>AC3 ({@link Ac3Extractor})</li>
  * <li>FLAC (only available if the FLAC extension is built and included)</li>
  * </ul>
  */
 public final class DefaultExtractorsFactory implements ExtractorsFactory {
 
-  // Lazily initialized default extractor classes in priority order.
-  private static List<Class<? extends Extractor>> defaultExtractorClasses;
+  private static final Constructor<? extends Extractor> FLAC_EXTRACTOR_CONSTRUCTOR;
+  static {
+    Constructor<? extends Extractor> flacExtractorConstructor = null;
+    try {
+      flacExtractorConstructor =
+          Class.forName("org.telegram.messenger.exoplayer2.ext.flac.FlacExtractor")
+              .asSubclass(Extractor.class).getConstructor();
+    } catch (ClassNotFoundException e) {
+      // Extractor not found.
+    } catch (NoSuchMethodException e) {
+      // Constructor not found.
+    }
+    FLAC_EXTRACTOR_CONSTRUCTOR = flacExtractorConstructor;
+  }
+
+  private @MatroskaExtractor.Flags int matroskaFlags;
+  private @FragmentedMp4Extractor.Flags int fragmentedMp4Flags;
+  private @Mp3Extractor.Flags int mp3Flags;
+  private @DefaultTsPayloadReaderFactory.Flags int tsFlags;
 
   /**
-   * Creates a new factory for the default extractors.
+   * Sets flags for {@link MatroskaExtractor} instances created by the factory.
+   *
+   * @see MatroskaExtractor#MatroskaExtractor(int)
+   * @param flags The flags to use.
+   * @return The factory, for convenience.
    */
-  public DefaultExtractorsFactory() {
-    synchronized (DefaultExtractorsFactory.class) {
-      if (defaultExtractorClasses == null) {
-        // Lazily initialize defaultExtractorClasses.
-        List<Class<? extends Extractor>> extractorClasses = new ArrayList<>();
-        // We reference extractors using reflection so that they can be deleted cleanly.
-        // Class.forName is used so that automated tools like proguard can detect the use of
-        // reflection (see http://proguard.sourceforge.net/FAQ.html#forname).
-        try {
-          extractorClasses.add(
-              Class.forName("org.telegram.messenger.exoplayer2.extractor.mkv.MatroskaExtractor")
-                  .asSubclass(Extractor.class));
-        } catch (ClassNotFoundException e) {
-          // Extractor not found.
-        }
-        try {
-          extractorClasses.add(
-              Class.forName("org.telegram.messenger.exoplayer2.extractor.mp4.FragmentedMp4Extractor")
-                  .asSubclass(Extractor.class));
-        } catch (ClassNotFoundException e) {
-          // Extractor not found.
-        }
-        try {
-          extractorClasses.add(
-              Class.forName("org.telegram.messenger.exoplayer2.extractor.mp4.Mp4Extractor")
-                  .asSubclass(Extractor.class));
-        } catch (ClassNotFoundException e) {
-          // Extractor not found.
-        }
-        try {
-          extractorClasses.add(
-              Class.forName("org.telegram.messenger.exoplayer2.extractor.mp3.Mp3Extractor")
-                  .asSubclass(Extractor.class));
-        } catch (ClassNotFoundException e) {
-          // Extractor not found.
-        }
-        try {
-          extractorClasses.add(
-              Class.forName("org.telegram.messenger.exoplayer2.extractor.ts.AdtsExtractor")
-                  .asSubclass(Extractor.class));
-        } catch (ClassNotFoundException e) {
-          // Extractor not found.
-        }
-        try {
-          extractorClasses.add(
-              Class.forName("org.telegram.messenger.exoplayer2.extractor.ts.Ac3Extractor")
-                  .asSubclass(Extractor.class));
-        } catch (ClassNotFoundException e) {
-          // Extractor not found.
-        }
-        try {
-          extractorClasses.add(
-              Class.forName("org.telegram.messenger.exoplayer2.extractor.ts.TsExtractor")
-                  .asSubclass(Extractor.class));
-        } catch (ClassNotFoundException e) {
-          // Extractor not found.
-        }
-        try {
-          extractorClasses.add(
-              Class.forName("org.telegram.messenger.exoplayer2.extractor.flv.FlvExtractor")
-                  .asSubclass(Extractor.class));
-        } catch (ClassNotFoundException e) {
-          // Extractor not found.
-        }
-        try {
-          extractorClasses.add(
-              Class.forName("org.telegram.messenger.exoplayer2.extractor.ogg.OggExtractor")
-                  .asSubclass(Extractor.class));
-        } catch (ClassNotFoundException e) {
-          // Extractor not found.
-        }
-        try {
-          extractorClasses.add(
-              Class.forName("org.telegram.messenger.exoplayer2.extractor.ts.PsExtractor")
-                  .asSubclass(Extractor.class));
-        } catch (ClassNotFoundException e) {
-          // Extractor not found.
-        }
-        try {
-          extractorClasses.add(
-              Class.forName("org.telegram.messenger.exoplayer2.extractor.wav.WavExtractor")
-                  .asSubclass(Extractor.class));
-        } catch (ClassNotFoundException e) {
-          // Extractor not found.
-        }
-        try {
-          extractorClasses.add(
-              Class.forName("org.telegram.messenger.exoplayer2.ext.flac.FlacExtractor")
-                  .asSubclass(Extractor.class));
-        } catch (ClassNotFoundException e) {
-          // Extractor not found.
-        }
-        defaultExtractorClasses = extractorClasses;
-      }
-    }
+  public synchronized DefaultExtractorsFactory setMatroskaExtractorFlags(
+      @MatroskaExtractor.Flags int flags) {
+    this.matroskaFlags = flags;
+    return this;
+  }
+
+  /**
+   * Sets flags for {@link FragmentedMp4Extractor} instances created by the factory.
+   *
+   * @see FragmentedMp4Extractor#FragmentedMp4Extractor(int)
+   * @param flags The flags to use.
+   * @return The factory, for convenience.
+   */
+  public synchronized DefaultExtractorsFactory setFragmentedMp4ExtractorFlags(
+      @FragmentedMp4Extractor.Flags int flags) {
+    this.fragmentedMp4Flags = flags;
+    return this;
+  }
+
+  /**
+   * Sets flags for {@link Mp3Extractor} instances created by the factory.
+   *
+   * @see Mp3Extractor#Mp3Extractor(int)
+   * @param flags The flags to use.
+   * @return The factory, for convenience.
+   */
+  public synchronized DefaultExtractorsFactory setMp3ExtractorFlags(@Mp3Extractor.Flags int flags) {
+    mp3Flags = flags;
+    return this;
+  }
+
+  /**
+   * Sets flags for {@link DefaultTsPayloadReaderFactory}s used by {@link TsExtractor} instances
+   * created by the factory.
+   *
+   * @see TsExtractor#TsExtractor(int)
+   * @param flags The flags to use.
+   * @return The factory, for convenience.
+   */
+  public synchronized DefaultExtractorsFactory setTsExtractorFlags(
+      @DefaultTsPayloadReaderFactory.Flags int flags) {
+    tsFlags = flags;
+    return this;
   }
 
   @Override
-  public Extractor[] createExtractors() {
-    Extractor[] extractors = new Extractor[defaultExtractorClasses.size()];
-    for (int i = 0; i < extractors.length; i++) {
+  public synchronized Extractor[] createExtractors() {
+    Extractor[] extractors = new Extractor[FLAC_EXTRACTOR_CONSTRUCTOR == null ? 11 : 12];
+    extractors[0] = new MatroskaExtractor(matroskaFlags);
+    extractors[1] = new FragmentedMp4Extractor(fragmentedMp4Flags);
+    extractors[2] = new Mp4Extractor();
+    extractors[3] = new Mp3Extractor(mp3Flags);
+    extractors[4] = new AdtsExtractor();
+    extractors[5] = new Ac3Extractor();
+    extractors[6] = new TsExtractor(tsFlags);
+    extractors[7] = new FlvExtractor();
+    extractors[8] = new OggExtractor();
+    extractors[9] = new PsExtractor();
+    extractors[10] = new WavExtractor();
+    if (FLAC_EXTRACTOR_CONSTRUCTOR != null) {
       try {
-        extractors[i] = defaultExtractorClasses.get(i).getConstructor().newInstance();
+        extractors[11] = FLAC_EXTRACTOR_CONSTRUCTOR.newInstance();
       } catch (Exception e) {
         // Should never happen.
-        throw new IllegalStateException("Unexpected error creating default extractor", e);
+        throw new IllegalStateException("Unexpected error creating FLAC extractor", e);
       }
     }
     return extractors;
