@@ -265,7 +265,7 @@ public class Emoji {
                 textPaint.getTextBounds(emoji, 0, emoji.length(), emojiRect);
                 if (emojiRect.height() <= getBounds().height()) {
                     textPaint.setTextAlign(Paint.Align.CENTER);
-                    canvas.drawText(emoji.length() < 2 ? emoji + "\uFE0F" : emoji, getBounds().left + getBounds().width() / 2.0f, getBounds().bottom - getBounds().height() / 5.0f, textPaint);
+                    canvas.drawText(emoji, getBounds().left + getBounds().width() / 2.0f, getBounds().bottom - getBounds().height() / 5.0f, textPaint);
                     return;
                 }
             }
