@@ -262,7 +262,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             directShareRow = rowCount++;
         }
         stickersRow = rowCount++;
-        //emojiRow = rowCount++;
+        emojiRow = rowCount++;
         textSizeRow = rowCount++;
         raiseToSpeakRow = rowCount++;
         sendByEnterRow = rowCount++;
@@ -578,12 +578,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     builder.setApplyBottomPadding(false);
                     LinearLayout linearLayout = new LinearLayout(getParentActivity());
                     linearLayout.setOrientation(LinearLayout.VERTICAL);
-                    for (int a = 0; a < (Build.VERSION.SDK_INT >= 19 ? 2 : 1); a++) {
+                    for (int a = 1; a < (Build.VERSION.SDK_INT >= 19 ? 2 : 1); a++) {
                         String name = null;
-                        if (a == 0) {
+                        /*if (a == 0) {
                             maskValues[a] = MessagesController.getInstance().allowBigEmoji;
                             name = LocaleController.getString("EmojiBigSize", R.string.EmojiBigSize);
-                        } else if (a == 1) {
+                        } else */ if (a == 1) {
                             maskValues[a] = MessagesController.getInstance().useSystemEmoji;
                             name = LocaleController.getString("EmojiUseDefault", R.string.EmojiUseDefault);
                         }
@@ -618,7 +618,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 FileLog.e(e);
                             }
                             SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit();
-                            editor.putBoolean("allowBigEmoji", MessagesController.getInstance().allowBigEmoji = maskValues[0]);
+                            //editor.putBoolean("allowBigEmoji", MessagesController.getInstance().allowBigEmoji = maskValues[0]);
                             editor.putBoolean("useSystemEmoji", MessagesController.getInstance().useSystemEmoji = maskValues[1]);
                             editor.commit();
                             if (listAdapter != null) {
