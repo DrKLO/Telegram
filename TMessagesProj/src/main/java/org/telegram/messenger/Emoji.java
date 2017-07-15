@@ -259,15 +259,12 @@ public class Emoji {
                 if (EmojiData.emojiToFE0FMap.containsKey(emoji.charAt(0))) {
                     emoji = emoji.substring(0, 1) + "\uFE0F" + emoji.substring(1);
                 }
-                Rect emojiRect = new Rect();
-                textPaint.setTextSize(getBounds().width() * 10.0f);
-                textPaint.setTextSize(getBounds().width() * 7.0f * Math.min(1.0f, getBounds().width() / textPaint.measureText(emoji)));
-                textPaint.getTextBounds(emoji, 0, emoji.length(), emojiRect);
-                if (emojiRect.height() <= getBounds().height()) {
-                    textPaint.setTextAlign(Paint.Align.CENTER);
-                    canvas.drawText(emoji, getBounds().left + getBounds().width() / 2.0f, getBounds().bottom - getBounds().height() / 5.0f, textPaint);
-                    return;
-                }
+                textPaint.setColor(Theme.getColor(Theme.key_chat_emojiPanelIcon));
+                textPaint.setTextSize(getBounds().width() * 4.0f);
+                textPaint.setTextSize(getBounds().width() * 0.7f * 4.0f * Math.min(0.3f, getBounds().width() / textPaint.measureText(emoji)));
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                canvas.drawText(emoji, getBounds().left + getBounds().width() / 2.0f, getBounds().bottom - getBounds().height() / 5.0f, textPaint);
+                return;
             }
             if (emojiBmp[info.page][info.page2] == null) {
                 if (loadingEmoji[info.page][info.page2]) {
