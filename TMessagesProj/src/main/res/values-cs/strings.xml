@@ -3,8 +3,10 @@
     <string name="AppName">Telegram</string>
     <string name="AppNameBeta">Telegram Beta</string>
     <string name="LanguageName">Čeština</string>
+    <string name="English">Angličtina</string>
     <string name="LanguageNameInEnglish">Czech</string>
     <string name="LanguageCode">cs</string>
+    <string name="ContinueOnThisLanguage">Pokračovat v angličtině</string>
     <!--signin view-->
     <string name="YourPhone">Tvůj telefon</string>
     <string name="StartText">Potvrď prosím svůj kód státu a zadej své telefonní číslo.</string>
@@ -78,6 +80,7 @@
     <string name="PaymentTestInvoice">TEST FAKTURY</string>
     <string name="PaymentCheckoutPay">ZAPLATIT %1$s</string>
     <string name="PaymentCheckoutMethod">Metoda platby</string>
+    <string name="PaymentCheckoutProvider">Poskytovatel platby</string>
     <string name="PaymentCheckoutName">Jméno</string>
     <string name="PaymentCheckoutPhoneNumber">Telefonní číslo</string>
     <string name="PaymentCheckoutProvider">Platební služba</string>
@@ -89,6 +92,8 @@
     <string name="PaymentPrecheckoutFailed">Bohužel, platba byla zrušena botem.</string>
     <string name="PaymentFailed">Bohužel, platba byla zamítnuta.</string>
     <string name="PaymentConnectionFailed">Nepodařilo se spojit s platebním serverem. Zkontroluj prosím své internetové připojení, a zkus to znovu.</string>
+    <string name="PaymentWarning">¨Varování</string>
+    <string name="PaymentWarningText">Ani Telegram, ani %1$s nebude mít přístup k informacím o tvé kreditní kartě. Tyto informace budou pouze předány do platebního systému, %2$s.\n\nPlatby jdou přímo vývojářům %1$s. Telegram nemůže poskytnout žádné garance, uvědom si proto, že pokračuješ dál na svoje vlastní uvážení. V případě problémů, kontaktuj prosím vývojáře %1$s nebo svou banku.</string>
     <!--chats view-->
     <string name="NewConversationShortcut">Nová konverzace</string>
     <string name="Settings">Nastavení</string>
@@ -100,6 +105,13 @@
     <string name="NoChatsHelp">Začni konverzovat stisknutím\ntlačítka Nová zpráva v pravém dolním rohu\nnebo použij tlačítko menu pro více možností.</string>
     <string name="WaitingForNetwork">Čekám na spojení se sítí...</string>
     <string name="Connecting">Připojuji...</string>
+    <string name="ConnectingToProxy">Připojuji skrz proxy...</string>
+    <string name="ConnectingToProxyTapToDisable">Zmáčkni pro vypnutí proxy...</string>
+    <string name="ConnectingToProxyDisable">Zakázat</string>
+    <string name="ConnectingToProxyEnable">Povolit</string>
+    <string name="EnableProxyAlert">Jsi si jistý, že chceš povolit tuto proxy?</string>
+    <string name="EnableProxyAlert2">Toto nastavení můžeš později změnit v Nastavení (Data a Úložiště).</string>
+    <string name="ConnectingToProxyDisableAlert">Jsi si jistý, že chceš zakázat proxy server %1$s? Toto nastavení můžeš později změnit v Nastavení (Data a Úložiště).</string>
     <string name="Updating">Obnovuji...</string>
     <string name="NewSecretChat">Nová šifrovaná konverzace</string>
     <string name="AwaitingEncryption">Čekám, až bude %s online...</string>
@@ -141,12 +153,14 @@
     <string name="Bold">Tučně</string>
     <string name="Italic">Kurzíva</string>
     <string name="Regular">Normální</string>
+    <string name="ContactsPermissionAlert">Pro jednoduché propojení s kýmkoli, koho znáš, povol <![CDATA[<b>]]>Telegram<![CDATA[</b>]]> přístup ke tvým kontaktům.</string>
+    <string name="ContactsPermissionAlertNotNow">NYNÍ NE</string>
+    <string name="ContactsPermissionAlertContinue">POKRAČOVAT</string>
     <!--channels-->
-    <string name="GroupType">Typ skupiny</string>
-    <string name="ChannelType">Typ kanálu</string>
     <string name="ChannelTypePublic">Veřejná(ý)</string>
     <string name="ChannelTypePrivate">Soukromá(ý)</string>
     <string name="SetAsAdmin">Povýšit na admina</string>
+    <string name="NoBlockedUsers">Žádní zabanovaní uživatelé</string>
     <string name="DescriptionInfoMega">Pro svoji skupinu můžeš přidat nepovinný popisek.</string>
     <string name="LeaveMega">Opustit skupinu</string>
     <string name="DeleteMega">Smazat skupinu</string>
@@ -178,7 +192,8 @@
     <string name="ActionPinnedMusic">un1 přišpendlil(a) písničku</string>
     <string name="ActionMigrateFromGroup">Tato skupina byla povýšena na superskupinu</string>
     <string name="ActionMigrateFromGroupNotify">%1$s byla povýšena na superskupinu</string>
-    <string name="NoBlockedGroup">Blokovaní uživatelé jsou odebráni ze skupiny. Můžou se vrátit zpět pouze na pozvání administrátora. Odkazy s pozváním na ně jinak nefungují.</string>
+    <string name="NoBlockedGroup">Zabanovaní uživatelé jsou odebráni ze skupiny. Můžou se vrátit zpět pouze na pozvání administrátora. Odkazy s pozváním na ně jinak nefungují.</string>
+    <string name="NoBlockedChannel">Zabanovaní uživatelé jsou odebráni z kanálu. Můžou se vrátit zpět pouze na pozvání administrátora. Odkazy s pozváním na ně jinak nefungují.</string>
     <string name="NewChannel">Nový kanál</string>
     <string name="EnterChannelName">Jméno kanálu</string>
     <string name="AddMutual">Přidat kontakty do kanálu</string>
@@ -220,7 +235,9 @@
     <string name="LinkChecking">Kontroluji jméno…</string>
     <string name="LinkAvailable">%1$s je dostupné.</string>
     <string name="ChannelMembers">Členové</string>
-    <string name="ChannelBlockedUsers">Blokovaní uživatelé</string>
+    <string name="ChannelBlacklist">Blacklist</string>
+    <string name="ChannelBlockedUsers">Zabanovaní uživatelé</string>
+    <string name="ChannelRestrictedUsers">Omezení uživatelé</string>
     <string name="ChannelAdministrators">Administrátoři</string>
     <string name="ChannelDelete">Smazat Kanál</string>
     <string name="ChannelDeleteMenu">Smazat kanál</string>
@@ -236,15 +253,17 @@
     <string name="ActionChannelRemovedPhoto">Obrázek kanálu odebrán</string>
     <string name="ActionChannelChangedTitle">Jméno kanálu změněno na un2</string>
     <string name="ChangePublicLimitReached">Bohužel, už máš rezervováno příliš mnoho uživatelských jmen. Odvolej prosím nějaké jméno z tvých starších skupin nebo kanálů. Případně můžeš vytvořit soukromou variantu.</string>
-    <string name="ChannelModerator">Moderátor</string>
     <string name="ChannelCreator">Tvůrce</string>
     <string name="ChannelEditor">Administrátor</string>
     <string name="ChannelMute">ZTIŠIT</string>
     <string name="ChannelUnmute">ZRUŠIT ZTIŠENÍ</string>
     <string name="ChannelAddAdmin">Přidat Administrátora</string>
+    <string name="ChannelBlockUser">Zabanovat uživatele</string>
+    <string name="Unban">Odbanovat</string>
+    <string name="UnbanText">Stiskni a podrž pro zrušení banu uživateli.</string>
     <string name="ChannelInviteViaLink">Pozvat přes odkaz</string>
     <string name="ChannelAddUserAdminAlert">Opravdu chceš udělat %1$s administrátorem?</string>
-    <string name="ChannelRemoveUserAdmin">Odebrat</string>
+    <string name="ChannelRemoveUserAdmin">Odebrat admina</string>
     <string name="ChannelMembersInfo">Tento seznam mohou vidět pouze Administrátoři.</string>
     <string name="ChannelAdminNotParticipant">Tento uživatel se do kanálu ještě nepřipojil. Chceš ho pozvat?</string>
     <string name="ChannelLinkInfo">Pomocí tohoto odkazu se bude moci kdokoli s instalovaným Telegramem připojit do tvého kanálu.</string>
@@ -276,6 +295,7 @@
     <string name="ChannelMessageGroupGif">%1$s poslal(a) GIF do kanálu %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s poslal(a) hlasovou zprávu do kanálu %2$s</string>
     <string name="ChannelMessageGroupMusic">%1$s poslal(a) písničku do kanálu %2$s</string>
+    <string name="ChannelMessageGroupRound">%1$s poslal(a) videozprávu do kanálu %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s poslal(a) samolepku do kanálu %2$s</string>
     <string name="ChannelMessageGroupStickerEmoji">%1$s poslal(a) %3$s samolepku do kanálu %2$s</string>
     <string name="ChannelMessageNoText">%1$s poslal(a) zprávu</string>
@@ -297,6 +317,110 @@
     <string name="ChannelNotifyMembersInfoOff">Členové nebudou upozorněni na tvé zprávy</string>
     <string name="ChannelSignMessages">Podepsat zprávy</string>
     <string name="ChannelSignMessagesInfo">Přidat jména adminů k jejich zprávám.</string>
+    <string name="EditAdmin">Změnit administrátora</string>
+    <string name="EditAdminWhatCanDo">K čemu má tento admin oprávnění?</string>
+    <string name="EditAdminChangeChannelInfo">Měnit informace o kanálu</string>
+    <string name="EditAdminChangeGroupInfo">Měnit informace o skupině</string>
+    <string name="EditAdminPostMessages">Posílat zprávy</string>
+    <string name="EditAdminEditMessages">Měnit zprávy ostatních</string>
+    <string name="EditAdminDeleteMessages">Mazat zprávy ostatních</string>
+    <string name="EditAdminGroupDeleteMessages">Mazat zprávy</string>
+    <string name="EditAdminAddAdmins">Přidávat další adminy</string>
+    <string name="EditAdminRemoveAdmin">Odebírat adminy</string>
+    <string name="EditAdminBanUsers">Banovat uživatele</string>
+    <string name="EditAdminAddUsers">Přidávat uživatele</string>
+    <string name="EditAdminAddUsersViaLink">Zvát uživatele skrz odkaz</string>
+    <string name="EditAdminPinMessages">Přišpendlit zprávy</string>
+    <string name="EditAdminPromotedBy">Přidán adminem %1$s</string>
+    <string name="EditAdminCantEdit">Nemůžeš měnit práva tohoto admina.</string>
+    <string name="UserRestrictionsBy">Omezen adminem %1$s</string>
+    <string name="UserRestrictions">Uživatelská omezení</string>
+    <string name="UserRestrictionsRead">Číst zprávy</string>
+    <string name="UserRestrictionsCanDo">Co může uživatel dělat?</string>
+    <string name="UserRestrictionsSend">Posílat zprávy</string>
+    <string name="UserRestrictionsSendMedia">Posílat soubory</string>
+    <string name="UserRestrictionsSendStickers">Posílat samolepky &amp; GIFy</string>
+    <string name="UserRestrictionsEmbedLinks">Posílat odkazy</string>
+    <string name="UserRestrictionsUntil">Zabanován do:</string>
+    <string name="UserRestrictionsUntilForever">Navždy</string>
+    <string name="UserRestrictionsUntilRemove">Odstranit</string>
+    <string name="UserRestrictionsBlock">Zabanovat a odstranit ze skupiny</string>
+    <string name="ManageGroup">Spravovat Skupinu</string>
+    <string name="ManageChannel">Spravovat Kanál</string>
+    <string name="ManageGroupMenu">Spravovat skupinu</string>
+    <string name="ManageChannelMenu">Spravovat kanál</string>
+    <!--event log-->
+    <string name="EventLog">Nedávné události</string>
+    <string name="EventLogAllEvents">Všechny události</string>
+    <string name="EventLogSelectedEvents">Vybrané události</string>
+    <string name="EventLogAllAdmins">Všichni admini</string>
+    <string name="EventLogEmpty"><![CDATA[<b>]]>Nejsou zde žádné události<![CDATA[</b>]]>\n\nprovedené členy skupiny nebo adminy\nv posledních 48 hodinách.</string>
+    <string name="EventLogEmptyChannel"><![CDATA[<b>]]>Nejsou zde žádné události<![CDATA[</b>]]>\n\nprovedené adminy kanálu \nv posledních 48 hodinách.</string>
+    <string name="EventLogEmptySearch"><![CDATA[<b>]]>Nenalezeny žádné události<![CDATA[</b>]]>\n\nŽádné události v poslední době dle tvého zadání \nnebyly nalezeny.</string>
+    <string name="EventLogEmptyTextSearch">Nenalezeny žádné události, obsahující \'<![CDATA[<b>]]>%1$s<![CDATA[</b>]]>\'.</string>
+    <string name="EventLogInfoTitle">Co jsou nedávné události?</string>
+    <string name="EventLogInfoDetail">Toto je seznam všech událostí, které provedli členové skupiny a administrátoři skupiny v posledních 48 hodinách.</string>
+    <string name="EventLogInfoDetailChannel">Toto je seznam všech událostí, které provedli členové kanálu a administrátoři v posledních 48 hodinách.</string>
+    <string name="EventLogEditedGroupTitle">un1 změnil(a) jméno skupiny na \"%1$s\"</string>
+    <string name="EventLogEditedChannelTitle">un1 změnil(a) jméno kanálu na \"%1$s\"</string>
+    <string name="EventLogLeftGroup">un1 opustil(a) skupinu</string>
+    <string name="EventLogLeftChannel">un1 opustil(a) kanál</string>
+    <string name="EventLogAdded">un1 přidal(a) uživatele un2</string>
+    <string name="EventLogGroupJoined">un1 se připojil(a) do skupiny</string>
+    <string name="EventLogChannelRestricted">zabanoval(a) %1$s</string>
+    <string name="EventLogChannelUnrestricted">odbanoval(a) %1$s</string>
+    <string name="EventLogChannelJoined">un1 se připojil(a) do kanálu</string>
+    <string name="EventLogEditedGroupPhoto">un1 změnil(a) obrázek skupiny</string>
+    <string name="EventLogEditedChannelPhoto">un1 změnil(a) obrázek kanálu</string>
+    <string name="EventLogRemovedWGroupPhoto">un1 odebral(a) obrázek skupiny</string>
+    <string name="EventLogRemovedChannelPhoto">un1 odebral(a) obrázek kanálu</string>
+    <string name="EventLogEditedMessages">un1 edited this message:</string>
+    <string name="EventLogEditedCaption">un1 změnil(a) zprávu:</string>
+    <string name="EventLogOriginalMessages">Původní zpráva</string>
+    <string name="EventLogOriginalCaption">Původní popisek</string>
+    <string name="EventLogOriginalCaptionEmpty">Prázdné</string>
+    <string name="EventLogPinnedMessages">un1 přišpendlil(a) zprávu:</string>
+    <string name="EventLogUnpinnedMessages">un1 zrušil(a) přišpendlení zprávy:</string>
+    <string name="EventLogDeletedMessages">un1 smazal(a) zprávu:</string>
+    <string name="EventLogChangedGroupLink">un1 změnil(a) odkaz na skupinu:</string>
+    <string name="EventLogChangedChannelLink">un1 změnil(a) odkaz na kanál:</string>
+    <string name="EventLogRemovedGroupLink">un1 odebral(a) odkaz na skupinu</string>
+    <string name="EventLogRemovedChannelLink">un1 odebral(a) odkaz na kanál</string>
+    <string name="EventLogPreviousLink">Předchozí odkaz</string>
+    <string name="EventLogEditedGroupDescription">un1 změnil(a) popisek skupiny:</string>
+    <string name="EventLogEditedChannelDescription">un1 změnil(a) popisek kanálu:</string>
+    <string name="EventLogPreviousGroupDescription">Předchozí popisek</string>
+    <string name="EventLogToggledInvitesOn">un1 povolil(a) pozvánky do skupiny</string>
+    <string name="EventLogToggledInvitesOff">un1 zakázal(a) pozvánky do skupiny</string>
+    <string name="EventLogToggledSignaturesOn">un1 povolil(a) podpisy</string>
+    <string name="EventLogToggledSignaturesOff">un1 zakázal(a) podpisy</string>
+    <string name="EventLogRestrictedUntil">změnil(a) omezení pro %1$s\n\nTrvání: %2$s</string>
+    <string name="EventLogRestrictedSendStickers">Posílat samolepky a GIFy</string>
+    <string name="EventLogRestrictedSendMedia">Posílat soubory</string>
+    <string name="EventLogRestrictedSendMessages">Posílat zprávy</string>
+    <string name="EventLogRestrictedSendEmbed">Posílat odkazy</string>
+    <string name="EventLogRestrictedReadMessages">Číst zprávy</string>
+    <string name="EventLogPromoted">změnil(a) oprávnění pro %1$s</string>
+    <string name="EventLogPromotedChangeChannelInfo">Změnit info o kanálu</string>
+    <string name="EventLogPromotedChangeGroupInfo">Změnit info o skupině</string>
+    <string name="EventLogPromotedPostMessages">Posílat zprávy</string>
+    <string name="EventLogPromotedEditMessages">Měnit zprávy</string>
+    <string name="EventLogPromotedDeleteMessages">Mazat zprávy</string>
+    <string name="EventLogPromotedAddAdmins">Přidat nové adminy</string>
+    <string name="EventLogPromotedBanUsers">Banovat uživatele</string>
+    <string name="EventLogPromotedAddUsers">Přidávat uživatele</string>
+    <string name="EventLogPromotedPinMessages">Přišpendlit zprávy</string>
+    <string name="EventLogFilterAll">Všechny události</string>
+    <string name="EventLogFilterNewRestrictions">Nové omezení</string>
+    <string name="EventLogFilterNewAdmins">Noví admini</string>
+    <string name="EventLogFilterNewMembers">Noví členové</string>
+    <string name="EventLogFilterGroupInfo">Informace o skupině</string>
+    <string name="EventLogFilterChannelInfo">Informace o kanálu</string>
+    <string name="EventLogFilterGroupSettings">Nastavení skupiny</string>
+    <string name="EventLogFilterDeletedMessages">Smazané zprávy</string>
+    <string name="EventLogFilterEditedMessages">Změněné zprávy</string>
+    <string name="EventLogFilterPinnedMessages">Přišpendlené zprávy</string>
+    <string name="EventLogFilterLeavingMembers">Bývalí členové</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nový seznam vysílání</string>
     <string name="EnterListName">Zadej název seznamu</string>
@@ -334,6 +458,9 @@
     <string name="IsSendingAudio">%1$s posílá audio...</string>
     <string name="IsSendingPhoto">%1$s posílá obrázek...</string>
     <string name="InstantView">OKAMŽITÝ POHLED</string>
+    <string name="OpenGroup">OTEVŘÍT SKUPINU</string>
+    <string name="OpenChannel">OTEVŘÍT KANÁL</string>
+    <string name="InstantViewNightMode">Tmavý vzhled se automaticky aktivuje v noci</string>
     <string name="IsSendingGame">%1$s hraje hru...</string>
     <string name="IsSendingVideo">%1$s posílá video...</string>
     <string name="IsSendingFile">%1$s posílá soubor...</string>
@@ -386,6 +513,8 @@
     <string name="OpenInExternalApp">Otevřít v...</string>
     <string name="CopyUrl">Kopírovat URL</string>
     <string name="SendItems">Poslat %1$s</string>
+    <string name="SendAsFile">Poslat jako soubor</string>
+    <string name="SendAsFiles">Poslat jako soubory</string>
     <string name="OpenUrlAlert">Otevřít url %1$s?</string>
     <string name="BotPermissionGameAlert">Umožnit %1$s sdílet tvé uživatelské jméno a id Telegramu (ne tvůj telefon) stránkám, které otevře tento bot?</string>
     <string name="ReportSpam">NAHLÁSIT SPAM</string>
@@ -401,6 +530,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">Více informací</string>
     <string name="ShareSendTo">Poslat...</string>
+    <string name="ShareComment">Napsat komentář...</string>
     <string name="TapHereGifs">Klikni sem pro přístup k uloženým GIFům</string>
     <string name="PinMessage">Přišpendlit</string>
     <string name="PinNotify">Upozornit všechny členy</string>
@@ -423,6 +553,7 @@
     <string name="TimeToEdit">%1$s</string>
     <string name="TimeToEditExpired">Bohužel, čas na editaci vypršel.</string>
     <string name="AddShortcut">Přidat zástupce</string>
+    <string name="SearchMembers">Hledat členy</string>
     <string name="ShortcutAdded">Zástupce byl přidán na domovskou obrazovku</string>
     <string name="ChatYourSelf">konverzace se sebou vlastním</string>
     <string name="ChatYourSelfName">Já</string>
@@ -435,6 +566,21 @@
     <string name="DeleteForUser">Smazat vše od %1$s</string>
     <string name="DeleteForAll">Smazat vše od všech členů</string>
     <string name="TextCopied">Text zkopírován do schránky</string>
+    <string name="HoldToAudio">Podrž pro nahrání audia. Klepni pro přepnutí na video.</string>
+    <string name="HoldToVideo">Podrž pro nahrání videa. Klepni pro přepnutí na audio.</string>
+    <string name="DiscardVoiceMessageTitle">Zahodit hlasovou zprávu</string>
+    <string name="DiscardVoiceMessageDescription">Jsi si jistý, že chceš to stop recording and discard your voice message?</string>
+    <string name="DiscardVideoMessageTitle">Discard Video Message</string>
+    <string name="DiscardVideoMessageDescription">Jsi si jistý, že chceš zastavit nahrávání, a zahodit svou videozprávu?</string>
+    <string name="DiscardVoiceMessageAction">Zahodit</string>
+    <string name="AttachMediaRestricted">Admini této skupiny ti zakázali posílat soubory do %1$s</string>
+    <string name="AttachInlineRestricted">Admini této skupiny ti zakázali posílat inline obsah do %1$s</string>
+    <string name="AttachStickersRestricted">Admini této skupiny ti zakázali posílat samolepky do %1$s</string>
+    <string name="SendMessageRestricted">Admini této skupiny ti sem zakázali psát do %1$s</string>
+    <string name="AttachMediaRestrictedForever">Admini této skupiny ti zakázali posílat soubory</string>
+    <string name="AttachInlineRestrictedForever">Admini této skupiny ti zakázali posílat inline obsah</string>
+    <string name="AttachStickersRestrictedForever">Admini této skupiny ti zakázali posílat samolepky</string>
+    <string name="SendMessageRestrictedForever">Admini této skupiny ti sem zakázali psát</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s nastavil(a) časovač sebezničení na %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Nastavil(a) jsi časovač sebezničení na %1$s</string>
@@ -452,6 +598,7 @@
     <string name="NotificationMessageDocument">%1$s ti poslal(a) soubor</string>
     <string name="NotificationMessageGif">%1$s ti poslal(a) GIF</string>
     <string name="NotificationMessageAudio">%1$s ti poslal(a) hlasovou zprávu</string>
+    <string name="NotificationMessageRound">%1$s ti poslal(a) video zprávu</string>
     <string name="NotificationMessageMusic">%1$s ti poslal(a) písničku</string>
     <string name="NotificationMessageSticker">%1$s ti poslal(a) samolepku</string>
     <string name="NotificationMessageStickerEmoji">%1$s ti poslal(a) %2$s samolepku</string>
@@ -495,6 +642,7 @@
     <string name="NotificationActionPinnedSticker">%1$s přišpendlil(a) samolepku ve skupině %2$s</string>
     <string name="NotificationActionPinnedStickerEmoji">%1$s přišpendlil(a) %3$s samolepku ve skupině %2$s</string>
     <string name="NotificationActionPinnedVoice">%1$s přišpendlil(a) hlasovou zprávu ve skupině %2$s</string>
+    <string name="NotificationActionPinnedRound">%1$s přišpendlil(a) video zprávu ve skupině %2$s</string>
     <string name="NotificationActionPinnedContact">%1$s přišpendlil(a) kontakt ve skupině %2$s</string>
     <string name="NotificationActionPinnedGeo">%1$s přišpendlil(a) mapu ve skupině %2$s</string>
     <string name="NotificationActionPinnedGif">%1$s přišpendlil(a) GIF ve skupině %2$s</string>
@@ -563,8 +711,10 @@
     <string name="SETTINGS">Nastavení</string>
     <string name="AddMember">Přidat člena</string>
     <string name="SetAdmins">Nastavit administrátory</string>
+    <string name="BanFromTheGroup">ZABANOVAT VE SKUPINĚ</string>
     <string name="DeleteAndExit">Smazat a opustit skupinu</string>
     <string name="Notifications">Upozornění</string>
+    <string name="KickFromSupergroup">Omezit uživatele</string>
     <string name="KickFromGroup">Odebrat ze skupiny</string>
     <string name="UpgradeGroup">Povýšit na Superskupinu</string>
     <string name="ConvertGroup">Změnit na Superskupinu</string>
@@ -617,7 +767,7 @@
     <string name="UsernameEmpty">Žádné</string>
     <string name="ErrorOccurred">Vyskytla se chyba.</string>
     <!--stickers view-->
-    <string name="Stickers">Samolepky</string>
+    <string name="StickersName">Samolepky</string>
     <string name="AddStickers">Přidat samolepky</string>
     <string name="AddMasks">Přidat Masky</string>
     <string name="AddToStickers">Přidat k samolepkám</string>
@@ -650,6 +800,8 @@
     <string name="ArchivedMasksAlertInfo">Některé z tvých starších masek byly archivovány. Můžeš je znovu aktivovat v nastavení masek.</string>
     <!--theme view-->
     <string name="Theme">Téma</string>
+    <string name="ThemeDark">Tmavé</string>
+    <string name="ThemeBlue">Modré</string>
     <string name="DeleteThemeAlert">Jsi si jistý, že chceš smazat toto téma?</string>
     <string name="IncorrectTheme">Neplatný název souboru</string>
     <string name="EnterThemeName">Zadej jméno tématu</string>
@@ -696,7 +848,10 @@
     <string name="ColorCyan">Tyrkysová</string>
     <string name="ColorDark">Tmavá</string>
     <string name="ColorWhite">Bílá</string>
+    <string name="ColorSepia">Sépie</string>
+    <string name="ColorDark">Tmavá</string>
     <string name="ColorPink">Růžová</string>
+    <string name="FontSize">Velikost písma</string>
     <string name="ColorViolet">Fialová</string>
     <string name="ColorOrange">Oranžová</string>
     <string name="ColorSepia">Sépiová</string>
@@ -726,6 +881,7 @@
     <string name="ContactJoined">Kontakt začal(a) používat Telegram</string>
     <string name="PinnedMessages">Přišpendlené zprávy</string>
     <string name="Language">Jazyk</string>
+    <string name="LanguageCustom">Volitelný</string>
     <string name="AskAQuestionInfo">Měj prosím na paměti, že podporu Telegramu poskytují dobrovolníci. Snažíme se odpovídat tak rychle, jak je to možné, ale může to chvíli trvat.<![CDATA[<br><br>]]>Prosím věnuj pozornost <![CDATA[<a href=\"https://telegram.org/faq#general\">Telegram FAQ</a>]]>: obsahuje důležité tipy a postupy, na většinu nejobvyklejších otázek a <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">jejich řešení</a>]]>.</string>
     <string name="AskButton">Ptát se dobrovolníka</string>
     <string name="TelegramFaq">Telegram FAQ</string>
@@ -807,6 +963,19 @@
     <string name="DebugMenu">Menu ladění</string>
     <string name="DebugMenuImportContacts">Importovat Kontakty</string>
     <string name="DebugMenuReloadContacts">Znovu načíst Kontakty</string>
+    <string name="ChangeLanguageLater">Zvolený jazyk můžeš později změnit v Nastavení.</string>
+    <string name="ChooseYourLanguage">Zvol vlastní jazyk</string>
+    <string name="ChooseYourLanguageOther">Ostatní</string>
+    <string name="ProxySettings">Nastavení proxy</string>
+    <string name="Proxy">Proxy</string>
+    <string name="UseProxySettings">Použít nastavení proxy</string>
+    <string name="UseProxyAddress">Server</string>
+    <string name="UseProxyPassword">Heslo</string>
+    <string name="UseProxyPort">Port</string>
+    <string name="UseProxyUsername">Uživatelské jméno</string>
+    <string name="UseProxyInfo">SOCKS5 nastavení proxy</string>
+    <string name="UseProxyForCalls">Nastavení proxy pro hovory</string>
+    <string name="UseProxyForCallsInfo">Proxy servery mohou snížit kvalitu tvých hovorů.</string>
     <!--cache view-->
     <string name="LocalDatabase">Lokální databáze</string>
     <string name="LocalDatabaseClear">Vyčistit zprávy v cache?</string>
@@ -825,6 +994,8 @@
     <string name="KeepMedia">Uchovat média</string>
     <string name="KeepMediaInfo">Obrázky, videa a další soubory z cloudových konverzací, ke kterým <![CDATA[<b>nebylo přistoupeno</b>]]> po zvolenou dobu, budou smazány z tohoto zařízení pro ušetření místa na disku.\n\nVeškerá média zůstanou dále dostupná v cloudu, odkud mohou být kdykoli znovu stáhnuta, pokud to bude potřeba.</string>
     <string name="KeepMediaForever">Navždy</string>
+    <string name="AudioAutodownload">Hlasové zprávy</string>
+    <string name="VideoMessagesAutodownload">Video zprávy</string>
     <!--sessions view-->
     <string name="SessionsTitle">Aktivní Konekce</string>
     <string name="CurrentSession">Současná konekce</string>
@@ -889,7 +1060,7 @@
     <string name="Of">%1$d z %2$d</string>
     <string name="Gallery">Galerie</string>
     <string name="AllPhotos">Všechny Obrázky</string>
-    <string name="AllVideo">Všechny Videa</string>
+    <string name="AllMedia">Všechny soubory</string>
     <string name="NoPhotos">Žádné obrázky</string>
     <string name="NoVideo">Žádná videa</string>
     <string name="PleaseDownload">Nejdřív prosím média stáhni</string>
@@ -1027,6 +1198,11 @@
     <string name="PrivacySettings">Soukromí a zabezpečení</string>
     <string name="PrivacyTitle">Soukromí</string>
     <string name="PrivacyLastSeen">Naposledy Viděn(a)</string>
+    <string name="PrivacyPayments">Platby</string>
+    <string name="PrivacyPaymentsClear">Vyčistit platby a informace o doručení</string>
+    <string name="PrivacyPaymentsClearInfo">Tímto vymažeš informace pro doručení a řekneš všem poskytovatelům plateb, že chceš vymazat jakékoli uložené informace o tvých platebních kartách. Měj na paměti, že Telegram samotný nikdy neukládá jakékoli data o tvých kartách.</string>
+    <string name="PrivacyClearShipping">Informace o dopravě</string>
+    <string name="PrivacyClearPayment">Platební informace</string>
     <string name="LastSeenEverybody">Všichni</string>
     <string name="LastSeenContacts">Moje Kontakty</string>
     <string name="LastSeenNobody">Nikdo</string>
@@ -1067,6 +1243,8 @@
     <string name="InviteToGroupError">Bohužel, tohoto uživatele nemůžeš přidat do skupiny, z důvodu jeho nastavení soukromí.</string>
     <string name="InviteToChannelError">Bohužel, tohoto uživatele nemůžeš přidat do kanálu, z důvodu jeho nastavení soukromí.</string>
     <string name="CreateGroupError">Bohužel, s těmito uživateli nemůžeš vytvořit skupinu, z důvodu jeho nastavení soukromí.</string>
+    <string name="PrivacyCallsP2PTitle">Peer-to-Peer</string>
+    <string name="PrivacyCallsP2PHelp">Vypnutím peer-to-peer budeš spoléhat na spojení hovorů přes servery Telegramu. Tímto se vyhneš zobrazení své IP adresy, ale může to mírně snížit kvalitu hovorů.</string>
     <!--edit video view-->
     <string name="EditVideo">Editovat Video</string>
     <string name="SendingVideo">Posílám video...</string>
@@ -1146,6 +1324,7 @@
     <string name="AttachDocument">Soubor</string>
     <string name="AttachSticker">Samolepka</string>
     <string name="AttachAudio">Hlasová zpráva</string>
+    <string name="AttachRound">Video zpráva</string>
     <string name="AttachGame">hra</string>
     <string name="FromYou">Já</string>
     <string name="ActionTakeScreenshootYou">Vyfotil(a) jsi obrazovku!</string>
@@ -1214,6 +1393,11 @@
     <string name="UserRestricted">Bohužel, nejsi oprávněn(a) toto udělat.</string>
     <string name="YouBlockedUser">Bohužel, nemůžeš přidat tohoto uživatele nebo bota do skupiny, protože jsi je zablokoval. Nejdříve je musíš odblokovat.</string>
     <string name="JoinGroup">PŘIPOJIT KE SKUPINĚ</string>
+    <string name="AddAdminErrorNotAMember">Bohužel, nemůžeš přidat tohoto uživatele jako admina, protože není členem této skupiny a ty nemáš oprávnění ho pozvat.</string>
+    <string name="AddAdminErrorBlacklisted">Bohužel, nemůžeš přidat tohoto uživatele jako admina, protože je na blacklistu, a ty jej nemůžeš odbanovat.</string>
+    <string name="AddBannedErrorAdmin">Bohužel, nemůžeš zabanovat tohoto uživatele, protože je adminem v této skupině, a ty nemáš oprávnění mu práva sebrat.</string>
+    <string name="ErrorSendRestrictedStickers">Bohužel, admini v této skupině ti zakázali posílat samolepky.</string>
+    <string name="ErrorSendRestrictedMedia">Bohužel, admini v této skupině ti zakázali posílat soubory.</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram potřebuje přístup k tvým kontaktům, aby se mohl propojit s tvými přáteli napříč všemi tvými zařízeními..</string>
     <string name="PermissionStorage">Telegram potřebuje přístup k tvému úložišti, aby jsi mohl posílat obrázky, videa, muziku a ostatní média.</string>
@@ -1300,13 +1484,18 @@
     <string name="ReturnToCall">VRÁTIT SE K HOVORU</string>
     <string name="CallNotAvailable">Bohužel, uživatel <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> neakceptuje hovory.</string>
     <string name="CallEmojiKeyTooltip">Pokud je emoji na obrazovce %1$s stejné, tento hovor je 100%% bezpečný.</string>
+    <string name="CallMessageReportProblem">Ohodnotit hovor</string>
+    <string name="CallReportHint">Co bylo špatně?</string>
+    <string name="CallReportIncludeLogs">Uveď technické informace</string>
+    <string name="CallReportLogsExplain">Toto neodhalí obsah tvé konverzace, pouze nám to umožní opravit problém dříve.</string>
+    <string name="CallReportSent">Děkujeme, že nám pomáháš vylepšit hovory v Telegramu.</string>
     <!--plural-->
-    <string name="Online_zero">%1$d online</string>
-    <string name="Online_one">%1$d online</string>
-    <string name="Online_two">%1$d online</string>
-    <string name="Online_few">%1$d online</string>
-    <string name="Online_many">%1$d online</string>
-    <string name="Online_other">%1$d online</string>
+    <string name="OnlineCount_zero">%1$d online</string>
+    <string name="OnlineCount_one">%1$d online</string>
+    <string name="OnlineCount_two">%1$d online</string>
+    <string name="OnlineCount_few">%1$d online</string>
+    <string name="OnlineCount_many">%1$d online</string>
+    <string name="OnlineCount_other">%1$d online</string>    
     <string name="Members_zero">%1$d členů</string>
     <string name="Members_one">%1$d člen</string>
     <string name="Members_two">%1$d členi</string>
@@ -1500,6 +1689,12 @@
     <string name="ForwardedAudio_few">%1$d přeposlané hlasové zprávy</string>
     <string name="ForwardedAudio_many">%1$d přeposlaných hlasových zpráv</string>
     <string name="ForwardedAudio_other">%1$d přeposlaných hlasových zpráv</string>
+    <string name="ForwardedRound_zero">%1$d přeposlaných video zpráv</string>
+    <string name="ForwardedRound_one">Přeposlaná video zpráva</string>
+    <string name="ForwardedRound_two">%1$d přeposlané video zprávy</string>
+    <string name="ForwardedRound_few">%1$d přeposlané video zprávy</string>
+    <string name="ForwardedRound_many">%1$d přeposlaných video zpráv</string>
+    <string name="ForwardedRound_other">%1$d přeposlaných video zpráv</string>
     <string name="ForwardedLocation_zero">%1$d přeposlaných poloh</string>
     <string name="ForwardedLocation_one">Přeposlaná poloha</string>
     <string name="ForwardedLocation_two">%1$d přeposlané polohy</string>
@@ -1527,6 +1722,10 @@
     <!--date formatters-->
     <string name="formatterStats12H">dd. MMM yyyy, h:mm a</string>
     <string name="formatterStats24H">dd. MMM yyyy, HH:mm</string>
+    <string name="formatterBannedUntil12H">dd. MMM yyyy, h:mm a</string>
+    <string name="formatterBannedUntil24H">dd. MMM yyyy, HH:mm</string>
+    <string name="formatterBannedUntilThisYear12H">dd. MMM, h:mm a</string>
+    <string name="formatterBannedUntilThisYear24H">dd. MMM, HH:mm</string>
     <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">dd. MMM</string>
     <string name="formatterYear">dd.MM.yy</string>
