@@ -126,6 +126,8 @@
     <string name="HiddenName">Conta Excluída</string>
     <string name="SelectChat">Selecione um Chat</string>
     <string name="PhotoTip">Toque e segure para ver</string>
+    <string name="DisappearingPhoto">Foto Secreta</string>
+    <string name="DisappearingVideo">Vídeo Secreto</string>
     <string name="CompatibilityChat">%1$s está usando uma versão mais antiga do Telegram, por isso fotos secretas serão mostradas em modo de compatibilidade.\n\nAssim que %2$s atualizar o Telegram, fotos com timers de 1 minuto ou menos passarão a funcionar no modo ‘Toque e segure para ver’, e você será notificado caso a outra pessoa salve a tela.</string>
     <string name="SearchMessages">MENSAGENS</string>
     <string name="Search">Busca</string>
@@ -587,6 +589,8 @@
     <string name="NotificationMessageNoText">%1$s te enviou uma mensagem</string>
     <string name="NotificationMessagePhoto">%1$s te enviou uma foto</string>
     <string name="NotificationMessageVideo">%1$s te enviou um vídeo</string>
+    <string name="NotificationMessageSDPhoto">%1$s te enviou uma foto auto-destrutiva</string>
+    <string name="NotificationMessageSDVideo">%1$s te enviou um video auto-destrutivo</string>
     <string name="NotificationMessageContact">%1$s compartilhou um contato com você</string>
     <string name="NotificationMessageMap">%1$s enviou uma localização</string>
     <string name="NotificationMessageGame">%1$s te convidou para jogar %2$s</string>
@@ -732,6 +736,9 @@
     <string name="PhoneWork">Trabalho</string>
     <string name="PhoneOther">Outro</string>
     <string name="PhoneMain">Principal</string>
+    <string name="UserBio">Bio</string>
+    <string name="UserBioEmpty">Nenhuma</string>
+    <string name="UserBioInfo">Você pode adicionar algumas linhas sobre você. Qualquer um que abra seu perfil verá esse texto.</string>
     <string name="StartEncryptedChat">Iniciar Chat Secreto</string>
     <string name="GroupsInCommon">Grupos em Comum</string>
     <string name="GroupsInCommonTitle">Grupos em Comum</string>
@@ -739,6 +746,8 @@
     <string name="CreateEncryptedChatError">Ocorreu um erro.</string>
     <string name="EncryptionKey">Chave criptográfica</string>
     <string name="MessageLifetime">Tempo de autodestruição</string>
+    <string name="MessageLifetimePhoto">Se você definir um temporizador, a foto irá se auto-destruir após ser vista.</string>
+    <string name="MessageLifetimeVideo">Se você definir um temporizador, o vídeo irá se auto-destruir após ser visto.</string>
     <string name="ShortMessageLifetimeForever">Desativado</string>
     <string name="EncryptionKeyDescription">Essa imagem e texto foram derivadas da chave criptográfica para esse chat secreto com <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nSe você vê o mesmo no dispositivo de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, a criptografia ponta a ponta está garantida.</string>
     <string name="EncryptionKeyLink">https://telegram.org/faq/br#chats-secretos</string>
@@ -1299,6 +1308,8 @@
     <string name="UnsupportedMedia">Esta mensagem não é suportada na sua versão do Telegram. Para visualizá-la atualize seu aplicativo em https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Vídeo</string>
+    <string name="AttachPhotoExpired">A foto expirou</string>
+    <string name="AttachVideoExpired">O vídeo expirou</string>
     <string name="AttachGif">GIF</string>
     <string name="AttachLocation">Localização</string>
     <string name="AttachContact">Contato</string>
@@ -1396,14 +1407,12 @@
     <string name="Page4Title">Seguro</string>
     <string name="Page5Title">Poderoso</string>
     <string name="Page6Title">Baseado na nuvem</string>
-    <string name="Page7Title">Privado</string>
     <string name="Page1Message">O aplicativo de mensagem mais <![CDATA[<b>rápido</b>]]> do mundo.\nÉ <![CDATA[<b>gratuito</b>]]> e <![CDATA[<b>seguro</b>]]>.</string>
     <string name="Page2Message">O <![CDATA[<b>Telegram</b>]]> envia mensagens mais rápido que qualquer outro aplicativo.</string>
     <string name="Page3Message">O <![CDATA[<b>Telegram</b>]]> é gratuito para sempre. Sem propagandas.\nSem taxas.</string>
     <string name="Page4Message">O <![CDATA[<b>Telegram</b>]]> mantém suas mensagens seguras\nde ataques de hackers.</string>
     <string name="Page5Message">O <![CDATA[<b>Telegram</b>]]> não possui limites no tamanho de\nsuas mídia e conversas.</string>
     <string name="Page6Message">O <![CDATA[<b>Telegram</b>]]> te permite acessar suas mensagens \nde múltiplos dispositivos.</string>
-    <string name="Page7Message">O <![CDATA[<b>Telegram</b>]]> possui mensagens fortemente criptografadas\ne que podem se auto-destruir.</string>
     <string name="StartMessaging">Comece a conversar</string>
     <!--VoIP-->
     <string name="AccountSettings">Configurações de Conta</string>

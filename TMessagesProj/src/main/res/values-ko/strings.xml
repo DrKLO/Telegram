@@ -126,6 +126,8 @@
     <string name="HiddenName">탈퇴한 계정</string>
     <string name="SelectChat">채팅방 선택</string>
     <string name="PhotoTip">꾹 눌러서 보기</string>
+    <string name="DisappearingPhoto">비밀 사진</string>
+    <string name="DisappearingVideo">비밀 동영상</string>
     <string name="CompatibilityChat">%1$s님의 텔레그램 버전이 낮아 비밀 사진을 호환성 모드로 표시합니다.\n\n%2$s님이 텔레그램을 업데이트하고 나면, 자동삭제 시간이 1분 이하인 사진은 \"탭하고 누르고 있어야 보임\" 상태가 되며, 상대방이 화면을 캡처할 때 마다 알림을 받습니다.</string>
     <string name="SearchMessages">메시지</string>
     <string name="Search">검색</string>
@@ -587,6 +589,8 @@
     <string name="NotificationMessageNoText">%1$s님이 메시지를 보냈습니다</string>
     <string name="NotificationMessagePhoto">%1$s님이 사진을 보냈습니다</string>
     <string name="NotificationMessageVideo">%1$s님이 동영상을 보냈습니다</string>
+    <string name="NotificationMessageSDPhoto">%1$s 님이 자동삭제되는 사진을 전송했습니다</string>
+    <string name="NotificationMessageSDVideo">%1$s 님이 자동삭제되는 동영상을 전송했습니다</string>
     <string name="NotificationMessageContact">%1$s님이 연락처를 공유했습니다</string>
     <string name="NotificationMessageMap">%1$s님이 위치를 보냈습니다</string>
     <string name="NotificationMessageGame">%1$s님이 %2$s 게임으로 초대했습니다</string>
@@ -732,6 +736,9 @@
     <string name="PhoneWork">직장</string>
     <string name="PhoneOther">기타</string>
     <string name="PhoneMain">주</string>
+    <string name="UserBio">자기소개</string>
+    <string name="UserBioEmpty">없음</string>
+    <string name="UserBioInfo">자기소개에 대한 몇줄을 추가 할 수 있습니다. 회원님 정보를 보시는 분들에게 표시가 됩니다</string>
     <string name="StartEncryptedChat">비밀대화 시작</string>
     <string name="GroupsInCommon">공통 그룹</string>
     <string name="GroupsInCommonTitle">공통 그룹</string>
@@ -739,6 +746,8 @@
     <string name="CreateEncryptedChatError">오류가 발생했습니다.</string>
     <string name="EncryptionKey">암호화 키</string>
     <string name="MessageLifetime">자동삭제 타이머</string>
+    <string name="MessageLifetimePhoto">타이머를 설정시, 사진을 읽은 후 자동삭제가 됩니다.</string>
+    <string name="MessageLifetimeVideo">타이머 설정시, 동영상 시청 후 자동삭제가 됩니다.</string>
     <string name="ShortMessageLifetimeForever">해제</string>
     <string name="EncryptionKeyDescription">이 이미지와 텍스트는 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>님과의 비밀대화시 생성된 암호화키에서 파생되었습니다.\n\n이 이미지와 텍스트가 <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> 님의 휴대전화와 동일하다면 단말기간(end-to-end)의 암호화가 정상적으로 진행되고 있음을 보장합니다.\n\n더 자세한 사항은 telegram.org를 참고해 주세요.</string>
     <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
@@ -961,8 +970,8 @@
     <string name="UseProxyPort">포트</string>
     <string name="UseProxyUsername">아이디</string>
     <string name="UseProxyInfo">SOCKS5 프록시 설정</string>
-    <string name="UseProxyForCalls">Use proxy for calls</string>
-    <string name="UseProxyForCallsInfo">Proxy servers may degrade the quality of your calls.</string>
+    <string name="UseProxyForCalls">전화에 프록시 사용</string>
+    <string name="UseProxyForCallsInfo">프록시 서버는 통화 품질을 저하시킬 수 있습니다.</string>
     <!--cache view-->
     <string name="LocalDatabase">로컬 데이터베이스</string>
     <string name="LocalDatabaseClear">캐시된 텍스트 메시지를 삭제하시겠습니까?</string>
@@ -982,7 +991,7 @@
     <string name="KeepMediaInfo">이 기간 동안 클라우드 채팅방에서  <![CDATA[<b>접근하지 않은</b>]]> 사진이나 동영상, 기타 파일 등은 공간 절약을 위해 이 기기에서 삭제됩니다.\n\n모든 파일은 Telegram 클라우드에 여전히 남으며 필요하시면 언제든 다시 다운로드하실 수 있습니다.</string>
     <string name="KeepMediaForever">영원히</string>
     <string name="AudioAutodownload">음성 메시지</string>
-    <string name="VideoMessagesAutodownload">음성 메시지</string>
+    <string name="VideoMessagesAutodownload">영상 메시지</string>
     <!--sessions view-->
     <string name="SessionsTitle">활성화된 세션</string>
     <string name="CurrentSession">현재 세션</string>
@@ -1299,6 +1308,8 @@
     <string name="UnsupportedMedia">이 메시지는 현재 사용 중인 버전의 Telegram에서 지원되지 않습니다. 메시지를 보려면 http://telegram.org/update에서 앱을 업데이트하세요.</string>
     <string name="AttachPhoto">사진</string>
     <string name="AttachVideo">동영상</string>
+    <string name="AttachPhotoExpired">사진이 만료되었습니다</string>
+    <string name="AttachVideoExpired">동영상이 만료되었습니다</string>
     <string name="AttachGif">GIF파일</string>
     <string name="AttachLocation">위치</string>
     <string name="AttachContact">연락처</string>
@@ -1396,14 +1407,12 @@
     <string name="Page4Title">보안성</string>
     <string name="Page5Title">강력함</string>
     <string name="Page6Title">클라우드 기반</string>
-    <string name="Page7Title">사생활 보호</string>
     <string name="Page1Message">세상에서 가장 <![CDATA[<b>빠른</b>]]> 메신저입니다.\n <![CDATA[<b>무료</b>]]> 이며 <![CDATA[<b>안전합니다</b>]]>.</string>
     <string name="Page2Message"><![CDATA[<b>텔레그램</b>]]>은 어떤 메신저보다도\n빠르게 메시지를 전송합니다.</string>
     <string name="Page3Message"><![CDATA[<b>텔레그램</b>]]>은 영원히 무료입니다. \n광고도 없고 이용료도 없습니다.</string>
     <string name="Page4Message"><![CDATA[<b>텔레그램</b>]]>은 그 어떤 누구로부터도\n메시지를 안전하게 보호합니다.</string>
     <string name="Page5Message"><![CDATA[<b>텔레그램</b>]]>은 대화나 미디어의 용량에\n제한이 없습니다.</string>
     <string name="Page6Message"><![CDATA[<b>텔레그램</b>]]>은 다른 기기에서도\n동시에 사용할 수 있습니다.</string>
-    <string name="Page7Message"><![CDATA[<b>텔레그램</b>]]>은 메시지를 강력하게 암호화하며\n자동으로 삭제되게 할 수 있습니다.</string>
     <string name="StartMessaging">시작하기</string>
     <!--VoIP-->
     <string name="AccountSettings">계정설정</string>

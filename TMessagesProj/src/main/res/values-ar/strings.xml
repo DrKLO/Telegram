@@ -126,6 +126,8 @@
     <string name="HiddenName">حساب محذوف</string>
     <string name="SelectChat">اختر محادثة</string>
     <string name="PhotoTip">اضغط بإستمرار على المستخدم العرض</string>
+    <string name="DisappearingPhoto">صورة سرية</string>
+    <string name="DisappearingVideo">فيديو سري</string>
     <string name="CompatibilityChat">%1$s يستخدم إصدار قديم من تيليجرام، لذلك، الصور السرية ستظهر في وضع الموافقة.\n\nعندما يقوم %2$s بتحديث تيليجرام، الصور التي بها عداد دقيقة أو أقل ستعمل بطريقة \"الاستمرار بالضغط للإستعراض\"، وسيتم إخبارك عندما يلتقط المستقبل صورة من شاشته.</string>
     <string name="SearchMessages">الرسائل</string>
     <string name="Search">بحث</string>
@@ -355,7 +357,7 @@
     <string name="EventLogEmptyChannel"><![CDATA[1]]>لا توجد أحداث هنا بعد<![CDATA[1]]>\n\nمشرفي القناة\nلم يقوموا بأي عمليات\nخلال 48 ساعة الماضية.</string>
     <string name="EventLogEmptySearch"><![CDATA[<b>]]>لم يتم العثور على أحداث <![CDATA[</b>]]>\n\nلا توجد أحداث مؤخرًا تحتوي على ما بحثت عنه.</string>
     <string name="EventLogEmptyTextSearch">لا توجد أحداث مؤخرًا تحتوي على \'<![CDATA[<b>]]>%1$s<![CDATA[</b>]]>\' تم العثور عليها.</string>
-    <string name="EventLogInfoTitle">What is the Recent Actions?</string>
+    <string name="EventLogInfoTitle">ما هي العمليات الحديثة؟</string>
     <string name="EventLogInfoDetail">هذه قائمة بجميع العمليات التي قام بها أعضاء المجموعة ومشرفيها خلال 48 ساعة.</string>
     <string name="EventLogInfoDetailChannel">هذه قائمة بجميع العمليات التي قام بها أعضاء القناة ومشرفيها خلال 48 ساعة.</string>
     <string name="EventLogEditedGroupTitle">un1 قام بتغيير اسم المجموعة إلى \"%1$s\"</string>
@@ -587,6 +589,8 @@
     <string name="NotificationMessageNoText">%1$s قام بإرسال رسالة لك</string>
     <string name="NotificationMessagePhoto">%1$s قام بإرسال صورة لك</string>
     <string name="NotificationMessageVideo">%1$s قام بإرسال مقطع مرئي لك</string>
+    <string name="NotificationMessageSDPhoto">%1$s أرسل لك صورة بتدمير ذاتي</string>
+    <string name="NotificationMessageSDVideo">%1$s أرسل لك فيديو بتدمير ذاتي </string>
     <string name="NotificationMessageContact">%1$s قام بإرسال جهة اتصال لك</string>
     <string name="NotificationMessageMap">%1$s قام بإرسال موقع لك</string>
     <string name="NotificationMessageGame">%1$s قام بدعوتك للعب %2$s</string>
@@ -732,6 +736,9 @@
     <string name="PhoneWork">العمل</string>
     <string name="PhoneOther">آخر</string>
     <string name="PhoneMain">الرئيسية</string>
+    <string name="UserBio">نبذة</string>
+    <string name="UserBioEmpty">لا يوجد</string>
+    <string name="UserBioInfo">يمكنك إضافة بعض المعلومات عن نفسك. يمكن لمن يستعرض حسابك رؤية هذه المعلمات.</string>
     <string name="StartEncryptedChat">إبدأ محادثة سرية</string>
     <string name="GroupsInCommon">المجموعات المشتركة</string>
     <string name="GroupsInCommonTitle">المجموعات المشتركة</string>
@@ -739,6 +746,8 @@
     <string name="CreateEncryptedChatError">حدث خطأ.</string>
     <string name="EncryptionKey">مفتاح التشفير</string>
     <string name="MessageLifetime">عداد التدمير الذاتي</string>
+    <string name="MessageLifetimePhoto">إذا اخترت العداد، الصورة ستقوم بتدمير ذاتها تلقائيًا بعد استعراضها.</string>
+    <string name="MessageLifetimeVideo">إذا اخترت العداد، الفيديو سيقوم بتدمير ذاته تلقائيًا بعد استعراضه.</string>
     <string name="ShortMessageLifetimeForever">إيقاف</string>
     <string name="EncryptionKeyDescription">هذه الصورة والنص تم اشتقاقهم من مفتاح التشفير لهذه المحادثة السرية مع <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nإذا كانت مطابقة لما يظهر على جهاز <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> ، التشفير من البداية للنهاية مضمون.\n\nللاستزادة، اطلع على telegram.org</string>
     <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
@@ -961,8 +970,8 @@
     <string name="UseProxyPort">المنفذ</string>
     <string name="UseProxyUsername">اسم المستخدم</string>
     <string name="UseProxyInfo">إعدادات بروكسي SOCKS 5</string>
-    <string name="UseProxyForCalls">Use proxy for calls</string>
-    <string name="UseProxyForCallsInfo">Proxy servers may degrade the quality of your calls.</string>
+    <string name="UseProxyForCalls">استخدم البروكسي للمكالمات</string>
+    <string name="UseProxyForCallsInfo">خوادم البروكسي ربما تقلل من جودة الاتصال في تيليجرام.</string>
     <!--cache view-->
     <string name="LocalDatabase">قاعدة البيانات على الجهاز</string>
     <string name="LocalDatabaseClear">هل ترغب في مسح الرسائل المحفوظة في الذاكرة المخبئية؟</string>
@@ -1299,6 +1308,8 @@
     <string name="UnsupportedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة: https://telegram.org/update</string>
     <string name="AttachPhoto">صورة</string>
     <string name="AttachVideo">مقطع مرئي</string>
+    <string name="AttachPhotoExpired">انتهت صلاحية الصورة</string>
+    <string name="AttachVideoExpired">انتهت صلاحية الفيديو</string>
     <string name="AttachGif">صورة متحركة</string>
     <string name="AttachLocation">موقع</string>
     <string name="AttachContact">جهة اتصال</string>
@@ -1308,8 +1319,8 @@
     <string name="AttachRound">رسالة مرئية</string>
     <string name="AttachGame">لعبة</string>
     <string name="FromYou">أنت</string>
-    <string name="ActionTakeScreenshootYou">أنت أخذت لقطة للشاشة !</string>
-    <string name="ActionTakeScreenshoot">un1 أخذ لقطة للشاشة !</string>
+    <string name="ActionTakeScreenshootYou">لقد قمت بتصوير الشاشة !</string>
+    <string name="ActionTakeScreenshoot">un1 قام بتصوير الشاشة !</string>
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">رقم الهاتف غير صحيح</string>
     <string name="BannedPhoneNumber">رقم هاتف محظور</string>
@@ -1396,14 +1407,12 @@
     <string name="Page4Title">آمن</string>
     <string name="Page5Title">قوي</string>
     <string name="Page6Title">مرتبط بالسحاب</string>
-    <string name="Page7Title">خصوصي</string>
     <string name="Page1Message">تيليجرام هو <![CDATA[<b>أسرع</b>]]> تطبيق مراسلة في العالم.\n,وهو كذلك <![CDATA[<b>مجاني</b>]]> و <![CDATA[<b>آمن</b>]]>.</string>
     <string name="Page2Message"><![CDATA[<b>تيليجرام</b>]]> يوصل الرّسائل أسرع من\nأي تطبيق آخر.</string>
     <string name="Page3Message"><![CDATA[<b>تيليجرام</b>]]> مجّاني دائماً. لا إعلانات.\nدون رسوم إشتراك.</string>
     <string name="Page4Message"><![CDATA[<b>تيليجرام</b>]]> يحمي الرسائل الخاصة بك\nمن هجمات المخترقين.</string>
     <string name="Page5Message"><![CDATA[<b>تيليجرام</b>]]> لا يفرض حدوداً على حجم\nمحادثاتك و وسائطك.</string>
     <string name="Page6Message"><![CDATA[<b>تيليجرام</b>]]> يمكنك من الوصول إلى الرسائل الخاصة بك\nمن أجهزة متعددة.</string>
-    <string name="Page7Message">رسائل <![CDATA[<b>تيليجرام</b>]]> مشفرة بشكل قوي\nوتستطيع تدمير ذاتها.</string>
     <string name="StartMessaging">إبدأ المراسلة</string>
     <!--VoIP-->
     <string name="AccountSettings">إعدادات الحساب</string>

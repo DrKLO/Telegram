@@ -126,6 +126,8 @@
     <string name="HiddenName">Gelöschtes Konto</string>
     <string name="SelectChat">Chat auswählen</string>
     <string name="PhotoTip">Tippen und Halten</string>
+    <string name="DisappearingPhoto">Geheimes Bild</string>
+    <string name="DisappearingVideo">Geheimes Video</string>
     <string name="CompatibilityChat">%1$s benutzt eine ältere Version von Telegram, sodass Bilder in Geheimen Chats im Kompatibilitätsmodus angezeigt werden.\n\nSobald %2$s Telegram aktualisiert, werden Bilder mit Timern von 1 Minute und kürzer per \"Tippen und Halten\" angezeigt. Du wirst benachrichtigt, sobald dein Chatpartner ein Bildschirmfoto macht.</string>
     <string name="SearchMessages">NACHRICHTEN</string>
     <string name="Search">Suche</string>
@@ -587,6 +589,8 @@
     <string name="NotificationMessageNoText">%1$s hat dir eine Nachricht gesendet</string>
     <string name="NotificationMessagePhoto">%1$s hat dir ein Bild gesendet</string>
     <string name="NotificationMessageVideo">%1$s hat dir ein Video gesendet</string>
+    <string name="NotificationMessageSDPhoto">%1$s hat dir ein selbstzerstörendes Bild gesendet</string>
+    <string name="NotificationMessageSDVideo">%1$s hat dir ein selbstzerstörendes Video gesendet</string>
     <string name="NotificationMessageContact">%1$s hat dir einen Kontakt gesendet</string>
     <string name="NotificationMessageMap">%1$s hat dir einen Standort gesendet</string>
     <string name="NotificationMessageGame">%1$s hat dich eingeladen, %2$s zu spielen</string>
@@ -732,6 +736,9 @@
     <string name="PhoneWork">Arbeit</string>
     <string name="PhoneOther">Sonstiges</string>
     <string name="PhoneMain">Hauptnummer</string>
+    <string name="UserBio">Bio</string>
+    <string name="UserBioEmpty">Keine</string>
+    <string name="UserBioInfo">Hier kannst du etwas über dich schreiben. Jeder der dein Profil öffnet, kann diesen Text lesen.</string>
     <string name="StartEncryptedChat">Geheimen Chat starten</string>
     <string name="GroupsInCommon">Gemeinsame Gruppen</string>
     <string name="GroupsInCommonTitle">Gemeinsame Gruppen</string>
@@ -739,6 +746,8 @@
     <string name="CreateEncryptedChatError">Es ist ein Fehler aufgetreten.</string>
     <string name="EncryptionKey">Geheimer Schlüssel</string>
     <string name="MessageLifetime">Selbstzerstörungs-Timer</string>
+    <string name="MessageLifetimePhoto">Bild wird nach Ablauf der Zeit selbst zerstört.</string>
+    <string name="MessageLifetimeVideo">Video wird nach Ablauf der Zeit selbst zerstört.</string>
     <string name="ShortMessageLifetimeForever">Aus</string>
     <string name="EncryptionKeyDescription">Bild und Text zeigen den Schlüssel dieses geheimen Chats mit <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nSehen sie auf dem Gerät von <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> genau so aus, ist Ende-zu-Ende Verschlüsselung garantiert.\n\nErfahre mehr unter telegram.org</string>
     <string name="EncryptionKeyLink">https://telegram.org/faq/de#geheime-chats</string>
@@ -1299,6 +1308,8 @@
     <string name="UnsupportedMedia">Diese Nachricht wird von deiner Telegram-Version nicht unterstützt. Bitte aktualisiere Telegram um sie zu sehen: https://telegram.org/update</string>
     <string name="AttachPhoto">Bild</string>
     <string name="AttachVideo">Video</string>
+    <string name="AttachPhotoExpired">Bild ist abgelaufen</string>
+    <string name="AttachVideoExpired">Video ist abgelaufen</string>
     <string name="AttachGif">GIF</string>
     <string name="AttachLocation">Standort</string>
     <string name="AttachContact">Kontakt</string>
@@ -1396,14 +1407,12 @@
     <string name="Page4Title">Sicher</string>
     <string name="Page5Title">Leistungsstark</string>
     <string name="Page6Title">Cloud-Basiert</string>
-    <string name="Page7Title">Vertraulich</string>
     <string name="Page1Message">Die <![CDATA[<b>schnellste</b>]]> Messaging App der Welt.\n<![CDATA[<b>Kostenlos</b>]]> und <![CDATA[<b>sicher</b>]]>.</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> übermittelt Nachrichten\nschneller als jede andere Anwendung.</string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> bleibt immer gratis.\nKeine Werbung. Keine Abo-Gebühren.</string>
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> schützt deine Nachrichten\nvor Hacker-Angriffen.</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> hat keine Begrenzungen auf\ndie Größe deiner Medien oder Chats.</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> kannst du vom Handy\nTablet oder auch Computer\nsynchronisiert benutzen.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]>-Nachrichten sind stark verschlüsselt\nund können sich selbst zerstören.</string>
     <string name="StartMessaging">Jetzt beginnen</string>
     <!--VoIP-->
     <string name="AccountSettings">Kontoeinstellungen</string>
