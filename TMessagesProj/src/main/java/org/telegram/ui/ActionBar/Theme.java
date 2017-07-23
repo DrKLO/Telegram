@@ -2415,23 +2415,21 @@ public class Theme {
 
             chat_composeShadowDrawable = context.getResources().getDrawable(R.drawable.compose_panel_shadow);
 
-            if (Build.VERSION.SDK_INT >= 16) {
+            try {
+                int bitmapSize = AndroidUtilities.roundMessageSize + AndroidUtilities.dp(6);
+                Bitmap bitmap = Bitmap.createBitmap(bitmapSize, bitmapSize, Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(bitmap);
+                Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                paint.setShadowLayer(AndroidUtilities.dp(4), 0, 0, 0x5f000000);
+                canvas.drawCircle(bitmapSize / 2, bitmapSize / 2, AndroidUtilities.roundMessageSize / 2 - AndroidUtilities.dp(1), paint);
                 try {
-                    int bitmapSize = AndroidUtilities.roundMessageSize + AndroidUtilities.dp(6);
-                    Bitmap bitmap = Bitmap.createBitmap(bitmapSize, bitmapSize, Bitmap.Config.ARGB_8888);
-                    Canvas canvas = new Canvas(bitmap);
-                    Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                    paint.setShadowLayer(AndroidUtilities.dp(4), 0, 0, 0x5f000000);
-                    canvas.drawCircle(bitmapSize / 2, bitmapSize / 2, AndroidUtilities.roundMessageSize / 2 - AndroidUtilities.dp(1), paint);
-                    try {
-                        canvas.setBitmap(null);
-                    } catch (Exception ignore) {
-
-                    }
-                    chat_roundVideoShadow = new BitmapDrawable(bitmap);
-                } catch (Throwable ignore) {
+                    canvas.setBitmap(null);
+                } catch (Exception ignore) {
 
                 }
+                chat_roundVideoShadow = new BitmapDrawable(bitmap);
+            } catch (Throwable ignore) {
+
             }
 
             applyChatTheme(fontsOnly);

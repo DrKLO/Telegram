@@ -147,7 +147,7 @@ public class SharedMediaQuery {
         if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
             return MEDIA_PHOTOVIDEO;
         } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-            if (MessageObject.isVoiceMessage(message)) {
+            if (MessageObject.isVoiceMessage(message) || MessageObject.isRoundVideoMessage(message)) {
                 return MEDIA_AUDIO;
             } else if (MessageObject.isVideoMessage(message)) {
                 return MEDIA_PHOTOVIDEO;
@@ -170,7 +170,9 @@ public class SharedMediaQuery {
     }
 
     public static boolean canAddMessageToMedia(TLRPC.Message message) {
-        if (message instanceof TLRPC.TL_message_secret && message.media instanceof TLRPC.TL_messageMediaPhoto && message.ttl != 0 && message.ttl <= 60) {
+        if (message instanceof TLRPC.TL_message && (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaDocument) && message.media.ttl_seconds != 0) {
+            return false;
+        } else if (message instanceof TLRPC.TL_message_secret && message.media instanceof TLRPC.TL_messageMediaPhoto && message.ttl != 0 && message.ttl <= 60) {
             return false;
         } else if (message.media instanceof TLRPC.TL_messageMediaPhoto ||
                 message.media instanceof TLRPC.TL_messageMediaDocument && !MessageObject.isGifDocument(message.media.document)) {

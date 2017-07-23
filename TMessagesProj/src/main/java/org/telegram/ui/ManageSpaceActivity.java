@@ -243,11 +243,7 @@ public class ManageSpaceActivity extends Activity implements ActionBarLayout.Act
             public void onGlobalLayout() {
                 needLayout();
                 if (actionBarLayout != null) {
-                    if (Build.VERSION.SDK_INT < 16) {
-                        actionBarLayout.getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                    } else {
-                        actionBarLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                    }
+                    actionBarLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 }
             }
         });

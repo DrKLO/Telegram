@@ -66,6 +66,8 @@ public class BottomSheet extends Dialog {
 
     private boolean allowDrawContent = true;
 
+    private boolean useHardwareLayer = true;
+
     private DialogInterface.OnClickListener onClickListener;
 
     private CharSequence[] items;
@@ -593,33 +595,33 @@ public class BottomSheet extends Dialog {
         containerView.setVisibility(View.INVISIBLE);
         container.addView(containerView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
 
+        int topOffset = 0;
+        if (title != null) {
+            TextView titleView = new TextView(getContext());
+            titleView.setLines(1);
+            titleView.setSingleLine(true);
+            titleView.setText(title);
+            titleView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
+            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            titleView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
+            titleView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), AndroidUtilities.dp(8));
+            titleView.setGravity(Gravity.CENTER_VERTICAL);
+            containerView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
+            titleView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
+            topOffset += 48;
+        }
         if (customView != null) {
             if (customView.getParent() != null) {
                 ViewGroup viewGroup = (ViewGroup) customView.getParent();
                 viewGroup.removeView(customView);
             }
-            containerView.addView(customView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+            containerView.addView(customView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, topOffset, 0, 0));
         } else {
-            int topOffset = 0;
-            if (title != null) {
-                TextView titleView = new TextView(getContext());
-                titleView.setLines(1);
-                titleView.setSingleLine(true);
-                titleView.setText(title);
-                titleView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
-                titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                titleView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
-                titleView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), AndroidUtilities.dp(8));
-                titleView.setGravity(Gravity.CENTER_VERTICAL);
-                containerView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
-                titleView.setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        return true;
-                    }
-                });
-                topOffset += 48;
-            }
             if (items != null) {
                 FrameLayout rowLayout = null;
                 int lastRowLayoutNum = 0;
@@ -657,6 +659,10 @@ public class BottomSheet extends Dialog {
 
     public void setShowWithoutAnimation(boolean value) {
         showWithoutAnimation = value;
+    }
+
+    public void setBackgroundColor(int color) {
+        shadowDrawable.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
     }
 
     @Override
@@ -754,7 +760,7 @@ public class BottomSheet extends Dialog {
         containerView.setVisibility(View.VISIBLE);
 
         if (!onCustomOpenAnimation()) {
-            if (Build.VERSION.SDK_INT >= 20) {
+            if (Build.VERSION.SDK_INT >= 20 && useHardwareLayer) {
                 container.setLayerType(View.LAYER_TYPE_HARDWARE, null);
             }
             containerView.setTranslationY(containerView.getMeasuredHeight());
@@ -773,7 +779,9 @@ public class BottomSheet extends Dialog {
                         if (delegate != null) {
                             delegate.onOpenAnimationEnd();
                         }
-                        container.setLayerType(View.LAYER_TYPE_NONE, null);
+                        if (useHardwareLayer) {
+                            container.setLayerType(View.LAYER_TYPE_NONE, null);
+                        }
                     }
                 }
 
@@ -978,6 +986,11 @@ public class BottomSheet extends Dialog {
 
         public Builder setTag(int tag) {
             bottomSheet.tag = tag;
+            return this;
+        }
+
+        public Builder setUseHardwareLayer(boolean value) {
+            bottomSheet.useHardwareLayer = value;
             return this;
         }
 

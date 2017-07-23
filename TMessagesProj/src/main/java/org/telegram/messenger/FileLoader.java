@@ -340,23 +340,32 @@ public class FileLoader {
         return result[0];
     }
 
-    public void loadFile(TLRPC.PhotoSize photo, String ext, boolean cacheOnly) {
-        loadFile(null, null, photo.location, ext, photo.size, false, cacheOnly || (photo != null && photo.size == 0 || photo.location.key != null));
+    public void loadFile(TLRPC.PhotoSize photo, String ext, int cacheType) {
+        if (cacheType == 0 && (photo != null && photo.size == 0 || photo.location.key != null)) {
+            cacheType = 1;
+        }
+        loadFile(null, null, photo.location, ext, photo.size, false, cacheType);
     }
 
-    public void loadFile(TLRPC.Document document, boolean force, boolean cacheOnly) {
-        loadFile(document, null, null, null, 0, force, cacheOnly || document != null && document.key != null);
+    public void loadFile(TLRPC.Document document, boolean force, int cacheType) {
+        if (cacheType == 0 && (document != null && document.key != null)) {
+            cacheType = 1;
+        }
+        loadFile(document, null, null, null, 0, force, cacheType);
     }
 
-    public void loadFile(TLRPC.TL_webDocument document, boolean force, boolean cacheOnly) {
-        loadFile(null, document, null, null, 0, force, cacheOnly);
+    public void loadFile(TLRPC.TL_webDocument document, boolean force, int cacheType) {
+        loadFile(null, document, null, null, 0, force, cacheType);
     }
 
-    public void loadFile(TLRPC.FileLocation location, String ext, int size, boolean cacheOnly) {
-        loadFile(null, null, location, ext, size, true, cacheOnly || size == 0 || (location != null && location.key != null));
+    public void loadFile(TLRPC.FileLocation location, String ext, int size, int cacheType) {
+        if (cacheType == 0 && (size == 0 || location != null && location.key != null)) {
+            cacheType = 1;
+        }
+        loadFile(null, null, location, ext, size, true, cacheType);
     }
 
-    private void loadFile(final TLRPC.Document document, final TLRPC.TL_webDocument webDocument, final TLRPC.FileLocation location, final String locationExt, final int locationSize, final boolean force, final boolean cacheOnly) {
+    private void loadFile(final TLRPC.Document document, final TLRPC.TL_webDocument webDocument, final TLRPC.FileLocation location, final String locationExt, final int locationSize, final boolean force, final int cacheType) {
         fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -424,8 +433,10 @@ public class FileLoader {
                         type = MEDIA_DIR_DOCUMENT;
                     }
                 }
-                if (!cacheOnly) {
+                if (cacheType == 0) {
                     storeDir = getDirectory(type);
+                } else if (cacheType == 2) {
+                    operation.setEncryptFile(true);
                 }
                 operation.setPaths(storeDir, tempDir);
 
@@ -668,13 +679,13 @@ public class FileLoader {
             }
         } else {
             if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-                return getPathToAttach(message.media.document);
+                return getPathToAttach(message.media.document, message.media.ttl_seconds != 0);
             } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
                 ArrayList<TLRPC.PhotoSize> sizes = message.media.photo.sizes;
                 if (sizes.size() > 0) {
                     TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize());
                     if (sizeFull != null) {
-                        return getPathToAttach(sizeFull);
+                        return getPathToAttach(sizeFull, message.media.ttl_seconds != 0);
                     }
                 }
             } else if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
@@ -819,6 +830,10 @@ public class FileLoader {
         return "";
     }
 
+    public static File getInternalCacheDir() {
+        return ApplicationLoader.applicationContext.getCacheDir();
+    }
+
     public static String getDocumentExtension(TLRPC.Document document) {
         String fileName = getDocumentFileName(document);
         int idx = fileName.lastIndexOf('.');
@@ -911,7 +926,24 @@ public class FileLoader {
             public void run() {
                 for (int a = 0; a < files.size(); a++) {
                     File file = files.get(a);
-                    if (file.exists()) {
+                    File encrypted = new File(file.getAbsolutePath() + ".enc");
+                    if (encrypted.exists()) {
+                        try {
+                            if (!encrypted.delete()) {
+                                encrypted.deleteOnExit();
+                            }
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        try {
+                            File key = new File(FileLoader.getInternalCacheDir(), file.getName() + ".enc.key");
+                            if (!key.delete()) {
+                                key.deleteOnExit();
+                            }
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    } else if (file.exists()) {
                         try {
                             if (!file.delete()) {
                                 file.deleteOnExit();

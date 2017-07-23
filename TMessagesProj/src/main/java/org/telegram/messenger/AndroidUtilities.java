@@ -60,6 +60,8 @@ import android.view.Display;
 import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.OvershootInterpolator;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.EdgeEffect;
@@ -119,6 +121,9 @@ public class AndroidUtilities {
     public static int leftBaseline;
     public static boolean usingHardwareInput;
     public static boolean isInMultiwindow;
+
+    public static DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator();
+    public static OvershootInterpolator overshootInterpolator = new OvershootInterpolator();
 
     private static Boolean isTablet = null;
     private static int adjustOwnerClassGuid = 0;
@@ -637,11 +642,7 @@ public class AndroidUtilities {
 
     public static int getPhotoSize() {
         if (photoSize == null) {
-            if (Build.VERSION.SDK_INT >= 16) {
-                photoSize = 1280;
-            } else {
-                photoSize = 800;
-            }
+            photoSize = 1280;
         }
         return photoSize;
     }
@@ -1134,7 +1135,8 @@ public class AndroidUtilities {
             ForegroundDetector.getInstance().resetBackgroundVar();
         }
         return UserConfig.passcodeHash.length() > 0 && wasInBackground &&
-                (UserConfig.appLocked || UserConfig.autoLockIn != 0 && UserConfig.lastPauseTime != 0 && !UserConfig.appLocked && (UserConfig.lastPauseTime + UserConfig.autoLockIn) <= ConnectionsManager.getInstance().getCurrentTime());
+                (UserConfig.appLocked || UserConfig.autoLockIn != 0 && UserConfig.lastPauseTime != 0 && !UserConfig.appLocked &&
+                        (UserConfig.lastPauseTime + UserConfig.autoLockIn) <= ConnectionsManager.getInstance().getCurrentTime() || ConnectionsManager.getInstance().getCurrentTime() + 5 < UserConfig.lastPauseTime);
     }
 
     public static void shakeView(final View view, final float x, final int num) {

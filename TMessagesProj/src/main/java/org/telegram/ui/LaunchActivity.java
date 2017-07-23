@@ -25,7 +25,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.provider.ContactsContract;
-import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.view.ActionMode;
 import android.view.KeyEvent;
@@ -148,8 +147,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 finish();
                 return;
             }
-            if (intent != null && !intent.getBooleanExtra("fromIntro", false)) {
-                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo2", MODE_PRIVATE);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+            long crashed_time = preferences.getLong("intro_crashed_time", 0);
+            boolean fromIntro = intent.getBooleanExtra("fromIntro", false);
+            if (fromIntro) {
+                preferences.edit().putLong("intro_crashed_time", 0).commit();
+            }
+            if (Math.abs(crashed_time - System.currentTimeMillis()) >= 60 * 2 * 1000 && intent != null && !fromIntro) {
+                preferences = ApplicationLoader.applicationContext.getSharedPreferences("logininfo2", MODE_PRIVATE);
                 Map<String, ?> state = preferences.getAll();
                 if (state.isEmpty()) {
                     Intent intent2 = new Intent(this, IntroActivity.class);
@@ -627,7 +632,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             return;
         }
         UserConfig.appLocked = true;
-        if (PhotoViewer.getInstance().isVisible()) {
+        if (SecretMediaViewer.getInstance().isVisible()) {
+            SecretMediaViewer.getInstance().closePhoto(false, false);
+        } else if (PhotoViewer.getInstance().isVisible()) {
             PhotoViewer.getInstance().closePhoto(false, true);
         } else if (ArticleViewer.getInstance().isVisible()) {
             ArticleViewer.getInstance().close(false, true);
@@ -903,7 +910,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         if (!(parcelable instanceof Uri)) {
                                             parcelable = Uri.parse(parcelable.toString());
                                         }
-                                        String path = AndroidUtilities.getPath((Uri) parcelable);
+                                        Uri uri = (Uri) parcelable;
+                                        String path = AndroidUtilities.getPath(uri);
                                         String originalPath = parcelable.toString();
                                         if (originalPath == null) {
                                             originalPath = path;
@@ -918,6 +926,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             }
                                             documentsPathsArray.add(path);
                                             documentsOriginalPathsArray.add(originalPath);
+                                        } else {
+                                            if (documentsUrisArray == null) {
+                                                documentsUrisArray = new ArrayList<>();
+                                            }
+                                            documentsUrisArray.add(uri);
+                                            documentsMimeType = type;
                                         }
                                     }
                                 }
@@ -1218,7 +1232,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                     actionBarLayout.presentFragment(fragment, removeLast, true, true);
                     pushOpened = true;
-                    if (PhotoViewer.getInstance().isVisible()) {
+                    if (SecretMediaViewer.getInstance().isVisible()) {
+                        SecretMediaViewer.getInstance().closePhoto(false, false);
+                    } else if (PhotoViewer.getInstance().isVisible()) {
                         PhotoViewer.getInstance().closePhoto(false, true);
                     } else if (ArticleViewer.getInstance().isVisible()) {
                         ArticleViewer.getInstance().close(false, true);
@@ -1373,7 +1389,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             removeLast = actionBarLayout.fragmentsStack.size() > 1 && actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1) instanceof DialogsActivity;
                                         }
                                         actionBarLayout.presentFragment(fragment, removeLast, true, true);
-                                        if (PhotoViewer.getInstance().isVisible()) {
+                                        if (SecretMediaViewer.getInstance().isVisible()) {
+                                            SecretMediaViewer.getInstance().closePhoto(false, false);
+                                        } else if (PhotoViewer.getInstance().isVisible()) {
                                             PhotoViewer.getInstance().closePhoto(false, true);
                                         } else if (ArticleViewer.getInstance().isVisible()) {
                                             ArticleViewer.getInstance().close(false, true);
@@ -1711,30 +1729,25 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             ChatActivity fragment = new ChatActivity(args);
 
             if (videoPath != null) {
-                if (Build.VERSION.SDK_INT >= 16) {
-                    if (AndroidUtilities.isTablet()) {
-                        if (tabletFullSize) {
-                            actionBarLayout.presentFragment(fragment, false, true, false);
-                        } else {
-                            rightActionBarLayout.removeAllFragments();
-                            rightActionBarLayout.addFragmentToStack(fragment);
-                            rightActionBarLayout.setVisibility(View.VISIBLE);
-                            rightActionBarLayout.showLastFragment();
-                        }
+                if (AndroidUtilities.isTablet()) {
+                    if (tabletFullSize) {
+                        actionBarLayout.presentFragment(fragment, false, true, false);
                     } else {
-                        actionBarLayout.addFragmentToStack(fragment, dialogsFragment != null ? actionBarLayout.fragmentsStack.size() - 1 : actionBarLayout.fragmentsStack.size());
-                    }
-
-                    if (!fragment.openVideoEditor(videoPath, dialogsFragment != null, false) && !AndroidUtilities.isTablet()) {
-                        if (dialogsFragment != null) {
-                            dialogsFragment.finishFragment(true);
-                        } else {
-                            actionBarLayout.showLastFragment();
-                        }
+                        rightActionBarLayout.removeAllFragments();
+                        rightActionBarLayout.addFragmentToStack(fragment);
+                        rightActionBarLayout.setVisibility(View.VISIBLE);
+                        rightActionBarLayout.showLastFragment();
                     }
                 } else {
-                    actionBarLayout.presentFragment(fragment, dialogsFragment != null, dialogsFragment == null, true);
-                    SendMessagesHelper.prepareSendingVideo(videoPath, 0, 0, 0, 0, null, dialog_id, null, null);
+                    actionBarLayout.addFragmentToStack(fragment, dialogsFragment != null ? actionBarLayout.fragmentsStack.size() - 1 : actionBarLayout.fragmentsStack.size());
+                }
+
+                if (!fragment.openVideoEditor(videoPath, dialogsFragment != null, false) && !AndroidUtilities.isTablet()) {
+                    if (dialogsFragment != null) {
+                        dialogsFragment.finishFragment(true);
+                    } else {
+                        actionBarLayout.showLastFragment();
+                    }
                 }
             } else {
                 actionBarLayout.presentFragment(fragment, dialogsFragment != null, dialogsFragment == null, true);
@@ -1746,7 +1759,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         captions.add(sendingText);
                         sendingText = null;
                     }
-                    SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id, null, captions, null, null, false);
+                    SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id, null, captions, null, null, false, null);
                 }
 
                 if (sendingText != null) {
@@ -1952,7 +1965,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     protected void onDestroy() {
         PhotoViewer.getInstance().destroyPhotoViewer();
-        SecretPhotoViewer.getInstance().destroyPhotoViewer();
+        SecretMediaViewer.getInstance().destroyPhotoViewer();
         ArticleViewer.getInstance().destroyArticleViewer();
         StickerPreviewViewer.getInstance().destroy();
         PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();
@@ -1980,11 +1993,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         try {
             if (onGlobalLayoutListener != null) {
                 final View view = getWindow().getDecorView().getRootView();
-                if (Build.VERSION.SDK_INT < 16) {
-                    view.getViewTreeObserver().removeGlobalOnLayoutListener(onGlobalLayoutListener);
-                } else {
-                    view.getViewTreeObserver().removeOnGlobalLayoutListener(onGlobalLayoutListener);
-                }
+                view.getViewTreeObserver().removeOnGlobalLayoutListener(onGlobalLayoutListener);
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -2512,7 +2521,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             finish();
             return;
         }
-        if (PhotoViewer.getInstance().isVisible()) {
+        if (SecretMediaViewer.getInstance().isVisible()) {
+            SecretMediaViewer.getInstance().closePhoto(true, false);
+        } else if (PhotoViewer.getInstance().isVisible()) {
             PhotoViewer.getInstance().closePhoto(true, false);
         } else if (ArticleViewer.getInstance().isVisible()) {
             ArticleViewer.getInstance().close(true, false);
@@ -2588,7 +2599,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     @Override
     public boolean onPreIme() {
-        if (PhotoViewer.getInstance().isVisible()) {
+        if (SecretMediaViewer.getInstance().isVisible()) {
+            SecretMediaViewer.getInstance().closePhoto(true, false);
+            return true;
+        } else if (PhotoViewer.getInstance().isVisible()) {
             PhotoViewer.getInstance().closePhoto(true, false);
             return true;
         } else if (ArticleViewer.getInstance().isVisible()) {
@@ -2599,7 +2613,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     }
 
     @Override
-    public boolean onKeyUp(int keyCode, @NonNull KeyEvent event) {
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_MENU && !UserConfig.isWaitingForPasscodeEnter) {
             if (PhotoViewer.getInstance().isVisible()) {
                 return super.onKeyUp(keyCode, event);

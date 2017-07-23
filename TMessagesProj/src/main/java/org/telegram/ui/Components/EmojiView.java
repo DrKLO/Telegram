@@ -33,7 +33,9 @@ import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
@@ -87,6 +89,13 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         void onShowStickerSet(TLRPC.StickerSet stickerSet, TLRPC.InputStickerSet inputStickerSet);
         void onStickerSetAdd(TLRPC.StickerSetCovered stickerSet);
         void onStickerSetRemove(TLRPC.StickerSetCovered stickerSet);
+    }
+
+    public interface DragListener{
+        void onDragStart();
+        void onDragEnd(float velocity);
+        void onDragCancel();
+        void onDrag(int offset);
     }
 
     private StickerPreviewViewer.StickerPreviewViewerDelegate stickerPreviewViewerDelegate = new StickerPreviewViewer.StickerPreviewViewerDelegate() {
@@ -582,6 +591,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private RecyclerListView.OnItemClickListener stickersOnItemClickListener;
     private PagerSlidingTabStrip pagerSlidingTabStrip;
     private TextView mediaBanTooltip;
+    private DragListener dragListener;
 
     private int currentChatId;
 
@@ -873,11 +883,33 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 float lastX;
                 float lastTranslateX;
                 boolean first = true;
+                final int touchslop=ViewConfiguration.get(getContext()).getScaledTouchSlop();
+                float downX, downY;
+                boolean draggingVertically, draggingHorizontally;
+                VelocityTracker vTracker;
 
                 @Override
                 public boolean onInterceptTouchEvent(MotionEvent ev) {
                     if (getParent() != null) {
                         getParent().requestDisallowInterceptTouchEvent(true);
+                    }
+                    if(ev.getAction()==MotionEvent.ACTION_DOWN){
+                        draggingVertically=draggingHorizontally=false;
+                        downX=ev.getRawX();
+                        downY=ev.getRawY();
+                    }else{
+                        if(!draggingVertically && !draggingHorizontally && dragListener!=null){
+                            if(Math.abs(ev.getRawY()-downY)>=touchslop){
+                                draggingVertically=true;
+                                downY=ev.getRawY();
+								dragListener.onDragStart();
+                                if(startedScroll){
+                                    pager.endFakeDrag();
+                                    startedScroll=false;
+                                }
+                                return true;
+                            }
+                        }
                     }
                     return super.onInterceptTouchEvent(ev);
                 }
@@ -887,6 +919,46 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     if (first) {
                         first = false;
                         lastX = ev.getX();
+                    }
+                    if(ev.getAction()==MotionEvent.ACTION_DOWN){
+                        draggingVertically=draggingHorizontally=false;
+                        downX=ev.getRawX();
+                        downY=ev.getRawY();
+                    }else{
+                        if(!draggingVertically && !draggingHorizontally && dragListener!=null){
+                            if(Math.abs(ev.getRawX()-downX)>=touchslop){
+                                draggingHorizontally=true;
+                            }else if(Math.abs(ev.getRawY()-downY)>=touchslop){
+                                draggingVertically=true;
+                                downY=ev.getRawY();
+                                dragListener.onDragStart();
+                                if(startedScroll){
+                                    pager.endFakeDrag();
+                                    startedScroll=false;
+                                }
+                            }
+                        }
+                    }
+                    if(draggingVertically){
+                        if(vTracker==null)
+                            vTracker=VelocityTracker.obtain();
+                        vTracker.addMovement(ev);
+                        if(ev.getAction()==MotionEvent.ACTION_UP || ev.getAction()==MotionEvent.ACTION_CANCEL){
+                            vTracker.computeCurrentVelocity(1000);
+                            float velocity=vTracker.getYVelocity();
+                            vTracker.recycle();
+                            vTracker=null;
+                            if(ev.getAction()==MotionEvent.ACTION_UP){
+                                dragListener.onDragEnd(velocity);
+                            }else{
+                                dragListener.onDragCancel();
+                            }
+                            first=true;
+                            draggingVertically=draggingHorizontally=false;
+                        }else{
+                            dragListener.onDrag(Math.round(ev.getRawY()-downY));
+                        }
+                        return true;
                     }
                     float newTranslationX = stickersTab.getTranslationX();
                     if (stickersTab.getScrollX() == 0 && newTranslationX == 0) {
@@ -920,6 +992,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     lastX = ev.getX();
                     if (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP) {
                         first = true;
+                        draggingVertically=draggingHorizontally=false;
                         if (startedScroll) {
                             pager.endFakeDrag();
                             startedScroll = false;
@@ -1618,6 +1691,10 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         listener = value;
     }
 
+    public void setDragListener(DragListener dragListener){
+        this.dragListener=dragListener;
+    }
+
     public void invalidateViews() {
         for (int a = 0; a < emojiGrids.size(); a++) {
             emojiGrids.get(a).invalidateViews();
@@ -1849,6 +1926,10 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         } catch (Exception e) {
             FileLog.e(e);
         }
+    }
+
+    public boolean areThereAnyStickers(){
+        return stickersGridAdapter!=null && stickersGridAdapter.getItemCount()>0;
     }
 
     @SuppressWarnings("unchecked")

@@ -916,13 +916,21 @@ public class NotificationsController {
                             if (!shortMessage && Build.VERSION.SDK_INT >= 19 && !TextUtils.isEmpty(messageObject.messageOwner.media.caption)) {
                                 msg = LocaleController.formatString("NotificationMessageText", R.string.NotificationMessageText, name, "\uD83D\uDDBC " + messageObject.messageOwner.media.caption);
                             } else {
-                                msg = LocaleController.formatString("NotificationMessagePhoto", R.string.NotificationMessagePhoto, name);
+                                if (messageObject.messageOwner.media.ttl_seconds != 0) {
+                                    msg = LocaleController.formatString("NotificationMessageSDPhoto", R.string.NotificationMessageSDPhoto, name);
+                                } else {
+                                    msg = LocaleController.formatString("NotificationMessagePhoto", R.string.NotificationMessagePhoto, name);
+                                }
                             }
                         } else if (messageObject.isVideo()) {
                             if (!shortMessage && Build.VERSION.SDK_INT >= 19 && !TextUtils.isEmpty(messageObject.messageOwner.media.caption)) {
                                 msg = LocaleController.formatString("NotificationMessageText", R.string.NotificationMessageText, name, "\uD83D\uDCF9 " + messageObject.messageOwner.media.caption);
                             } else {
-                                msg = LocaleController.formatString("NotificationMessageVideo", R.string.NotificationMessageVideo, name);
+                                if (messageObject.messageOwner.media.ttl_seconds != 0) {
+                                    msg = LocaleController.formatString("NotificationMessageSDVideo", R.string.NotificationMessageSDVideo, name);
+                                } else {
+                                    msg = LocaleController.formatString("NotificationMessageVideo", R.string.NotificationMessageVideo, name);
+                                }
                             }
                         } else if (messageObject.isGame()) {
                             msg = LocaleController.formatString("NotificationMessageGame", R.string.NotificationMessageGame, name, messageObject.messageOwner.media.game.title);
@@ -1037,6 +1045,8 @@ public class NotificationsController {
                             msg = LocaleController.formatString("ActionMigrateFromGroupNotify", R.string.ActionMigrateFromGroupNotify, chat.title);
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChannelMigrateFrom) {
                             msg = LocaleController.formatString("ActionMigrateFromGroupNotify", R.string.ActionMigrateFromGroupNotify, messageObject.messageOwner.action.title);
+                        } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionScreenshotTaken) {
+                            msg = messageObject.messageText.toString();
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage) {
                             if (messageObject.replyMessageObject == null) {
                                 if (!ChatObject.isChannel(chat) || chat.megagroup) {

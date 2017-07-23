@@ -16,23 +16,28 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.database.DataSetObserver;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.SurfaceTexture;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.opengl.GLES20;
+import android.opengl.GLUtils;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Looper;
 import android.os.Parcelable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -42,6 +47,9 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.DispatchQueue;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.Intro;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -50,6 +58,14 @@ import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.LayoutHelper;
+
+import javax.microedition.khronos.egl.EGL10;
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.egl.EGLContext;
+import javax.microedition.khronos.egl.EGLDisplay;
+import javax.microedition.khronos.egl.EGLSurface;
+import javax.microedition.khronos.opengles.GL;
+import javax.microedition.khronos.opengles.GL10;
 
 public class IntroActivity extends Activity implements NotificationCenter.NotificationCenterDelegate {
 
@@ -84,7 +100,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             paint.setColor(0xffbbbbbb);
             int x;
             currentPage = viewPager.getCurrentItem();
-            for (int a = 0; a < 7; a++) {
+            for (int a = 0; a < 6; a++) {
                 if (a == currentPage) {
                     continue;
                 }
@@ -108,18 +124,19 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
     }
 
     private ViewPager viewPager;
-    private ImageView topImage1;
-    private ImageView topImage2;
     private BottomPagesView bottomPages;
     private TextView textView;
     private int lastPage = 0;
     private boolean justCreated = false;
     private boolean startPressed = false;
-    private int[] icons;
-    private int[] titles;
-    private String[] titlesString;
-    private int[] messages;
-    private String[] messagesString;
+    private String[] titles;
+    private String[] messages;
+    private int currentViewPagerPage;
+    private EGLThread eglThread;
+    private long currentDate;
+    private boolean justEndDragging;
+    private boolean dragging;
+    private int startDragX;
 
     private LocaleController.LocaleInfo localeInfo;
 
@@ -129,117 +146,74 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        if (LocaleController.isRTL) {
-            icons = new int[]{
-                    R.drawable.intro7,
-                    R.drawable.intro6,
-                    R.drawable.intro5,
-                    R.drawable.intro4,
-                    R.drawable.intro3,
-                    R.drawable.intro2,
-                    R.drawable.intro1
-            };
-            titles = new int[]{
-                    R.string.Page7Title,
-                    R.string.Page6Title,
-                    R.string.Page5Title,
-                    R.string.Page4Title,
-                    R.string.Page3Title,
-                    R.string.Page2Title,
-                    R.string.Page1Title
-            };
-            titlesString = new String[]{
-                    "Page7Title",
-                    "Page6Title",
-                    "Page5Title",
-                    "Page4Title",
-                    "Page3Title",
-                    "Page2Title",
-                    "Page1Title"
-            };
-            messages = new int[]{
-                    R.string.Page7Message,
-                    R.string.Page6Message,
-                    R.string.Page5Message,
-                    R.string.Page4Message,
-                    R.string.Page3Message,
-                    R.string.Page2Message,
-                    R.string.Page1Message
-            };
-            messagesString = new String[]{
-                    "Page7Message",
-                    "Page6Message",
-                    "Page5Message",
-                    "Page4Message",
-                    "Page3Message",
-                    "Page2Message",
-                    "Page1Message"
-            };
-        } else {
-            icons = new int[]{
-                    R.drawable.intro1,
-                    R.drawable.intro2,
-                    R.drawable.intro3,
-                    R.drawable.intro4,
-                    R.drawable.intro5,
-                    R.drawable.intro6,
-                    R.drawable.intro7
-            };
-            titles = new int[]{
-                    R.string.Page1Title,
-                    R.string.Page2Title,
-                    R.string.Page3Title,
-                    R.string.Page4Title,
-                    R.string.Page5Title,
-                    R.string.Page6Title,
-                    R.string.Page7Title
-            };
-            titlesString = new String[]{
-                    "Page1Title",
-                    "Page2Title",
-                    "Page3Title",
-                    "Page4Title",
-                    "Page5Title",
-                    "Page6Title",
-                    "Page7Title"
-            };
-            messages = new int[]{
-                    R.string.Page1Message,
-                    R.string.Page2Message,
-                    R.string.Page3Message,
-                    R.string.Page4Message,
-                    R.string.Page5Message,
-                    R.string.Page6Message,
-                    R.string.Page7Message
-            };
-            messagesString = new String[]{
-                    "Page1Message",
-                    "Page2Message",
-                    "Page3Message",
-                    "Page4Message",
-                    "Page5Message",
-                    "Page6Message",
-                    "Page7Message"
-            };
-        }
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        preferences.edit().putLong("intro_crashed_time", System.currentTimeMillis()).commit();
+
+        titles = new String[]{
+                LocaleController.getString("Page1Title", R.string.Page1Title),
+                LocaleController.getString("Page2Title", R.string.Page2Title),
+                LocaleController.getString("Page3Title", R.string.Page3Title),
+                LocaleController.getString("Page5Title", R.string.Page5Title),
+                LocaleController.getString("Page4Title", R.string.Page4Title),
+                LocaleController.getString("Page6Title", R.string.Page6Title)
+        };
+        messages = new String[]{
+                LocaleController.getString("Page1Message", R.string.Page1Message),
+                LocaleController.getString("Page2Message", R.string.Page2Message),
+                LocaleController.getString("Page3Message", R.string.Page3Message),
+                LocaleController.getString("Page5Message", R.string.Page5Message),
+                LocaleController.getString("Page4Message", R.string.Page4Message),
+                LocaleController.getString("Page6Message", R.string.Page6Message)
+        };
 
         ScrollView scrollView = new ScrollView(this);
         scrollView.setFillViewport(true);
 
         FrameLayout frameLayout = new FrameLayout(this);
-        frameLayout.setBackgroundColor(0xfffafafa);
+        frameLayout.setBackgroundColor(0xffffffff);
         scrollView.addView(frameLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
 
         FrameLayout frameLayout2 = new FrameLayout(this);
-        frameLayout.addView(frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 88, 0, 0));
+        frameLayout.addView(frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 78, 0, 0));
 
-        topImage1 = new ImageView(this);
-        topImage1.setImageResource(R.drawable.intro1);
-        frameLayout2.addView(topImage1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+        TextureView textureView = new TextureView(this);
+        frameLayout2.addView(textureView, LayoutHelper.createFrame(180, 140, Gravity.CENTER));
+        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @Override
+            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                if (eglThread == null && surface != null) {
+                    eglThread = new EGLThread(surface);
+                    eglThread.setSurfaceTextureSize(width, height);
+                    eglThread.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            eglThread.drawRunnable.run();
+                        }
+                    });
+                }
+            }
 
-        topImage2 = new ImageView(this);
-        topImage2.setVisibility(View.GONE);
-        frameLayout2.addView(topImage2, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+            @Override
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, final int width, final int height) {
+                if (eglThread != null) {
+                    eglThread.setSurfaceTextureSize(width, height);
+                }
+            }
+
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+                if (eglThread != null) {
+                    eglThread.shutdown();
+                    eglThread = null;
+                }
+                return true;
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+
+            }
+        });
 
         viewPager = new ViewPager(this);
         viewPager.setAdapter(new IntroAdapter());
@@ -250,72 +224,32 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
                 bottomPages.setPageOffset(position, positionOffset);
+
+                float width = viewPager.getMeasuredWidth();
+                if (width == 0) {
+                    return;
+                }
+                float offset = (position * width + positionOffsetPixels - currentViewPagerPage * width) / width;
+                Intro.setScrollOffset(offset);
             }
 
             @Override
             public void onPageSelected(int i) {
-
+                currentViewPagerPage = i;
             }
 
             @Override
             public void onPageScrollStateChanged(int i) {
-                if (i == ViewPager.SCROLL_STATE_IDLE || i == ViewPager.SCROLL_STATE_SETTLING) {
+                if (i == ViewPager.SCROLL_STATE_DRAGGING) {
+                    dragging = true;
+                    startDragX = viewPager.getCurrentItem() * viewPager.getMeasuredWidth();
+                } else if (i == ViewPager.SCROLL_STATE_IDLE || i == ViewPager.SCROLL_STATE_SETTLING) {
+                    if (dragging) {
+                        justEndDragging = true;
+                        dragging = false;
+                    }
                     if (lastPage != viewPager.getCurrentItem()) {
                         lastPage = viewPager.getCurrentItem();
-
-                        final ImageView fadeoutImage;
-                        final ImageView fadeinImage;
-                        if (topImage1.getVisibility() == View.VISIBLE) {
-                            fadeoutImage = topImage1;
-                            fadeinImage = topImage2;
-
-                        } else {
-                            fadeoutImage = topImage2;
-                            fadeinImage = topImage1;
-                        }
-
-                        fadeinImage.bringToFront();
-                        fadeinImage.setImageResource(icons[lastPage]);
-                        fadeinImage.clearAnimation();
-                        fadeoutImage.clearAnimation();
-
-                        Animation outAnimation = AnimationUtils.loadAnimation(IntroActivity.this, R.anim.icon_anim_fade_out);
-                        outAnimation.setAnimationListener(new Animation.AnimationListener() {
-                            @Override
-                            public void onAnimationStart(Animation animation) {
-                            }
-
-                            @Override
-                            public void onAnimationEnd(Animation animation) {
-                                fadeoutImage.setVisibility(View.GONE);
-                            }
-
-                            @Override
-                            public void onAnimationRepeat(Animation animation) {
-
-                            }
-                        });
-
-                        Animation inAnimation = AnimationUtils.loadAnimation(IntroActivity.this, R.anim.icon_anim_fade_in);
-                        inAnimation.setAnimationListener(new Animation.AnimationListener() {
-                            @Override
-                            public void onAnimationStart(Animation animation) {
-                                fadeinImage.setVisibility(View.VISIBLE);
-                            }
-
-                            @Override
-                            public void onAnimationEnd(Animation animation) {
-                            }
-
-                            @Override
-                            public void onAnimationRepeat(Animation animation) {
-
-                            }
-                        });
-
-
-                        fadeoutImage.startAnimation(outAnimation);
-                        fadeinImage.startAnimation(inAnimation);
                     }
                 }
             }
@@ -323,7 +257,6 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
 
         TextView startMessagingButton = new TextView(this);
         startMessagingButton.setText(LocaleController.getString("StartMessaging", R.string.StartMessaging).toUpperCase());
-        startMessagingButton.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(10), AndroidUtilities.dp(20), AndroidUtilities.dp(10));
         startMessagingButton.setGravity(Gravity.CENTER);
         startMessagingButton.setTextColor(0xffffffff);
         startMessagingButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -334,6 +267,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             animator.addState(new int[]{}, ObjectAnimator.ofFloat(startMessagingButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
             startMessagingButton.setStateListAnimator(animator);
         }
+        startMessagingButton.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(10), AndroidUtilities.dp(20), AndroidUtilities.dp(10));
         frameLayout.addView(startMessagingButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 10, 0, 10, 76));
         startMessagingButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -359,7 +293,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         }
 
         bottomPages = new BottomPagesView(this);
-        frameLayout.addView(bottomPages, LayoutHelper.createFrame(77, 5, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 350, 0, 0));
+        frameLayout.addView(bottomPages, LayoutHelper.createFrame(66, 5, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 350, 0, 0));
 
         textView = new TextView(this);
         textView.setTextColor(0xff1393d2);
@@ -436,6 +370,8 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
     protected void onDestroy() {
         super.onDestroy();
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        preferences.edit().putLong("intro_crashed_time", 0).commit();
     }
 
     private void checkContinueText() {
@@ -502,7 +438,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
     private class IntroAdapter extends PagerAdapter {
         @Override
         public int getCount() {
-            return 7;
+            return titles.length;
         }
 
         @Override
@@ -523,8 +459,8 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
 
             container.addView(frameLayout, 0);
 
-            headerTextView.setText(LocaleController.getString(titlesString[position], titles[position]));
-            messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(messagesString[position], messages[position])));
+            headerTextView.setText(titles[position]);
+            messageTextView.setText(AndroidUtilities.replaceTags(messages[position]));
 
             return frameLayout;
         }
@@ -538,6 +474,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         public void setPrimaryItem(ViewGroup container, int position, Object object) {
             super.setPrimaryItem(container, position, object);
             bottomPages.setCurrentPage(position);
+            currentViewPagerPage = position;
         }
 
         @Override
@@ -559,6 +496,220 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             if (observer != null) {
                 super.unregisterDataSetObserver(observer);
             }
+        }
+    }
+
+    public class EGLThread extends DispatchQueue {
+
+        private final int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
+        private final int EGL_OPENGL_ES2_BIT = 4;
+        private SurfaceTexture surfaceTexture;
+        private EGL10 egl10;
+        private EGLDisplay eglDisplay;
+        private EGLConfig eglConfig;
+        private EGLContext eglContext;
+        private EGLSurface eglSurface;
+        private GL gl;
+        private boolean initied;
+        private int textures[] = new int[23];
+
+        private int surfaceWidth;
+        private int surfaceHeight;
+
+        private long lastRenderCallTime;
+
+        public EGLThread(SurfaceTexture surface) {
+            super("EGLThread");
+            surfaceTexture = surface;
+        }
+
+        private boolean initGL() {
+            egl10 = (EGL10) EGLContext.getEGL();
+
+            eglDisplay = egl10.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
+            if (eglDisplay == EGL10.EGL_NO_DISPLAY) {
+                FileLog.e("eglGetDisplay failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                finish();
+                return false;
+            }
+
+            int[] version = new int[2];
+            if (!egl10.eglInitialize(eglDisplay, version)) {
+                FileLog.e("eglInitialize failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                finish();
+                return false;
+            }
+
+            int[] configsCount = new int[1];
+            EGLConfig[] configs = new EGLConfig[1];
+            int[] configSpec = new int[] {
+                    EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+                    EGL10.EGL_RED_SIZE, 8,
+                    EGL10.EGL_GREEN_SIZE, 8,
+                    EGL10.EGL_BLUE_SIZE, 8,
+                    EGL10.EGL_ALPHA_SIZE, 8,
+                    EGL10.EGL_DEPTH_SIZE, 24,
+                    EGL10.EGL_STENCIL_SIZE, 0,
+                    EGL10.EGL_SAMPLE_BUFFERS, 1,
+                    EGL10.EGL_SAMPLES, 2,
+                    EGL10.EGL_NONE
+            };
+            if (!egl10.eglChooseConfig(eglDisplay, configSpec, configs, 1, configsCount)) {
+                FileLog.e("eglChooseConfig failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                finish();
+                return false;
+            } else if (configsCount[0] > 0) {
+                eglConfig = configs[0];
+            } else {
+                FileLog.e("eglConfig not initialized");
+                finish();
+                return false;
+            }
+
+            int[] attrib_list = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE };
+            eglContext = egl10.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
+            if (eglContext == null) {
+                FileLog.e("eglCreateContext failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                finish();
+                return false;
+            }
+
+            if (surfaceTexture instanceof SurfaceTexture) {
+                eglSurface = egl10.eglCreateWindowSurface(eglDisplay, eglConfig, surfaceTexture, null);
+            } else {
+                finish();
+                return false;
+            }
+
+            if (eglSurface == null || eglSurface == EGL10.EGL_NO_SURFACE) {
+                FileLog.e("createWindowSurface failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                finish();
+                return false;
+            }
+            if (!egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
+                FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                finish();
+                return false;
+            }
+            gl = eglContext.getGL();
+
+            GLES20.glGenTextures(23, textures, 0);
+            loadTexture(R.drawable.intro_fast_arrow_shadow, 0);
+            loadTexture(R.drawable.intro_fast_arrow, 1);
+            loadTexture(R.drawable.intro_fast_body, 2);
+            loadTexture(R.drawable.intro_fast_spiral, 3);
+            loadTexture(R.drawable.intro_ic_bubble_dot, 4);
+            loadTexture(R.drawable.intro_ic_bubble, 5);
+            loadTexture(R.drawable.intro_ic_cam_lens, 6);
+            loadTexture(R.drawable.intro_ic_cam, 7);
+            loadTexture(R.drawable.intro_ic_pencil, 8);
+            loadTexture(R.drawable.intro_ic_pin, 9);
+            loadTexture(R.drawable.intro_ic_smile_eye, 10);
+            loadTexture(R.drawable.intro_ic_smile, 11);
+            loadTexture(R.drawable.intro_ic_videocam, 12);
+            loadTexture(R.drawable.intro_knot_down, 13);
+            loadTexture(R.drawable.intro_knot_up, 14);
+            loadTexture(R.drawable.intro_powerful_infinity_white, 15);
+            loadTexture(R.drawable.intro_powerful_infinity, 16);
+            loadTexture(R.drawable.intro_powerful_mask, 17);
+            loadTexture(R.drawable.intro_powerful_star, 18);
+            loadTexture(R.drawable.intro_private_door, 19);
+            loadTexture(R.drawable.intro_private_screw, 20);
+            loadTexture(R.drawable.intro_tg_plane, 21);
+            loadTexture(R.drawable.intro_tg_sphere, 22);
+
+            Intro.setTelegramTextures(textures[22], textures[21]);
+            Intro.setPowerfulTextures(textures[17], textures[18], textures[16], textures[15]);
+            Intro.setPrivateTextures(textures[19], textures[20]);
+            Intro.setFreeTextures(textures[14], textures[13]);
+            Intro.setFastTextures(textures[2], textures[3], textures[1], textures[0]);
+            Intro.setIcTextures(textures[4], textures[5], textures[6], textures[7], textures[8], textures[9], textures[10], textures[11], textures[12]);
+            Intro.onSurfaceCreated();
+            currentDate = System.currentTimeMillis() - 1000;
+
+            return true;
+        }
+
+        public void finish() {
+            if (eglSurface != null) {
+                egl10.eglMakeCurrent(eglDisplay, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
+                egl10.eglDestroySurface(eglDisplay, eglSurface);
+                eglSurface = null;
+            }
+            if (eglContext != null) {
+                egl10.eglDestroyContext(eglDisplay, eglContext);
+                eglContext = null;
+            }
+            if (eglDisplay != null) {
+                egl10.eglTerminate(eglDisplay);
+                eglDisplay = null;
+            }
+        }
+
+        private Runnable drawRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!initied) {
+                    return;
+                }
+
+                if (!eglContext.equals(egl10.eglGetCurrentContext()) || !eglSurface.equals(egl10.eglGetCurrentSurface(EGL10.EGL_DRAW))) {
+                    if (!egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
+                        FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                        return;
+                    }
+                }
+                float time = (System.currentTimeMillis() - currentDate) / 1000.0f;
+                Intro.setPage(currentViewPagerPage);
+                Intro.setDate(time);
+                Intro.onDrawFrame();
+                egl10.eglSwapBuffers(eglDisplay, eglSurface);
+
+                postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        drawRunnable.run();
+                    }
+                }, 16);
+            }
+        };
+
+        private void loadTexture(int resId, int index) {
+            Drawable drawable = getResources().getDrawable(resId);
+            if (drawable instanceof BitmapDrawable) {
+                Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+                GLES20.glBindTexture(GL10.GL_TEXTURE_2D, textures[index]);
+                GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
+                GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);
+                GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S, GL10.GL_CLAMP_TO_EDGE);
+                GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE);
+                GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, bitmap, 0);
+            }
+        }
+
+        public void shutdown() {
+            postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    finish();
+                    Looper looper = Looper.myLooper();
+                    if (looper != null) {
+                        looper.quit();
+                    }
+                }
+            });
+        }
+
+        public void setSurfaceTextureSize(int width, int height) {
+            surfaceWidth = width;
+            surfaceHeight = height;
+            Intro.onSurfaceChanged(width, height, Math.min(surfaceWidth / 148.0f, surfaceHeight / 148.0f), 0);
+        }
+
+        @Override
+        public void run() {
+            initied = initGL();
+            super.run();
         }
     }
 }

@@ -429,7 +429,7 @@ public class ProfileSearchCell extends BaseCell {
 
 
         lastAvatar = photo;
-        avatarImage.setImage(photo, "50_50", avatarDrawable, null, false);
+        avatarImage.setImage(photo, "50_50", avatarDrawable, null, 0);
 
         if (getMeasuredWidth() != 0 || getMeasuredHeight() != 0) {
             buildLayout();

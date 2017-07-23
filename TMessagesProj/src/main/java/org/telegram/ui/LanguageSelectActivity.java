@@ -56,19 +56,7 @@ public class LanguageSelectActivity extends BaseFragment {
 
     @Override
     public boolean onFragmentCreate() {
-        sortedLanguages = new ArrayList<>(LocaleController.getInstance().languages);
-        final LocaleController.LocaleInfo currentLocale = LocaleController.getInstance().getCurrentLocaleInfo();
-        Collections.sort(sortedLanguages, new Comparator<LocaleController.LocaleInfo>() {
-            @Override
-            public int compare(LocaleController.LocaleInfo o, LocaleController.LocaleInfo o2) {
-                if (o == currentLocale) {
-                    return -1;
-                } else if (o2 == currentLocale) {
-                    return 1;
-                }
-                return o.name.compareTo(o2.name);
-            }
-        });
+        fillLanguages();
         return super.onFragmentCreate();
     }
 
@@ -186,6 +174,7 @@ public class LanguageSelectActivity extends BaseFragment {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         if (LocaleController.getInstance().deleteLanguage(finalLocaleInfo)) {
+                            fillLanguages();
                             if (searchResult != null) {
                                 searchResult.remove(finalLocaleInfo);
                             }
@@ -214,6 +203,22 @@ public class LanguageSelectActivity extends BaseFragment {
         });
 
         return fragmentView;
+    }
+
+    private void fillLanguages() {
+        sortedLanguages = new ArrayList<>(LocaleController.getInstance().languages);
+        final LocaleController.LocaleInfo currentLocale = LocaleController.getInstance().getCurrentLocaleInfo();
+        Collections.sort(sortedLanguages, new Comparator<LocaleController.LocaleInfo>() {
+            @Override
+            public int compare(LocaleController.LocaleInfo o, LocaleController.LocaleInfo o2) {
+                if (o == currentLocale) {
+                    return -1;
+                } else if (o2 == currentLocale) {
+                    return 1;
+                }
+                return o.name.compareTo(o2.name);
+            }
+        });
     }
 
     @Override

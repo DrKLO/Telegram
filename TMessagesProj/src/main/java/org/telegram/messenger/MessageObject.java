@@ -317,6 +317,12 @@ public class MessageObject {
                             }
                         }
                     }
+                } else if (message.action instanceof TLRPC.TL_messageActionScreenshotTaken) {
+                    if (isOut()) {
+                        messageText = LocaleController.formatString("ActionTakeScreenshootYou", R.string.ActionTakeScreenshootYou);
+                    } else {
+                        messageText = replaceWithLink(LocaleController.getString("ActionTakeScreenshoot", R.string.ActionTakeScreenshoot), "un1", fromUser);
+                    }
                 } else if (message.action instanceof TLRPC.TL_messageActionCreatedBroadcastList) {
                     messageText = LocaleController.formatString("YouCreatedBroadcastList", R.string.YouCreatedBroadcastList);
                 } else if (message.action instanceof TLRPC.TL_messageActionChannelCreate) {
@@ -386,7 +392,7 @@ public class MessageObject {
         } else if (!isMediaEmpty()) {
             if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
                 messageText = LocaleController.getString("AttachPhoto", R.string.AttachPhoto);
-            } else if (isVideo()) {
+            } else if (isVideo() || message.media instanceof TLRPC.TL_messageMediaDocument && message.media.document instanceof TLRPC.TL_documentEmpty && message.media.ttl_seconds != 0) {
                 messageText = LocaleController.getString("AttachVideo", R.string.AttachVideo);
             } else if (isVoice()) {
                 messageText = LocaleController.getString("AttachAudio", R.string.AttachAudio);
@@ -1138,6 +1144,9 @@ public class MessageObject {
                 if (TextUtils.isEmpty(messageText) && eventId == 0) {
                     messageText = "Empty message";
                 }
+            } else if (messageOwner.media.ttl_seconds != 0 && (messageOwner.media.photo instanceof TLRPC.TL_photoEmpty || messageOwner.media.document instanceof TLRPC.TL_documentEmpty)) {
+                contentType = 1;
+                type = 10;
             } else if (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
                 type = 1;
             } else if (messageOwner.media instanceof TLRPC.TL_messageMediaGeo || messageOwner.media instanceof TLRPC.TL_messageMediaVenue) {
@@ -1254,9 +1263,6 @@ public class MessageObject {
     }
 
     public static boolean isRoundVideoDocument(TLRPC.Document document) {
-        if (Build.VERSION.SDK_INT < 16) {
-            return false;
-        }
         if (document != null && document.mime_type != null && document.mime_type.equals("video/mp4")) {
             int width = 0;
             int height = 0;
@@ -2023,13 +2029,28 @@ public class MessageObject {
         return messageOwner.id;
     }
 
+    public static boolean shouldEncryptPhotoOrVideo(TLRPC.Message message) {
+        return message instanceof TLRPC.TL_message && (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaDocument) && message.media.ttl_seconds != 0 ||
+                message instanceof TLRPC.TL_message_secret && (message.media instanceof TLRPC.TL_messageMediaPhoto || isVideoMessage(message)) && message.ttl > 0 && message.ttl <= 60;
+    }
+
+    public boolean shouldEncryptPhotoOrVideo() {
+        return shouldEncryptPhotoOrVideo(messageOwner);
+    }
+
+    public static boolean isSecretPhotoOrVideo(TLRPC.Message message) {
+        return message instanceof TLRPC.TL_message && (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaDocument) && message.media.ttl_seconds != 0 ||
+                message instanceof TLRPC.TL_message_secret && (message.media instanceof TLRPC.TL_messageMediaPhoto || isRoundVideoMessage(message) || isVideoMessage(message)) && message.ttl > 0 && message.ttl <= 60;
+    }
+
     public boolean isSecretPhoto() {
-        return messageOwner instanceof TLRPC.TL_message_secret && (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || isRoundVideo()) && messageOwner.ttl > 0 && messageOwner.ttl <= 60;
+        return messageOwner instanceof TLRPC.TL_message && (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || messageOwner.media instanceof TLRPC.TL_messageMediaDocument) && messageOwner.media.ttl_seconds != 0 ||
+                messageOwner instanceof TLRPC.TL_message_secret && (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || isRoundVideo() || isVideo()) && messageOwner.ttl > 0 && messageOwner.ttl <= 60;
     }
 
     public boolean isSecretMedia() {
-        return messageOwner instanceof TLRPC.TL_message_secret &&
-                ((messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || isRoundVideo()) && messageOwner.ttl > 0 && messageOwner.ttl <= 60 || isVoice() || isVideo());
+        return messageOwner instanceof TLRPC.TL_message && (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || messageOwner.media instanceof TLRPC.TL_messageMediaDocument) && messageOwner.media.ttl_seconds != 0 ||
+                messageOwner instanceof TLRPC.TL_message_secret && ((messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || isRoundVideo()) && messageOwner.ttl > 0 && messageOwner.ttl <= 60 || isVoice() || isVideo());
     }
 
     public static void setUnreadFlags(TLRPC.Message message, int flag) {
@@ -2092,14 +2113,19 @@ public class MessageObject {
         return messageOwner.send_state == MESSAGE_SEND_STATE_SENT || messageOwner.id > 0;
     }
 
-    public String getSecretTimeString() {
-        if (!isSecretMedia()) {
-            return null;
-        }
+    public int getSecretTimeLeft() {
         int secondsLeft = messageOwner.ttl;
         if (messageOwner.destroyTime != 0) {
             secondsLeft = Math.max(0, messageOwner.destroyTime - ConnectionsManager.getInstance().getCurrentTime());
         }
+        return secondsLeft;
+    }
+
+    public String getSecretTimeString() {
+        if (!isSecretMedia()) {
+            return null;
+        }
+        int secondsLeft = getSecretTimeLeft();
         String str;
         if (secondsLeft < 60) {
             str = secondsLeft + "s";
@@ -2188,7 +2214,7 @@ public class MessageObject {
             for (int a = 0; a < document.attributes.size(); a++) {
                 TLRPC.DocumentAttribute attribute = document.attributes.get(a);
                 if (attribute instanceof TLRPC.TL_documentAttributeVideo) {
-                    if (Build.VERSION.SDK_INT >= 16 && attribute.round_message) {
+                    if (attribute.round_message) {
                         return false;
                     }
                     isVideo = true;
@@ -2229,9 +2255,6 @@ public class MessageObject {
     }
 
     public static boolean isRoundVideoMessage(TLRPC.Message message) {
-        if (Build.VERSION.SDK_INT < 16) {
-            return false;
-        }
         if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
             return isRoundVideoDocument(message.media.webpage.document);
         }
@@ -2428,9 +2451,6 @@ public class MessageObject {
     }
 
     public boolean isRoundVideo() {
-        if (Build.VERSION.SDK_INT < 16) {
-            return false;
-        }
         if (isRoundVideoCached == 0) {
             isRoundVideoCached = type == 5 || isRoundVideoMessage(messageOwner) ? 1 : 2;
         }
@@ -2500,6 +2520,8 @@ public class MessageObject {
         for (int a = 0; a < document.attributes.size(); a++) {
             TLRPC.DocumentAttribute attribute = document.attributes.get(a);
             if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
+                return attribute.duration;
+            } else if (attribute instanceof TLRPC.TL_documentAttributeVideo) {
                 return attribute.duration;
             }
         }
@@ -2667,7 +2689,13 @@ public class MessageObject {
         if (type == 1) {
             TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, AndroidUtilities.getPhotoSize());
             if (currentPhotoObject != null) {
-                mediaExists = FileLoader.getPathToMessage(messageOwner).exists();
+                File file = FileLoader.getPathToMessage(messageOwner);
+                if (isSecretPhoto()) {
+                    mediaExists = new File(file.getAbsolutePath() + ".enc").exists();
+                }
+                if (!mediaExists) {
+                    mediaExists = file.exists();
+                }
             }
         } else if (type == 8 || type == 3 || type == 9 || type == 2 || type == 14 || type == 5) {
             if (messageOwner.attachPath != null && messageOwner.attachPath.length() > 0) {
@@ -2675,7 +2703,13 @@ public class MessageObject {
                 attachPathExists = f.exists();
             }
             if (!attachPathExists) {
-                mediaExists = FileLoader.getPathToMessage(messageOwner).exists();
+                File file = FileLoader.getPathToMessage(messageOwner);
+                if (type == 3 && isSecretPhoto()) {
+                    mediaExists = new File(file.getAbsolutePath() + ".enc").exists();
+                }
+                if (!mediaExists) {
+                    mediaExists = file.exists();
+                }
             }
         } else {
             TLRPC.Document document = getDocument();

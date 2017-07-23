@@ -165,17 +165,13 @@ public class AvatarDrawable extends Drawable {
                     }
                     lastch = lastName.codePointAt(a);
                 }
-                if (Build.VERSION.SDK_INT >= 16) {
-                    stringBuilder.append("\u200C");
-                }
+                stringBuilder.append("\u200C");
                 stringBuilder.appendCodePoint(lastch);
             } else if (firstName != null && firstName.length() > 0) {
                 for (int a = firstName.length() - 1; a >= 0; a--) {
                     if (firstName.charAt(a) == ' ') {
                         if (a != firstName.length() - 1 && firstName.charAt(a + 1) != ' ') {
-                            if (Build.VERSION.SDK_INT >= 16) {
-                                stringBuilder.append("\u200C");
-                            }
+                            stringBuilder.append("\u200C");
                             stringBuilder.appendCodePoint(firstName.codePointAt(a + 1));
                             break;
                         }

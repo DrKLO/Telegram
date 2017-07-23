@@ -196,6 +196,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int sectionRow;
     private int userSectionRow;
     private int userInfoRow;
+    private int userInfoDetailedRow;
     private int membersSectionRow;
     private int membersEndRow;
     private int loadMoreMembersRow;
@@ -1256,7 +1257,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             });
             showDialog(builder.create());
             return true;
-        } else if (position == channelInfoRow || position == userInfoRow) {
+        } else if (position == channelInfoRow || position == userInfoRow || position == userInfoDetailedRow) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setItems(new CharSequence[]{LocaleController.getString("Copy", R.string.Copy)}, new DialogInterface.OnClickListener() {
                 @Override
@@ -1869,9 +1870,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (playProfileAnimation && allowProfileAnimation) {
             final AnimatorSet animatorSet = new AnimatorSet();
             animatorSet.setDuration(180);
-            if (Build.VERSION.SDK_INT > 15) {
-                listView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-            }
+            listView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
             ActionBarMenu menu = actionBar.createMenu();
             if (menu.getItem(10) == null) {
                 if (animatingItem == null) {
@@ -1955,9 +1954,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             animatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    if (Build.VERSION.SDK_INT > 15) {
-                        listView.setLayerType(View.LAYER_TYPE_NONE, null);
-                    }
+                    listView.setLayerType(View.LAYER_TYPE_NONE, null);
                     if (animatingItem != null) {
                         ActionBarMenu menu = actionBar.createMenu();
                         menu.clearItems();
@@ -2185,6 +2182,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         emptyRow = -1;
         phoneRow = -1;
         userInfoRow = -1;
+        userInfoDetailedRow = -1;
         userSectionRow = -1;
         sectionRow = -1;
         sharedMediaRow = -1;
@@ -2211,20 +2209,24 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (user_id != 0) {
             TLRPC.User user = MessagesController.getInstance().getUser(user_id);
             emptyRow = rowCount++;
-            if (user == null || !user.bot) {
+            if ((user == null || !user.bot) && !TextUtils.isEmpty(user.phone)) {
                 phoneRow = rowCount++;
-            }
-            if (user != null && user.username != null && user.username.length() > 0) {
-                usernameRow = rowCount++;
             }
             TLRPC.TL_userFull userFull = MessagesController.getInstance().getUserFull(user.id);
             String about = userFull != null ? userFull.about : null;
+            boolean hasUsername = user != null && !TextUtils.isEmpty(user.username);
             if (about != null) {
-                userSectionRow = rowCount++;
-                userInfoRow = rowCount++;
-            } else {
-                userSectionRow = -1;
-                userInfoRow = -1;
+                if (phoneRow != -1) {
+                    userSectionRow = rowCount++;
+                }
+                if (hasUsername) {
+                    userInfoRow = rowCount++;
+                } else {
+                    userInfoDetailedRow = rowCount++;
+                }
+            }
+            if (hasUsername) {
+                usernameRow = rowCount++;
             }
             sectionRow = rowCount++;
             if (user_id != UserConfig.getClientUserId()) {
@@ -2706,6 +2708,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     break;
                 case 2:
                     TextDetailCell textDetailCell = (TextDetailCell) holder.itemView;
+                    textDetailCell.setMultiline(false);
                     if (i == phoneRow) {
                         String text;
                         final TLRPC.User user = MessagesController.getInstance().getUser(user_id);
@@ -2714,7 +2717,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         } else {
                             text = LocaleController.getString("NumberUnknown", R.string.NumberUnknown);
                         }
-                        textDetailCell.setTextAndValueAndIcon(text, LocaleController.getString("PhoneMobile", R.string.PhoneMobile), R.drawable.profile_phone);
+                        textDetailCell.setTextAndValueAndIcon(text, LocaleController.getString("PhoneMobile", R.string.PhoneMobile), R.drawable.profile_phone, 0);
                     } else if (i == usernameRow) {
                         String text;
                         final TLRPC.User user = MessagesController.getInstance().getUser(user_id);
@@ -2723,15 +2726,24 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         } else {
                             text = "-";
                         }
-                        textDetailCell.setTextAndValue(text, LocaleController.getString("Username", R.string.Username));
+                        if (phoneRow == -1 && userInfoRow == -1 && userInfoDetailedRow == -1) {
+                            textDetailCell.setTextAndValueAndIcon(text, LocaleController.getString("Username", R.string.Username), R.drawable.profile_info, 11);
+                        } else {
+                            textDetailCell.setTextAndValue(text, LocaleController.getString("Username", R.string.Username));
+                        }
                     } else if (i == channelNameRow) {
                         String text;
-                        if (currentChat != null && currentChat.username != null && currentChat.username.length() != 0) {
+                        if (currentChat != null && !TextUtils.isEmpty(currentChat.username)) {
                             text = "@" + currentChat.username;
                         } else {
                             text = "-";
                         }
                         textDetailCell.setTextAndValue(text, MessagesController.getInstance().linkPrefix + "/" + currentChat.username);
+                    } else if (i == userInfoDetailedRow) {
+                        TLRPC.TL_userFull userFull = MessagesController.getInstance().getUserFull(user_id);
+                        String about = userFull != null ? userFull.about : null;
+                        textDetailCell.setMultiline(true);
+                        textDetailCell.setTextAndValueAndIcon(about, LocaleController.getString("UserBio", R.string.UserBio), R.drawable.profile_info, 11);
                     }
                     break;
                 case 3:
@@ -2892,13 +2904,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (i == userInfoRow) {
                         TLRPC.TL_userFull userFull = MessagesController.getInstance().getUserFull(user_id);
                         String about = userFull != null ? userFull.about : null;
-                        aboutLinkCell.setTextAndIcon(about, R.drawable.profile_info);
+                        aboutLinkCell.setTextAndIcon(about, R.drawable.profile_info, false);
                     } else if (i == channelInfoRow) {
                         String text = info.about;
                         while (text.contains("\n\n\n")) {
                             text = text.replace("\n\n\n", "\n\n");
                         }
-                        aboutLinkCell.setTextAndIcon(text, R.drawable.profile_info);
+                        aboutLinkCell.setTextAndIcon(text, R.drawable.profile_info, true);
                     }
                     break;
             }
@@ -2909,7 +2921,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             int i = holder.getAdapterPosition();
             if (user_id != 0) {
                 return i == phoneRow || i == settingsTimerRow || i == settingsKeyRow || i == settingsNotificationsRow ||
-                        i == sharedMediaRow || i == startSecretChatRow || i == usernameRow || i == userInfoRow || i == groupsInCommonRow;
+                        i == sharedMediaRow || i == startSecretChatRow || i == usernameRow || i == userInfoRow || i == groupsInCommonRow || i == userInfoDetailedRow;
             } else if (chat_id != 0) {
                 return i == convertRow || i == settingsNotificationsRow || i == sharedMediaRow || i > emptyRowChat2 && i < membersEndRow ||
                         i == addMemberRow || i == channelNameRow || i == leaveChannelRow || i == channelInfoRow || i == membersRow;
@@ -2928,7 +2940,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return 0;
             } else if (i == sectionRow || i == userSectionRow) {
                 return 1;
-            } else if (i == phoneRow || i == usernameRow || i == channelNameRow) {
+            } else if (i == phoneRow || i == usernameRow || i == channelNameRow || i == userInfoDetailedRow) {
                 return 2;
             } else if (i == leaveChannelRow || i == sharedMediaRow || i == settingsTimerRow || i == settingsNotificationsRow || i == startSecretChatRow || i == settingsKeyRow || i == convertRow || i == addMemberRow || i == groupsInCommonRow || i == membersRow) {
                 return 3;

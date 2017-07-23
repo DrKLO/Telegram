@@ -285,7 +285,6 @@ public class ChannelRightsEditActivity extends BaseFragment {
                 } else if (position == removeAdminRow) {
                     if (currentType == 0) {
                         MessagesController.setUserAdminRole(chatId, currentUser, new TLRPC.TL_channelAdminRights(), isMegagroup, getFragmentForAlert(0));
-                        finishFragment();
                     } else if (currentType == 1) {
                         bannedRights = new TLRPC.TL_channelBannedRights();
                         bannedRights.view_messages = true;
@@ -298,11 +297,11 @@ public class ChannelRightsEditActivity extends BaseFragment {
                         bannedRights.embed_links = true;
                         bannedRights.until_date = 0;
                         MessagesController.setUserBannedRole(chatId, currentUser, bannedRights, isMegagroup, getFragmentForAlert(0));
-                        finishFragment();
                     }
                     if (delegate != null) {
                         delegate.didSetRights(0, adminRights, bannedRights);
                     }
+                    finishFragment();
                 } else if (position == untilDateRow) {
                     if (getParentActivity() == null) {
                         return;

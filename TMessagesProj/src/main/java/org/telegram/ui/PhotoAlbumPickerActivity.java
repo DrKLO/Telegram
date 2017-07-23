@@ -27,7 +27,6 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
-import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
@@ -48,8 +47,7 @@ import java.util.HashMap;
 public class PhotoAlbumPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     public interface PhotoAlbumPickerActivityDelegate {
-        void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<MediaController.PhotoEntry> videos, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos);
-        void didSelectVideo(String path, VideoEditedInfo info, long estimatedSize, long estimatedDuration, String caption);
+        void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<Integer> ttls, ArrayList<MediaController.PhotoEntry> videos, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos);
         void startPhotoSelectActivity();
     }
 
@@ -287,6 +285,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         ArrayList<String> photos = new ArrayList<>();
         ArrayList<MediaController.PhotoEntry> videos = new ArrayList<>();
         ArrayList<String> captions = new ArrayList<>();
+        ArrayList<Integer> ttls = new ArrayList<>();
         ArrayList<ArrayList<TLRPC.InputDocument>> masks = new ArrayList<>();
         for (HashMap.Entry<Integer, MediaController.PhotoEntry> entry : selectedPhotos.entrySet()) {
             MediaController.PhotoEntry photoEntry = entry.getValue();
@@ -296,10 +295,12 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 photos.add(photoEntry.imagePath);
                 captions.add(photoEntry.caption != null ? photoEntry.caption.toString() : null);
                 masks.add(!photoEntry.stickers.isEmpty() ? new ArrayList<>(photoEntry.stickers) : null);
+                ttls.add(photoEntry.ttl);
             } else if (photoEntry.path != null) {
                 photos.add(photoEntry.path);
                 captions.add(photoEntry.caption != null ? photoEntry.caption.toString() : null);
                 masks.add(!photoEntry.stickers.isEmpty() ? new ArrayList<>(photoEntry.stickers) : null);
+                ttls.add(photoEntry.ttl);
             }
         }
         ArrayList<MediaController.SearchImage> webPhotos = new ArrayList<>();
@@ -311,6 +312,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 photos.add(searchImage.imagePath);
                 captions.add(searchImage.caption != null ? searchImage.caption.toString() : null);
                 masks.add(!searchImage.stickers.isEmpty() ? new ArrayList<>(searchImage.stickers) : null);
+                ttls.add(searchImage.ttl);
             } else {
                 webPhotos.add(searchImage);
             }
@@ -343,7 +345,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             MessagesStorage.getInstance().putWebRecent(recentGifImages);
         }
 
-        delegate.didSelectPhotos(photos, captions, videos, masks, webPhotos);
+        delegate.didSelectPhotos(photos, captions, ttls, videos, masks, webPhotos);
     }
 
     private void fixLayout() {
@@ -400,12 +402,6 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 if (!canceled) {
                     sendSelectedPhotos();
                 }
-            }
-
-            @Override
-            public void didSelectVideo(String path, VideoEditedInfo info, long estimatedSize, long estimatedDuration, String caption) {
-                removeSelfFromStack();
-                delegate.didSelectVideo(path, info, estimatedSize, estimatedDuration, caption);
             }
         });
         presentFragment(fragment);

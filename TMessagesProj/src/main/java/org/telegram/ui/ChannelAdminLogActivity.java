@@ -2120,7 +2120,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
                         MessageObject message = cell.getMessageObject();
                         if (message.type == 13) {
                             showDialog(new StickersAlert(getParentActivity(), ChannelAdminLogActivity.this, message.getInputStickerSet(), null, null));
-                        } else if (Build.VERSION.SDK_INT >= 16 && message.isVideo() || message.type == 1 || message.type == 0 && !message.isWebpageDocument() || message.isGif()) {
+                        } else if (message.isVideo() || message.type == 1 || message.type == 0 && !message.isWebpageDocument() || message.isGif()) {
                             PhotoViewer.getInstance().setParentActivity(getParentActivity());
                             PhotoViewer.getInstance().openPhoto(message, message.type != 0 ? dialog_id : 0, 0, ChannelAdminLogActivity.this);
                         } else if (message.type == 3) {

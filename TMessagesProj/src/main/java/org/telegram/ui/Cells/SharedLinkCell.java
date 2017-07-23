@@ -14,7 +14,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -279,10 +278,10 @@ public class SharedLinkCell extends FrameLayout {
             }
             String filter = String.format(Locale.US, "%d_%d", maxPhotoWidth, maxPhotoWidth);
             if (photoExist || MediaController.getInstance().canDownloadMedia(MediaController.AUTODOWNLOAD_MASK_PHOTO) || FileLoader.getInstance().isLoadingFile(fileName)) {
-                linkImageView.setImage(currentPhotoObject.location, filter, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, String.format(Locale.US, "%d_%d_b", maxPhotoWidth, maxPhotoWidth), 0, null, false);
+                linkImageView.setImage(currentPhotoObject.location, filter, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, String.format(Locale.US, "%d_%d_b", maxPhotoWidth, maxPhotoWidth), 0, null, 0);
             } else {
                 if (currentPhotoObjectThumb != null) {
-                    linkImageView.setImage(null, null, currentPhotoObjectThumb.location, String.format(Locale.US, "%d_%d_b", maxPhotoWidth, maxPhotoWidth), 0, null, false);
+                    linkImageView.setImage(null, null, currentPhotoObjectThumb.location, String.format(Locale.US, "%d_%d_b", maxPhotoWidth, maxPhotoWidth), 0, null, 0);
                 } else {
                     linkImageView.setImageBitmap((Drawable) null);
                 }
@@ -378,7 +377,7 @@ public class SharedLinkCell extends FrameLayout {
                             } else if (linkPreviewPressed) {
                                 try {
                                     TLRPC.WebPage webPage = pressedLink == 0 && message.messageOwner.media != null ? message.messageOwner.media.webpage : null;
-                                    if (webPage != null && Build.VERSION.SDK_INT >= 16 && webPage.embed_url != null && webPage.embed_url.length() != 0) {
+                                    if (webPage != null && webPage.embed_url != null && webPage.embed_url.length() != 0) {
                                         delegate.needOpenWebView(webPage);
                                     } else {
                                         Browser.openUrl(getContext(), links.get(pressedLink));

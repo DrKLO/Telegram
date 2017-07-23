@@ -27,6 +27,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.query.DraftQuery;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
@@ -465,7 +466,11 @@ public class DialogCell extends BaseCell {
                                 }
                                 messageString = Emoji.replaceEmoji(stringBuilder, Theme.dialogs_messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
                             } else {
-                                if (message.caption != null) {
+                                if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && message.messageOwner.media.photo instanceof TLRPC.TL_photoEmpty && message.messageOwner.media.ttl_seconds != 0) {
+                                    messageString = LocaleController.getString("AttachPhotoExpired", R.string.AttachPhotoExpired);
+                                } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaDocument && message.messageOwner.media.document instanceof TLRPC.TL_documentEmpty && message.messageOwner.media.ttl_seconds != 0) {
+                                    messageString = LocaleController.getString("AttachVideoExpired", R.string.AttachVideoExpired);
+                                } else if (message.caption != null) {
                                     messageString = message.caption;
                                 } else {
                                     if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
@@ -797,7 +802,7 @@ public class DialogCell extends BaseCell {
             drawPin = customDialog.pinned;
             dialogMuted = customDialog.muted;
             avatarDrawable.setInfo(customDialog.id, customDialog.name, null, false);
-            avatarImage.setImage(null, "50_50", avatarDrawable, null, false);
+            avatarImage.setImage((TLObject) null, "50_50", avatarDrawable, null, 0);
         } else {
             if (isDialogCell) {
                 TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(currentDialogId);
@@ -912,7 +917,7 @@ public class DialogCell extends BaseCell {
                 }
                 avatarDrawable.setInfo(chat);
             }
-            avatarImage.setImage(photo, "50_50", avatarDrawable, null, false);
+            avatarImage.setImage(photo, "50_50", avatarDrawable, null, 0);
         }
         if (getMeasuredWidth() != 0 || getMeasuredHeight() != 0) {
             buildLayout();

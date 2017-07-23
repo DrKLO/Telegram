@@ -399,7 +399,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                         stickerEmojiTextView.setText(Emoji.replaceEmoji(StickersQuery.getEmojiForSticker(selectedSticker.id), stickerEmojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(30), false));
                     }
 
-                    stickerImageView.getImageReceiver().setImage(selectedSticker, null, selectedSticker.thumb.location, null, "webp", true);
+                    stickerImageView.getImageReceiver().setImage(selectedSticker, null, selectedSticker.thumb.location, null, "webp", 1);
                     FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) stickerPreviewLayout.getLayoutParams();
                     layoutParams.topMargin = scrollOffsetY;
                     stickerPreviewLayout.setLayoutParams(layoutParams);

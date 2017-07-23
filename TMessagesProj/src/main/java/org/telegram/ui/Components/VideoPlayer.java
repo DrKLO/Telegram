@@ -14,6 +14,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.view.TextureView;
 
+import org.telegram.messenger.secretmedia.ExtendedDefaultDataSourceFactory;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.exoplayer2.DefaultLoadControl;
 import org.telegram.messenger.exoplayer2.DefaultRenderersFactory;
@@ -41,7 +42,6 @@ import org.telegram.messenger.exoplayer2.trackselection.TrackSelection;
 import org.telegram.messenger.exoplayer2.trackselection.TrackSelectionArray;
 import org.telegram.messenger.exoplayer2.upstream.DataSource;
 import org.telegram.messenger.exoplayer2.upstream.DefaultBandwidthMeter;
-import org.telegram.messenger.exoplayer2.upstream.DefaultDataSourceFactory;
 import org.telegram.messenger.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 
 @SuppressLint("NewApi")
@@ -79,7 +79,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
 
     public VideoPlayer() {
-        mediaDataSourceFactory = new DefaultDataSourceFactory(ApplicationLoader.applicationContext, BANDWIDTH_METER, new DefaultHttpDataSourceFactory("Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20150101 Firefox/47.0 (Chrome)", BANDWIDTH_METER));
+        mediaDataSourceFactory = new ExtendedDefaultDataSourceFactory(ApplicationLoader.applicationContext, BANDWIDTH_METER, new DefaultHttpDataSourceFactory("Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20150101 Firefox/47.0 (Chrome)", BANDWIDTH_METER));
 
         mainHandler = new Handler();
 

@@ -55,6 +55,8 @@ public class ActionBar extends FrameLayout {
     private int extraHeight;
     private AnimatorSet actionModeAnimation;
 
+    private int titleRightMargin;
+
     private boolean allowOverlayTitle;
     private CharSequence lastTitle;
     private CharSequence lastSubtitle;
@@ -170,6 +172,10 @@ public class ActionBar extends FrameLayout {
         titleTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle));
         titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addView(titleTextView, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+    }
+
+    public void setTitleRightMargin(int value) {
+        titleRightMargin = value;
     }
 
     public void setTitle(CharSequence value) {
@@ -490,7 +496,7 @@ public class ActionBar extends FrameLayout {
         }
 
         if (titleTextView != null && titleTextView.getVisibility() != GONE || subtitleTextView != null && subtitleTextView.getVisibility() != GONE) {
-            int availableWidth = width - (menu != null ? menu.getMeasuredWidth() : 0) - AndroidUtilities.dp(16) - textLeft;
+            int availableWidth = width - (menu != null ? menu.getMeasuredWidth() : 0) - AndroidUtilities.dp(16) - textLeft - titleRightMargin;
 
             if (titleTextView != null && titleTextView.getVisibility() != GONE) {
                 titleTextView.setTextSize(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 18 : 20);
