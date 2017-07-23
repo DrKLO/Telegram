@@ -947,7 +947,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             permissons.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
         String[] items = permissons.toArray(new String[permissons.size()]);
-        activity.requestPermissions(items, 1);
+        try {
+            activity.requestPermissions(items, 1);
+        } catch (Exception ignore) {
+        }
     }
 
     @Override

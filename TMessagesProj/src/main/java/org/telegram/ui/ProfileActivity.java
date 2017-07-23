@@ -2212,10 +2212,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if ((user == null || !user.bot) && !TextUtils.isEmpty(user.phone)) {
                 phoneRow = rowCount++;
             }
+
             TLRPC.TL_userFull userFull = MessagesController.getInstance().getUserFull(user.id);
-            String about = userFull != null ? userFull.about : null;
             boolean hasUsername = user != null && !TextUtils.isEmpty(user.username);
-            if (about != null) {
+            if (userFull != null && !TextUtils.isEmpty(userFull.about)) {
                 if (phoneRow != -1) {
                     userSectionRow = rowCount++;
                 }
@@ -2228,7 +2228,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (hasUsername) {
                 usernameRow = rowCount++;
             }
-            sectionRow = rowCount++;
+            if (phoneRow != -1 || userInfoRow != -1 || userInfoDetailedRow != -1 || usernameRow != -1) {
+                sectionRow = rowCount++;
+            }
             if (user_id != UserConfig.getClientUserId()) {
                 settingsNotificationsRow = rowCount++;
             }
@@ -2721,7 +2723,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (i == usernameRow) {
                         String text;
                         final TLRPC.User user = MessagesController.getInstance().getUser(user_id);
-                        if (user != null && user.username != null && user.username.length() != 0) {
+                        if (user != null && !TextUtils.isEmpty(user.username)) {
                             text = "@" + user.username;
                         } else {
                             text = "-";
@@ -2741,9 +2743,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         textDetailCell.setTextAndValue(text, MessagesController.getInstance().linkPrefix + "/" + currentChat.username);
                     } else if (i == userInfoDetailedRow) {
                         TLRPC.TL_userFull userFull = MessagesController.getInstance().getUserFull(user_id);
-                        String about = userFull != null ? userFull.about : null;
                         textDetailCell.setMultiline(true);
-                        textDetailCell.setTextAndValueAndIcon(about, LocaleController.getString("UserBio", R.string.UserBio), R.drawable.profile_info, 11);
+                        textDetailCell.setTextAndValueAndIcon(userFull != null ? userFull.about : null, LocaleController.getString("UserBio", R.string.UserBio), R.drawable.profile_info, 11);
                     }
                     break;
                 case 3:
@@ -2903,8 +2904,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     AboutLinkCell aboutLinkCell = (AboutLinkCell) holder.itemView;
                     if (i == userInfoRow) {
                         TLRPC.TL_userFull userFull = MessagesController.getInstance().getUserFull(user_id);
-                        String about = userFull != null ? userFull.about : null;
-                        aboutLinkCell.setTextAndIcon(about, R.drawable.profile_info, false);
+                        aboutLinkCell.setTextAndIcon(userFull != null ? userFull.about : null, R.drawable.profile_info, false);
                     } else if (i == channelInfoRow) {
                         String text = info.about;
                         while (text.contains("\n\n\n")) {
