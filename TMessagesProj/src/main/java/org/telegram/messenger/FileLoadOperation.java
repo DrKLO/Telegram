@@ -581,16 +581,17 @@ public class FileLoadOperation {
                         RequestInfo delayedRequestInfo = delayedRequestInfos.get(a);
                         if (downloadedBytes == delayedRequestInfo.offset) {
                             delayedRequestInfos.remove(a);
-                            processRequestResult(delayedRequestInfo, null);
-                            if (delayedRequestInfo.response != null) {
-                                delayedRequestInfo.response.disableFree = false;
-                                delayedRequestInfo.response.freeResources();
-                            } else if (delayedRequestInfo.responseWeb != null) {
-                                delayedRequestInfo.responseWeb.disableFree = false;
-                                delayedRequestInfo.responseWeb.freeResources();
-                            } else if (delayedRequestInfo.responseCdn != null) {
-                                delayedRequestInfo.responseCdn.disableFree = false;
-                                delayedRequestInfo.responseCdn.freeResources();
+                            if (!processRequestResult(delayedRequestInfo, null)) {
+                                if (delayedRequestInfo.response != null) {
+                                    delayedRequestInfo.response.disableFree = false;
+                                    delayedRequestInfo.response.freeResources();
+                                } else if (delayedRequestInfo.responseWeb != null) {
+                                    delayedRequestInfo.responseWeb.disableFree = false;
+                                    delayedRequestInfo.responseWeb.freeResources();
+                                } else if (delayedRequestInfo.responseCdn != null) {
+                                    delayedRequestInfo.responseCdn.disableFree = false;
+                                    delayedRequestInfo.responseCdn.freeResources();
+                                }
                             }
                             break;
                         }
@@ -600,16 +601,16 @@ public class FileLoadOperation {
         }, null, null, 0, datacenter_id, ConnectionsManager.ConnectionTypeGeneric, true);
     }
 
-    private void processRequestResult(RequestInfo requestInfo, TLRPC.TL_error error) {
+    private boolean processRequestResult(RequestInfo requestInfo, TLRPC.TL_error error) {
         if (state != stateDownloading) {
-            return;
+            return false;
         }
         requestInfos.remove(requestInfo);
         if (error == null) {
             try {
                 if (downloadedBytes != requestInfo.offset) {
                     delayRequestInfo(requestInfo);
-                    return;
+                    return false;
                 }
                 NativeByteBuffer bytes;
                 if (requestInfo.response != null) {
@@ -623,7 +624,7 @@ public class FileLoadOperation {
                 }
                 if (bytes == null || bytes.limit() == 0) {
                     onFinishLoadingFile(true);
-                    return;
+                    return false;
                 }
                 int currentBytesSize = bytes.limit();
                 if (isCdn) {
@@ -633,7 +634,7 @@ public class FileLoadOperation {
                     if (hash == null) {
                         delayRequestInfo(requestInfo);
                         requestFileOffsets(fileOffset);
-                        return;
+                        return true;
                     }
                 }
 
@@ -694,7 +695,7 @@ public class FileLoadOperation {
                             }
                             onFail(false, 0);
                             cacheFileTemp.delete();
-                            return;
+                            return false;
                         }
                         lastCheckedCdnPart = cdnCheckPart;
                     }
@@ -711,16 +712,17 @@ public class FileLoadOperation {
                     RequestInfo delayedRequestInfo = delayedRequestInfos.get(a);
                     if (downloadedBytes == delayedRequestInfo.offset) {
                         delayedRequestInfos.remove(a);
-                        processRequestResult(delayedRequestInfo, null);
-                        if (delayedRequestInfo.response != null) {
-                            delayedRequestInfo.response.disableFree = false;
-                            delayedRequestInfo.response.freeResources();
-                        } else if (delayedRequestInfo.responseWeb != null) {
-                            delayedRequestInfo.responseWeb.disableFree = false;
-                            delayedRequestInfo.responseWeb.freeResources();
-                        } else if (delayedRequestInfo.responseCdn != null) {
-                            delayedRequestInfo.responseCdn.disableFree = false;
-                            delayedRequestInfo.responseCdn.freeResources();
+                        if (!processRequestResult(delayedRequestInfo, null)) {
+                            if (delayedRequestInfo.response != null) {
+                                delayedRequestInfo.response.disableFree = false;
+                                delayedRequestInfo.response.freeResources();
+                            } else if (delayedRequestInfo.responseWeb != null) {
+                                delayedRequestInfo.responseWeb.disableFree = false;
+                                delayedRequestInfo.responseWeb.freeResources();
+                            } else if (delayedRequestInfo.responseCdn != null) {
+                                delayedRequestInfo.responseCdn.disableFree = false;
+                                delayedRequestInfo.responseCdn.freeResources();
+                            }
                         }
                         break;
                     }
@@ -775,6 +777,7 @@ public class FileLoadOperation {
                 onFail(false, 0);
             }
         }
+        return false;
     }
 
     private void onFail(boolean thread, final int reason) {
