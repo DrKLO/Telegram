@@ -39,6 +39,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PopupNotificationActivity;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -1826,12 +1827,15 @@ public class NotificationsController {
                     mBuilder.setLargeIcon(img.getBitmap());
                 } else {
                     try {
-                        float scaleFactor = 160.0f / AndroidUtilities.dp(50);
-                        BitmapFactory.Options options = new BitmapFactory.Options();
-                        options.inSampleSize = scaleFactor < 1 ? 1 : (int) scaleFactor;
-                        Bitmap bitmap = BitmapFactory.decodeFile(FileLoader.getPathToAttach(photoPath, true).toString(), options);
-                        if (bitmap != null) {
-                            mBuilder.setLargeIcon(bitmap);
+                        File file = FileLoader.getPathToAttach(photoPath, true);
+                        if (file.exists()) {
+                            float scaleFactor = 160.0f / AndroidUtilities.dp(50);
+                            BitmapFactory.Options options = new BitmapFactory.Options();
+                            options.inSampleSize = scaleFactor < 1 ? 1 : (int) scaleFactor;
+                            Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+                            if (bitmap != null) {
+                                mBuilder.setLargeIcon(bitmap);
+                            }
                         }
                     } catch (Throwable e) {
                         //ignore
@@ -2085,12 +2089,15 @@ public class NotificationsController {
                     builder.setLargeIcon(img.getBitmap());
                 } else {
                     try {
-                        float scaleFactor = 160.0f / AndroidUtilities.dp(50);
-                        BitmapFactory.Options options = new BitmapFactory.Options();
-                        options.inSampleSize = scaleFactor < 1 ? 1 : (int) scaleFactor;
-                        Bitmap bitmap = BitmapFactory.decodeFile(FileLoader.getPathToAttach(photoPath, true).toString(), options);
-                        if (bitmap != null) {
-                            builder.setLargeIcon(bitmap);
+                        File file = FileLoader.getPathToAttach(photoPath, true);
+                        if (file.exists()) {
+                            float scaleFactor = 160.0f / AndroidUtilities.dp(50);
+                            BitmapFactory.Options options = new BitmapFactory.Options();
+                            options.inSampleSize = scaleFactor < 1 ? 1 : (int) scaleFactor;
+                            Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+                            if (bitmap != null) {
+                                builder.setLargeIcon(bitmap);
+                            }
                         }
                     } catch (Throwable e) {
                         //ignore

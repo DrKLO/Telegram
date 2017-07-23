@@ -17,6 +17,7 @@ import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
+import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.view.Gravity;
@@ -80,11 +81,7 @@ public class AboutLinkCell extends FrameLayout {
     }
 
     public void setTextAndIcon(String text, int resId, boolean parseLinks) {
-        if (text == null || text.length() == 0) {
-            setVisibility(GONE);
-            return;
-        }
-        if (text != null && oldText != null && text.equals(oldText)) {
+        if (TextUtils.isEmpty(text) || text != null && oldText != null && text.equals(oldText)) {
             return;
         }
         oldText = text;
@@ -174,8 +171,10 @@ public class AboutLinkCell extends FrameLayout {
     @SuppressLint("DrawAllocation")
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        textLayout = new StaticLayout(stringBuilder, Theme.profile_aboutTextPaint, MeasureSpec.getSize(widthMeasureSpec) - AndroidUtilities.dp(71 + 16), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(textLayout.getHeight() + AndroidUtilities.dp(16), MeasureSpec.EXACTLY));
+        if (stringBuilder != null) {
+            textLayout = new StaticLayout(stringBuilder, Theme.profile_aboutTextPaint, MeasureSpec.getSize(widthMeasureSpec) - AndroidUtilities.dp(71 + 16), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        }
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec((textLayout != null ? textLayout.getHeight() : AndroidUtilities.dp(20)) + AndroidUtilities.dp(16), MeasureSpec.EXACTLY));
     }
 
     @Override

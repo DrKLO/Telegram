@@ -19,7 +19,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.os.Handler;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -234,9 +233,9 @@ public class ActionBarLayout extends FrameLayout {
                 currentAnimation = null;
             }
             if (onCloseAnimationEndRunnable != null) {
-                onCloseAnimationEnd(false);
+                onCloseAnimationEnd();
             } else if (onOpenAnimationEndRunnable != null) {
-                onOpenAnimationEnd(false);
+                onOpenAnimationEnd();
             }
         }
         if (!fragmentsStack.isEmpty()) {
@@ -523,9 +522,9 @@ public class ActionBarLayout extends FrameLayout {
         }
     }
 
-    private void onAnimationEndCheck(boolean byCheck, boolean customAnimation) {
-        onCloseAnimationEnd(customAnimation);
-        onOpenAnimationEnd(customAnimation);
+    private void onAnimationEndCheck(boolean byCheck) {
+        onCloseAnimationEnd();
+        onOpenAnimationEnd();
         if (waitingForKeyboardCloseRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(waitingForKeyboardCloseRunnable);
             waitingForKeyboardCloseRunnable = null;
@@ -551,7 +550,7 @@ public class ActionBarLayout extends FrameLayout {
 
     public boolean checkTransitionAnimation() {
         if (transitionAnimationInProgress && transitionAnimationStartTime < System.currentTimeMillis() - 1500) {
-            onAnimationEndCheck(true, false);
+            onAnimationEndCheck(true);
         }
         return transitionAnimationInProgress;
     }
@@ -627,7 +626,7 @@ public class ActionBarLayout extends FrameLayout {
                 if (animationProgress < 1) {
                     startLayoutAnimation(open, false);
                 } else {
-                    onAnimationEndCheck(false, false);
+                    onAnimationEndCheck(false);
                 }
             }
         });
@@ -730,7 +729,7 @@ public class ActionBarLayout extends FrameLayout {
                 currentAnimation.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
-                        onAnimationEndCheck(false, true);
+                        onAnimationEndCheck(false);
                     }
                 });
                 currentAnimation.start();
@@ -750,7 +749,7 @@ public class ActionBarLayout extends FrameLayout {
                 AnimatorSet animation = fragment.onCustomTransitionAnimation(true, new Runnable() {
                     @Override
                     public void run() {
-                        onAnimationEndCheck(false, true);
+                        onAnimationEndCheck(false);
                     }
                 });
                 if (animation == null) {
@@ -921,7 +920,7 @@ public class ActionBarLayout extends FrameLayout {
                 AnimatorSet animation = currentFragment.onCustomTransitionAnimation(false, new Runnable() {
                     @Override
                     public void run() {
-                        onAnimationEndCheck(false, true);
+                        onAnimationEndCheck(false);
                     }
                 });
                 if (animation == null) {
@@ -985,7 +984,7 @@ public class ActionBarLayout extends FrameLayout {
 
                     @Override
                     public void onAnimationEnd(Animator animation) {
-                        onAnimationEndCheck(false, true);
+                        onAnimationEndCheck(false);
                     }
                 });
                 currentAnimation.start();
@@ -1113,21 +1112,12 @@ public class ActionBarLayout extends FrameLayout {
         inActionMode = false;
     }
 
-    private void onCloseAnimationEnd(boolean post) {
+    private void onCloseAnimationEnd() {
         if (transitionAnimationInProgress && onCloseAnimationEndRunnable != null) {
             transitionAnimationInProgress = false;
             transitionAnimationStartTime = 0;
-            if (post) {
-                new Handler().post(new Runnable() {
-                    public void run() {
-                        onCloseAnimationEndRunnable.run();
-                        onCloseAnimationEndRunnable = null;
-                    }
-                });
-            } else {
-                onCloseAnimationEndRunnable.run();
-                onCloseAnimationEndRunnable = null;
-            }
+            onCloseAnimationEndRunnable.run();
+            onCloseAnimationEndRunnable = null;
             checkNeedRebuild();
         }
     }
@@ -1139,22 +1129,12 @@ public class ActionBarLayout extends FrameLayout {
         }
     }
 
-    private void onOpenAnimationEnd(boolean post) {
+    private void onOpenAnimationEnd() {
         if (transitionAnimationInProgress && onOpenAnimationEndRunnable != null) {
             transitionAnimationInProgress = false;
             transitionAnimationStartTime = 0;
-            if (post) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        onOpenAnimationEndRunnable.run();
-                        onOpenAnimationEndRunnable = null;
-                    }
-                });
-            } else {
-                onOpenAnimationEndRunnable.run();
-                onOpenAnimationEndRunnable = null;
-            }
+            onOpenAnimationEndRunnable.run();
+            onOpenAnimationEndRunnable = null;
             checkNeedRebuild();
         }
     }
@@ -1169,9 +1149,9 @@ public class ActionBarLayout extends FrameLayout {
                 currentAnimation = null;
             }
             if (onCloseAnimationEndRunnable != null) {
-                onCloseAnimationEnd(false);
+                onCloseAnimationEnd();
             } else if (onOpenAnimationEndRunnable != null) {
-                onOpenAnimationEnd(false);
+                onOpenAnimationEnd();
             }
             containerView.invalidate();
             if (intent != null) {
