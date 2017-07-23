@@ -1784,7 +1784,7 @@ public class MessagesStorage {
         });
     }
 
-    public void createTaskForSecretChat(final long did, final int time, final int readTime, final int isOut, final ArrayList<Long> random_ids) {
+    public void createTaskForSecretChat(final int chatId, final int time, final int readTime, final int isOut, final ArrayList<Long> random_ids) {
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -1795,7 +1795,7 @@ public class MessagesStorage {
                     StringBuilder mids = new StringBuilder();
                     SQLiteCursor cursor;
                     if (random_ids == null) {
-                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, ttl FROM messages WHERE uid = %d AND out = %d AND read_state != 0 AND ttl > 0 AND date <= %d AND send_state = 0 AND media != 1", did, isOut, time));
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, ttl FROM messages WHERE uid = %d AND out = %d AND read_state != 0 AND ttl > 0 AND date <= %d AND send_state = 0 AND media != 1", ((long) chatId) << 32, isOut, time));
                     } else {
                         String ids = TextUtils.join(",", random_ids);
                         cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.mid, m.ttl FROM messages as m INNER JOIN randoms as r ON m.mid = r.mid WHERE r.random_id IN (%s)", ids));

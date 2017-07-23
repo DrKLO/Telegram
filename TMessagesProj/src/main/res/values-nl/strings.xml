@@ -126,6 +126,8 @@
     <string name="HiddenName">Verwijderd account</string>
     <string name="SelectChat">Kies een chat</string>
     <string name="PhotoTip">Druk en houd ingedrukt</string>
+    <string name="DisappearingPhoto">Geheime foto</string>
+    <string name="DisappearingVideo">Geheime video</string>
     <string name="CompatibilityChat">%1$s gebruikt een oudere versie van Telegram, dus worden geheime foto\'s weergegeven in de compatibiliteitsmodus.\n\nZodra %2$s Telegram updatet werken foto\'s met timers voor 1 minuut of minder in de \'Druk en houd ingedrukt\'-modus en krijg je een bericht wanneer de andere partij een schermafdruk maakt.</string>
     <string name="SearchMessages">BERICHTEN</string>
     <string name="Search">Zoeken</string>
@@ -587,6 +589,8 @@
     <string name="NotificationMessageNoText">%1$s heeft je een bericht gestuurd</string>
     <string name="NotificationMessagePhoto">%1$s heeft je een foto gestuurd</string>
     <string name="NotificationMessageVideo">%1$s heeft je een video gestuurd</string>
+    <string name="NotificationMessageSDPhoto">%1$s heeft je een zelfvernietigende foto gestuurd</string>
+    <string name="NotificationMessageSDVideo">%1$s heeft je een zelfvernietigende video gestuurd</string>
     <string name="NotificationMessageContact">%1$s heeft een contact met je gedeeld</string>
     <string name="NotificationMessageMap">%1$s heeft je een locatie gestuurd</string>
     <string name="NotificationMessageGame">%1$s wil %2$s met je spelen</string>
@@ -732,6 +736,9 @@
     <string name="PhoneWork">Werk</string>
     <string name="PhoneOther">Overig</string>
     <string name="PhoneMain">Hoofd</string>
+    <string name="UserBio">Bio</string>
+    <string name="UserBioEmpty">Geen</string>
+    <string name="UserBioInfo">Je kunt hier wat over jezelf vertellen. Iedereen die je profiel opent kan deze tekst zien.</string>
     <string name="StartEncryptedChat">Geheime chat starten</string>
     <string name="GroupsInCommon">Gedeelde groepen</string>
     <string name="GroupsInCommonTitle">Gedeelde groepen</string>
@@ -739,6 +746,8 @@
     <string name="CreateEncryptedChatError">Er is een fout opgetreden.</string>
     <string name="EncryptionKey">Encryptiesleutel</string>
     <string name="MessageLifetime">Zelfvernietigingstimer</string>
+    <string name="MessageLifetimePhoto">Als je een timer instelt vernietigt de foto zichzelf na het bekijken.</string>
+    <string name="MessageLifetimeVideo">Als je een timer instelt vernietigt de video zichzelf na het bekijken.</string>
     <string name="ShortMessageLifetimeForever">Uit</string>
     <string name="EncryptionKeyDescription">Deze afbeelding en tekst zijn afgeleid van de encryptiesleutel voor deze geheime chat met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nAls dit er hetzelfde uitziet op het apparaat van <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, dan is end-to-end-encryptie gegarandeerd.<![CDATA[<br><br>]]>Lees meer op telegram.org</string>
     <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
@@ -1299,6 +1308,8 @@
     <string name="UnsupportedMedia">Dit bericht wordt niet ondersteund door jouw versie van Telegram. Werk Telegram bij om dit bericht te bekijken: https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
+    <string name="AttachPhotoExpired">Foto is verlopen</string>
+    <string name="AttachVideoExpired">Video is verlopen</string>
     <string name="AttachGif">GIF</string>
     <string name="AttachLocation">Locatie</string>
     <string name="AttachContact">Contact</string>
@@ -1396,14 +1407,12 @@
     <string name="Page4Title">Veilig</string>
     <string name="Page5Title">Krachtig</string>
     <string name="Page6Title">In de cloud</string>
-    <string name="Page7Title">Privé</string>
     <string name="Page1Message">\'s Werelds <![CDATA[<b>snelste</b>]]> berichtendienst.\nHet is <![CDATA[<b>gratis</b>]]> en <![CDATA[<b>veilig</b>]]>.</string>
     <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> bezorgt berichten sneller dan\nelke andere applicatie.</string>
     <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is altijd gratis. Geen advertenties.\nGeen abonnementskosten.</string>
     <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligd je berichten\ntegen aanvallen van hackers.</string>
     <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> beperkt je niet in de grootte van\nje media of chats.</string>
     <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot je berichten\nvanaf meerdere apparaten.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld\nen kunnen zichzelf vernietigen.</string>
     <string name="StartMessaging">Begin met chatten</string>
     <!--VoIP-->
     <string name="AccountSettings">Accountinstellingen</string>
