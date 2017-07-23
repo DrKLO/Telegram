@@ -80,7 +80,7 @@ public class GroupCreateSpan extends View {
         if (user.photo != null) {
             photo = user.photo.photo_small;
         }
-        imageReceiver.setImage(photo, null, "50_50", avatarDrawable, null, null, 0, null, true);
+        imageReceiver.setImage(photo, null, "50_50", avatarDrawable, null, null, 0, null, 1);
         updateColors();
     }
 

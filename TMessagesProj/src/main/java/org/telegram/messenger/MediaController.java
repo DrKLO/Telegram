@@ -186,6 +186,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         public VideoEditedInfo editedInfo;
         public boolean isVideo;
         public CharSequence caption;
+        public boolean isFiltered;
+        public boolean isPainted;
+        public boolean isCropped;
+        public int ttl;
         public ArrayList<TLRPC.InputDocument> stickers = new ArrayList<>();
 
         public PhotoEntry(int bucketId, int imageId, long dateTaken, String path, int orientation, boolean isVideo) {
@@ -199,6 +203,17 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 this.orientation = orientation;
             }
             this.isVideo = isVideo;
+        }
+
+        public void reset() {
+            isFiltered = false;
+            isPainted = false;
+            isCropped = false;
+            ttl = 0;
+            imagePath = null;
+            thumbPath = null;
+            caption = null;
+            stickers.clear();
         }
     }
 
@@ -216,6 +231,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         public String imagePath;
         public CharSequence caption;
         public TLRPC.Document document;
+        public boolean isFiltered;
+        public boolean isPainted;
+        public boolean isCropped;
+        public int ttl;
         public ArrayList<TLRPC.InputDocument> stickers = new ArrayList<>();
     }
 
@@ -549,15 +568,17 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     }
 
-    private ExternalObserver externalObserver = null;
-    private InternalObserver internalObserver = null;
-    private long lastSecretChatEnterTime = 0;
-    private long lastSecretChatLeaveTime = 0;
-    private long lastMediaCheckTime = 0;
-    private TLRPC.EncryptedChat lastSecretChat = null;
-    private ArrayList<Long> lastSecretChatVisibleMessages = null;
-    private int startObserverToken = 0;
-    private StopMediaObserverRunnable stopMediaObserverRunnable = null;
+    private ExternalObserver externalObserver;
+    private InternalObserver internalObserver;
+    private long lastChatEnterTime;
+    private long lastChatLeaveTime;
+    private long lastMediaCheckTime;
+    private TLRPC.EncryptedChat lastSecretChat;
+    private TLRPC.User lastUser;
+    private int lastMessageId;
+    private ArrayList<Long> lastChatVisibleMessages;
+    private int startObserverToken;
+    private StopMediaObserverRunnable stopMediaObserverRunnable;
 
     private final class StopMediaObserverRunnable implements Runnable {
         public int currentObserverToken = 0;
@@ -688,25 +709,15 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             checkAutodownloadSettings();
         }
 
-        if (Build.VERSION.SDK_INT >= 16) {
-            mediaProjections = new String[]{
-                    MediaStore.Images.ImageColumns.DATA,
-                    MediaStore.Images.ImageColumns.DISPLAY_NAME,
-                    MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME,
-                    MediaStore.Images.ImageColumns.DATE_TAKEN,
-                    MediaStore.Images.ImageColumns.TITLE,
-                    MediaStore.Images.ImageColumns.WIDTH,
-                    MediaStore.Images.ImageColumns.HEIGHT
-            };
-        } else {
-            mediaProjections = new String[]{
-                    MediaStore.Images.ImageColumns.DATA,
-                    MediaStore.Images.ImageColumns.DISPLAY_NAME,
-                    MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME,
-                    MediaStore.Images.ImageColumns.DATE_TAKEN,
-                    MediaStore.Images.ImageColumns.TITLE
-            };
-        }
+        mediaProjections = new String[]{
+                MediaStore.Images.ImageColumns.DATA,
+                MediaStore.Images.ImageColumns.DISPLAY_NAME,
+                MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME,
+                MediaStore.Images.ImageColumns.DATE_TAKEN,
+                MediaStore.Images.ImageColumns.TITLE,
+                MediaStore.Images.ImageColumns.WIDTH,
+                MediaStore.Images.ImageColumns.HEIGHT
+        };
 
         try {
             ApplicationLoader.applicationContext.getContentResolver().registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, false, new GalleryObserverExternal());
@@ -1096,10 +1107,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
             boolean added = true;
             if (downloadObject.object instanceof TLRPC.PhotoSize) {
-                FileLoader.getInstance().loadFile((TLRPC.PhotoSize) downloadObject.object, null, false);
+                FileLoader.getInstance().loadFile((TLRPC.PhotoSize) downloadObject.object, null, downloadObject.secret ? 2 : 0);
             } else if (downloadObject.object instanceof TLRPC.Document) {
                 TLRPC.Document document = (TLRPC.Document) downloadObject.object;
-                FileLoader.getInstance().loadFile(document, false, false);
+                FileLoader.getInstance().loadFile(document, false, downloadObject.secret ? 2 : 0);
             } else {
                 added = false;
             }
@@ -1208,7 +1219,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         ApplicationLoader.applicationHandler.postDelayed(stopMediaObserverRunnable, 5000);
     }
 
-    public void processMediaObserver(Uri uri) {
+    private void processMediaObserver(Uri uri) {
         try {
             Point size = AndroidUtilities.getRealScreenSize();
 
@@ -1222,12 +1233,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     String album_name = cursor.getString(2);
                     long date = cursor.getLong(3);
                     String title = cursor.getString(4);
-                    int photoW = 0;
-                    int photoH = 0;
-                    if (Build.VERSION.SDK_INT >= 16) {
-                        photoW = cursor.getInt(5);
-                        photoH = cursor.getInt(6);
-                    }
+                    int photoW = cursor.getInt(5);
+                    int photoH = cursor.getInt(6);
                     if (data != null && data.toLowerCase().contains("screenshot") ||
                             display_name != null && display_name.toLowerCase().contains("screenshot") ||
                             album_name != null && album_name.toLowerCase().contains("screenshot") ||
@@ -1265,33 +1272,40 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     private void checkScreenshots(ArrayList<Long> dates) {
-        if (dates == null || dates.isEmpty() || lastSecretChatEnterTime == 0 || lastSecretChat == null || !(lastSecretChat instanceof TLRPC.TL_encryptedChat)) {
+        if (dates == null || dates.isEmpty() || lastChatEnterTime == 0 || (lastUser == null && !(lastSecretChat instanceof TLRPC.TL_encryptedChat))) {
             return;
         }
         long dt = 2000;
         boolean send = false;
-        for (Long date : dates) {
+        for (int a = 0; a < dates.size(); a++) {
+            Long date = dates.get(a);
             if (lastMediaCheckTime != 0 && date <= lastMediaCheckTime) {
                 continue;
             }
 
-            if (date >= lastSecretChatEnterTime) {
-                if (lastSecretChatLeaveTime == 0 || date <= lastSecretChatLeaveTime + dt) {
+            if (date >= lastChatEnterTime) {
+                if (lastChatLeaveTime == 0 || date <= lastChatLeaveTime + dt) {
                     lastMediaCheckTime = Math.max(lastMediaCheckTime, date);
                     send = true;
                 }
             }
         }
         if (send) {
-            SecretChatHelper.getInstance().sendScreenshotMessage(lastSecretChat, lastSecretChatVisibleMessages, null);
+            if (lastSecretChat != null) {
+                SecretChatHelper.getInstance().sendScreenshotMessage(lastSecretChat, lastChatVisibleMessages, null);
+            } else {
+                SendMessagesHelper.getInstance().sendScreenshotMessage(lastUser, lastMessageId, null);
+            }
         }
     }
 
-    public void setLastEncryptedChatParams(long enterTime, long leaveTime, TLRPC.EncryptedChat encryptedChat, ArrayList<Long> visibleMessages) {
-        lastSecretChatEnterTime = enterTime;
-        lastSecretChatLeaveTime = leaveTime;
+    public void setLastVisibleMessageIds(long enterTime, long leaveTime, TLRPC.User user, TLRPC.EncryptedChat encryptedChat, ArrayList<Long> visibleMessages, int visibleMessage) {
+        lastChatEnterTime = enterTime;
+        lastChatLeaveTime = leaveTime;
         lastSecretChat = encryptedChat;
-        lastSecretChatVisibleMessages = visibleMessages;
+        lastUser = user;
+        lastMessageId = visibleMessage;
+        lastChatVisibleMessages = visibleMessages;
     }
 
     public int generateObserverTag() {
@@ -2308,7 +2322,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         final File cacheFile = file != null ? file : FileLoader.getPathToMessage(nextAudio.messageOwner);
         boolean exist = cacheFile != null && cacheFile.exists();
         if (cacheFile != null && cacheFile != file && !cacheFile.exists()) {
-            FileLoader.getInstance().loadFile(nextAudio.getDocument(), false, false);
+            FileLoader.getInstance().loadFile(nextAudio.getDocument(), false, 0);
         }
     }
 
@@ -2335,7 +2349,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         final File cacheFile = file != null ? file : FileLoader.getPathToMessage(nextAudio.messageOwner);
         boolean exist = cacheFile != null && cacheFile.exists();
         if (cacheFile != null && cacheFile != file && !cacheFile.exists() && nextAudio.isMusic()) {
-            FileLoader.getInstance().loadFile(nextAudio.getDocument(), false, false);
+            FileLoader.getInstance().loadFile(nextAudio.getDocument(), false, 0);
         }
     }
 
@@ -2485,7 +2499,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         final File cacheFile = file != null ? file : FileLoader.getPathToMessage(messageObject.messageOwner);
         if (cacheFile != null && cacheFile != file && !cacheFile.exists()) {
-            FileLoader.getInstance().loadFile(messageObject.getDocument(), false, false);
+            FileLoader.getInstance().loadFile(messageObject.getDocument(), false, 0);
             downloadingCurrentMessage = true;
             isPaused = false;
             lastProgress = 0;
@@ -3142,7 +3156,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             audioToSend.attributes.add(attributeAudio);
                             if (duration > 700) {
                                 if (send == 1) {
-                                    SendMessagesHelper.getInstance().sendMessage(audioToSend, null, recordingAudioFileToSend.getAbsolutePath(), recordDialogId, recordReplyingMessageObject, null, null);
+                                    SendMessagesHelper.getInstance().sendMessage(audioToSend, null, recordingAudioFileToSend.getAbsolutePath(), recordDialogId, recordReplyingMessageObject, null, null, 0);
                                 }
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioDidSent, send == 2 ? audioToSend : null, send == 2 ? recordingAudioFileToSend.getAbsolutePath() : null);
                             } else {

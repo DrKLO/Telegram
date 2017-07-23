@@ -103,7 +103,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
         PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(true, false, false, null);
         fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
             @Override
-            public void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<MediaController.PhotoEntry> videos, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos) {
+            public void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<Integer> ttls, ArrayList<MediaController.PhotoEntry> videos, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos) {
                 if (!photos.isEmpty()) {
                     Bitmap bitmap = ImageLoader.loadBitmap(photos.get(0), null, 800, 800, true);
                     processBitmap(bitmap);
@@ -119,11 +119,6 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
-            }
-
-            @Override
-            public void didSelectVideo(String path, VideoEditedInfo info, long estimatedSize, long estimatedDuration, String caption) {
-
             }
         });
         parentFragment.presentFragment(fragment);

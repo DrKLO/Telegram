@@ -968,11 +968,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     floatingButton.setTranslationY(floatingHidden ? AndroidUtilities.dp(100) : 0);
                     floatingButton.setClickable(!floatingHidden);
                     if (floatingButton != null) {
-                        if (Build.VERSION.SDK_INT < 16) {
-                            floatingButton.getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                        } else {
-                            floatingButton.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                        }
+                        floatingButton.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                     }
                 }
             });

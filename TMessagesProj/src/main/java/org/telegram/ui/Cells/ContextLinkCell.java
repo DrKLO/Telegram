@@ -260,15 +260,15 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
 
             if (documentAttachType == DOCUMENT_ATTACH_TYPE_GIF) {
                 if (documentAttach != null) {
-                    linkImageView.setImage(documentAttach, null, currentPhotoObject != null ? currentPhotoObject.location : null, currentPhotoFilter, documentAttach.size, ext, false);
+                    linkImageView.setImage(documentAttach, null, currentPhotoObject != null ? currentPhotoObject.location : null, currentPhotoFilter, documentAttach.size, ext, 0);
                 } else {
-                    linkImageView.setImage(null, url, null, null, currentPhotoObject != null ? currentPhotoObject.location : null, currentPhotoFilter, -1, ext, true);
+                    linkImageView.setImage(null, url, null, null, currentPhotoObject != null ? currentPhotoObject.location : null, currentPhotoFilter, -1, ext, 1);
                 }
             } else {
                 if (currentPhotoObject != null) {
-                    linkImageView.setImage(currentPhotoObject.location, currentPhotoFilter, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, currentPhotoFilterThumb, currentPhotoObject.size, ext, false);
+                    linkImageView.setImage(currentPhotoObject.location, currentPhotoFilter, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, currentPhotoFilterThumb, currentPhotoObject.size, ext, 0);
                 } else {
-                    linkImageView.setImage(null, url, currentPhotoFilter, null, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, currentPhotoFilterThumb, -1, ext, true);
+                    linkImageView.setImage(null, url, currentPhotoFilter, null, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, currentPhotoFilterThumb, -1, ext, 1);
                 }
             }
             drawLinkImageView = true;
@@ -340,6 +340,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
             message.date = (int) (System.currentTimeMillis() / 1000);
             message.message = "-1";
             message.media = new TLRPC.TL_messageMediaDocument();
+            message.media.flags |= 3;
             message.media.document = new TLRPC.TL_document();
             message.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
 
@@ -534,7 +535,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
             } else if (buttonState == 2) {
                 radialProgress.setProgress(0, false);
                 if (documentAttach != null) {
-                    FileLoader.getInstance().loadFile(documentAttach, true, false);
+                    FileLoader.getInstance().loadFile(documentAttach, true, 0);
                 } else {
                     ImageLoader.getInstance().loadHttpFile(inlineResult.content_url, documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC ? "mp3" : "ogg");
                 }

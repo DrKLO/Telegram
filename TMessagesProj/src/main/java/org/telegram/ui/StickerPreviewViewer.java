@@ -55,7 +55,7 @@ public class StickerPreviewViewer {
 
         @Override
         protected void onDraw(Canvas canvas) {
-            getInstance().onDraw(canvas);
+            StickerPreviewViewer.this.onDraw(canvas);
         }
     }
 
@@ -423,7 +423,7 @@ public class StickerPreviewViewer {
             }
         }
         currentSet = newSet;
-        centerImage.setImage(sticker, null, sticker.thumb.location, null, "webp", true);
+        centerImage.setImage(sticker, null, sticker.thumb.location, null, "webp", 1);
         stickerEmojiLayout = null;
         for (int a = 0; a < sticker.attributes.size(); a++) {
             TLRPC.DocumentAttribute attribute = sticker.attributes.get(a);
@@ -522,7 +522,7 @@ public class StickerPreviewViewer {
 
         canvas.save();
         int size = (int) (Math.min(containerView.getWidth(), containerView.getHeight()) / 1.8f);
-        canvas.translate(containerView.getWidth() / 2, Math.max(size / 2 + AndroidUtilities.statusBarHeight, (containerView.getHeight() - keyboardHeight) / 2));
+        canvas.translate(containerView.getWidth() / 2, Math.max(size / 2 + AndroidUtilities.statusBarHeight + (stickerEmojiLayout!=null ? AndroidUtilities.dp(40) : 0), (containerView.getHeight() - keyboardHeight) / 2));
         Bitmap bitmap = centerImage.getBitmap();
         if (bitmap != null) {
             float scale = 0.8f * showProgress / 0.8f;

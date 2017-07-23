@@ -77,7 +77,7 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
             File f = FileLoader.getPathToAttach(document.thumb, "webp", true);
             if (!f.exists()) {
                 stickersToLoad.add(FileLoader.getAttachFileName(document.thumb, "webp"));
-                FileLoader.getInstance().loadFile(document.thumb.location, "webp", 0, true);
+                FileLoader.getInstance().loadFile(document.thumb.location, "webp", 0, 1);
             }
         }
         return stickersToLoad.isEmpty();

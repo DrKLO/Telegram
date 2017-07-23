@@ -29,14 +29,14 @@ public class PhotoEditorSeekBar extends View {
     private PhotoEditorSeekBarDelegate delegate;
 
     public interface PhotoEditorSeekBarDelegate {
-        void onProgressChanged();
+        void onProgressChanged(int i, int progress);
     }
 
     public PhotoEditorSeekBar(Context context) {
         super(context);
 
-        innerPaint.setColor(0x99383838);
-        outerPaint.setColor(0xff53aeef);
+        innerPaint.setColor(0xff4d4d4d);
+        outerPaint.setColor(0xffffffff);
     }
 
     public void setDelegate(PhotoEditorSeekBarDelegate delegate) {
@@ -76,7 +76,7 @@ public class PhotoEditorSeekBar extends View {
                 }
                 progress = thumbX / (getMeasuredWidth() - thumbSize);
                 if (delegate != null) {
-                    delegate.onProgressChanged();
+                    delegate.onProgressChanged((Integer) getTag(), getProgress());
                 }
                 invalidate();
                 return true;
@@ -98,7 +98,7 @@ public class PhotoEditorSeekBar extends View {
         this.progress = (progress - minValue) / (float) (maxValue - minValue);
         invalidate();
         if (notify && delegate != null) {
-            delegate.onProgressChanged();
+            delegate.onProgressChanged((Integer) getTag(), getProgress());
         }
     }
 

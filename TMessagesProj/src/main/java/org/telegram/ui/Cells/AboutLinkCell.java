@@ -79,7 +79,7 @@ public class AboutLinkCell extends FrameLayout {
         invalidate();
     }
 
-    public void setTextAndIcon(String text, int resId) {
+    public void setTextAndIcon(String text, int resId, boolean parseLinks) {
         if (text == null || text.length() == 0) {
             setVisibility(GONE);
             return;
@@ -89,7 +89,9 @@ public class AboutLinkCell extends FrameLayout {
         }
         oldText = text;
         stringBuilder = new SpannableStringBuilder(oldText);
-        MessageObject.addLinks(false, stringBuilder, false);
+        if (parseLinks) {
+            MessageObject.addLinks(false, stringBuilder, false);
+        }
         Emoji.replaceEmoji(stringBuilder, Theme.profile_aboutTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
         requestLayout();
         if (resId == 0) {

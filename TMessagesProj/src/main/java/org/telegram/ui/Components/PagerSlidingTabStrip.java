@@ -13,7 +13,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.view.View;
@@ -104,11 +103,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
-                if (Build.VERSION.SDK_INT < 16) {
-                    getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                } else {
-                    getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                }
+                getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 currentPosition = pager.getCurrentItem();
                 scrollToChild(currentPosition, 0);
             }

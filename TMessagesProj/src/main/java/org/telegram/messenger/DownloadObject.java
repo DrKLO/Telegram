@@ -14,4 +14,5 @@ public class DownloadObject {
     public TLObject object;
     public int type;
     public long id;
+    public boolean secret;
 }

@@ -830,8 +830,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[1];
                 boolean enc = ((int) dialog_id) == 0;
                 boolean updated = false;
-                for (MessageObject obj : arr) {
-                    if (obj.messageOwner.media == null) {
+                for (int a = 0; a < arr.size(); a++) {
+                    MessageObject obj = arr.get(a);
+                    if (obj.messageOwner.media == null || obj.isSecretPhoto()) {
                         continue;
                     }
                     int type = SharedMediaQuery.getMediaType(obj.messageOwner);
@@ -1252,7 +1253,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             }
                         }
                     } else if (!cell.isLoading()) {
-                        FileLoader.getInstance().loadFile(cell.getMessage().getDocument(), false, false);
+                        FileLoader.getInstance().loadFile(cell.getMessage().getDocument(), false, 0);
                         cell.updateFileExistIcon();
                     } else {
                         FileLoader.getInstance().cancelLoadFile(cell.getMessage().getDocument());
@@ -1264,7 +1265,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     TLRPC.WebPage webPage = message.messageOwner.media.webpage;
                     String link = null;
                     if (webPage != null && !(webPage instanceof TLRPC.TL_webPageEmpty)) {
-                        if (Build.VERSION.SDK_INT >= 16 && webPage.embed_url != null && webPage.embed_url.length() != 0) {
+                        if (webPage.embed_url != null && webPage.embed_url.length() != 0) {
                             openWebView(webPage);
                             return;
                         } else {

@@ -52,7 +52,7 @@ public class VideoTimelineView extends View {
 
     public interface VideoTimelineViewDelegate {
         void onLeftProgressChanged(float progress);
-        void onRifhtProgressChanged(float progress);
+        void onRightProgressChanged(float progress);
         void didStartDragging();
         void didStopDragging();
     }
@@ -181,7 +181,7 @@ public class VideoTimelineView extends View {
                     }
                 }
                 if (delegate != null) {
-                    delegate.onRifhtProgressChanged(progressRight);
+                    delegate.onRightProgressChanged(progressRight);
                 }
                 invalidate();
                 return true;

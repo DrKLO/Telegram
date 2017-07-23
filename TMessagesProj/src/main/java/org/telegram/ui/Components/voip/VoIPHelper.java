@@ -272,7 +272,7 @@ public class VoIPHelper{
 				.setPositiveButton(LocaleController.getString("Send", R.string.Send), new DialogInterface.OnClickListener(){
 					@Override
 					public void onClick(DialogInterface dialog, int which){
-						TLRPC.TL_phone_setCallRating req = new TLRPC.TL_phone_setCallRating();
+						final TLRPC.TL_phone_setCallRating req = new TLRPC.TL_phone_setCallRating();
 						req.rating = bar.getRating();
 						if (req.rating < 5)
 							req.comment = commentBox.getText().toString();
@@ -287,7 +287,7 @@ public class VoIPHelper{
 								if (response instanceof TLRPC.TL_updates) {
 									TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
 									MessagesController.getInstance().processUpdates(updates, false);
-									if(includeLogs[0] && log.exists()){
+									if(includeLogs[0] && log.exists() && req.rating<4){
 										SendMessagesHelper.prepareSendingDocument(log.getAbsolutePath(), log.getAbsolutePath(), null, "text/plain", VOIP_SUPPORT_ID, null, null);
 										Toast.makeText(context, LocaleController.getString("CallReportSent", R.string.CallReportSent), Toast.LENGTH_LONG).show();
 									}

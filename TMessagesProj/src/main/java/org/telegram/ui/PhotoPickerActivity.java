@@ -77,10 +77,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
     public interface PhotoPickerActivityDelegate {
         void selectedPhotosChanged();
-
         void actionButtonPressed(boolean canceled);
-
-        void didSelectVideo(String path, VideoEditedInfo info, long estimatedSize, long estimatedDuration, String caption);
     }
 
     private int type;
@@ -298,65 +295,24 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
-                /*if (selectedAlbum != null && selectedAlbum.isVideo) {
-                    if (position < 0 || position >= selectedAlbum.photos.size()) {
-                        return;
-                    }
-
-                    String path = selectedAlbum.photos.get(position).path;
-                    if (Build.VERSION.SDK_INT >= 16) {
-                        Bundle args = new Bundle();
-                        args.putString("videoPath", path);
-                        VideoEditorActivity fragment = new VideoEditorActivity(args);
-                        fragment.setDelegate(new VideoEditorActivity.VideoEditorActivityDelegate() {
-                            @Override
-                            public void didFinishEditVideo(String videoPath, long startTime, long endTime, int resultWidth, int resultHeight, int rotationValue, int originalWidth, int originalHeight, int bitrate, long estimatedSize, long estimatedDuration, String caption) {
-                                removeSelfFromStack();
-                                VideoEditedInfo videoEditedInfo = new VideoEditedInfo();
-                                videoEditedInfo.startTime = startTime;
-                                videoEditedInfo.endTime = endTime;
-                                videoEditedInfo.rotationValue = rotationValue;
-                                videoEditedInfo.originalWidth = originalWidth;
-                                videoEditedInfo.originalHeight = originalHeight;
-                                videoEditedInfo.bitrate = bitrate;
-                                videoEditedInfo.resultWidth = resultWidth;
-                                videoEditedInfo.resultHeight = resultHeight;
-                                videoEditedInfo.originalPath = videoPath;
-                                videoEditedInfo.muted = videoEditedInfo.bitrate == -1;
-                                delegate.didSelectVideo(videoPath, videoEditedInfo, estimatedSize, estimatedDuration, caption);
-                            }
-                        });
-
-                        if (!fragment.onFragmentCreate()) {
-                            delegate.didSelectVideo(path, null, 0, 0, null);
-                            finishFragment();
-                        } else if (parentLayout.presentFragment(fragment, false, false, true)) {
-                            fragment.setParentChatActivity(chatActivity);
-                        }
+                ArrayList<Object> arrayList;
+                if (selectedAlbum != null) {
+                    arrayList = (ArrayList) selectedAlbum.photos;
+                } else {
+                    if (searchResult.isEmpty() && lastSearchString == null) {
+                        arrayList = (ArrayList) recentImages;
                     } else {
-                        delegate.didSelectVideo(path, null, 0, 0, null);
-                        finishFragment();
+                        arrayList = (ArrayList) searchResult;
                     }
-                } else {*/
-                    ArrayList<Object> arrayList;
-                    if (selectedAlbum != null) {
-                        arrayList = (ArrayList) selectedAlbum.photos;
-                    } else {
-                        if (searchResult.isEmpty() && lastSearchString == null) {
-                            arrayList = (ArrayList) recentImages;
-                        } else {
-                            arrayList = (ArrayList) searchResult;
-                        }
-                    }
-                    if (position < 0 || position >= arrayList.size()) {
-                        return;
-                    }
-                    if (searchItem != null) {
-                        AndroidUtilities.hideKeyboard(searchItem.getSearchField());
-                    }
-                    PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                    PhotoViewer.getInstance().openPhotoForSelect(arrayList, position, singlePhoto ? 1 : 0, PhotoPickerActivity.this, chatActivity);
-                //}
+                }
+                if (position < 0 || position >= arrayList.size()) {
+                    return;
+                }
+                if (searchItem != null) {
+                    AndroidUtilities.hideKeyboard(searchItem.getSearchField());
+                }
+                PhotoViewer.getInstance().setParentActivity(getParentActivity());
+                PhotoViewer.getInstance().openPhotoForSelect(arrayList, position, singlePhoto ? 1 : 0, PhotoPickerActivity.this, chatActivity);
             }
         });
 
@@ -1172,9 +1128,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                                 MediaController.PhotoEntry photoEntry = selectedAlbum.photos.get(index);
                                 if (selectedPhotos.containsKey(photoEntry.imageId)) {
                                     selectedPhotos.remove(photoEntry.imageId);
-                                    photoEntry.imagePath = null;
-                                    photoEntry.thumbPath = null;
-                                    photoEntry.stickers.clear();
+                                    photoEntry.reset();
                                     updatePhotoAtIndex(index);
                                 } else {
                                     selectedPhotos.put(photoEntry.imageId, photoEntry);

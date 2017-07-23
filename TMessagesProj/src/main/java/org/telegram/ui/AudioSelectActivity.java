@@ -225,6 +225,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
                         message.message = "-1";
                         message.attachPath = audioEntry.path;
                         message.media = new TLRPC.TL_messageMediaDocument();
+                        message.media.flags |= 3;
                         message.media.document = new TLRPC.TL_document();
                         message.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
 

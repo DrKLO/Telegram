@@ -602,7 +602,8 @@ LOCAL_C_INCLUDES    := \
 ./jni/boringssl/include \
 ./jni/breakpad/common/android/include \
 ./jni/breakpad \
-./jni/ffmpeg/include
+./jni/ffmpeg/include \
+./jni/intro
 
 LOCAL_SRC_FILES     += \
 ./libyuv/source/compare_common.cc \
@@ -660,6 +661,7 @@ LOCAL_SRC_FILES     += \
 ./utils.c \
 ./image.c \
 ./video.c \
+./intro/IntroRenderer.c \
 ./gifvideo.cpp \
 ./SqliteWrapper.cpp \
 ./TgNetWrapper.cpp \

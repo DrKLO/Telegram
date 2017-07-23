@@ -81,7 +81,7 @@ public class BackupImageView extends View {
         if (thumbBitmap != null) {
             thumb = new BitmapDrawable(null, thumbBitmap);
         }
-        imageReceiver.setImage(path, httpUrl, filter, thumb, thumbLocation, thumbFilter, size, ext, false);
+        imageReceiver.setImage(path, httpUrl, filter, thumb, thumbLocation, thumbFilter, size, ext, 0);
     }
 
     public void setImageBitmap(Bitmap bitmap) {

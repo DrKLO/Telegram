@@ -102,6 +102,9 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                             List<Camera.Size> list = params.getSupportedPreviewSizes();
                             for (int a = 0; a < list.size(); a++) {
                                 Camera.Size size = list.get(a);
+                                if (size.width == 1280 && size.height != 720) {
+                                    continue;
+                                }
                                 if (size.height < 2160 && size.width < 2160) {
                                     cameraInfo.previewSizes.add(new Size(size.width, size.height));
                                     FileLog.e("preview size = " + size.width + " " + size.height);
@@ -111,6 +114,9 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                             list = params.getSupportedPictureSizes();
                             for (int a = 0; a < list.size(); a++) {
                                 Camera.Size size = list.get(a);
+                                if (size.width == 1280 && size.height != 720) {
+                                    continue;
+                                }
                                 if (!"samsung".equals(Build.MANUFACTURER) || !"jflteuc".equals(Build.PRODUCT) || size.width < 2048) {
                                     cameraInfo.pictureSizes.add(new Size(size.width, size.height));
                                     FileLog.e("picture size = " + size.width + " " + size.height);
@@ -119,6 +125,25 @@ public class CameraController implements MediaRecorder.OnInfoListener {
 
                             camera.release();
                             result.add(cameraInfo);
+                            Comparator<Size> comparator = new Comparator<Size>() {
+                                @Override
+                                public int compare(Size o1, Size o2) {
+                                    if (o1.mWidth < o2.mWidth) {
+                                        return 1;
+                                    } else if (o1.mWidth > o2.mWidth) {
+                                        return -1;
+                                    } else {
+                                        if (o1.mHeight < o2.mHeight) {
+                                            return 1;
+                                        } else if (o1.mHeight > o2.mHeight) {
+                                            return -1;
+                                        }
+                                        return 0;
+                                    }
+                                }
+                            };
+                            Collections.sort(cameraInfo.previewSizes, comparator);
+                            Collections.sort(cameraInfo.pictureSizes, comparator);
                         }
                         cameraInfos = result;
                     }
@@ -648,7 +673,6 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                         onVideoTakeCallback = null;
                     }
                 } catch (Exception e) {
-                    FileLog.e(e);
                 }
             }
         });

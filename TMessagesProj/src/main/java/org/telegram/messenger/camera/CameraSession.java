@@ -24,7 +24,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class CameraSession {
 
@@ -400,7 +399,17 @@ public class CameraSession {
         Camera.CameraInfo info = new Camera.CameraInfo();
         Camera.getCameraInfo(cameraInfo.cameraId, info);
         int displayOrientation = getDisplayOrientation(info, false);
-        recorder.setOrientationHint(displayOrientation);
+
+
+        int outputOrientation = 0;
+        if (jpegOrientation != OrientationEventListener.ORIENTATION_UNKNOWN) {
+            if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                outputOrientation = (info.orientation - jpegOrientation + 360) % 360;
+            } else {
+                outputOrientation = (info.orientation + jpegOrientation) % 360;
+            }
+        }
+        recorder.setOrientationHint(outputOrientation);
 
         int highProfile = getHigh();
         boolean canGoHigh = CamcorderProfile.hasProfile(cameraInfo.cameraId, highProfile);

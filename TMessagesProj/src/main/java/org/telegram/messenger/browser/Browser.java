@@ -201,7 +201,7 @@ public class Browser {
         } else if ("telegram.me".equals(host) || "t.me".equals(host) || "telegram.dog".equals(host) || "telesco.pe".equals(host)) {
             String path = uri.getPath();
             if (path != null && path.length() > 1) {
-                return true;
+                return !path.toLowerCase().equals("/iv");
             }
         }
         return false;

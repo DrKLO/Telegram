@@ -25,6 +25,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
@@ -119,11 +120,11 @@ public class ChatActionCell extends BaseCell {
             }
             avatarDrawable.setInfo(id, null, null, false);
             if (currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
-                imageReceiver.setImage(currentMessageObject.messageOwner.action.newUserPhoto.photo_small, "50_50", avatarDrawable, null, false);
+                imageReceiver.setImage(currentMessageObject.messageOwner.action.newUserPhoto.photo_small, "50_50", avatarDrawable, null, 0);
             } else {
                 TLRPC.PhotoSize photo = FileLoader.getClosestPhotoSizeWithSize(currentMessageObject.photoThumbs, AndroidUtilities.dp(64));
                 if (photo != null) {
-                    imageReceiver.setImage(photo.location, "50_50", avatarDrawable, null, false);
+                    imageReceiver.setImage(photo.location, "50_50", avatarDrawable, null, 0);
                 } else {
                     imageReceiver.setImageBitmap(avatarDrawable);
                 }
@@ -297,7 +298,17 @@ public class ChatActionCell extends BaseCell {
         if (width != previousWidth) {
             CharSequence text;
             if (currentMessageObject != null) {
-                text = currentMessageObject.messageText;
+                if (currentMessageObject.messageOwner != null && currentMessageObject.messageOwner.media != null && currentMessageObject.messageOwner.media.ttl_seconds != 0) {
+                    if (currentMessageObject.messageOwner.media.photo instanceof TLRPC.TL_photoEmpty) {
+                        text = LocaleController.getString("AttachPhotoExpired", R.string.AttachPhotoExpired);
+                    } else if (currentMessageObject.messageOwner.media.document instanceof TLRPC.TL_documentEmpty) {
+                        text = LocaleController.getString("AttachVideoExpired", R.string.AttachVideoExpired);
+                    } else {
+                        text = currentMessageObject.messageText;
+                    }
+                } else {
+                    text = currentMessageObject.messageText;
+                }
             } else {
                 text = customText;
             }

@@ -698,7 +698,8 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.chatInfoDidLoaded) {
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
-            if (chatFull.id == chatId) {
+            boolean byChannelUsers = (Boolean) args[2];
+            if (chatFull.id == chatId && !byChannelUsers) {
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
@@ -733,8 +734,9 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
         }
         TLRPC.TL_channels_getParticipants req = new TLRPC.TL_channels_getParticipants();
         req.channel = MessagesController.getInputChannel(chatId);
+        final boolean byEndReached = firstEndReached;
         if (type == 0) {
-            if (firstEndReached) {
+            if (byEndReached) {
                 req.filter = new TLRPC.TL_channelParticipantsKicked();
             } else {
                 req.filter = new TLRPC.TL_channelParticipantsBanned();
@@ -772,9 +774,10 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                                 }
                             }
                             if (type == 0) {
-                                if (firstEndReached) {
+                                if (byEndReached) {
                                     participants2 = res.participants;
                                 } else {
+                                    participants2 = new ArrayList<>();
                                     participantsMap.clear();
                                     participants = res.participants;
                                     if (changeFirst) {

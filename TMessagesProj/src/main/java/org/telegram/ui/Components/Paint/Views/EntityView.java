@@ -21,8 +21,6 @@ public class EntityView extends FrameLayout {
         boolean onEntitySelected(EntityView entityView);
         boolean onEntityLongClicked(EntityView entityView);
         boolean allowInteraction(EntityView entityView);
-        void onBeganEntityDragging(EntityView entityView);
-        void onFinishedEntityDragging(EntityView entityView);
     }
 
     private float previousLocationX;
@@ -31,7 +29,6 @@ public class EntityView extends FrameLayout {
     private boolean hasReleased = false;
     private boolean hasTransformed = false;
     private boolean announcedSelection = false;
-    private boolean announcedDragging = false;
     private boolean recognizedLongPress = false;
 
     private EntityViewDelegate delegate;
@@ -112,12 +109,6 @@ public class EntityView extends FrameLayout {
             pan(translation);
             previousLocationX = x;
             previousLocationY = y;
-            if (!announcedDragging) {
-                announcedDragging = true;
-                if (delegate != null) {
-                    delegate.onBeganEntityDragging(this);
-                }
-            }
             hasPanned = true;
             return true;
         }
@@ -128,15 +119,11 @@ public class EntityView extends FrameLayout {
         if (!recognizedLongPress && !hasPanned && !hasTransformed && !announcedSelection && delegate != null) {
             delegate.onEntitySelected(this);
         }
-        if (announcedDragging && delegate != null) {
-            delegate.onFinishedEntityDragging(this);
-        }
         recognizedLongPress = false;
         hasPanned = false;
         hasTransformed = false;
         hasReleased = true;
         announcedSelection = false;
-        announcedDragging = false;
     }
 
     @Override
@@ -347,12 +334,6 @@ public class EntityView extends FrameLayout {
                         previousLocationX = event.getRawX();
                         previousLocationY = event.getRawY();
 
-                        if (!announcedDragging) {
-                            announcedDragging = true;
-                            if (delegate != null) {
-                                delegate.onBeganEntityDragging(EntityView.this);
-                            }
-                        }
                         handled = true;
                     }
                 }

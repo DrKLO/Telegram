@@ -849,6 +849,7 @@ public class SecretChatHelper {
                         return null;
                     }
                     newMessage.media = new TLRPC.TL_messageMediaPhoto();
+                    newMessage.media.flags |= 3;
                     newMessage.media.caption = decryptedMessage.media.caption != null ? decryptedMessage.media.caption : "";
                     newMessage.media.photo = new TLRPC.TL_photo();
                     newMessage.media.photo.date = newMessage.date;
@@ -881,6 +882,7 @@ public class SecretChatHelper {
                         return null;
                     }
                     newMessage.media = new TLRPC.TL_messageMediaDocument();
+                    newMessage.media.flags |= 3;
                     newMessage.media.document = new TLRPC.TL_documentEncrypted();
                     newMessage.media.document.key = decryptedMessage.media.key;
                     newMessage.media.document.iv = decryptedMessage.media.iv;
@@ -919,6 +921,7 @@ public class SecretChatHelper {
                         return null;
                     }
                     newMessage.media = new TLRPC.TL_messageMediaDocument();
+                    newMessage.media.flags |= 3;
                     newMessage.media.caption = decryptedMessage.media.caption != null ? decryptedMessage.media.caption : "";
                     newMessage.media.document = new TLRPC.TL_documentEncrypted();
                     newMessage.media.document.id = file.id;
@@ -956,6 +959,7 @@ public class SecretChatHelper {
                     }
                 } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaExternalDocument) {
                     newMessage.media = new TLRPC.TL_messageMediaDocument();
+                    newMessage.media.flags |= 3;
                     newMessage.media.caption = "";
                     newMessage.media.document = new TLRPC.TL_document();
                     newMessage.media.document.id = decryptedMessage.media.id;
@@ -974,6 +978,7 @@ public class SecretChatHelper {
                         return null;
                     }
                     newMessage.media = new TLRPC.TL_messageMediaDocument();
+                    newMessage.media.flags |= 3;
                     newMessage.media.document = new TLRPC.TL_documentEncrypted();
                     newMessage.media.document.key = decryptedMessage.media.key;
                     newMessage.media.document.iv = decryptedMessage.media.iv;

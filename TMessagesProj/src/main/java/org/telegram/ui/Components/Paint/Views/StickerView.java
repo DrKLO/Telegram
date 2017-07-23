@@ -65,7 +65,7 @@ public class StickerView extends EntityView {
         centerImage.setAspectFit(true);
         centerImage.setInvalidateAll(true);
         centerImage.setParentView(containerView);
-        centerImage.setImage(sticker, null, sticker.thumb.location, null, "webp", true);
+        centerImage.setImage(sticker, null, sticker.thumb.location, null, "webp", 1);
 
         updatePosition();
     }

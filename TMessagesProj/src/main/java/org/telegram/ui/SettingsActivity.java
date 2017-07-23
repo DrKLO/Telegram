@@ -130,6 +130,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int numberSectionRow;
     private int numberRow;
     private int usernameRow;
+    private int bioRow;
     private int settingsSectionRow;
     private int settingsSectionRow2;
     private int enableAnimationsRow;
@@ -236,6 +237,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         };
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.featuredStickersDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.userInfoDidLoaded);
 
         rowCount = 0;
         overscrollRow = rowCount++;
@@ -243,6 +245,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         numberSectionRow = rowCount++;
         numberRow = rowCount++;
         usernameRow = rowCount++;
+        bioRow = rowCount++;
         settingsSectionRow = rowCount++;
         settingsSectionRow2 = rowCount++;
         notificationRow = rowCount++;
@@ -296,6 +299,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         MessagesController.getInstance().cancelLoadFullUser(UserConfig.getClientUserId());
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.featuredStickersDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.userInfoDidLoaded);
         avatarUpdater.clear();
     }
 
@@ -375,10 +379,17 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         listView = new RecyclerListView(context);
         listView.setVerticalScrollBarEnabled(false);
-        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
+            @Override
+            public boolean supportsPredictiveItemAnimations() {
+                return false;
+            }
+        });
         listView.setGlowColor(Theme.getColor(Theme.key_avatar_backgroundActionBarBlue));
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         listView.setAdapter(listAdapter);
+        listView.setItemAnimator(null);
+        listView.setLayoutAnimation(null);
         listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
             public void onItemClick(View view, final int position) {
@@ -547,6 +558,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     showDialog(builder.create());
                 } else if (position == usernameRow) {
                     presentFragment(new ChangeUsernameActivity());
+                } else if (position == bioRow) {
+                    TLRPC.TL_userFull userFull = MessagesController.getInstance().getUserFull(UserConfig.getClientUserId());
+                    if (userFull != null) {
+                        presentFragment(new ChangeBioActivity());
+                    }
                 } else if (position == numberRow) {
                     presentFragment(new ChangePhoneHelpActivity());
                 } else if (position == stickersRow) {
@@ -1003,6 +1019,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             if (listAdapter != null) {
                 listAdapter.notifyItemChanged(stickersRow);
             }
+        } else if (id == NotificationCenter.userInfoDidLoaded) {
+            Integer uid = (Integer) args[0];
+            if (uid == UserConfig.getClientUserId()) {
+                listAdapter.notifyItemChanged(bioRow);
+            }
         }
     }
 
@@ -1286,12 +1307,23 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (position == usernameRow) {
                         TLRPC.User user = UserConfig.getCurrentUser();
                         String value;
-                        if (user != null && user.username != null && user.username.length() != 0) {
+                        if (user != null && !TextUtils.isEmpty(user.username)) {
                             value = "@" + user.username;
                         } else {
                             value = LocaleController.getString("UsernameEmpty", R.string.UsernameEmpty);
                         }
-                        textCell.setTextAndValue(value, LocaleController.getString("Username", R.string.Username), false);
+                        textCell.setTextAndValue(value, LocaleController.getString("Username", R.string.Username), true);
+                    } else if (position == bioRow) {
+                        TLRPC.TL_userFull userFull = MessagesController.getInstance().getUserFull(UserConfig.getClientUserId());
+                        String value;
+                        if (userFull == null) {
+                            value = LocaleController.getString("Loading", R.string.Loading);
+                        } else if (userFull != null && !TextUtils.isEmpty(userFull.about)) {
+                            value = userFull.about;
+                        } else {
+                            value = LocaleController.getString("UserBioEmpty", R.string.UserBioEmpty);
+                        }
+                        textCell.setTextAndValue(value, LocaleController.getString("UserBio", R.string.UserBio), false);
                     }
                     break;
                 }
@@ -1303,7 +1335,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             int position = holder.getAdapterPosition();
             return position == textSizeRow || position == enableAnimationsRow || position == notificationRow || position == backgroundRow || position == numberRow ||
                     position == askQuestionRow || position == sendLogsRow || position == sendByEnterRow || position == autoplayGifsRow || position == privacyRow ||
-                    position == clearLogsRow || position == languageRow || position == usernameRow ||
+                    position == clearLogsRow || position == languageRow || position == usernameRow || position == bioRow ||
                     position == switchBackendButtonRow || position == telegramFaqRow || position == contactsSortRow || position == contactsReimportRow || position == saveToGalleryRow ||
                     position == stickersRow || position == raiseToSpeakRow || position == privacyPolicyRow || position == customTabsRow || position == directShareRow || position == versionRow ||
                     position == emojiRow || position == dataRow || position == themeRow || position == dumpCallStatsRow;
@@ -1382,7 +1414,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 2;
             } else if (position == versionRow) {
                 return 5;
-            } else if (position == numberRow || position == usernameRow) {
+            } else if (position == numberRow || position == usernameRow || position == bioRow) {
                 return 6;
             } else if (position == settingsSectionRow2 || position == messagesSectionRow2 || position == supportSectionRow2 || position == numberSectionRow) {
                 return 4;
