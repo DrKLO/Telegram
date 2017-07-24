@@ -1472,7 +1472,7 @@ public class VoIPService extends Service implements VoIPController.ConnectionSta
 		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 		am.setMode(AudioManager.MODE_IN_COMMUNICATION);
 		am.setSpeakerphoneOn(false);
-		am.requestAudioFocus(this, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN);
+		am.requestAudioFocus(this, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
 
 		SensorManager sm = (SensorManager) getSystemService(SENSOR_SERVICE);
 		Sensor proximity = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
