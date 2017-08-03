@@ -2,5 +2,6 @@
   <component name="GithubSettings">
     <option name="LOGIN" value="0631mohammad" />
     <option name="AUTH_TYPE" value="BASIC" />
+    <option name="CLONE_GIT_USING_SSH" value="true" />
   </component>
 </application>

@@ -4,6 +4,9 @@
       <entry key="ChangesView">
         <PlaceSettings />
       </entry>
+      <entry key="CommitDialog">
+        <PlaceSettings />
+      </entry>
     </option>
   </component>
 </application>
