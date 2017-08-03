@@ -1,0 +1,10 @@
+.idea/
+.gradle/
+build/
+obj/
+*.iml
+local.properties
+*.keystore
+gradle.properties
+
+TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java

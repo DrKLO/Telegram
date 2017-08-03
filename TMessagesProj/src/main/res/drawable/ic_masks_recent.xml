@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android" android:enterFadeDuration="1" android:exitFadeDuration="200">
+	<item android:state_selected="true" android:drawable="@drawable/ic_masks_recent2"/>
+	<item android:drawable="@drawable/ic_masks_recent1"/>
+</selector>
