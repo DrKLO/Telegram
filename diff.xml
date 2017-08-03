@@ -1,0 +1,9 @@
+<application>
+  <component name="DiffSettings">
+    <option name="PLACES_MAP">
+      <entry key="ChangesView">
+        <PlaceSettings />
+      </entry>
+    </option>
+  </component>
+</application>
