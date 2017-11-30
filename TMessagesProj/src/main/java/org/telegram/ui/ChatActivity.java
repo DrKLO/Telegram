@@ -9936,6 +9936,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             }
                         } else if (message.type == 4) {
                             if (!AndroidUtilities.isGoogleMapsInstalled(ChatActivity.this)) {
+                                double lat = message.messageOwner.media.geo.lat;
+                                double lon = message.messageOwner.media.geo._long;
+                                Intent intent = new Intent(android.content.Intent.ACTION_VIEW,
+                                        Uri.parse("geo:" + lat + "," + lon + "?z=15&q=" + lat + "," + lon ));
+                                if(intent.resolveActivity(getParentActivity().getPackageManager()) != null) {
+                                    try{
+                                        getParentActivity().startActivity(intent);
+                                    }
+                                    catch (Exception e){
+                                        FileLog.e("tmessages", e);
+                                    }
+                                }
                                 return;
                             }
                             LocationActivity fragment = new LocationActivity();
