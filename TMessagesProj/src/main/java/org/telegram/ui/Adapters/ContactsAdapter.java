@@ -251,6 +251,9 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                             textCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
                         } else if (position == 1) {
                             textCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
+                            if (Constants.LOCK_DISABLE_SECRET_CHAT) {
+                                textCell.setVisibility(View.INVISIBLE);
+                            }
                         } else if (position == 2) {
                             textCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast);
                         }
