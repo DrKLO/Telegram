@@ -1,3 +1,7 @@
+def keystorePropertiesFile = rootProject.file("../keystore.properties");
+def keystoreProperties = new Properties()
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
 buildscript {
     repositories {
         maven { url 'https://maven.fabric.io/public' }
@@ -62,18 +66,18 @@ android {
 
     signingConfigs {
         debug {
-            storeFile file("config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
+            storeFile file(keystoreProperties['storeFileCloudVeil'])
+            storePassword keystoreProperties['storePasswordCloudVeil']
+            keyAlias keystoreProperties['keyAliasCloudVeil']
+            keyPassword keystoreProperties['keyPasswordCloudVeil']
             v2SigningEnabled false
         }
 
         release {
-            storeFile file("config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
+            storeFile file(keystoreProperties['storeFileCloudVeil'])
+            storePassword keystoreProperties['storePasswordCloudVeil']
+            keyAlias keystoreProperties['keyAliasCloudVeil']
+            keyPassword keystoreProperties['keyPasswordCloudVeil']
             v2SigningEnabled false
         }
     }
@@ -102,7 +106,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 957
+    defaultConfig.versionCode = 961
 
     sourceSets.debug {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
@@ -174,7 +178,7 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 25
-        versionName "3.18.0"
+        versionName "4.2.0"
 
         externalNativeBuild {
             ndkBuild {
