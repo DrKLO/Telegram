@@ -21,6 +21,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Constants;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
@@ -86,58 +87,62 @@ public class PhotoPickerSearchCell extends LinearLayout {
         super(context);
         setOrientation(HORIZONTAL);
 
-        SearchButton searchButton = new SearchButton(context);
-        searchButton.textView1.setText(LocaleController.getString("SearchImages", R.string.SearchImages));
-        searchButton.textView2.setText(LocaleController.getString("SearchImagesInfo", R.string.SearchImagesInfo));
-        searchButton.imageView.setImageResource(R.drawable.search_web);
-        addView(searchButton);
-        LayoutParams layoutParams = (LayoutParams) searchButton.getLayoutParams();
-        layoutParams.weight = 0.5f;
-        layoutParams.topMargin = AndroidUtilities.dp(4);
-        layoutParams.height = AndroidUtilities.dp(48);
-        layoutParams.width = 0;
-        searchButton.setLayoutParams(layoutParams);
-        searchButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (delegate != null) {
-                    delegate.didPressedSearchButton(0);
-                }
-            }
-        });
-
-        FrameLayout frameLayout = new FrameLayout(context);
-        frameLayout.setBackgroundColor(0);
-        addView(frameLayout);
-        layoutParams = (LayoutParams) frameLayout.getLayoutParams();
-        layoutParams.topMargin = AndroidUtilities.dp(4);
-        layoutParams.height = AndroidUtilities.dp(48);
-        layoutParams.width = AndroidUtilities.dp(4);
-        frameLayout.setLayoutParams(layoutParams);
-
-        searchButton = new SearchButton(context);
-        searchButton.textView1.setText(LocaleController.getString("SearchGifs", R.string.SearchGifs));
-        searchButton.textView2.setText("GIPHY");
-        searchButton.imageView.setImageResource(R.drawable.search_gif);
-        addView(searchButton);
-        layoutParams = (LayoutParams) searchButton.getLayoutParams();
-        layoutParams.weight = 0.5f;
-        layoutParams.topMargin = AndroidUtilities.dp(4);
-        layoutParams.height = AndroidUtilities.dp(48);
-        layoutParams.width = 0;
-        searchButton.setLayoutParams(layoutParams);
-        if (allowGifs) {
+        /* Start Disable Giphy */
+        if (!Constants.LOCK_DISABLE_GIFS) {
+            SearchButton searchButton = new SearchButton(context);
+            searchButton.textView1.setText(LocaleController.getString("SearchImages", R.string.SearchImages));
+            searchButton.textView2.setText(LocaleController.getString("SearchImagesInfo", R.string.SearchImagesInfo));
+            searchButton.imageView.setImageResource(R.drawable.search_web);
+            addView(searchButton);
+            LayoutParams layoutParams = (LayoutParams) searchButton.getLayoutParams();
+            layoutParams.weight = 0.5f;
+            layoutParams.topMargin = AndroidUtilities.dp(4);
+            layoutParams.height = AndroidUtilities.dp(48);
+            layoutParams.width = 0;
+            searchButton.setLayoutParams(layoutParams);
             searchButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (delegate != null) {
-                        delegate.didPressedSearchButton(1);
+                        delegate.didPressedSearchButton(0);
                     }
                 }
             });
-        } else {
-            searchButton.setAlpha(0.5f);
+
+            FrameLayout frameLayout = new FrameLayout(context);
+            frameLayout.setBackgroundColor(0);
+            addView(frameLayout);
+            layoutParams = (LayoutParams) frameLayout.getLayoutParams();
+            layoutParams.topMargin = AndroidUtilities.dp(4);
+            layoutParams.height = AndroidUtilities.dp(48);
+            layoutParams.width = AndroidUtilities.dp(4);
+            frameLayout.setLayoutParams(layoutParams);
+
+            searchButton = new SearchButton(context);
+            searchButton.textView1.setText(LocaleController.getString("SearchGifs", R.string.SearchGifs));
+            searchButton.textView2.setText("GIPHY");
+            searchButton.imageView.setImageResource(R.drawable.search_gif);
+            addView(searchButton);
+            layoutParams = (LayoutParams) searchButton.getLayoutParams();
+            layoutParams.weight = 0.5f;
+            layoutParams.topMargin = AndroidUtilities.dp(4);
+            layoutParams.height = AndroidUtilities.dp(48);
+            layoutParams.width = 0;
+            searchButton.setLayoutParams(layoutParams);
+            if (allowGifs) {
+                searchButton.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (delegate != null) {
+                            delegate.didPressedSearchButton(1);
+                        }
+                    }
+                });
+            } else {
+                searchButton.setAlpha(0.5f);
+            }
         }
+        /*End Disable Giphy*/
     }
 
     public void setDelegate(PhotoPickerSearchCellDelegate delegate) {
