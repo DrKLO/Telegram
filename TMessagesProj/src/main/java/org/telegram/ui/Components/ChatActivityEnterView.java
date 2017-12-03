@@ -57,6 +57,7 @@ import android.widget.Toast;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.Constants;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -1162,10 +1163,18 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             sizeNotifierLayout.removeView(emojiView);
             emojiView = null;
         }
-        allowStickers = value;
-        // always dissallow gifs
-        //allowGifs = value2;
-        allowGifs = false;
+
+        if (!Constants.LOCK_DISABLE_STICKERS) {
+            allowStickers = value;
+        } else {
+            allowStickers = false;
+        }
+
+        if (!Constants.LOCK_DISABLE_GIFS) {
+            allowGifs = value2;
+        } else {
+            allowGifs = false;
+        }
 
         setEmojiButtonImage();
     }
@@ -2418,7 +2427,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         if (emojiView != null) {
             return;
         }
-        emojiView = new EmojiView(allowStickers, allowGifs, parentActivity);
+        if (!Constants.LOCK_DISABLE_STICKERS) {
+            emojiView = new EmojiView(allowStickers, allowGifs, parentActivity);
+        } else {
+            emojiView = new EmojiView(false, false, parentActivity);
+        }
         emojiView.setVisibility(GONE);
         emojiView.setListener(new EmojiView.Listener() {
             public boolean onBackspace() {
@@ -2516,22 +2529,24 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 if (parentFragment == null || parentActivity == null) {
                     return;
                 }
-                if (stickerSet != null) {
-                    inputStickerSet = new TLRPC.TL_inputStickerSetID();
-                    inputStickerSet.access_hash = stickerSet.access_hash;
-                    inputStickerSet.id = stickerSet.id;
+                if (!Constants.LOCK_DISABLE_STICKERS) {
+                    if (stickerSet != null) {
+                        inputStickerSet = new TLRPC.TL_inputStickerSetID();
+                        inputStickerSet.access_hash = stickerSet.access_hash;
+                        inputStickerSet.id = stickerSet.id;
+                    }
+                    parentFragment.showDialog(new StickersAlert(parentActivity, parentFragment, inputStickerSet, null, ChatActivityEnterView.this));
                 }
-                parentFragment.showDialog(new StickersAlert(parentActivity, parentFragment, inputStickerSet, null, ChatActivityEnterView.this));
             }
 
             @Override
             public void onStickerSetAdd(TLRPC.StickerSetCovered stickerSet) {
-                StickersQuery.removeStickersSet(parentActivity, stickerSet.set, 2, parentFragment, false);
+               StickersQuery.removeStickersSet(parentActivity, stickerSet.set, 2, parentFragment, false);
             }
 
             @Override
             public void onStickerSetRemove(TLRPC.StickerSetCovered stickerSet) {
-                StickersQuery.removeStickersSet(parentActivity, stickerSet.set, 0, parentFragment, false);
+               StickersQuery.removeStickersSet(parentActivity, stickerSet.set, 0, parentFragment, false);
             }
         });
         emojiView.setVisibility(GONE);
@@ -2540,7 +2555,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     @Override
     public void onStickerSelected(TLRPC.Document sticker) {
-        SendMessagesHelper.getInstance().sendSticker(sticker, dialog_id, replyingMessageObject);
+        if (!Constants.LOCK_DISABLE_STICKERS) {
+            SendMessagesHelper.getInstance().sendSticker(sticker, dialog_id, replyingMessageObject);
+        }
         if (delegate != null) {
             delegate.onMessageSend(null);
         }
@@ -2548,7 +2565,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     public void addStickerToRecent(TLRPC.Document sticker) {
         createEmojiView();
-        emojiView.addRecentSticker(sticker);
+        if (!Constants.LOCK_DISABLE_STICKERS) {
+            emojiView.addRecentSticker(sticker);
+        }
     }
 
     private void showPopup(int show, int contentType) {
@@ -2639,7 +2658,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         if (currentPage == 0 || !allowStickers && !allowGifs) {
             emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
         } else if (currentPage == 1) {
-            emojiButton.setImageResource(R.drawable.ic_msg_panel_stickers);
+            if (!Constants.LOCK_DISABLE_STICKERS) {
+                emojiButton.setImageResource(R.drawable.ic_msg_panel_stickers);
+            }
         } else if (currentPage == 2) {
             emojiButton.setImageResource(R.drawable.ic_msg_panel_gif);
         }

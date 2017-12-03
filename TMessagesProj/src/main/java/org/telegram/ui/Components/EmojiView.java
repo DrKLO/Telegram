@@ -43,6 +43,7 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Constants;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.EmojiData;
 import org.telegram.messenger.LocaleController;
@@ -700,21 +701,23 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     return StickerPreviewViewer.getInstance().onTouch(event, stickersGridView, EmojiView.this.getMeasuredHeight(), stickersOnItemClickListener, stickerPreviewViewerDelegate);
                 }
             });
-            stickersOnItemClickListener = new RecyclerListView.OnItemClickListener() {
-                @Override
-                public void onItemClick(View view, int position) {
-                    if (!(view instanceof StickerEmojiCell)) {
-                        return;
+            if (!Constants.LOCK_DISABLE_STICKERS) {
+                stickersOnItemClickListener = new RecyclerListView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(View view, int position) {
+                        if (!(view instanceof StickerEmojiCell)) {
+                            return;
+                        }
+                        StickerPreviewViewer.getInstance().reset();
+                        StickerEmojiCell cell = (StickerEmojiCell) view;
+                        if (cell.isDisabled()) {
+                            return;
+                        }
+                        cell.disable();
+                        listener.onStickerSelected(cell.getSticker());
                     }
-                    StickerPreviewViewer.getInstance().reset();
-                    StickerEmojiCell cell = (StickerEmojiCell) view;
-                    if (cell.isDisabled()) {
-                        return;
-                    }
-                    cell.disable();
-                    listener.onStickerSelected(cell.getSticker());
-                }
-            };
+                };
+            }
             stickersGridView.setOnItemClickListener(stickersOnItemClickListener);
             stickersGridView.setGlowColor(Theme.getColor(Theme.key_chat_emojiPanelBackground));
             stickersWrap.addView(stickersGridView);

@@ -19,6 +19,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import org.telegram.messenger.Constants;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -185,22 +186,24 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
-                if (position >= stickersStartRow && position < stickersEndRow && getParentActivity() != null) {
-                    sendReorder();
-                    final TLRPC.TL_messages_stickerSet stickerSet = StickersQuery.getStickerSets(currentType).get(position - stickersStartRow);
-                    ArrayList<TLRPC.Document> stickers = stickerSet.documents;
-                    if (stickers == null || stickers.isEmpty()) {
-                        return;
+                if (!Constants.LOCK_DISABLE_STICKERS) {
+                    if (position >= stickersStartRow && position < stickersEndRow && getParentActivity() != null) {
+                        sendReorder();
+                        final TLRPC.TL_messages_stickerSet stickerSet = StickersQuery.getStickerSets(currentType).get(position - stickersStartRow);
+                        ArrayList<TLRPC.Document> stickers = stickerSet.documents;
+                        if (stickers == null || stickers.isEmpty()) {
+                            return;
+                        }
+                        showDialog(new StickersAlert(getParentActivity(), StickersActivity.this, null, stickerSet, null));
+                    } else if (position == featuredRow) {
+                        sendReorder();
+                        presentFragment(new FeaturedStickersActivity());
+                    } else if (position == archivedRow) {
+                        sendReorder();
+                        presentFragment(new ArchivedStickersActivity(currentType));
+                    } else if (position == masksRow) {
+                        presentFragment(new StickersActivity(StickersQuery.TYPE_MASK));
                     }
-                    showDialog(new StickersAlert(getParentActivity(), StickersActivity.this, null, stickerSet, null));
-                } else if (position == featuredRow) {
-                    sendReorder();
-                    presentFragment(new FeaturedStickersActivity());
-                } else if (position == archivedRow) {
-                    sendReorder();
-                    presentFragment(new ArchivedStickersActivity(currentType));
-                } else if (position == masksRow) {
-                    presentFragment(new StickersActivity(StickersQuery.TYPE_MASK));
                 }
             }
         });

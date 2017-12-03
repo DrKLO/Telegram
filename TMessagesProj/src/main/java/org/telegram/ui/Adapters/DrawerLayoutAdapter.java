@@ -5,7 +5,6 @@
  *
  * Copyright Nikolai Kudashov, 2013-2017.
  */
-
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
@@ -77,51 +76,6 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         return new RecyclerListView.Holder(view);
     }
 
-    /*@Override
-    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view;
-        switch (viewType) {
-            case 0:
-                view = new DrawerProfileCell(mContext);
-                break;
-            case 1:
-            default:
-                view = new EmptyCell(mContext, AndroidUtilities.dp(8));
-                break;
-            case 2:
-                view = new DividerCell(mContext);
-                break;
-            case 3:
-                view = new DrawerActionCell(mContext);
-				break;
-            }
-            DrawerActionCell actionCell = (DrawerActionCell) view;
-            if (i == 2) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
-            } else if (i == 3) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
-                //CloudVeil Start
-                if (Constants.LOCK_DISABLE_SECRET_CHAT) {
-                    actionCell.setEnabled(false);
-                    actionCell.setVisibility(View.GONE);
-                }
-                //CloudVeil End
-            } else if (i == 4) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast);
-            } else if (i == 6) {
-                actionCell.setTextAndIcon(LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts);
-            } else if (i == 7) {
-                actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite);
-            } else if (i == 8) {
-                actionCell.setTextAndIcon(LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings);
-            } else if (i == 9) {
-                actionCell.setTextAndIcon(LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help);
-            }
-        }
-        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        return new RecyclerListView.Holder(view);
-    }*/
-
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         switch (holder.getItemViewType()) {
@@ -154,17 +108,32 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         }
         items.add(null); // profile
         items.add(null); // padding
-        items.add(new Item(2, LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup));
-        items.add(new Item(3, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret));
-        items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast));
-        items.add(null); // divider
-        items.add(new Item(6, LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts));
-        if (MessagesController.getInstance().callsEnabled) {
-            items.add(new Item(10, LocaleController.getString("Calls", R.string.Calls), R.drawable.menu_calls));
+        if (Constants.LOCK_DISABLE_SECRET_CHAT) { //If secret chats are disabled.
+            items.add(new Item(2, LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup));
+            //items.add(new Item(3, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret));
+            items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast));
+            //items.add(null); // divider
+            items.add(new Item(6, LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts));
+            items.add(null);
+            if (MessagesController.getInstance().callsEnabled) {
+                items.add(new Item(10, LocaleController.getString("Calls", R.string.Calls), R.drawable.menu_calls));
+            }
+            items.add(new Item(7, LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite));
+            items.add(new Item(8, LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings));
+            items.add(new Item(9, LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help));
+        } else {
+            items.add(new Item(2, LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup));
+            items.add(new Item(3, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret));
+            items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast));
+            items.add(null); // divider
+            items.add(new Item(6, LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts));
+            if (MessagesController.getInstance().callsEnabled) {
+                items.add(new Item(10, LocaleController.getString("Calls", R.string.Calls), R.drawable.menu_calls));
+            }
+            items.add(new Item(7, LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite));
+            items.add(new Item(8, LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings));
+            items.add(new Item(9, LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help));
         }
-        items.add(new Item(7, LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite));
-        items.add(new Item(8, LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings));
-        items.add(new Item(9, LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help));
     }
 
     public int getId(int position) {
