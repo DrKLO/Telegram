@@ -130,7 +130,7 @@ public final class TextRenderer extends BaseRenderer implements Callback {
   }
 
   @Override
-  protected void onStreamChanged(Format[] formats) throws ExoPlaybackException {
+  protected void onStreamChanged(Format[] formats, long offsetUs) throws ExoPlaybackException {
     streamFormat = formats[0];
     if (decoder != null) {
       decoderReplacementState = REPLACEMENT_STATE_SIGNAL_END_OF_STREAM;
@@ -254,7 +254,6 @@ public final class TextRenderer extends BaseRenderer implements Callback {
     streamFormat = null;
     clearOutput();
     releaseDecoder();
-    super.onDisabled();
   }
 
   @Override
@@ -295,9 +294,9 @@ public final class TextRenderer extends BaseRenderer implements Callback {
   }
 
   private long getNextEventTime() {
-    return ((nextSubtitleEventIndex == C.INDEX_UNSET)
-        || (nextSubtitleEventIndex >= subtitle.getEventTimeCount())) ? Long.MAX_VALUE
-        : (subtitle.getEventTime(nextSubtitleEventIndex));
+    return nextSubtitleEventIndex == C.INDEX_UNSET
+        || nextSubtitleEventIndex >= subtitle.getEventTimeCount()
+        ? Long.MAX_VALUE : subtitle.getEventTime(nextSubtitleEventIndex);
   }
 
   private void updateOutput(List<Cue> cues) {

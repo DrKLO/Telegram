@@ -70,6 +70,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     private CharSequence subtitle;
     private CharSequence message;
     private int topResId;
+    private Drawable topDrawable;
     private int topBackgroundColor;
     private int progressViewStyle;
     private int currentProgress;
@@ -84,6 +85,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     private FrameLayout buttonsLayout;
     private LineProgressView lineProgressView;
     private TextView lineProgressViewPercent;
+    private OnClickListener onBackButtonListener;
 
     private Drawable shadowDrawable;
     private Rect backgroundPaddings;
@@ -305,9 +307,13 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
 
         final boolean hasButtons = positiveButtonText != null || negativeButtonText != null || neutralButtonText != null;
 
-        if (topResId != 0) {
+        if (topResId != 0 || topDrawable != null) {
             topImageView = new ImageView(getContext());
-            topImageView.setImageResource(topResId);
+            if (topDrawable != null) {
+                topImageView.setImageDrawable(topDrawable);
+            } else {
+                topImageView.setImageResource(topResId);
+            }
             topImageView.setScaleType(ImageView.ScaleType.CENTER);
             topImageView.setBackgroundDrawable(getContext().getResources().getDrawable(R.drawable.popup_fixed_top));
             topImageView.getBackground().setColorFilter(new PorterDuffColorFilter(topBackgroundColor, PorterDuff.Mode.MULTIPLY));
@@ -583,6 +589,14 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         window.setAttributes(params);
     }
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        if (onBackButtonListener != null) {
+            onBackButtonListener.onClick(AlertDialog.this, AlertDialog.BUTTON_NEGATIVE);
+        }
+    }
+
     private void runShadowAnimation(final int num, final boolean show) {
         if (show && !shadowVisibility[num] || !show && shadowVisibility[num]) {
             shadowVisibility[num] = show;
@@ -766,6 +780,12 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
             return this;
         }
 
+        public Builder setTopImage(Drawable drawable, int backgroundColor) {
+            alertDialog.topDrawable = drawable;
+            alertDialog.topBackgroundColor = backgroundColor;
+            return this;
+        }
+
         public Builder setMessage(CharSequence message) {
             alertDialog.message = message;
             return this;
@@ -786,6 +806,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         public Builder setNeutralButton(CharSequence text, final OnClickListener listener) {
             alertDialog.neutralButtonText = text;
             alertDialog.neutralButtonListener = listener;
+            return this;
+        }
+
+        public Builder setOnBackButtonListener(final OnClickListener listener) {
+            alertDialog.onBackButtonListener = listener;
             return this;
         }
 

@@ -51,17 +51,17 @@ public final class H262Reader implements ElementaryStreamReader {
   // State that should be reset on seek.
   private final boolean[] prefixFlags;
   private final CsdBuffer csdBuffer;
-  private boolean foundFirstFrameInGroup;
   private long totalBytesWritten;
+  private boolean startedFirstSample;
 
   // Per packet state that gets reset at the start of each packet.
   private long pesTimeUs;
-  private boolean pesPtsUsAvailable;
 
-  // Per sample state that gets reset at the start of each frame.
-  private boolean isKeyframe;
-  private long framePosition;
-  private long frameTimeUs;
+  // Per sample state that gets reset at the start of each sample.
+  private long samplePosition;
+  private long sampleTimeUs;
+  private boolean sampleIsKeyframe;
+  private boolean sampleHasPicture;
 
   public H262Reader() {
     prefixFlags = new boolean[4];
@@ -72,9 +72,8 @@ public final class H262Reader implements ElementaryStreamReader {
   public void seek() {
     NalUnitUtil.clearPrefixFlags(prefixFlags);
     csdBuffer.reset();
-    pesPtsUsAvailable = false;
-    foundFirstFrameInGroup = false;
     totalBytesWritten = 0;
+    startedFirstSample = false;
   }
 
   @Override
@@ -86,10 +85,7 @@ public final class H262Reader implements ElementaryStreamReader {
 
   @Override
   public void packetStarted(long pesTimeUs, boolean dataAlignmentIndicator) {
-    pesPtsUsAvailable = pesTimeUs != C.TIME_UNSET;
-    if (pesPtsUsAvailable) {
-      this.pesTimeUs = pesTimeUs;
-    }
+    this.pesTimeUs = pesTimeUs;
   }
 
   @Override
@@ -102,9 +98,8 @@ public final class H262Reader implements ElementaryStreamReader {
     totalBytesWritten += data.bytesLeft();
     output.sampleData(data, data.bytesLeft());
 
-    int searchOffset = offset;
     while (true) {
-      int startCodeOffset = NalUnitUtil.findNalUnit(dataArray, searchOffset, limit, prefixFlags);
+      int startCodeOffset = NalUnitUtil.findNalUnit(dataArray, offset, limit, prefixFlags);
 
       if (startCodeOffset == limit) {
         // We've scanned to the end of the data without finding another start code.
@@ -125,7 +120,7 @@ public final class H262Reader implements ElementaryStreamReader {
           csdBuffer.onData(dataArray, offset, startCodeOffset);
         }
         // This is the number of bytes belonging to the next start code that have already been
-        // passed to csdDataTargetBuffer.
+        // passed to csdBuffer.
         int bytesAlreadyPassed = lengthToStartCode < 0 ? -lengthToStartCode : 0;
         if (csdBuffer.onStartCode(startCodeValue, bytesAlreadyPassed)) {
           // The csd data is complete, so we can decode and output the media format.
@@ -136,27 +131,29 @@ public final class H262Reader implements ElementaryStreamReader {
         }
       }
 
-      if (hasOutputFormat && (startCodeValue == START_GROUP || startCodeValue == START_PICTURE)) {
+      if (startCodeValue == START_PICTURE || startCodeValue == START_SEQUENCE_HEADER) {
         int bytesWrittenPastStartCode = limit - startCodeOffset;
-        if (foundFirstFrameInGroup) {
-          @C.BufferFlags int flags = isKeyframe ? C.BUFFER_FLAG_KEY_FRAME : 0;
-          int size = (int) (totalBytesWritten - framePosition) - bytesWrittenPastStartCode;
-          output.sampleMetadata(frameTimeUs, flags, size, bytesWrittenPastStartCode, null);
-          isKeyframe = false;
+        if (startedFirstSample && sampleHasPicture && hasOutputFormat) {
+          // Output the sample.
+          @C.BufferFlags int flags = sampleIsKeyframe ? C.BUFFER_FLAG_KEY_FRAME : 0;
+          int size = (int) (totalBytesWritten - samplePosition) - bytesWrittenPastStartCode;
+          output.sampleMetadata(sampleTimeUs, flags, size, bytesWrittenPastStartCode, null);
         }
-        if (startCodeValue == START_GROUP) {
-          foundFirstFrameInGroup = false;
-          isKeyframe = true;
-        } else /* startCodeValue == START_PICTURE */ {
-          frameTimeUs = pesPtsUsAvailable ? pesTimeUs : (frameTimeUs + frameDurationUs);
-          framePosition = totalBytesWritten - bytesWrittenPastStartCode;
-          pesPtsUsAvailable = false;
-          foundFirstFrameInGroup = true;
+        if (!startedFirstSample || sampleHasPicture) {
+          // Start the next sample.
+          samplePosition = totalBytesWritten - bytesWrittenPastStartCode;
+          sampleTimeUs = pesTimeUs != C.TIME_UNSET ? pesTimeUs
+              : (startedFirstSample ? (sampleTimeUs + frameDurationUs) : 0);
+          sampleIsKeyframe = false;
+          pesTimeUs = C.TIME_UNSET;
+          startedFirstSample = true;
         }
+        sampleHasPicture = startCodeValue == START_PICTURE;
+      } else if (startCodeValue == START_GROUP) {
+        sampleIsKeyframe = true;
       }
 
-      offset = startCodeOffset;
-      searchOffset = offset + 3;
+      offset = startCodeOffset + 3;
     }
   }
 
@@ -221,6 +218,8 @@ public final class H262Reader implements ElementaryStreamReader {
 
   private static final class CsdBuffer {
 
+    private static final byte[] START_CODE = new byte[] {0, 0, 1};
+
     private boolean isFilling;
 
     public int length;
@@ -244,24 +243,25 @@ public final class H262Reader implements ElementaryStreamReader {
      * Called when a start code is encountered in the stream.
      *
      * @param startCodeValue The start code value.
-     * @param bytesAlreadyPassed The number of bytes of the start code that have already been
-     *     passed to {@link #onData(byte[], int, int)}, or 0.
+     * @param bytesAlreadyPassed The number of bytes of the start code that have been passed to
+     *     {@link #onData(byte[], int, int)}, or 0.
      * @return Whether the csd data is now complete. If true is returned, neither
-     *     this method or {@link #onData(byte[], int, int)} should be called again without an
+     *     this method nor {@link #onData(byte[], int, int)} should be called again without an
      *     interleaving call to {@link #reset()}.
      */
     public boolean onStartCode(int startCodeValue, int bytesAlreadyPassed) {
       if (isFilling) {
+        length -= bytesAlreadyPassed;
         if (sequenceExtensionPosition == 0 && startCodeValue == START_EXTENSION) {
           sequenceExtensionPosition = length;
         } else {
-          length -= bytesAlreadyPassed;
           isFilling = false;
           return true;
         }
       } else if (startCodeValue == START_SEQUENCE_HEADER) {
         isFilling = true;
       }
+      onData(START_CODE, 0, START_CODE.length);
       return false;
     }
 

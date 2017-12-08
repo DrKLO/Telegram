@@ -241,7 +241,7 @@ import java.util.Arrays;
       for (int i = 0; i < period; i++) {
         short sVal = samples[position + i];
         short pVal = samples[position + period + i];
-        diff += sVal >= pVal ? sVal - pVal : pVal - sVal;
+        diff += Math.abs(sVal - pVal);
       }
       // Note that the highest number of samples we add into diff will be less than 256, since we
       // skip samples. Thus, diff is a 24 bit number, and we can safely multiply by numSamples
@@ -374,8 +374,8 @@ import java.util.Arrays;
   }
 
   private short interpolate(short[] in, int inPos, int oldSampleRate, int newSampleRate) {
-    short left = in[inPos * numChannels];
-    short right = in[inPos * numChannels + numChannels];
+    short left = in[inPos];
+    short right = in[inPos + numChannels];
     int position = newRatePosition * oldSampleRate;
     int leftPosition = oldRatePosition * newSampleRate;
     int rightPosition = (oldRatePosition + 1) * newSampleRate;
@@ -402,7 +402,7 @@ import java.util.Arrays;
         enlargeOutputBufferIfNeeded(1);
         for (int i = 0; i < numChannels; i++) {
           outputBuffer[numOutputSamples * numChannels + i] =
-              interpolate(pitchBuffer, position + i, oldSampleRate, newSampleRate);
+              interpolate(pitchBuffer, position * numChannels + i, oldSampleRate, newSampleRate);
         }
         newRatePosition++;
         numOutputSamples++;

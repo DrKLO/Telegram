@@ -65,7 +65,7 @@ public abstract class Representation {
   /**
    * The in-band event streams in the representation. Never null, but may be empty.
    */
-  public final List<SchemeValuePair> inbandEventStreams;
+  public final List<Descriptor> inbandEventStreams;
 
   private final RangedUri initializationUri;
 
@@ -96,7 +96,7 @@ public abstract class Representation {
    * @return The constructed instance.
    */
   public static Representation newInstance(String contentId, long revisionId, Format format,
-      String baseUrl, SegmentBase segmentBase, List<SchemeValuePair> inbandEventStreams) {
+      String baseUrl, SegmentBase segmentBase, List<Descriptor> inbandEventStreams) {
     return newInstance(contentId, revisionId, format, baseUrl, segmentBase, inbandEventStreams,
         null);
   }
@@ -115,7 +115,7 @@ public abstract class Representation {
    * @return The constructed instance.
    */
   public static Representation newInstance(String contentId, long revisionId, Format format,
-      String baseUrl, SegmentBase segmentBase, List<SchemeValuePair> inbandEventStreams,
+      String baseUrl, SegmentBase segmentBase, List<Descriptor> inbandEventStreams,
       String customCacheKey) {
     if (segmentBase instanceof SingleSegmentBase) {
       return new SingleSegmentRepresentation(contentId, revisionId, format, baseUrl,
@@ -130,13 +130,12 @@ public abstract class Representation {
   }
 
   private Representation(String contentId, long revisionId, Format format, String baseUrl,
-      SegmentBase segmentBase, List<SchemeValuePair> inbandEventStreams) {
+      SegmentBase segmentBase, List<Descriptor> inbandEventStreams) {
     this.contentId = contentId;
     this.revisionId = revisionId;
     this.format = format;
     this.baseUrl = baseUrl;
-    this.inbandEventStreams = inbandEventStreams == null
-        ? Collections.<SchemeValuePair>emptyList()
+    this.inbandEventStreams = inbandEventStreams == null ? Collections.<Descriptor>emptyList()
         : Collections.unmodifiableList(inbandEventStreams);
     initializationUri = segmentBase.getInitialization(this);
     presentationTimeOffsetUs = segmentBase.getPresentationTimeOffsetUs();
@@ -201,8 +200,8 @@ public abstract class Representation {
      */
     public static SingleSegmentRepresentation newInstance(String contentId, long revisionId,
         Format format, String uri, long initializationStart, long initializationEnd,
-        long indexStart, long indexEnd, List<SchemeValuePair> inbandEventStreams,
-        String customCacheKey, long contentLength) {
+        long indexStart, long indexEnd, List<Descriptor> inbandEventStreams, String customCacheKey,
+        long contentLength) {
       RangedUri rangedUri = new RangedUri(null, initializationStart,
           initializationEnd - initializationStart + 1);
       SingleSegmentBase segmentBase = new SingleSegmentBase(rangedUri, 1, 0, indexStart,
@@ -222,7 +221,7 @@ public abstract class Representation {
      * @param contentLength The content length, or {@link C#LENGTH_UNSET} if unknown.
      */
     public SingleSegmentRepresentation(String contentId, long revisionId, Format format,
-        String baseUrl, SingleSegmentBase segmentBase, List<SchemeValuePair> inbandEventStreams,
+        String baseUrl, SingleSegmentBase segmentBase, List<Descriptor> inbandEventStreams,
         String customCacheKey, long contentLength) {
       super(contentId, revisionId, format, baseUrl, segmentBase, inbandEventStreams);
       this.uri = Uri.parse(baseUrl);
@@ -270,7 +269,7 @@ public abstract class Representation {
      * @param inbandEventStreams The in-band event streams in the representation. May be null.
      */
     public MultiSegmentRepresentation(String contentId, long revisionId, Format format,
-        String baseUrl, MultiSegmentBase segmentBase, List<SchemeValuePair> inbandEventStreams) {
+        String baseUrl, MultiSegmentBase segmentBase, List<Descriptor> inbandEventStreams) {
       super(contentId, revisionId, format, baseUrl, segmentBase, inbandEventStreams);
       this.segmentBase = segmentBase;
     }

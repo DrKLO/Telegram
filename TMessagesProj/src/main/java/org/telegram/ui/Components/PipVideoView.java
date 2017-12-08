@@ -16,18 +16,23 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
+import android.webkit.WebView;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.R;
 import org.telegram.messenger.exoplayer2.ui.AspectRatioFrameLayout;
 import org.telegram.ui.ActionBar.ActionBar;
 
@@ -47,7 +52,113 @@ public class PipVideoView {
     private SharedPreferences preferences;
     private DecelerateInterpolator decelerateInterpolator;
 
-    public TextureView show(Activity activity, EmbedBottomSheet sheet, View controls, float aspectRatio, int rotation) {
+    private class MiniControlsView extends FrameLayout {
+
+        private boolean isVisible = true;
+        private AnimatorSet currentAnimation;
+        private ImageView inlineButton;
+        private Runnable hideRunnable = new Runnable() {
+            @Override
+            public void run() {
+                show(false, true);
+            }
+        };
+
+        public MiniControlsView(Context context) {
+            super(context);
+            setWillNotDraw(false);
+
+            inlineButton = new ImageView(context);
+            inlineButton.setScaleType(ImageView.ScaleType.CENTER);
+            inlineButton.setImageResource(R.drawable.ic_outinline);
+            addView(inlineButton, LayoutHelper.createFrame(56, 48, Gravity.RIGHT | Gravity.TOP));
+            inlineButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (parentSheet == null) {
+                        return;
+                    }
+                    parentSheet.exitFromPip();
+                }
+            });
+        }
+
+        public void show(boolean value, boolean animated) {
+            if (isVisible == value) {
+                return;
+            }
+            isVisible = value;
+            if (currentAnimation != null) {
+                currentAnimation.cancel();
+            }
+            if (isVisible) {
+                if (animated) {
+                    currentAnimation = new AnimatorSet();
+                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, "alpha", 1.0f));
+                    currentAnimation.setDuration(150);
+                    currentAnimation.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animator) {
+                            currentAnimation = null;
+                        }
+                    });
+                    currentAnimation.start();
+                } else {
+                    setAlpha(1.0f);
+                }
+            } else {
+                if (animated) {
+                    currentAnimation = new AnimatorSet();
+                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, "alpha", 0.0f));
+                    currentAnimation.setDuration(150);
+                    currentAnimation.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animator) {
+                            currentAnimation = null;
+                        }
+                    });
+                    currentAnimation.start();
+                } else {
+                    setAlpha(0.0f);
+                }
+            }
+            checkNeedHide();
+        }
+
+        private void checkNeedHide() {
+            AndroidUtilities.cancelRunOnUIThread(hideRunnable);
+            if (isVisible) {
+                AndroidUtilities.runOnUIThread(hideRunnable, 3000);
+            }
+        }
+
+        @Override
+        public boolean onInterceptTouchEvent(MotionEvent ev) {
+            if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+                if (!isVisible) {
+                    show(true, true);
+                    return true;
+                } else {
+                    checkNeedHide();
+                }
+            }
+            return super.onInterceptTouchEvent(ev);
+        }
+
+        @Override
+        public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+            super.requestDisallowInterceptTouchEvent(disallowIntercept);
+            checkNeedHide();
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            checkNeedHide();
+        }
+    }
+
+    public TextureView show(Activity activity, EmbedBottomSheet sheet, View controls, float aspectRatio, int rotation, WebView webview) {
         windowView = new FrameLayout(activity) {
 
             private float startX;
@@ -66,7 +177,9 @@ public class PipVideoView {
                         dragging = true;
                         startX = x;
                         startY = y;
-                        ((ViewParent) controlsView).requestDisallowInterceptTouchEvent(true);
+                        if (controlsView != null) {
+                            ((ViewParent) controlsView).requestDisallowInterceptTouchEvent(true);
+                        }
                         return true;
                     }
                 }
@@ -134,10 +247,24 @@ public class PipVideoView {
         aspectRatioFrameLayout.setAspectRatio(aspectRatio, rotation);
         windowView.addView(aspectRatioFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
 
-        TextureView textureView = new TextureView(activity);
-        aspectRatioFrameLayout.addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        TextureView textureView;
+        if (webview != null) {
+            ViewGroup parent = (ViewGroup) webview.getParent();
+            if (parent != null) {
+                parent.removeView(webview);
+            }
+            aspectRatioFrameLayout.addView(webview, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            textureView = null;
+        } else {
+            textureView = new TextureView(activity);
+            aspectRatioFrameLayout.addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
 
-        controlsView = controls;
+        if (controls == null) {
+            controlsView = new MiniControlsView(activity);
+        } else {
+            controlsView = controls;
+        }
         windowView.addView(controlsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         windowManager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
@@ -157,7 +284,11 @@ public class PipVideoView {
             windowLayoutParams.y = getSideCoord(false, sidey, py, videoHeight);
             windowLayoutParams.format = PixelFormat.TRANSLUCENT;
             windowLayoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-            windowLayoutParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
+            if (Build.VERSION.SDK_INT >= 26) {
+                windowLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+            } else {
+                windowLayoutParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
+            }
             windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
             windowManager.addView(windowView, windowLayoutParams);
         } catch (Exception e) {
@@ -283,7 +414,9 @@ public class PipVideoView {
                 animatorSet.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
-                        parentSheet.destroy();
+                        if (parentSheet != null) {
+                            parentSheet.destroy();
+                        }
                     }
                 });
             }

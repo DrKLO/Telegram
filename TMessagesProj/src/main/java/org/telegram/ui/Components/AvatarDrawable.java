@@ -34,6 +34,7 @@ public class AvatarDrawable extends Drawable {
     private float textLeft;
     private boolean isProfile;
     private boolean drawBrodcast;
+    private int savedMessages;
     private boolean drawPhoto;
     private StringBuilder stringBuilder = new StringBuilder(5);
 
@@ -74,7 +75,7 @@ public class AvatarDrawable extends Drawable {
     }
 
     public static int getColorIndex(int id) {
-        if (id >= 0 && id < 8) {
+        if (id >= 0 && id < 7) {
             return id;
         }
         return Math.abs(id % Theme.keys_avatar_background.length);
@@ -114,6 +115,11 @@ public class AvatarDrawable extends Drawable {
         }
     }
 
+    public void setSavedMessages(int value) {
+        savedMessages = value;
+        color = Theme.getColor(Theme.key_avatar_backgroundSaved);
+    }
+
     public void setInfo(TLRPC.Chat chat) {
         if (chat != null) {
             setInfo(chat.id, chat.title, null, chat.id < 0, null);
@@ -144,6 +150,7 @@ public class AvatarDrawable extends Drawable {
         }
 
         drawBrodcast = isBroadcast;
+        savedMessages = 0;
 
         if (firstName == null || firstName.length() == 0) {
             firstName = lastName;
@@ -165,13 +172,17 @@ public class AvatarDrawable extends Drawable {
                     }
                     lastch = lastName.codePointAt(a);
                 }
-                stringBuilder.append("\u200C");
+                if (Build.VERSION.SDK_INT >= 17) {
+                    stringBuilder.append("\u200C");
+                }
                 stringBuilder.appendCodePoint(lastch);
             } else if (firstName != null && firstName.length() > 0) {
                 for (int a = firstName.length() - 1; a >= 0; a--) {
                     if (firstName.charAt(a) == ' ') {
                         if (a != firstName.length() - 1 && firstName.charAt(a + 1) != ' ') {
-                            stringBuilder.append("\u200C");
+                            if (Build.VERSION.SDK_INT >= 17) {
+                                stringBuilder.append("\u200C");
+                            }
                             stringBuilder.appendCodePoint(firstName.codePointAt(a + 1));
                             break;
                         }
@@ -212,9 +223,20 @@ public class AvatarDrawable extends Drawable {
         Theme.avatar_backgroundPaint.setColor(color);
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
-        canvas.drawCircle(size / 2, size / 2, size / 2, Theme.avatar_backgroundPaint);
+        canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, Theme.avatar_backgroundPaint);
 
-        if (drawBrodcast && Theme.avatar_broadcastDrawable != null) {
+        if (savedMessages != 0 && Theme.avatar_savedDrawable != null) {
+            int w = Theme.avatar_savedDrawable.getIntrinsicWidth();
+            int h = Theme.avatar_savedDrawable.getIntrinsicHeight();
+            if (savedMessages == 2) {
+                w *= 0.8f;
+                h *= 0.8f;
+            }
+            int x = (size - w) / 2;
+            int y = (size - h) / 2;
+            Theme.avatar_savedDrawable.setBounds(x, y, x + w, y + h);
+            Theme.avatar_savedDrawable.draw(canvas);
+        } else if (drawBrodcast && Theme.avatar_broadcastDrawable != null) {
             int x = (size - Theme.avatar_broadcastDrawable.getIntrinsicWidth()) / 2;
             int y = (size - Theme.avatar_broadcastDrawable.getIntrinsicHeight()) / 2;
             Theme.avatar_broadcastDrawable.setBounds(x, y, x + Theme.avatar_broadcastDrawable.getIntrinsicWidth(), y + Theme.avatar_broadcastDrawable.getIntrinsicHeight());

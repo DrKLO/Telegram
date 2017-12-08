@@ -16,6 +16,7 @@
 package org.telegram.messenger.exoplayer2.extractor.mp3;
 
 import org.telegram.messenger.exoplayer2.C;
+import org.telegram.messenger.exoplayer2.util.Util;
 
 /**
  * MP3 seeker that doesn't rely on metadata and seeks assuming the source has a constant bitrate.
@@ -41,8 +42,11 @@ import org.telegram.messenger.exoplayer2.C;
 
   @Override
   public long getPosition(long timeUs) {
-    return durationUs == C.TIME_UNSET ? 0
-        : firstFramePosition + (timeUs * bitrate) / (C.MICROS_PER_SECOND * BITS_PER_BYTE);
+    if (durationUs == C.TIME_UNSET) {
+      return 0;
+    }
+    timeUs = Util.constrainValue(timeUs, 0, durationUs);
+    return firstFramePosition + (timeUs * bitrate) / (C.MICROS_PER_SECOND * BITS_PER_BYTE);
   }
 
   @Override

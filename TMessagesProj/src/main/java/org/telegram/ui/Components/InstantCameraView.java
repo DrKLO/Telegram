@@ -145,7 +145,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private CameraGLThread cameraThread;
     private Size previewSize;
     private Size pictureSize;
-    private Size aspectRatio = new Size(16, 9);
+    private Size aspectRatio = MediaController.getInstance().canRoundCamera16to9() ? new Size(16, 9) : new Size(4, 3);
     private TextureView textureView;
     private CameraSession cameraSession;
 
@@ -1110,7 +1110,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 }
             }
 
-            videoEncoder.frameAvailable(cameraSurface, cameraId);
+            videoEncoder.frameAvailable(cameraSurface, cameraId, System.nanoTime());
 
             cameraSurface.getTransformMatrix(mSTMatrix);
 
@@ -1347,6 +1347,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         private int scaleXHandle;
         private int scaleYHandle;
         private int alphaHandle;
+        private int zeroTimeStamps;
 
         private Integer lastCameraId = 0;
 
@@ -1447,7 +1448,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             handler.sendMessage(handler.obtainMessage(MSG_STOP_RECORDING, send, 0));
         }
 
-        public void frameAvailable(SurfaceTexture st, Integer cameraId) {
+        public void frameAvailable(SurfaceTexture st, Integer cameraId, long timestampInternal) {
             synchronized (sync) {
                 if (!ready) {
                     return;
@@ -1456,7 +1457,14 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
             long timestamp = st.getTimestamp();
             if (timestamp == 0) {
-                return;
+                zeroTimeStamps++;
+                if (zeroTimeStamps > 1) {
+                    timestamp = timestampInternal;
+                } else {
+                    return;
+                }
+            } else {
+                zeroTimeStamps = 0;
             }
 
             handler.sendMessage(handler.obtainMessage(MSG_VIDEOFRAME_AVAILABLE, (int) (timestamp >> 32), (int) timestamp, cameraId));
@@ -1930,7 +1938,10 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 videoEncoder.signalEndOfInputStream();
             }
 
-            ByteBuffer[] encoderOutputBuffers = videoEncoder.getOutputBuffers();
+            ByteBuffer[] encoderOutputBuffers = null;
+            if (Build.VERSION.SDK_INT < 21) {
+                encoderOutputBuffers = videoEncoder.getOutputBuffers();
+            }
             while (true) {
                 int encoderStatus = videoEncoder.dequeueOutputBuffer(videoBufferInfo, 10000);
                 if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
@@ -1997,7 +2008,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 }
             }
 
-            encoderOutputBuffers = audioEncoder.getOutputBuffers();
+            if (Build.VERSION.SDK_INT < 21) {
+                encoderOutputBuffers = audioEncoder.getOutputBuffers();
+            }
             boolean encoderOutputAvailable = true;
             while (true) {
                 int encoderStatus = audioEncoder.dequeueOutputBuffer(audioBufferInfo, 0);

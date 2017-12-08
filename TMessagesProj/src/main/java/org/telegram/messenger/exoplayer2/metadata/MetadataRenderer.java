@@ -104,7 +104,7 @@ public final class MetadataRenderer extends BaseRenderer implements Callback {
   }
 
   @Override
-  protected void onStreamChanged(Format[] formats) throws ExoPlaybackException {
+  protected void onStreamChanged(Format[] formats, long offsetUs) throws ExoPlaybackException {
     decoder = decoderFactory.createDecoder(formats[0]);
   }
 
@@ -153,7 +153,6 @@ public final class MetadataRenderer extends BaseRenderer implements Callback {
   protected void onDisabled() {
     flushPendingMetadata();
     decoder = null;
-    super.onDisabled();
   }
 
   @Override

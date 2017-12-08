@@ -49,7 +49,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -57,7 +56,6 @@ public class SearchQuery {
 
     public static ArrayList<TLRPC.TL_topPeer> hints = new ArrayList<>();
     public static ArrayList<TLRPC.TL_topPeer> inlineBots = new ArrayList<>();
-    private static HashMap<Integer, Integer> inlineDates = new HashMap<>();
     private static boolean loaded;
     private static boolean loading;
 
@@ -69,7 +67,6 @@ public class SearchQuery {
         loaded = false;
         hints.clear();
         inlineBots.clear();
-        inlineDates.clear();
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.reloadHints);
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.reloadInlineHints);
     }
@@ -89,153 +86,157 @@ public class SearchQuery {
             @SuppressLint("NewApi")
             @Override
             public void run() {
-                ShortcutManager shortcutManager = ApplicationLoader.applicationContext.getSystemService(ShortcutManager.class);
-                List<ShortcutInfo> currentShortcuts = shortcutManager.getDynamicShortcuts();
-                ArrayList<String> shortcutsToUpdate = new ArrayList<>();
-                ArrayList<String> newShortcutsIds = new ArrayList<>();
-                ArrayList<String> shortcutsToDelete = new ArrayList<>();
+                try {
+                    ShortcutManager shortcutManager = ApplicationLoader.applicationContext.getSystemService(ShortcutManager.class);
+                    List<ShortcutInfo> currentShortcuts = shortcutManager.getDynamicShortcuts();
+                    ArrayList<String> shortcutsToUpdate = new ArrayList<>();
+                    ArrayList<String> newShortcutsIds = new ArrayList<>();
+                    ArrayList<String> shortcutsToDelete = new ArrayList<>();
 
-                if (currentShortcuts != null && !currentShortcuts.isEmpty()) {
-                    newShortcutsIds.add("compose");
-                    for (int a = 0; a < hintsFinal.size(); a++) {
-                        TLRPC.TL_topPeer hint = hintsFinal.get(a);
-                        long did;
-                        if (hint.peer.user_id != 0) {
-                            did = hint.peer.user_id;
-                        } else {
-                            did = -hint.peer.chat_id;
-                            if (did == 0) {
-                                did = -hint.peer.channel_id;
-                            }
-                        }
-                        newShortcutsIds.add("did" + did);
-                    }
-                    for (int a = 0; a < currentShortcuts.size(); a++) {
-                        String id = currentShortcuts.get(a).getId();
-                        if (!newShortcutsIds.remove(id)) {
-                            shortcutsToDelete.add(id);
-                        }
-                        shortcutsToUpdate.add(id);
-                    }
-                    if (newShortcutsIds.isEmpty() && shortcutsToDelete.isEmpty()) {
-                        return;
-                    }
-                }
-
-                Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
-                intent.setAction("new_dialog");
-                ArrayList<ShortcutInfo> arrayList = new ArrayList<>();
-                arrayList.add(new ShortcutInfo.Builder(ApplicationLoader.applicationContext, "compose")
-                        .setShortLabel(LocaleController.getString("NewConversationShortcut", R.string.NewConversationShortcut))
-                        .setLongLabel(LocaleController.getString("NewConversationShortcut", R.string.NewConversationShortcut))
-                        .setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.shortcut_compose))
-                        .setIntent(intent)
-                        .build());
-                if (shortcutsToUpdate.contains("compose")) {
-                    shortcutManager.updateShortcuts(arrayList);
-                } else {
-                    shortcutManager.addDynamicShortcuts(arrayList);
-                }
-                arrayList.clear();
-
-                if (!shortcutsToDelete.isEmpty()) {
-                    shortcutManager.removeDynamicShortcuts(shortcutsToDelete);
-                }
-
-                for (int a = 0; a < hintsFinal.size(); a++) {
-                    Intent shortcutIntent = new Intent(ApplicationLoader.applicationContext, OpenChatReceiver.class);
-                    TLRPC.TL_topPeer hint = hintsFinal.get(a);
-
-                    TLRPC.User user = null;
-                    TLRPC.Chat chat = null;
-                    long did;
-                    if (hint.peer.user_id != 0) {
-                        shortcutIntent.putExtra("userId", hint.peer.user_id);
-                        user = MessagesController.getInstance().getUser(hint.peer.user_id);
-                        did = hint.peer.user_id;
-                    } else {
-                        int chat_id = hint.peer.chat_id;
-                        if (chat_id == 0) {
-                            chat_id = hint.peer.channel_id;
-                        }
-                        chat = MessagesController.getInstance().getChat(chat_id);
-                        shortcutIntent.putExtra("chatId", chat_id);
-                        did = -chat_id;
-                    }
-                    if (user == null && chat == null) {
-                        continue;
-                    }
-
-                    String name;
-                    TLRPC.FileLocation photo = null;
-
-                    if (user != null) {
-                        name = ContactsController.formatName(user.first_name, user.last_name);
-                        if (user.photo != null) {
-                            photo = user.photo.photo_small;
-                        }
-                    } else {
-                        name = chat.title;
-                        if (chat.photo != null) {
-                            photo = chat.photo.photo_small;
-                        }
-                    }
-
-                    shortcutIntent.setAction("com.tmessages.openchat" + did);
-                    shortcutIntent.addFlags(0x4000000);
-
-                    Bitmap bitmap = null;
-                    if (photo != null) {
-                        try {
-                            File path = FileLoader.getPathToAttach(photo, true);
-                            bitmap = BitmapFactory.decodeFile(path.toString());
-                            if (bitmap != null) {
-                                int size = AndroidUtilities.dp(48);
-                                Bitmap result = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-                                result.eraseColor(Color.TRANSPARENT);
-                                Canvas canvas = new Canvas(result);
-                                BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-                                if (roundPaint == null) {
-                                    roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                                    bitmapRect = new RectF();
+                    if (currentShortcuts != null && !currentShortcuts.isEmpty()) {
+                        newShortcutsIds.add("compose");
+                        for (int a = 0; a < hintsFinal.size(); a++) {
+                            TLRPC.TL_topPeer hint = hintsFinal.get(a);
+                            long did;
+                            if (hint.peer.user_id != 0) {
+                                did = hint.peer.user_id;
+                            } else {
+                                did = -hint.peer.chat_id;
+                                if (did == 0) {
+                                    did = -hint.peer.channel_id;
                                 }
-                                float scale = size / (float) bitmap.getWidth();
-                                canvas.scale(scale, scale);
-                                roundPaint.setShader(shader);
-                                bitmapRect.set(AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(46), AndroidUtilities.dp(46));
-                                canvas.drawRoundRect(bitmapRect, bitmap.getWidth(), bitmap.getHeight(), roundPaint);
-                                try {
-                                    canvas.setBitmap(null);
-                                } catch (Exception e) {
-                                    //don't promt, this will crash on 2.x
-                                }
-                                bitmap = result;
                             }
-                        } catch (Throwable e) {
-                            FileLog.e(e);
+                            newShortcutsIds.add("did" + did);
+                        }
+                        for (int a = 0; a < currentShortcuts.size(); a++) {
+                            String id = currentShortcuts.get(a).getId();
+                            if (!newShortcutsIds.remove(id)) {
+                                shortcutsToDelete.add(id);
+                            }
+                            shortcutsToUpdate.add(id);
+                        }
+                        if (newShortcutsIds.isEmpty() && shortcutsToDelete.isEmpty()) {
+                            return;
                         }
                     }
 
-                    String id = "did" + did;
-                    if (TextUtils.isEmpty(name)) {
-                        name = " ";
-                    }
-                    ShortcutInfo.Builder builder = new ShortcutInfo.Builder(ApplicationLoader.applicationContext, id)
-                            .setShortLabel(name)
-                            .setLongLabel(name)
-                            .setIntent(shortcutIntent);
-                    if (bitmap != null) {
-                        builder.setIcon(Icon.createWithBitmap(bitmap));
-                    } else {
-                        builder.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.shortcut_user));
-                    }
-                    arrayList.add(builder.build());
-                    if (shortcutsToUpdate.contains(id)) {
+                    Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
+                    intent.setAction("new_dialog");
+                    ArrayList<ShortcutInfo> arrayList = new ArrayList<>();
+                    arrayList.add(new ShortcutInfo.Builder(ApplicationLoader.applicationContext, "compose")
+                            .setShortLabel(LocaleController.getString("NewConversationShortcut", R.string.NewConversationShortcut))
+                            .setLongLabel(LocaleController.getString("NewConversationShortcut", R.string.NewConversationShortcut))
+                            .setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.shortcut_compose))
+                            .setIntent(intent)
+                            .build());
+                    if (shortcutsToUpdate.contains("compose")) {
                         shortcutManager.updateShortcuts(arrayList);
                     } else {
                         shortcutManager.addDynamicShortcuts(arrayList);
                     }
                     arrayList.clear();
+
+                    if (!shortcutsToDelete.isEmpty()) {
+                        shortcutManager.removeDynamicShortcuts(shortcutsToDelete);
+                    }
+
+                    for (int a = 0; a < hintsFinal.size(); a++) {
+                        Intent shortcutIntent = new Intent(ApplicationLoader.applicationContext, OpenChatReceiver.class);
+                        TLRPC.TL_topPeer hint = hintsFinal.get(a);
+
+                        TLRPC.User user = null;
+                        TLRPC.Chat chat = null;
+                        long did;
+                        if (hint.peer.user_id != 0) {
+                            shortcutIntent.putExtra("userId", hint.peer.user_id);
+                            user = MessagesController.getInstance().getUser(hint.peer.user_id);
+                            did = hint.peer.user_id;
+                        } else {
+                            int chat_id = hint.peer.chat_id;
+                            if (chat_id == 0) {
+                                chat_id = hint.peer.channel_id;
+                            }
+                            chat = MessagesController.getInstance().getChat(chat_id);
+                            shortcutIntent.putExtra("chatId", chat_id);
+                            did = -chat_id;
+                        }
+                        if (user == null && chat == null) {
+                            continue;
+                        }
+
+                        String name;
+                        TLRPC.FileLocation photo = null;
+
+                        if (user != null) {
+                            name = ContactsController.formatName(user.first_name, user.last_name);
+                            if (user.photo != null) {
+                                photo = user.photo.photo_small;
+                            }
+                        } else {
+                            name = chat.title;
+                            if (chat.photo != null) {
+                                photo = chat.photo.photo_small;
+                            }
+                        }
+
+                        shortcutIntent.setAction("com.tmessages.openchat" + did);
+                        shortcutIntent.addFlags(0x4000000);
+
+                        Bitmap bitmap = null;
+                        if (photo != null) {
+                            try {
+                                File path = FileLoader.getPathToAttach(photo, true);
+                                bitmap = BitmapFactory.decodeFile(path.toString());
+                                if (bitmap != null) {
+                                    int size = AndroidUtilities.dp(48);
+                                    Bitmap result = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+                                    result.eraseColor(Color.TRANSPARENT);
+                                    Canvas canvas = new Canvas(result);
+                                    BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                                    if (roundPaint == null) {
+                                        roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                                        bitmapRect = new RectF();
+                                    }
+                                    float scale = size / (float) bitmap.getWidth();
+                                    canvas.scale(scale, scale);
+                                    roundPaint.setShader(shader);
+                                    bitmapRect.set(AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(46), AndroidUtilities.dp(46));
+                                    canvas.drawRoundRect(bitmapRect, bitmap.getWidth(), bitmap.getHeight(), roundPaint);
+                                    try {
+                                        canvas.setBitmap(null);
+                                    } catch (Exception e) {
+                                        //don't promt, this will crash on 2.x
+                                    }
+                                    bitmap = result;
+                                }
+                            } catch (Throwable e) {
+                                FileLog.e(e);
+                            }
+                        }
+
+                        String id = "did" + did;
+                        if (TextUtils.isEmpty(name)) {
+                            name = " ";
+                        }
+                        ShortcutInfo.Builder builder = new ShortcutInfo.Builder(ApplicationLoader.applicationContext, id)
+                                .setShortLabel(name)
+                                .setLongLabel(name)
+                                .setIntent(shortcutIntent);
+                        if (bitmap != null) {
+                            builder.setIcon(Icon.createWithBitmap(bitmap));
+                        } else {
+                            builder.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.shortcut_user));
+                        }
+                        arrayList.add(builder.build());
+                        if (shortcutsToUpdate.contains(id)) {
+                            shortcutManager.updateShortcuts(arrayList);
+                        } else {
+                            shortcutManager.addDynamicShortcuts(arrayList);
+                        }
+                        arrayList.clear();
+                    }
+                } catch (Throwable ignore) {
+
                 }
             }
         });
@@ -255,15 +256,18 @@ public class SearchQuery {
                 public void run() {
                     final ArrayList<TLRPC.TL_topPeer> hintsNew = new ArrayList<>();
                     final ArrayList<TLRPC.TL_topPeer> inlineBotsNew = new ArrayList<>();
-                    final HashMap<Integer, Integer> inlineDatesNew = new HashMap<>();
                     final ArrayList<TLRPC.User> users = new ArrayList<>();
                     final ArrayList<TLRPC.Chat> chats = new ArrayList<>();
+                    int selfUserId = UserConfig.getClientUserId();
                     try {
                         ArrayList<Integer> usersToLoad = new ArrayList<>();
                         ArrayList<Integer> chatsToLoad = new ArrayList<>();
-                        SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT did, type, rating, date FROM chat_hints WHERE 1 ORDER BY rating DESC");
+                        SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT did, type, rating FROM chat_hints WHERE 1 ORDER BY rating DESC");
                         while (cursor.next()) {
                             int did = cursor.intValue(0);
+                            if (did == selfUserId) {
+                                continue;
+                            }
                             int type = cursor.intValue(1);
                             TLRPC.TL_topPeer peer = new TLRPC.TL_topPeer();
                             peer.rating = cursor.doubleValue(2);
@@ -280,7 +284,6 @@ public class SearchQuery {
                                 hintsNew.add(peer);
                             } else if (type == 1) {
                                 inlineBotsNew.add(peer);
-                                inlineDatesNew.put(did, cursor.intValue(3));
                             }
                         }
                         cursor.dispose();
@@ -300,7 +303,6 @@ public class SearchQuery {
                                 loaded = true;
                                 hints = hintsNew;
                                 inlineBots = inlineBotsNew;
-                                inlineDates = inlineDatesNew;
                                 buildShortcuts();
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.reloadHints);
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.reloadInlineHints);
@@ -340,14 +342,24 @@ public class SearchQuery {
                                     TLRPC.TL_topPeerCategoryPeers category = topPeers.categories.get(a);
                                     if (category.category instanceof TLRPC.TL_topPeerCategoryBotsInline) {
                                         inlineBots = category.peers;
+                                        UserConfig.botRatingLoadTime = (int) (System.currentTimeMillis() / 1000);
                                     } else {
                                         hints = category.peers;
+                                        int selfUserId = UserConfig.getClientUserId();
+                                        for (int b = 0; b < hints.size(); b++) {
+                                            TLRPC.TL_topPeer topPeer = hints.get(b);
+                                            if (topPeer.peer.user_id == selfUserId) {
+                                                hints.remove(b);
+                                                break;
+                                            }
+                                        }
+                                        UserConfig.ratingLoadTime = (int) (System.currentTimeMillis() / 1000);
                                     }
                                 }
+                                UserConfig.saveConfig(false);
                                 buildShortcuts();
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.reloadHints);
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.reloadInlineHints);
-                                final HashMap<Integer, Integer> inlineDatesCopy = new HashMap<>(inlineDates);
                                 MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                                     @Override
                                     public void run() {
@@ -375,12 +387,11 @@ public class SearchQuery {
                                                     } else {
                                                         did = -peer.peer.channel_id;
                                                     }
-                                                    Integer date = inlineDatesCopy.get(did);
                                                     state.requery();
                                                     state.bindInteger(1, did);
                                                     state.bindInteger(2, type);
                                                     state.bindDouble(3, peer.rating);
-                                                    state.bindInteger(4, date != null ? date : 0);
+                                                    state.bindInteger(4, 0);
                                                     state.step();
                                                 }
                                             }
@@ -409,10 +420,9 @@ public class SearchQuery {
     }
 
     public static void increaseInlineRaiting(final int uid) {
-        Integer time = inlineDates.get(uid);
         int dt;
-        if (time != null) {
-            dt = Math.max(1, ((int) (System.currentTimeMillis() / 1000)) - time);
+        if (UserConfig.botRatingLoadTime != 0) {
+            dt = Math.max(1, ((int) (System.currentTimeMillis() / 1000)) - UserConfig.botRatingLoadTime);
         } else {
             dt = 60;
         }
@@ -516,12 +526,8 @@ public class SearchQuery {
                         lastTime = cursor.intValue(1);
                     }
                     cursor.dispose();
-                    if (lastMid > 0) {
-                        cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT date FROM messages WHERE uid = %d AND mid < %d AND out = 1 ORDER BY date DESC", did, lastMid));
-                        if (cursor.next()) {
-                            dt = (lastTime - cursor.intValue(0));
-                        }
-                        cursor.dispose();
+                    if (lastMid > 0 && UserConfig.ratingLoadTime != 0) {
+                        dt = (lastTime - UserConfig.ratingLoadTime);
                     }
                 } catch (Exception e) {
                     FileLog.e(e);

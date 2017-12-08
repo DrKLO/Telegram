@@ -112,6 +112,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
 
         emptyView = new EmptyTextProgressView(context);
         emptyView.showProgress();
+        frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
 
         listView = new RecyclerListView(context);
         listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));

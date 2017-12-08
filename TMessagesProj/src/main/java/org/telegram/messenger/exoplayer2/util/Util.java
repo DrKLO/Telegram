@@ -34,7 +34,6 @@ import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.ExoPlayerLibraryInfo;
 import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.upstream.DataSource;
-import org.telegram.messenger.exoplayer2.upstream.DataSpec;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
@@ -98,7 +97,7 @@ public final class Util {
   private static final Pattern XS_DATE_TIME_PATTERN = Pattern.compile(
       "(\\d\\d\\d\\d)\\-(\\d\\d)\\-(\\d\\d)[Tt]"
       + "(\\d\\d):(\\d\\d):(\\d\\d)([\\.,](\\d+))?"
-      + "([Zz]|((\\+|\\-)(\\d\\d):?(\\d\\d)))?");
+      + "([Zz]|((\\+|\\-)(\\d?\\d):?(\\d\\d)))?");
   private static final Pattern XS_DURATION_PATTERN =
       Pattern.compile("^(-)?P(([0-9]*)Y)?(([0-9]*)M)?(([0-9]*)D)?"
           + "(T(([0-9]*)H)?(([0-9]*)M)?(([0-9.]*)S)?)?$");
@@ -254,7 +253,7 @@ public final class Util {
    * @return The code points encoding using UTF-8.
    */
   public static byte[] getUtf8Bytes(String value) {
-    return value.getBytes(Charset.defaultCharset()); // UTF-8 is the default on Android.
+    return value.getBytes(Charset.forName(C.UTF8_NAME));
   }
 
   /**
@@ -681,25 +680,6 @@ public final class Util {
   }
 
   /**
-   * Given a {@link DataSpec} and a number of bytes already loaded, returns a {@link DataSpec}
-   * that represents the remainder of the data.
-   *
-   * @param dataSpec The original {@link DataSpec}.
-   * @param bytesLoaded The number of bytes already loaded.
-   * @return A {@link DataSpec} that represents the remainder of the data.
-   */
-  public static DataSpec getRemainderDataSpec(DataSpec dataSpec, int bytesLoaded) {
-    if (bytesLoaded == 0) {
-      return dataSpec;
-    } else {
-      long remainingLength = dataSpec.length == C.LENGTH_UNSET ? C.LENGTH_UNSET
-          : dataSpec.length - bytesLoaded;
-      return new DataSpec(dataSpec.uri, dataSpec.position + bytesLoaded, remainingLength,
-          dataSpec.key, dataSpec.flags);
-    }
-  }
-
-  /**
    * Returns the integer equal to the big-endian concatenation of the characters in {@code string}
    * as bytes. The string must be no more than four characters long.
    *
@@ -817,6 +797,85 @@ public final class Util {
   }
 
   /**
+   * Returns the {@link C.AudioUsage} corresponding to the specified {@link C.StreamType}.
+   */
+  @C.AudioUsage
+  public static int getAudioUsageForStreamType(@C.StreamType int streamType) {
+    switch (streamType) {
+      case C.STREAM_TYPE_ALARM:
+        return C.USAGE_ALARM;
+      case C.STREAM_TYPE_DTMF:
+        return C.USAGE_VOICE_COMMUNICATION_SIGNALLING;
+      case C.STREAM_TYPE_NOTIFICATION:
+        return C.USAGE_NOTIFICATION;
+      case C.STREAM_TYPE_RING:
+        return C.USAGE_NOTIFICATION_RINGTONE;
+      case C.STREAM_TYPE_SYSTEM:
+        return C.USAGE_ASSISTANCE_SONIFICATION;
+      case C.STREAM_TYPE_VOICE_CALL:
+        return C.USAGE_VOICE_COMMUNICATION;
+      case C.STREAM_TYPE_USE_DEFAULT:
+      case C.STREAM_TYPE_MUSIC:
+      default:
+        return C.USAGE_MEDIA;
+    }
+  }
+
+  /**
+   * Returns the {@link C.AudioContentType} corresponding to the specified {@link C.StreamType}.
+   */
+  @C.AudioContentType
+  public static int getAudioContentTypeForStreamType(@C.StreamType int streamType) {
+    switch (streamType) {
+      case C.STREAM_TYPE_ALARM:
+      case C.STREAM_TYPE_DTMF:
+      case C.STREAM_TYPE_NOTIFICATION:
+      case C.STREAM_TYPE_RING:
+      case C.STREAM_TYPE_SYSTEM:
+        return C.CONTENT_TYPE_SONIFICATION;
+      case C.STREAM_TYPE_VOICE_CALL:
+        return C.CONTENT_TYPE_SPEECH;
+      case C.STREAM_TYPE_USE_DEFAULT:
+      case C.STREAM_TYPE_MUSIC:
+      default:
+        return C.CONTENT_TYPE_MUSIC;
+    }
+  }
+
+  /**
+   * Returns the {@link C.StreamType} corresponding to the specified {@link C.AudioUsage}.
+   */
+  @C.StreamType
+  public static int getStreamTypeForAudioUsage(@C.AudioUsage int usage) {
+    switch (usage) {
+      case C.USAGE_MEDIA:
+      case C.USAGE_GAME:
+      case C.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE:
+        return C.STREAM_TYPE_MUSIC;
+      case C.USAGE_ASSISTANCE_SONIFICATION:
+        return C.STREAM_TYPE_SYSTEM;
+      case C.USAGE_VOICE_COMMUNICATION:
+        return C.STREAM_TYPE_VOICE_CALL;
+      case C.USAGE_VOICE_COMMUNICATION_SIGNALLING:
+        return C.STREAM_TYPE_DTMF;
+      case C.USAGE_ALARM:
+        return C.STREAM_TYPE_ALARM;
+      case C.USAGE_NOTIFICATION_RINGTONE:
+        return C.STREAM_TYPE_RING;
+      case C.USAGE_NOTIFICATION:
+      case C.USAGE_NOTIFICATION_COMMUNICATION_REQUEST:
+      case C.USAGE_NOTIFICATION_COMMUNICATION_INSTANT:
+      case C.USAGE_NOTIFICATION_COMMUNICATION_DELAYED:
+      case C.USAGE_NOTIFICATION_EVENT:
+        return C.STREAM_TYPE_NOTIFICATION;
+      case C.USAGE_ASSISTANCE_ACCESSIBILITY:
+      case C.USAGE_UNKNOWN:
+      default:
+        return C.STREAM_TYPE_DEFAULT;
+    }
+  }
+
+  /**
    * Makes a best guess to infer the type from a {@link Uri}.
    *
    * @param uri The {@link Uri}.
@@ -836,7 +895,7 @@ public final class Util {
    */
   @C.ContentType
   public static int inferContentType(String fileName) {
-    fileName = fileName.toLowerCase();
+    fileName = Util.toLowerInvariant(fileName);
     if (fileName.endsWith(".mpd")) {
       return C.TYPE_DASH;
     } else if (fileName.endsWith(".m3u8")) {
@@ -977,15 +1036,15 @@ public final class Util {
     int expectedLength = length - percentCharacterCount * 2;
     StringBuilder builder = new StringBuilder(expectedLength);
     Matcher matcher = ESCAPED_CHARACTER_PATTERN.matcher(fileName);
-    int endOfLastMatch = 0;
+    int startOfNotEscaped = 0;
     while (percentCharacterCount > 0 && matcher.find()) {
       char unescapedCharacter = (char) Integer.parseInt(matcher.group(1), 16);
-      builder.append(fileName, endOfLastMatch, matcher.start()).append(unescapedCharacter);
-      endOfLastMatch = matcher.end();
+      builder.append(fileName, startOfNotEscaped, matcher.start()).append(unescapedCharacter);
+      startOfNotEscaped = matcher.end();
       percentCharacterCount--;
     }
-    if (endOfLastMatch < length) {
-      builder.append(fileName, endOfLastMatch, length);
+    if (startOfNotEscaped < length) {
+      builder.append(fileName, startOfNotEscaped, length);
     }
     if (builder.length() != expectedLength) {
       return null;

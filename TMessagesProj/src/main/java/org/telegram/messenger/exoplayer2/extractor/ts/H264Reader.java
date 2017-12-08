@@ -316,7 +316,7 @@ public final class H264Reader implements ElementaryStreamReader {
       if (!bitArray.canReadBits(8)) {
         return;
       }
-      bitArray.skipBits(1); // forbidden_zero_bit
+      bitArray.skipBit(); // forbidden_zero_bit
       int nalRefIdc = bitArray.readBits(2);
       bitArray.skipBits(5); // nal_unit_type
 

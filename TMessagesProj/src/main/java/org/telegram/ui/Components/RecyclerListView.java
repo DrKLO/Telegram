@@ -45,6 +45,7 @@ import java.util.ArrayList;
 public class RecyclerListView extends RecyclerView {
 
     private OnItemClickListener onItemClickListener;
+    private OnItemClickListenerExtended onItemClickListenerExtended;
     private OnItemLongClickListener onItemLongClickListener;
     private OnScrollListener onScrollListener;
     private OnInterceptTouchListener onInterceptTouchListener;
@@ -79,11 +80,19 @@ public class RecyclerListView extends RecyclerView {
     private Runnable clickRunnable;
     private boolean ignoreOnScroll;
 
+    private boolean scrollEnabled = true;
+
     private static int[] attributes;
     private static boolean gotAttributes;
 
+    private boolean hiddenByEmptyView;
+
     public interface OnItemClickListener {
         void onItemClick(View view, int position);
+    }
+
+    public interface OnItemClickListenerExtended {
+        void onItemClick(View view, int position, float x, float y);
     }
 
     public interface OnItemLongClickListener {
@@ -459,13 +468,19 @@ public class RecyclerListView extends RecyclerView {
             gestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
                 @Override
                 public boolean onSingleTapUp(MotionEvent e) {
-                    if (currentChildView != null && onItemClickListener != null) {
-                        currentChildView.setPressed(true);
+                    if (currentChildView != null && (onItemClickListener != null || onItemClickListenerExtended != null)) {
+                        onChildPressed(currentChildView, true);
                         final View view = currentChildView;
                         final int position = currentChildPosition;
+                        final float x = e.getX();
+                        final float y = e.getY();
                         if (instantClick && position != -1) {
                             view.playSoundEffect(SoundEffectConstants.CLICK);
-                            onItemClickListener.onItemClick(view, position);
+                            if (onItemClickListener != null) {
+                                onItemClickListener.onItemClick(view, position);
+                            } else if (onItemClickListenerExtended != null) {
+                                onItemClickListenerExtended.onItemClick(view, position, x, y);
+                            }
                         }
                         AndroidUtilities.runOnUIThread(clickRunnable = new Runnable() {
                             @Override
@@ -474,11 +489,15 @@ public class RecyclerListView extends RecyclerView {
                                     clickRunnable = null;
                                 }
                                 if (view != null) {
-                                    view.setPressed(false);
+                                    onChildPressed(view, false);
                                     if (!instantClick) {
                                         view.playSoundEffect(SoundEffectConstants.CLICK);
-                                        if (onItemClickListener != null && position != -1) {
-                                            onItemClickListener.onItemClick(view, position);
+                                        if (position != -1) {
+                                            if (onItemClickListener != null) {
+                                                onItemClickListener.onItemClick(view, position);
+                                            } else if (onItemClickListenerExtended != null) {
+                                                onItemClickListenerExtended.onItemClick(view, position, x, y);
+                                            }
                                         }
                                     }
                                 }
@@ -517,7 +536,11 @@ public class RecyclerListView extends RecyclerView {
             boolean isScrollIdle = RecyclerListView.this.getScrollState() == RecyclerListView.SCROLL_STATE_IDLE;
 
             if ((action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) && currentChildView == null && isScrollIdle) {
-                currentChildView = view.findChildViewUnder(event.getX(), event.getY());
+                float ex = event.getX();
+                float ey = event.getY();
+                if (allowSelectChildAtPosition(ex, ey)) {
+                    currentChildView = view.findChildViewUnder(ex, ey);
+                }
                 if (currentChildView instanceof ViewGroup) {
                     float x = event.getX() - currentChildView.getLeft();
                     float y = event.getY() - currentChildView.getTop();
@@ -560,7 +583,7 @@ public class RecyclerListView extends RecyclerView {
                         @Override
                         public void run() {
                             if (selectChildRunnable != null && currentChildView != null) {
-                                currentChildView.setPressed(true);
+                                onChildPressed(currentChildView, true);
                                 selectChildRunnable = null;
                             }
                         }
@@ -593,7 +616,7 @@ public class RecyclerListView extends RecyclerView {
                         selectChildRunnable = null;
                     }
                     View pressedChild = currentChildView;
-                    currentChildView.setPressed(false);
+                    onChildPressed(currentChildView, false);
                     currentChildView = null;
                     interceptedByChild = false;
                     removeSelection(pressedChild, event);
@@ -611,6 +634,14 @@ public class RecyclerListView extends RecyclerView {
         public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
             cancelClickRunnables(true);
         }
+    }
+
+    protected void onChildPressed(View child, boolean pressed) {
+        child.setPressed(pressed);
+    }
+
+    protected boolean allowSelectChildAtPosition(float x, float y) {
+        return true;
     }
 
     private void removeSelection(View pressedChild, MotionEvent event) {
@@ -642,7 +673,7 @@ public class RecyclerListView extends RecyclerView {
         if (currentChildView != null) {
             View child = currentChildView;
             if (uncheck) {
-                currentChildView.setPressed(false);
+                onChildPressed(currentChildView, false);
             }
             currentChildView = null;
             removeSelection(child, null);
@@ -724,7 +755,7 @@ public class RecyclerListView extends RecyclerView {
                     currentChildView.onTouchEvent(event);
                     event.recycle();
                     View child = currentChildView;
-                    currentChildView.setPressed(false);
+                    onChildPressed(currentChildView, false);
                     currentChildView = null;
                     removeSelection(child, null);
                     interceptedByChild = false;
@@ -910,6 +941,10 @@ public class RecyclerListView extends RecyclerView {
         onItemClickListener = listener;
     }
 
+    public void setOnItemClickListener(OnItemClickListenerExtended listener) {
+        onItemClickListenerExtended = listener;
+    }
+
     public void setOnItemLongClickListener(OnItemLongClickListener listener) {
         onItemLongClickListener = listener;
     }
@@ -940,6 +975,15 @@ public class RecyclerListView extends RecyclerView {
     }
 
     @Override
+    public boolean canScrollVertically(int direction) {
+        return scrollEnabled && super.canScrollVertically(direction);
+    }
+
+    public void setScrollEnabled(boolean value) {
+        scrollEnabled = value;
+    }
+
+    @Override
     public boolean onInterceptTouchEvent(MotionEvent e) {
         if (!isEnabled()) {
             return false;
@@ -951,12 +995,25 @@ public class RecyclerListView extends RecyclerView {
     }
 
     private void checkIfEmpty() {
-        if (emptyView == null || getAdapter() == null) {
+        if (getAdapter() == null || emptyView == null) {
+            if (hiddenByEmptyView && getVisibility() != VISIBLE) {
+                setVisibility(VISIBLE);
+                hiddenByEmptyView = false;
+            }
             return;
         }
         boolean emptyViewVisible = getAdapter().getItemCount() == 0;
         emptyView.setVisibility(emptyViewVisible ? VISIBLE : GONE);
         setVisibility(emptyViewVisible ? INVISIBLE : VISIBLE);
+        hiddenByEmptyView = true;
+    }
+
+    @Override
+    public void setVisibility(int visibility) {
+        super.setVisibility(visibility);
+        if (visibility != VISIBLE) {
+            hiddenByEmptyView = false;
+        }
     }
 
     @Override
@@ -1239,44 +1296,4 @@ public class RecyclerListView extends RecyclerView {
     public View getPinnedHeader() {
         return pinnedHeader;
     }
-
-    /*
-    void keyPressed() {
-        if (!isEnabled() || !isClickable()) {
-            return;
-        }
-
-        Drawable selector = mSelector;
-        Rect selectorRect = mSelectorRect;
-        if (selector != null && (isFocused() || touchModeDrawsInPressedState())
-                && !selectorRect.isEmpty()) {
-
-            final View v = getChildAt(mSelectedPosition - mFirstPosition);
-
-            if (v != null) {
-                if (v.hasFocusable()) return;
-                v.setPressed(true);
-            }
-            setPressed(true);
-
-            final boolean longClickable = isLongClickable();
-            Drawable d = selector.getCurrent();
-            if (d != null && d instanceof TransitionDrawable) {
-                if (longClickable) {
-                    ((TransitionDrawable) d).startTransition(
-                            ViewConfiguration.getLongPressTimeout());
-                } else {
-                    ((TransitionDrawable) d).resetTransition();
-                }
-            }
-            if (longClickable && !mDataChanged) {
-                if (mPendingCheckForKeyLongPress == null) {
-                    mPendingCheckForKeyLongPress = new CheckForKeyLongPress();
-                }
-                mPendingCheckForKeyLongPress.rememberWindowAttachCount();
-                postDelayed(mPendingCheckForKeyLongPress, ViewConfiguration.getLongPressTimeout());
-            }
-        }
-    }
-     */
 }

@@ -300,6 +300,7 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
                                     if (object.has("name")) {
                                         venue.title = object.getString("name");
                                     }
+                                    venue.venue_type = "";
                                     venue.venue_id = object.getString("id");
                                     venue.provider = "foursquare";
                                     places.add(venue);

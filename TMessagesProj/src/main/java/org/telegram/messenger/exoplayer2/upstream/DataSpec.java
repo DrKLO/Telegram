@@ -68,7 +68,7 @@ public final class DataSpec {
    * The position of the data when read from {@link #uri}.
    * <p>
    * Always equal to {@link #absoluteStreamPosition} unless the {@link #uri} defines the location
-   * of a subset of the underyling data.
+   * of a subset of the underlying data.
    */
   public final long position;
   /**
@@ -185,6 +185,33 @@ public final class DataSpec {
   public String toString() {
     return "DataSpec[" + uri + ", " + Arrays.toString(postBody) + ", " + absoluteStreamPosition
         + ", "  + position + ", " + length + ", " + key + ", " + flags + "]";
+  }
+
+  /**
+   * Returns a {@link DataSpec} that represents a subrange of the data defined by this DataSpec. The
+   * subrange includes data from the offset up to the end of this DataSpec.
+   *
+   * @param offset The offset of the subrange.
+   * @return A {@link DataSpec} that represents a subrange of the data defined by this DataSpec.
+   */
+  public DataSpec subrange(long offset) {
+    return subrange(offset, length == C.LENGTH_UNSET ? C.LENGTH_UNSET : length - offset);
+  }
+
+  /**
+   * Returns a {@link DataSpec} that represents a subrange of the data defined by this DataSpec.
+   *
+   * @param offset The offset of the subrange.
+   * @param length The length of the subrange.
+   * @return A {@link DataSpec} that represents a subrange of the data defined by this DataSpec.
+   */
+  public DataSpec subrange(long offset, long length) {
+    if (offset == 0 && this.length == length) {
+      return this;
+    } else {
+      return new DataSpec(uri, postBody, absoluteStreamPosition + offset, position + offset, length,
+          key, flags);
+    }
   }
 
 }

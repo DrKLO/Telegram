@@ -20,6 +20,7 @@ import android.os.Handler;
 import android.os.SystemClock;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.ExoPlayer;
+import org.telegram.messenger.exoplayer2.ExoPlayerLibraryInfo;
 import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.Timeline;
 import org.telegram.messenger.exoplayer2.source.AdaptiveMediaSourceEventListener;
@@ -45,6 +46,10 @@ import java.util.ArrayList;
  */
 public final class SsMediaSource implements MediaSource,
     Loader.Callback<ParsingLoadable<SsManifest>> {
+
+  static {
+    ExoPlayerLibraryInfo.registerModule("goog.exo.smoothstreaming");
+  }
 
   /**
    * The default minimum number of times to retry loading data prior to failing.
@@ -222,8 +227,8 @@ public final class SsMediaSource implements MediaSource,
   }
 
   @Override
-  public MediaPeriod createPeriod(int index, Allocator allocator, long positionUs) {
-    Assertions.checkArgument(index == 0);
+  public MediaPeriod createPeriod(MediaPeriodId id, Allocator allocator) {
+    Assertions.checkArgument(id.periodIndex == 0);
     SsMediaPeriod period = new SsMediaPeriod(manifest, chunkSourceFactory, minLoadableRetryCount,
         eventDispatcher, manifestLoaderErrorThrower, allocator);
     mediaPeriods.add(period);
@@ -287,39 +292,41 @@ public final class SsMediaSource implements MediaSource,
     for (int i = 0; i < mediaPeriods.size(); i++) {
       mediaPeriods.get(i).updateManifest(manifest);
     }
+
+    long startTimeUs = Long.MAX_VALUE;
+    long endTimeUs = Long.MIN_VALUE;
+    for (StreamElement element : manifest.streamElements) {
+      if (element.chunkCount > 0) {
+        startTimeUs = Math.min(startTimeUs, element.getStartTimeUs(0));
+        endTimeUs = Math.max(endTimeUs, element.getStartTimeUs(element.chunkCount - 1)
+            + element.getChunkDurationUs(element.chunkCount - 1));
+      }
+    }
+
     Timeline timeline;
-    if (manifest.isLive) {
-      long startTimeUs = Long.MAX_VALUE;
-      long endTimeUs = Long.MIN_VALUE;
-      for (int i = 0; i < manifest.streamElements.length; i++) {
-        StreamElement element = manifest.streamElements[i];
-        if (element.chunkCount > 0) {
-          startTimeUs = Math.min(startTimeUs, element.getStartTimeUs(0));
-          endTimeUs = Math.max(endTimeUs, element.getStartTimeUs(element.chunkCount - 1)
-              + element.getChunkDurationUs(element.chunkCount - 1));
-        }
+    if (startTimeUs == Long.MAX_VALUE) {
+      long periodDurationUs = manifest.isLive ? C.TIME_UNSET : 0;
+      timeline = new SinglePeriodTimeline(periodDurationUs, 0, 0, 0, true /* isSeekable */,
+          manifest.isLive /* isDynamic */);
+    } else if (manifest.isLive) {
+      if (manifest.dvrWindowLengthUs != C.TIME_UNSET && manifest.dvrWindowLengthUs > 0) {
+        startTimeUs = Math.max(startTimeUs, endTimeUs - manifest.dvrWindowLengthUs);
       }
-      if (startTimeUs == Long.MAX_VALUE) {
-        timeline = new SinglePeriodTimeline(C.TIME_UNSET, false);
-      } else {
-        if (manifest.dvrWindowLengthUs != C.TIME_UNSET
-            && manifest.dvrWindowLengthUs > 0) {
-          startTimeUs = Math.max(startTimeUs, endTimeUs - manifest.dvrWindowLengthUs);
-        }
-        long durationUs = endTimeUs - startTimeUs;
-        long defaultStartPositionUs = durationUs - C.msToUs(livePresentationDelayMs);
-        if (defaultStartPositionUs < MIN_LIVE_DEFAULT_START_POSITION_US) {
-          // The default start position is too close to the start of the live window. Set it to the
-          // minimum default start position provided the window is at least twice as big. Else set
-          // it to the middle of the window.
-          defaultStartPositionUs = Math.min(MIN_LIVE_DEFAULT_START_POSITION_US, durationUs / 2);
-        }
-        timeline = new SinglePeriodTimeline(C.TIME_UNSET, durationUs, startTimeUs,
-            defaultStartPositionUs, true /* isSeekable */, true /* isDynamic */);
+      long durationUs = endTimeUs - startTimeUs;
+      long defaultStartPositionUs = durationUs - C.msToUs(livePresentationDelayMs);
+      if (defaultStartPositionUs < MIN_LIVE_DEFAULT_START_POSITION_US) {
+        // The default start position is too close to the start of the live window. Set it to the
+        // minimum default start position provided the window is at least twice as big. Else set
+        // it to the middle of the window.
+        defaultStartPositionUs = Math.min(MIN_LIVE_DEFAULT_START_POSITION_US, durationUs / 2);
       }
+      timeline = new SinglePeriodTimeline(C.TIME_UNSET, durationUs, startTimeUs,
+          defaultStartPositionUs, true /* isSeekable */, true /* isDynamic */);
     } else {
-      boolean isSeekable = manifest.durationUs != C.TIME_UNSET;
-      timeline = new SinglePeriodTimeline(manifest.durationUs, isSeekable);
+      long durationUs = manifest.durationUs != C.TIME_UNSET ? manifest.durationUs
+          : endTimeUs - startTimeUs;
+      timeline = new SinglePeriodTimeline(startTimeUs + durationUs, durationUs, startTimeUs, 0,
+          true /* isSeekable */, false /* isDynamic */);
     }
     sourceListener.onSourceInfoRefreshed(timeline, manifest);
   }

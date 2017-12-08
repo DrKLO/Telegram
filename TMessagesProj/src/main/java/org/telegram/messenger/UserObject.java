@@ -20,11 +20,11 @@ public class UserObject {
     }
 
     public static boolean isContact(TLRPC.User user) {
-        return user instanceof TLRPC.TL_userContact_old2 || user.contact || user.mutual_contact;
+        return user != null && (user instanceof TLRPC.TL_userContact_old2 || user.contact || user.mutual_contact);
     }
 
     public static boolean isUserSelf(TLRPC.User user) {
-        return user instanceof TLRPC.TL_userSelf_old3 || user.self;
+        return user != null && (user instanceof TLRPC.TL_userSelf_old3 || user.self);
     }
 
     public static String getUserName(TLRPC.User user) {

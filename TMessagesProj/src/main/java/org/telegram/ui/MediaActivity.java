@@ -16,7 +16,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -46,9 +45,9 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
-import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.query.SharedMediaQuery;
 import org.telegram.messenger.ApplicationLoader;
@@ -96,7 +95,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 @SuppressWarnings("unchecked")
-public class MediaActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
+public class MediaActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private SharedPhotoVideoAdapter photoVideoAdapter;
     private SharedLinksAdapter linksAdapter;
@@ -134,6 +133,45 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     private long dialog_id;
     private int selectedMode;
     private int columnsCount = 4;
+
+    private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
+
+        @Override
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+            if (messageObject == null || listView == null || selectedMode != 0) {
+                return null;
+            }
+            int count = listView.getChildCount();
+
+            for (int a = 0; a < count; a++) {
+                View view = listView.getChildAt(a);
+                if (view instanceof SharedPhotoVideoCell) {
+                    SharedPhotoVideoCell cell = (SharedPhotoVideoCell) view;
+                    for (int i = 0; i < 6; i++) {
+                        MessageObject message = cell.getMessageObject(i);
+                        if (message == null) {
+                            break;
+                        }
+                        BackupImageView imageView = cell.getImageView(i);
+                        if (message.getId() == messageObject.getId()) {
+                            int coords[] = new int[2];
+                            imageView.getLocationInWindow(coords);
+                            PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
+                            object.viewX = coords[0];
+                            object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
+                            object.parentView = listView;
+                            object.imageReceiver = imageView.getImageReceiver();
+                            object.thumb = object.imageReceiver.getBitmap();
+                            object.parentView.getLocationInWindow(coords);
+                            object.clipTopAddition = AndroidUtilities.dp(40);
+                            return object;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+    };
 
     private class SharedMediaData {
         private ArrayList<MessageObject> messages = new ArrayList<>();
@@ -238,7 +276,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             }
         }
         sharedMediaData[0].loading = true;
-        SharedMediaQuery.loadMedia(dialog_id, 0, 50, 0, SharedMediaQuery.MEDIA_PHOTOVIDEO, true, classGuid);
+        SharedMediaQuery.loadMedia(dialog_id, 50, 0, SharedMediaQuery.MEDIA_PHOTOVIDEO, true, classGuid);
         return true;
     }
 
@@ -415,37 +453,54 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 } else if (id == forward) {
                     Bundle args = new Bundle();
                     args.putBoolean("onlySelect", true);
-                    args.putInt("dialogsType", 1);
+                    args.putInt("dialogsType", 3);
                     DialogsActivity fragment = new DialogsActivity(args);
                     fragment.setDelegate(new DialogsActivity.DialogsActivityDelegate() {
                         @Override
-                        public void didSelectDialog(DialogsActivity fragment, long did, boolean param) {
-                            int lower_part = (int) did;
-                            if (lower_part != 0) {
+                        public void didSelectDialogs(DialogsActivity fragment, ArrayList<Long> dids, CharSequence message, boolean param) {
+                            ArrayList<MessageObject> fmessages = new ArrayList<>();
+                            for (int a = 1; a >= 0; a--) {
+                                ArrayList<Integer> ids = new ArrayList<>(selectedFiles[a].keySet());
+                                Collections.sort(ids);
+                                for (Integer id : ids) {
+                                    if (id > 0) {
+                                        fmessages.add(selectedFiles[a].get(id));
+                                    }
+                                }
+                                selectedFiles[a].clear();
+                            }
+                            cantDeleteMessagesCount = 0;
+                            actionBar.hideActionMode();
+
+                            if (dids.size() > 1 || dids.get(0) == UserConfig.getClientUserId() || message != null) {
+                                for (int a = 0; a < dids.size(); a++) {
+                                    long did = dids.get(a);
+                                    if (message != null) {
+                                        SendMessagesHelper.getInstance().sendMessage(message.toString(), did, null, null, true, null, null, null);
+                                    }
+                                    SendMessagesHelper.getInstance().sendMessage(fmessages, did);
+                                }
+                                fragment.finishFragment();
+                            } else {
+                                long did = dids.get(0);
+                                int lower_part = (int) did;
+                                int high_part = (int) (did >> 32);
                                 Bundle args = new Bundle();
                                 args.putBoolean("scrollToTopOnResume", true);
-                                if (lower_part > 0) {
-                                    args.putInt("user_id", lower_part);
-                                } else if (lower_part < 0) {
-                                    args.putInt("chat_id", -lower_part);
-                                }
-                                if (!MessagesController.checkCanOpenChat(args, fragment)) {
-                                    return;
-                                }
-
-                                ArrayList<MessageObject> fmessages = new ArrayList<>();
-                                for (int a = 1; a >= 0; a--) {
-                                    ArrayList<Integer> ids = new ArrayList<>(selectedFiles[a].keySet());
-                                    Collections.sort(ids);
-                                    for (Integer id : ids) {
-                                        if (id > 0) {
-                                            fmessages.add(selectedFiles[a].get(id));
-                                        }
+                                if (lower_part != 0) {
+                                    if (lower_part > 0) {
+                                        args.putInt("user_id", lower_part);
+                                    } else if (lower_part < 0) {
+                                        args.putInt("chat_id", -lower_part);
                                     }
-                                    selectedFiles[a].clear();
+                                } else {
+                                    args.putInt("enc_id", high_part);
                                 }
-                                cantDeleteMessagesCount = 0;
-                                actionBar.hideActionMode();
+                                if (lower_part != 0) {
+                                    if (!MessagesController.checkCanOpenChat(args, fragment)) {
+                                        return;
+                                    }
+                                }
 
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
 
@@ -456,8 +511,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                                 if (!AndroidUtilities.isTablet()) {
                                     removeSelfFromStack();
                                 }
-                            } else {
-                                fragment.finishFragment();
                             }
                         }
                     });
@@ -653,10 +706,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     }
                     if (!sharedMediaData[selectedMode].endReached[0]) {
                         sharedMediaData[selectedMode].loading = true;
-                        SharedMediaQuery.loadMedia(dialog_id, 0, 50, sharedMediaData[selectedMode].max_id[0], type, true, classGuid);
+                        SharedMediaQuery.loadMedia(dialog_id, 50, sharedMediaData[selectedMode].max_id[0], type, true, classGuid);
                     } else if (mergeDialogId != 0 && !sharedMediaData[selectedMode].endReached[1]) {
                         sharedMediaData[selectedMode].loading = true;
-                        SharedMediaQuery.loadMedia(mergeDialogId, 0, 50, sharedMediaData[selectedMode].max_id[1], type, true, classGuid);
+                        SharedMediaQuery.loadMedia(mergeDialogId, 50, sharedMediaData[selectedMode].max_id[1], type, true, classGuid);
                     }
                 }
             }
@@ -720,7 +773,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         switchToCurrentSelectedMode();
 
         if (!AndroidUtilities.isTablet()) {
-            frameLayout.addView(fragmentContextView = new FragmentContextView(context, this), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 39, Gravity.TOP | Gravity.LEFT, 0, -36, 0, 0));
+            frameLayout.addView(fragmentContextView = new FragmentContextView(context, this, false), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 39, Gravity.TOP | Gravity.LEFT, 0, -36, 0, 0));
         }
 
         return fragmentView;
@@ -745,7 +798,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 sharedMediaData[type].endReached[loadIndex] = (Boolean) args[5];
                 if (loadIndex == 0 && sharedMediaData[type].endReached[loadIndex] && mergeDialogId != 0) {
                     sharedMediaData[type].loading = true;
-                    SharedMediaQuery.loadMedia(mergeDialogId, 0, 50, sharedMediaData[type].max_id[1], type, true, classGuid);
+                    SharedMediaQuery.loadMedia(mergeDialogId, 50, sharedMediaData[type].max_id[1], type, true, classGuid);
                 }
                 if (!sharedMediaData[type].loading) {
                     if (progressView != null) {
@@ -911,83 +964,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         }
     }
 
-    @Override
-    public void updatePhotoAtIndex(int index) {
-
-    }
-
-    @Override
-    public boolean scaleToFill() {
-        return false;
-    }
-
-    @Override
-    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
-        if (messageObject == null || listView == null || selectedMode != 0) {
-            return null;
-        }
-        int count = listView.getChildCount();
-
-        for (int a = 0; a < count; a++) {
-            View view = listView.getChildAt(a);
-            if (view instanceof SharedPhotoVideoCell) {
-                SharedPhotoVideoCell cell = (SharedPhotoVideoCell) view;
-                for (int i = 0; i < 6; i++) {
-                    MessageObject message = cell.getMessageObject(i);
-                    if (message == null) {
-                        break;
-                    }
-                    BackupImageView imageView = cell.getImageView(i);
-                    if (message.getId() == messageObject.getId()) {
-                        int coords[] = new int[2];
-                        imageView.getLocationInWindow(coords);
-                        PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
-                        object.viewX = coords[0];
-                        object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
-                        object.parentView = listView;
-                        object.imageReceiver = imageView.getImageReceiver();
-                        object.thumb = object.imageReceiver.getBitmap();
-                        object.parentView.getLocationInWindow(coords);
-                        object.clipTopAddition = AndroidUtilities.dp(40);
-                        return object;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public Bitmap getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
-        return null;
-    }
-
-    @Override
-    public boolean allowCaption() {
-        return true;
-    }
-
-    @Override
-    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) { }
-
-    @Override
-    public void willHidePhotoViewer() { }
-
-    @Override
-    public boolean isPhotoChecked(int index) { return false; }
-
-    @Override
-    public void setPhotoChecked(int index, VideoEditedInfo videoEditedInfo) { }
-
-    @Override
-    public boolean cancelButtonPressed() { return true; }
-
-    @Override
-    public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo) { }
-
-    @Override
-    public int getSelectedCount() { return 0; }
-
     public void setChatInfo(TLRPC.ChatFull chatInfo) {
         info = chatInfo;
         if (info != null && info.migrated_from_chat_id != 0) {
@@ -1064,7 +1040,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 searchItem.setVisibility(!sharedMediaData[selectedMode].messages.isEmpty() ? View.VISIBLE : View.GONE);
                 if (!sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached[0] && sharedMediaData[selectedMode].messages.isEmpty()) {
                     sharedMediaData[selectedMode].loading = true;
-                    SharedMediaQuery.loadMedia(dialog_id, 0, 50, 0, selectedMode == 1 ? SharedMediaQuery.MEDIA_FILE : SharedMediaQuery.MEDIA_MUSIC, true, classGuid);
+                    SharedMediaQuery.loadMedia(dialog_id, 50, 0, selectedMode == 1 ? SharedMediaQuery.MEDIA_FILE : SharedMediaQuery.MEDIA_MUSIC, true, classGuid);
                 }
                 listView.setVisibility(View.VISIBLE);
                 if (sharedMediaData[selectedMode].loading && sharedMediaData[selectedMode].messages.isEmpty()) {
@@ -1088,7 +1064,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 searchItem.setVisibility(!sharedMediaData[3].messages.isEmpty() ? View.VISIBLE : View.GONE);
                 if (!sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached[0] && sharedMediaData[selectedMode].messages.isEmpty()) {
                     sharedMediaData[selectedMode].loading = true;
-                    SharedMediaQuery.loadMedia(dialog_id, 0, 50, 0, SharedMediaQuery.MEDIA_URL, true, classGuid);
+                    SharedMediaQuery.loadMedia(dialog_id, 50, 0, SharedMediaQuery.MEDIA_URL, true, classGuid);
                 }
                 listView.setVisibility(View.VISIBLE);
                 if (sharedMediaData[selectedMode].loading && sharedMediaData[selectedMode].messages.isEmpty()) {
@@ -1174,7 +1150,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         } else {
             if (selectedMode == 0) {
                 PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                PhotoViewer.getInstance().openPhoto(sharedMediaData[selectedMode].messages, index, dialog_id, mergeDialogId, this);
+                PhotoViewer.getInstance().openPhoto(sharedMediaData[selectedMode].messages, index, dialog_id, mergeDialogId, provider);
             } else if (selectedMode == 1 || selectedMode == 4) {
                 if (view instanceof SharedDocumentCell) {
                     SharedDocumentCell cell = (SharedDocumentCell) view;
@@ -1739,9 +1715,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 return;
             }
             TLRPC.TL_messages_search req = new TLRPC.TL_messages_search();
-            req.offset = 0;
             req.limit = 50;
-            req.max_id = max_id;
+            req.offset_id = max_id;
             if (currentType == 1) {
                 req.filter = new TLRPC.TL_inputMessagesFilterDocument();
             } else if (currentType == 3) {

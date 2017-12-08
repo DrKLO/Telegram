@@ -38,6 +38,10 @@ public interface ICustomTabsService extends IInterface {
 
     boolean updateVisuals(ICustomTabsCallback var1, Bundle var2) throws RemoteException;
 
+    boolean requestPostMessageChannel(ICustomTabsCallback var1, Uri var2) throws RemoteException;
+
+    int postMessage(ICustomTabsCallback var1, String var2, Bundle var3) throws RemoteException;
+
     abstract class Stub extends Binder implements ICustomTabsService {
         private static final String DESCRIPTOR = "android.support.customtabs.ICustomTabsService";
         static final int TRANSACTION_warmup = 2;
@@ -45,17 +49,19 @@ public interface ICustomTabsService extends IInterface {
         static final int TRANSACTION_mayLaunchUrl = 4;
         static final int TRANSACTION_extraCommand = 5;
         static final int TRANSACTION_updateVisuals = 6;
+        static final int TRANSACTION_requestPostMessageChannel = 7;
+        static final int TRANSACTION_postMessage = 8;
 
         public Stub() {
             this.attachInterface(this, "android.support.customtabs.ICustomTabsService");
         }
 
         public static ICustomTabsService asInterface(IBinder obj) {
-            if (obj == null) {
+            if(obj == null) {
                 return null;
             } else {
                 IInterface iin = obj.queryLocalInterface("android.support.customtabs.ICustomTabsService");
-                return (iin != null && iin instanceof ICustomTabsService ? (ICustomTabsService) iin : new ICustomTabsService.Stub.Proxy(obj));
+                return (iin != null && iin instanceof ICustomTabsService?(ICustomTabsService)iin:new ICustomTabsService.Stub.Proxy(obj));
             }
         }
 
@@ -65,59 +71,59 @@ public interface ICustomTabsService extends IInterface {
 
         public boolean onTransact(int code, Parcel data, Parcel reply, int flags) throws RemoteException {
             ICustomTabsCallback _arg0;
-            Bundle _arg1;
-            boolean _result;
-            Bundle _result2;
-            switch (code) {
+            Bundle _arg2;
+            Uri _arg11;
+            Bundle _arg12;
+            boolean _arg21;
+            switch(code) {
                 case 2:
                     data.enforceInterface("android.support.customtabs.ICustomTabsService");
                     long _arg02 = data.readLong();
-                    _result = this.warmup(_arg02);
+                    _arg21 = this.warmup(_arg02);
                     reply.writeNoException();
-                    reply.writeInt(_result ? 1 : 0);
+                    reply.writeInt(_arg21?1:0);
                     return true;
                 case 3:
                     data.enforceInterface("android.support.customtabs.ICustomTabsService");
                     _arg0 = ICustomTabsCallback.Stub.asInterface(data.readStrongBinder());
-                    boolean _arg12 = this.newSession(_arg0);
+                    boolean _arg13 = this.newSession(_arg0);
                     reply.writeNoException();
-                    reply.writeInt(_arg12 ? 1 : 0);
+                    reply.writeInt(_arg13?1:0);
                     return true;
                 case 4:
                     data.enforceInterface("android.support.customtabs.ICustomTabsService");
                     _arg0 = ICustomTabsCallback.Stub.asInterface(data.readStrongBinder());
-                    Uri _arg11;
-                    if (0 != data.readInt()) {
+                    if(0 != data.readInt()) {
                         _arg11 = Uri.CREATOR.createFromParcel(data);
                     } else {
                         _arg11 = null;
                     }
 
-                    if (0 != data.readInt()) {
-                        _result2 = Bundle.CREATOR.createFromParcel(data);
+                    if(0 != data.readInt()) {
+                        _arg2 = Bundle.CREATOR.createFromParcel(data);
                     } else {
-                        _result2 = null;
+                        _arg2 = null;
                     }
 
-                    ArrayList _arg3 = data.createTypedArrayList(Bundle.CREATOR);
-                    boolean _result1 = this.mayLaunchUrl(_arg0, _arg11, _result2, _arg3);
+                    ArrayList _result2 = data.createTypedArrayList(Bundle.CREATOR);
+                    boolean _result1 = this.mayLaunchUrl(_arg0, _arg11, _arg2, _result2);
                     reply.writeNoException();
-                    reply.writeInt(_result1 ? 1 : 0);
+                    reply.writeInt(_result1?1:0);
                     return true;
                 case 5:
                     data.enforceInterface("android.support.customtabs.ICustomTabsService");
                     String _arg01 = data.readString();
-                    if (0 != data.readInt()) {
-                        _arg1 = Bundle.CREATOR.createFromParcel(data);
+                    if(0 != data.readInt()) {
+                        _arg12 = Bundle.CREATOR.createFromParcel(data);
                     } else {
-                        _arg1 = null;
+                        _arg12 = null;
                     }
 
-                    _result2 = this.extraCommand(_arg01, _arg1);
+                    _arg2 = this.extraCommand(_arg01, _arg12);
                     reply.writeNoException();
-                    if (_result2 != null) {
+                    if(_arg2 != null) {
                         reply.writeInt(1);
-                        _result2.writeToParcel(reply, 1);
+                        _arg2.writeToParcel(reply, 1);
                     } else {
                         reply.writeInt(0);
                     }
@@ -126,15 +132,42 @@ public interface ICustomTabsService extends IInterface {
                 case 6:
                     data.enforceInterface("android.support.customtabs.ICustomTabsService");
                     _arg0 = ICustomTabsCallback.Stub.asInterface(data.readStrongBinder());
-                    if (0 != data.readInt()) {
-                        _arg1 = Bundle.CREATOR.createFromParcel(data);
+                    if(0 != data.readInt()) {
+                        _arg12 = Bundle.CREATOR.createFromParcel(data);
                     } else {
-                        _arg1 = null;
+                        _arg12 = null;
                     }
 
-                    _result = this.updateVisuals(_arg0, _arg1);
+                    _arg21 = this.updateVisuals(_arg0, _arg12);
                     reply.writeNoException();
-                    reply.writeInt(_result ? 1 : 0);
+                    reply.writeInt(_arg21?1:0);
+                    return true;
+                case 7:
+                    data.enforceInterface("android.support.customtabs.ICustomTabsService");
+                    _arg0 = ICustomTabsCallback.Stub.asInterface(data.readStrongBinder());
+                    if(0 != data.readInt()) {
+                        _arg11 = Uri.CREATOR.createFromParcel(data);
+                    } else {
+                        _arg11 = null;
+                    }
+
+                    _arg21 = this.requestPostMessageChannel(_arg0, _arg11);
+                    reply.writeNoException();
+                    reply.writeInt(_arg21?1:0);
+                    return true;
+                case 8:
+                    data.enforceInterface("android.support.customtabs.ICustomTabsService");
+                    _arg0 = ICustomTabsCallback.Stub.asInterface(data.readStrongBinder());
+                    String _arg1 = data.readString();
+                    if(0 != data.readInt()) {
+                        _arg2 = Bundle.CREATOR.createFromParcel(data);
+                    } else {
+                        _arg2 = null;
+                    }
+
+                    int _result = this.postMessage(_arg0, _arg1, _arg2);
+                    reply.writeNoException();
+                    reply.writeInt(_result);
                     return true;
                 case 1598968902:
                     reply.writeString("android.support.customtabs.ICustomTabsService");
@@ -185,7 +218,7 @@ public interface ICustomTabsService extends IInterface {
                 boolean _result;
                 try {
                     _data.writeInterfaceToken("android.support.customtabs.ICustomTabsService");
-                    _data.writeStrongBinder(callback != null ? callback.asBinder() : null);
+                    _data.writeStrongBinder(callback != null?callback.asBinder():null);
                     this.mRemote.transact(3, _data, _reply, 0);
                     _reply.readException();
                     _result = 0 != _reply.readInt();
@@ -204,15 +237,15 @@ public interface ICustomTabsService extends IInterface {
                 boolean _result;
                 try {
                     _data.writeInterfaceToken("android.support.customtabs.ICustomTabsService");
-                    _data.writeStrongBinder(callback != null ? callback.asBinder() : null);
-                    if (url != null) {
+                    _data.writeStrongBinder(callback != null?callback.asBinder():null);
+                    if(url != null) {
                         _data.writeInt(1);
                         url.writeToParcel(_data, 0);
                     } else {
                         _data.writeInt(0);
                     }
 
-                    if (extras != null) {
+                    if(extras != null) {
                         _data.writeInt(1);
                         extras.writeToParcel(_data, 0);
                     } else {
@@ -239,7 +272,7 @@ public interface ICustomTabsService extends IInterface {
                 try {
                     _data.writeInterfaceToken("android.support.customtabs.ICustomTabsService");
                     _data.writeString(commandName);
-                    if (args != null) {
+                    if(args != null) {
                         _data.writeInt(1);
                         args.writeToParcel(_data, 0);
                     } else {
@@ -248,7 +281,7 @@ public interface ICustomTabsService extends IInterface {
 
                     this.mRemote.transact(5, _data, _reply, 0);
                     _reply.readException();
-                    if (0 != _reply.readInt()) {
+                    if(0 != _reply.readInt()) {
                         _result = Bundle.CREATOR.createFromParcel(_reply);
                     } else {
                         _result = null;
@@ -268,8 +301,8 @@ public interface ICustomTabsService extends IInterface {
                 boolean _result;
                 try {
                     _data.writeInterfaceToken("android.support.customtabs.ICustomTabsService");
-                    _data.writeStrongBinder(callback != null ? callback.asBinder() : null);
-                    if (bundle != null) {
+                    _data.writeStrongBinder(callback != null?callback.asBinder():null);
+                    if(bundle != null) {
                         _data.writeInt(1);
                         bundle.writeToParcel(_data, 0);
                     } else {
@@ -279,6 +312,59 @@ public interface ICustomTabsService extends IInterface {
                     this.mRemote.transact(6, _data, _reply, 0);
                     _reply.readException();
                     _result = 0 != _reply.readInt();
+                } finally {
+                    _reply.recycle();
+                    _data.recycle();
+                }
+
+                return _result;
+            }
+
+            public boolean requestPostMessageChannel(ICustomTabsCallback callback, Uri postMessageOrigin) throws RemoteException {
+                Parcel _data = Parcel.obtain();
+                Parcel _reply = Parcel.obtain();
+
+                boolean _result;
+                try {
+                    _data.writeInterfaceToken("android.support.customtabs.ICustomTabsService");
+                    _data.writeStrongBinder(callback != null?callback.asBinder():null);
+                    if(postMessageOrigin != null) {
+                        _data.writeInt(1);
+                        postMessageOrigin.writeToParcel(_data, 0);
+                    } else {
+                        _data.writeInt(0);
+                    }
+
+                    this.mRemote.transact(7, _data, _reply, 0);
+                    _reply.readException();
+                    _result = 0 != _reply.readInt();
+                } finally {
+                    _reply.recycle();
+                    _data.recycle();
+                }
+
+                return _result;
+            }
+
+            public int postMessage(ICustomTabsCallback callback, String message, Bundle extras) throws RemoteException {
+                Parcel _data = Parcel.obtain();
+                Parcel _reply = Parcel.obtain();
+
+                int _result;
+                try {
+                    _data.writeInterfaceToken("android.support.customtabs.ICustomTabsService");
+                    _data.writeStrongBinder(callback != null?callback.asBinder():null);
+                    _data.writeString(message);
+                    if(extras != null) {
+                        _data.writeInt(1);
+                        extras.writeToParcel(_data, 0);
+                    } else {
+                        _data.writeInt(0);
+                    }
+
+                    this.mRemote.transact(8, _data, _reply, 0);
+                    _reply.readException();
+                    _result = _reply.readInt();
                 } finally {
                     _reply.recycle();
                     _data.recycle();

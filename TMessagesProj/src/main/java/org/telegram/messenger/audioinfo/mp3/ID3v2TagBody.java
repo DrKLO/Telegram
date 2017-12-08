@@ -55,12 +55,13 @@ public class ID3v2TagBody {
 		if (frameHeader.isUnsynchronization()) {
 			byte[] bytes = data.readFully(frameHeader.getBodySize());
 			boolean ff = false;
+			byte ffByte = (byte) 0xFF;
 			int len = 0;
 			for (byte b : bytes) {
 				if (!ff || b != 0) {
 					bytes[len++] = b;
 				}
-				ff = (b == 0xFF);
+				ff = (b == ffByte);
 			}
 			dataLength = len;
 			input = new ByteArrayInputStream(bytes, 0, len);

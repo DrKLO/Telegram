@@ -236,7 +236,7 @@ public class CommonGroupsActivity extends BaseFragment {
             if (holder.getItemViewType() == 0) {
                 ProfileSearchCell cell = (ProfileSearchCell) holder.itemView;
                 TLRPC.Chat chat = chats.get(position);
-                cell.setData(chat, null, null, null, false);
+                cell.setData(chat, null, null, null, false, false);
                 cell.useSeparator = position != chats.size() - 1 || !endReached;
             }
         }
@@ -289,7 +289,7 @@ public class CommonGroupsActivity extends BaseFragment {
                 new ThemeDescription(listView, 0, new Class[]{LoadingCell.class}, new String[]{"progressBar"}, null, null, null, Theme.key_progressCircle),
 
                 new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, Theme.dialogs_namePaint, null, null, Theme.key_chats_name),
-                new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),

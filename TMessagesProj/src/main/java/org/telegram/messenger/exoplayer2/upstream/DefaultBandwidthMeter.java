@@ -16,8 +16,8 @@
 package org.telegram.messenger.exoplayer2.upstream;
 
 import android.os.Handler;
-import android.os.SystemClock;
 import org.telegram.messenger.exoplayer2.util.Assertions;
+import org.telegram.messenger.exoplayer2.util.Clock;
 import org.telegram.messenger.exoplayer2.util.SlidingPercentile;
 
 /**
@@ -37,6 +37,7 @@ public final class DefaultBandwidthMeter implements BandwidthMeter, TransferList
   private final Handler eventHandler;
   private final EventListener eventListener;
   private final SlidingPercentile slidingPercentile;
+  private final Clock clock;
 
   private int streamCount;
   private long sampleStartTimeMs;
@@ -55,9 +56,15 @@ public final class DefaultBandwidthMeter implements BandwidthMeter, TransferList
   }
 
   public DefaultBandwidthMeter(Handler eventHandler, EventListener eventListener, int maxWeight) {
+    this(eventHandler, eventListener, maxWeight, Clock.DEFAULT);
+  }
+
+  public DefaultBandwidthMeter(Handler eventHandler, EventListener eventListener, int maxWeight,
+      Clock clock) {
     this.eventHandler = eventHandler;
     this.eventListener = eventListener;
     this.slidingPercentile = new SlidingPercentile(maxWeight);
+    this.clock = clock;
     bitrateEstimate = NO_ESTIMATE;
   }
 
@@ -69,7 +76,7 @@ public final class DefaultBandwidthMeter implements BandwidthMeter, TransferList
   @Override
   public synchronized void onTransferStart(Object source, DataSpec dataSpec) {
     if (streamCount == 0) {
-      sampleStartTimeMs = SystemClock.elapsedRealtime();
+      sampleStartTimeMs = clock.elapsedRealtime();
     }
     streamCount++;
   }
@@ -82,7 +89,7 @@ public final class DefaultBandwidthMeter implements BandwidthMeter, TransferList
   @Override
   public synchronized void onTransferEnd(Object source) {
     Assertions.checkState(streamCount > 0);
-    long nowMs = SystemClock.elapsedRealtime();
+    long nowMs = clock.elapsedRealtime();
     int sampleElapsedTimeMs = (int) (nowMs - sampleStartTimeMs);
     totalElapsedTimeMs += sampleElapsedTimeMs;
     totalBytesTransferred += sampleBytesTransferred;

@@ -16,10 +16,12 @@
 package org.telegram.messenger.exoplayer2.source;
 
 import org.telegram.messenger.exoplayer2.C;
+import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.FormatHolder;
 import org.telegram.messenger.exoplayer2.decoder.DecoderInputBuffer;
 import org.telegram.messenger.exoplayer2.trackselection.TrackSelection;
 import org.telegram.messenger.exoplayer2.util.Assertions;
+import org.telegram.messenger.exoplayer2.util.MimeTypes;
 import java.io.IOException;
 
 /**
@@ -45,14 +47,20 @@ public final class ClippingMediaPeriod implements MediaPeriod, MediaPeriod.Callb
    * <p>
    * The clipping start/end positions must be specified by calling {@link #setClipping(long, long)}
    * on the playback thread before preparation completes.
+   * <p>
+   * If the start point is guaranteed to be a key frame, pass {@code false} to {@code
+   * enableInitialPositionDiscontinuity} to suppress an initial discontinuity when the period is
+   * first read from.
    *
    * @param mediaPeriod The media period to clip.
+   * @param enableInitialDiscontinuity Whether the initial discontinuity should be enabled.
    */
-  public ClippingMediaPeriod(MediaPeriod mediaPeriod) {
+  public ClippingMediaPeriod(MediaPeriod mediaPeriod, boolean enableInitialDiscontinuity) {
     this.mediaPeriod = mediaPeriod;
     startUs = C.TIME_UNSET;
     endUs = C.TIME_UNSET;
     sampleStreams = new ClippingSampleStream[0];
+    pendingInitialDiscontinuity = enableInitialDiscontinuity;
   }
 
   /**
@@ -68,9 +76,9 @@ public final class ClippingMediaPeriod implements MediaPeriod, MediaPeriod.Callb
   }
 
   @Override
-  public void prepare(MediaPeriod.Callback callback) {
+  public void prepare(MediaPeriod.Callback callback, long positionUs) {
     this.callback = callback;
-    mediaPeriod.prepare(this);
+    mediaPeriod.prepare(this, startUs + positionUs);
   }
 
   @Override
@@ -94,6 +102,9 @@ public final class ClippingMediaPeriod implements MediaPeriod, MediaPeriod.Callb
     }
     long enablePositionUs = mediaPeriod.selectTracks(selections, mayRetainStreamFlags,
         internalStreams, streamResetFlags, positionUs + startUs);
+    if (pendingInitialDiscontinuity) {
+      pendingInitialDiscontinuity = startUs != 0 && shouldKeepInitialDiscontinuity(selections);
+    }
     Assertions.checkState(enablePositionUs == positionUs + startUs
         || (enablePositionUs >= startUs
         && (endUs == C.TIME_END_OF_SOURCE || enablePositionUs <= endUs)));
@@ -179,6 +190,15 @@ public final class ClippingMediaPeriod implements MediaPeriod, MediaPeriod.Callb
   @Override
   public void onPrepared(MediaPeriod mediaPeriod) {
     Assertions.checkState(startUs != C.TIME_UNSET && endUs != C.TIME_UNSET);
+    callback.onPrepared(this);
+  }
+
+  @Override
+  public void onContinueLoadingRequested(MediaPeriod source) {
+    callback.onContinueLoadingRequested(this);
+  }
+
+  private static boolean shouldKeepInitialDiscontinuity(TrackSelection[] selections) {
     // If the clipping start position is non-zero, the clipping sample streams will adjust
     // timestamps on buffers they read from the unclipped sample streams. These adjusted buffer
     // timestamps can be negative, because sample streams provide buffers starting at a key-frame,
@@ -186,13 +206,17 @@ public final class ClippingMediaPeriod implements MediaPeriod, MediaPeriod.Callb
     // negative timestamp, its offset timestamp can jump backwards compared to the last timestamp
     // read in the previous period. Renderer implementations may not allow this, so we signal a
     // discontinuity which resets the renderers before they read the clipping sample stream.
-    pendingInitialDiscontinuity = startUs != 0;
-    callback.onPrepared(this);
-  }
-
-  @Override
-  public void onContinueLoadingRequested(MediaPeriod source) {
-    callback.onContinueLoadingRequested(this);
+    // However, for audio-only track selections we assume to have random access seek behaviour and
+    // do not need an initial discontinuity to reset the renderer.
+    for (TrackSelection trackSelection : selections) {
+      if (trackSelection != null) {
+        Format selectedFormat = trackSelection.getSelectedFormat();
+        if (!MimeTypes.isAudio(selectedFormat.sampleMimeType)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**

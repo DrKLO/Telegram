@@ -65,13 +65,13 @@ public final class TsExtractor implements Extractor {
    * Modes for the extractor.
    */
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef({MODE_NORMAL, MODE_SINGLE_PMT, MODE_HLS})
+  @IntDef({MODE_MULTI_PMT, MODE_SINGLE_PMT, MODE_HLS})
   public @interface Mode {}
 
   /**
    * Behave as defined in ISO/IEC 13818-1.
    */
-  public static final int MODE_NORMAL = 0;
+  public static final int MODE_MULTI_PMT = 0;
   /**
    * Assume only one PMT will be contained in the stream, even if more are declared by the PAT.
    */
@@ -105,13 +105,12 @@ public final class TsExtractor implements Extractor {
   private static final long E_AC3_FORMAT_IDENTIFIER = Util.getIntegerCodeForString("EAC3");
   private static final long HEVC_FORMAT_IDENTIFIER = Util.getIntegerCodeForString("HEVC");
 
-  private static final int BUFFER_PACKET_COUNT = 5; // Should be at least 2
-  private static final int BUFFER_SIZE = TS_PACKET_SIZE * BUFFER_PACKET_COUNT;
+  private static final int BUFFER_SIZE = TS_PACKET_SIZE * 50;
+  private static final int SNIFF_TS_PACKET_COUNT = 5;
 
   @Mode private final int mode;
   private final List<TimestampAdjuster> timestampAdjusters;
   private final ParsableByteArray tsPacketBuffer;
-  private final ParsableBitArray tsScratch;
   private final SparseIntArray continuityCounters;
   private final TsPayloadReader.Factory payloadReaderFactory;
   private final SparseArray<TsPayloadReader> tsPayloadReaders; // Indexed by pid
@@ -132,12 +131,23 @@ public final class TsExtractor implements Extractor {
    *     {@code FLAG_*} values that control the behavior of the payload readers.
    */
   public TsExtractor(@Flags int defaultTsPayloadReaderFlags) {
-    this(MODE_NORMAL, new TimestampAdjuster(0),
-        new DefaultTsPayloadReaderFactory(defaultTsPayloadReaderFlags));
+    this(MODE_SINGLE_PMT, defaultTsPayloadReaderFlags);
   }
 
   /**
-   * @param mode Mode for the extractor. One of {@link #MODE_NORMAL}, {@link #MODE_SINGLE_PMT}
+   * @param mode Mode for the extractor. One of {@link #MODE_MULTI_PMT}, {@link #MODE_SINGLE_PMT}
+   *     and {@link #MODE_HLS}.
+   * @param defaultTsPayloadReaderFlags A combination of {@link DefaultTsPayloadReaderFactory}
+   *     {@code FLAG_*} values that control the behavior of the payload readers.
+   */
+  public TsExtractor(@Mode int mode, @Flags int defaultTsPayloadReaderFlags) {
+    this(mode, new TimestampAdjuster(0),
+        new DefaultTsPayloadReaderFactory(defaultTsPayloadReaderFlags));
+  }
+
+
+  /**
+   * @param mode Mode for the extractor. One of {@link #MODE_MULTI_PMT}, {@link #MODE_SINGLE_PMT}
    *     and {@link #MODE_HLS}.
    * @param timestampAdjuster A timestamp adjuster for offsetting and scaling sample timestamps.
    * @param payloadReaderFactory Factory for injecting a custom set of payload readers.
@@ -153,7 +163,6 @@ public final class TsExtractor implements Extractor {
       timestampAdjusters.add(timestampAdjuster);
     }
     tsPacketBuffer = new ParsableByteArray(BUFFER_SIZE);
-    tsScratch = new ParsableBitArray(new byte[3]);
     trackIds = new SparseBooleanArray();
     tsPayloadReaders = new SparseArray<>();
     continuityCounters = new SparseIntArray();
@@ -165,10 +174,10 @@ public final class TsExtractor implements Extractor {
   @Override
   public boolean sniff(ExtractorInput input) throws IOException, InterruptedException {
     byte[] buffer = tsPacketBuffer.data;
-    input.peekFully(buffer, 0, BUFFER_SIZE);
+    input.peekFully(buffer, 0, TS_PACKET_SIZE * SNIFF_TS_PACKET_COUNT);
     for (int j = 0; j < TS_PACKET_SIZE; j++) {
       for (int i = 0; true; i++) {
-        if (i == BUFFER_PACKET_COUNT) {
+        if (i == SNIFF_TS_PACKET_COUNT) {
           input.skipFully(j);
           return true;
         }
@@ -207,7 +216,8 @@ public final class TsExtractor implements Extractor {
   public int read(ExtractorInput input, PositionHolder seekPosition)
       throws IOException, InterruptedException {
     byte[] data = tsPacketBuffer.data;
-    // Shift bytes to the start of the buffer if there isn't enough space left at the end
+
+    // Shift bytes to the start of the buffer if there isn't enough space left at the end.
     if (BUFFER_SIZE - tsPacketBuffer.getPosition() < TS_PACKET_SIZE) {
       int bytesLeft = tsPacketBuffer.bytesLeft();
       if (bytesLeft > 0) {
@@ -215,7 +225,8 @@ public final class TsExtractor implements Extractor {
       }
       tsPacketBuffer.reset(data, bytesLeft);
     }
-    // Read more bytes until there is at least one packet size
+
+    // Read more bytes until we have at least one packet.
     while (tsPacketBuffer.bytesLeft() < TS_PACKET_SIZE) {
       int limit = tsPacketBuffer.limit();
       int read = input.read(data, limit, BUFFER_SIZE - limit);
@@ -225,8 +236,7 @@ public final class TsExtractor implements Extractor {
       tsPacketBuffer.setLimit(limit + read);
     }
 
-    // Note: see ISO/IEC 13818-1, section 2.4.3.2 for detailed information on the format of
-    // the header.
+    // Note: See ISO/IEC 13818-1, section 2.4.3.2 for details of the header format.
     final int limit = tsPacketBuffer.limit();
     int position = tsPacketBuffer.getPosition();
     while (position < limit && data[position] != TS_SYNC_BYTE) {
@@ -239,24 +249,23 @@ public final class TsExtractor implements Extractor {
       return RESULT_CONTINUE;
     }
 
-    tsPacketBuffer.skipBytes(1);
-    tsPacketBuffer.readBytes(tsScratch, 3);
-    if (tsScratch.readBit()) { // transport_error_indicator
+    int tsPacketHeader = tsPacketBuffer.readInt();
+    if ((tsPacketHeader & 0x800000) != 0) { // transport_error_indicator
       // There are uncorrectable errors in this packet.
       tsPacketBuffer.setPosition(endOfPacket);
       return RESULT_CONTINUE;
     }
-    boolean payloadUnitStartIndicator = tsScratch.readBit();
-    tsScratch.skipBits(1); // transport_priority
-    int pid = tsScratch.readBits(13);
-    tsScratch.skipBits(2); // transport_scrambling_control
-    boolean adaptationFieldExists = tsScratch.readBit();
-    boolean payloadExists = tsScratch.readBit();
+    boolean payloadUnitStartIndicator = (tsPacketHeader & 0x400000) != 0;
+    // Ignoring transport_priority (tsPacketHeader & 0x200000)
+    int pid = (tsPacketHeader & 0x1FFF00) >> 8;
+    // Ignoring transport_scrambling_control (tsPacketHeader & 0xC0)
+    boolean adaptationFieldExists = (tsPacketHeader & 0x20) != 0;
+    boolean payloadExists = (tsPacketHeader & 0x10) != 0;
 
     // Discontinuity check.
     boolean discontinuityFound = false;
-    int continuityCounter = tsScratch.readBits(4);
     if (mode != MODE_HLS) {
+      int continuityCounter = tsPacketHeader & 0xF;
       int previousCounter = continuityCounters.get(pid, continuityCounter - 1);
       continuityCounters.put(pid, continuityCounter);
       if (previousCounter == continuityCounter) {
@@ -265,7 +274,7 @@ public final class TsExtractor implements Extractor {
           tsPacketBuffer.setPosition(endOfPacket);
           return RESULT_CONTINUE;
         }
-      } else if (continuityCounter != (previousCounter + 1) % 16) {
+      } else if (continuityCounter != ((previousCounter + 1) & 0xF)) {
         discontinuityFound = true;
       }
     }
@@ -285,7 +294,6 @@ public final class TsExtractor implements Extractor {
         }
         tsPacketBuffer.setLimit(endOfPacket);
         payloadReader.consume(tsPacketBuffer, payloadUnitStartIndicator);
-        Assertions.checkState(tsPacketBuffer.getPosition() <= endOfPacket);
         tsPacketBuffer.setLimit(limit);
       }
     }
@@ -371,10 +379,14 @@ public final class TsExtractor implements Extractor {
     private static final int TS_PMT_DESC_DVBSUBS = 0x59;
 
     private final ParsableBitArray pmtScratch;
+    private final SparseArray<TsPayloadReader> trackIdToReaderScratch;
+    private final SparseIntArray trackIdToPidScratch;
     private final int pid;
 
     public PmtReader(int pid) {
       pmtScratch = new ParsableBitArray(new byte[5]);
+      trackIdToReaderScratch = new SparseArray<>();
+      trackIdToPidScratch = new SparseIntArray();
       this.pid = pid;
     }
 
@@ -425,6 +437,8 @@ public final class TsExtractor implements Extractor {
             new TrackIdGenerator(programNumber, TS_STREAM_TYPE_ID3, MAX_PID_PLUS_ONE));
       }
 
+      trackIdToReaderScratch.clear();
+      trackIdToPidScratch.clear();
       int remainingEntriesLength = sectionData.bytesLeft();
       while (remainingEntriesLength > 0) {
         sectionData.readBytes(pmtScratch, 5);
@@ -443,23 +457,30 @@ public final class TsExtractor implements Extractor {
         if (trackIds.get(trackId)) {
           continue;
         }
-        trackIds.put(trackId, true);
 
-        TsPayloadReader reader;
-        if (mode == MODE_HLS && streamType == TS_STREAM_TYPE_ID3) {
-          reader = id3Reader;
-        } else {
-          reader = payloadReaderFactory.createPayloadReader(streamType, esInfo);
-          if (reader != null) {
+        TsPayloadReader reader = mode == MODE_HLS && streamType == TS_STREAM_TYPE_ID3 ? id3Reader
+            : payloadReaderFactory.createPayloadReader(streamType, esInfo);
+        if (mode != MODE_HLS
+            || elementaryPid < trackIdToPidScratch.get(trackId, MAX_PID_PLUS_ONE)) {
+          trackIdToPidScratch.put(trackId, elementaryPid);
+          trackIdToReaderScratch.put(trackId, reader);
+        }
+      }
+
+      int trackIdCount = trackIdToPidScratch.size();
+      for (int i = 0; i < trackIdCount; i++) {
+        int trackId = trackIdToPidScratch.keyAt(i);
+        trackIds.put(trackId, true);
+        TsPayloadReader reader = trackIdToReaderScratch.valueAt(i);
+        if (reader != null) {
+          if (reader != id3Reader) {
             reader.init(timestampAdjuster, output,
                 new TrackIdGenerator(programNumber, trackId, MAX_PID_PLUS_ONE));
           }
-        }
-
-        if (reader != null) {
-          tsPayloadReaders.put(elementaryPid, reader);
+          tsPayloadReaders.put(trackIdToPidScratch.valueAt(i), reader);
         }
       }
+
       if (mode == MODE_HLS) {
         if (!tracksEnded) {
           output.endTracks();
@@ -533,6 +554,5 @@ public final class TsExtractor implements Extractor {
     }
 
   }
-
 
 }

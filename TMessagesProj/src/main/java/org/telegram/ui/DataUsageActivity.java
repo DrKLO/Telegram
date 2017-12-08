@@ -133,23 +133,13 @@ public class DataUsageActivity extends BaseFragment {
         filesBytesReceivedRow = rowCount++;
         filesSection2Row = rowCount++;
 
-        if (MessagesController.getInstance().callsEnabled) {
-            callsSectionRow = rowCount++;
-            callsSentRow = rowCount++;
-            callsReceivedRow = rowCount++;
-            callsBytesSentRow = rowCount++;
-            callsBytesReceivedRow = rowCount++;
-            callsTotalTimeRow = rowCount++;
-            callsSection2Row = rowCount++;
-        } else {
-            callsSectionRow = -1;
-            callsSentRow = -1;
-            callsReceivedRow = -1;
-            callsBytesSentRow = -1;
-            callsBytesReceivedRow = -1;
-            callsTotalTimeRow = -1;
-            callsSection2Row = -1;
-        }
+        callsSectionRow = rowCount++;
+        callsSentRow = rowCount++;
+        callsReceivedRow = rowCount++;
+        callsBytesSentRow = rowCount++;
+        callsBytesReceivedRow = rowCount++;
+        callsTotalTimeRow = rowCount++;
+        callsSection2Row = rowCount++;
 
         messagesSectionRow = rowCount++;
         /*if (BuildVars.DEBUG_VERSION) {

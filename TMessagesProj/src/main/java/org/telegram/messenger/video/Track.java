@@ -8,7 +8,6 @@
 
 package org.telegram.messenger.video;
 
-import android.annotation.TargetApi;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
@@ -35,7 +34,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-@TargetApi(16)
 public class Track {
 
     private class SamplePresentationTime {

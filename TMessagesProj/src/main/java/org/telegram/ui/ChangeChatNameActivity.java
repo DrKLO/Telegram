@@ -25,7 +25,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
@@ -49,11 +48,12 @@ import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.AvatarUpdater;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdater.AvatarUpdaterDelegate {
 
-    private EditText nameTextView;
+    private EditTextBoldCursor nameTextView;
     private BackupImageView avatarImage;
     private AvatarDrawable avatarDrawable;
     private AvatarUpdater avatarUpdater;
@@ -209,7 +209,7 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
             }
         });
 
-        nameTextView = new EditText(context);
+        nameTextView = new EditTextBoldCursor(context);
         if (currentChat.megagroup) {
             nameTextView.setHint(LocaleController.getString("GroupName", R.string.GroupName));
         } else {
@@ -229,7 +229,9 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
         InputFilter[] inputFilters = new InputFilter[1];
         inputFilters[0] = new InputFilter.LengthFilter(100);
         nameTextView.setFilters(inputFilters);
-        AndroidUtilities.clearCursorDrawable(nameTextView);
+        nameTextView.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        nameTextView.setCursorSize(AndroidUtilities.dp(20));
+        nameTextView.setCursorWidth(1.5f);
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         frameLayout.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 16 : 96, 0, LocaleController.isRTL ? 96 : 16, 0));
         nameTextView.addTextChangedListener(new TextWatcher() {
@@ -268,7 +270,7 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
                 @Override
                 public void onClick(View v) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setMessage(LocaleController.getString("MegaDeleteAlert", R.string.MegaDeleteAlert));
+                    builder.setMessage(LocaleController.getString("AreYouSureDeleteAndExit", R.string.AreYouSureDeleteAndExit));
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                         @Override
@@ -279,7 +281,7 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
                             } else {
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                             }
-                            MessagesController.getInstance().deleteUserFromChat(chatId, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), null);
+                            MessagesController.getInstance().deleteUserFromChat(chatId, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), null, true);
                             finishFragment();
                         }
                     });

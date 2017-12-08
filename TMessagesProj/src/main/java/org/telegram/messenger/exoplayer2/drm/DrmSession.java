@@ -28,11 +28,13 @@ import java.util.Map;
 @TargetApi(16)
 public interface DrmSession<T extends ExoMediaCrypto> {
 
-  /** Wraps the exception which is the cause of the error state. */
+  /**
+   * Wraps the throwable which is the cause of the error state.
+   */
   class DrmSessionException extends Exception {
 
-    public DrmSessionException(Exception e) {
-      super(e);
+    public DrmSessionException(Throwable cause) {
+      super(cause);
     }
 
   }
@@ -41,16 +43,16 @@ public interface DrmSession<T extends ExoMediaCrypto> {
    * The state of the DRM session.
    */
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef({STATE_ERROR, STATE_CLOSED, STATE_OPENING, STATE_OPENED, STATE_OPENED_WITH_KEYS})
-  @interface State {}
+  @IntDef({STATE_RELEASED, STATE_ERROR, STATE_OPENING, STATE_OPENED, STATE_OPENED_WITH_KEYS})
+  public @interface State {}
+  /**
+   * The session has been released.
+   */
+  int STATE_RELEASED = 0;
   /**
    * The session has encountered an error. {@link #getError()} can be used to retrieve the cause.
    */
-  int STATE_ERROR = 0;
-  /**
-   * The session is closed.
-   */
-  int STATE_CLOSED = 1;
+  int STATE_ERROR = 1;
   /**
    * The session is being opened.
    */
@@ -65,66 +67,40 @@ public interface DrmSession<T extends ExoMediaCrypto> {
   int STATE_OPENED_WITH_KEYS = 4;
 
   /**
-   * Returns the current state of the session.
-   *
-   * @return One of {@link #STATE_ERROR}, {@link #STATE_CLOSED}, {@link #STATE_OPENING},
-   *     {@link #STATE_OPENED} and {@link #STATE_OPENED_WITH_KEYS}.
+   * Returns the current state of the session, which is one of {@link #STATE_ERROR},
+   * {@link #STATE_RELEASED}, {@link #STATE_OPENING}, {@link #STATE_OPENED} and
+   * {@link #STATE_OPENED_WITH_KEYS}.
    */
   @State int getState();
 
   /**
-   * Returns a {@link ExoMediaCrypto} for the open session.
-   * <p>
-   * This method may be called when the session is in the following states:
-   * {@link #STATE_OPENED}, {@link #STATE_OPENED_WITH_KEYS}
-   *
-   * @return A {@link ExoMediaCrypto} for the open session.
-   * @throws IllegalStateException If called when a session isn't opened.
-   */
-  T getMediaCrypto();
-
-  /**
-   * Whether the session requires a secure decoder for the specified mime type.
-   * <p>
-   * Normally this method should return
-   * {@link ExoMediaCrypto#requiresSecureDecoderComponent(String)}, however in some cases
-   * implementations may wish to modify the return value (i.e. to force a secure decoder even when
-   * one is not required).
-   * <p>
-   * This method may be called when the session is in the following states:
-   * {@link #STATE_OPENED}, {@link #STATE_OPENED_WITH_KEYS}
-   *
-   * @return Whether the open session requires a secure decoder for the specified mime type.
-   * @throws IllegalStateException If called when a session isn't opened.
-   */
-  boolean requiresSecureDecoderComponent(String mimeType);
-
-  /**
    * Returns the cause of the error state.
-   * <p>
-   * This method may be called when the session is in any state.
-   *
-   * @return An exception if the state is {@link #STATE_ERROR}. Null otherwise.
    */
   DrmSessionException getError();
 
   /**
-   * Returns an informative description of the key status for the session. The status is in the form
-   * of {name, value} pairs.
-   *
-   * <p>Since DRM license policies vary by vendor, the specific status field names are determined by
+   * Returns a {@link ExoMediaCrypto} for the open session, or null if called before the session has
+   * been opened or after it's been released.
+   */
+  T getMediaCrypto();
+
+  /**
+   * Returns a map describing the key status for the session, or null if called before the session
+   * has been opened or after it's been released.
+   * <p>
+   * Since DRM license policies vary by vendor, the specific status field names are determined by
    * each DRM vendor. Refer to your DRM provider documentation for definitions of the field names
    * for a particular DRM engine plugin.
    *
-   * @return A map of key status.
-   * @throws IllegalStateException If called when the session isn't opened.
+   * @return A map describing the key status for the session, or null if called before the session
+   *     has been opened or after it's been released.
    * @see MediaDrm#queryKeyStatus(byte[])
    */
   Map<String, String> queryKeyStatus();
 
   /**
-   * Returns the key set id of the offline license loaded into this session, if there is one. Null
-   * otherwise.
+   * Returns the key set id of the offline license loaded into this session, or null if there isn't
+   * one.
    */
   byte[] getOfflineLicenseKeySetId();
 

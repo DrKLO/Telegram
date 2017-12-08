@@ -34,17 +34,25 @@ public final class CacheDataSourceFactory implements DataSource.Factory {
   private final EventListener eventListener;
 
   /**
+   * @see CacheDataSource#CacheDataSource(Cache, DataSource)
+   */
+  public CacheDataSourceFactory(Cache cache, DataSource.Factory upstreamFactory) {
+    this(cache, upstreamFactory, 0);
+  }
+
+  /**
    * @see CacheDataSource#CacheDataSource(Cache, DataSource, int)
    */
-  public CacheDataSourceFactory(Cache cache, DataSource.Factory upstreamFactory, int flags) {
+  public CacheDataSourceFactory(Cache cache, DataSource.Factory upstreamFactory,
+      @CacheDataSource.Flags int flags) {
     this(cache, upstreamFactory, flags, CacheDataSource.DEFAULT_MAX_CACHE_FILE_SIZE);
   }
 
   /**
    * @see CacheDataSource#CacheDataSource(Cache, DataSource, int, long)
    */
-  public CacheDataSourceFactory(Cache cache, DataSource.Factory upstreamFactory, int flags,
-      long maxCacheFileSize) {
+  public CacheDataSourceFactory(Cache cache, DataSource.Factory upstreamFactory,
+      @CacheDataSource.Flags int flags, long maxCacheFileSize) {
     this(cache, upstreamFactory, new FileDataSourceFactory(),
         new CacheDataSinkFactory(cache, maxCacheFileSize), flags, null);
   }
@@ -54,8 +62,8 @@ public final class CacheDataSourceFactory implements DataSource.Factory {
    *     EventListener)
    */
   public CacheDataSourceFactory(Cache cache, Factory upstreamFactory,
-      Factory cacheReadDataSourceFactory,
-      DataSink.Factory cacheWriteDataSinkFactory, int flags, EventListener eventListener) {
+      Factory cacheReadDataSourceFactory, DataSink.Factory cacheWriteDataSinkFactory,
+      @CacheDataSource.Flags int flags, EventListener eventListener) {
     this.cache = cache;
     this.upstreamFactory = upstreamFactory;
     this.cacheReadDataSourceFactory = cacheReadDataSourceFactory;

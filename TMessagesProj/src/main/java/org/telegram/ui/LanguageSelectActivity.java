@@ -18,6 +18,7 @@ import android.widget.FrameLayout;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
@@ -40,7 +41,7 @@ import java.util.Comparator;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class LanguageSelectActivity extends BaseFragment {
+public class LanguageSelectActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private ListAdapter listAdapter;
     private RecyclerListView listView;
@@ -57,7 +58,15 @@ public class LanguageSelectActivity extends BaseFragment {
     @Override
     public boolean onFragmentCreate() {
         fillLanguages();
+        LocaleController.getInstance().loadRemoteLanguages();
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.suggestedLangpack);
         return super.onFragmentCreate();
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        super.onFragmentDestroy();
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
     }
 
     @Override
@@ -132,6 +141,9 @@ public class LanguageSelectActivity extends BaseFragment {
         listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
+                if (getParentActivity() == null || parentLayout == null) {
+                    return;
+                }
                 LocaleController.LocaleInfo localeInfo = null;
                 if (searching && searchWas) {
                     if (position >= 0 && position < searchResult.size()) {
@@ -143,7 +155,7 @@ public class LanguageSelectActivity extends BaseFragment {
                     }
                 }
                 if (localeInfo != null) {
-                    LocaleController.getInstance().applyLanguage(localeInfo, true);
+                    LocaleController.getInstance().applyLanguage(localeInfo, true, false, false, true);
                     parentLayout.rebuildAllFragmentViews(false, false);
                 }
                 finishFragment();
@@ -203,6 +215,16 @@ public class LanguageSelectActivity extends BaseFragment {
         });
 
         return fragmentView;
+    }
+
+    @Override
+    public void didReceivedNotification(int id, Object... args) {
+        if (id == NotificationCenter.suggestedLangpack) {
+            if (listAdapter != null) {
+                fillLanguages();
+                listAdapter.notifyDataSetChanged();
+            }
+        }
     }
 
     private void fillLanguages() {

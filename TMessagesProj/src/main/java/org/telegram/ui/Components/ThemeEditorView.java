@@ -45,7 +45,6 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -160,7 +159,7 @@ public class ThemeEditorView {
 
             private Bitmap colorWheelBitmap;
 
-            private EditText colorEditText[] = new EditText[4];
+            private EditTextBoldCursor colorEditText[] = new EditTextBoldCursor[4];
 
             private int colorWheelRadius;
 
@@ -196,10 +195,12 @@ public class ThemeEditorView {
                 linearLayout.setOrientation(LinearLayout.HORIZONTAL);
                 addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
                 for (int a = 0; a < 4; a++){
-                    colorEditText[a] = new EditText(context);
+                    colorEditText[a] = new EditTextBoldCursor(context);
                     colorEditText[a].setInputType(InputType.TYPE_CLASS_NUMBER);
                     colorEditText[a].setTextColor(0xff212121);
-                    AndroidUtilities.clearCursorDrawable(colorEditText[a]);
+                    colorEditText[a].setCursorColor(0xff212121);
+                    colorEditText[a].setCursorSize(AndroidUtilities.dp(20));
+                    colorEditText[a].setCursorWidth(1.5f);
                     colorEditText[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
                     colorEditText[a].setBackgroundDrawable(Theme.createEditTextDrawable(context, true));
                     colorEditText[a].setMaxLines(1);

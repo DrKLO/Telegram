@@ -10,7 +10,6 @@ package org.telegram.messenger;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
@@ -50,6 +49,7 @@ import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
@@ -69,6 +69,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.EmbedBottomSheet;
+import org.telegram.ui.Components.PhotoFilterView;
 import org.telegram.ui.Components.PipRoundVideoView;
 import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.PhotoViewer;
@@ -174,6 +175,28 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     }
 
+    public static class SavedFilterState {
+        public float enhanceValue;
+        public float exposureValue;
+        public float contrastValue;
+        public float warmthValue;
+        public float saturationValue;
+        public float fadeValue;
+        public int tintShadowsColor;
+        public int tintHighlightsColor;
+        public float highlightsValue;
+        public float shadowsValue;
+        public float vignetteValue;
+        public float grainValue;
+        public int blurType;
+        public float sharpenValue;
+        public PhotoFilterView.CurvesToolValue curvesToolValue = new PhotoFilterView.CurvesToolValue();
+        public float blurExcludeSize;
+        public org.telegram.ui.Components.Point blurExcludePoint;
+        public float blurExcludeBlurSize;
+        public float blurAngle;
+    }
+
     public static class PhotoEntry {
         public int bucketId;
         public int imageId;
@@ -189,7 +212,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         public boolean isFiltered;
         public boolean isPainted;
         public boolean isCropped;
+        public boolean isMuted;
         public int ttl;
+        public SavedFilterState savedFilterState;
         public ArrayList<TLRPC.InputDocument> stickers = new ArrayList<>();
 
         public PhotoEntry(int bucketId, int imageId, long dateTaken, String path, int orientation, boolean isVideo) {
@@ -213,6 +238,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             imagePath = null;
             thumbPath = null;
             caption = null;
+            savedFilterState = null;
             stickers.clear();
         }
     }
@@ -235,7 +261,20 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         public boolean isPainted;
         public boolean isCropped;
         public int ttl;
+        public SavedFilterState savedFilterState;
         public ArrayList<TLRPC.InputDocument> stickers = new ArrayList<>();
+
+        public void reset() {
+            isFiltered = false;
+            isPainted = false;
+            isCropped = false;
+            ttl = 0;
+            imagePath = null;
+            thumbPath = null;
+            caption = null;
+            savedFilterState = null;
+            stickers.clear();
+        }
     }
 
     public final static String MIME_TYPE = "video/avc";
@@ -305,9 +344,13 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     public static final int AUTODOWNLOAD_MASK_MUSIC = 16;
     public static final int AUTODOWNLOAD_MASK_GIF = 32;
     public static final int AUTODOWNLOAD_MASK_VIDEOMESSAGE = 64;
-    public int mobileDataDownloadMask = 0;
-    public int wifiDownloadMask = 0;
-    public int roamingDownloadMask = 0;
+    public boolean globalAutodownloadEnabled;
+    public int mobileDataDownloadMask[] = new int[4];
+    public int wifiDownloadMask[] = new int[4];
+    public int roamingDownloadMask[] = new int[4];
+    public int mobileMaxFileSize[] = new int[7];
+    public int wifiMaxFileSize[] = new int[7];
+    public int roamingMaxFileSize[] = new int[7];
     private int lastCheckMask = 0;
     private ArrayList<DownloadObject> photoDownloadQueue = new ArrayList<>();
     private ArrayList<DownloadObject> audioDownloadQueue = new ArrayList<>();
@@ -323,10 +366,14 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private boolean raiseToSpeak = true;
     private boolean customTabs = true;
     private boolean directShare = true;
+    private boolean inappCamera = true;
+    private boolean roundCamera16to9 = true;
+    private boolean groupPhotosEnabled = true;
     private boolean shuffleMusic;
+    private boolean playOrderReversed;
     private int repeatMode;
 
-    private Runnable refreshGalleryRunnable;
+    private static Runnable refreshGalleryRunnable;
     public static AlbumEntry allMediaAlbumEntry;
     public static AlbumEntry allPhotosAlbumEntry;
     private static Runnable broadcastPhotosRunnable;
@@ -494,6 +541,36 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     };
 
+    private class SmsObserver extends ContentObserver {
+        public SmsObserver() {
+            super(null);
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            readSms();
+        }
+    }
+
+    private void readSms() {
+        /*Cursor cursor = null;
+        try {
+            cursor = ApplicationLoader.applicationContext.getContentResolver().query(Uri.parse("content://sms/sent"), null, null, null, null);
+            while (cursor.moveToNext()) {
+                String address = cursor.getString(cursor.getColumnIndexOrThrow("address"));
+                long data = cursor.getLong(cursor.getColumnIndexOrThrow("date"));
+                String smsBody = cursor.getString(cursor.getColumnIndexOrThrow("body"));
+                FileLog.d(address + " body = " + smsBody);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }*/
+    }
+
     private class InternalObserver extends ContentObserver {
         public InternalObserver() {
             super(null);
@@ -547,6 +624,25 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     }
 
+    public static int maskToIndex(int mask) {
+        if (mask == AUTODOWNLOAD_MASK_PHOTO) {
+            return 0;
+        } else if (mask == AUTODOWNLOAD_MASK_AUDIO) {
+            return 1;
+        } else if (mask == AUTODOWNLOAD_MASK_VIDEO) {
+            return 2;
+        } else if (mask == AUTODOWNLOAD_MASK_DOCUMENT) {
+            return 3;
+        } else if (mask == AUTODOWNLOAD_MASK_MUSIC) {
+            return 4;
+        } else if (mask == AUTODOWNLOAD_MASK_GIF) {
+            return 5;
+        } else if (mask == AUTODOWNLOAD_MASK_VIDEOMESSAGE) {
+            return 6;
+        }
+        return 0;
+    }
+
     private class GalleryObserverExternal extends ContentObserver {
         public GalleryObserverExternal() {
             super(null);
@@ -568,8 +664,64 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     }
 
+    public static void checkGallery() {
+        if (Build.VERSION.SDK_INT < 24 || allPhotosAlbumEntry == null) {
+            return;
+        }
+        final int prevSize = allPhotosAlbumEntry.photos.size();
+        Utilities.globalQueue.postRunnable(new Runnable() {
+            @SuppressLint("NewApi")
+            @Override
+            public void run() {
+                int count = 0;
+                Cursor cursor = null;
+                try {
+                    if (ApplicationLoader.applicationContext.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                        cursor = MediaStore.Images.Media.query(ApplicationLoader.applicationContext.getContentResolver(), MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new String[] {"COUNT(_id)"}, null, null, null);
+                        if (cursor != null) {
+                            if (cursor.moveToNext()) {
+                                count += cursor.getInt(0);
+                            }
+                        }
+                    }
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                } finally {
+                    if (cursor != null) {
+                        cursor.close();
+                    }
+                }
+                try {
+                    if (ApplicationLoader.applicationContext.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                        cursor = MediaStore.Images.Media.query(ApplicationLoader.applicationContext.getContentResolver(), MediaStore.Video.Media.EXTERNAL_CONTENT_URI, new String[] {"COUNT(_id)"}, null, null, null);
+                        if (cursor != null) {
+                            if (cursor.moveToNext()) {
+                                count += cursor.getInt(0);
+                            }
+                        }
+                    }
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                } finally {
+                    if (cursor != null) {
+                        cursor.close();
+                    }
+                }
+                if (prevSize != count) {
+                    if (refreshGalleryRunnable != null) {
+                        AndroidUtilities.cancelRunOnUIThread(refreshGalleryRunnable);
+                        refreshGalleryRunnable = null;
+                    }
+                    loadGalleryPhotosAlbums(0);
+                }
+            }
+        }, 2000);
+    }
+
+
     private ExternalObserver externalObserver;
     private InternalObserver internalObserver;
+    private SmsObserver smsObserver;
     private long lastChatEnterTime;
     private long lastChatLeaveTime;
     private long lastMediaCheckTime;
@@ -669,15 +821,42 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         fileDecodingQueue = new DispatchQueue("fileDecodingQueue");
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        mobileDataDownloadMask = preferences.getInt("mobileDataDownloadMask", AUTODOWNLOAD_MASK_PHOTO | AUTODOWNLOAD_MASK_AUDIO | AUTODOWNLOAD_MASK_MUSIC | AUTODOWNLOAD_MASK_GIF | AUTODOWNLOAD_MASK_VIDEOMESSAGE);
-        wifiDownloadMask = preferences.getInt("wifiDownloadMask", AUTODOWNLOAD_MASK_PHOTO | AUTODOWNLOAD_MASK_AUDIO | AUTODOWNLOAD_MASK_MUSIC | AUTODOWNLOAD_MASK_GIF | AUTODOWNLOAD_MASK_VIDEOMESSAGE);
-        roamingDownloadMask = preferences.getInt("roamingDownloadMask", 0);
+        for (int a = 0; a < 4; a++) {
+            String key = "mobileDataDownloadMask" + (a == 0 ? "" : a);
+            if (a == 0 || preferences.contains(key)) {
+                mobileDataDownloadMask[a] = preferences.getInt(key, AUTODOWNLOAD_MASK_PHOTO | AUTODOWNLOAD_MASK_AUDIO | AUTODOWNLOAD_MASK_MUSIC | AUTODOWNLOAD_MASK_GIF | AUTODOWNLOAD_MASK_VIDEOMESSAGE);
+                wifiDownloadMask[a] = preferences.getInt("wifiDownloadMask" + (a == 0 ? "" : a), AUTODOWNLOAD_MASK_PHOTO | AUTODOWNLOAD_MASK_AUDIO | AUTODOWNLOAD_MASK_MUSIC | AUTODOWNLOAD_MASK_GIF | AUTODOWNLOAD_MASK_VIDEOMESSAGE);
+                roamingDownloadMask[a] = preferences.getInt("roamingDownloadMask" + (a == 0 ? "" : a), 0);
+            } else {
+                mobileDataDownloadMask[a] = mobileDataDownloadMask[0];
+                wifiDownloadMask[a] = wifiDownloadMask[0];
+                roamingDownloadMask[a] = roamingDownloadMask[0];
+            }
+        }
+        for (int a = 0; a < 7; a++) {
+            int sdefault;
+            if (a == 1) {
+                sdefault = 2 * 1024 * 1024;
+            } else if (a == 6) {
+                sdefault = 5 * 1024 * 1024;
+            } else {
+                sdefault = 10 * 1024 * 1024;
+            }
+            mobileMaxFileSize[a] = preferences.getInt("mobileMaxDownloadSize" + a, sdefault);
+            wifiMaxFileSize[a] = preferences.getInt("wifiMaxDownloadSize" + a, sdefault);
+            roamingMaxFileSize[a] = preferences.getInt("roamingMaxDownloadSize" + a, sdefault);
+        }
+        globalAutodownloadEnabled = preferences.getBoolean("globalAutodownloadEnabled", true);
         saveToGallery = preferences.getBoolean("save_gallery", false);
         autoplayGifs = preferences.getBoolean("autoplay_gif", true);
         raiseToSpeak = preferences.getBoolean("raise_to_speak", true);
         customTabs = preferences.getBoolean("custom_tabs", true);
         directShare = preferences.getBoolean("direct_share", true);
         shuffleMusic = preferences.getBoolean("shuffleMusic", false);
+        playOrderReversed = preferences.getBoolean("playOrderReversed", false);
+        inappCamera = preferences.getBoolean("inappCamera", true);
+        roundCamera16to9 = preferences.getBoolean("roundCamera16to9", true);
+        groupPhotosEnabled = preferences.getBoolean("groupPhotosEnabled", true);
         repeatMode = preferences.getInt("repeatMode", 0);
 
         AndroidUtilities.runOnUIThread(new Runnable() {
@@ -720,12 +899,22 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         };
 
         try {
-            ApplicationLoader.applicationContext.getContentResolver().registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, false, new GalleryObserverExternal());
+            ApplicationLoader.applicationContext.getContentResolver().registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true, new GalleryObserverExternal());
         } catch (Exception e) {
             FileLog.e(e);
         }
         try {
-            ApplicationLoader.applicationContext.getContentResolver().registerContentObserver(MediaStore.Images.Media.INTERNAL_CONTENT_URI, false, new GalleryObserverInternal());
+            ApplicationLoader.applicationContext.getContentResolver().registerContentObserver(MediaStore.Images.Media.INTERNAL_CONTENT_URI, true, new GalleryObserverInternal());
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        try {
+            ApplicationLoader.applicationContext.getContentResolver().registerContentObserver(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, true, new GalleryObserverExternal());
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        try {
+            ApplicationLoader.applicationContext.getContentResolver().registerContentObserver(MediaStore.Video.Media.INTERNAL_CONTENT_URI, true, new GalleryObserverInternal());
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -918,27 +1107,73 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     protected int getAutodownloadMask() {
+        if (!globalAutodownloadEnabled) {
+            return 0;
+        }
+        int result = 0;
+        int masksArray[];
+        if (ConnectionsManager.isConnectedToWiFi()) {
+            masksArray = wifiDownloadMask;
+        } else if (ConnectionsManager.isRoaming()) {
+            masksArray = roamingDownloadMask;
+        } else {
+            masksArray = mobileDataDownloadMask;
+        }
+        for (int a = 0; a < 4; a++) {
+            int mask = 0;
+            if ((masksArray[a] & AUTODOWNLOAD_MASK_PHOTO) != 0) {
+                mask |= AUTODOWNLOAD_MASK_PHOTO;
+            }
+            if ((masksArray[a] & AUTODOWNLOAD_MASK_AUDIO) != 0) {
+                mask |= AUTODOWNLOAD_MASK_AUDIO;
+            }
+            if ((masksArray[a] & AUTODOWNLOAD_MASK_VIDEOMESSAGE) != 0) {
+                mask |= AUTODOWNLOAD_MASK_VIDEOMESSAGE;
+            }
+            if ((masksArray[a] & AUTODOWNLOAD_MASK_VIDEO) != 0) {
+                mask |= AUTODOWNLOAD_MASK_VIDEO;
+            }
+            if ((masksArray[a] & AUTODOWNLOAD_MASK_DOCUMENT) != 0) {
+                mask |= AUTODOWNLOAD_MASK_DOCUMENT;
+            }
+            if ((masksArray[a] & AUTODOWNLOAD_MASK_MUSIC) != 0) {
+                mask |= AUTODOWNLOAD_MASK_MUSIC;
+            }
+            if ((masksArray[a] & AUTODOWNLOAD_MASK_GIF) != 0) {
+                mask |= AUTODOWNLOAD_MASK_GIF;
+            }
+            result |= mask << (a * 8);
+        }
+        return result;
+    }
+
+    protected int getAutodownloadMaskAll() {
+        if (!globalAutodownloadEnabled) {
+            return 0;
+        }
         int mask = 0;
-        if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_PHOTO) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_PHOTO) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_PHOTO) != 0) {
-            mask |= AUTODOWNLOAD_MASK_PHOTO;
-        }
-        if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_AUDIO) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_AUDIO) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_AUDIO) != 0) {
-            mask |= AUTODOWNLOAD_MASK_AUDIO;
-        }
-        if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_VIDEOMESSAGE) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_VIDEOMESSAGE) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_VIDEOMESSAGE) != 0) {
-            mask |= AUTODOWNLOAD_MASK_VIDEOMESSAGE;
-        }
-        if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_VIDEO) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_VIDEO) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_VIDEO) != 0) {
-            mask |= AUTODOWNLOAD_MASK_VIDEO;
-        }
-        if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_DOCUMENT) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_DOCUMENT) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_DOCUMENT) != 0) {
-            mask |= AUTODOWNLOAD_MASK_DOCUMENT;
-        }
-        if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_MUSIC) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_MUSIC) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_MUSIC) != 0) {
-            mask |= AUTODOWNLOAD_MASK_MUSIC;
-        }
-        if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_GIF) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_GIF) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_GIF) != 0) {
-            mask |= AUTODOWNLOAD_MASK_GIF;
+        for (int a = 0; a < 4; a++) {
+            if ((mobileDataDownloadMask[a] & AUTODOWNLOAD_MASK_PHOTO) != 0 || (wifiDownloadMask[a] & AUTODOWNLOAD_MASK_PHOTO) != 0 || (roamingDownloadMask[a] & AUTODOWNLOAD_MASK_PHOTO) != 0) {
+                mask |= AUTODOWNLOAD_MASK_PHOTO;
+            }
+            if ((mobileDataDownloadMask[a] & AUTODOWNLOAD_MASK_AUDIO) != 0 || (wifiDownloadMask[a] & AUTODOWNLOAD_MASK_AUDIO) != 0 || (roamingDownloadMask[a] & AUTODOWNLOAD_MASK_AUDIO) != 0) {
+                mask |= AUTODOWNLOAD_MASK_AUDIO;
+            }
+            if ((mobileDataDownloadMask[a] & AUTODOWNLOAD_MASK_VIDEOMESSAGE) != 0 || (wifiDownloadMask[a] & AUTODOWNLOAD_MASK_VIDEOMESSAGE) != 0 || (roamingDownloadMask[a] & AUTODOWNLOAD_MASK_VIDEOMESSAGE) != 0) {
+                mask |= AUTODOWNLOAD_MASK_VIDEOMESSAGE;
+            }
+            if ((mobileDataDownloadMask[a] & AUTODOWNLOAD_MASK_VIDEO) != 0 || (wifiDownloadMask[a] & AUTODOWNLOAD_MASK_VIDEO) != 0 || (roamingDownloadMask[a] & AUTODOWNLOAD_MASK_VIDEO) != 0) {
+                mask |= AUTODOWNLOAD_MASK_VIDEO;
+            }
+            if ((mobileDataDownloadMask[a] & AUTODOWNLOAD_MASK_DOCUMENT) != 0 || (wifiDownloadMask[a] & AUTODOWNLOAD_MASK_DOCUMENT) != 0 || (roamingDownloadMask[a] & AUTODOWNLOAD_MASK_DOCUMENT) != 0) {
+                mask |= AUTODOWNLOAD_MASK_DOCUMENT;
+            }
+            if ((mobileDataDownloadMask[a] & AUTODOWNLOAD_MASK_MUSIC) != 0 || (wifiDownloadMask[a] & AUTODOWNLOAD_MASK_MUSIC) != 0 || (roamingDownloadMask[a] & AUTODOWNLOAD_MASK_MUSIC) != 0) {
+                mask |= AUTODOWNLOAD_MASK_MUSIC;
+            }
+            if ((mobileDataDownloadMask[a] & AUTODOWNLOAD_MASK_GIF) != 0 || (wifiDownloadMask[a] & AUTODOWNLOAD_MASK_GIF) != 0 || (roamingDownloadMask[a] & AUTODOWNLOAD_MASK_GIF) != 0) {
+                mask |= AUTODOWNLOAD_MASK_GIF;
+            }
         }
         return mask;
     }
@@ -1030,7 +1265,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             gifDownloadQueue.clear();
         }
 
-        int mask = getAutodownloadMask();
+        int mask = getAutodownloadMaskAll();
         if (mask == 0) {
             MessagesStorage.getInstance().clearDownloadQueue(0);
         } else {
@@ -1058,17 +1293,88 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     }
 
-    public boolean canDownloadMedia(int type) {
-        return (getCurrentDownloadMask() & type) != 0;
+    public boolean canDownloadMedia(MessageObject messageObject) {
+        return canDownloadMedia(messageObject.messageOwner);
+    }
+
+    public boolean canDownloadMedia(TLRPC.Message message) {
+        if (!globalAutodownloadEnabled) {
+            return false;
+        }
+        int type;
+        if (MessageObject.isPhoto(message)) {
+            type = MediaController.AUTODOWNLOAD_MASK_PHOTO;
+        } else if (MessageObject.isVoiceMessage(message)) {
+            type = MediaController.AUTODOWNLOAD_MASK_AUDIO;
+        } else if (MessageObject.isRoundVideoMessage(message)) {
+            type = MediaController.AUTODOWNLOAD_MASK_VIDEOMESSAGE;
+        } else if (MessageObject.isVideoMessage(message)) {
+            type = MediaController.AUTODOWNLOAD_MASK_VIDEO;
+        } else if (MessageObject.isMusicMessage(message)) {
+            type = MediaController.AUTODOWNLOAD_MASK_MUSIC;
+        } else if (MessageObject.isGifMessage(message)) {
+            type = MediaController.AUTODOWNLOAD_MASK_GIF;
+        } else {
+            type = MediaController.AUTODOWNLOAD_MASK_DOCUMENT;
+        }
+        int mask;
+        int index;
+        int maxSize;
+        TLRPC.Peer peer = message.to_id;
+        if (peer != null) {
+            if (peer.user_id != 0) {
+                if (ContactsController.getInstance().contactsDict.containsKey(peer.user_id)) {
+                    index = 0;
+                } else {
+                    index = 1;
+                }
+            } else if (peer.chat_id != 0) {
+                index = 2;
+            } else {
+                if (MessageObject.isMegagroup(message)) {
+                    index = 2;
+                } else {
+                    index = 3;
+                }
+            }
+        } else {
+            index = 1;
+        }
+        if (ConnectionsManager.isConnectedToWiFi()) {
+            mask = wifiDownloadMask[index];
+            maxSize = wifiMaxFileSize[maskToIndex(type)];
+        } else if (ConnectionsManager.isRoaming()) {
+            mask = roamingDownloadMask[index];
+            maxSize = roamingMaxFileSize[maskToIndex(type)];
+        } else {
+            mask = mobileDataDownloadMask[index];
+            maxSize = mobileMaxFileSize[maskToIndex(type)];
+        }
+        return (type == MediaController.AUTODOWNLOAD_MASK_PHOTO || MessageObject.getMessageSize(message) <= maxSize) && (mask & type) != 0;
     }
 
     private int getCurrentDownloadMask() {
+        if (!globalAutodownloadEnabled) {
+            return 0;
+        }
         if (ConnectionsManager.isConnectedToWiFi()) {
-            return wifiDownloadMask;
+            int mask = 0;
+            for (int a = 0; a < 4; a++) {
+                mask |= wifiDownloadMask[a];
+            }
+            return mask;
         } else if (ConnectionsManager.isRoaming()) {
-            return roamingDownloadMask;
+            int mask = 0;
+            for (int a = 0; a < 4; a++) {
+                mask |= roamingDownloadMask[a];
+            }
+            return mask;
         } else {
-            return mobileDataDownloadMask;
+            int mask = 0;
+            for (int a = 0; a < 4; a++) {
+                mask |= mobileDataDownloadMask[a];
+            }
+            return mask;
         }
     }
 
@@ -1206,6 +1512,29 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             if (externalObserver == null) {
                 ApplicationLoader.applicationContext.getContentResolver().registerContentObserver(MediaStore.Images.Media.INTERNAL_CONTENT_URI, false, internalObserver = new InternalObserver());
             }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    public void startSmsObserver() {
+        try {
+            if (smsObserver == null) {
+                ApplicationLoader.applicationContext.getContentResolver().registerContentObserver(Uri.parse("content://sms"), false, smsObserver = new SmsObserver());
+            }
+            AndroidUtilities.runOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (smsObserver != null) {
+                            ApplicationLoader.applicationContext.getContentResolver().unregisterContentObserver(smsObserver);
+                            smsObserver = null;
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                }
+            }, 5 * 60 * 1000);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -1367,7 +1696,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     private void processLaterArrays() {
         for (HashMap.Entry<String, FileDownloadProgressListener> listener : addLaterArray.entrySet()) {
-            addLoadingFileObserver(listener.getKey(), listener.getValue()); //TODO
+            addLoadingFileObserver(listener.getKey(), listener.getValue());
         }
         addLaterArray.clear();
         for (FileDownloadProgressListener listener : deleteLaterArray) {
@@ -1463,19 +1792,28 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     for (int a = 0; a < delayedMessages.size(); a++) {
                         SendMessagesHelper.DelayedMessage delayedMessage = delayedMessages.get(a);
                         if (delayedMessage.encryptedChat == null) {
-                            long dialog_id = delayedMessage.obj.getDialogId();
-                            Long lastTime = typingTimes.get(dialog_id);
-                            if (lastTime == null || lastTime + 4000 < System.currentTimeMillis()) {
-                                if (MessageObject.isRoundVideoDocument(delayedMessage.documentLocation)) {
-                                    MessagesController.getInstance().sendTyping(dialog_id, 8, 0);
-                                } else if (MessageObject.isVideoDocument(delayedMessage.documentLocation)) {
-                                    MessagesController.getInstance().sendTyping(dialog_id, 5, 0);
-                                } else if (delayedMessage.documentLocation != null) {
-                                    MessagesController.getInstance().sendTyping(dialog_id, 3, 0);
-                                } else if (delayedMessage.location != null) {
+                            long dialog_id = delayedMessage.peer;
+                            if (delayedMessage.type == 4) {
+                                Long lastTime = typingTimes.get(dialog_id);
+                                if (lastTime == null || lastTime + 4000 < System.currentTimeMillis()) {
                                     MessagesController.getInstance().sendTyping(dialog_id, 4, 0);
+                                    typingTimes.put(dialog_id, System.currentTimeMillis());
                                 }
-                                typingTimes.put(dialog_id, System.currentTimeMillis());
+                            } else {
+                                Long lastTime = typingTimes.get(dialog_id);
+                                TLRPC.Document document = delayedMessage.obj.getDocument();
+                                if (lastTime == null || lastTime + 4000 < System.currentTimeMillis()) {
+                                    if (delayedMessage.obj.isRoundVideo()) {
+                                        MessagesController.getInstance().sendTyping(dialog_id, 8, 0);
+                                    } else if (delayedMessage.obj.isVideo()) {
+                                        MessagesController.getInstance().sendTyping(dialog_id, 5, 0);
+                                    } else if (delayedMessage.obj.getDocument() != null) {
+                                        MessagesController.getInstance().sendTyping(dialog_id, 3, 0);
+                                    } else if (delayedMessage.location != null) {
+                                        MessagesController.getInstance().sendTyping(dialog_id, 4, 0);
+                                    }
+                                    typingTimes.put(dialog_id, System.currentTimeMillis());
+                                }
                             }
                         }
                     }
@@ -2189,14 +2527,24 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 currentPlaylistNum = 0;
             }
             if (loadMusic) {
-                SharedMediaQuery.loadMusic(current.getDialogId(), playlist.get(0).getId());
+                SharedMediaQuery.loadMusic(current.getDialogId(), playlist.get(0).getIdWithChannel());
             }
         }
         return playMessage(current);
     }
 
     public void playNextMessage() {
-        playNextMessage(false);
+        playNextMessageWithoutOrder(false);
+    }
+
+    public boolean findMessageInPlaylistAndPlay(MessageObject messageObject) {
+        int index = playlist.indexOf(messageObject);
+        if (index == -1) {
+            return playMessage(messageObject);
+        } else {
+            playMessageAtIndex(index);
+        }
+        return true;
     }
 
     public void playMessageAtIndex(int index) {
@@ -2208,7 +2556,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         playMessage(playlist.get(currentPlaylistNum));
     }
 
-    private void playNextMessage(boolean byStop) {
+    private void playNextMessageWithoutOrder(boolean byStop) {
         ArrayList<MessageObject> currentPlayList = shuffleMusic ? shuffledPlaylist : playlist;
 
         if (byStop && repeatMode == 2 && !forceLoopCurrentPlaylist) {
@@ -2216,67 +2564,78 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             playMessage(currentPlayList.get(currentPlaylistNum));
             return;
         }
-        currentPlaylistNum++;
-        if (currentPlaylistNum >= currentPlayList.size()) {
-            currentPlaylistNum = 0;
-            if (byStop && repeatMode == 0 && !forceLoopCurrentPlaylist) {
-                if (audioPlayer != null || audioTrackPlayer != null || videoPlayer != null) {
-                    if (audioPlayer != null) {
-                        try {
-                            audioPlayer.reset();
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        try {
-                            audioPlayer.stop();
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        try {
-                            audioPlayer.release();
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        audioPlayer = null;
-                    } else if (audioTrackPlayer != null) {
-                        synchronized (playerObjectSync) {
-                            try {
-                                audioTrackPlayer.pause();
-                                audioTrackPlayer.flush();
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
-                            try {
-                                audioTrackPlayer.release();
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
-                            audioTrackPlayer = null;
-                        }
-                    } else if (videoPlayer != null) {
-                        currentAspectRatioFrameLayout = null;
-                        currentTextureViewContainer = null;
-                        currentAspectRatioFrameLayoutReady = false;
-                        currentTextureView = null;
-                        videoPlayer.releasePlayer();
-                        videoPlayer = null;
-                        try {
-                            baseActivity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                    }
-                    stopProgressTimer();
-                    lastProgress = 0;
-                    buffersWrited = 0;
-                    isPaused = true;
-                    playingMessageObject.audioProgress = 0.0f;
-                    playingMessageObject.audioProgressSec = 0;
-                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagePlayingProgressDidChanged, playingMessageObject.getId(), 0);
-                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagePlayingPlayStateChanged, playingMessageObject.getId());
-                }
-                return;
+
+        boolean last = false;
+        if (playOrderReversed) {
+            currentPlaylistNum++;
+            if (currentPlaylistNum >= currentPlayList.size()) {
+                currentPlaylistNum = 0;
+                last = true;
             }
+        } else {
+            currentPlaylistNum--;
+            if (currentPlaylistNum < 0) {
+                currentPlaylistNum = currentPlayList.size() - 1;
+                last = true;
+            }
+        }
+        if (last && byStop && repeatMode == 0 && !forceLoopCurrentPlaylist) {
+            if (audioPlayer != null || audioTrackPlayer != null || videoPlayer != null) {
+                if (audioPlayer != null) {
+                    try {
+                        audioPlayer.reset();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    try {
+                        audioPlayer.stop();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    try {
+                        audioPlayer.release();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    audioPlayer = null;
+                } else if (audioTrackPlayer != null) {
+                    synchronized (playerObjectSync) {
+                        try {
+                            audioTrackPlayer.pause();
+                            audioTrackPlayer.flush();
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        try {
+                            audioTrackPlayer.release();
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        audioTrackPlayer = null;
+                    }
+                } else if (videoPlayer != null) {
+                    currentAspectRatioFrameLayout = null;
+                    currentTextureViewContainer = null;
+                    currentAspectRatioFrameLayoutReady = false;
+                    currentTextureView = null;
+                    videoPlayer.releasePlayer();
+                    videoPlayer = null;
+                    try {
+                        baseActivity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                }
+                stopProgressTimer();
+                lastProgress = 0;
+                buffersWrited = 0;
+                isPaused = true;
+                playingMessageObject.audioProgress = 0.0f;
+                playingMessageObject.audioProgressSec = 0;
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagePlayingProgressDidChanged, playingMessageObject.getId(), 0);
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagePlayingPlayStateChanged, playingMessageObject.getId());
+            }
+            return;
         }
         if (currentPlaylistNum < 0 || currentPlaylistNum >= currentPlayList.size()) {
             return;
@@ -2296,9 +2655,16 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             return;
         }
 
-        currentPlaylistNum--;
-        if (currentPlaylistNum < 0) {
-            currentPlaylistNum = currentPlayList.size() - 1;
+        if (playOrderReversed) {
+            currentPlaylistNum--;
+            if (currentPlaylistNum < 0) {
+                currentPlaylistNum = currentPlayList.size() - 1;
+            }
+        } else {
+            currentPlaylistNum++;
+            if (currentPlaylistNum >= currentPlayList.size()) {
+                currentPlaylistNum = 0;
+            }
         }
         if (currentPlaylistNum < 0 || currentPlaylistNum >= currentPlayList.size()) {
             return;
@@ -2334,13 +2700,25 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (currentPlayList == null || currentPlayList.size() < 2) {
             return;
         }
-        int nextIndex = currentPlaylistNum + 1;
-        if (nextIndex >= currentPlayList.size()) {
-            nextIndex = 0;
+        int nextIndex;
+        if (playOrderReversed) {
+            nextIndex = currentPlaylistNum + 1;
+            if (nextIndex >= currentPlayList.size()) {
+                nextIndex = 0;
+            }
+        } else {
+            nextIndex = currentPlaylistNum - 1;
+            if (nextIndex < 0) {
+                nextIndex = currentPlayList.size() - 1;
+            }
         }
+
         MessageObject nextAudio = currentPlayList.get(nextIndex);
+        if (!canDownloadMedia(nextAudio)) {
+            return;
+        }
         File file = null;
-        if (nextAudio.messageOwner.attachPath != null && nextAudio.messageOwner.attachPath.length() > 0) {
+        if (!TextUtils.isEmpty(nextAudio.messageOwner.attachPath)) {
             file = new File(nextAudio.messageOwner.attachPath);
             if (!file.exists()) {
                 file = null;
@@ -2481,7 +2859,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             }
             return true;
         }
-        if (!messageObject.isOut() && messageObject.isContentUnread() && messageObject.messageOwner.to_id.channel_id == 0) {
+        if (!messageObject.isOut() && messageObject.isContentUnread()) {
             MessagesController.getInstance().markMessageContentAsRead(messageObject);
         }
         boolean notify = !playMusicAgain;
@@ -2592,7 +2970,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     }
                 }
 
-                @TargetApi(16)
                 @Override
                 public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
                     if (videoPlayer == null) {
@@ -2727,7 +3104,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     @Override
                     public void onCompletion(MediaPlayer mediaPlayer) {
                         if (!playlist.isEmpty() && playlist.size() > 1) {
-                            playNextMessage(true);
+                            playNextMessageWithoutOrder(true);
                         } else {
                             cleanupPlayer(true, true, messageObject != null && messageObject.isVoice());
                         }
@@ -2895,26 +3272,38 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         return shuffleMusic;
     }
 
+    public boolean isPlayOrderReversed() {
+        return playOrderReversed;
+    }
+
     public int getRepeatMode() {
         return repeatMode;
     }
 
-    public void toggleShuffleMusic() {
-        shuffleMusic = !shuffleMusic;
+    public void toggleShuffleMusic(int type) {
+        boolean oldShuffle = shuffleMusic;
+        if (type == 2) {
+            shuffleMusic = !shuffleMusic;
+        } else {
+            playOrderReversed = !playOrderReversed;
+        }
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("shuffleMusic", shuffleMusic);
+        editor.putBoolean("playOrderReversed", playOrderReversed);
         editor.commit();
-        if (shuffleMusic) {
-            buildShuffledPlayList();
-            currentPlaylistNum = 0;
-        } else {
-            if (playingMessageObject != null) {
-                currentPlaylistNum = playlist.indexOf(playingMessageObject);
-                if (currentPlaylistNum == -1) {
-                    playlist.clear();
-                    shuffledPlaylist.clear();
-                    cleanupPlayer(true, true);
+        if (oldShuffle != shuffleMusic) {
+            if (shuffleMusic) {
+                buildShuffledPlayList();
+                currentPlaylistNum = 0;
+            } else {
+                if (playingMessageObject != null) {
+                    currentPlaylistNum = playlist.indexOf(playingMessageObject);
+                    if (currentPlaylistNum == -1) {
+                        playlist.clear();
+                        shuffledPlaylist.clear();
+                        cleanupPlayer(true, true);
+                    }
                 }
             }
         }
@@ -2983,8 +3372,22 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         return currentAspectRatioFrameLayout != null && currentAspectRatioFrameLayout.isDrawingReady();
     }
 
+    public ArrayList<MessageObject> getPlaylist() {
+        return playlist;
+    }
+
     public boolean isPlayingMessage(MessageObject messageObject) {
-        return !(audioTrackPlayer == null && audioPlayer == null && videoPlayer == null || messageObject == null || playingMessageObject == null || playingMessageObject != null && (playingMessageObject.eventId != messageObject.eventId || playingMessageObject.getId() != messageObject.getId() || downloadingCurrentMessage));
+        if (audioTrackPlayer == null && audioPlayer == null && videoPlayer == null || messageObject == null || playingMessageObject == null) {
+            return false;
+        }
+        if (playingMessageObject.eventId != 0 && playingMessageObject.eventId == playingMessageObject.eventId) {
+            return !downloadingCurrentMessage;
+        }
+        if (playingMessageObject.getDialogId() == messageObject.getDialogId() && playingMessageObject.getId() == messageObject.getId()) {
+            return !downloadingCurrentMessage;
+        }
+        //
+        return false;
     }
 
     public boolean isMessagePaused() {
@@ -3004,7 +3407,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         try {
             Vibrator v = (Vibrator) ApplicationLoader.applicationContext.getSystemService(Context.VIBRATOR_SERVICE);
-            v.vibrate(50);
+            v.vibrate(10);
             //NotificationsController.getInstance().playRecordSound();
         } catch (Exception e) {
             FileLog.e(e);
@@ -3204,7 +3607,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
                 try {
                     Vibrator v = (Vibrator) ApplicationLoader.applicationContext.getSystemService(Context.VIBRATOR_SERVICE);
-                    v.vibrate(50);
+                    v.vibrate(10);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -3236,10 +3639,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
 
         final File sourceFile = file;
-        final boolean[] cancelled = new boolean[1];
+        final boolean[] cancelled = new boolean[] {false};
         if (sourceFile.exists()) {
             AlertDialog progressDialog = null;
-            if (context != null) {
+            if (context != null && type != 0) {
                 try {
                     progressDialog = new AlertDialog(context, 2);
                     progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
@@ -3470,7 +3873,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 name = String.format(Locale.US, "%d.%s", id, ext);
             }
             inputStream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri);
-            File f = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), name);
+            File f = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), "sharing/");
+            f.mkdirs();
+            f = new File(f, name);
             output = new FileOutputStream(f);
             byte[] buffer = new byte[1024 * 20];
             int len;
@@ -3540,6 +3945,30 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         editor.commit();
     }
 
+    public void toggleInappCamera() {
+        inappCamera = !inappCamera;
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("direct_share", inappCamera);
+        editor.commit();
+    }
+
+    public void toggleRoundCamera16to9() {
+        roundCamera16to9 = !roundCamera16to9;
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("roundCamera16to9", roundCamera16to9);
+        editor.commit();
+    }
+
+    public void toggleGroupPhotosEnabled() {
+        groupPhotosEnabled = !groupPhotosEnabled;
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("groupPhotosEnabled", groupPhotosEnabled);
+        editor.commit();
+    }
+
     public void checkSaveToGalleryFiles() {
         try {
             File telegramPath = new File(Environment.getExternalStorageDirectory(), "Telegram");
@@ -3586,6 +4015,18 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     public boolean canDirectShare() {
         return directShare;
+    }
+
+    public boolean canInAppCamera() {
+        return inappCamera;
+    }
+
+    public boolean canRoundCamera16to9() {
+        return roundCamera16to9;
+    }
+
+    public boolean isGroupPhotosEnabled() {
+        return groupPhotosEnabled;
     }
 
     public static void loadGalleryPhotosAlbums(final int guid) {
@@ -3896,7 +4337,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         return lastColorFormat;
     }
 
-    @TargetApi(16)
     private int selectTrack(MediaExtractor extractor, boolean audio) {
         int numTracks = extractor.getTrackCount();
         for (int i = 0; i < numTracks; i++) {
@@ -3942,7 +4382,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         });
     }
 
-    @TargetApi(16)
     private long readAndWriteTrack(final MessageObject messageObject, MediaExtractor extractor, MP4Builder mediaMuxer, MediaCodec.BufferInfo info, long start, long end, File file, boolean isAudio) throws Exception {
         int trackIndex = selectTrack(extractor, isAudio);
         if (trackIndex >= 0) {
@@ -4074,7 +4513,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     }
 
-    @TargetApi(16)
     private boolean convertVideo(final MessageObject messageObject) {
         String videoPath = messageObject.videoEditedInfo.originalPath;
         long startTime = messageObject.videoEditedInfo.startTime;

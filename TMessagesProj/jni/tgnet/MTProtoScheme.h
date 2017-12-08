@@ -411,6 +411,17 @@ public:
     void serializeToStream(NativeByteBuffer *stream);
 };
 
+class MsgsStateInfo : public TLObject {
+
+public:
+    static const uint32_t constructor = 0x04deb57d;
+
+    int64_t req_msg_id;
+    std::string info;
+
+    void readParams(NativeByteBuffer *stream, bool &error);
+};
+
 class RpcError : public TLObject {
 
 public:

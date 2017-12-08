@@ -72,7 +72,7 @@ public final class InitializationChunk extends Chunk {
   @SuppressWarnings("NonAtomicVolatileUpdate")
   @Override
   public void load() throws IOException, InterruptedException {
-    DataSpec loadDataSpec = Util.getRemainderDataSpec(dataSpec, bytesLoaded);
+    DataSpec loadDataSpec = dataSpec.subrange(bytesLoaded);
     try {
       // Create and open the input.
       ExtractorInput input = new DefaultExtractorInput(dataSource,

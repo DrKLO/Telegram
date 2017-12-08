@@ -752,9 +752,7 @@ void ConnectionsManager::onConnectionDataReceived(Connection *connection, Native
     } else {
         if (length < 24 + 32 || (length - 24) % 16 != 0 || !datacenter->decryptServerResponse(keyId, data->bytes() + mark + 8, data->bytes() + mark + 24, length - 24)) {
             DEBUG_E("connection(%p) unable to decrypt server response", connection);
-            datacenter->switchTo443Port();
-            connection->suspendConnection();
-            connection->connect();
+            connection->reconnect();
             return;
         }
         data->position(mark + 24);
@@ -1153,7 +1151,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
 
     } else if (typeInfo == typeid(TL_bad_msg_notification)) {
         TL_bad_msg_notification *result = (TL_bad_msg_notification *) message;
-        DEBUG_E("bad message: %d", result->error_code);
+        DEBUG_E("bad message notification %d for messageId 0x%llx, seqno %d", result->error_code, result->bad_msg_id, result->bad_msg_seqno);
         switch (result->error_code) {
             case 16:
             case 17:
@@ -1178,6 +1176,19 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                 lastOutgoingMessageId = 0;
                 clearRequestsForDatacenter(datacenter);
                 break;
+            }
+            case 20: {
+                for (requestsIter iter = runningRequests.begin(); iter != runningRequests.end(); iter++) {
+                    Request *request = iter->get();
+                    if (request->respondsToMessageId(result->bad_msg_id)) {
+                        if (request->completed) {
+                            break;
+                        }
+                        connection->addMessageToConfirm(result->bad_msg_id);
+                        request->clear(true);
+                        break;
+                    }
+                }
             }
             default:
                 break;
@@ -1218,12 +1229,33 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
         if (datacenter->hasAuthKey()) {
             processRequestQueue(AllConnectionTypes, datacenter->getDatacenterId());
         }
+    } else if (typeInfo == typeid(MsgsStateInfo)) {
+        MsgsStateInfo *response = (MsgsStateInfo *) message;
+        DEBUG_D("connection(%p, dc%u, type %d) got %s for messageId 0x%llx", connection, datacenter->getDatacenterId(), connection->getConnectionType(), typeInfo.name(), response->req_msg_id);
+
+        std::map<int64_t, int64_t>::iterator mIter = resendRequests.find(response->req_msg_id);
+        if (mIter != resendRequests.end()) {
+            DEBUG_D("found resend for messageId 0x%llx", mIter->second);
+            connection->addMessageToConfirm(mIter->second);
+            for (requestsIter iter = runningRequests.begin(); iter != runningRequests.end(); iter++) {
+                Request *request = iter->get();
+                if (request->respondsToMessageId(mIter->second)) {
+                    if (request->completed) {
+                        break;
+                    }
+                    request->clear(true);
+                    break;
+                }
+            }
+            resendRequests.erase(mIter);
+        }
     } else if (dynamic_cast<MsgDetailedInfo *>(message)) {
         MsgDetailedInfo *response = (MsgDetailedInfo *) message;
 
         bool requestResend = false;
         bool confirm = true;
 
+        DEBUG_D("connection(%p, dc%u, type %d) got %s for messageId 0x%llx", connection, datacenter->getDatacenterId(), connection->getConnectionType(), typeInfo.name(), response->msg_id);
         if (typeInfo == typeid(TL_msg_detailed_info)) {
             for (requestsIter iter = runningRequests.begin(); iter != runningRequests.end(); iter++) {
                 Request *request = iter->get();
@@ -1231,6 +1263,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                     if (request->completed) {
                         break;
                     }
+                    DEBUG_D("got TL_msg_detailed_info for rpc request %p - %s", request->rawRequest, typeid(*request->rawRequest).name());
                     int32_t currentTime = (int32_t) (getCurrentTimeMonotonicMillis() / 1000);
                     if (request->lastResendTime == 0 || abs(currentTime - request->lastResendTime) >= 60) {
                         request->lastResendTime = currentTime;
@@ -1261,6 +1294,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
             array.push_back(std::unique_ptr<NetworkMessage>(networkMessage));
 
             sendMessagesToConnection(array, connection, false);
+            resendRequests[networkMessage->message->msg_id] = response->answer_msg_id;
         } else if (confirm) {
             connection->addMessageToConfirm(response->answer_msg_id);
         }
@@ -1843,10 +1877,11 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
             if (requestDatacenter->isCdnDatacenter) {
                 request->requestFlags |= RequestFlagEnableUnauthorized;
             }
-            if (requestDatacenter->lastInitVersion != currentVersion && !request->isInitRequest) {
-                request->rpcRequest.release();
-                request->rpcRequest = wrapInLayer(request->rawRequest, requestDatacenter, request);
-                request->serializedLength = request->getRpcRequest()->getObjectSize();
+            if (requestDatacenter->lastInitVersion != currentVersion && !request->isInitRequest && request->rawRequest->isNeedLayer()) {
+                DEBUG_D("move %p - %s to requestsQueue because of initConnection", request->rawRequest, typeid(*request->rawRequest).name());
+                requestsQueue.push_back(std::move(*iter));
+                iter = runningRequests.erase(iter);
+                continue;
             }
 
             if (!requestDatacenter->hasAuthKey()) {
@@ -2628,6 +2663,9 @@ void ConnectionsManager::setProxySettings(std::string address, uint16_t port, st
 
 void ConnectionsManager::setLangCode(std::string langCode) {
     scheduleTask([&, langCode] {
+        if (currentLangCode.compare(langCode) == 0) {
+            return;
+        }
         currentLangCode = langCode;
         for (std::map<uint32_t, Datacenter *>::iterator iter = datacenters.begin(); iter != datacenters.end(); iter++) {
             iter->second->lastInitVersion = 0;

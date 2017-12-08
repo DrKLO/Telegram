@@ -3,8 +3,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="128dp"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="horizontal"
-    android:background="#ff424242" >
+    android:background="#ff424242">
 
     <ImageView
         android:id="@+id/player_album_art"
@@ -28,7 +29,8 @@
             android:textSize="16dp"
             android:layout_marginLeft="12dp"
             android:layout_marginTop="4dp"
-            android:layout_marginRight="44dp"/>
+            android:layout_marginRight="44dp"
+            tools:text="Song Title"/>
 
         <ImageView
             android:id="@+id/player_close"
@@ -50,7 +52,20 @@
             android:layout_marginTop="25dp"
             android:layout_marginLeft="12dp"
             android:layout_marginRight="44dp"
-            android:textSize="13dp" />
+            android:textSize="13dp"
+            tools:text="Artist Name"/>
+
+        <TextView
+            android:id="@+id/player_album_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:textColor="#ffc7c7c7"
+            android:layout_marginTop="42dp"
+            android:layout_marginLeft="12dp"
+            android:layout_marginRight="44dp"
+            android:textSize="13dp"
+            tools:text="Album"/>
 
         <FrameLayout
             android:layout_height="1dp"

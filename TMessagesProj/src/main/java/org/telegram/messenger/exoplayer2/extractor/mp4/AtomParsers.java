@@ -60,11 +60,13 @@ import java.util.List;
    * @param duration The duration in units of the timescale declared in the mvhd atom, or
    *     {@link C#TIME_UNSET} if the duration should be parsed from the tkhd atom.
    * @param drmInitData {@link DrmInitData} to be included in the format.
+   * @param ignoreEditLists Whether to ignore any edit lists in the trak box.
    * @param isQuickTime True for QuickTime media. False otherwise.
    * @return A {@link Track} instance, or {@code null} if the track's type isn't supported.
    */
   public static Track parseTrak(Atom.ContainerAtom trak, Atom.LeafAtom mvhd, long duration,
-      DrmInitData drmInitData, boolean isQuickTime) throws ParserException {
+      DrmInitData drmInitData, boolean ignoreEditLists, boolean isQuickTime)
+      throws ParserException {
     Atom.ContainerAtom mdia = trak.getContainerAtomOfType(Atom.TYPE_mdia);
     int trackType = parseHdlr(mdia.getLeafAtomOfType(Atom.TYPE_hdlr).data);
     if (trackType == C.TRACK_TYPE_UNKNOWN) {
@@ -88,11 +90,17 @@ import java.util.List;
     Pair<Long, String> mdhdData = parseMdhd(mdia.getLeafAtomOfType(Atom.TYPE_mdhd).data);
     StsdData stsdData = parseStsd(stbl.getLeafAtomOfType(Atom.TYPE_stsd).data, tkhdData.id,
         tkhdData.rotationDegrees, mdhdData.second, drmInitData, isQuickTime);
-    Pair<long[], long[]> edtsData = parseEdts(trak.getContainerAtomOfType(Atom.TYPE_edts));
+    long[] editListDurations = null;
+    long[] editListMediaTimes = null;
+    if (!ignoreEditLists) {
+      Pair<long[], long[]> edtsData = parseEdts(trak.getContainerAtomOfType(Atom.TYPE_edts));
+      editListDurations = edtsData.first;
+      editListMediaTimes = edtsData.second;
+    }
     return stsdData.format == null ? null
         : new Track(tkhdData.id, trackType, mdhdData.first, movieTimescale, durationUs,
             stsdData.format, stsdData.requiredSampleTransformation, stsdData.trackEncryptionBoxes,
-            stsdData.nalUnitLengthFieldLength, edtsData.first, edtsData.second);
+            stsdData.nalUnitLengthFieldLength, editListDurations, editListMediaTimes);
   }
 
   /**
@@ -395,7 +403,11 @@ import java.util.List;
       hasSyncSample |= (editedFlags[i] & C.BUFFER_FLAG_KEY_FRAME) != 0;
     }
     if (!hasSyncSample) {
-      throw new ParserException("The edited sample sequence does not contain a sync sample.");
+      // We don't support edit lists where the edited sample sequence doesn't contain a sync sample.
+      // Such edit lists are often (although not always) broken, so we ignore it and continue.
+      Log.w(TAG, "Ignoring edit list: Edited sample sequence does not contain a sync sample.");
+      Util.scaleLargeTimestampsInPlace(timestamps, C.MICROS_PER_SECOND, track.timescale);
+      return new TrackSampleTable(offsets, sizes, maximumSize, timestamps, flags);
     }
 
     return new TrackSampleTable(editedOffsets, editedSizes, editedMaximumSize, editedTimestamps,
@@ -615,10 +627,10 @@ import java.util.List;
           || childAtomType == Atom.TYPE_wvtt || childAtomType == Atom.TYPE_stpp
           || childAtomType == Atom.TYPE_c608) {
         parseTextSampleEntry(stsd, childAtomType, childStartPosition, childAtomSize, trackId,
-            language, drmInitData, out);
+            language, out);
       } else if (childAtomType == Atom.TYPE_camm) {
         out.format = Format.createSampleFormat(Integer.toString(trackId),
-            MimeTypes.APPLICATION_CAMERA_MOTION, null, Format.NO_VALUE, drmInitData);
+            MimeTypes.APPLICATION_CAMERA_MOTION, null, Format.NO_VALUE, null);
       }
       stsd.setPosition(childStartPosition + childAtomSize);
     }
@@ -626,8 +638,7 @@ import java.util.List;
   }
 
   private static void parseTextSampleEntry(ParsableByteArray parent, int atomType, int position,
-      int atomSize, int trackId, String language, DrmInitData drmInitData, StsdData out)
-      throws ParserException {
+      int atomSize, int trackId, String language, StsdData out) throws ParserException {
     parent.setPosition(position + Atom.HEADER_SIZE + StsdData.STSD_HEADER_SIZE);
 
     // Default values.
@@ -658,8 +669,7 @@ import java.util.List;
     }
 
     out.format = Format.createTextSampleFormat(Integer.toString(trackId), mimeType, null,
-        Format.NO_VALUE, 0, language, Format.NO_VALUE, drmInitData, subsampleOffsetUs,
-        initializationData);
+        Format.NO_VALUE, 0, language, Format.NO_VALUE, null, subsampleOffsetUs, initializationData);
   }
 
   private static void parseVideoSampleEntry(ParsableByteArray parent, int atomType, int position,
@@ -676,9 +686,20 @@ import java.util.List;
 
     int childPosition = parent.getPosition();
     if (atomType == Atom.TYPE_encv) {
-      atomType = parseSampleEntryEncryptionData(parent, position, size, out, entryIndex);
+      Pair<Integer, TrackEncryptionBox> sampleEntryEncryptionData = parseSampleEntryEncryptionData(
+          parent, position, size);
+      if (sampleEntryEncryptionData != null) {
+        atomType = sampleEntryEncryptionData.first;
+        drmInitData = drmInitData == null ? null
+            : drmInitData.copyWithSchemeType(sampleEntryEncryptionData.second.schemeType);
+        out.trackEncryptionBoxes[entryIndex] = sampleEntryEncryptionData.second;
+      }
       parent.setPosition(childPosition);
     }
+    // TODO: Uncomment when [Internal: b/63092960] is fixed.
+    // else {
+    //   drmInitData = null;
+    // }
 
     List<byte[]> initializationData = null;
     String mimeType = null;
@@ -770,7 +791,7 @@ import java.util.List;
    *
    * @param edtsAtom edts (edit box) atom to decode.
    * @return Pair of edit list durations and edit list media times, or a pair of nulls if they are
-   * not present.
+   *     not present.
    */
   private static Pair<long[], long[]> parseEdts(Atom.ContainerAtom edtsAtom) {
     Atom.LeafAtom elst;
@@ -845,9 +866,20 @@ import java.util.List;
 
     int childPosition = parent.getPosition();
     if (atomType == Atom.TYPE_enca) {
-      atomType = parseSampleEntryEncryptionData(parent, position, size, out, entryIndex);
+      Pair<Integer, TrackEncryptionBox> sampleEntryEncryptionData = parseSampleEntryEncryptionData(
+          parent, position, size);
+      if (sampleEntryEncryptionData != null) {
+        atomType = sampleEntryEncryptionData.first;
+        drmInitData = drmInitData == null ? null
+            : drmInitData.copyWithSchemeType(sampleEntryEncryptionData.second.schemeType);
+        out.trackEncryptionBoxes[entryIndex] = sampleEntryEncryptionData.second;
+      }
       parent.setPosition(childPosition);
     }
+    // TODO: Uncomment when [Internal: b/63092960] is fixed.
+    // else {
+    //   drmInitData = null;
+    // }
 
     // If the atom type determines a MIME type, set it immediately.
     String mimeType = null;
@@ -975,9 +1007,10 @@ import java.util.List;
     int objectTypeIndication = parent.readUnsignedByte();
     String mimeType;
     switch (objectTypeIndication) {
-      case 0x6B:
-        mimeType = MimeTypes.AUDIO_MPEG;
-        return Pair.create(mimeType, null);
+      case 0x60:
+      case 0x61:
+        mimeType = MimeTypes.VIDEO_MPEG2;
+        break;
       case 0x20:
         mimeType = MimeTypes.VIDEO_MP4V;
         break;
@@ -987,6 +1020,9 @@ import java.util.List;
       case 0x23:
         mimeType = MimeTypes.VIDEO_H265;
         break;
+      case 0x6B:
+        mimeType = MimeTypes.AUDIO_MPEG;
+        return Pair.create(mimeType, null);
       case 0x40:
       case 0x66:
       case 0x67:
@@ -1014,8 +1050,8 @@ import java.util.List;
 
     parent.skipBytes(12);
 
-    // Start of the AudioSpecificConfig.
-    parent.skipBytes(1); // AudioSpecificConfig tag
+    // Start of the DecoderSpecificInfo.
+    parent.skipBytes(1); // DecoderSpecificInfo tag
     int initializationDataSize = parseExpandableClassSize(parent);
     byte[] initializationData = new byte[initializationDataSize];
     parent.readBytes(initializationData, 0, initializationDataSize);
@@ -1023,11 +1059,12 @@ import java.util.List;
   }
 
   /**
-   * Parses encryption data from an audio/video sample entry, populating {@code out} and returning
-   * the unencrypted atom type, or 0 if no common encryption sinf atom was present.
+   * Parses encryption data from an audio/video sample entry, returning a pair consisting of the
+   * unencrypted atom type and a {@link TrackEncryptionBox}. Null is returned if no common
+   * encryption sinf atom was present.
    */
-  private static int parseSampleEntryEncryptionData(ParsableByteArray parent, int position,
-      int size, StsdData out, int entryIndex) {
+  private static Pair<Integer, TrackEncryptionBox> parseSampleEntryEncryptionData(
+      ParsableByteArray parent, int position, int size) {
     int childPosition = parent.getPosition();
     while (childPosition - position < size) {
       parent.setPosition(childPosition);
@@ -1035,25 +1072,23 @@ import java.util.List;
       Assertions.checkArgument(childAtomSize > 0, "childAtomSize should be positive");
       int childAtomType = parent.readInt();
       if (childAtomType == Atom.TYPE_sinf) {
-        Pair<Integer, TrackEncryptionBox> result = parseSinfFromParent(parent, childPosition,
-            childAtomSize);
+        Pair<Integer, TrackEncryptionBox> result = parseCommonEncryptionSinfFromParent(parent,
+            childPosition, childAtomSize);
         if (result != null) {
-          out.trackEncryptionBoxes[entryIndex] = result.second;
-          return result.first;
+          return result;
         }
       }
       childPosition += childAtomSize;
     }
-    // This enca/encv box does not have a data format so return an invalid atom type.
-    return 0;
+    return null;
   }
 
-  private static Pair<Integer, TrackEncryptionBox> parseSinfFromParent(ParsableByteArray parent,
-      int position, int size) {
+  /* package */ static Pair<Integer, TrackEncryptionBox> parseCommonEncryptionSinfFromParent(
+      ParsableByteArray parent, int position, int size) {
     int childPosition = position + Atom.HEADER_SIZE;
-
-    boolean isCencScheme = false;
-    TrackEncryptionBox trackEncryptionBox = null;
+    int schemeInformationBoxPosition = C.POSITION_UNSET;
+    int schemeInformationBoxSize = 0;
+    String schemeType = null;
     Integer dataFormat = null;
     while (childPosition - position < size) {
       parent.setPosition(childPosition);
@@ -1063,36 +1098,61 @@ import java.util.List;
         dataFormat = parent.readInt();
       } else if (childAtomType == Atom.TYPE_schm) {
         parent.skipBytes(4);
-        isCencScheme = parent.readInt() == TYPE_cenc;
+        // Common encryption scheme_type values are defined in ISO/IEC 23001-7:2016, section 4.1.
+        schemeType = parent.readString(4);
       } else if (childAtomType == Atom.TYPE_schi) {
-        trackEncryptionBox = parseSchiFromParent(parent, childPosition, childAtomSize);
+        schemeInformationBoxPosition = childPosition;
+        schemeInformationBoxSize = childAtomSize;
       }
       childPosition += childAtomSize;
     }
 
-    if (isCencScheme) {
+    if (C.CENC_TYPE_cenc.equals(schemeType) || C.CENC_TYPE_cbc1.equals(schemeType)
+        || C.CENC_TYPE_cens.equals(schemeType) || C.CENC_TYPE_cbcs.equals(schemeType)) {
       Assertions.checkArgument(dataFormat != null, "frma atom is mandatory");
-      Assertions.checkArgument(trackEncryptionBox != null, "schi->tenc atom is mandatory");
-      return Pair.create(dataFormat, trackEncryptionBox);
+      Assertions.checkArgument(schemeInformationBoxPosition != C.POSITION_UNSET,
+          "schi atom is mandatory");
+      TrackEncryptionBox encryptionBox = parseSchiFromParent(parent, schemeInformationBoxPosition,
+          schemeInformationBoxSize, schemeType);
+      Assertions.checkArgument(encryptionBox != null, "tenc atom is mandatory");
+      return Pair.create(dataFormat, encryptionBox);
     } else {
       return null;
     }
   }
 
   private static TrackEncryptionBox parseSchiFromParent(ParsableByteArray parent, int position,
-      int size) {
+      int size, String schemeType) {
     int childPosition = position + Atom.HEADER_SIZE;
     while (childPosition - position < size) {
       parent.setPosition(childPosition);
       int childAtomSize = parent.readInt();
       int childAtomType = parent.readInt();
       if (childAtomType == Atom.TYPE_tenc) {
-        parent.skipBytes(6);
-        boolean defaultIsEncrypted = parent.readUnsignedByte() == 1;
-        int defaultInitVectorSize = parent.readUnsignedByte();
+        int fullAtom = parent.readInt();
+        int version = Atom.parseFullAtomVersion(fullAtom);
+        parent.skipBytes(1); // reserved = 0.
+        int defaultCryptByteBlock = 0;
+        int defaultSkipByteBlock = 0;
+        if (version == 0) {
+          parent.skipBytes(1); // reserved = 0.
+        } else /* version 1 or greater */ {
+          int patternByte = parent.readUnsignedByte();
+          defaultCryptByteBlock = (patternByte & 0xF0) >> 4;
+          defaultSkipByteBlock = patternByte & 0x0F;
+        }
+        boolean defaultIsProtected = parent.readUnsignedByte() == 1;
+        int defaultPerSampleIvSize = parent.readUnsignedByte();
         byte[] defaultKeyId = new byte[16];
         parent.readBytes(defaultKeyId, 0, defaultKeyId.length);
-        return new TrackEncryptionBox(defaultIsEncrypted, defaultInitVectorSize, defaultKeyId);
+        byte[] constantIv = null;
+        if (defaultIsProtected && defaultPerSampleIvSize == 0) {
+          int constantIvSize = parent.readUnsignedByte();
+          constantIv = new byte[constantIvSize];
+          parent.readBytes(constantIv, 0, constantIvSize);
+        }
+        return new TrackEncryptionBox(defaultIsProtected, schemeType, defaultPerSampleIvSize,
+            defaultKeyId, defaultCryptByteBlock, defaultSkipByteBlock, constantIv);
       }
       childPosition += childAtomSize;
     }

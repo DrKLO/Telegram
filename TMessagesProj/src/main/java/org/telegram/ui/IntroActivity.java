@@ -137,6 +137,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
     private boolean justEndDragging;
     private boolean dragging;
     private int startDragX;
+    private boolean destroyed;
 
     private LocaleController.LocaleInfo localeInfo;
 
@@ -177,7 +178,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         frameLayout.addView(frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 78, 0, 0));
 
         TextureView textureView = new TextureView(this);
-        frameLayout2.addView(textureView, LayoutHelper.createFrame(180, 140, Gravity.CENTER));
+        frameLayout2.addView(textureView, LayoutHelper.createFrame(200, 150, Gravity.CENTER));
         textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
@@ -279,6 +280,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
                 Intent intent2 = new Intent(IntroActivity.this, LaunchActivity.class);
                 intent2.putExtra("fromIntro", true);
                 startActivity(intent2);
+                destroyed = true;
                 finish();
             }
         });
@@ -306,11 +308,12 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
                 if (startPressed || localeInfo == null) {
                     return;
                 }
-                LocaleController.getInstance().applyLanguage(localeInfo, true);
+                LocaleController.getInstance().applyLanguage(localeInfo, true, false);
                 startPressed = true;
                 Intent intent2 = new Intent(IntroActivity.this, LaunchActivity.class);
                 intent2.putExtra("fromIntro", true);
                 startActivity(intent2);
+                destroyed = true;
                 finish();
             }
         });
@@ -334,6 +337,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             setContentView(scrollView);
         }
 
+        LocaleController.getInstance().loadRemoteLanguages();
         checkContinueText();
         justCreated = true;
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.suggestedLangpack);
@@ -369,6 +373,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        destroyed = true;
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         preferences.edit().putLong("intro_crashed_time", 0).commit();
@@ -380,14 +385,13 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         LocaleController.LocaleInfo currentLocaleInfo = LocaleController.getInstance().getCurrentLocaleInfo();
         String systemLang = LocaleController.getSystemLocaleStringIso639().toLowerCase();
         String arg = systemLang.contains("-") ? systemLang.split("-")[0] : systemLang;
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        preferences.edit().putString("language_showed2", LocaleController.getSystemLocaleStringIso639().toLowerCase()).commit();
+        String alias = LocaleController.getLocaleAlias(arg);
         for (int a = 0; a < LocaleController.getInstance().languages.size(); a++) {
             LocaleController.LocaleInfo info = LocaleController.getInstance().languages.get(a);
             if (info.shortName.equals("en")) {
                 englishInfo = info;
             }
-            if (info.shortName.replace("_", "-").equals(systemLang) || info.shortName.equals(arg)) {
+            if (info.shortName.replace("_", "-").equals(systemLang) || info.shortName.equals(arg) || alias != null && info.shortName.equals(alias)) {
                 systemInfo = info;
             }
             if (englishInfo != null && systemInfo != null) {
@@ -419,7 +423,11 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
                         AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
-                                textView.setText(string.value);
+                                if (!destroyed) {
+                                    textView.setText(string.value);
+                                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                                    preferences.edit().putString("language_showed2", LocaleController.getSystemLocaleStringIso639().toLowerCase()).commit();
+                                }
                             }
                         });
                     }
@@ -703,7 +711,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         public void setSurfaceTextureSize(int width, int height) {
             surfaceWidth = width;
             surfaceHeight = height;
-            Intro.onSurfaceChanged(width, height, Math.min(surfaceWidth / 148.0f, surfaceHeight / 148.0f), 0);
+            Intro.onSurfaceChanged(width, height, Math.min(surfaceWidth / 150.0f, surfaceHeight / 150.0f), 0);
         }
 
         @Override

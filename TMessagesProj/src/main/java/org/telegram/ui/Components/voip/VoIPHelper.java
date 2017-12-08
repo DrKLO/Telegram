@@ -12,7 +12,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.text.InputType;
-import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -25,9 +24,7 @@ import android.widget.Toast;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
@@ -49,7 +46,7 @@ import java.util.Set;
 
 public class VoIPHelper{
 
-	private static long lastCallRequestTime=0;
+	public static long lastCallTime=0;
 
 	private static final int VOIP_SUPPORT_ID=4244000;
 
@@ -131,9 +128,9 @@ public class VoIPHelper{
 		if (activity == null || user==null) {
 			return;
 		}
-		if(System.currentTimeMillis()-lastCallRequestTime<1000)
+		if(System.currentTimeMillis()-lastCallTime<2000)
 			return;
-		lastCallRequestTime=System.currentTimeMillis();
+		lastCallTime=System.currentTimeMillis();
 		Intent intent = new Intent(activity, VoIPService.class);
 		intent.putExtra("user_id", user.id);
 		intent.putExtra("is_outgoing", true);
@@ -324,5 +321,16 @@ public class VoIPHelper{
 				}
 			}
 		});
+	}
+
+	public static void upgradeP2pSetting(){
+		SharedPreferences prefs=ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Context.MODE_PRIVATE);
+		if(prefs.contains("calls_p2p")){
+			SharedPreferences.Editor e=prefs.edit();
+			if(!prefs.getBoolean("calls_p2p", true)){
+				e.putInt("calls_p2p_new", 2);
+			}
+			e.remove("calls_p2p").apply();
+		}
 	}
 }

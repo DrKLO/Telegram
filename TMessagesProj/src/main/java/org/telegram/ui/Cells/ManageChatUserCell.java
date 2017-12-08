@@ -46,6 +46,7 @@ public class ManageChatUserCell extends FrameLayout {
     private String lastName;
     private int lastStatus;
     private TLRPC.FileLocation lastAvatar;
+    private boolean isAdmin;
 
     private int statusColor;
     private int statusOnlineColor;
@@ -126,6 +127,10 @@ public class ManageChatUserCell extends FrameLayout {
         statusOnlineColor = onlineColor;
     }
 
+    public void setIsAdmin(boolean value) {
+        isAdmin = value;
+    }
+
     public void update(int mask) {
         if (currentUser == null) {
             return;
@@ -183,7 +188,7 @@ public class ManageChatUserCell extends FrameLayout {
         } else if (currentUser != null) {
             if (currentUser.bot) {
                 statusTextView.setTextColor(statusColor);
-                if (currentUser.bot_chat_history) {
+                if (currentUser.bot_chat_history || isAdmin) {
                     statusTextView.setText(LocaleController.getString("BotStatusRead", R.string.BotStatusRead));
                 } else {
                     statusTextView.setText(LocaleController.getString("BotStatusCantRead", R.string.BotStatusCantRead));

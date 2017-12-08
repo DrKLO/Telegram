@@ -117,6 +117,7 @@ Datacenter::Datacenter(NativeByteBuffer *data) {
         }
         if (currentVersion >= 4) {
             authKeyId = data->readInt64(nullptr);
+            DEBUG_D("dc%d key = 0x%llx", datacenterId, authKeyId);
         } else {
             len = data->readUint32(nullptr);
             if (len != 0) {
@@ -160,37 +161,6 @@ Datacenter::Datacenter(NativeByteBuffer *data) {
         currentAddressNumIpv4Download = 0;
         currentPortNumIpv6Download = 0;
         currentAddressNumIpv6Download = 0;
-    }
-}
-
-void Datacenter::switchTo443Port() {
-    for (uint32_t a = 0; a < addressesIpv4.size(); a++) {
-        if (addressesIpv4[a].port == 443) {
-            currentAddressNumIpv4 = a;
-            currentPortNumIpv4 = 0;
-            break;
-        }
-    }
-    for (uint32_t a = 0; a < addressesIpv6.size(); a++) {
-        if (addressesIpv6[a].port == 443) {
-            currentAddressNumIpv6 = a;
-            currentPortNumIpv6 = 0;
-            break;
-        }
-    }
-    for (uint32_t a = 0; a < addressesIpv4Download.size(); a++) {
-        if (addressesIpv4Download[a].port == 443) {
-            currentAddressNumIpv4Download = a;
-            currentPortNumIpv4Download = 0;
-            break;
-        }
-    }
-    for (uint32_t a = 0; a < addressesIpv6Download.size(); a++) {
-        if (addressesIpv6Download[a].port == 443) {
-            currentAddressNumIpv6Download = a;
-            currentPortNumIpv6Download = 0;
-            break;
-        }
     }
 }
 
@@ -316,7 +286,7 @@ int32_t Datacenter::getCurrentPort(uint32_t flags) {
             }
         }
     }
-    if (currentPortNum >= 11) {
+    if (currentPortNum >= 15) {
         currentPortNum = 0;
         if ((flags & TcpAddressFlagTemp) != 0) {
             currentPortNumIpv4Temp = currentAddressNum;
@@ -401,7 +371,7 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
             addresses = &addressesIpv4;
         }
     }
-    if (currentPortNum + 1 < 11) {
+    if (currentPortNum + 1 < 15) {
         currentPortNum++;
     } else {
         if (currentAddressNum + 1 < addresses->size()) {
@@ -465,7 +435,9 @@ void Datacenter::resetAddressAndPortNum() {
 
 void Datacenter::replaceAddresses(std::vector<TcpAddress> &newAddresses, uint32_t flags) {
     isCdnDatacenter = (flags & 8) != 0;
-    if ((flags & TcpAddressFlagDownload) != 0) {
+    if ((flags & TcpAddressFlagTemp) != 0) {
+        addressesIpv4Temp = newAddresses;
+    } else if ((flags & TcpAddressFlagDownload) != 0) {
         if ((flags & TcpAddressFlagIpv6) != 0) {
             addressesIpv6Download = newAddresses;
         } else {
@@ -1084,6 +1056,46 @@ void Datacenter::processHandshakeResponse(TLObject *message, int64_t messageId) 
                                                        "UiggS4UeE8TzIuXFQxw7fzEIlmhIaq3FnwIDAQAB\n"
                                                        "-----END RSA PUBLIC KEY-----");
                     serverPublicKeysFingerprints.push_back(0x71e025b6c76033e3LL);
+
+                    serverPublicKeys.push_back("-----BEGIN RSA PUBLIC KEY-----\n"
+                                                       "MIIBCgKCAQEAruw2yP/BCcsJliRoW5eBVBVle9dtjJw+OYED160Wybum9SXtBBLX\n"
+                                                       "riwt4rROd9csv0t0OHCaTmRqBcQ0J8fxhN6/cpR1GWgOZRUAiQxoMnlt0R93LCX/\n"
+                                                       "j1dnVa/gVbCjdSxpbrfY2g2L4frzjJvdl84Kd9ORYjDEAyFnEA7dD556OptgLQQ2\n"
+                                                       "e2iVNq8NZLYTzLp5YpOdO1doK+ttrltggTCy5SrKeLoCPPbOgGsdxJxyz5KKcZnS\n"
+                                                       "Lj16yE5HvJQn0CNpRdENvRUXe6tBP78O39oJ8BTHp9oIjd6XWXAsp2CvK45Ol8wF\n"
+                                                       "XGF710w9lwCGNbmNxNYhtIkdqfsEcwR5JwIDAQAB\n"
+                                                       "-----END RSA PUBLIC KEY-----");
+                    serverPublicKeysFingerprints.push_back(0xbc35f3509f7b7a5LL);
+
+                    serverPublicKeys.push_back("-----BEGIN RSA PUBLIC KEY-----\n"
+                                                       "MIIBCgKCAQEAvfLHfYH2r9R70w8prHblWt/nDkh+XkgpflqQVcnAfSuTtO05lNPs\n"
+                                                       "pQmL8Y2XjVT4t8cT6xAkdgfmmvnvRPOOKPi0OfJXoRVylFzAQG/j83u5K3kRLbae\n"
+                                                       "7fLccVhKZhY46lvsueI1hQdLgNV9n1cQ3TDS2pQOCtovG4eDl9wacrXOJTG2990V\n"
+                                                       "jgnIKNA0UMoP+KF03qzryqIt3oTvZq03DyWdGK+AZjgBLaDKSnC6qD2cFY81UryR\n"
+                                                       "WOab8zKkWAnhw2kFpcqhI0jdV5QaSCExvnsjVaX0Y1N0870931/5Jb9ICe4nweZ9\n"
+                                                       "kSDF/gip3kWLG0o8XQpChDfyvsqB9OLV/wIDAQAB\n"
+                                                       "-----END RSA PUBLIC KEY-----");
+                    serverPublicKeysFingerprints.push_back(0x15ae5fa8b5529542LL);
+
+                    serverPublicKeys.push_back("-----BEGIN RSA PUBLIC KEY-----\n"
+                                                       "MIIBCgKCAQEAs/ditzm+mPND6xkhzwFIz6J/968CtkcSE/7Z2qAJiXbmZ3UDJPGr\n"
+                                                       "zqTDHkO30R8VeRM/Kz2f4nR05GIFiITl4bEjvpy7xqRDspJcCFIOcyXm8abVDhF+\n"
+                                                       "th6knSU0yLtNKuQVP6voMrnt9MV1X92LGZQLgdHZbPQz0Z5qIpaKhdyA8DEvWWvS\n"
+                                                       "Uwwc+yi1/gGaybwlzZwqXYoPOhwMebzKUk0xW14htcJrRrq+PXXQbRzTMynseCoP\n"
+                                                       "Ioke0dtCodbA3qQxQovE16q9zz4Otv2k4j63cz53J+mhkVWAeWxVGI0lltJmWtEY\n"
+                                                       "K6er8VqqWot3nqmWMXogrgRLggv/NbbooQIDAQAB\n"
+                                                       "-----END RSA PUBLIC KEY-----");
+                    serverPublicKeysFingerprints.push_back(0xaeae98e13cd7f94fLL);
+
+                    serverPublicKeys.push_back("-----BEGIN RSA PUBLIC KEY-----\n"
+                                                       "MIIBCgKCAQEAvmpxVY7ld/8DAjz6F6q05shjg8/4p6047bn6/m8yPy1RBsvIyvuD\n"
+                                                       "uGnP/RzPEhzXQ9UJ5Ynmh2XJZgHoE9xbnfxL5BXHplJhMtADXKM9bWB11PU1Eioc\n"
+                                                       "3+AXBB8QiNFBn2XI5UkO5hPhbb9mJpjA9Uhw8EdfqJP8QetVsI/xrCEbwEXe0xvi\n"
+                                                       "fRLJbY08/Gp66KpQvy7g8w7VB8wlgePexW3pT13Ap6vuC+mQuJPyiHvSxjEKHgqe\n"
+                                                       "Pji9NP3tJUFQjcECqcm0yV7/2d0t/pbCm+ZH1sadZspQCEPPrtbkQBlvHb4OLiIW\n"
+                                                       "PGHKSMeRFvp3IWcmdJqXahxLCUS1Eh6MAQIDAQAB\n"
+                                                       "-----END RSA PUBLIC KEY-----");
+                    serverPublicKeysFingerprints.push_back(0x5a181b2235057d98LL);
                 }
 
                 size_t count2 = serverPublicKeysFingerprints.size();
@@ -1647,6 +1659,9 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
 }
 
 bool Datacenter::decryptServerResponse(int64_t keyId, uint8_t *key, uint8_t *data, uint32_t length) {
+    if (authKey == nullptr) {
+        return false;
+    }
     bool error = false;
     if (authKeyId != keyId) {
         error = true;
@@ -1657,7 +1672,10 @@ bool Datacenter::decryptServerResponse(int64_t keyId, uint8_t *key, uint8_t *dat
 
     uint32_t messageLength;
     memcpy(&messageLength, data + 28, sizeof(uint32_t));
+    uint32_t paddingLength = (int32_t) length - (messageLength + 32);
     if (messageLength > length - 32) {
+        error = true;
+    } else if (paddingLength < 12 || paddingLength > 1024) {
         error = true;
     }
     messageLength += 32;
@@ -1952,8 +1970,8 @@ TL_help_configSimple *Datacenter::decodeSimpleConfig(NativeByteBuffer *buffer) {
     BN_bin2bn(bytes, 256, &x);
 
     if (BN_mod_exp(&y, &x, rsaKey->e, rsaKey->n, bnContext) == 1) {
-        uint8_t temp[256];
-        /*BN_bn2bin(&y, temp);
+        /*uint8_t temp[256];
+        BN_bn2bin(&y, temp);
         std::string res = "";
         for (int a = 0; a < 256; a++) {
             char buf[20];

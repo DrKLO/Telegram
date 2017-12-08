@@ -9,11 +9,11 @@ configurations {
 }
 
 dependencies {
-    compile 'com.google.android.gms:play-services-gcm:11.0.2'
-    compile 'com.google.android.gms:play-services-maps:11.0.2'
-    compile 'com.google.android.gms:play-services-vision:11.0.2'
-    compile 'com.google.android.gms:play-services-wallet:11.0.2'
-    compile 'com.google.android.gms:play-services-wearable:11.0.2'
+    compile 'com.google.android.gms:play-services-gcm:11.0.4'
+    compile 'com.google.android.gms:play-services-maps:11.0.4'
+    compile 'com.google.android.gms:play-services-vision:11.0.4'
+    compile 'com.google.android.gms:play-services-wallet:11.0.4'
+    compile 'com.google.android.gms:play-services-wearable:11.0.4'
     compile 'com.android.support:support-core-ui:25.3.1'
     compile 'com.android.support:support-compat:25.3.1'
     compile 'com.android.support:support-core-utils:25.3.1'
@@ -25,8 +25,9 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion '25.0.2'
+    compileSdkVersion 26
+    buildToolsVersion '26.0.2'
+
 
     useLibrary 'org.apache.http.legacy'
     defaultConfig.applicationId = "org.telegram.messenger"
@@ -90,7 +91,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 1043
+    defaultConfig.versionCode = 1154
 
     sourceSets.debug {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
@@ -103,6 +104,8 @@ android {
     sourceSets.foss {
         manifest.srcFile 'config/foss/AndroidManifest.xml'
     }
+
+    flavorDimensions "minApi"
 
     productFlavors {
         x86 {
@@ -155,14 +158,21 @@ android {
     }
 
     applicationVariants.all { variant ->
-        def abiVersion = variant.productFlavors.get(0).versionCode
-        variant.mergedFlavor.versionCode = defaultConfig.versionCode * 10 + abiVersion
+        variant.outputs.all { output ->
+            output.processManifest.doLast {
+                def abiVersion = variant.productFlavors.get(0).versionCode
+                String manifestPath = "$manifestOutputDirectory/AndroidManifest.xml"
+                def manifestContent = file(manifestPath).getText()
+                manifestContent = manifestContent.replace(String.format('android:versionCode="%d"', abiVersion), String.format('android:versionCode="%s"', defaultConfig.versionCode * 10 + abiVersion))
+                file(manifestPath).write(manifestContent)
+            }
+        }
     }
 
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 25
-        versionName "4.2.1"
+        versionName "4.6.0"
 
         externalNativeBuild {
             ndkBuild {

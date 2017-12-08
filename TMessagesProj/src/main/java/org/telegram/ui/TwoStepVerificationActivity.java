@@ -24,7 +24,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -52,6 +51,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
@@ -63,7 +63,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     private TextView titleTextView;
     private TextView bottomTextView;
     private TextView bottomButton;
-    private EditText passwordEditText;
+    private EditTextBoldCursor passwordEditText;
     private AlertDialog progressDialog;
     private EmptyTextProgressView emptyView;
     private ActionBarMenuItem doneItem;
@@ -174,7 +174,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 38, 0, 0));
 
-        passwordEditText = new EditText(context);
+        passwordEditText = new EditTextBoldCursor(context);
         passwordEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         passwordEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         passwordEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
@@ -186,7 +186,9 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         passwordEditText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         passwordEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
         passwordEditText.setTypeface(Typeface.DEFAULT);
-        AndroidUtilities.clearCursorDrawable(passwordEditText);
+        passwordEditText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        passwordEditText.setCursorSize(AndroidUtilities.dp(20));
+        passwordEditText.setCursorWidth(1.5f);
         linearLayout.addView(passwordEditText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP | Gravity.LEFT, 40, 32, 40, 0));
         passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -659,7 +661,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             }
             if (email.length() > 0) {
                 req.new_settings.flags |= 2;
-                req.new_settings.email = email;
+                req.new_settings.email = email.trim();
             }
         }
         needShowProgress();

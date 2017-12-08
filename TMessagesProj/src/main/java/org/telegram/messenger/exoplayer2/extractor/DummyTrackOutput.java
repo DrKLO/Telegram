@@ -51,7 +51,7 @@ public final class DummyTrackOutput implements TrackOutput {
 
   @Override
   public void sampleMetadata(long timeUs, @C.BufferFlags int flags, int size, int offset,
-      byte[] encryptionKey) {
+      CryptoData cryptoData) {
     // Do nothing.
   }
 

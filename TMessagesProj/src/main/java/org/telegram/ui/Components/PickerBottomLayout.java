@@ -64,7 +64,7 @@ public class PickerBottomLayout extends FrameLayout {
         doneButtonBadgeTextView.setGravity(Gravity.CENTER);
         Drawable drawable;
         if (isDarkTheme) {
-            drawable = getResources().getDrawable(R.drawable.photobadge);
+            drawable = Theme.createRoundRectDrawable(AndroidUtilities.dp(11), 0xff66bffa);
         } else {
             drawable = Theme.createRoundRectDrawable(AndroidUtilities.dp(11), Theme.getColor(Theme.key_picker_badge));
         }

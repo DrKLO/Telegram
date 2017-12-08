@@ -26,18 +26,39 @@ import org.telegram.messenger.exoplayer2.util.Assertions;
 public final class FrameworkMediaCrypto implements ExoMediaCrypto {
 
   private final MediaCrypto mediaCrypto;
+  private final boolean forceAllowInsecureDecoderComponents;
 
-  /* package */ FrameworkMediaCrypto(MediaCrypto mediaCrypto) {
-    this.mediaCrypto = Assertions.checkNotNull(mediaCrypto);
+  /**
+   * @param mediaCrypto The {@link MediaCrypto} to wrap.
+   */
+  public FrameworkMediaCrypto(MediaCrypto mediaCrypto) {
+    this(mediaCrypto, false);
   }
 
+  /**
+   * @param mediaCrypto The {@link MediaCrypto} to wrap.
+   * @param forceAllowInsecureDecoderComponents Whether to force
+   *     {@link #requiresSecureDecoderComponent(String)} to return {@code false}, rather than
+   *     {@link MediaCrypto#requiresSecureDecoderComponent(String)} of the wrapped
+   *     {@link MediaCrypto}.
+   */
+  public FrameworkMediaCrypto(MediaCrypto mediaCrypto,
+      boolean forceAllowInsecureDecoderComponents) {
+    this.mediaCrypto = Assertions.checkNotNull(mediaCrypto);
+    this.forceAllowInsecureDecoderComponents = forceAllowInsecureDecoderComponents;
+  }
+
+  /**
+   * Returns the wrapped {@link MediaCrypto}.
+   */
   public MediaCrypto getWrappedMediaCrypto() {
     return mediaCrypto;
   }
 
   @Override
   public boolean requiresSecureDecoderComponent(String mimeType) {
-    return mediaCrypto.requiresSecureDecoderComponent(mimeType);
+    return !forceAllowInsecureDecoderComponents
+        && mediaCrypto.requiresSecureDecoderComponent(mimeType);
   }
 
 }

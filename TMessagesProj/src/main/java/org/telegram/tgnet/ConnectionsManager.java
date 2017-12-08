@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -22,6 +23,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.StatsController;
@@ -106,6 +108,42 @@ public class ConnectionsManager {
     }
 
     public ConnectionsManager() {
+        String deviceModel;
+        String systemLangCode;
+        String langCode;
+        String appVersion;
+        String systemVersion;
+        String configPath = ApplicationLoader.getFilesDirFixed().toString();
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        boolean enablePushConnection = preferences.getBoolean("pushConnection", true);
+        try {
+            systemLangCode = LocaleController.getSystemLocaleStringIso639();
+            langCode = LocaleController.getLocaleStringIso639();
+            deviceModel = Build.MANUFACTURER + Build.MODEL;
+            PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
+            appVersion = pInfo.versionName + " (" + pInfo.versionCode + ")";
+            systemVersion = "SDK " + Build.VERSION.SDK_INT;
+        } catch (Exception e) {
+            systemLangCode = "en";
+            langCode = "";
+            deviceModel = "Android unknown";
+            appVersion = "App version unknown";
+            systemVersion = "SDK " + Build.VERSION.SDK_INT;
+        }
+        if (systemLangCode.trim().length() == 0) {
+            langCode = "en";
+        }
+        if (deviceModel.trim().length() == 0) {
+            deviceModel = "Android unknown";
+        }
+        if (appVersion.trim().length() == 0) {
+            appVersion = "App version unknown";
+        }
+        if (systemVersion.trim().length() == 0) {
+            systemVersion = "SDK Unknown";
+        }
+        UserConfig.loadConfig();
+        init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, FileLog.getNetworkLogPath(), UserConfig.getClientUserId(), enablePushConnection);
         try {
             PowerManager pm = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
             wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "lock");
@@ -265,6 +303,8 @@ public class ConnectionsManager {
     }
 
     public void switchBackend() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        preferences.edit().remove("language_showed2").commit();
         native_switchBackend();
     }
 
@@ -399,7 +439,7 @@ public class ConnectionsManager {
     }
 
     public static void onRequestNewServerIpAndPort(int second) {
-        if (currentTask != null || second != 1 && Math.abs(lastDnsRequestTime - System.currentTimeMillis()) < 10000) {
+        if (currentTask != null || second != 1 && Math.abs(lastDnsRequestTime - System.currentTimeMillis()) < 10000 || !isNetworkOnline()) {
             return;
         }
         lastDnsRequestTime = System.currentTimeMillis();
@@ -523,10 +563,6 @@ public class ConnectionsManager {
             FileLog.e(e);
         }
         return false;
-    }
-
-    public void applyCountryPortNumber(String number) {
-
     }
 
     public void setIsUpdating(final boolean value) {

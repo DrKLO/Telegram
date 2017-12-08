@@ -21,6 +21,7 @@ import android.text.Layout.Alignment;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.style.AbsoluteSizeSpan;
 import android.text.style.AlignmentSpan;
 import android.text.style.BackgroundColorSpan;
@@ -92,19 +93,24 @@ import java.util.regex.Pattern;
   /* package */ boolean parseCue(ParsableByteArray webvttData, WebvttCue.Builder builder,
       List<WebvttCssStyle> styles) {
     String firstLine = webvttData.readLine();
+    if (firstLine == null) {
+      return false;
+    }
     Matcher cueHeaderMatcher = WebvttCueParser.CUE_HEADER_PATTERN.matcher(firstLine);
     if (cueHeaderMatcher.matches()) {
       // We have found the timestamps in the first line. No id present.
       return parseCue(null, cueHeaderMatcher, webvttData, builder, textBuilder, styles);
-    } else {
-      // The first line is not the timestamps, but could be the cue id.
-      String secondLine = webvttData.readLine();
-      cueHeaderMatcher = WebvttCueParser.CUE_HEADER_PATTERN.matcher(secondLine);
-      if (cueHeaderMatcher.matches()) {
-        // We can do the rest of the parsing, including the id.
-        return parseCue(firstLine.trim(), cueHeaderMatcher, webvttData, builder, textBuilder,
-            styles);
-      }
+    }
+    // The first line is not the timestamps, but could be the cue id.
+    String secondLine = webvttData.readLine();
+    if (secondLine == null) {
+      return false;
+    }
+    cueHeaderMatcher = WebvttCueParser.CUE_HEADER_PATTERN.matcher(secondLine);
+    if (cueHeaderMatcher.matches()) {
+      // We can do the rest of the parsing, including the id.
+      return parseCue(firstLine.trim(), cueHeaderMatcher, webvttData, builder, textBuilder,
+          styles);
     }
     return false;
   }
@@ -233,7 +239,7 @@ import java.util.regex.Pattern;
     // Parse the cue text.
     textBuilder.setLength(0);
     String line;
-    while ((line = webvttData.readLine()) != null && !line.isEmpty()) {
+    while (!TextUtils.isEmpty(line = webvttData.readLine())) {
       if (textBuilder.length() > 0) {
         textBuilder.append("\n");
       }

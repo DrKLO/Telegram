@@ -257,6 +257,7 @@
         <service android:name=".NotificationRepeat" android:exported="false"/>
         <service android:name=".ClearCacheService" android:exported="false"/>
         <service android:name=".VideoEncodingService" android:enabled="true"/>
+        <service android:name=".LocationSharingService" android:enabled="true"/>
         <service android:name=".voip.VoIPService" android:enabled="true"/>
         <service android:name=".MusicPlayerService" android:exported="true" android:enabled="true"/>
         <service android:name=".MusicBrowserService" android:exported="true">
@@ -299,13 +300,25 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:name=".RefererReceiver" android:exported="true" android:permission="android.permission.INSTALL_PACKAGES">
+            <intent-filter>
+                <action android:name="com.android.vending.INSTALL_REFERRER" />
+            </intent-filter>
+        </receiver>
+
         <receiver android:name=".WearReplyReceiver" android:enabled="true"/>
+
+        <receiver android:name=".StopLiveLocationReceiver" android:enabled="true"/>
 
         <receiver android:name=".PopupReplyReceiver" android:enabled="true"/>
 
         <receiver android:name=".ShareBroadcastReceiver" android:enabled="true"/>
 
+        <receiver android:name=".CustomTabsCopyReceiver" android:enabled="true"/>
+
         <receiver android:name=".NotificationDismissReceiver" android:exported="false"/>
+
+        <receiver android:name=".voip.VoIPActionsReceiver" android:exported="false"/>
 
         <provider
             android:name="android.support.v4.content.FileProvider"

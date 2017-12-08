@@ -134,7 +134,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
             popupInfoRow = -1;
         }
 
-        if (lower_id > 0 && MessagesController.getInstance().callsEnabled) {
+        if (lower_id > 0) {
             callsRow = rowCount++;
             callsVibrateRow = rowCount++;
             ringtoneRow = rowCount++;

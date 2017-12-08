@@ -39,9 +39,14 @@ import java.util.List;
   public static final int LONG_HEADER_SIZE = 16;
 
   /**
-   * Value for the first 32 bits of atomSize when the atom size is actually a long value.
+   * Value for the size field in an atom that defines its size in the largesize field.
    */
-  public static final int LONG_SIZE_PREFIX = 1;
+  public static final int DEFINES_LARGE_SIZE = 1;
+
+  /**
+   * Value for the size field in an atom that extends to the end of the file.
+   */
+  public static final int EXTENDS_TO_END_SIZE = 0;
 
   public static final int TYPE_ftyp = Util.getIntegerCodeForString("ftyp");
   public static final int TYPE_avc1 = Util.getIntegerCodeForString("avc1");

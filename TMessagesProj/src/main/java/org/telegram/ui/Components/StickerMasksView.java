@@ -107,7 +107,7 @@ public class StickerMasksView extends FrameLayout implements NotificationCenter.
                 }
                 TLRPC.Document document = cell.getSticker();
                 listener.onStickerSelected(document);
-                StickersQuery.addRecentSticker(StickersQuery.TYPE_MASK, document, (int) (System.currentTimeMillis() / 1000));
+                StickersQuery.addRecentSticker(StickersQuery.TYPE_MASK, document, (int) (System.currentTimeMillis() / 1000), false);
                 MessagesController.getInstance().saveRecentSticker(document, true);
             }
         };
@@ -249,7 +249,7 @@ public class StickerMasksView extends FrameLayout implements NotificationCenter.
         if (document == null) {
             return;
         }
-        StickersQuery.addRecentSticker(currentType, document, (int) (System.currentTimeMillis() / 1000));
+        StickersQuery.addRecentSticker(currentType, document, (int) (System.currentTimeMillis() / 1000), false);
         boolean wasEmpty = recentStickers[currentType].isEmpty();
         recentStickers[currentType] = StickersQuery.getRecentStickers(currentType);
         if (stickersGridAdapter != null) {
@@ -306,8 +306,9 @@ public class StickerMasksView extends FrameLayout implements NotificationCenter.
             updateStickerTabs();
             reloadStickersAdapter();
             checkDocuments();
-            StickersQuery.loadRecents(StickersQuery.TYPE_IMAGE, false, true);
-            StickersQuery.loadRecents(StickersQuery.TYPE_MASK, false, true);
+            StickersQuery.loadRecents(StickersQuery.TYPE_IMAGE, false, true, false);
+            StickersQuery.loadRecents(StickersQuery.TYPE_MASK, false, true, false);
+            StickersQuery.loadRecents(StickersQuery.TYPE_FAVE, false, true, false);
         }
     }
 

@@ -21,12 +21,15 @@ public class NotificationCenter {
     public static final int dialogsNeedReload = totalEvents++;
     public static final int closeChats = totalEvents++;
     public static final int messagesDeleted = totalEvents++;
+    public static final int historyCleared = totalEvents++;
     public static final int messagesRead = totalEvents++;
     public static final int messagesDidLoaded = totalEvents++;
     public static final int messageReceivedByAck = totalEvents++;
     public static final int messageReceivedByServer = totalEvents++;
     public static final int messageSendError = totalEvents++;
     public static final int contactsDidLoaded = totalEvents++;
+    public static final int contactsImported = totalEvents++;
+    public static final int hasNewContactsToImport = totalEvents++;
     public static final int chatDidCreated = totalEvents++;
     public static final int chatDidFailCreate = totalEvents++;
     public static final int chatInfoDidLoaded = totalEvents++;
@@ -60,12 +63,14 @@ public class NotificationCenter {
     public static final int didReceivedWebpagesInUpdates = totalEvents++;
     public static final int stickersDidLoaded = totalEvents++;
     public static final int featuredStickersDidLoaded = totalEvents++;
+    public static final int groupStickersDidLoaded = totalEvents++;
     public static final int didReplacedPhotoInMemCache = totalEvents++;
     public static final int messagesReadContent = totalEvents++;
     public static final int botInfoDidLoaded = totalEvents++;
     public static final int userInfoDidLoaded = totalEvents++;
     public static final int botKeyboardDidLoaded = totalEvents++;
     public static final int chatSearchResultsAvailable = totalEvents++;
+    public static final int chatSearchResultsLoading = totalEvents++;
     public static final int musicDidLoaded = totalEvents++;
     public static final int needShowAlert = totalEvents++;
     public static final int didUpdatedMessagesViews = totalEvents++;
@@ -86,11 +91,17 @@ public class NotificationCenter {
     public static final int suggestedLangpack = totalEvents++;
     public static final int channelRightsUpdated = totalEvents++;
     public static final int proxySettingsChanged = totalEvents++;
+    public static final int openArticle = totalEvents++;
+    public static final int updateMentionsCount = totalEvents++;
+    public static final int liveLocationsChanged = totalEvents++;
+    public static final int liveLocationsCacheChanged = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
 
     public static final int messageThumbGenerated = totalEvents++;
+
+    public static final int didSetNewTheme = totalEvents++;
 
     public static final int wallpapersDidLoaded = totalEvents++;
     public static final int closeOtherAppActivities = totalEvents++;

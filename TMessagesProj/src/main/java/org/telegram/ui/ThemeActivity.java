@@ -14,7 +14,9 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Vibrator;
+import android.support.v4.content.FileProvider;
 import android.text.InputType;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -22,7 +24,6 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -30,6 +31,7 @@ import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -46,6 +48,7 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Cells.ThemeCell;
+import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ThemeEditorView;
@@ -92,7 +95,7 @@ public class ThemeActivity extends BaseFragment {
                     if (getParentActivity() == null) {
                         return;
                     }
-                    final EditText editText = new EditText(getParentActivity());
+                    final EditTextBoldCursor editText = new EditTextBoldCursor(getParentActivity());
                     editText.setBackgroundDrawable(Theme.createEditTextDrawable(getParentActivity(), true));
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
@@ -124,7 +127,9 @@ public class ThemeActivity extends BaseFragment {
                     editText.setGravity(Gravity.LEFT | Gravity.TOP);
                     editText.setSingleLine(true);
                     editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-                    AndroidUtilities.clearCursorDrawable(editText);
+                    editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    editText.setCursorSize(AndroidUtilities.dp(20));
+                    editText.setCursorWidth(1.5f);
                     editText.setPadding(0, AndroidUtilities.dp(4), 0, 0);
                     linearLayout.addView(editText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP | Gravity.LEFT, 24, 6, 24, 0));
                     editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -287,7 +292,16 @@ public class ThemeActivity extends BaseFragment {
                                             }
                                             Intent intent = new Intent(Intent.ACTION_SEND);
                                             intent.setType("text/xml");
-                                            intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(finalFile));
+                                            if (Build.VERSION.SDK_INT >= 24) {
+                                                try {
+                                                    intent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(getParentActivity(), BuildConfig.APPLICATION_ID + ".provider", finalFile));
+                                                    intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                                } catch (Exception ignore) {
+                                                    intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(finalFile));
+                                                }
+                                            } else {
+                                                intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(finalFile));
+                                            }
                                             startActivityForResult(Intent.createChooser(intent, LocaleController.getString("ShareFile", R.string.ShareFile)), 500);
                                         } catch (Exception e) {
                                             FileLog.e(e);

@@ -265,7 +265,7 @@ public final class NalUnitUtil {
       }
       data.readUnsignedExpGolombCodedInt(); // bit_depth_luma_minus8
       data.readUnsignedExpGolombCodedInt(); // bit_depth_chroma_minus8
-      data.skipBits(1); // qpprime_y_zero_transform_bypass_flag
+      data.skipBit(); // qpprime_y_zero_transform_bypass_flag
       boolean seqScalingMatrixPresentFlag = data.readBit();
       if (seqScalingMatrixPresentFlag) {
         int limit = (chromaFormatIdc != 3) ? 8 : 12;
@@ -295,17 +295,17 @@ public final class NalUnitUtil {
       }
     }
     data.readUnsignedExpGolombCodedInt(); // max_num_ref_frames
-    data.skipBits(1); // gaps_in_frame_num_value_allowed_flag
+    data.skipBit(); // gaps_in_frame_num_value_allowed_flag
 
     int picWidthInMbs = data.readUnsignedExpGolombCodedInt() + 1;
     int picHeightInMapUnits = data.readUnsignedExpGolombCodedInt() + 1;
     boolean frameMbsOnlyFlag = data.readBit();
     int frameHeightInMbs = (2 - (frameMbsOnlyFlag ? 1 : 0)) * picHeightInMapUnits;
     if (!frameMbsOnlyFlag) {
-      data.skipBits(1); // mb_adaptive_frame_field_flag
+      data.skipBit(); // mb_adaptive_frame_field_flag
     }
 
-    data.skipBits(1); // direct_8x8_inference_flag
+    data.skipBit(); // direct_8x8_inference_flag
     int frameWidth = picWidthInMbs * 16;
     int frameHeight = frameHeightInMbs * 16;
     boolean frameCroppingFlag = data.readBit();
@@ -368,7 +368,7 @@ public final class NalUnitUtil {
     data.skipBits(8); // nal_unit
     int picParameterSetId = data.readUnsignedExpGolombCodedInt();
     int seqParameterSetId = data.readUnsignedExpGolombCodedInt();
-    data.skipBits(1); // entropy_coding_mode_flag
+    data.skipBit(); // entropy_coding_mode_flag
     boolean bottomFieldPicOrderInFramePresentFlag = data.readBit();
     return new PpsData(picParameterSetId, seqParameterSetId, bottomFieldPicOrderInFramePresentFlag);
   }

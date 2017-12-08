@@ -11,7 +11,6 @@ package org.telegram.messenger.voip;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.media.audiofx.AcousticEchoCanceler;
-import android.media.audiofx.NoiseSuppressor;
 import android.os.Build;
 import android.os.SystemClock;
 
@@ -24,7 +23,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Locale;
 
 public class VoIPController {
@@ -60,12 +58,12 @@ public class VoIPController {
 	public static final int ERROR_TIMEOUT=2;
 	public static final int ERROR_AUDIO_IO=3;
 
-	private long nativeInst = 0;
-	private long callStartTime;
-	private ConnectionStateListener listener;
+	protected long nativeInst = 0;
+	protected long callStartTime;
+	protected ConnectionStateListener listener;
 
 	public VoIPController() {
-		nativeInst = nativeInit(Build.VERSION.SDK_INT);
+		nativeInst = nativeInit();
 	}
 
 	public void start() {
@@ -118,7 +116,7 @@ public class VoIPController {
 		return nativeGetDebugString(nativeInst);
 	}
 
-	private void ensureNativeInstance() {
+	protected void ensureNativeInstance() {
 		if (nativeInst == 0) {
 			throw new IllegalStateException("Native instance is not valid");
 		}
@@ -128,12 +126,19 @@ public class VoIPController {
 		listener = connectionStateListener;
 	}
 
+	// called from native code
 	private void handleStateChange(int state) {
 		if(state==STATE_ESTABLISHED && callStartTime==0)
 			callStartTime = SystemClock.elapsedRealtime();
 		if (listener != null) {
 			listener.onConnectionStateChanged(state);
 		}
+	}
+
+	// called from native code
+	private void handleSignalBarsChange(int count){
+		if(listener!=null)
+			listener.onSignalBarCountChanged(count);
 	}
 
 	public void setNetworkType(int type) {
@@ -234,7 +239,12 @@ public class VoIPController {
 		nativeSetProxy(nativeInst, address, port, username, password);
 	}
 
-	private native long nativeInit(int systemVersion);
+	public void setAudioOutputGainControlEnabled(boolean enabled){
+		ensureNativeInstance();
+		nativeSetAudioOutputGainControlEnabled(nativeInst, enabled);
+	}
+
+	private native long nativeInit();
 	private native void nativeStart(long inst);
 	private native void nativeConnect(long inst);
 	private static native void nativeSetNativeBufferSize(int size);
@@ -251,10 +261,12 @@ public class VoIPController {
 	private native int nativeGetLastError(long inst);
 	private native String nativeGetDebugString(long inst);
 	private static native String nativeGetVersion();
+	private native void nativeSetAudioOutputGainControlEnabled(long inst, boolean enabled);
 	private native String nativeGetDebugLog(long inst);
 
 	public interface ConnectionStateListener {
 		void onConnectionStateChanged(int newState);
+		void onSignalBarCountChanged(int newCount);
 	}
 
 	public static class Stats{

@@ -214,6 +214,8 @@ void TL_config::readParams(NativeByteBuffer *stream, bool &error) {
     edit_time_limit = stream->readInt32(&error);
     rating_e_decay = stream->readInt32(&error);
     stickers_recent_limit = stream->readInt32(&error);
+    stickers_faved_limit = stream->readInt32(&error);
+    channels_read_media_period = stream->readInt32(&error);
     if ((flags & 1) != 0) {
         tmp_sessions = stream->readInt32(&error);
     }
@@ -274,6 +276,8 @@ void TL_config::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(edit_time_limit);
     stream->writeInt32(rating_e_decay);
     stream->writeInt32(stickers_recent_limit);
+    stream->writeInt32(stickers_faved_limit);
+    stream->writeInt32(channels_read_media_period);
     if ((flags & 1) != 0) {
         stream->writeInt32(tmp_sessions);
     }

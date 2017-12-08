@@ -50,14 +50,15 @@ import java.util.TreeSet;
 
   public static final String ANONYMOUS_REGION_ID = "";
   public static final String ATTR_ID = "id";
-  public static final String ATTR_TTS_BACKGROUND_COLOR = "backgroundColor";
+  public static final String ATTR_TTS_ORIGIN = "origin";
   public static final String ATTR_TTS_EXTENT = "extent";
+  public static final String ATTR_TTS_DISPLAY_ALIGN = "displayAlign";
+  public static final String ATTR_TTS_BACKGROUND_COLOR = "backgroundColor";
   public static final String ATTR_TTS_FONT_STYLE = "fontStyle";
   public static final String ATTR_TTS_FONT_SIZE = "fontSize";
   public static final String ATTR_TTS_FONT_FAMILY = "fontFamily";
   public static final String ATTR_TTS_FONT_WEIGHT = "fontWeight";
   public static final String ATTR_TTS_COLOR = "color";
-  public static final String ATTR_TTS_ORIGIN = "origin";
   public static final String ATTR_TTS_TEXT_DECORATION = "textDecoration";
   public static final String ATTR_TTS_TEXT_ALIGN = "textAlign";
 
@@ -179,7 +180,7 @@ import java.util.TreeSet;
     for (Entry<String, SpannableStringBuilder> entry : regionOutputs.entrySet()) {
       TtmlRegion region = regionMap.get(entry.getKey());
       cues.add(new Cue(cleanUpText(entry.getValue()), null, region.line, region.lineType,
-          Cue.TYPE_UNSET, region.position, Cue.TYPE_UNSET, region.width));
+          region.lineAnchor, region.position, Cue.TYPE_UNSET, region.width));
     }
     return cues;
   }

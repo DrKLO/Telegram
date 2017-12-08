@@ -14,6 +14,8 @@ import android.net.Uri;
 import android.os.Handler;
 import android.view.TextureView;
 
+import org.telegram.messenger.exoplayer2.Player;
+import org.telegram.messenger.exoplayer2.source.LoopingMediaSource;
 import org.telegram.messenger.secretmedia.ExtendedDefaultDataSourceFactory;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.exoplayer2.DefaultLoadControl;
@@ -26,9 +28,7 @@ import org.telegram.messenger.exoplayer2.SimpleExoPlayer;
 import org.telegram.messenger.exoplayer2.Timeline;
 import org.telegram.messenger.exoplayer2.extractor.DefaultExtractorsFactory;
 import org.telegram.messenger.exoplayer2.source.ExtractorMediaSource;
-import org.telegram.messenger.exoplayer2.source.LoopingMediaSource;
 import org.telegram.messenger.exoplayer2.source.MediaSource;
-import org.telegram.messenger.exoplayer2.source.MergingMediaSource;
 import org.telegram.messenger.exoplayer2.source.TrackGroupArray;
 import org.telegram.messenger.exoplayer2.source.dash.DashMediaSource;
 import org.telegram.messenger.exoplayer2.source.dash.DefaultDashChunkSource;
@@ -62,11 +62,17 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     private SimpleExoPlayer player;
+    private SimpleExoPlayer audioPlayer;
     private MappingTrackSelector trackSelector;
     private Handler mainHandler;
     private DataSource.Factory mediaDataSourceFactory;
     private TextureView textureView;
     private boolean autoplay;
+    private boolean mixedAudio;
+
+    private boolean videoPlayerReady;
+    private boolean audioPlayerReady;
+    private boolean mixedPlayWhenReady;
 
     private VideoPlayerDelegate delegate;
     private int lastReportedPlaybackState;
@@ -97,9 +103,62 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
             player.setVideoTextureView(textureView);
             player.setPlayWhenReady(autoplay);
         }
+        if (mixedAudio) {
+            if (audioPlayer == null) {
+                audioPlayer = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, trackSelector, new DefaultLoadControl(), null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
+                audioPlayer.addListener(new Player.EventListener() {
+                    @Override
+                    public void onTimelineChanged(Timeline timeline, Object manifest) {
+
+                    }
+
+                    @Override
+                    public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
+
+                    }
+
+                    @Override
+                    public void onLoadingChanged(boolean isLoading) {
+
+                    }
+
+                    @Override
+                    public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+                        if (!audioPlayerReady && playbackState == Player.STATE_READY) {
+                            audioPlayerReady = true;
+                            checkPlayersReady();
+                        }
+                    }
+
+                    @Override
+                    public void onRepeatModeChanged(int repeatMode) {
+
+                    }
+
+                    @Override
+                    public void onPlayerError(ExoPlaybackException error) {
+
+                    }
+
+                    @Override
+                    public void onPositionDiscontinuity() {
+
+                    }
+
+                    @Override
+                    public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
+
+                    }
+                });
+                audioPlayer.setPlayWhenReady(autoplay);
+            }
+        }
     }
 
     public void preparePlayerLoop(Uri videoUri, String videoType, Uri audioUri, String audioType) {
+        mixedAudio = true;
+        audioPlayerReady = false;
+        videoPlayerReady = false;
         ensurePleyaerCreated();
         MediaSource mediaSource1 = null, mediaSource2 = null;
         for (int a = 0; a < 2; a++) {
@@ -134,11 +193,13 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
                 mediaSource2 = mediaSource;
             }
         }
-        MediaSource mediaSource = new MergingMediaSource(mediaSource1, mediaSource2);
         player.prepare(mediaSource1, true, true);
+        audioPlayer.prepare(mediaSource2, true, true);
     }
 
     public void preparePlayer(Uri uri, String type) {
+        videoPlayerReady = false;
+        mixedAudio = false;
         ensurePleyaerCreated();
         MediaSource mediaSource;
         switch (type) {
@@ -167,6 +228,10 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
             player.release();
             player = null;
         }
+        if (audioPlayer != null) {
+            audioPlayer.release();
+            audioPlayer = null;
+        }
     }
 
     public void setTextureView(TextureView texture) {
@@ -181,25 +246,56 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     public void play() {
-        if (player == null) {
-            return;
+        mixedPlayWhenReady = true;
+        if (mixedAudio) {
+            if (!audioPlayerReady || !videoPlayerReady) {
+                if (player != null) {
+                    player.setPlayWhenReady(false);
+                }
+                if (audioPlayer != null) {
+                    audioPlayer.setPlayWhenReady(false);
+                }
+                return;
+            }
         }
-        player.setPlayWhenReady(true);
+        if (player != null) {
+            player.setPlayWhenReady(true);
+        }
+        if (audioPlayer != null) {
+            audioPlayer.setPlayWhenReady(true);
+        }
     }
 
     public void pause() {
-        if (player == null) {
-            return;
+        mixedPlayWhenReady = false;
+        if (player != null) {
+            player.setPlayWhenReady(false);
         }
-        player.setPlayWhenReady(false);
+        if (audioPlayer != null) {
+            audioPlayer.setPlayWhenReady(false);
+        }
     }
 
     public void setPlayWhenReady(boolean playWhenReady) {
-        autoplay = playWhenReady;
-        if (player == null) {
-            return;
+        mixedPlayWhenReady = playWhenReady;
+        if (playWhenReady && mixedAudio) {
+            if (!audioPlayerReady || !videoPlayerReady) {
+                if (player != null) {
+                    player.setPlayWhenReady(false);
+                }
+                if (audioPlayer != null) {
+                    audioPlayer.setPlayWhenReady(false);
+                }
+                return;
+            }
         }
-        player.setPlayWhenReady(playWhenReady);
+        autoplay = playWhenReady;
+        if (player != null) {
+            player.setPlayWhenReady(playWhenReady);
+        }
+        if (audioPlayer != null) {
+            audioPlayer.setPlayWhenReady(playWhenReady);
+        }
     }
 
     public long getDuration() {
@@ -215,28 +311,32 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     public void setMute(boolean value) {
-        if (player == null) {
-            return;
+        if (player != null) {
+            player.setVolume(value ? 0.0f : 1.0f);
         }
-        if (value) {
-            player.setVolume(0.0f);
-        } else {
-            player.setVolume(1.0f);
+        if (audioPlayer != null) {
+            audioPlayer.setVolume(value ? 0.0f : 1.0f);
         }
+    }
+
+    @Override
+    public void onRepeatModeChanged(int repeatMode) {
+
     }
 
     public void setVolume(float volume) {
-        if (player == null) {
-            return;
+        if (player != null) {
+            player.setVolume(volume);
         }
-        player.setVolume(volume);
+        if (audioPlayer != null) {
+            audioPlayer.setVolume(volume);
+        }
     }
 
     public void seekTo(long positionMs) {
-        if (player == null) {
-            return;
+        if (player != null) {
+            player.seekTo(positionMs);
         }
-        player.seekTo(positionMs);
     }
 
     public void setDelegate(VideoPlayerDelegate videoPlayerDelegate) {
@@ -252,7 +352,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     public boolean isPlaying() {
-        return player != null && player.getPlayWhenReady();
+        return mixedAudio && mixedPlayWhenReady || player != null && player.getPlayWhenReady();
     }
 
     public boolean isBuffering() {
@@ -262,6 +362,15 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     public void setStreamType(int type) {
         if (player != null) {
             player.setAudioStreamType(type);
+        }
+        if (audioPlayer != null) {
+            audioPlayer.setAudioStreamType(type);
+        }
+    }
+
+    private void checkPlayersReady() {
+        if (audioPlayerReady && videoPlayerReady && mixedPlayWhenReady) {
+            play();
         }
     }
 
@@ -273,6 +382,10 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         maybeReportPlayerState();
+        if (!videoPlayerReady && playbackState == Player.STATE_READY) {
+            videoPlayerReady = true;
+            checkPlayersReady();
+        }
     }
 
     @Override

@@ -232,16 +232,17 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					return false;
 				}
 				final CallLogRow row = calls.get(position);
-				ArrayList<String> items=new ArrayList<String>();
+				ArrayList<String> items = new ArrayList<>();
 				items.add(LocaleController.getString("Delete", R.string.Delete));
-				if(VoIPHelper.canRateCall((TLRPC.TL_messageActionPhoneCall) row.calls.get(0).action))
+				if (VoIPHelper.canRateCall((TLRPC.TL_messageActionPhoneCall) row.calls.get(0).action)) {
 					items.add(LocaleController.getString("CallMessageReportProblem", R.string.CallMessageReportProblem));
+				}
 				new AlertDialog.Builder(getParentActivity())
 						.setTitle(LocaleController.getString("Calls", R.string.Calls))
 						.setItems(items.toArray(new String[items.size()]), new DialogInterface.OnClickListener() {
 							@Override
 							public void onClick(DialogInterface dialog, int which) {
-								switch(which){
+								switch (which) {
 									case 0:
 										confirmAndDelete(row);
 										break;
@@ -377,7 +378,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		req.peer = new TLRPC.TL_inputPeerEmpty();
 		req.filter = new TLRPC.TL_inputMessagesFilterPhoneCalls();
 		req.q = "";
-		req.max_id = max_id;
+		req.offset_id = max_id;
 		int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
 			@Override
 			public void run(final TLObject response, final TLRPC.TL_error error) {
@@ -395,7 +396,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 							CallLogRow currentRow = calls.size() > 0 ? calls.get(calls.size() - 1) : null;
 							for (int a = 0; a < msgs.messages.size(); a++) {
 								TLRPC.Message msg = msgs.messages.get(a);
-								if (msg.action == null) {
+								if (msg.action == null || msg.action instanceof TLRPC.TL_messageActionHistoryClear) {
 									continue;
 								}
 								int callType = msg.from_id == UserConfig.getClientUserId() ? TYPE_OUT : TYPE_IN;
@@ -563,7 +564,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 						subtitle.setSpan(iconMissed, ldir.length(), ldir.length() + 1, 0);
 						break;
 				}
-				cell.setData(row.user, null, null, subtitle, false);
+				cell.setData(row.user, null, null, subtitle, false, false);
 				cell.useSeparator = position != calls.size() - 1 || !endReached;
 				viewItem.button.setTag(row);
 			}
@@ -642,7 +643,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, Theme.dialogs_offlinePaint, null, null, Theme.key_windowBackgroundWhiteGrayText3),
 				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, Theme.dialogs_onlinePaint, null, null, Theme.key_windowBackgroundWhiteBlueText3),
 				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, Theme.dialogs_namePaint, null, null, Theme.key_chats_name),
-				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, null, Theme.key_avatar_text),
+				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
 				new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
 				new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
 				new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),

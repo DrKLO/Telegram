@@ -9,8 +9,6 @@
 package org.telegram.ui.ActionBar;
 
 import android.content.Context;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.ViewGroup;
@@ -74,7 +72,7 @@ public class ActionBarMenu extends LinearLayout {
         menuItem.setTag(id);
         if (drawable != null) {
             menuItem.iconView.setImageDrawable(drawable);
-        } else {
+        } else if (icon != 0) {
             menuItem.iconView.setImageResource(icon);
         }
         addView(menuItem, new LinearLayout.LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -158,14 +156,15 @@ public class ActionBarMenu extends LinearLayout {
         }
     }
 
-    public void closeSearchField() {
+    public void closeSearchField(boolean closeKeyboard) {
         int count = getChildCount();
         for (int a = 0; a < count; a++) {
             View view = getChildAt(a);
             if (view instanceof ActionBarMenuItem) {
                 ActionBarMenuItem item = (ActionBarMenuItem) view;
                 if (item.isSearchField()) {
-                    parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch(false));
+                    parentActionBar.onSearchFieldVisibilityChanged(false);
+                    item.toggleSearch(closeKeyboard);
                     break;
                 }
             }

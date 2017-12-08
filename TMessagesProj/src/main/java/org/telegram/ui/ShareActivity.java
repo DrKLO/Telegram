@@ -74,7 +74,7 @@ public class ShareActivity extends Activity {
         messageObject.messageOwner.with_my_score = true;
 
         try {
-            visibleDialog = new ShareAlert(this, messageObject, null, false, link, false);
+            visibleDialog = ShareAlert.createShareAlert(this, messageObject, null, false, link, false);
             visibleDialog.setCanceledOnTouchOutside(true);
             visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
                 @Override

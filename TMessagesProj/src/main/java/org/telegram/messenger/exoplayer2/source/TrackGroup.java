@@ -42,7 +42,7 @@ public final class TrackGroup {
   private int hashCode;
 
   /**
-   * @param formats The track formats. Must not be null or contain null elements.
+   * @param formats The track formats. Must not be null, contain null elements or be of length 0.
    */
   public TrackGroup(Format... formats) {
     Assertions.checkState(formats.length > 0);

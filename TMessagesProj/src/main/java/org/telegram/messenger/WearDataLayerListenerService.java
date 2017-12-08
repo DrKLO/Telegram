@@ -7,6 +7,7 @@ import com.google.android.gms.wearable.Channel;
 import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 
 import java.io.BufferedOutputStream;
@@ -112,6 +113,7 @@ public class WearDataLayerListenerService extends WearableListenerService {
 				out.flush();
 				out.close();
 			} else if ("/waitForAuthCode".equals(path)) {
+				ConnectionsManager.getInstance().setAppPaused(false, false);
 				final String[] code = {null};
 				final CyclicBarrier barrier = new CyclicBarrier(2);
 				final NotificationCenter.NotificationCenterDelegate listener = new NotificationCenter.NotificationCenterDelegate() {
@@ -161,6 +163,7 @@ public class WearDataLayerListenerService extends WearableListenerService {
 					out.writeUTF("");
 				out.flush();
 				out.close();
+				ConnectionsManager.getInstance().setAppPaused(true, false);
 			}
 		} catch (Exception x) {
 			FileLog.e("error processing wear request", x);

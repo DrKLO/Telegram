@@ -33,6 +33,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.DispatchQueue;
@@ -60,6 +61,9 @@ import javax.microedition.khronos.opengles.GL10;
 @SuppressLint("NewApi")
 public class PhotoFilterView extends FrameLayout {
 
+    private final static int curveGranularity = 100;
+    private final static int curveDataStep = 2;
+
     private boolean showOriginal;
 
     private int enhanceTool = 0;
@@ -76,29 +80,27 @@ public class PhotoFilterView extends FrameLayout {
     private int tintShadowsTool = 11;
     private int tintHighlightsTool = 12;
 
-    private float enhanceValue = 0; //0 100
-    private float exposureValue = 0; //-100 100
-    private float contrastValue = 0; //-100 100
-    private float warmthValue = 0; //-100 100
-    private float saturationValue = 0; //-100 100
-    private float fadeValue = 0; // 0 100
-    private int tintShadowsColor = 0; //0 0xffffffff
-    private int tintHighlightsColor = 0; //0 0xffffffff
-    private float highlightsValue = 0; //-100 100
-    private float shadowsValue = 0; //-100 100
-    private float vignetteValue = 0; //0 100
-    private float grainValue = 0; //0 100
-    private int blurType = 0; //0 none, 1 radial, 2 linear
-    private float sharpenValue = 0; //0 100
-    private CurvesToolValue curvesToolValue = new CurvesToolValue();
+    private float enhanceValue; //0 100
+    private float exposureValue; //-100 100
+    private float contrastValue; //-100 100
+    private float warmthValue; //-100 100
+    private float saturationValue; //-100 100
+    private float fadeValue; // 0 100
+    private int tintShadowsColor; //0 0xffffffff
+    private int tintHighlightsColor; //0 0xffffffff
+    private float highlightsValue; //-100 100
+    private float shadowsValue; //-100 100
+    private float vignetteValue; //0 100
+    private float grainValue; //0 100
+    private int blurType; //0 none, 1 radial, 2 linear
+    private float sharpenValue; //0 100
+    private CurvesToolValue curvesToolValue;
+    private float blurExcludeSize;
+    private Point blurExcludePoint;
+    private float blurExcludeBlurSize;
+    private float blurAngle;
 
-    private final static int curveGranularity = 100;
-    private final static int curveDataStep = 2;
-
-    private float blurExcludeSize = 0.35f;
-    private Point blurExcludePoint = new Point(0.5f, 0.5f);
-    private float blurExcludeBlurSize = 0.15f;
-    private float blurAngle = (float) Math.PI / 2.0f;
+    private MediaController.SavedFilterState lastState;
 
     private FrameLayout toolsView;
     private TextView doneTextView;
@@ -1625,9 +1627,37 @@ public class PhotoFilterView extends FrameLayout {
         }
     }
 
-    public PhotoFilterView(Context context, Bitmap bitmap, int rotation) {
+    public PhotoFilterView(Context context, Bitmap bitmap, int rotation, MediaController.SavedFilterState state) {
         super(context);
 
+        if (state != null) {
+            enhanceValue = state.enhanceValue;
+            exposureValue = state.exposureValue;
+            contrastValue = state.contrastValue;
+            warmthValue = state.warmthValue;
+            saturationValue = state.saturationValue;
+            fadeValue = state.fadeValue;
+            tintShadowsColor = state.tintShadowsColor;
+            tintHighlightsColor = state.tintHighlightsColor;
+            highlightsValue = state.highlightsValue;
+            shadowsValue = state.shadowsValue;
+            vignetteValue = state.vignetteValue;
+            grainValue = state.grainValue;
+            blurType = state.blurType;
+            sharpenValue = state.sharpenValue;
+            curvesToolValue = state.curvesToolValue;
+            blurExcludeSize = state.blurExcludeSize;
+            blurExcludePoint = state.blurExcludePoint;
+            blurExcludeBlurSize = state.blurExcludeBlurSize;
+            blurAngle = state.blurAngle;
+            lastState = state;
+        } else {
+            curvesToolValue = new CurvesToolValue();
+            blurExcludeSize = 0.35f;
+            blurExcludePoint = new Point(0.5f, 0.5f);
+            blurExcludeBlurSize = 0.15f;
+            blurAngle = (float) Math.PI / 2.0f;
+        }
         bitmapToEdit = bitmap;
         orientation = rotation;
 
@@ -1952,9 +1982,50 @@ public class PhotoFilterView extends FrameLayout {
         }
     }
 
+    public MediaController.SavedFilterState getSavedFilterState() {
+        MediaController.SavedFilterState state = new MediaController.SavedFilterState();
+        state.enhanceValue = enhanceValue;
+        state.exposureValue = exposureValue;
+        state.contrastValue = contrastValue;
+        state.warmthValue = warmthValue;
+        state.saturationValue = saturationValue;
+        state.fadeValue = fadeValue;
+        state.tintShadowsColor = tintShadowsColor;
+        state.tintHighlightsColor = tintHighlightsColor;
+        state.highlightsValue = highlightsValue;
+        state.shadowsValue = shadowsValue;
+        state.vignetteValue = vignetteValue;
+        state.grainValue = grainValue;
+        state.blurType = blurType;
+        state.sharpenValue = sharpenValue;
+        state.curvesToolValue = curvesToolValue;
+        state.blurExcludeSize = blurExcludeSize;
+        state.blurExcludePoint = blurExcludePoint;
+        state.blurExcludeBlurSize = blurExcludeBlurSize;
+        state.blurAngle = blurAngle;
+        return state;
+    }
+
     public boolean hasChanges() {
-        return enhanceValue != 0 || contrastValue != 0 || highlightsValue != 0 || exposureValue != 0 || warmthValue != 0 || saturationValue != 0 || vignetteValue != 0 ||
-                shadowsValue != 0 || grainValue != 0 || sharpenValue != 0 || fadeValue != 0 || tintHighlightsColor != 0 || tintShadowsColor != 0 || !curvesToolValue.shouldBeSkipped();
+        if (lastState != null) {
+            return enhanceValue != lastState.enhanceValue ||
+                    contrastValue != lastState.contrastValue ||
+                    highlightsValue != lastState.highlightsValue ||
+                    exposureValue != lastState.exposureValue ||
+                    warmthValue != lastState.warmthValue ||
+                    saturationValue != lastState.saturationValue ||
+                    vignetteValue != lastState.vignetteValue ||
+                    shadowsValue != lastState.shadowsValue ||
+                    grainValue != lastState.grainValue ||
+                    sharpenValue != lastState.sharpenValue ||
+                    fadeValue != lastState.fadeValue ||
+                    tintHighlightsColor != lastState.tintHighlightsColor ||
+                    tintShadowsColor != lastState.tintShadowsColor ||
+                    !curvesToolValue.shouldBeSkipped();
+        } else {
+            return enhanceValue != 0 || contrastValue != 0 || highlightsValue != 0 || exposureValue != 0 || warmthValue != 0 || saturationValue != 0 || vignetteValue != 0 ||
+                    shadowsValue != 0 || grainValue != 0 || sharpenValue != 0 || fadeValue != 0 || tintHighlightsColor != 0 || tintShadowsColor != 0 || !curvesToolValue.shouldBeSkipped();
+        }
     }
 
     public void onTouch(MotionEvent event) {

@@ -17,6 +17,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
@@ -76,11 +77,24 @@ public class TextDetailSettingsCell extends FrameLayout {
         }
     }
 
-    public void setTextAndValue(String text, String value, boolean divider) {
+    public void setTextAndValue(String text, CharSequence value, boolean divider) {
         textView.setText(text);
         valueTextView.setText(value);
         needDivider = divider;
         setWillNotDraw(!divider);
+    }
+
+    public void setTextWithEmojiAndValue(String text, CharSequence value, boolean divider) {
+        textView.setText(Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false));
+        valueTextView.setText(value);
+        needDivider = divider;
+        setWillNotDraw(!divider);
+    }
+
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        textView.invalidate();
     }
 
     @Override

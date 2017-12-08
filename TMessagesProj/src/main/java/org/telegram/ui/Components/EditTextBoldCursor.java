@@ -51,6 +51,7 @@ public class EditTextBoldCursor extends EditText {
     private float hintAlpha = 1.0f;
     private long lastUpdateTime;
     private boolean allowDrawCursor = true;
+    private float cursorWidth = 2.0f;
 
     public EditTextBoldCursor(Context context) {
         super(context);
@@ -87,6 +88,10 @@ public class EditTextBoldCursor extends EditText {
 
     public void setAllowDrawCursor(boolean value) {
         allowDrawCursor = value;
+    }
+
+    public void setCursorWidth(float width) {
+        cursorWidth = width;
     }
 
     public void setCursorColor(int color) {
@@ -192,7 +197,12 @@ public class EditTextBoldCursor extends EditText {
             getPaint().setColor(hintColor);
             getPaint().setAlpha((int) (255 * hintAlpha));
             canvas.save();
-            canvas.translate(0.0f, (getMeasuredHeight() - hintLayout.getHeight()) / 2.0f);
+            int left = 0;
+            float lineLeft = hintLayout.getLineLeft(0);
+            if (lineLeft != 0) {
+                left -= lineLeft;
+            }
+            canvas.translate(left, (getMeasuredHeight() - hintLayout.getHeight()) / 2.0f);
             hintLayout.draw(canvas);
             getPaint().setColor(oldColor);
             canvas.restore();
@@ -200,7 +210,7 @@ public class EditTextBoldCursor extends EditText {
         try {
             if (allowDrawCursor && mShowCursorField != null && mCursorDrawable != null && mCursorDrawable[0] != null) {
                 long mShowCursor = mShowCursorField.getLong(editor);
-                boolean showCursor = (SystemClock.uptimeMillis() - mShowCursor) % (2 * 500) < 500;
+                boolean showCursor = (SystemClock.uptimeMillis() - mShowCursor) % (2 * 500) < 500 && isFocused();
                 if (showCursor) {
                     canvas.save();
                     int voffsetCursor = 0;
@@ -213,7 +223,7 @@ public class EditTextBoldCursor extends EditText {
                     int lineCount = layout.getLineCount();
                     Rect bounds = mCursorDrawable[0].getBounds();
                     rect.left = bounds.left;
-                    rect.right = bounds.left + AndroidUtilities.dp(2);
+                    rect.right = bounds.left + AndroidUtilities.dp(cursorWidth);
                     rect.bottom = bounds.bottom;
                     rect.top = bounds.top;
                     if (lineSpacingExtra != 0 && line < lineCount - 1) {

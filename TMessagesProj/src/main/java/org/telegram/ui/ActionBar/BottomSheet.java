@@ -85,6 +85,8 @@ public class BottomSheet extends Dialog {
 
     private boolean focusable;
 
+    private boolean allowNestedScroll = true;
+
     private Drawable shadowDrawable;
     protected static int backgroundPaddingTop;
     protected static int backgroundPaddingLeft;
@@ -119,13 +121,13 @@ public class BottomSheet extends Dialog {
 
         @Override
         public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
-            return !dismissed && nestedScrollAxes == ViewCompat.SCROLL_AXIS_VERTICAL && !canDismissWithSwipe();
+            return !dismissed && allowNestedScroll && nestedScrollAxes == ViewCompat.SCROLL_AXIS_VERTICAL && !canDismissWithSwipe();
         }
 
         @Override
         public void onNestedScrollAccepted(View child, View target, int nestedScrollAxes) {
             nestedScrollingParentHelper.onNestedScrollAccepted(child, target, nestedScrollAxes);
-            if (dismissed) {
+            if (dismissed || !allowNestedScroll) {
                 return;
             }
             cancelCurrentAnimation();
@@ -134,7 +136,7 @@ public class BottomSheet extends Dialog {
         @Override
         public void onStopNestedScroll(View target) {
             nestedScrollingParentHelper.onStopNestedScroll(target);
-            if (dismissed) {
+            if (dismissed || !allowNestedScroll) {
                 return;
             }
             float currentTranslation = containerView.getTranslationY();
@@ -143,7 +145,7 @@ public class BottomSheet extends Dialog {
 
         @Override
         public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed) {
-            if (dismissed) {
+            if (dismissed || !allowNestedScroll) {
                 return;
             }
             cancelCurrentAnimation();
@@ -159,7 +161,7 @@ public class BottomSheet extends Dialog {
 
         @Override
         public void onNestedPreScroll(View target, int dx, int dy, int[] consumed) {
-            if (dismissed) {
+            if (dismissed || !allowNestedScroll) {
                 return;
             }
             cancelCurrentAnimation();
@@ -231,7 +233,7 @@ public class BottomSheet extends Dialog {
             if (onContainerTouchEvent(ev)) {
                 return true;
             }
-            if (canDismissWithTouchOutside() && ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && !startedTracking && !maybeStartTracking) {
+            if (canDismissWithTouchOutside() && ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && (!startedTracking && !maybeStartTracking || ev.getPointerCount() == 1)) {
                 startedTrackingX = (int) ev.getX();
                 startedTrackingY = (int) ev.getY();
                 if (startedTrackingY < containerView.getTop() || startedTrackingX < containerView.getLeft() || startedTrackingX > containerView.getRight()) {
@@ -517,6 +519,13 @@ public class BottomSheet extends Dialog {
     @Override
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
+    }
+
+    public void setAllowNestedScroll(boolean value) {
+        allowNestedScroll = value;
+        if (!allowNestedScroll) {
+            containerView.setTranslationY(0);
+        }
     }
 
     public BottomSheet(Context context, boolean needFocus) {

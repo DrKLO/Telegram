@@ -21,7 +21,12 @@ import org.telegram.messenger.support.customtabs.CustomTabsServiceConnection;
 
 import java.lang.ref.WeakReference;
 
+/**
+ * Implementation for the CustomTabsServiceConnection that avoids leaking the
+ * ServiceConnectionCallback
+ */
 public class ServiceConnection extends CustomTabsServiceConnection {
+    // A weak reference to the ServiceConnectionCallback to avoid leaking it.
     private WeakReference<ServiceConnectionCallback> mConnectionCallback;
 
     public ServiceConnection(ServiceConnectionCallback connectionCallback) {

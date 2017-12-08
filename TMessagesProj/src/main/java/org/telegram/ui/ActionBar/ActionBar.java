@@ -100,7 +100,7 @@ public class ActionBar extends FrameLayout {
         backButtonImageView.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (isSearchFieldVisible) {
+                if (!actionModeVisible && isSearchFieldVisible) {
                     closeSearchField();
                     return;
                 }
@@ -248,6 +248,10 @@ public class ActionBar extends FrameLayout {
 
     public void setActionBarMenuOnItemClick(ActionBarMenuOnItemClick listener) {
         actionBarMenuOnItemClick = listener;
+    }
+
+    public ActionBarMenuOnItemClick getActionBarMenuOnItemClick() {
+        return actionBarMenuOnItemClick;
     }
 
     public View getBackButton() {
@@ -455,10 +459,14 @@ public class ActionBar extends FrameLayout {
     }
 
     public void closeSearchField() {
+        closeSearchField(true);
+    }
+
+    public void closeSearchField(boolean closeKeyboard) {
         if (!isSearchFieldVisible || menu == null) {
             return;
         }
-        menu.closeSearchField();
+        menu.closeSearchField(closeKeyboard);
     }
 
     public void openSearchField(String text) {
@@ -501,7 +509,6 @@ public class ActionBar extends FrameLayout {
             if (titleTextView != null && titleTextView.getVisibility() != GONE) {
                 titleTextView.setTextSize(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 18 : 20);
                 titleTextView.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(24), MeasureSpec.AT_MOST));
-
             }
             if (subtitleTextView != null && subtitleTextView.getVisibility() != GONE) {
                 subtitleTextView.setTextSize(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 14 : 16);

@@ -131,7 +131,12 @@ public class EditTextCaption extends EditTextBoldCursor {
                     mode.finish();
                     return true;
                 }
-                return callback.onActionItemClicked(mode, item);
+                try {
+                    return callback.onActionItemClicked(mode, item);
+                } catch (Exception ignore) {
+
+                }
+                return true;
             }
 
             @Override

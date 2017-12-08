@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.util;
 
+import org.telegram.messenger.exoplayer2.C;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
@@ -428,7 +429,7 @@ public final class ParsableByteArray {
    * @return The string encoded by the bytes.
    */
   public String readString(int length) {
-    return readString(length, Charset.defaultCharset());
+    return readString(length, Charset.forName(C.UTF8_NAME));
   }
 
   /**

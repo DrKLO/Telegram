@@ -763,7 +763,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                             photoExist = false;
                         }
                     }
-                    if (photoExist || MediaController.getInstance().canDownloadMedia(MediaController.AUTODOWNLOAD_MASK_PHOTO)) {
+                    if (photoExist || MediaController.getInstance().canDownloadMedia(messageObject)) {
                         imageView.setImage(currentPhotoObject.location, "100_100", thumb.location, currentPhotoObject.size);
                         photoSet = true;
                     } else {
@@ -822,7 +822,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             cell.setMessageObject(messageObject);
-            if (MediaController.getInstance().canDownloadMedia(MediaController.AUTODOWNLOAD_MASK_AUDIO)) {
+            if (MediaController.getInstance().canDownloadMedia(messageObject)) {
                 cell.downloadAudioIfNeed();
             }
         } else {

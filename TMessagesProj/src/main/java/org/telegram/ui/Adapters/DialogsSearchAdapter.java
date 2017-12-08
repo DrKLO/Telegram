@@ -26,6 +26,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.query.SearchQuery;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
@@ -73,6 +74,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     private int dialogsType;
     private SearchAdapterHelper searchAdapterHelper;
     private RecyclerListView innerListView;
+    private int selfUserId;
 
     private ArrayList<RecentSearchObject> recentSearchObjects = new ArrayList<>();
     private HashMap<Long, RecentSearchObject> recentSearchObjectsById = new HashMap<>();
@@ -91,7 +93,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
     public interface DialogsSearchAdapterDelegate {
         void searchStateChanged(boolean searching);
-        void didPressedOnSubDialog(int did);
+        void didPressedOnSubDialog(long did);
         void needRemoveHint(int did);
     }
 
@@ -170,6 +172,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         mContext = context;
         needMessagesSearch = messagesSearch;
         dialogsType = type;
+        selfUserId = UserConfig.getClientUserId();
         loadRecentSearch();
         SearchQuery.loadHints(true);
     }
@@ -486,6 +489,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             @Override
             public void run() {
                 try {
+                    String savedMessages = LocaleController.getString("SavedMessages", R.string.SavedMessages).toLowerCase();
                     String search1 = query.trim().toLowerCase();
                     if (search1.length() == 0) {
                         lastSearchId = -1;
@@ -541,6 +545,16 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         }
                     }
                     cursor.dispose();
+
+                    if (savedMessages.startsWith(search1)) {
+                        TLRPC.User user = UserConfig.getCurrentUser();
+                        DialogSearchResult dialogSearchResult = new DialogSearchResult();
+                        dialogSearchResult.date = Integer.MAX_VALUE;
+                        dialogSearchResult.name = savedMessages;
+                        dialogSearchResult.object = user;
+                        dialogsResult.put((long) user.id, dialogSearchResult);
+                        resultCount++;
+                    }
 
                     if (!usersToLoad.isEmpty()) {
                         cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, status, name FROM users WHERE uid IN(%s)", TextUtils.join(",", usersToLoad)));
@@ -621,7 +635,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     }
 
                     if (!encryptedToLoad.isEmpty()) {
-                        cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT q.data, u.name, q.user, q.g, q.authkey, q.ttl, u.data, u.status, q.layer, q.seq_in, q.seq_out, q.use_count, q.exchange_id, q.key_date, q.fprint, q.fauthkey, q.khash, q.in_seq_no FROM enc_chats as q INNER JOIN users as u ON q.user = u.uid WHERE q.uid IN(%s)", TextUtils.join(",", encryptedToLoad)));
+                        cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT q.data, u.name, q.user, q.g, q.authkey, q.ttl, u.data, u.status, q.layer, q.seq_in, q.seq_out, q.use_count, q.exchange_id, q.key_date, q.fprint, q.fauthkey, q.khash, q.in_seq_no, q.admin_id, q.mtproto_seq FROM enc_chats as q INNER JOIN users as u ON q.user = u.uid WHERE q.uid IN(%s)", TextUtils.join(",", encryptedToLoad)));
                         while (cursor.next()) {
                             String name = cursor.stringValue(1);
                             String tName = LocaleController.getInstance().getTranslitString(name);
@@ -674,6 +688,11 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                                         chat.future_auth_key = cursor.byteArrayValue(15);
                                         chat.key_hash = cursor.byteArrayValue(16);
                                         chat.in_seq_no = cursor.intValue(17);
+                                        int admin_id = cursor.intValue(18);
+                                        if (admin_id != 0) {
+                                            chat.admin_id = admin_id;
+                                        }
+                                        chat.mtproto_seq = cursor.intValue(19);
 
                                         if (user.status != null) {
                                             user.status.expires = cursor.intValue(7);
@@ -800,6 +819,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 MessagesController.getInstance().putUsers(encUsers, true);
                 searchResult = result;
                 searchResultNames = names;
+                searchAdapterHelper.mergeResults(searchResult);
                 notifyDataSetChanged();
             }
         });
@@ -833,6 +853,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             searchResult.clear();
             searchResultNames.clear();
             searchResultHashtags.clear();
+            searchAdapterHelper.mergeResults(null);
             if (needMessagesSearch != 2) {
                 searchAdapterHelper.queryServerSearch(null, true, true, true, true, 0, false);
             }
@@ -972,7 +993,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 view = new GraySectionCell(mContext);
                 break;
             case 2:
-                view = new DialogCell(mContext);
+                view = new DialogCell(mContext, false);
                 break;
             case 3:
                 view = new LoadingCell(mContext);
@@ -1083,15 +1104,41 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                             foundUserName = foundUserName.substring(1);
                         }
                         try {
-                            username = new SpannableStringBuilder(un);
-                            ((SpannableStringBuilder) username).setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), 0, foundUserName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
+                            spannableStringBuilder.append("@");
+                            spannableStringBuilder.append(un);
+                            if (un.startsWith(foundUserName)) {
+                                spannableStringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), 0, Math.min(spannableStringBuilder.length(), foundUserName.length() + 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            }
+                            username = spannableStringBuilder;
                         } catch (Exception e) {
                             username = un;
                             FileLog.e(e);
                         }
                     }
                 }
-                cell.setData(user != null ? user : chat, encryptedChat, name, username, isRecent);
+                boolean savedMessages = false;
+                if (user != null && user.id == selfUserId) {
+                    name = LocaleController.getString("SavedMessages", R.string.SavedMessages);
+                    username = null;
+                    savedMessages = true;
+                }
+                if (chat != null && chat.participants_count != 0) {
+                    String membersString;
+                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                        membersString = LocaleController.formatPluralString("Subscribers", chat.participants_count);
+                    } else {
+                        membersString = LocaleController.formatPluralString("Members", chat.participants_count);
+                    }
+                    if (username instanceof SpannableStringBuilder) {
+                        ((SpannableStringBuilder) username).append(", ").append(membersString);
+                    } else if (!TextUtils.isEmpty(username)) {
+                        username = TextUtils.concat(username, ", ", membersString);
+                    } else {
+                        username = membersString;
+                    }
+                }
+                cell.setData(user != null ? user : chat, encryptedChat, name, username, isRecent, savedMessages);
                 break;
             }
             case 1: {

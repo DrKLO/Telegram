@@ -192,6 +192,14 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         MediaController.getInstance().removeLoadingFileObserver(this);
     }
 
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (progressView.getVisibility() == VISIBLE) {
+            updateFileExistIcon();
+        }
+    }
+
     public void setChecked(boolean checked, boolean animated) {
         if (checkBox.getVisibility() != VISIBLE) {
             checkBox.setVisibility(VISIBLE);
@@ -270,6 +278,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
             loaded = false;
             if (fileName == null) {
                 statusImageView.setVisibility(INVISIBLE);
+                progressView.setVisibility(INVISIBLE);
                 dateTextView.setPadding(0, 0, 0, 0);
                 loading = false;
                 loaded = true;

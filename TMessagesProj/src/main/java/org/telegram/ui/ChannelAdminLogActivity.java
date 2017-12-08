@@ -19,7 +19,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Outline;
 import android.graphics.Paint;
@@ -67,7 +66,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.exoplayer2.ui.AspectRatioFrameLayout;
 import org.telegram.messenger.query.StickersQuery;
@@ -113,7 +111,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 
-public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer.PhotoViewerProvider, NotificationCenter.NotificationCenterDelegate {
+public class ChannelAdminLogActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     protected TLRPC.Chat currentChat;
 
@@ -182,6 +180,61 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
     private HashMap<Integer, TLRPC.User> selectedAdmins;
 
     private MessageObject scrollToMessage;
+
+    private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
+
+        @Override
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+            int count = chatListView.getChildCount();
+
+            for (int a = 0; a < count; a++) {
+                ImageReceiver imageReceiver = null;
+                View view = chatListView.getChildAt(a);
+                if (view instanceof ChatMessageCell) {
+                    if (messageObject != null) {
+                        ChatMessageCell cell = (ChatMessageCell) view;
+                        MessageObject message = cell.getMessageObject();
+                        if (message != null && message.getId() == messageObject.getId()) {
+                            imageReceiver = cell.getPhotoImage();
+                        }
+                    }
+                } else if (view instanceof ChatActionCell) {
+                    ChatActionCell cell = (ChatActionCell) view;
+                    MessageObject message = cell.getMessageObject();
+                    if (message != null) {
+                        if (messageObject != null) {
+                            if (message.getId() == messageObject.getId()) {
+                                imageReceiver = cell.getPhotoImage();
+                            }
+                        } else if (fileLocation != null && message.photoThumbs != null) {
+                            for (int b = 0; b < message.photoThumbs.size(); b++) {
+                                TLRPC.PhotoSize photoSize = message.photoThumbs.get(b);
+                                if (photoSize.location.volume_id == fileLocation.volume_id && photoSize.location.local_id == fileLocation.local_id) {
+                                    imageReceiver = cell.getPhotoImage();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (imageReceiver != null) {
+                    int coords[] = new int[2];
+                    view.getLocationInWindow(coords);
+                    PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
+                    object.viewX = coords[0];
+                    object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
+                    object.parentView = chatListView;
+                    object.imageReceiver = imageReceiver;
+                    object.thumb = imageReceiver.getBitmap();
+                    object.radius = imageReceiver.getRoundRadius();
+                    object.isEvent = true;
+                    return object;
+                }
+            }
+            return null;
+        }
+    };
 
     public ChannelAdminLogActivity(TLRPC.Chat chat) {
         currentChat = chat;
@@ -288,7 +341,11 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
                                 }
                                 minEventId = Math.min(minEventId, event.id);
                                 added = true;
-                                messagesDict.put(event.id, new MessageObject(event, messages, messagesByDays, currentChat, mid));
+                                MessageObject messageObject = new MessageObject(event, messages, messagesByDays, currentChat, mid);
+                                if (messageObject.contentType < 0) {
+                                    continue;
+                                }
+                                messagesDict.put(event.id, messageObject);
                             }
                             int newRowsCount = messages.size() - oldRowsCount;
                             loading = false;
@@ -435,6 +492,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
         Theme.createChatResources(context, false);
 
         actionBar.setAddToContainer(false);
+        actionBar.setOccupyStatusBar(Build.VERSION.SDK_INT >= 21 && !AndroidUtilities.isTablet());
         actionBar.setBackButtonDrawable(new BackDrawable(false));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -999,7 +1057,18 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
             items.add(LocaleController.getString("Copy", R.string.Copy));
             options.add(3);
         }
-        if (type == 3) {
+        if (type == 1) {
+            if (selectedObject.currentEvent != null && selectedObject.currentEvent.action instanceof TLRPC.TL_channelAdminLogEventActionChangeStickerSet) {
+                TLRPC.InputStickerSet stickerSet = selectedObject.currentEvent.action.new_stickerset;
+                if (stickerSet == null || stickerSet instanceof TLRPC.TL_inputStickerSetEmpty) {
+                    stickerSet = selectedObject.currentEvent.action.prev_stickerset;
+                }
+                if (stickerSet != null) {
+                    showDialog(new StickersAlert(getParentActivity(), ChannelAdminLogActivity.this, stickerSet, null, null));
+                    return;
+                }
+            }
+        } else if (type == 3) {
             if (selectedObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && MessageObject.isNewGifDocument(selectedObject.messageOwner.media.webpage.document)) {
                 items.add(LocaleController.getString("SaveToGIFs", R.string.SaveToGIFs));
                 options.add(11);
@@ -1310,7 +1379,16 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
                 }
                 Intent intent = new Intent(Intent.ACTION_SEND);
                 intent.setType(selectedObject.getDocument().mime_type);
-                intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(path)));
+                if (Build.VERSION.SDK_INT >= 24) {
+                    try {
+                        intent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(getParentActivity(), BuildConfig.APPLICATION_ID + ".provider", new File(path)));
+                        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    } catch (Exception ignore) {
+                        intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(path)));
+                    }
+                } else {
+                    intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(path)));
+                }
                 getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString("ShareFile", R.string.ShareFile)), 500);
                 break;
             }
@@ -1760,75 +1838,8 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
         showDialog(builder.create());
     }
 
-    @Override
-    public void updatePhotoAtIndex(int index) {
-
-    }
-
     public TLRPC.Chat getCurrentChat() {
         return currentChat;
-    }
-
-    @Override
-    public boolean allowCaption() {
-        return true;
-    }
-
-    @Override
-    public boolean scaleToFill() {
-        return false;
-    }
-
-    @Override
-    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
-        int count = chatListView.getChildCount();
-
-        for (int a = 0; a < count; a++) {
-            ImageReceiver imageReceiver = null;
-            View view = chatListView.getChildAt(a);
-            if (view instanceof ChatMessageCell) {
-                if (messageObject != null) {
-                    ChatMessageCell cell = (ChatMessageCell) view;
-                    MessageObject message = cell.getMessageObject();
-                    if (message != null && message.getId() == messageObject.getId()) {
-                        imageReceiver = cell.getPhotoImage();
-                    }
-                }
-            } else if (view instanceof ChatActionCell) {
-                ChatActionCell cell = (ChatActionCell) view;
-                MessageObject message = cell.getMessageObject();
-                if (message != null) {
-                    if (messageObject != null) {
-                        if (message.getId() == messageObject.getId()) {
-                            imageReceiver = cell.getPhotoImage();
-                        }
-                    } else if (fileLocation != null && message.photoThumbs != null) {
-                        for (int b = 0; b < message.photoThumbs.size(); b++) {
-                            TLRPC.PhotoSize photoSize = message.photoThumbs.get(b);
-                            if (photoSize.location.volume_id == fileLocation.volume_id && photoSize.location.local_id == fileLocation.local_id) {
-                                imageReceiver = cell.getPhotoImage();
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (imageReceiver != null) {
-                int coords[] = new int[2];
-                view.getLocationInWindow(coords);
-                PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
-                object.viewX = coords[0];
-                object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
-                object.parentView = chatListView;
-                object.imageReceiver = imageReceiver;
-                object.thumb = imageReceiver.getBitmap();
-                object.radius = imageReceiver.getRoundRadius();
-                object.isEvent = true;
-                return object;
-            }
-        }
-        return null;
     }
 
     private void addCanBanUser(Bundle bundle, int uid) {
@@ -1848,7 +1859,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
     }
 
     public void showOpenUrlAlert(final String url, boolean ask) {
-        if (Browser.isInternalUrl(url) || !ask) {
+        if (Browser.isInternalUrl(url, null) || !ask) {
             Browser.openUrl(getParentActivity(), url, true);
         } else {
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
@@ -1863,42 +1874,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
             showDialog(builder.create());
         }
-    }
-
-    @Override
-    public Bitmap getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
-        return null;
-    }
-
-    @Override
-    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
-    }
-
-    @Override
-    public void willHidePhotoViewer() {
-    }
-
-    @Override
-    public boolean isPhotoChecked(int index) {
-        return false;
-    }
-
-    @Override
-    public void setPhotoChecked(int index, VideoEditedInfo videoEditedInfo) {
-    }
-
-    @Override
-    public boolean cancelButtonPressed() {
-        return true;
-    }
-
-    @Override
-    public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo) {
-    }
-
-    @Override
-    public int getSelectedCount() {
-        return 0;
     }
 
     private void removeMessageObject(MessageObject messageObject) {
@@ -1969,7 +1944,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
                         if (getParentActivity() == null) {
                             return;
                         }
-                        showDialog(new ShareAlert(mContext, cell.getMessageObject(), null, ChatObject.isChannel(currentChat) && !currentChat.megagroup && currentChat.username != null && currentChat.username.length() > 0, null, false));
+                        showDialog(ShareAlert.createShareAlert(mContext, cell.getMessageObject(), null, ChatObject.isChannel(currentChat) && !currentChat.megagroup && currentChat.username != null && currentChat.username.length() > 0, null, false));
                     }
 
                     @Override
@@ -2122,7 +2097,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
                             showDialog(new StickersAlert(getParentActivity(), ChannelAdminLogActivity.this, message.getInputStickerSet(), null, null));
                         } else if (message.isVideo() || message.type == 1 || message.type == 0 && !message.isWebpageDocument() || message.isGif()) {
                             PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                            PhotoViewer.getInstance().openPhoto(message, message.type != 0 ? dialog_id : 0, 0, ChannelAdminLogActivity.this);
+                            PhotoViewer.getInstance().openPhoto(message, message.type != 0 ? dialog_id : 0, 0, provider);
                         } else if (message.type == 3) {
                             try {
                                 File f = null;
@@ -2147,7 +2122,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
                             if (!AndroidUtilities.isGoogleMapsInstalled(ChannelAdminLogActivity.this)) {
                                 return;
                             }
-                            LocationActivity fragment = new LocationActivity();
+                            LocationActivity fragment = new LocationActivity(0);
                             fragment.setMessageObject(message);
                             presentFragment(fragment);
                         } else if (message.type == 9 || message.type == 0) {
@@ -2207,6 +2182,11 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
                             Browser.openUrl(getParentActivity(), messageObject.messageOwner.media.webpage.url);
                         }
                     }
+
+                    @Override
+                    public boolean isChatAdminCell(int uid) {
+                        return false;
+                    }
                 });
                 chatMessageCell.setAllowAssistant(true);
             } else if (viewType == 1) {
@@ -2218,9 +2198,9 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
                         PhotoViewer.getInstance().setParentActivity(getParentActivity());
                         TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(message.photoThumbs, 640);
                         if (photoSize != null) {
-                            PhotoViewer.getInstance().openPhoto(photoSize.location, ChannelAdminLogActivity.this);
+                            PhotoViewer.getInstance().openPhoto(photoSize.location, provider);
                         } else {
-                            PhotoViewer.getInstance().openPhoto(message, 0, 0, ChannelAdminLogActivity.this);
+                            PhotoViewer.getInstance().openPhoto(message, 0, 0, provider);
                         }
                     }
 
@@ -2308,8 +2288,8 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
                     } else {
                         pinnedTop = false;
                     }
-                    messageCell.setMessageObject(message, pinnedBotton, pinnedTop);
-                    if (view instanceof ChatMessageCell && MediaController.getInstance().canDownloadMedia(MediaController.AUTODOWNLOAD_MASK_AUDIO)) {
+                    messageCell.setMessageObject(message, null, pinnedBotton, pinnedTop);
+                    if (view instanceof ChatMessageCell && MediaController.getInstance().canDownloadMedia(message)) {
                         ((ChatMessageCell) view).downloadAudioIfNeed();
                     }
                     messageCell.setHighlighted(false);
@@ -2471,7 +2451,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
                 new ThemeDescription(avatarContainer.getSubtitleTextView(), ThemeDescription.FLAG_TEXTCOLOR, null, new Paint[]{Theme.chat_statusPaint, Theme.chat_statusRecordPaint}, null, null, Theme.key_actionBarDefaultSubtitle, null),
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
 
-                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_avatar_backgroundViolet),
@@ -2495,7 +2475,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements PhotoViewer
                 new ThemeDescription(chatListView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{ChatActionCell.class}, Theme.chat_actionTextPaint, null, null, Theme.key_chat_serviceText),
                 new ThemeDescription(chatListView, ThemeDescription.FLAG_LINKCOLOR, new Class[]{ChatActionCell.class}, Theme.chat_actionTextPaint, null, null, Theme.key_chat_serviceLink),
 
-                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_shareIconDrawable, Theme.chat_botInlineDrawable, Theme.chat_botLinkDrawalbe}, null, Theme.key_chat_serviceIcon),
+                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_shareIconDrawable, Theme.chat_botInlineDrawable, Theme.chat_botLinkDrawalbe, Theme.chat_goIconDrawable}, null, Theme.key_chat_serviceIcon),
 
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class, ChatActionCell.class}, null, null, null, Theme.key_chat_serviceBackground),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class, ChatActionCell.class}, null, null, null, Theme.key_chat_serviceBackgroundSelected),
