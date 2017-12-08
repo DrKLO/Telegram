@@ -15,9 +15,9 @@
  */
 package org.telegram.messenger.exoplayer2.source;
 
-import android.util.Pair;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.ExoPlayer;
+import org.telegram.messenger.exoplayer2.Player;
 import org.telegram.messenger.exoplayer2.Timeline;
 import org.telegram.messenger.exoplayer2.upstream.Allocator;
 import org.telegram.messenger.exoplayer2.util.Assertions;
@@ -38,6 +38,7 @@ public final class ConcatenatingMediaSource implements MediaSource {
   private final Object[] manifests;
   private final Map<MediaPeriod, Integer> sourceIndexByMediaPeriod;
   private final boolean[] duplicateFlags;
+  private final boolean isRepeatOneAtomic;
 
   private Listener listener;
   private ConcatenatedTimeline timeline;
@@ -47,7 +48,21 @@ public final class ConcatenatingMediaSource implements MediaSource {
    *     {@link MediaSource} instance to be present more than once in the array.
    */
   public ConcatenatingMediaSource(MediaSource... mediaSources) {
+    this(false, mediaSources);
+  }
+
+  /**
+   * @param isRepeatOneAtomic Whether the concatenated media source shall be treated as atomic
+   *     (i.e., repeated in its entirety) when repeat mode is set to {@code Player.REPEAT_MODE_ONE}.
+   * @param mediaSources The {@link MediaSource}s to concatenate. It is valid for the same
+   *     {@link MediaSource} instance to be present more than once in the array.
+   */
+  public ConcatenatingMediaSource(boolean isRepeatOneAtomic, MediaSource... mediaSources) {
+    for (MediaSource mediaSource : mediaSources) {
+      Assertions.checkNotNull(mediaSource);
+    }
     this.mediaSources = mediaSources;
+    this.isRepeatOneAtomic = isRepeatOneAtomic;
     timelines = new Timeline[mediaSources.length];
     manifests = new Object[mediaSources.length];
     sourceIndexByMediaPeriod = new HashMap<>();
@@ -80,11 +95,11 @@ public final class ConcatenatingMediaSource implements MediaSource {
   }
 
   @Override
-  public MediaPeriod createPeriod(int index, Allocator allocator, long positionUs) {
-    int sourceIndex = timeline.getSourceIndexForPeriod(index);
-    int periodIndexInSource = index - timeline.getFirstPeriodIndexInSource(sourceIndex);
-    MediaPeriod mediaPeriod = mediaSources[sourceIndex].createPeriod(periodIndexInSource, allocator,
-        positionUs);
+  public MediaPeriod createPeriod(MediaPeriodId id, Allocator allocator) {
+    int sourceIndex = timeline.getChildIndexByPeriodIndex(id.periodIndex);
+    MediaPeriodId periodIdInSource =
+        new MediaPeriodId(id.periodIndex - timeline.getFirstPeriodIndexByChildIndex(sourceIndex));
+    MediaPeriod mediaPeriod = mediaSources[sourceIndex].createPeriod(periodIdInSource, allocator);
     sourceIndexByMediaPeriod.put(mediaPeriod, sourceIndex);
     return mediaPeriod;
   }
@@ -123,7 +138,7 @@ public final class ConcatenatingMediaSource implements MediaSource {
         return;
       }
     }
-    timeline = new ConcatenatedTimeline(timelines.clone());
+    timeline = new ConcatenatedTimeline(timelines.clone(), isRepeatOneAtomic);
     listener.onSourceInfoRefreshed(timeline, manifests.clone());
   }
 
@@ -144,13 +159,15 @@ public final class ConcatenatingMediaSource implements MediaSource {
   /**
    * A {@link Timeline} that is the concatenation of one or more {@link Timeline}s.
    */
-  private static final class ConcatenatedTimeline extends Timeline {
+  private static final class ConcatenatedTimeline extends AbstractConcatenatedTimeline {
 
     private final Timeline[] timelines;
     private final int[] sourcePeriodOffsets;
     private final int[] sourceWindowOffsets;
+    private final boolean isRepeatOneAtomic;
 
-    public ConcatenatedTimeline(Timeline[] timelines) {
+    public ConcatenatedTimeline(Timeline[] timelines, boolean isRepeatOneAtomic) {
+      super(timelines.length);
       int[] sourcePeriodOffsets = new int[timelines.length];
       int[] sourceWindowOffsets = new int[timelines.length];
       long periodCount = 0;
@@ -167,6 +184,7 @@ public final class ConcatenatingMediaSource implements MediaSource {
       this.timelines = timelines;
       this.sourcePeriodOffsets = sourcePeriodOffsets;
       this.sourceWindowOffsets = sourceWindowOffsets;
+      this.isRepeatOneAtomic = isRepeatOneAtomic;
     }
 
     @Override
@@ -175,69 +193,62 @@ public final class ConcatenatingMediaSource implements MediaSource {
     }
 
     @Override
-    public Window getWindow(int windowIndex, Window window, boolean setIds,
-        long defaultPositionProjectionUs) {
-      int sourceIndex = getSourceIndexForWindow(windowIndex);
-      int firstWindowIndexInSource = getFirstWindowIndexInSource(sourceIndex);
-      int firstPeriodIndexInSource = getFirstPeriodIndexInSource(sourceIndex);
-      timelines[sourceIndex].getWindow(windowIndex - firstWindowIndexInSource, window, setIds,
-          defaultPositionProjectionUs);
-      window.firstPeriodIndex += firstPeriodIndexInSource;
-      window.lastPeriodIndex += firstPeriodIndexInSource;
-      return window;
-    }
-
-    @Override
     public int getPeriodCount() {
       return sourcePeriodOffsets[sourcePeriodOffsets.length - 1];
     }
 
     @Override
-    public Period getPeriod(int periodIndex, Period period, boolean setIds) {
-      int sourceIndex = getSourceIndexForPeriod(periodIndex);
-      int firstWindowIndexInSource = getFirstWindowIndexInSource(sourceIndex);
-      int firstPeriodIndexInSource = getFirstPeriodIndexInSource(sourceIndex);
-      timelines[sourceIndex].getPeriod(periodIndex - firstPeriodIndexInSource, period, setIds);
-      period.windowIndex += firstWindowIndexInSource;
-      if (setIds) {
-        period.uid = Pair.create(sourceIndex, period.uid);
+    public int getNextWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode) {
+      if (isRepeatOneAtomic && repeatMode == Player.REPEAT_MODE_ONE) {
+        repeatMode = Player.REPEAT_MODE_ALL;
       }
-      return period;
+      return super.getNextWindowIndex(windowIndex, repeatMode);
     }
 
     @Override
-    public int getIndexOfPeriod(Object uid) {
-      if (!(uid instanceof Pair)) {
-        return C.INDEX_UNSET;
+    public int getPreviousWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode) {
+      if (isRepeatOneAtomic && repeatMode == Player.REPEAT_MODE_ONE) {
+        repeatMode = Player.REPEAT_MODE_ALL;
       }
-      Pair<?, ?> sourceIndexAndPeriodId = (Pair<?, ?>) uid;
-      if (!(sourceIndexAndPeriodId.first instanceof Integer)) {
-        return C.INDEX_UNSET;
-      }
-      int sourceIndex = (Integer) sourceIndexAndPeriodId.first;
-      Object periodId = sourceIndexAndPeriodId.second;
-      if (sourceIndex < 0 || sourceIndex >= timelines.length) {
-        return C.INDEX_UNSET;
-      }
-      int periodIndexInSource = timelines[sourceIndex].getIndexOfPeriod(periodId);
-      return periodIndexInSource == C.INDEX_UNSET ? C.INDEX_UNSET
-          : getFirstPeriodIndexInSource(sourceIndex) + periodIndexInSource;
+      return super.getPreviousWindowIndex(windowIndex, repeatMode);
     }
 
-    private int getSourceIndexForPeriod(int periodIndex) {
+    @Override
+    protected int getChildIndexByPeriodIndex(int periodIndex) {
       return Util.binarySearchFloor(sourcePeriodOffsets, periodIndex, true, false) + 1;
     }
 
-    private int getFirstPeriodIndexInSource(int sourceIndex) {
-      return sourceIndex == 0 ? 0 : sourcePeriodOffsets[sourceIndex - 1];
-    }
-
-    private int getSourceIndexForWindow(int windowIndex) {
+    @Override
+    protected int getChildIndexByWindowIndex(int windowIndex) {
       return Util.binarySearchFloor(sourceWindowOffsets, windowIndex, true, false) + 1;
     }
 
-    private int getFirstWindowIndexInSource(int sourceIndex) {
-      return sourceIndex == 0 ? 0 : sourceWindowOffsets[sourceIndex - 1];
+    @Override
+    protected int getChildIndexByChildUid(Object childUid) {
+      if (!(childUid instanceof Integer)) {
+        return C.INDEX_UNSET;
+      }
+      return (Integer) childUid;
+    }
+
+    @Override
+    protected Timeline getTimelineByChildIndex(int childIndex) {
+      return timelines[childIndex];
+    }
+
+    @Override
+    protected int getFirstPeriodIndexByChildIndex(int childIndex) {
+      return childIndex == 0 ? 0 : sourcePeriodOffsets[childIndex - 1];
+    }
+
+    @Override
+    protected int getFirstWindowIndexByChildIndex(int childIndex) {
+      return childIndex == 0 ? 0 : sourceWindowOffsets[childIndex - 1];
+    }
+
+    @Override
+    protected Object getChildUidByChildIndex(int childIndex) {
+      return childIndex;
     }
 
   }

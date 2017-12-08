@@ -48,6 +48,7 @@ public class MessageObject {
     public static final int MESSAGE_SEND_STATE_SENT = 0;
     public static final int MESSAGE_SEND_STATE_SEND_ERROR = 2;
 
+    public long localGroupId;
     public TLRPC.Message messageOwner;
     public CharSequence messageText;
     public CharSequence linkDescription;
@@ -76,6 +77,8 @@ public class MessageObject {
     public boolean useCustomPhoto;
     public StringBuilder botButtonsLayout;
 
+    public TLRPC.TL_channelAdminLogEvent currentEvent;
+
     public boolean forceUpdate;
 
     public int lastLineWidth;
@@ -95,10 +98,416 @@ public class MessageObject {
         public int charactersOffset;
         public int charactersEnd;
         public int height;
+        public int heightByOffset;
         public byte directionFlags;
 
         public boolean isRtl() {
             return (directionFlags & 1) != 0 && (directionFlags & 2) == 0;
+        }
+    }
+
+    public static final int POSITION_FLAG_LEFT = 1;
+    public static final int POSITION_FLAG_RIGHT = 2;
+    public static final int POSITION_FLAG_TOP = 4;
+    public static final int POSITION_FLAG_BOTTOM = 8;
+
+    public static class GroupedMessagePosition {
+        public byte minX;
+        public byte maxX;
+        public byte minY;
+        public byte maxY;
+        public int pw;
+        public float ph;
+        public float aspectRatio;
+        public boolean last;
+        public int spanSize;
+        public int leftSpanOffset;
+        public boolean edge;
+        public int flags;
+        public float siblingHeights[];
+
+        public void set(int minX, int maxX, int minY, int maxY, int w, float h, int flags) {
+            this.minX = (byte) minX;
+            this.maxX = (byte) maxX;
+            this.minY = (byte) minY;
+            this.maxY = (byte) maxY;
+            this.pw = w;
+            this.spanSize = w;
+            this.ph = h;
+            this.flags = (byte) flags;
+        }
+    }
+
+    public static class GroupedMessages {
+        public long groupId;
+        public boolean hasSibling;
+        public ArrayList<MessageObject> messages = new ArrayList<>();
+        public ArrayList<GroupedMessagePosition> posArray = new ArrayList<>();
+        public HashMap<MessageObject, GroupedMessagePosition> positions = new HashMap<>();
+
+        private int maxSizeWidth = 800;
+        private int firstSpanAdditionalSize = 200;
+
+        private class MessageGroupedLayoutAttempt {
+
+            public int[] lineCounts;
+            public float[] heights;
+
+            public MessageGroupedLayoutAttempt(int i1, int i2, float f1, float f2) {
+                lineCounts = new int[] {i1, i2};
+                heights = new float[] {f1, f2};
+            }
+
+            public MessageGroupedLayoutAttempt(int i1, int i2, int i3, float f1, float f2, float f3) {
+                lineCounts = new int[] {i1, i2, i3};
+                heights = new float[] {f1, f2, f3};
+            }
+
+            public MessageGroupedLayoutAttempt(int i1, int i2, int i3, int i4, float f1, float f2, float f3, float f4) {
+                lineCounts = new int[] {i1, i2, i3, i4};
+                heights = new float[] {f1, f2, f3, f4};
+            }
+        }
+
+        private float multiHeight(float array[], int start, int end) {
+            float sum = 0;
+            for (int a = start; a < end; a++) {
+                sum += array[a];
+            }
+            return maxSizeWidth / sum;
+        }
+
+        public void calculate() {
+            posArray.clear();
+            positions.clear();
+            int count = messages.size();
+            if (count <= 1) {
+                return;
+            }
+
+            float maxSizeHeight = 814.0f;
+            StringBuilder proportions = new StringBuilder();
+            float averageAspectRatio = 1.0f;
+            boolean isOut = false;
+            int maxX = 0;
+            boolean forceCalc = false;
+            boolean needShare = false;
+            hasSibling = false;
+
+            for (int a = 0; a < count; a++) {
+                MessageObject messageObject = messages.get(a);
+                if (a == 0) {
+                    isOut = messageObject.isOutOwner();
+                    needShare = !isOut && (
+                            messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.saved_from_peer != null ||
+                                    messageObject.messageOwner.from_id > 0 && (messageObject.messageOwner.to_id.channel_id != 0 || messageObject.messageOwner.to_id.chat_id != 0 ||
+                                            messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGame || messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaInvoice)
+                    );
+                }
+                TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
+                GroupedMessagePosition position = new GroupedMessagePosition();
+                position.last = a == count - 1;
+                position.aspectRatio = photoSize == null ? 1.0f : photoSize.w / (float) photoSize.h;
+
+                if (position.aspectRatio > 1.2f) {
+                    proportions.append("w");
+                } else if (position.aspectRatio < 0.8f) {
+                    proportions.append("n");
+                } else {
+                    proportions.append("q");
+                }
+
+                averageAspectRatio += position.aspectRatio;
+
+                if (position.aspectRatio > 2.0f) {
+                    forceCalc = true;
+                }
+
+                positions.put(messageObject, position);
+                posArray.add(position);
+            }
+
+            if (needShare) {
+                maxSizeWidth -= 50;
+                firstSpanAdditionalSize += 50;
+            }
+
+            int minHeight = AndroidUtilities.dp(120);
+            int minWidth = (int) (AndroidUtilities.dp(120) / (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) / (float) maxSizeWidth));
+            int paddingsWidth = (int) (AndroidUtilities.dp(40) / (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) / (float) maxSizeWidth));
+
+            float maxAspectRatio = maxSizeWidth / maxSizeHeight;
+            averageAspectRatio = averageAspectRatio / count;
+
+            if (!forceCalc && (count == 2 || count == 3 || count == 4)) {
+                if (count == 2) {
+                    GroupedMessagePosition position1 = posArray.get(0);
+                    GroupedMessagePosition position2 = posArray.get(1);
+                    String pString = proportions.toString();
+                    if (pString.equals("ww") && averageAspectRatio > 1.4 * maxAspectRatio && position1.aspectRatio - position2.aspectRatio < 0.2) {
+                        float height = Math.round(Math.min(maxSizeWidth / position1.aspectRatio, Math.min(maxSizeWidth / position2.aspectRatio, maxSizeHeight / 2.0f))) / maxSizeHeight;
+                        position1.set(0, 0, 0, 0, maxSizeWidth, height, POSITION_FLAG_LEFT | POSITION_FLAG_RIGHT | POSITION_FLAG_TOP);
+                        position2.set(0, 0, 1, 1, maxSizeWidth, height, POSITION_FLAG_LEFT | POSITION_FLAG_RIGHT | POSITION_FLAG_BOTTOM);
+                    } else if (pString.equals("ww") || pString.equals("qq")) {
+                        int width = maxSizeWidth / 2;
+                        float height = Math.round(Math.min(width / position1.aspectRatio, Math.min(width / position2.aspectRatio, maxSizeHeight))) / maxSizeHeight;
+                        position1.set(0, 0, 0, 0, width, height, POSITION_FLAG_LEFT | POSITION_FLAG_BOTTOM | POSITION_FLAG_TOP);
+                        position2.set(1, 1, 0, 0, width, height, POSITION_FLAG_RIGHT | POSITION_FLAG_BOTTOM | POSITION_FLAG_TOP);
+                        maxX = 1;
+                    } else {
+                        int secondWidth = (int) Math.max(0.4f * maxSizeWidth, Math.round((maxSizeWidth / position1.aspectRatio / (1.0f / position1.aspectRatio + 1.0f / position2.aspectRatio))));
+                        int firstWidth = maxSizeWidth - secondWidth;
+                        if (firstWidth < minWidth) {
+                            int diff = minWidth - firstWidth;
+                            firstWidth = minWidth;
+                            secondWidth -= diff;
+                        }
+
+                        float height = Math.min(maxSizeHeight, Math.round(Math.min(firstWidth / position1.aspectRatio, secondWidth / position2.aspectRatio))) / maxSizeHeight;
+                        position1.set(0, 0, 0, 0, firstWidth, height, POSITION_FLAG_LEFT | POSITION_FLAG_BOTTOM | POSITION_FLAG_TOP);
+                        position2.set(1, 1, 0, 0, secondWidth, height, POSITION_FLAG_RIGHT | POSITION_FLAG_BOTTOM | POSITION_FLAG_TOP);
+                        maxX = 1;
+                    }
+                } else if (count == 3) {
+                    GroupedMessagePosition position1 = posArray.get(0);
+                    GroupedMessagePosition position2 = posArray.get(1);
+                    GroupedMessagePosition position3 = posArray.get(2);
+                    if (proportions.charAt(0) == 'n') {
+                        float thirdHeight = Math.min(maxSizeHeight * 0.5f, Math.round(position2.aspectRatio * maxSizeWidth / (position3.aspectRatio + position2.aspectRatio)));
+                        float secondHeight = maxSizeHeight - thirdHeight;
+                        int rightWidth = (int) Math.max(minWidth, Math.min(maxSizeWidth * 0.5f, Math.round(Math.min(thirdHeight * position3.aspectRatio, secondHeight * position2.aspectRatio))));
+
+                        int leftWidth = Math.round(Math.min(maxSizeHeight * position1.aspectRatio + paddingsWidth, maxSizeWidth - rightWidth));
+                        position1.set(0, 0, 0, 1, leftWidth, 1.0f, POSITION_FLAG_LEFT | POSITION_FLAG_BOTTOM | POSITION_FLAG_TOP);
+
+                        position2.set(1, 1, 0, 0, rightWidth, secondHeight / maxSizeHeight, POSITION_FLAG_RIGHT | POSITION_FLAG_TOP);
+
+                        position3.set(0, 1, 1, 1, rightWidth, thirdHeight / maxSizeHeight, POSITION_FLAG_RIGHT | POSITION_FLAG_BOTTOM);
+                        position3.spanSize = maxSizeWidth;
+
+                        position1.siblingHeights = new float[] {thirdHeight / maxSizeHeight, secondHeight / maxSizeHeight};
+
+                        if (isOut) {
+                            position1.spanSize = maxSizeWidth - rightWidth;
+                        } else {
+                            position2.spanSize = maxSizeWidth - leftWidth;
+                            position3.leftSpanOffset = leftWidth;
+                        }
+                        hasSibling = true;
+                        maxX = 1;
+                    } else {
+                        float firstHeight = Math.round(Math.min(maxSizeWidth / position1.aspectRatio, (maxSizeHeight) * 0.66f)) / maxSizeHeight;
+                        position1.set(0, 1, 0, 0, maxSizeWidth, firstHeight, POSITION_FLAG_LEFT | POSITION_FLAG_RIGHT | POSITION_FLAG_TOP);
+
+                        int width = maxSizeWidth / 2;
+                        float secondHeight = Math.min(maxSizeHeight - firstHeight, Math.round(Math.min(width / position2.aspectRatio, width / position3.aspectRatio))) / maxSizeHeight;
+                        position2.set(0, 0, 1, 1, width, secondHeight, POSITION_FLAG_LEFT | POSITION_FLAG_BOTTOM);
+                        position3.set(1, 1, 1, 1, width, secondHeight, POSITION_FLAG_RIGHT | POSITION_FLAG_BOTTOM);
+                        maxX = 1;
+                    }
+                } else if (count == 4) {
+                    GroupedMessagePosition position1 = posArray.get(0);
+                    GroupedMessagePosition position2 = posArray.get(1);
+                    GroupedMessagePosition position3 = posArray.get(2);
+                    GroupedMessagePosition position4 = posArray.get(3);
+                    if (proportions.charAt(0) == 'w') {
+                        float h0 = Math.round(Math.min(maxSizeWidth / position1.aspectRatio, maxSizeHeight * 0.66f)) / maxSizeHeight;
+                        position1.set(0, 2, 0, 0, maxSizeWidth, h0, POSITION_FLAG_LEFT | POSITION_FLAG_RIGHT | POSITION_FLAG_TOP);
+
+                        float h = Math.round(maxSizeWidth / (position2.aspectRatio + position3.aspectRatio + position4.aspectRatio));
+                        int w0 = (int) Math.max(minWidth, Math.min(maxSizeWidth * 0.4f, h * position2.aspectRatio));
+                        int w2 = (int) Math.max(Math.max(minWidth, maxSizeWidth * 0.33f), h * position4.aspectRatio);
+                        int w1 = maxSizeWidth - w0 - w2;
+                        h = Math.min(maxSizeHeight - h0, h);
+                        h /= maxSizeHeight;
+                        position2.set(0, 0, 1, 1, w0, h, POSITION_FLAG_LEFT | POSITION_FLAG_BOTTOM);
+                        position3.set(1, 1, 1, 1, w1, h, POSITION_FLAG_BOTTOM);
+                        position4.set(2, 2, 1, 1, w2, h, POSITION_FLAG_RIGHT | POSITION_FLAG_BOTTOM);
+                        maxX = 2;
+                    } else {
+                        int w = Math.max(minWidth, Math.round(maxSizeHeight / (1.0f / position2.aspectRatio + 1.0f / position3.aspectRatio + 1.0f / posArray.get(3).aspectRatio)));
+                        float h0 = Math.min(0.33f, Math.max(minHeight, w / position2.aspectRatio) / maxSizeHeight);
+                        float h1 = Math.min(0.33f, Math.max(minHeight, w / position3.aspectRatio) / maxSizeHeight);
+                        float h2 = 1.0f - h0 - h1;
+                        int w0 = Math.round(Math.min(maxSizeHeight * position1.aspectRatio + paddingsWidth, maxSizeWidth - w));
+
+                        position1.set(0, 0, 0, 2, w0, h0 + h1 + h2, POSITION_FLAG_LEFT | POSITION_FLAG_TOP | POSITION_FLAG_BOTTOM);
+
+                        position2.set(1, 1, 0, 0, w, h0, POSITION_FLAG_RIGHT | POSITION_FLAG_TOP);
+
+                        position3.set(0, 1, 1, 1, w, h1, POSITION_FLAG_RIGHT);
+                        position3.spanSize = maxSizeWidth;
+
+                        position4.set(0, 1, 2, 2, w, h2, POSITION_FLAG_RIGHT | POSITION_FLAG_BOTTOM);
+                        position4.spanSize = maxSizeWidth;
+
+                        if (isOut) {
+                            position1.spanSize = maxSizeWidth - w;
+                        } else {
+                            position2.spanSize = maxSizeWidth - w0;
+                            position3.leftSpanOffset = w0;
+                            position4.leftSpanOffset = w0;
+                        }
+                        position1.siblingHeights = new float[] {h0, h1, h2};
+                        hasSibling = true;
+                        maxX = 1;
+                    }
+                }
+            } else {
+                float croppedRatios[] = new float[posArray.size()];
+                for (int a = 0; a < count; a++) {
+                    if (averageAspectRatio > 1.1f) {
+                        croppedRatios[a] = Math.max(1.0f, posArray.get(a).aspectRatio);
+                    } else {
+                        croppedRatios[a] = Math.min(1.0f, posArray.get(a).aspectRatio);
+                    }
+                    croppedRatios[a] = Math.max(0.66667f, Math.min(1.7f, croppedRatios[a]));
+                }
+
+                int firstLine;
+                int secondLine;
+                int thirdLine;
+                int fourthLine;
+                ArrayList<MessageGroupedLayoutAttempt> attempts = new ArrayList<>();
+                for (firstLine = 1; firstLine < croppedRatios.length; firstLine++) {
+                    secondLine = croppedRatios.length - firstLine;
+                    if (firstLine > 3 || secondLine > 3) {
+                        continue;
+                    }
+                    attempts.add(new MessageGroupedLayoutAttempt(firstLine, secondLine, multiHeight(croppedRatios, 0, firstLine), multiHeight(croppedRatios, firstLine, croppedRatios.length)));
+                }
+
+                for (firstLine = 1; firstLine < croppedRatios.length - 1; firstLine++) {
+                    for (secondLine = 1; secondLine < croppedRatios.length - firstLine; secondLine++) {
+                        thirdLine = croppedRatios.length - firstLine - secondLine;
+                        if (firstLine > 3 || secondLine > (averageAspectRatio < 0.85f ? 4 : 3) || thirdLine > 3) {
+                            continue;
+                        }
+                        attempts.add(new MessageGroupedLayoutAttempt(firstLine, secondLine, thirdLine, multiHeight(croppedRatios, 0, firstLine), multiHeight(croppedRatios, firstLine, firstLine + secondLine), multiHeight(croppedRatios, firstLine + secondLine, croppedRatios.length)));
+                    }
+                }
+
+                for (firstLine = 1; firstLine < croppedRatios.length - 2; firstLine++) {
+                    for (secondLine = 1; secondLine < croppedRatios.length - firstLine; secondLine++) {
+                        for (thirdLine = 1; thirdLine < croppedRatios.length - firstLine - secondLine; thirdLine++) {
+                            fourthLine = croppedRatios.length - firstLine - secondLine - thirdLine;
+                            if (firstLine > 3 || secondLine > 3 || thirdLine > 3 || fourthLine > 3) {
+                                continue;
+                            }
+                            attempts.add(new MessageGroupedLayoutAttempt(firstLine, secondLine, thirdLine, fourthLine, multiHeight(croppedRatios, 0, firstLine), multiHeight(croppedRatios, firstLine, firstLine + secondLine), multiHeight(croppedRatios, firstLine + secondLine, firstLine + secondLine + thirdLine), multiHeight(croppedRatios, firstLine + secondLine + thirdLine, croppedRatios.length)));
+                        }
+                    }
+                }
+
+                MessageGroupedLayoutAttempt optimal = null;
+                float optimalDiff = 0.0f;
+                float maxHeight = maxSizeWidth / 3 * 4;
+                for (int a = 0; a < attempts.size(); a++) {
+                    MessageGroupedLayoutAttempt attempt = attempts.get(a);
+                    float height = 0;
+                    float minLineHeight = Float.MAX_VALUE;
+                    for (int b = 0; b < attempt.heights.length; b++){
+                        height += attempt.heights[b];
+                        if (attempt.heights[b] < minLineHeight) {
+                            minLineHeight = attempt.heights[b];
+                        }
+                    }
+
+                    float diff = Math.abs(height - maxHeight);
+                    if (attempt.lineCounts.length > 1) {
+                        if (attempt.lineCounts[0] > attempt.lineCounts[1] || (attempt.lineCounts.length > 2 && attempt.lineCounts[1] > attempt.lineCounts[2]) || (attempt.lineCounts.length > 3 && attempt.lineCounts[2] > attempt.lineCounts[3])) {
+                            diff *= 1.2f;
+                        }
+                    }
+
+                    if (minLineHeight < minWidth) {
+                        diff *= 1.5f;
+                    }
+
+                    if (optimal == null || diff < optimalDiff) {
+                        optimal = attempt;
+                        optimalDiff = diff;
+                    }
+                }
+                if (optimal == null) {
+                    return;
+                }
+
+                int index = 0;
+                float y = 0.0f;
+
+                for (int i = 0; i < optimal.lineCounts.length; i++) {
+                    int c = optimal.lineCounts[i];
+                    float lineHeight = optimal.heights[i];
+                    int spanLeft = maxSizeWidth;
+                    GroupedMessagePosition posToFix = null;
+                    maxX = Math.max(maxX, c - 1);
+                    for (int k = 0; k < c; k++) {
+                        float ratio = croppedRatios[index];
+                        int width = (int) (ratio * lineHeight);
+                        spanLeft -= width;
+                        GroupedMessagePosition pos = posArray.get(index);
+                        int flags = 0;
+                        if (i == 0) {
+                            flags |= POSITION_FLAG_TOP;
+                        }
+                        if (i == optimal.lineCounts.length - 1) {
+                            flags |= POSITION_FLAG_BOTTOM;
+                        }
+                        if (k == 0) {
+                            flags |= POSITION_FLAG_LEFT;
+                            if (isOut) {
+                                posToFix = pos;
+                            }
+                        }
+                        if (k == c - 1) {
+                            flags |= POSITION_FLAG_RIGHT;
+                            if (!isOut) {
+                                posToFix = pos;
+                            }
+                        }
+                        pos.set(k, k, i, i, width, lineHeight / maxSizeHeight, flags);
+                        index++;
+                    }
+                    posToFix.pw += spanLeft;
+                    posToFix.spanSize += spanLeft;
+                    y += lineHeight;
+                }
+            }
+            int avatarOffset = 108;
+            for (int a = 0; a < count; a++) {
+                GroupedMessagePosition pos = posArray.get(a);
+                if (isOut) {
+                    if (pos.minX == 0) {
+                        pos.spanSize += firstSpanAdditionalSize;
+                    }
+                    if ((pos.flags & POSITION_FLAG_RIGHT) != 0) {
+                        pos.edge = true;
+                    }
+                } else {
+                    if (pos.maxX == maxX || (pos.flags & POSITION_FLAG_RIGHT) != 0) {
+                        pos.spanSize += firstSpanAdditionalSize;
+                    }
+                    if ((pos.flags & POSITION_FLAG_LEFT) != 0) {
+                        pos.edge = true;
+                    }
+                }
+                MessageObject messageObject = messages.get(a);
+                if (!isOut && messageObject.needDrawAvatar()) {
+                    if (pos.edge) {
+                        if (pos.spanSize != 1000) {
+                            pos.spanSize += avatarOffset;
+                        }
+                        pos.pw += avatarOffset;
+                    } else if ((pos.flags & POSITION_FLAG_RIGHT) != 0) {
+                        if (pos.spanSize != 1000) {
+                            pos.spanSize -= avatarOffset;
+                        } else if (pos.leftSpanOffset != 0) {
+                            pos.leftSpanOffset += avatarOffset;
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -136,7 +545,9 @@ public class MessageObject {
 
         if (message instanceof TLRPC.TL_messageService) {
             if (message.action != null) {
-                if (message.action instanceof TLRPC.TL_messageActionChatCreate) {
+                if (message.action instanceof TLRPC.TL_messageActionCustomAction) {
+                    messageText = message.action.message;
+                } else if (message.action instanceof TLRPC.TL_messageActionChatCreate) {
                     if (isOut()) {
                         messageText = LocaleController.getString("ActionYouCreateGroup", R.string.ActionYouCreateGroup);
                     } else {
@@ -400,6 +811,8 @@ public class MessageObject {
                 messageText = LocaleController.getString("AttachRound", R.string.AttachRound);
             } else if (message.media instanceof TLRPC.TL_messageMediaGeo || message.media instanceof TLRPC.TL_messageMediaVenue) {
                 messageText = LocaleController.getString("AttachLocation", R.string.AttachLocation);
+            } else if (message.media instanceof TLRPC.TL_messageMediaGeoLive) {
+                messageText = LocaleController.getString("AttachLiveLocation", R.string.AttachLiveLocation);
             } else if (message.media instanceof TLRPC.TL_messageMediaContact) {
                 messageText = LocaleController.getString("AttachContact", R.string.AttachContact);
             } else if (message.media instanceof TLRPC.TL_messageMediaGame) {
@@ -498,31 +911,12 @@ public class MessageObject {
         checkMediaExistance();
     }
 
-    public MessageObject(TLRPC.TL_channelAdminLogEvent event, ArrayList<MessageObject> messageObjects, HashMap<String, ArrayList<MessageObject>> messagesByDays, TLRPC.Chat chat, int[] mid) {
-        TLRPC.User fromUser = null;
-        if (event.user_id > 0) {
-            if (fromUser == null) {
-                fromUser = MessagesController.getInstance().getUser(event.user_id);
-            }
-        }
-
-        Calendar rightNow = new GregorianCalendar();
-        rightNow.setTimeInMillis((long) (event.date) * 1000);
-        int dateDay = rightNow.get(Calendar.DAY_OF_YEAR);
-        int dateYear = rightNow.get(Calendar.YEAR);
-        int dateMonth = rightNow.get(Calendar.MONTH);
-        dateKey = String.format("%d_%02d_%02d", dateYear, dateMonth, dateDay);
-        monthKey = String.format("%d_%02d", dateYear, dateMonth);
-
+    private void createDateArray(TLRPC.TL_channelAdminLogEvent event, ArrayList<MessageObject> messageObjects, HashMap<String, ArrayList<MessageObject>> messagesByDays) {
         ArrayList<MessageObject> dayArray = messagesByDays.get(dateKey);
-
-        TLRPC.Peer to_id = new TLRPC.TL_peerChannel();
-        to_id.channel_id = chat.id;
-
         if (dayArray == null) {
             dayArray = new ArrayList<>();
             messagesByDays.put(dateKey, dayArray);
-            TLRPC.Message dateMsg = new TLRPC.Message();
+            TLRPC.TL_message dateMsg = new TLRPC.TL_message();
             dateMsg.message = LocaleController.formatDateChat(event.date);
             dateMsg.id = 0;
             dateMsg.date = event.date;
@@ -532,6 +926,27 @@ public class MessageObject {
             dateObj.isDateObject = true;
             messageObjects.add(dateObj);
         }
+    }
+
+    public MessageObject(TLRPC.TL_channelAdminLogEvent event, ArrayList<MessageObject> messageObjects, HashMap<String, ArrayList<MessageObject>> messagesByDays, TLRPC.Chat chat, int[] mid) {
+        TLRPC.User fromUser = null;
+        if (event.user_id > 0) {
+            if (fromUser == null) {
+                fromUser = MessagesController.getInstance().getUser(event.user_id);
+            }
+        }
+        currentEvent = event;
+
+        Calendar rightNow = new GregorianCalendar();
+        rightNow.setTimeInMillis((long) (event.date) * 1000);
+        int dateDay = rightNow.get(Calendar.DAY_OF_YEAR);
+        int dateYear = rightNow.get(Calendar.YEAR);
+        int dateMonth = rightNow.get(Calendar.MONTH);
+        dateKey = String.format("%d_%02d_%02d", dateYear, dateMonth, dateDay);
+        monthKey = String.format("%d_%02d", dateYear, dateMonth);
+
+        TLRPC.Peer to_id = new TLRPC.TL_peerChannel();
+        to_id.channel_id = chat.id;
 
         TLRPC.Message message = null;
         if (event.action instanceof TLRPC.TL_channelAdminLogEventActionChangeTitle) {
@@ -662,9 +1077,9 @@ public class MessageObject {
             TLRPC.TL_channelBannedRights n = event.action.new_participant.banned_rights;
             if (chat.megagroup && (n == null || !n.view_messages || n != null && o != null && n.until_date != o.until_date)) {
                 StringBuilder rights;
-                String bannedDuration;
+                StringBuilder bannedDuration;
                 if (n != null && !AndroidUtilities.isBannedForever(n.until_date)) {
-                    bannedDuration = "";
+                    bannedDuration = new StringBuilder();
                     int duration = n.until_date - event.date;
                     int days = duration / 60 / 60 / 24;
                     duration -= days * 60 * 60 * 24;
@@ -692,20 +1107,20 @@ public class MessageObject {
                         }
                         if (addStr != null) {
                             if (bannedDuration.length() > 0) {
-                                bannedDuration += ", ";
+                                bannedDuration.append(", ");
                             }
-                            bannedDuration += addStr;
+                            bannedDuration.append(addStr);
                         }
                         if (count == 2) {
                             break;
                         }
                     }
                 } else {
-                    bannedDuration = LocaleController.getString("UserRestrictionsUntilForever", R.string.UserRestrictionsUntilForever);
+                    bannedDuration = new StringBuilder(LocaleController.getString("UserRestrictionsUntilForever", R.string.UserRestrictionsUntilForever));
                 }
                 String str = LocaleController.getString("EventLogRestrictedUntil", R.string.EventLogRestrictedUntil);
                 int offset = str.indexOf("%1$s");
-                rights = new StringBuilder(String.format(str, getUserName(whoUser, messageOwner.entities, offset), bannedDuration));
+                rights = new StringBuilder(String.format(str, getUserName(whoUser, messageOwner.entities, offset), bannedDuration.toString()));
                 boolean added = false;
                 if (o == null) {
                     o = new TLRPC.TL_channelBannedRights();
@@ -783,6 +1198,12 @@ public class MessageObject {
             }
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionDeleteMessage) {
             messageText = replaceWithLink(LocaleController.getString("EventLogDeletedMessages", R.string.EventLogDeletedMessages), "un1", fromUser);
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionTogglePreHistoryHidden) {
+            if (((TLRPC.TL_channelAdminLogEventActionTogglePreHistoryHidden) event.action).new_value) {
+                messageText = replaceWithLink(LocaleController.getString("EventLogToggledInvitesHistoryOff", R.string.EventLogToggledInvitesHistoryOff), "un1", fromUser);
+            } else {
+                messageText = replaceWithLink(LocaleController.getString("EventLogToggledInvitesHistoryOn", R.string.EventLogToggledInvitesHistoryOn), "un1", fromUser);
+            }
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionChangeAbout) {
             messageText = replaceWithLink(chat.megagroup ? LocaleController.getString("EventLogEditedGroupDescription", R.string.EventLogEditedGroupDescription) : LocaleController.getString("EventLogEditedChannelDescription", R.string.EventLogEditedChannelDescription), "un1", fromUser);
             message = new TLRPC.TL_message();
@@ -867,6 +1288,14 @@ public class MessageObject {
             message.media.webpage.flags = 10;
             message.media.webpage.display_url = "";
             message.media.webpage.url = "";
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionChangeStickerSet) {
+            TLRPC.InputStickerSet newStickerset = ((TLRPC.TL_channelAdminLogEventActionChangeStickerSet) event.action).new_stickerset;
+            TLRPC.InputStickerSet oldStickerset = ((TLRPC.TL_channelAdminLogEventActionChangeStickerSet) event.action).new_stickerset;
+            if (newStickerset == null || newStickerset instanceof TLRPC.TL_inputStickerSetEmpty) {
+                messageText = replaceWithLink(LocaleController.getString("EventLogRemovedStickersSet", R.string.EventLogRemovedStickersSet), "un1", fromUser);
+            } else {
+                messageText = replaceWithLink(LocaleController.getString("EventLogChangedStickersSet", R.string.EventLogChangedStickersSet), "un1", fromUser);
+            }
         } else {
             messageText = "unsupported " + event.action;
         }
@@ -900,9 +1329,19 @@ public class MessageObject {
                 message.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
             }
             MessageObject messageObject = new MessageObject(message, null, null, true, eventId);
-            messageObjects.add(messageObjects.size() - 1, messageObject);
+            if (messageObject.contentType >= 0) {
+                createDateArray(event, messageObjects, messagesByDays);
+                messageObjects.add(messageObjects.size() - 1, messageObject);
+            } else {
+                contentType = -1;
+            }
         }
-        messageObjects.add(messageObjects.size() - 1, this);
+        if (contentType >= 0) {
+            createDateArray(event, messageObjects, messagesByDays);
+            messageObjects.add(messageObjects.size() - 1, this);
+        } else {
+            return;
+        }
 
         if (messageText == null) {
             messageText = "";
@@ -1033,6 +1472,10 @@ public class MessageObject {
         }
     }
 
+    public boolean hasValidReplyMessageObject() {
+        return !(replyMessageObject == null || replyMessageObject.messageOwner instanceof TLRPC.TL_messageEmpty || replyMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionHistoryClear);
+    }
+
     public void generatePaymentSentMessageText(TLRPC.User fromUser) {
         if (fromUser == null) {
             fromUser = MessagesController.getInstance().getUser((int) getDialogId());
@@ -1059,7 +1502,7 @@ public class MessageObject {
                 chat = MessagesController.getInstance().getChat(messageOwner.to_id.channel_id);
             }
         }
-        if (replyMessageObject == null) {
+        if (replyMessageObject == null || replyMessageObject.messageOwner instanceof TLRPC.TL_messageEmpty || replyMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionHistoryClear) {
             messageText = replaceWithLink(LocaleController.getString("ActionPinnedNoText", R.string.ActionPinnedNoText), "un1", fromUser != null ? fromUser : chat);
         } else {
             if (replyMessageObject.isMusic()) {
@@ -1078,6 +1521,8 @@ public class MessageObject {
                 messageText = replaceWithLink(LocaleController.getString("ActionPinnedFile", R.string.ActionPinnedFile), "un1", fromUser != null ? fromUser : chat);
             } else if (replyMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGeo) {
                 messageText = replaceWithLink(LocaleController.getString("ActionPinnedGeo", R.string.ActionPinnedGeo), "un1", fromUser != null ? fromUser : chat);
+            } else if (replyMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGeoLive) {
+                messageText = replaceWithLink(LocaleController.getString("ActionPinnedGeoLive", R.string.ActionPinnedGeoLive), "un1", fromUser != null ? fromUser : chat);
             } else if (replyMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaContact) {
                 messageText = replaceWithLink(LocaleController.getString("ActionPinnedContact", R.string.ActionPinnedContact), "un1", fromUser != null ? fromUser : chat);
             } else if (replyMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
@@ -1096,6 +1541,90 @@ public class MessageObject {
                 messageText = replaceWithLink(LocaleController.getString("ActionPinnedNoText", R.string.ActionPinnedNoText), "un1", fromUser != null ? fromUser : chat);
             }
         }
+    }
+
+    private TLRPC.Photo getPhotoWithId(TLRPC.WebPage webPage, long id) {
+        if (webPage == null || webPage.cached_page == null) {
+            return null;
+        }
+        if (webPage.photo != null && webPage.photo.id == id) {
+            return webPage.photo;
+        }
+        for (int a = 0; a < webPage.cached_page.photos.size(); a++) {
+            TLRPC.Photo photo = webPage.cached_page.photos.get(a);
+            if (photo.id == id) {
+                return photo;
+            }
+        }
+        return null;
+    }
+
+    private TLRPC.Document getDocumentWithId(TLRPC.WebPage webPage, long id) {
+        if (webPage == null || webPage.cached_page == null) {
+            return null;
+        }
+        if (webPage.document != null && webPage.document.id == id) {
+            return webPage.document;
+        }
+        for (int a = 0; a < webPage.cached_page.documents.size(); a++) {
+            TLRPC.Document document = webPage.cached_page.documents.get(a);
+            if (document.id == id) {
+                return document;
+            }
+        }
+        return null;
+    }
+
+    private MessageObject getMessageObjectForBlock(TLRPC.WebPage webPage, TLRPC.PageBlock pageBlock) {
+        TLRPC.TL_message message = null;
+        if (pageBlock instanceof TLRPC.TL_pageBlockPhoto) {
+            TLRPC.Photo photo = getPhotoWithId(webPage, pageBlock.photo_id);
+            if (photo == webPage.photo) {
+                return this;
+            }
+            message = new TLRPC.TL_message();
+            message.media = new TLRPC.TL_messageMediaPhoto();
+            message.media.photo = photo;
+        } else if (pageBlock instanceof TLRPC.TL_pageBlockVideo) {
+            TLRPC.Document document = getDocumentWithId(webPage, pageBlock.video_id);
+            if (document == webPage.document) {
+                return this;
+            }
+            message = new TLRPC.TL_message();
+            message.media = new TLRPC.TL_messageMediaDocument();
+            message.media.document = getDocumentWithId(webPage, pageBlock.video_id);
+        }
+        message.message = "";
+        message.id = Utilities.random.nextInt();
+        message.date = messageOwner.date;
+        message.to_id = messageOwner.to_id;
+        message.out = messageOwner.out;
+        message.from_id = messageOwner.from_id;
+        return new MessageObject(message, null, false);
+    }
+
+    public ArrayList<MessageObject> getWebPagePhotos(ArrayList<MessageObject> array, ArrayList<TLRPC.PageBlock> blocksToSearch) {
+        TLRPC.WebPage webPage = messageOwner.media.webpage;
+        ArrayList<MessageObject> messageObjects = array == null ? new ArrayList<MessageObject>() : array;
+        if (webPage.cached_page == null) {
+            return messageObjects;
+        }
+        ArrayList<TLRPC.PageBlock> blocks = blocksToSearch == null ? webPage.cached_page.blocks : blocksToSearch;
+        for (int a = 0; a < blocks.size(); a++) {
+            TLRPC.PageBlock block = blocks.get(a);
+            if (block instanceof TLRPC.TL_pageBlockSlideshow) {
+                TLRPC.TL_pageBlockSlideshow slideshow = (TLRPC.TL_pageBlockSlideshow) block;
+                for (int b = 0; b < slideshow.items.size(); b++) {
+                    messageObjects.add(getMessageObjectForBlock(webPage, slideshow.items.get(b)));
+                }
+            } else if (block instanceof TLRPC.TL_pageBlockCollage) {
+                TLRPC.TL_pageBlockCollage slideshow = (TLRPC.TL_pageBlockCollage) block;
+                for (int b = 0; b < slideshow.items.size(); b++) {
+                    messageObjects.add(getMessageObjectForBlock(webPage, slideshow.items.get(b)));
+                }
+            }
+        }
+        return messageObjects;
     }
 
     public void measureInlineBotButtons() {
@@ -1149,7 +1678,7 @@ public class MessageObject {
                 type = 10;
             } else if (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
                 type = 1;
-            } else if (messageOwner.media instanceof TLRPC.TL_messageMediaGeo || messageOwner.media instanceof TLRPC.TL_messageMediaVenue) {
+            } else if (messageOwner.media instanceof TLRPC.TL_messageMediaGeo || messageOwner.media instanceof TLRPC.TL_messageMediaVenue || messageOwner.media instanceof TLRPC.TL_messageMediaGeoLive) {
                 type = 4;
             } else if (isRoundVideo()) {
                 type = 5;
@@ -1609,10 +2138,10 @@ public class MessageObject {
     }
 
     public void generateCaption() {
-        if (caption != null) {
+        if (caption != null || isRoundVideo()) {
             return;
         }
-        if (messageOwner.media != null && messageOwner.media.caption != null && messageOwner.media.caption.length() > 0) {
+        if (messageOwner.media != null && !TextUtils.isEmpty(messageOwner.media.caption)) {
             caption = Emoji.replaceEmoji(messageOwner.media.caption, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
             if (containsUrls(caption)) {
                 try {
@@ -1654,6 +2183,13 @@ public class MessageObject {
         }
     }
 
+    public boolean hasValidGroupId() {
+        return getGroupId() != 0 && photoThumbs != null && !photoThumbs.isEmpty();
+    }
+
+    public long getGroupId() {
+        return localGroupId != 0 ? localGroupId : messageOwner.grouped_id;
+    }
 
     public static void addLinks(boolean isOut, CharSequence messageText) {
         addLinks(isOut, messageText, true);
@@ -1679,7 +2215,7 @@ public class MessageObject {
     }
 
     public void generateLayout(TLRPC.User fromUser) {
-        if (type != 0 || messageOwner.to_id == null || messageText == null || messageText.length() == 0) {
+        if (type != 0 || messageOwner.to_id == null || TextUtils.isEmpty(messageText)) {
             return;
         }
 
@@ -1725,10 +2261,14 @@ public class MessageObject {
             }
         }
 
+        boolean hasUrls = false;
         if (messageText instanceof Spannable) {
             Spannable spannable = (Spannable) messageText;
             int count = messageOwner.entities.size();
             URLSpan[] spans = spannable.getSpans(0, messageText.length(), URLSpan.class);
+            if (spans != null && spans.length > 0) {
+                hasUrls = true;
+            }
             for (int a = 0; a < count; a++) {
                 TLRPC.MessageEntity entity = messageOwner.entities.get(a);
                 if (entity.length <= 0 || entity.offset < 0 || entity.offset >= messageOwner.message.length()) {
@@ -1775,6 +2315,7 @@ public class MessageObject {
                     } else if (entity instanceof TLRPC.TL_messageEntityEmail) {
                         spannable.setSpan(new URLSpanReplacement("mailto:" + url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     } else if (entity instanceof TLRPC.TL_messageEntityUrl) {
+                        hasUrls = true;
                         if (!url.toLowerCase().startsWith("http") && !url.toLowerCase().startsWith("tg://")) {
                             spannable.setSpan(new URLSpan("http://" + url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         } else {
@@ -1788,9 +2329,12 @@ public class MessageObject {
         }
 
         int maxWidth;
-        boolean needShare = eventId == 0 && messageOwner.from_id > 0 && (messageOwner.to_id.channel_id != 0 || messageOwner.to_id.chat_id != 0 || messageOwner.media instanceof TLRPC.TL_messageMediaGame || messageOwner.media instanceof TLRPC.TL_messageMediaInvoice) && !isOut();
+        boolean needShare = eventId == 0 && !isOutOwner() && (
+                messageOwner.fwd_from != null && (messageOwner.fwd_from.saved_from_peer != null || messageOwner.fwd_from.from_id != 0 || messageOwner.fwd_from.channel_id != 0) ||
+                messageOwner.from_id > 0 && (messageOwner.to_id.channel_id != 0 || messageOwner.to_id.chat_id != 0 || messageOwner.media instanceof TLRPC.TL_messageMediaGame || messageOwner.media instanceof TLRPC.TL_messageMediaInvoice)
+        );
         generatedWithMinSize = AndroidUtilities.isTablet() ? AndroidUtilities.getMinTabletSide() : AndroidUtilities.displaySize.x;
-        maxWidth = generatedWithMinSize - AndroidUtilities.dp(needShare || eventId != 0 ? 122 : 80);
+        maxWidth = generatedWithMinSize - AndroidUtilities.dp(needShare || eventId != 0 ? 132 : 80);
         if (fromUser != null && fromUser.bot || (isMegagroup() || messageOwner.fwd_from != null && messageOwner.fwd_from.channel_id != 0) && !isOut()) {
             maxWidth -= AndroidUtilities.dp(20);
         }
@@ -1808,7 +2352,7 @@ public class MessageObject {
         }
 
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            if (hasUrls && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 textLayout = StaticLayout.Builder.obtain(messageText, 0, messageText.length(), paint, maxWidth)
                         .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
                         .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
@@ -1847,8 +2391,8 @@ public class MessageObject {
                 block.charactersOffset = startCharacter;
                 block.charactersEnd = endCharacter;
                 try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        block.textLayout = StaticLayout.Builder.obtain(messageText, startCharacter, endCharacter, paint, maxWidth)
+                    if (hasUrls && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        block.textLayout = StaticLayout.Builder.obtain(messageText, startCharacter, endCharacter, paint, maxWidth + AndroidUtilities.dp(2))
                                 .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
                                 .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
                                 .setAlignment(Layout.Alignment.ALIGN_NORMAL)
@@ -1983,11 +2527,21 @@ public class MessageObject {
     }
 
     public boolean isOutOwner() {
-        return messageOwner.out && messageOwner.from_id > 0 && !messageOwner.post;
+        if (!messageOwner.out || messageOwner.from_id <= 0 || messageOwner.post) {
+            return false;
+        }
+        if (messageOwner.fwd_from == null) {
+            return true;
+        }
+        int selfUserId = UserConfig.getClientUserId();
+        if (getDialogId() == selfUserId) {
+            return messageOwner.fwd_from.from_id == selfUserId || messageOwner.fwd_from.saved_from_peer != null && messageOwner.fwd_from.saved_from_peer.user_id == selfUserId;
+        }
+        return messageOwner.fwd_from.saved_from_peer == null || messageOwner.fwd_from.saved_from_peer.user_id == selfUserId;
     }
 
     public boolean needDrawAvatar() {
-        return isFromUser() || eventId != 0;
+        return isFromUser() || eventId != 0 || messageOwner.fwd_from != null && messageOwner.fwd_from.saved_from_peer != null;
     }
 
     public boolean isFromUser() {
@@ -2029,6 +2583,32 @@ public class MessageObject {
         return messageOwner.id;
     }
 
+    public static int getMessageSize(TLRPC.Message message) {
+        if (message.media != null && message.media.document != null) {
+            return message.media.document.size;
+        }
+        return 0;
+    }
+
+    public int getSize() {
+        return getMessageSize(messageOwner);
+    }
+
+    public long getIdWithChannel() {
+        long id = messageOwner.id;
+        if (messageOwner.to_id != null && messageOwner.to_id.channel_id != 0) {
+            id |= ((long) messageOwner.to_id.channel_id) << 32;
+        }
+        return id;
+    }
+
+    public int getChannelId() {
+        if (messageOwner.to_id != null) {
+            return messageOwner.to_id.channel_id;
+        }
+        return 0;
+    }
+
     public static boolean shouldEncryptPhotoOrVideo(TLRPC.Message message) {
         return message instanceof TLRPC.TL_message && (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaDocument) && message.media.ttl_seconds != 0 ||
                 message instanceof TLRPC.TL_message_secret && (message.media instanceof TLRPC.TL_messageMediaPhoto || isVideoMessage(message)) && message.ttl > 0 && message.ttl <= 60;
@@ -2045,12 +2625,12 @@ public class MessageObject {
 
     public boolean isSecretPhoto() {
         return messageOwner instanceof TLRPC.TL_message && (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || messageOwner.media instanceof TLRPC.TL_messageMediaDocument) && messageOwner.media.ttl_seconds != 0 ||
-                messageOwner instanceof TLRPC.TL_message_secret && (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || isRoundVideo() || isVideo()) && messageOwner.ttl > 0 && messageOwner.ttl <= 60;
+                messageOwner instanceof TLRPC.TL_message_secret && ((messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || isVideo()) && messageOwner.ttl > 0 && messageOwner.ttl <= 60 || isRoundVideo());
     }
 
     public boolean isSecretMedia() {
         return messageOwner instanceof TLRPC.TL_message && (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || messageOwner.media instanceof TLRPC.TL_messageMediaDocument) && messageOwner.media.ttl_seconds != 0 ||
-                messageOwner instanceof TLRPC.TL_message_secret && ((messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || isRoundVideo()) && messageOwner.ttl > 0 && messageOwner.ttl <= 60 || isVoice() || isVideo());
+                messageOwner instanceof TLRPC.TL_message_secret && ((messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) && messageOwner.ttl > 0 && messageOwner.ttl <= 60 || isVoice() || isRoundVideo() || isVideo());
     }
 
     public static void setUnreadFlags(TLRPC.Message message, int flag) {
@@ -2068,6 +2648,14 @@ public class MessageObject {
 
     public boolean isMegagroup() {
         return isMegagroup(messageOwner);
+    }
+
+    public boolean isSavedFromMegagroup() {
+        if (messageOwner.fwd_from != null && messageOwner.fwd_from.saved_from_peer != null && messageOwner.fwd_from.saved_from_peer.channel_id != 0) {
+            TLRPC.Chat chat = MessagesController.getInstance().getChat(messageOwner.fwd_from.saved_from_peer.channel_id);
+            return ChatObject.isMegagroup(chat);
+        }
+        return false;
     }
 
     public static boolean isMegagroup(TLRPC.Message message) {
@@ -2254,11 +2842,22 @@ public class MessageObject {
         return message.media != null && message.media.document != null && isMusicDocument(message.media.document);
     }
 
+    public static boolean isGifMessage(TLRPC.Message message) {
+        return message.media != null && message.media.document != null && isGifDocument(message.media.document);
+    }
+
     public static boolean isRoundVideoMessage(TLRPC.Message message) {
         if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
             return isRoundVideoDocument(message.media.webpage.document);
         }
         return message.media != null && message.media.document != null && isRoundVideoDocument(message.media.document);
+    }
+
+    public static boolean isPhoto(TLRPC.Message message) {
+        if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
+            return message.media.webpage.photo instanceof TLRPC.TL_photo;
+        }
+        return message.media instanceof TLRPC.TL_messageMediaPhoto;
     }
 
     public static boolean isVoiceMessage(TLRPC.Message message) {
@@ -2273,6 +2872,10 @@ public class MessageObject {
             return isNewGifDocument(message.media.webpage.document);
         }
         return message.media != null && message.media.document != null && isNewGifDocument(message.media.document);
+    }
+
+    public static boolean isLiveLocationMessage(TLRPC.Message message) {
+        return message.media instanceof TLRPC.TL_messageMediaGeoLive;
     }
 
     public static boolean isVideoMessage(TLRPC.Message message) {
@@ -2442,6 +3045,10 @@ public class MessageObject {
         return isVideoMessage(messageOwner);
     }
 
+    public boolean isLiveLocation() {
+        return isLiveLocationMessage(messageOwner);
+    }
+
     public boolean isGame() {
         return isGameMessage(messageOwner);
     }
@@ -2462,7 +3069,7 @@ public class MessageObject {
     }
 
     public boolean isGif() {
-        return messageOwner.media instanceof TLRPC.TL_messageMediaDocument && isGifDocument(messageOwner.media.document);
+        return isGifMessage(messageOwner);
     }
 
     public boolean isWebpageDocument() {
@@ -2593,6 +3200,10 @@ public class MessageObject {
         return isForwardedMessage(messageOwner);
     }
 
+    public boolean needDrawForwarded() {
+        return (messageOwner.flags & TLRPC.MESSAGE_FLAG_FWD) != 0 && messageOwner.fwd_from != null && messageOwner.fwd_from.saved_from_peer == null && UserConfig.getClientUserId() != getDialogId();
+    }
+
     public static boolean isForwardedMessage(TLRPC.Message message) {
         return (message.flags & TLRPC.MESSAGE_FLAG_FWD) != 0 && message.fwd_from != null;
     }
@@ -2613,11 +3224,44 @@ public class MessageObject {
         return canEditMessage(messageOwner, chat);
     }
 
-    public static boolean canEditMessage(TLRPC.Message message, TLRPC.Chat chat) {
-        if (message == null || message.to_id == null || message.media != null && isRoundVideoDocument(message.media.document) || message.action != null && !(message.action instanceof TLRPC.TL_messageActionEmpty) || isForwardedMessage(message) || message.via_bot_id != 0 || message.id < 0) {
+    public boolean canEditMessageAnytime(TLRPC.Chat chat) {
+        return canEditMessageAnytime(messageOwner, chat);
+    }
+
+    public static boolean canEditMessageAnytime(TLRPC.Message message, TLRPC.Chat chat) {
+        if (message == null || message.to_id == null || message.media != null && (isRoundVideoDocument(message.media.document) || isStickerDocument(message.media.document)) || message.action != null && !(message.action instanceof TLRPC.TL_messageActionEmpty) || isForwardedMessage(message) || message.via_bot_id != 0 || message.id < 0) {
             return false;
         }
-        if (message.from_id == message.to_id.user_id && message.from_id == UserConfig.getClientUserId()) {
+        if (message.from_id == message.to_id.user_id && message.from_id == UserConfig.getClientUserId() && !isLiveLocationMessage(message)) {
+            return true;
+        }
+        if (chat == null && message.to_id.channel_id != 0) {
+            chat = MessagesController.getInstance().getChat(message.to_id.channel_id);
+            if (chat == null) {
+                return false;
+            }
+        }
+        if (message.out && chat != null && chat.megagroup && (chat.creator || chat.admin_rights != null && chat.admin_rights.pin_messages)) {
+            return true;
+        }
+        //
+        return false;
+    }
+
+    public static boolean canEditMessage(TLRPC.Message message, TLRPC.Chat chat) {
+        if (message == null || message.to_id == null || message.media != null && (isRoundVideoDocument(message.media.document) || isStickerDocument(message.media.document)) || message.action != null && !(message.action instanceof TLRPC.TL_messageActionEmpty) || isForwardedMessage(message) || message.via_bot_id != 0 || message.id < 0) {
+            return false;
+        }
+        if (message.from_id == message.to_id.user_id && message.from_id == UserConfig.getClientUserId() && !isLiveLocationMessage(message)) {
+            return true;
+        }
+        if (chat == null && message.to_id.channel_id != 0) {
+            chat = MessagesController.getInstance().getChat(message.to_id.channel_id);
+            if (chat == null) {
+                return false;
+            }
+        }
+        if (message.out && chat != null && chat.megagroup && (chat.creator || chat.admin_rights != null && chat.admin_rights.pin_messages)) {
             return true;
         }
         if (Math.abs(message.date - ConnectionsManager.getInstance().getCurrentTime()) > MessagesController.getInstance().maxEditTime) {
@@ -2630,13 +3274,7 @@ public class MessageObject {
                     message.media instanceof TLRPC.TL_messageMediaWebPage ||
                     message.media == null);
         }
-        if (chat == null && message.to_id.channel_id != 0) {
-            chat = MessagesController.getInstance().getChat(message.to_id.channel_id);
-            if (chat == null) {
-                return false;
-            }
-        }
-        if (chat.megagroup && message.out || !chat.megagroup && (chat.creator || chat.admin_rights != null && chat.admin_rights.edit_messages) && message.post) {
+        if (chat.megagroup && message.out || !chat.megagroup && (chat.creator || chat.admin_rights != null && (chat.admin_rights.edit_messages || message.out)) && message.post) {
             if (message.media instanceof TLRPC.TL_messageMediaPhoto ||
                     message.media instanceof TLRPC.TL_messageMediaDocument && !isStickerMessage(message) ||
                     message.media instanceof TLRPC.TL_messageMediaEmpty ||
@@ -2660,7 +3298,7 @@ public class MessageObject {
             chat = MessagesController.getInstance().getChat(message.to_id.channel_id);
         }
         if (ChatObject.isChannel(chat)) {
-            return message.id != 1 && (chat.creator || chat.admin_rights != null && chat.admin_rights.delete_messages || chat.megagroup && isOut(message) && message.from_id > 0);
+            return message.id != 1 && (chat.creator || chat.admin_rights != null && (chat.admin_rights.delete_messages || message.out) || chat.megagroup && message.out && message.from_id > 0);
         }
         return isOut(message) || !ChatObject.isChannel(chat);
     }
@@ -2680,6 +3318,35 @@ public class MessageObject {
             }
         }
         return null;
+    }
+
+    public int getFromId() {
+        if (messageOwner.fwd_from != null && messageOwner.fwd_from.saved_from_peer != null) {
+            if (messageOwner.fwd_from.saved_from_peer.user_id != 0) {
+                if (messageOwner.fwd_from.from_id != 0) {
+                    return messageOwner.fwd_from.from_id;
+                } else {
+                    return messageOwner.fwd_from.saved_from_peer.user_id;
+                }
+            } else if (messageOwner.fwd_from.saved_from_peer.channel_id != 0) {
+                if (isSavedFromMegagroup() && messageOwner.fwd_from.from_id != 0) {
+                    return messageOwner.fwd_from.from_id;
+                } else {
+                    return -messageOwner.fwd_from.saved_from_peer.channel_id;
+                }
+            } else if (messageOwner.fwd_from.saved_from_peer.chat_id != 0) {
+                if (messageOwner.fwd_from.from_id != 0) {
+                    return messageOwner.fwd_from.from_id;
+                } else {
+                    return -messageOwner.fwd_from.saved_from_peer.chat_id;
+                }
+            }
+        } else if (messageOwner.from_id != 0) {
+            return messageOwner.from_id;
+        } else if (messageOwner.post) {
+            return messageOwner.to_id.channel_id;
+        }
+        return 0;
     }
 
     public void checkMediaExistance() {

@@ -27,9 +27,9 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -47,17 +47,19 @@ import java.util.HashMap;
 public class PhotoAlbumPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     public interface PhotoAlbumPickerActivityDelegate {
-        void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<Integer> ttls, ArrayList<MediaController.PhotoEntry> videos, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos);
+        void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos);
         void startPhotoSelectActivity();
     }
 
+    private HashMap<Object, Object> selectedPhotos = new HashMap<>();
+    private ArrayList<Object> selectedPhotosOrder = new ArrayList<>();
+
     private ArrayList<MediaController.AlbumEntry> albumsSorted = null;
-    private HashMap<Integer, MediaController.PhotoEntry> selectedPhotos = new HashMap<>();
-    private HashMap<String, MediaController.SearchImage> selectedWebPhotos = new HashMap<>();
     private HashMap<String, MediaController.SearchImage> recentImagesWebKeys = new HashMap<>();
     private HashMap<String, MediaController.SearchImage> recentImagesGifKeys = new HashMap<>();
     private ArrayList<MediaController.SearchImage> recentWebImages = new ArrayList<>();
     private ArrayList<MediaController.SearchImage> recentGifImages = new ArrayList<>();
+
     private boolean loading = false;
 
     private int columnsCount = 2;
@@ -199,7 +201,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         pickerBottomLayout.doneButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                sendSelectedPhotos();
+                sendSelectedPhotos(selectedPhotos, selectedPhotosOrder);
                 finishFragment();
             }
         });
@@ -211,7 +213,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             progressView.setVisibility(View.GONE);
             listView.setEmptyView(emptyView);
         }
-        pickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
+        pickerBottomLayout.updateSelectedCount(selectedPhotos.size(), true);
 
         return fragmentView;
     }
@@ -277,67 +279,68 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         this.delegate = delegate;
     }
 
-    private void sendSelectedPhotos() {
-        if (selectedPhotos.isEmpty() && selectedWebPhotos.isEmpty() || delegate == null || sendPressed) {
+    private void sendSelectedPhotos(HashMap<Object, Object> photos, ArrayList<Object> order) {
+        if (photos.isEmpty() || delegate == null || sendPressed) {
             return;
         }
         sendPressed = true;
-        ArrayList<String> photos = new ArrayList<>();
-        ArrayList<MediaController.PhotoEntry> videos = new ArrayList<>();
-        ArrayList<String> captions = new ArrayList<>();
-        ArrayList<Integer> ttls = new ArrayList<>();
-        ArrayList<ArrayList<TLRPC.InputDocument>> masks = new ArrayList<>();
-        for (HashMap.Entry<Integer, MediaController.PhotoEntry> entry : selectedPhotos.entrySet()) {
-            MediaController.PhotoEntry photoEntry = entry.getValue();
-            if (photoEntry.isVideo) {
-                videos.add(photoEntry);
-            } else if (photoEntry.imagePath != null) {
-                photos.add(photoEntry.imagePath);
-                captions.add(photoEntry.caption != null ? photoEntry.caption.toString() : null);
-                masks.add(!photoEntry.stickers.isEmpty() ? new ArrayList<>(photoEntry.stickers) : null);
-                ttls.add(photoEntry.ttl);
-            } else if (photoEntry.path != null) {
-                photos.add(photoEntry.path);
-                captions.add(photoEntry.caption != null ? photoEntry.caption.toString() : null);
-                masks.add(!photoEntry.stickers.isEmpty() ? new ArrayList<>(photoEntry.stickers) : null);
-                ttls.add(photoEntry.ttl);
-            }
-        }
-        ArrayList<MediaController.SearchImage> webPhotos = new ArrayList<>();
         boolean gifChanged = false;
         boolean webChange = false;
-        for (HashMap.Entry<String, MediaController.SearchImage> entry : selectedWebPhotos.entrySet()) {
-            MediaController.SearchImage searchImage = entry.getValue();
-            if (searchImage.imagePath != null) {
-                photos.add(searchImage.imagePath);
-                captions.add(searchImage.caption != null ? searchImage.caption.toString() : null);
-                masks.add(!searchImage.stickers.isEmpty() ? new ArrayList<>(searchImage.stickers) : null);
-                ttls.add(searchImage.ttl);
-            } else {
-                webPhotos.add(searchImage);
-            }
-            searchImage.date = (int) (System.currentTimeMillis() / 1000);
 
-            if (searchImage.type == 0) {
-                webChange = true;
-                MediaController.SearchImage recentImage = recentImagesWebKeys.get(searchImage.id);
-                if (recentImage != null) {
-                    recentWebImages.remove(recentImage);
-                    recentWebImages.add(0, recentImage);
-                } else {
-                    recentWebImages.add(0, searchImage);
+        ArrayList<SendMessagesHelper.SendingMediaInfo> media = new ArrayList<>();
+        for (int a = 0; a < order.size(); a++) {
+            Object object = photos.get(order.get(a));
+            SendMessagesHelper.SendingMediaInfo info = new SendMessagesHelper.SendingMediaInfo();
+            media.add(info);
+            if (object instanceof MediaController.PhotoEntry) {
+                MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) object;
+                if (photoEntry.isVideo) {
+                    info.path = photoEntry.path;
+                    info.videoEditedInfo = photoEntry.editedInfo;
+                } else if (photoEntry.imagePath != null) {
+                    info.path = photoEntry.imagePath;
+                } else if (photoEntry.path != null) {
+                    info.path = photoEntry.path;
                 }
-            } else if (searchImage.type == 1) {
-                gifChanged = true;
-                MediaController.SearchImage recentImage = recentImagesGifKeys.get(searchImage.id);
-                if (recentImage != null) {
-                    recentGifImages.remove(recentImage);
-                    recentGifImages.add(0, recentImage);
+                info.isVideo = photoEntry.isVideo;
+                info.caption = photoEntry.caption != null ? photoEntry.caption.toString() : null;
+                info.masks = !photoEntry.stickers.isEmpty() ? new ArrayList<>(photoEntry.stickers) : null;
+                info.ttl = photoEntry.ttl;
+            } else if (object instanceof MediaController.SearchImage) {
+                MediaController.SearchImage searchImage = (MediaController.SearchImage) object;
+                if (searchImage.imagePath != null) {
+                    info.path = searchImage.imagePath;
                 } else {
-                    recentGifImages.add(0, searchImage);
+                    info.searchImage = searchImage;
+                }
+
+                info.caption = searchImage.caption != null ? searchImage.caption.toString() : null;
+                info.masks = !searchImage.stickers.isEmpty() ? new ArrayList<>(searchImage.stickers) : null;
+                info.ttl = searchImage.ttl;
+
+                searchImage.date = (int) (System.currentTimeMillis() / 1000);
+                if (searchImage.type == 0) {
+                    webChange = true;
+                    MediaController.SearchImage recentImage = recentImagesWebKeys.get(searchImage.id);
+                    if (recentImage != null) {
+                        recentWebImages.remove(recentImage);
+                        recentWebImages.add(0, recentImage);
+                    } else {
+                        recentWebImages.add(0, searchImage);
+                    }
+                } else if (searchImage.type == 1) {
+                    gifChanged = true;
+                    MediaController.SearchImage recentImage = recentImagesGifKeys.get(searchImage.id);
+                    if (recentImage != null) {
+                        recentGifImages.remove(recentImage);
+                        recentGifImages.add(0, recentImage);
+                    } else {
+                        recentGifImages.add(0, searchImage);
+                    }
                 }
             }
         }
+
         if (webChange) {
             MessagesStorage.getInstance().putWebRecent(recentWebImages);
         }
@@ -345,7 +348,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             MessagesStorage.getInstance().putWebRecent(recentGifImages);
         }
 
-        delegate.didSelectPhotos(photos, captions, ttls, videos, masks, webPhotos);
+        delegate.didSelectPhotos(media);
     }
 
     private void fixLayout() {
@@ -387,23 +390,45 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 recentImages = recentGifImages;
             }
         }
-        PhotoPickerActivity fragment = new PhotoPickerActivity(type, albumEntry, selectedPhotos, selectedWebPhotos, recentImages, singlePhoto, allowCaption, chatActivity);
-        fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
-            @Override
-            public void selectedPhotosChanged() {
-                if (pickerBottomLayout != null) {
-                    pickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
-                }
-            }
 
-            @Override
-            public void actionButtonPressed(boolean canceled) {
-                removeSelfFromStack();
-                if (!canceled) {
-                    sendSelectedPhotos();
+        PhotoPickerActivity fragment;
+        if (albumEntry != null) {
+            fragment = new PhotoPickerActivity(type, albumEntry, selectedPhotos, selectedPhotosOrder, recentImages, singlePhoto, allowCaption, chatActivity);
+            fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
+                @Override
+                public void selectedPhotosChanged() {
+                    if (pickerBottomLayout != null) {
+                        pickerBottomLayout.updateSelectedCount(selectedPhotos.size(), true);
+                    }
                 }
-            }
-        });
+
+                @Override
+                public void actionButtonPressed(boolean canceled) {
+                    removeSelfFromStack();
+                    if (!canceled) {
+                        sendSelectedPhotos(selectedPhotos, selectedPhotosOrder);
+                    }
+                }
+            });
+        } else {
+            final HashMap<Object, Object> photos = new HashMap<>();
+            final ArrayList<Object> order = new ArrayList<>();
+            fragment = new PhotoPickerActivity(type, albumEntry, photos, order, recentImages, singlePhoto, allowCaption, chatActivity);
+            fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
+                @Override
+                public void selectedPhotosChanged() {
+
+                }
+
+                @Override
+                public void actionButtonPressed(boolean canceled) {
+                    removeSelfFromStack();
+                    if (!canceled) {
+                        sendSelectedPhotos(photos, order);
+                    }
+                }
+            });
+        }
         presentFragment(fragment);
     }
 

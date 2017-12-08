@@ -37,6 +37,14 @@ public interface SequenceableLoader {
   }
 
   /**
+   * Returns an estimate of the position up to which data is buffered.
+   *
+   * @return An estimate of the absolute position in microseconds up to which data is buffered, or
+   *     {@link C#TIME_END_OF_SOURCE} if the data is fully buffered.
+   */
+  long getBufferedPositionUs();
+
+  /**
    * Returns the next load time, or {@link C#TIME_END_OF_SOURCE} if loading has finished.
    */
   long getNextLoadPositionUs();

@@ -107,6 +107,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
             } else {
                 offsetX = -AndroidUtilities.dp(8);
             }
+            offsetX += getPaddingLeft();
         }
     }
 
@@ -121,7 +122,6 @@ public class SimpleTextView extends View implements Drawable.Callback {
                     width -= rightDrawable.getIntrinsicWidth();
                     width -= drawablePadding;
                 }
-                width -= getPaddingLeft() + getPaddingRight();
                 CharSequence string = TextUtils.ellipsize(text, textPaint, width, TextUtils.TruncateAt.END);
                 /*if (layout != null && TextUtils.equals(layout.getText(), string)) {
                     calcOffset(width);
@@ -129,8 +129,8 @@ public class SimpleTextView extends View implements Drawable.Callback {
                 }*/
                 layout = new StaticLayout(string, 0, string.length(), textPaint, width + AndroidUtilities.dp(8), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 calcOffset(width);
-            } catch (Exception e) {
-                //ignore
+            } catch (Exception ignore) {
+
             }
         } else {
             layout = null;

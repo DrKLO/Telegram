@@ -154,6 +154,7 @@ private:
     int32_t lastDestroySessionRequestTime;
     std::map<int32_t, std::vector<int32_t>> requestsByGuids;
     std::map<int32_t, int32_t> guidsByRequests;
+    std::map<int64_t, int64_t> resendRequests;
 
     std::string proxyUser = "";
     std::string proxyPassword = "";

@@ -20,6 +20,7 @@ import org.telegram.messenger.exoplayer2.extractor.ExtractorInput;
 import org.telegram.messenger.exoplayer2.util.Assertions;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * OGG packet class.
@@ -27,8 +28,8 @@ import java.io.IOException;
 /* package */ final class OggPacket {
 
   private final OggPageHeader pageHeader = new OggPageHeader();
-  private final ParsableByteArray packetArray =
-      new ParsableByteArray(new byte[OggPageHeader.MAX_PAGE_PAYLOAD], 0);
+  private final ParsableByteArray packetArray = new ParsableByteArray(
+      new byte[OggPageHeader.MAX_PAGE_PAYLOAD], 0);
 
   private int currentSegmentIndex = C.INDEX_UNSET;
   private int segmentCount;
@@ -85,6 +86,9 @@ import java.io.IOException;
       int size = calculatePacketSize(currentSegmentIndex);
       int segmentIndex = currentSegmentIndex + segmentCount;
       if (size > 0) {
+        if (packetArray.capacity() < packetArray.limit() + size) {
+          packetArray.data = Arrays.copyOf(packetArray.data, packetArray.limit() + size);
+        }
         input.readFully(packetArray.data, packetArray.limit(), size);
         packetArray.setLimit(packetArray.limit() + size);
         populated = pageHeader.laces[segmentIndex - 1] != 255;
@@ -116,6 +120,17 @@ import java.io.IOException;
    */
   public ParsableByteArray getPayload() {
     return packetArray;
+  }
+
+  /**
+   * Trims the packet data array.
+   */
+  public void trimPayload() {
+    if (packetArray.data.length == OggPageHeader.MAX_PAGE_PAYLOAD) {
+      return;
+    }
+    packetArray.data = Arrays.copyOf(packetArray.data, Math.max(OggPageHeader.MAX_PAGE_PAYLOAD,
+        packetArray.limit()));
   }
 
   /**

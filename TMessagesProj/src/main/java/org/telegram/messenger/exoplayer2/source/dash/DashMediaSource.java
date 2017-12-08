@@ -22,6 +22,7 @@ import android.util.Log;
 import android.util.SparseArray;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.ExoPlayer;
+import org.telegram.messenger.exoplayer2.ExoPlayerLibraryInfo;
 import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.Timeline;
 import org.telegram.messenger.exoplayer2.source.AdaptiveMediaSourceEventListener;
@@ -51,6 +52,10 @@ import java.util.TimeZone;
  * A DASH {@link MediaSource}.
  */
 public final class DashMediaSource implements MediaSource {
+
+  static {
+    ExoPlayerLibraryInfo.registerModule("goog.exo.dash");
+  }
 
   /**
    * The default minimum number of times to retry loading data prior to failing.
@@ -281,7 +286,8 @@ public final class DashMediaSource implements MediaSource {
   }
 
   @Override
-  public MediaPeriod createPeriod(int periodIndex, Allocator allocator, long positionUs) {
+  public MediaPeriod createPeriod(MediaPeriodId periodId, Allocator allocator) {
+    int periodIndex = periodId.periodIndex;
     EventDispatcher periodEventDispatcher = eventDispatcher.copyWithMediaTimeOffsetMs(
         manifest.getPeriod(periodIndex).startMs);
     DashMediaPeriod mediaPeriod = new DashMediaPeriod(firstPeriodId + periodIndex, manifest,
@@ -410,12 +416,14 @@ public final class DashMediaSource implements MediaSource {
 
   private void resolveUtcTimingElement(UtcTimingElement timingElement) {
     String scheme = timingElement.schemeIdUri;
-    if (Util.areEqual(scheme, "urn:mpeg:dash:utc:direct:2012")) {
+    if (Util.areEqual(scheme, "urn:mpeg:dash:utc:direct:2014")
+        || Util.areEqual(scheme, "urn:mpeg:dash:utc:direct:2012")) {
       resolveUtcTimingElementDirect(timingElement);
-    } else if (Util.areEqual(scheme, "urn:mpeg:dash:utc:http-iso:2014")) {
+    } else if (Util.areEqual(scheme, "urn:mpeg:dash:utc:http-iso:2014")
+        || Util.areEqual(scheme, "urn:mpeg:dash:utc:http-iso:2012")) {
       resolveUtcTimingElementHttp(timingElement, new Iso8601Parser());
-    } else if (Util.areEqual(scheme, "urn:mpeg:dash:utc:http-xsdate:2012")
-        || Util.areEqual(scheme, "urn:mpeg:dash:utc:http-xsdate:2014")) {
+    } else if (Util.areEqual(scheme, "urn:mpeg:dash:utc:http-xsdate:2014")
+        || Util.areEqual(scheme, "urn:mpeg:dash:utc:http-xsdate:2012")) {
       resolveUtcTimingElementHttp(timingElement, new XsDateTimeParser());
     } else {
       // Unsupported scheme.
@@ -625,9 +633,9 @@ public final class DashMediaSource implements MediaSource {
     private final long windowDefaultStartPositionUs;
     private final DashManifest manifest;
 
-    public DashTimeline(long presentationStartTimeMs, long windowStartTimeMs,
-        int firstPeriodId, long offsetInFirstPeriodUs, long windowDurationUs,
-        long windowDefaultStartPositionUs, DashManifest manifest) {
+    public DashTimeline(long presentationStartTimeMs, long windowStartTimeMs, int firstPeriodId,
+        long offsetInFirstPeriodUs, long windowDurationUs, long windowDefaultStartPositionUs,
+        DashManifest manifest) {
       this.presentationStartTimeMs = presentationStartTimeMs;
       this.windowStartTimeMs = windowStartTimeMs;
       this.firstPeriodId = firstPeriodId;
@@ -650,7 +658,7 @@ public final class DashMediaSource implements MediaSource {
           + Assertions.checkIndex(periodIndex, 0, manifest.getPeriodCount()) : null;
       return period.set(id, uid, 0, manifest.getPeriodDurationUs(periodIndex),
           C.msToUs(manifest.getPeriod(periodIndex).startMs - manifest.getPeriod(0).startMs)
-              - offsetInFirstPeriodUs, false);
+              - offsetInFirstPeriodUs);
     }
 
     @Override

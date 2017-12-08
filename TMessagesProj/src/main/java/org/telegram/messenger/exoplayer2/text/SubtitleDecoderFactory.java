@@ -19,6 +19,7 @@ import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.text.cea.Cea608Decoder;
 import org.telegram.messenger.exoplayer2.text.cea.Cea708Decoder;
 import org.telegram.messenger.exoplayer2.text.dvb.DvbDecoder;
+import org.telegram.messenger.exoplayer2.text.ssa.SsaDecoder;
 import org.telegram.messenger.exoplayer2.text.subrip.SubripDecoder;
 import org.telegram.messenger.exoplayer2.text.ttml.TtmlDecoder;
 import org.telegram.messenger.exoplayer2.text.tx3g.Tx3gDecoder;
@@ -58,6 +59,7 @@ public interface SubtitleDecoderFactory {
    * <li>WebVTT (MP4) ({@link Mp4WebvttDecoder})</li>
    * <li>TTML ({@link TtmlDecoder})</li>
    * <li>SubRip ({@link SubripDecoder})</li>
+   * <li>SSA/ASS ({@link SsaDecoder})</li>
    * <li>TX3G ({@link Tx3gDecoder})</li>
    * <li>Cea608 ({@link Cea608Decoder})</li>
    * <li>Cea708 ({@link Cea708Decoder})</li>
@@ -70,6 +72,7 @@ public interface SubtitleDecoderFactory {
     public boolean supportsFormat(Format format) {
       String mimeType = format.sampleMimeType;
       return MimeTypes.TEXT_VTT.equals(mimeType)
+          || MimeTypes.TEXT_SSA.equals(mimeType)
           || MimeTypes.APPLICATION_TTML.equals(mimeType)
           || MimeTypes.APPLICATION_MP4VTT.equals(mimeType)
           || MimeTypes.APPLICATION_SUBRIP.equals(mimeType)
@@ -85,6 +88,8 @@ public interface SubtitleDecoderFactory {
       switch (format.sampleMimeType) {
         case MimeTypes.TEXT_VTT:
           return new WebvttDecoder();
+        case MimeTypes.TEXT_SSA:
+          return new SsaDecoder(format.initializationData);
         case MimeTypes.APPLICATION_MP4VTT:
           return new Mp4WebvttDecoder();
         case MimeTypes.APPLICATION_TTML:

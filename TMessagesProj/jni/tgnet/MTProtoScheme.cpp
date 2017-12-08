@@ -31,6 +31,9 @@ TLObject *TLClassStore::TLdeserialize(NativeByteBuffer *stream, uint32_t bytes, 
         case TL_new_session_created::constructor:
             object = new TL_new_session_created();
             break;
+        case MsgsStateInfo::constructor:
+            object = new MsgsStateInfo();
+            break;
         case TL_rpc_result::constructor:
             object = new TL_rpc_result();
             ((TL_rpc_result *) object)->readParamsEx(stream, bytes, error);
@@ -662,6 +665,11 @@ void TL_msg_resend_req::serializeToStream(NativeByteBuffer *stream) {
     for (uint32_t a = 0; a < count; a++) {
         stream->writeInt64(msg_ids[a]);
     }
+}
+
+void MsgsStateInfo::readParams(NativeByteBuffer *stream, bool &error) {
+    req_msg_id = stream->readInt64(&error);
+    info = stream->readString(&error);
 }
 
 void TL_rpc_error::readParams(NativeByteBuffer *stream, bool &error) {

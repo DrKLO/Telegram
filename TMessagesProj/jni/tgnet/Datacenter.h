@@ -29,7 +29,6 @@ class Datacenter {
 public:
     Datacenter(uint32_t id);
     Datacenter(NativeByteBuffer *data);
-    void switchTo443Port();
     uint32_t getDatacenterId();
     std::string getCurrentAddress(uint32_t flags);
     int32_t getCurrentPort(uint32_t flags);
@@ -69,8 +68,8 @@ private:
     bool decryptServerResponse(int64_t keyId, uint8_t *key, uint8_t *data, uint32_t length);
     TLObject *getCurrentHandshakeRequest();
 
-    const int32_t *defaultPorts = new int32_t[11] {-1, 80, -1, 443, -1, 443, -1, 80, -1, 443, -1};
-    const int32_t *defaultPorts8888 = new int32_t[11] {-1, 8888, -1, 443, -1, 8888,  -1, 80, -1, 8888, -1};
+    const int32_t *defaultPorts = new int32_t[15] {-1, 80, -1, 443, -1, 5222, -1, 443, -1, 80, -1,  -1, 5222, 443, -1};
+    const int32_t *defaultPorts8888 = new int32_t[15] {-1, 8888, -1, 443, -1, 5222, -1, 8888,  -1, 80, -1, 5222, -1, 8888, -1};
 
     uint32_t datacenterId;
     Connection *genericConnection = nullptr;

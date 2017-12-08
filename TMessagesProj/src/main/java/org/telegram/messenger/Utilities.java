@@ -183,7 +183,7 @@ public class Utilities {
     }
 
     public static boolean arraysEquals(byte[] arr1, int offset1, byte[] arr2, int offset2) {
-        if (arr1 == null || arr2 == null || offset1 < 0 || offset2 < 0 || arr1.length - offset1 != arr2.length - offset2 || arr1.length - offset1 < 0 || arr2.length - offset2 < 0) {
+        if (arr1 == null || arr2 == null || offset1 < 0 || offset2 < 0 || arr1.length - offset1 > arr2.length - offset2 || arr1.length - offset1 < 0 || arr2.length - offset2 < 0) {
             return false;
         }
         boolean result = true;
@@ -232,6 +232,10 @@ public class Utilities {
         return computeSHA1(convertme, 0, convertme.length);
     }
 
+    public static byte[] computeSHA256(byte[] convertme) {
+        return computeSHA256(convertme, 0, convertme.length);
+    }
+
     public static byte[] computeSHA256(byte[] convertme, int offset, int len) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -240,7 +244,26 @@ public class Utilities {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        return null;
+        return new byte[32];
+    }
+
+    public static byte[] computeSHA256(byte[] b1, int o1, int l1, ByteBuffer b2, int o2, int l2) {
+        int oldp = b2.position();
+        int oldl = b2.limit();
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(b1, o1, l1);
+            b2.position(o2);
+            b2.limit(l2);
+            md.update(b2);
+            return md.digest();
+        } catch (Exception e) {
+            FileLog.e(e);
+        } finally {
+            b2.limit(oldl);
+            b2.position(oldp);
+        }
+        return new byte[32];
     }
 
     public static long bytesToLong(byte[] bytes) {

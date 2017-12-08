@@ -375,7 +375,7 @@ public class SsManifestParser implements ParsingLoadable.Parser<SsManifest> {
       StreamElement[] streamElementArray = new StreamElement[streamElements.size()];
       streamElements.toArray(streamElementArray);
       if (protectionElement != null) {
-        DrmInitData drmInitData = new DrmInitData(new SchemeData(protectionElement.uuid,
+        DrmInitData drmInitData = new DrmInitData(new SchemeData(protectionElement.uuid, null,
             MimeTypes.VIDEO_MP4, protectionElement.data));
         for (StreamElement streamElement : streamElementArray) {
           for (int i = 0; i < streamElement.formats.length; i++) {

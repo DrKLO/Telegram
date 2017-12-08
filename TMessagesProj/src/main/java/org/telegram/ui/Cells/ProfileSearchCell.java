@@ -38,16 +38,18 @@ public class ProfileSearchCell extends BaseCell {
     private AvatarDrawable avatarDrawable;
     private CharSequence subLabel;
 
-    private TLRPC.User user = null;
-    private TLRPC.Chat chat = null;
-    private TLRPC.EncryptedChat encryptedChat = null;
+    private TLRPC.User user;
+    private TLRPC.Chat chat;
+    private TLRPC.EncryptedChat encryptedChat;
     private long dialog_id;
 
-    private String lastName = null;
-    private int lastStatus = 0;
-    private TLRPC.FileLocation lastAvatar = null;
+    private String lastName;
+    private int lastStatus;
+    private TLRPC.FileLocation lastAvatar;
 
-    public boolean useSeparator = false;
+    private boolean savedMessages;
+
+    public boolean useSeparator;
 
     private int nameLeft;
     private int nameTop;
@@ -82,7 +84,7 @@ public class ProfileSearchCell extends BaseCell {
         avatarDrawable = new AvatarDrawable();
     }
 
-    public void setData(TLObject object, TLRPC.EncryptedChat ec, CharSequence n, CharSequence s, boolean needCount) {
+    public void setData(TLObject object, TLRPC.EncryptedChat ec, CharSequence n, CharSequence s, boolean needCount, boolean saved) {
         currentName = n;
         if (object instanceof TLRPC.User) {
             user = (TLRPC.User) object;
@@ -94,6 +96,7 @@ public class ProfileSearchCell extends BaseCell {
         encryptedChat = ec;
         subLabel = s;
         drawCount = needCount;
+        savedMessages = saved;
         update(0);
     }
 
@@ -121,7 +124,6 @@ public class ProfileSearchCell extends BaseCell {
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         if (user == null && chat == null && encryptedChat == null) {
-            super.onLayout(changed, left, top, right, bottom);
             return;
         }
         if (changed) {
@@ -293,11 +295,16 @@ public class ProfileSearchCell extends BaseCell {
                 }
             }
 
-            CharSequence onlineStringFinal = TextUtils.ellipsize(onlineString, currentOnlinePaint, onlineWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
-            onlineLayout = new StaticLayout(onlineStringFinal, currentOnlinePaint, onlineWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-            nameTop = AndroidUtilities.dp(13);
-            if (subLabel != null && chat != null) {
-                nameLockTop -= AndroidUtilities.dp(12);
+            if (savedMessages) {
+                onlineLayout = null;
+                nameTop = AndroidUtilities.dp(25);
+            } else {
+                CharSequence onlineStringFinal = TextUtils.ellipsize(onlineString, currentOnlinePaint, onlineWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
+                onlineLayout = new StaticLayout(onlineStringFinal, currentOnlinePaint, onlineWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                nameTop = AndroidUtilities.dp(13);
+                if (subLabel != null && chat != null) {
+                    nameLockTop -= AndroidUtilities.dp(12);
+                }
             }
         } else {
             onlineLayout = null;
@@ -364,10 +371,12 @@ public class ProfileSearchCell extends BaseCell {
     public void update(int mask) {
         TLRPC.FileLocation photo = null;
         if (user != null) {
-            if (user.photo != null) {
+            avatarDrawable.setInfo(user);
+            if (savedMessages) {
+                avatarDrawable.setSavedMessages(1);
+            } else if (user.photo != null) {
                 photo = user.photo.photo_small;
             }
-            avatarDrawable.setInfo(user);
         } else if (chat != null) {
             if (chat.photo != null) {
                 photo = chat.photo.photo_small;
@@ -426,7 +435,6 @@ public class ProfileSearchCell extends BaseCell {
         } else if (chat != null) {
             lastName = chat.title;
         }
-
 
         lastAvatar = photo;
         avatarImage.setImage(photo, "50_50", avatarDrawable, null, 0);

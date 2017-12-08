@@ -31,6 +31,7 @@ import java.util.UUID;
 /**
  * Defines constants used by the library.
  */
+@SuppressWarnings("InlinedApi")
 public final class C {
 
   private C() {}
@@ -83,12 +84,12 @@ public final class C {
   public static final String UTF16_NAME = "UTF-16";
 
   /**
-   * * The name of the serif font family.
+   * The name of the serif font family.
    */
   public static final String SERIF_NAME = "serif";
 
   /**
-   * * The name of the sans-serif font family.
+   * The name of the sans-serif font family.
    */
   public static final String SANS_SERIF_NAME = "sans-serif";
 
@@ -101,24 +102,20 @@ public final class C {
   /**
    * @see MediaCodec#CRYPTO_MODE_UNENCRYPTED
    */
-  @SuppressWarnings("InlinedApi")
   public static final int CRYPTO_MODE_UNENCRYPTED = MediaCodec.CRYPTO_MODE_UNENCRYPTED;
   /**
    * @see MediaCodec#CRYPTO_MODE_AES_CTR
    */
-  @SuppressWarnings("InlinedApi")
   public static final int CRYPTO_MODE_AES_CTR = MediaCodec.CRYPTO_MODE_AES_CTR;
   /**
    * @see MediaCodec#CRYPTO_MODE_AES_CBC
    */
-  @SuppressWarnings("InlinedApi")
   public static final int CRYPTO_MODE_AES_CBC = MediaCodec.CRYPTO_MODE_AES_CBC;
 
   /**
    * Represents an unset {@link android.media.AudioTrack} session identifier. Equal to
    * {@link AudioManager#AUDIO_SESSION_ID_GENERATE}.
    */
-  @SuppressWarnings("InlinedApi")
   public static final int AUDIO_SESSION_ID_UNSET = AudioManager.AUDIO_SESSION_ID_GENERATE;
 
   /**
@@ -160,28 +157,24 @@ public final class C {
   /**
    * @see AudioFormat#ENCODING_AC3
    */
-  @SuppressWarnings("InlinedApi")
   public static final int ENCODING_AC3 = AudioFormat.ENCODING_AC3;
   /**
    * @see AudioFormat#ENCODING_E_AC3
    */
-  @SuppressWarnings("InlinedApi")
   public static final int ENCODING_E_AC3 = AudioFormat.ENCODING_E_AC3;
   /**
    * @see AudioFormat#ENCODING_DTS
    */
-  @SuppressWarnings("InlinedApi")
   public static final int ENCODING_DTS = AudioFormat.ENCODING_DTS;
   /**
    * @see AudioFormat#ENCODING_DTS_HD
    */
-  @SuppressWarnings("InlinedApi")
   public static final int ENCODING_DTS_HD = AudioFormat.ENCODING_DTS_HD;
 
   /**
    * @see AudioFormat#CHANNEL_OUT_7POINT1_SURROUND
    */
-  @SuppressWarnings({"InlinedApi", "deprecation"})
+  @SuppressWarnings("deprecation")
   public static final int CHANNEL_OUT_7POINT1_SURROUND = Util.SDK_INT < 23
       ? AudioFormat.CHANNEL_OUT_7POINT1 : AudioFormat.CHANNEL_OUT_7POINT1_SURROUND;
 
@@ -189,13 +182,17 @@ public final class C {
    * Stream types for an {@link android.media.AudioTrack}.
    */
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef({STREAM_TYPE_ALARM, STREAM_TYPE_MUSIC, STREAM_TYPE_NOTIFICATION, STREAM_TYPE_RING,
-      STREAM_TYPE_SYSTEM, STREAM_TYPE_VOICE_CALL})
+  @IntDef({STREAM_TYPE_ALARM, STREAM_TYPE_DTMF, STREAM_TYPE_MUSIC, STREAM_TYPE_NOTIFICATION,
+      STREAM_TYPE_RING, STREAM_TYPE_SYSTEM, STREAM_TYPE_VOICE_CALL, STREAM_TYPE_USE_DEFAULT})
   public @interface StreamType {}
   /**
    * @see AudioManager#STREAM_ALARM
    */
   public static final int STREAM_TYPE_ALARM = AudioManager.STREAM_ALARM;
+  /**
+   * @see AudioManager#STREAM_DTMF
+   */
+  public static final int STREAM_TYPE_DTMF = AudioManager.STREAM_DTMF;
   /**
    * @see AudioManager#STREAM_MUSIC
    */
@@ -217,9 +214,141 @@ public final class C {
    */
   public static final int STREAM_TYPE_VOICE_CALL = AudioManager.STREAM_VOICE_CALL;
   /**
+   * @see AudioManager#USE_DEFAULT_STREAM_TYPE
+   */
+  public static final int STREAM_TYPE_USE_DEFAULT = AudioManager.USE_DEFAULT_STREAM_TYPE;
+  /**
    * The default stream type used by audio renderers.
    */
   public static final int STREAM_TYPE_DEFAULT = STREAM_TYPE_MUSIC;
+
+  /**
+   * Content types for {@link org.telegram.messenger.exoplayer2.audio.AudioAttributes}.
+   */
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({CONTENT_TYPE_MOVIE, CONTENT_TYPE_MUSIC, CONTENT_TYPE_SONIFICATION, CONTENT_TYPE_SPEECH,
+      CONTENT_TYPE_UNKNOWN})
+  public @interface AudioContentType {}
+  /**
+   * @see android.media.AudioAttributes#CONTENT_TYPE_MOVIE
+   */
+  public static final int CONTENT_TYPE_MOVIE = android.media.AudioAttributes.CONTENT_TYPE_MOVIE;
+  /**
+   * @see android.media.AudioAttributes#CONTENT_TYPE_MUSIC
+   */
+  public static final int CONTENT_TYPE_MUSIC = android.media.AudioAttributes.CONTENT_TYPE_MUSIC;
+  /**
+   * @see android.media.AudioAttributes#CONTENT_TYPE_SONIFICATION
+   */
+  public static final int CONTENT_TYPE_SONIFICATION =
+      android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION;
+  /**
+   * @see android.media.AudioAttributes#CONTENT_TYPE_SPEECH
+   */
+  public static final int CONTENT_TYPE_SPEECH =
+      android.media.AudioAttributes.CONTENT_TYPE_SPEECH;
+  /**
+   * @see android.media.AudioAttributes#CONTENT_TYPE_UNKNOWN
+   */
+  public static final int CONTENT_TYPE_UNKNOWN =
+      android.media.AudioAttributes.CONTENT_TYPE_UNKNOWN;
+
+  /**
+   * Flags for {@link org.telegram.messenger.exoplayer2.audio.AudioAttributes}.
+   * <p>
+   * Note that {@code FLAG_HW_AV_SYNC} is not available because the player takes care of setting the
+   * flag when tunneling is enabled via a track selector.
+   */
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef(flag = true, value = {FLAG_AUDIBILITY_ENFORCED})
+  public @interface AudioFlags {}
+  /**
+   * @see android.media.AudioAttributes#FLAG_AUDIBILITY_ENFORCED
+   */
+  public static final int FLAG_AUDIBILITY_ENFORCED =
+      android.media.AudioAttributes.FLAG_AUDIBILITY_ENFORCED;
+
+  /**
+   * Usage types for {@link org.telegram.messenger.exoplayer2.audio.AudioAttributes}.
+   */
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({USAGE_ALARM, USAGE_ASSISTANCE_ACCESSIBILITY, USAGE_ASSISTANCE_NAVIGATION_GUIDANCE,
+      USAGE_ASSISTANCE_SONIFICATION, USAGE_GAME, USAGE_MEDIA, USAGE_NOTIFICATION,
+      USAGE_NOTIFICATION_COMMUNICATION_DELAYED, USAGE_NOTIFICATION_COMMUNICATION_INSTANT,
+      USAGE_NOTIFICATION_COMMUNICATION_REQUEST, USAGE_NOTIFICATION_EVENT,
+      USAGE_NOTIFICATION_RINGTONE, USAGE_UNKNOWN, USAGE_VOICE_COMMUNICATION,
+      USAGE_VOICE_COMMUNICATION_SIGNALLING})
+  public @interface AudioUsage {}
+  /**
+   * @see android.media.AudioAttributes#USAGE_ALARM
+   */
+  public static final int USAGE_ALARM = android.media.AudioAttributes.USAGE_ALARM;
+  /**
+   * @see android.media.AudioAttributes#USAGE_ASSISTANCE_ACCESSIBILITY
+   */
+  public static final int USAGE_ASSISTANCE_ACCESSIBILITY =
+      android.media.AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY;
+  /**
+   * @see android.media.AudioAttributes#USAGE_ASSISTANCE_NAVIGATION_GUIDANCE
+   */
+  public static final int USAGE_ASSISTANCE_NAVIGATION_GUIDANCE =
+      android.media.AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE;
+  /**
+   * @see android.media.AudioAttributes#USAGE_ASSISTANCE_SONIFICATION
+   */
+  public static final int USAGE_ASSISTANCE_SONIFICATION =
+      android.media.AudioAttributes.USAGE_ASSISTANCE_SONIFICATION;
+  /**
+   * @see android.media.AudioAttributes#USAGE_GAME
+   */
+  public static final int USAGE_GAME = android.media.AudioAttributes.USAGE_GAME;
+  /**
+   * @see android.media.AudioAttributes#USAGE_MEDIA
+   */
+  public static final int USAGE_MEDIA = android.media.AudioAttributes.USAGE_MEDIA;
+  /**
+   * @see android.media.AudioAttributes#USAGE_NOTIFICATION
+   */
+  public static final int USAGE_NOTIFICATION = android.media.AudioAttributes.USAGE_NOTIFICATION;
+  /**
+   * @see android.media.AudioAttributes#USAGE_NOTIFICATION_COMMUNICATION_DELAYED
+   */
+  public static final int USAGE_NOTIFICATION_COMMUNICATION_DELAYED =
+      android.media.AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_DELAYED;
+  /**
+   * @see android.media.AudioAttributes#USAGE_NOTIFICATION_COMMUNICATION_INSTANT
+   */
+  public static final int USAGE_NOTIFICATION_COMMUNICATION_INSTANT =
+      android.media.AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT;
+  /**
+   * @see android.media.AudioAttributes#USAGE_NOTIFICATION_COMMUNICATION_REQUEST
+   */
+  public static final int USAGE_NOTIFICATION_COMMUNICATION_REQUEST =
+      android.media.AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_REQUEST;
+  /**
+   * @see android.media.AudioAttributes#USAGE_NOTIFICATION_EVENT
+   */
+  public static final int USAGE_NOTIFICATION_EVENT =
+      android.media.AudioAttributes.USAGE_NOTIFICATION_EVENT;
+  /**
+   * @see android.media.AudioAttributes#USAGE_NOTIFICATION_RINGTONE
+   */
+  public static final int USAGE_NOTIFICATION_RINGTONE =
+      android.media.AudioAttributes.USAGE_NOTIFICATION_RINGTONE;
+  /**
+   * @see android.media.AudioAttributes#USAGE_UNKNOWN
+   */
+  public static final int USAGE_UNKNOWN = android.media.AudioAttributes.USAGE_UNKNOWN;
+  /**
+   * @see android.media.AudioAttributes#USAGE_VOICE_COMMUNICATION
+   */
+  public static final int USAGE_VOICE_COMMUNICATION =
+      android.media.AudioAttributes.USAGE_VOICE_COMMUNICATION;
+  /**
+   * @see android.media.AudioAttributes#USAGE_VOICE_COMMUNICATION_SIGNALLING
+   */
+  public static final int USAGE_VOICE_COMMUNICATION_SIGNALLING =
+      android.media.AudioAttributes.USAGE_VOICE_COMMUNICATION_SIGNALLING;
 
   /**
    * Flags which can apply to a buffer containing a media sample.
@@ -231,12 +360,10 @@ public final class C {
   /**
    * Indicates that a buffer holds a synchronization sample.
    */
-  @SuppressWarnings("InlinedApi")
   public static final int BUFFER_FLAG_KEY_FRAME = MediaCodec.BUFFER_FLAG_KEY_FRAME;
   /**
    * Flag for empty buffers that signal that the end of the stream was reached.
    */
-  @SuppressWarnings("InlinedApi")
   public static final int BUFFER_FLAG_END_OF_STREAM = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
   /**
    * Indicates that a buffer is (at least partially) encrypted.
@@ -256,13 +383,11 @@ public final class C {
   /**
    * @see MediaCodec#VIDEO_SCALING_MODE_SCALE_TO_FIT
    */
-  @SuppressWarnings("InlinedApi")
   public static final int VIDEO_SCALING_MODE_SCALE_TO_FIT =
       MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT;
   /**
    * @see MediaCodec#VIDEO_SCALING_MODE_SCALE_TO_FIT
    */
-  @SuppressWarnings("InlinedApi")
   public static final int VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING =
       MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING;
   /**
@@ -454,6 +579,26 @@ public final class C {
       + DEFAULT_AUDIO_BUFFER_SIZE + DEFAULT_TEXT_BUFFER_SIZE;
 
   /**
+   * "cenc" scheme type name as defined in ISO/IEC 23001-7:2016.
+   */
+  public static final String CENC_TYPE_cenc = "cenc";
+
+  /**
+   * "cbc1" scheme type name as defined in ISO/IEC 23001-7:2016.
+   */
+  public static final String CENC_TYPE_cbc1 = "cbc1";
+
+  /**
+   * "cens" scheme type name as defined in ISO/IEC 23001-7:2016.
+   */
+  public static final String CENC_TYPE_cens = "cens";
+
+  /**
+   * "cbcs" scheme type name as defined in ISO/IEC 23001-7:2016.
+   */
+  public static final String CENC_TYPE_cbcs = "cbcs";
+
+  /**
    * The Nil UUID as defined by
    * <a href="https://tools.ietf.org/html/rfc4122#section-4.1.7">RFC4122</a>.
    */
@@ -498,16 +643,25 @@ public final class C {
   /**
    * A type of a message that can be passed to an audio {@link Renderer} via
    * {@link ExoPlayer#sendMessages} or {@link ExoPlayer#blockingSendMessages}. The message object
-   * should be one of the integer stream types in {@link C.StreamType}, and will specify the stream
-   * type of the underlying {@link android.media.AudioTrack}. See also
-   * {@link android.media.AudioTrack#AudioTrack(int, int, int, int, int, int)}. If the stream type
-   * is not set, audio renderers use {@link #STREAM_TYPE_DEFAULT}.
+   * should be an {@link org.telegram.messenger.exoplayer2.audio.AudioAttributes} instance that will
+   * configure the underlying audio track. If not set, the default audio attributes will be used.
+   * They are suitable for general media playback.
    * <p>
-   * Note that when the stream type changes, the AudioTrack must be reinitialized, which can
-   * introduce a brief gap in audio output. Note also that tracks in the same audio session must
-   * share the same routing, so a new audio session id will be generated.
+   * Setting the audio attributes during playback may introduce a short gap in audio output as the
+   * audio track is recreated. A new audio session id will also be generated.
+   * <p>
+   * If tunneling is enabled by the track selector, the specified audio attributes will be ignored,
+   * but they will take effect if audio is later played without tunneling.
+   * <p>
+   * If the device is running a build before platform API version 21, audio attributes cannot be set
+   * directly on the underlying audio track. In this case, the usage will be mapped onto an
+   * equivalent stream type using {@link Util#getStreamTypeForAudioUsage(int)}.
+   * <p>
+   * To get audio attributes that are equivalent to a legacy stream type, pass the stream type to
+   * {@link Util#getAudioUsageForStreamType(int)} and use the returned {@link C.AudioUsage} to build
+   * an audio attributes instance.
    */
-  public static final int MSG_SET_STREAM_TYPE = 3;
+  public static final int MSG_SET_AUDIO_ATTRIBUTES = 3;
 
   /**
    * The type of a message that can be passed to a {@link MediaCodec}-based video {@link Renderer}
@@ -564,17 +718,14 @@ public final class C {
   /**
    * @see MediaFormat#COLOR_STANDARD_BT709
    */
-  @SuppressWarnings("InlinedApi")
   public static final int COLOR_SPACE_BT709 = MediaFormat.COLOR_STANDARD_BT709;
   /**
    * @see MediaFormat#COLOR_STANDARD_BT601_PAL
    */
-  @SuppressWarnings("InlinedApi")
   public static final int COLOR_SPACE_BT601 = MediaFormat.COLOR_STANDARD_BT601_PAL;
   /**
    * @see MediaFormat#COLOR_STANDARD_BT2020
    */
-  @SuppressWarnings("InlinedApi")
   public static final int COLOR_SPACE_BT2020 = MediaFormat.COLOR_STANDARD_BT2020;
 
   /**
@@ -586,17 +737,14 @@ public final class C {
   /**
    * @see MediaFormat#COLOR_TRANSFER_SDR_VIDEO
    */
-  @SuppressWarnings("InlinedApi")
   public static final int COLOR_TRANSFER_SDR = MediaFormat.COLOR_TRANSFER_SDR_VIDEO;
   /**
    * @see MediaFormat#COLOR_TRANSFER_ST2084
    */
-  @SuppressWarnings("InlinedApi")
   public static final int COLOR_TRANSFER_ST2084 = MediaFormat.COLOR_TRANSFER_ST2084;
   /**
    * @see MediaFormat#COLOR_TRANSFER_HLG
    */
-  @SuppressWarnings("InlinedApi")
   public static final int COLOR_TRANSFER_HLG = MediaFormat.COLOR_TRANSFER_HLG;
 
   /**
@@ -608,12 +756,10 @@ public final class C {
   /**
    * @see MediaFormat#COLOR_RANGE_LIMITED
    */
-  @SuppressWarnings("InlinedApi")
   public static final int COLOR_RANGE_LIMITED = MediaFormat.COLOR_RANGE_LIMITED;
   /**
    * @see MediaFormat#COLOR_RANGE_FULL
    */
-  @SuppressWarnings("InlinedApi")
   public static final int COLOR_RANGE_FULL = MediaFormat.COLOR_RANGE_FULL;
 
   /**
@@ -632,24 +778,24 @@ public final class C {
 
   /**
    * Converts a time in microseconds to the corresponding time in milliseconds, preserving
-   * {@link #TIME_UNSET} values.
+   * {@link #TIME_UNSET} and {@link #TIME_END_OF_SOURCE} values.
    *
    * @param timeUs The time in microseconds.
    * @return The corresponding time in milliseconds.
    */
   public static long usToMs(long timeUs) {
-    return timeUs == TIME_UNSET ? TIME_UNSET : (timeUs / 1000);
+    return (timeUs == TIME_UNSET || timeUs == TIME_END_OF_SOURCE) ? timeUs : (timeUs / 1000);
   }
 
   /**
    * Converts a time in milliseconds to the corresponding time in microseconds, preserving
-   * {@link #TIME_UNSET} values.
+   * {@link #TIME_UNSET} values and {@link #TIME_END_OF_SOURCE} values.
    *
    * @param timeMs The time in milliseconds.
    * @return The corresponding time in microseconds.
    */
   public static long msToUs(long timeMs) {
-    return timeMs == TIME_UNSET ? TIME_UNSET : (timeMs * 1000);
+    return (timeMs == TIME_UNSET || timeMs == TIME_END_OF_SOURCE) ? timeMs : (timeMs * 1000);
   }
 
   /**

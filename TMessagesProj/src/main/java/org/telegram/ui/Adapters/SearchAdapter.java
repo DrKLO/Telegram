@@ -303,7 +303,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                     }
                 } else {
                     ProfileSearchCell profileSearchCell = (ProfileSearchCell) holder.itemView;
-                    profileSearchCell.setData(object, null, name, username, false);
+                    profileSearchCell.setData(object, null, name, username, false, false);
                     profileSearchCell.useSeparator = (position != getItemCount() - 1 && position != searchResult.size() - 1);
                     /*if (ignoreUsers != null) {
                         if (ignoreUsers.containsKey(id)) {

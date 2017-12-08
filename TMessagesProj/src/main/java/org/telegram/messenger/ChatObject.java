@@ -34,6 +34,10 @@ public class ChatObject {
         return chat instanceof TLRPC.TL_channel || chat instanceof TLRPC.TL_channelForbidden;
     }
 
+    public static boolean isMegagroup(TLRPC.Chat chat) {
+        return (chat instanceof TLRPC.TL_channel || chat instanceof TLRPC.TL_channelForbidden) && chat.megagroup;
+    }
+
     public static boolean hasAdminRights(TLRPC.Chat chat) {
         return chat != null && (chat.creator || chat.admin_rights != null && chat.admin_rights.flags != 0);
     }

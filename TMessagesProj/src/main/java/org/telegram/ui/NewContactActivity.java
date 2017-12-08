@@ -33,7 +33,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -62,6 +61,7 @@ import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ContextProgressView;
+import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.HintEditText;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -78,9 +78,9 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
     private ActionBarMenuItem editDoneItem;
     private ContextProgressView editDoneItemProgress;
-    private EditText firstNameField;
-    private EditText lastNameField;
-    private EditText codeField;
+    private EditTextBoldCursor firstNameField;
+    private EditTextBoldCursor lastNameField;
+    private EditTextBoldCursor codeField;
     private HintEditText phoneField;
     private BackupImageView avatarImage;
     private TextView countryButton;
@@ -174,7 +174,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                                                 public void onClick(DialogInterface dialog, int which) {
                                                     try {
                                                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", inputPhoneContact.phone, null));
-                                                        intent.putExtra("sms_body", LocaleController.getString("InviteText", R.string.InviteText));
+                                                        intent.putExtra("sms_body", ContactsController.getInstance().getInviteText(1));
                                                         getParentActivity().startActivityForResult(intent, 500);
                                                     } catch (Exception e) {
                                                         FileLog.e(e);
@@ -226,7 +226,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         avatarImage.setImageDrawable(avatarDrawable);
         frameLayout.addView(avatarImage, LayoutHelper.createFrame(60, 60, Gravity.LEFT | Gravity.TOP, 0, 9, 0, 0));
 
-        firstNameField = new EditText(context);
+        firstNameField = new EditTextBoldCursor(context);
         firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         firstNameField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         firstNameField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -238,7 +238,9 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         firstNameField.setImeOptions(EditorInfo.IME_ACTION_NEXT);
         firstNameField.setHint(LocaleController.getString("FirstName", R.string.FirstName));
-        AndroidUtilities.clearCursorDrawable(firstNameField);
+        firstNameField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        firstNameField.setCursorSize(AndroidUtilities.dp(20));
+        firstNameField.setCursorWidth(1.5f);
         frameLayout.addView(firstNameField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 34, Gravity.LEFT | Gravity.TOP, 84, 0, 0, 0));
         firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -269,7 +271,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
             }
         });
 
-        lastNameField = new EditText(context);
+        lastNameField = new EditTextBoldCursor(context);
         lastNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         lastNameField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         lastNameField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -281,7 +283,9 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         lastNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         lastNameField.setImeOptions(EditorInfo.IME_ACTION_NEXT);
         lastNameField.setHint(LocaleController.getString("LastName", R.string.LastName));
-        AndroidUtilities.clearCursorDrawable(lastNameField);
+        lastNameField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        lastNameField.setCursorSize(AndroidUtilities.dp(20));
+        lastNameField.setCursorWidth(1.5f);
         frameLayout.addView(lastNameField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 34, Gravity.LEFT | Gravity.TOP, 84, 44, 0, 0));
         lastNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -359,11 +363,13 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         linearLayout2.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
-        codeField = new EditText(context);
+        codeField = new EditTextBoldCursor(context);
         codeField.setInputType(InputType.TYPE_CLASS_PHONE);
         codeField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         codeField.setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
-        AndroidUtilities.clearCursorDrawable(codeField);
+        codeField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        codeField.setCursorSize(AndroidUtilities.dp(20));
+        codeField.setCursorWidth(1.5f);
         codeField.setPadding(AndroidUtilities.dp(10), 0, 0, 0);
         codeField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         codeField.setMaxLines(1);
@@ -467,7 +473,9 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         phoneField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         phoneField.setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
         phoneField.setPadding(0, 0, 0, 0);
-        AndroidUtilities.clearCursorDrawable(phoneField);
+        phoneField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        phoneField.setCursorSize(AndroidUtilities.dp(20));
+        phoneField.setCursorWidth(1.5f);
         phoneField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         phoneField.setMaxLines(1);
         phoneField.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
@@ -787,7 +795,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                 new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressInner2),
                 new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressOuter2),
 
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, сellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, сellDelegate, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),
@@ -795,8 +803,6 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundCyan),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundPink),
-
-                //TODO edittext
         };
     }
 }

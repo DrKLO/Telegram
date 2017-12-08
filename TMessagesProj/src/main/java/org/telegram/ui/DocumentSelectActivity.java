@@ -481,7 +481,6 @@ public class DocumentSelectActivity extends BaseFragment {
             showErrorBox(LocaleController.getString("AccessError", R.string.AccessError));
             return false;
         }
-        emptyView.setText(LocaleController.getString("NoFiles", R.string.NoFiles));
         File[] files;
         try {
             files = dir.listFiles();

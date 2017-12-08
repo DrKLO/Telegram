@@ -78,7 +78,7 @@ public final class DefaultTsPayloadReaderFactory implements TsPayloadReader.Fact
     this.flags = flags;
     if (!isSet(FLAG_OVERRIDE_CAPTION_DESCRIPTORS) && closedCaptionFormats.isEmpty()) {
       closedCaptionFormats = Collections.singletonList(Format.createTextSampleFormat(null,
-          MimeTypes.APPLICATION_CEA608, null, Format.NO_VALUE, 0, null, null));
+          MimeTypes.APPLICATION_CEA608, 0, null));
     }
     this.closedCaptionFormats = closedCaptionFormats;
   }

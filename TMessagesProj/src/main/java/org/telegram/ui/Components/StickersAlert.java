@@ -95,6 +95,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
     private PickerBottomLayout pickerBottomLayout;
     private FrameLayout stickerPreviewLayout;
     private TextView previewSendButton;
+    private ImageView previewFavButton;
     private View previewSendButtonShadow;
     private BackupImageView stickerImageView;
     private TextView stickerEmojiTextView;
@@ -398,6 +399,12 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                     if (!set) {
                         stickerEmojiTextView.setText(Emoji.replaceEmoji(StickersQuery.getEmojiForSticker(selectedSticker.id), stickerEmojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(30), false));
                     }
+                    boolean fav = StickersQuery.isStickerInFavorites(selectedSticker);
+                    previewFavButton.setImageResource(fav ? R.drawable.stickers_unfavorite : R.drawable.stickers_favorite);
+                    previewFavButton.setTag(fav ? 1 : null);
+                    if (previewFavButton.getVisibility() != View.GONE) {
+                        previewFavButton.setVisibility(fav || StickersQuery.canAddStickerToFavorites() ? View.VISIBLE : View.INVISIBLE);
+                    }
 
                     stickerImageView.getImageReceiver().setImage(selectedSticker, null, selectedSticker.thumb.location, null, "webp", 1);
                     FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) stickerPreviewLayout.getLayoutParams();
@@ -517,6 +524,24 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             }
         });
 
+        previewFavButton = new ImageView(context);
+        previewFavButton.setScaleType(ImageView.ScaleType.CENTER);
+        stickerPreviewLayout.addView(previewFavButton, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 4, 0));
+        previewFavButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogIcon), PorterDuff.Mode.MULTIPLY));
+        previewFavButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                StickersQuery.addRecentSticker(StickersQuery.TYPE_FAVE, selectedSticker, (int) (System.currentTimeMillis() / 1000), previewFavButton.getTag() != null);
+                if (previewFavButton.getTag() == null) {
+                    previewFavButton.setTag(1);
+                    previewFavButton.setImageResource(R.drawable.stickers_unfavorite);
+                } else {
+                    previewFavButton.setTag(null);
+                    previewFavButton.setImageResource(R.drawable.stickers_favorite);
+                }
+            }
+        });
+
         previewSendButtonShadow = new View(context);
         previewSendButtonShadow.setBackgroundResource(R.drawable.header_shadow_reverse);
         stickerPreviewLayout.addView(previewSendButtonShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 48));
@@ -534,12 +559,14 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             stickerImageView.setLayoutParams(LayoutHelper.createFrame(size, size, Gravity.CENTER, 0, 0, 0, 30));
             stickerEmojiTextView.setLayoutParams(LayoutHelper.createFrame(size, size, Gravity.CENTER, 0, 0, 0, 30));
             previewSendButton.setVisibility(View.VISIBLE);
+            previewFavButton.setVisibility(View.VISIBLE);
             previewSendButtonShadow.setVisibility(View.VISIBLE);
         } else {
             previewSendButton.setText(LocaleController.getString("Close", R.string.Close).toUpperCase());
             stickerImageView.setLayoutParams(LayoutHelper.createFrame(size, size, Gravity.CENTER));
             stickerEmojiTextView.setLayoutParams(LayoutHelper.createFrame(size, size, Gravity.CENTER));
             previewSendButton.setVisibility(View.GONE);
+            previewFavButton.setVisibility(View.GONE);
             previewSendButtonShadow.setVisibility(View.GONE);
         }
     }

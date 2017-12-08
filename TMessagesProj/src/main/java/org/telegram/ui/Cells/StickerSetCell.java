@@ -29,6 +29,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RadialProgressView;
 
 import java.util.ArrayList;
 
@@ -37,12 +38,13 @@ public class StickerSetCell extends FrameLayout {
     private TextView textView;
     private TextView valueTextView;
     private BackupImageView imageView;
+    private RadialProgressView progressView;
     private boolean needDivider;
     private ImageView optionsButton;
     private TLRPC.TL_messages_stickerSet stickersSet;
     private Rect rect = new Rect();
 
-    public StickerSetCell(Context context) {
+    public StickerSetCell(Context context, int option) {
         super(context);
 
         textView = new TextView(context);
@@ -68,13 +70,26 @@ public class StickerSetCell extends FrameLayout {
         imageView.setAspectFit(true);
         addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
 
-        optionsButton = new ImageView(context);
-        optionsButton.setFocusable(false);
-        optionsButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector)));
-        optionsButton.setImageResource(R.drawable.msg_actions);
-        optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
-        optionsButton.setScaleType(ImageView.ScaleType.CENTER);
-        addView(optionsButton, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP));
+        if (option == 2) {
+            progressView = new RadialProgressView(getContext());
+            progressView.setProgressColor(Theme.getColor(Theme.key_dialogProgressCircle));
+            progressView.setSize(AndroidUtilities.dp(30));
+            addView(progressView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
+        } else if (option != 0) {
+            optionsButton = new ImageView(context);
+            optionsButton.setFocusable(false);
+            optionsButton.setScaleType(ImageView.ScaleType.CENTER);
+            optionsButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector)));
+            if (option == 1) {
+                optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
+                optionsButton.setImageResource(R.drawable.msg_actions);
+                addView(optionsButton, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP));
+            } else if (option == 3) {
+                optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addedIcon), PorterDuff.Mode.MULTIPLY));
+                optionsButton.setImageResource(R.drawable.sticker_added);
+                addView(optionsButton, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, (LocaleController.isRTL ? 10 : 0), 12, (LocaleController.isRTL ? 0 : 10), 0));
+            }
+        }
     }
 
     @Override
@@ -82,10 +97,40 @@ public class StickerSetCell extends FrameLayout {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
     }
 
+    public void setText(String title, String subtitle, int icon, boolean divider) {
+        needDivider = divider;
+        stickersSet = null;
+        textView.setText(title);
+        valueTextView.setText(subtitle);
+        if (TextUtils.isEmpty(subtitle)) {
+            textView.setTranslationY(AndroidUtilities.dp(10));
+        } else {
+            textView.setTranslationY(0);
+        }
+        if (icon != 0) {
+            imageView.setImageResource(icon, Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon));
+            imageView.setVisibility(VISIBLE);
+            if (progressView != null) {
+                progressView.setVisibility(INVISIBLE);
+            }
+        } else {
+            imageView.setVisibility(INVISIBLE);
+            if (progressView != null) {
+                progressView.setVisibility(VISIBLE);
+            }
+        }
+    }
+
     public void setStickersSet(TLRPC.TL_messages_stickerSet set, boolean divider) {
         needDivider = divider;
         stickersSet = set;
 
+        imageView.setVisibility(VISIBLE);
+        if (progressView != null) {
+            progressView.setVisibility(INVISIBLE);
+        }
+
+        textView.setTranslationY(0);
         textView.setText(stickersSet.set.title);
         if (stickersSet.set.archived) {
             textView.setAlpha(0.5f);
@@ -108,7 +153,17 @@ public class StickerSetCell extends FrameLayout {
         }
     }
 
+    public void setChecked(boolean checked) {
+        if (optionsButton == null) {
+            return;
+        }
+        optionsButton.setVisibility(checked ? VISIBLE : INVISIBLE);
+    }
+
     public void setOnOptionsClick(OnClickListener listener) {
+        if (optionsButton == null) {
+            return;
+        }
         optionsButton.setOnClickListener(listener);
     }
 
@@ -118,7 +173,7 @@ public class StickerSetCell extends FrameLayout {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (Build.VERSION.SDK_INT >= 21 && getBackground() != null) {
+        if (Build.VERSION.SDK_INT >= 21 && getBackground() != null && optionsButton != null) {
             optionsButton.getHitRect(rect);
             if (rect.contains((int) event.getX(), (int) event.getY())) {
                 return true;

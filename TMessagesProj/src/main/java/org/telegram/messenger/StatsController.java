@@ -165,7 +165,7 @@ public class StatsController {
                         editor.putLong("resetStatsDate" + networkType, resetStatsDate[networkType]);
                     }
                     try {
-                        editor.commit();
+                        editor.apply();
                     } catch (Exception e) {
                         FileLog.e(e);
                     }

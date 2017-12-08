@@ -25,8 +25,9 @@ import org.telegram.messenger.exoplayer2.util.Assertions;
  */
 /* package */ final class VorbisBitArray {
 
-  public final byte[] data;
-  private final int limit;
+  private final byte[] data;
+  private final int byteLimit;
+
   private int byteOffset;
   private int bitOffset;
 
@@ -36,18 +37,8 @@ import org.telegram.messenger.exoplayer2.util.Assertions;
    * @param data the array to wrap.
    */
   public VorbisBitArray(byte[] data) {
-    this(data, data.length);
-  }
-
-  /**
-   * Creates a new instance that wraps an existing array.
-   *
-   * @param data the array to wrap.
-   * @param limit the limit in bytes.
-   */
-  public VorbisBitArray(byte[] data, int limit) {
     this.data = data;
-    this.limit = limit * 8;
+    byteLimit = data.length;
   }
 
   /**
@@ -64,7 +55,9 @@ import org.telegram.messenger.exoplayer2.util.Assertions;
    * @return {@code true} if the bit is set, {@code false} otherwise.
    */
   public boolean readBit() {
-    return readBits(1) == 1;
+    boolean returnValue = (((data[byteOffset] & 0xFF) >> bitOffset) & 0x01) == 1;
+    skipBits(1);
+    return returnValue;
   }
 
   /**
@@ -74,53 +67,32 @@ import org.telegram.messenger.exoplayer2.util.Assertions;
    * @return An integer whose bottom {@code numBits} bits hold the read data.
    */
   public int readBits(int numBits) {
-    Assertions.checkState(getPosition() + numBits <= limit);
-    if (numBits == 0) {
-      return 0;
+    int tempByteOffset = byteOffset;
+    int bitsRead = Math.min(numBits, 8 - bitOffset);
+    int returnValue = ((data[tempByteOffset++] & 0xFF) >> bitOffset) & (0xFF >> (8 - bitsRead));
+    while (bitsRead < numBits) {
+      returnValue |= (data[tempByteOffset++] & 0xFF) << bitsRead;
+      bitsRead += 8;
     }
-    int result = 0;
-    int bitCount = 0;
-    if (bitOffset != 0) {
-      bitCount = Math.min(numBits, 8 - bitOffset);
-      int mask = 0xFF >>> (8 - bitCount);
-      result = (data[byteOffset] >>> bitOffset) & mask;
-      bitOffset += bitCount;
-      if (bitOffset == 8) {
-        byteOffset++;
-        bitOffset = 0;
-      }
-    }
-
-    if (numBits - bitCount > 7) {
-      int numBytes = (numBits - bitCount) / 8;
-      for (int i = 0; i < numBytes; i++) {
-        result |= (data[byteOffset++] & 0xFFL) << bitCount;
-        bitCount += 8;
-      }
-    }
-
-    if (numBits > bitCount) {
-      int bitsOnNextByte = numBits - bitCount;
-      int mask = 0xFF >>> (8 - bitsOnNextByte);
-      result |= (data[byteOffset] & mask) << bitCount;
-      bitOffset += bitsOnNextByte;
-    }
-    return result;
+    returnValue &= 0xFFFFFFFF >>> (32 - numBits);
+    skipBits(numBits);
+    return returnValue;
   }
 
   /**
    * Skips {@code numberOfBits} bits.
    *
-   * @param numberOfBits The number of bits to skip.
+   * @param numBits The number of bits to skip.
    */
-  public void skipBits(int numberOfBits) {
-    Assertions.checkState(getPosition() + numberOfBits <= limit);
-    byteOffset += numberOfBits / 8;
-    bitOffset += numberOfBits % 8;
+  public void skipBits(int numBits) {
+    int numBytes = numBits / 8;
+    byteOffset += numBytes;
+    bitOffset += numBits - (numBytes * 8);
     if (bitOffset > 7) {
       byteOffset++;
       bitOffset -= 8;
     }
+    assertValidOffset();
   }
 
   /**
@@ -136,23 +108,22 @@ import org.telegram.messenger.exoplayer2.util.Assertions;
    * @param position The new reading position in bits.
    */
   public void setPosition(int position) {
-    Assertions.checkArgument(position < limit && position >= 0);
     byteOffset = position / 8;
     bitOffset = position - (byteOffset * 8);
+    assertValidOffset();
   }
 
   /**
    * Returns the number of remaining bits.
    */
   public int bitsLeft() {
-    return limit - getPosition();
+    return (byteLimit - byteOffset) * 8 - bitOffset;
   }
 
-  /**
-   * Returns the limit in bits.
-   **/
-  public int limit() {
-    return limit;
+  private void assertValidOffset() {
+    // It is fine for position to be at the end of the array, but no further.
+    Assertions.checkState(byteOffset >= 0
+        && (byteOffset < byteLimit || (byteOffset == byteLimit && bitOffset == 0)));
   }
 
 }

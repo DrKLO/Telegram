@@ -257,7 +257,11 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
             actionBar.setTitle(LocaleController.getString("ChannelAdministrators", R.string.ChannelAdministrators));
         } else if (type == 2) {
             if (selectType == 0) {
-                actionBar.setTitle(LocaleController.getString("ChannelMembers", R.string.ChannelMembers));
+                if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
+                    actionBar.setTitle(LocaleController.getString("ChannelSubscribers", R.string.ChannelSubscribers));
+                } else {
+                    actionBar.setTitle(LocaleController.getString("ChannelMembers", R.string.ChannelMembers));
+                }
             } else {
                 if (selectType == 1) {
                     actionBar.setTitle(LocaleController.getString("ChannelAddAdmin", R.string.ChannelAddAdmin));
@@ -443,6 +447,11 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                                         if (participant != null) {
                                             participant.admin_rights = rightsAdmin;
                                             participant.banned_rights = rightsBanned;
+                                            TLRPC.ChannelParticipant p = participantsMap.get(participant.user_id);
+                                            if (p != null) {
+                                                p.admin_rights = rightsAdmin;
+                                                p.banned_rights = rightsBanned;
+                                            }
                                         }
                                         removeSelfFromStack();
                                     }
@@ -483,6 +492,11 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                                         if (participant != null) {
                                             participant.admin_rights = rightsAdmin;
                                             participant.banned_rights = rightsBanned;
+                                            TLRPC.ChannelParticipant p = participantsMap.get(participant.user_id);
+                                            if (p != null) {
+                                                p.admin_rights = rightsAdmin;
+                                                p.banned_rights = rightsBanned;
+                                            }
                                         }
                                     }
                                 });
@@ -1258,7 +1272,11 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                         if (type == 0) {
                             sectionCell.setText(LocaleController.getString("ChannelRestrictedUsers", R.string.ChannelRestrictedUsers).toUpperCase());
                         } else {
-                            sectionCell.setText(LocaleController.getString("ChannelMembers", R.string.ChannelMembers).toUpperCase());
+                            if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
+                                actionBar.setTitle(LocaleController.getString("ChannelSubscribers", R.string.ChannelSubscribers));
+                            } else {
+                                sectionCell.setText(LocaleController.getString("ChannelMembers", R.string.ChannelMembers).toUpperCase());
+                            }
                         }
                     } else if (position == group2StartRow) {
                         sectionCell.setText(LocaleController.getString("ChannelBlockedUsers", R.string.ChannelBlockedUsers).toUpperCase());
@@ -1471,7 +1489,11 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                         } else if (type == 1) {
                             actionCell.setText(LocaleController.getString("ChannelAddAdmin", R.string.ChannelAddAdmin), null, R.drawable.group_admin_new, false);
                         } else if (type == 2) {
-                            actionCell.setText(LocaleController.getString("AddMember", R.string.AddMember), null, R.drawable.menu_invite, true);
+                            if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
+                                actionCell.setText(LocaleController.getString("AddSubscriber", R.string.AddSubscriber), null, R.drawable.menu_invite, true);
+                            } else {
+                                actionCell.setText(LocaleController.getString("AddMember", R.string.AddMember), null, R.drawable.menu_invite, true);
+                            }
                         }
                     } else if (position == addNew2Row) {
                         actionCell.setText(LocaleController.getString("ChannelInviteViaLink", R.string.ChannelInviteViaLink), null, R.drawable.msg_panel_link, false);
@@ -1585,7 +1607,7 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"statusColor"}, null, null, сellDelegate, Theme.key_windowBackgroundWhiteGrayText),
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"statusOnlineColor"}, null, null, сellDelegate, Theme.key_windowBackgroundWhiteBlueText),
-                new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),

@@ -131,8 +131,12 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         requestLayout();
     }
 
-    public void setChecked(boolean value, boolean animated) {
-        checkBox.setChecked(value, animated);
+    public void setChecked(int num, boolean value, boolean animated) {
+        checkBox.setChecked(num, value, animated);
+    }
+
+    public void setNum(int num) {
+        checkBox.setNum(num);
     }
 
     public void setOnCheckClickLisnener(OnClickListener onCheckClickLisnener) {

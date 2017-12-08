@@ -155,6 +155,9 @@ bool ConnectionSocket::checkSocketError() {
     int code;
     socklen_t len = sizeof(int);
     ret = getsockopt(socketFd, SOL_SOCKET, SO_ERROR, &code, &len);
+    if (ret != 0 || code != 0) {
+        DEBUG_E("socket error 0x%x code 0x%x", ret, code);
+    }
     return (ret || code) != 0;
 }
 
@@ -333,6 +336,7 @@ void ConnectionSocket::onEvent(uint32_t events) {
         }
     }
     if ((events & EPOLLRDHUP) || (events & EPOLLHUP)) {
+        DEBUG_E("socket event has EPOLLHUP");
         closeSocket(1);
         return;
     }

@@ -22,7 +22,6 @@ import android.util.AttributeSet;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.FrameLayout;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -35,7 +34,8 @@ public class AspectRatioFrameLayout extends FrameLayout {
      * Resize modes for {@link AspectRatioFrameLayout}.
      */
     @Retention(RetentionPolicy.SOURCE)
-    @IntDef({RESIZE_MODE_FIT, RESIZE_MODE_FIXED_WIDTH, RESIZE_MODE_FIXED_HEIGHT, RESIZE_MODE_FILL})
+    @IntDef({RESIZE_MODE_FIT, RESIZE_MODE_FIXED_WIDTH, RESIZE_MODE_FIXED_HEIGHT, RESIZE_MODE_FILL,
+            RESIZE_MODE_ZOOM})
     public @interface ResizeMode {}
 
     /**
@@ -54,6 +54,10 @@ public class AspectRatioFrameLayout extends FrameLayout {
      * The specified aspect ratio is ignored.
      */
     public static final int RESIZE_MODE_FILL = 3;
+    /**
+     * Either the width or height is increased to obtain the desired aspect ratio.
+     */
+    public static final int RESIZE_MODE_ZOOM = 4;
 
     /**
      * The {@link FrameLayout} will not resize itself if the fractional difference between its natural
@@ -81,13 +85,11 @@ public class AspectRatioFrameLayout extends FrameLayout {
         resizeMode = RESIZE_MODE_FIT;
     }
 
-    public void setDrawingReady(boolean value) {
-        if (drawingReady == value) {
-            return;
-        }
-        drawingReady = value;
-    }
-
+    /**
+     * Sets the aspect ratio that this view should satisfy.
+     *
+     * @param widthHeightRatio The width to height ratio.
+     */
     public boolean isDrawingReady() {
         return drawingReady;
     }
@@ -105,12 +107,11 @@ public class AspectRatioFrameLayout extends FrameLayout {
         }
     }
 
-    public float getAspectRatio() {
-        return videoAspectRatio;
-    }
-
-    public int getVideoRotation() {
-        return rotation;
+    /**
+     * Returns the resize mode.
+     */
+    public @ResizeMode int getResizeMode() {
+        return resizeMode;
     }
 
     /**
@@ -123,6 +124,21 @@ public class AspectRatioFrameLayout extends FrameLayout {
             this.resizeMode = resizeMode;
             requestLayout();
         }
+    }
+
+    public void setDrawingReady(boolean value) {
+        if (drawingReady == value) {
+            return;
+        }
+        drawingReady = value;
+    }
+
+    public float getAspectRatio() {
+        return videoAspectRatio;
+    }
+
+    public int getVideoRotation() {
+        return rotation;
     }
 
     @Override
@@ -148,6 +164,13 @@ public class AspectRatioFrameLayout extends FrameLayout {
                 break;
             case RESIZE_MODE_FIXED_HEIGHT:
                 width = (int) (height * videoAspectRatio);
+                break;
+            case RESIZE_MODE_ZOOM:
+                if (aspectDeformation > 0) {
+                    width = (int) (height * videoAspectRatio);
+                } else {
+                    height = (int) (width / videoAspectRatio);
+                }
                 break;
             default:
                 if (aspectDeformation > 0) {
@@ -175,4 +198,5 @@ public class AspectRatioFrameLayout extends FrameLayout {
             }
         }
     }
+
 }

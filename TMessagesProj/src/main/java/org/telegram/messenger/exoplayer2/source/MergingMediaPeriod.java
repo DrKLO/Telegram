@@ -44,11 +44,11 @@ import java.util.IdentityHashMap;
   }
 
   @Override
-  public void prepare(Callback callback) {
+  public void prepare(Callback callback, long positionUs) {
     this.callback = callback;
     pendingChildPrepareCount = periods.length;
     for (MediaPeriod period : periods) {
-      period.prepare(this);
+      period.prepare(this, positionUs);
     }
   }
 
@@ -168,14 +168,7 @@ import java.util.IdentityHashMap;
 
   @Override
   public long getBufferedPositionUs() {
-    long bufferedPositionUs = Long.MAX_VALUE;
-    for (MediaPeriod period : enabledPeriods) {
-      long rendererBufferedPositionUs = period.getBufferedPositionUs();
-      if (rendererBufferedPositionUs != C.TIME_END_OF_SOURCE) {
-        bufferedPositionUs = Math.min(bufferedPositionUs, rendererBufferedPositionUs);
-      }
-    }
-    return bufferedPositionUs == Long.MAX_VALUE ? C.TIME_END_OF_SOURCE : bufferedPositionUs;
+    return sequenceableLoader.getBufferedPositionUs();
   }
 
   @Override

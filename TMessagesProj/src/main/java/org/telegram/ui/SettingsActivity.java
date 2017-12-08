@@ -21,7 +21,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Outline;
 import android.graphics.PorterDuff;
@@ -31,6 +30,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.content.FileProvider;
 import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -55,6 +55,7 @@ import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.UserObject;
@@ -62,7 +63,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.query.StickersQuery;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
@@ -108,7 +108,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Locale;
 
-public class SettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
+public class SettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private RecyclerListView listView;
     private ListAdapter listAdapter;
@@ -168,6 +168,41 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
     private final static int edit_name = 1;
     private final static int logout = 2;
+
+    private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
+
+        @Override
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+            if (fileLocation == null) {
+                return null;
+            }
+            TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
+            if (user != null && user.photo != null && user.photo.photo_big != null) {
+                TLRPC.FileLocation photoBig = user.photo.photo_big;
+                if (photoBig.local_id == fileLocation.local_id && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
+                    int coords[] = new int[2];
+                    avatarImage.getLocationInWindow(coords);
+                    PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
+                    object.viewX = coords[0];
+                    object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
+                    object.parentView = avatarImage;
+                    object.imageReceiver = avatarImage.getImageReceiver();
+                    object.dialogId = UserConfig.getClientUserId();
+                    object.thumb = object.imageReceiver.getBitmap();
+                    object.size = -1;
+                    object.radius = avatarImage.getImageReceiver().getRoundRadius();
+                    object.scale = avatarImage.getScaleX();
+                    return object;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public void willHidePhotoViewer() {
+            avatarImage.getImageReceiver().setVisible(true, true);
+        }
+    };
 
     private static class LinkMovementMethodMy extends LinkMovementMethod {
         @Override
@@ -238,6 +273,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.featuredStickersDidLoaded);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.userInfoDidLoaded);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
 
         rowCount = 0;
         overscrollRow = rowCount++;
@@ -300,6 +336,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.featuredStickersDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.userInfoDidLoaded);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
         avatarUpdater.clear();
     }
 
@@ -650,19 +687,43 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             public boolean onItemClick(View view, int position) {
                 if (position == versionRow) {
                     pressCount++;
-                    if (pressCount >= 2) {
+                    if (pressCount >= 2 || BuildVars.DEBUG_PRIVATE_VERSION) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("DebugMenu", R.string.DebugMenu));
-                        builder.setItems(new CharSequence[]{
-                                LocaleController.getString("DebugMenuImportContacts", R.string.DebugMenuImportContacts),
-                                LocaleController.getString("DebugMenuReloadContacts", R.string.DebugMenuReloadContacts)
-                        }, new DialogInterface.OnClickListener() {
+                        CharSequence[] items;
+                        if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                            items = new CharSequence[]{
+                                    LocaleController.getString("DebugMenuImportContacts", R.string.DebugMenuImportContacts),
+                                    LocaleController.getString("DebugMenuReloadContacts", R.string.DebugMenuReloadContacts),
+                                    LocaleController.getString("DebugMenuResetContacts", R.string.DebugMenuResetContacts),
+                                    LocaleController.getString("DebugMenuResetDialogs", R.string.DebugMenuResetDialogs),
+                                    MediaController.getInstance().canInAppCamera() ? LocaleController.getString("DebugMenuDisableCamera", R.string.DebugMenuDisableCamera) : LocaleController.getString("DebugMenuEnableCamera", R.string.DebugMenuEnableCamera),
+                                    MediaController.getInstance().canRoundCamera16to9() ? "switch camera to 4:3" : "switch camera to 16:9"
+                            };
+                        } else {
+                            items = new CharSequence[]{
+                                    LocaleController.getString("DebugMenuImportContacts", R.string.DebugMenuImportContacts),
+                                    LocaleController.getString("DebugMenuReloadContacts", R.string.DebugMenuReloadContacts),
+                                    LocaleController.getString("DebugMenuResetContacts", R.string.DebugMenuResetContacts),
+                                    LocaleController.getString("DebugMenuResetDialogs", R.string.DebugMenuResetDialogs),
+                                    MediaController.getInstance().canInAppCamera() ? LocaleController.getString("DebugMenuDisableCamera", R.string.DebugMenuDisableCamera) : LocaleController.getString("DebugMenuEnableCamera", R.string.DebugMenuEnableCamera)
+                            };
+                        }
+                        builder.setItems(items, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 if (which == 0) {
                                     ContactsController.getInstance().forceImportContacts();
                                 } else if (which == 1) {
-                                    ContactsController.getInstance().loadContacts(false, true);
+                                    ContactsController.getInstance().loadContacts(false, 0);
+                                } else if (which == 2) {
+                                    ContactsController.getInstance().resetImportedContacts();
+                                } else if (which == 3) {
+                                    MessagesController.getInstance().forceResetDialogs();
+                                } else if (which == 4) {
+                                    MediaController.getInstance().toggleInappCamera();
+                                } else if (which == 5) {
+                                    MediaController.getInstance().toggleRoundCamera16to9();
                                 }
                             }
                         });
@@ -703,7 +764,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
                 if (user != null && user.photo != null && user.photo.photo_big != null) {
                     PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                    PhotoViewer.getInstance().openPhoto(user.photo.photo_big, SettingsActivity.this);
+                    PhotoViewer.getInstance().openPhoto(user.photo.photo_big, provider);
                 }
             }
         });
@@ -825,85 +886,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         return fragmentView;
     }
 
-    @Override
-    public void updatePhotoAtIndex(int index) {
-
-    }
-
-    @Override
-    public boolean allowCaption() {
-        return true;
-    }
-
-    @Override
-    public boolean scaleToFill() {
-        return false;
-    }
-
-    @Override
-    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
-        if (fileLocation == null) {
-            return null;
-        }
-        TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
-        if (user != null && user.photo != null && user.photo.photo_big != null) {
-            TLRPC.FileLocation photoBig = user.photo.photo_big;
-            if (photoBig.local_id == fileLocation.local_id && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
-                int coords[] = new int[2];
-                avatarImage.getLocationInWindow(coords);
-                PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
-                object.viewX = coords[0];
-                object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
-                object.parentView = avatarImage;
-                object.imageReceiver = avatarImage.getImageReceiver();
-                object.dialogId = UserConfig.getClientUserId();
-                object.thumb = object.imageReceiver.getBitmap();
-                object.size = -1;
-                object.radius = avatarImage.getImageReceiver().getRoundRadius();
-                object.scale = avatarImage.getScaleX();
-                return object;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public Bitmap getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
-        return null;
-    }
-
-    @Override
-    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
-    }
-
-    @Override
-    public void willHidePhotoViewer() {
-        avatarImage.getImageReceiver().setVisible(true, true);
-    }
-
-    @Override
-    public boolean isPhotoChecked(int index) {
-        return false;
-    }
-
-    @Override
-    public void setPhotoChecked(int index, VideoEditedInfo videoEditedInfo) {
-    }
-
-    @Override
-    public boolean cancelButtonPressed() {
-        return true;
-    }
-
-    @Override
-    public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo) {
-    }
-
-    @Override
-    public int getSelectedCount() {
-        return 0;
-    }
-
     private void performAskAQuestion() {
         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         int uid = preferences.getInt("support_id", 0);
@@ -1021,8 +1003,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
         } else if (id == NotificationCenter.userInfoDidLoaded) {
             Integer uid = (Integer) args[0];
-            if (uid == UserConfig.getClientUserId()) {
+            if (uid == UserConfig.getClientUserId() && listAdapter != null) {
                 listAdapter.notifyItemChanged(bioRow);
+            }
+        } else if (id == NotificationCenter.emojiDidLoaded) {
+            if (listView != null) {
+                listView.invalidateViews();
             }
         }
     }
@@ -1164,14 +1150,22 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
             File dir = new File(sdCard.getAbsolutePath() + "/logs");
             File[] files = dir.listFiles();
+
             for (File file : files) {
-                uris.add(Uri.fromFile(file));
+                if (Build.VERSION.SDK_INT >= 24) {
+                    uris.add(FileProvider.getUriForFile(getParentActivity(), BuildConfig.APPLICATION_ID + ".provider", file));
+                } else {
+                    uris.add(Uri.fromFile(file));
+                }
             }
 
             if (uris.isEmpty()) {
                 return;
             }
             Intent i = new Intent(Intent.ACTION_SEND_MULTIPLE);
+            if (Build.VERSION.SDK_INT >= 24) {
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            }
             i.setType("message/rfc822");
             i.putExtra(Intent.EXTRA_EMAIL, "");
             i.putExtra(Intent.EXTRA_SUBJECT, "last logs");
@@ -1245,7 +1239,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (position == switchBackendButtonRow) {
                         textCell.setText("Switch Backend", true);
                     } else if (position == telegramFaqRow) {
-                        textCell.setText(LocaleController.getString("TelegramFAQ", R.string.TelegramFaq), true);
+                        textCell.setText(LocaleController.getString("TelegramFAQ", R.string.TelegramFAQ), true);
                     } else if (position == contactsReimportRow) {
                         textCell.setText(LocaleController.getString("ImportContacts", R.string.ImportContacts), true);
                     } else if (position == stickersRow) {
@@ -1318,12 +1312,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         String value;
                         if (userFull == null) {
                             value = LocaleController.getString("Loading", R.string.Loading);
-                        } else if (userFull != null && !TextUtils.isEmpty(userFull.about)) {
+                        } else if (!TextUtils.isEmpty(userFull.about)) {
                             value = userFull.about;
                         } else {
                             value = LocaleController.getString("UserBioEmpty", R.string.UserBioEmpty);
                         }
-                        textCell.setTextAndValue(value, LocaleController.getString("UserBio", R.string.UserBio), false);
+                        textCell.setTextWithEmojiAndValue(value, LocaleController.getString("UserBio", R.string.UserBio), false);
                     }
                     break;
                 }
@@ -1464,7 +1458,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
                 new ThemeDescription(listView, 0, new Class[]{TextInfoCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText5),
 
-                new ThemeDescription(avatarImage, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(avatarImage, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
                 new ThemeDescription(avatarImage, 0, null, null, new Drawable[]{avatarDrawable}, null, Theme.key_avatar_backgroundInProfileBlue),
 
                 new ThemeDescription(writeButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_profile_actionIcon),

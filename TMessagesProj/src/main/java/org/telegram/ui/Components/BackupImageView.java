@@ -11,6 +11,8 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
@@ -94,12 +96,26 @@ public class BackupImageView extends View {
         invalidate();
     }
 
+    public void setImageResource(int resId, int color) {
+        Drawable drawable = getResources().getDrawable(resId);
+        if (drawable != null) {
+            drawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+        }
+        imageReceiver.setImageBitmap(drawable);
+        invalidate();
+    }
+
     public void setImageDrawable(Drawable drawable) {
         imageReceiver.setImageBitmap(drawable);
     }
 
     public void setRoundRadius(int value) {
         imageReceiver.setRoundRadius(value);
+        invalidate();
+    }
+
+    public int getRoundRadius() {
+        return imageReceiver.getRoundRadius();
     }
 
     public void setAspectFit(boolean value) {

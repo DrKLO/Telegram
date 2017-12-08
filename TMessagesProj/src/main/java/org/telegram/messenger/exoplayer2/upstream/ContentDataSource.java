@@ -22,6 +22,7 @@ import android.net.Uri;
 import org.telegram.messenger.exoplayer2.C;
 import java.io.EOFException;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -71,9 +72,13 @@ public final class ContentDataSource implements DataSource {
     try {
       uri = dataSpec.uri;
       assetFileDescriptor = resolver.openAssetFileDescriptor(uri, "r");
+      if (assetFileDescriptor == null) {
+        throw new FileNotFoundException("Could not open file descriptor for: " + uri);
+      }
       inputStream = new FileInputStream(assetFileDescriptor.getFileDescriptor());
-      long skipped = inputStream.skip(dataSpec.position);
-      if (skipped < dataSpec.position) {
+      long assetStartOffset = assetFileDescriptor.getStartOffset();
+      long skipped = inputStream.skip(assetStartOffset + dataSpec.position) - assetStartOffset;
+      if (skipped != dataSpec.position) {
         // We expect the skip to be satisfied in full. If it isn't then we're probably trying to
         // skip beyond the end of the data.
         throw new EOFException();
@@ -81,12 +86,18 @@ public final class ContentDataSource implements DataSource {
       if (dataSpec.length != C.LENGTH_UNSET) {
         bytesRemaining = dataSpec.length;
       } else {
-        bytesRemaining = inputStream.available();
-        if (bytesRemaining == 0) {
-          // FileInputStream.available() returns 0 if the remaining length cannot be determined, or
-          // if it's greater than Integer.MAX_VALUE. We don't know the true length in either case,
-          // so treat as unbounded.
-          bytesRemaining = C.LENGTH_UNSET;
+        long assetFileDescriptorLength = assetFileDescriptor.getLength();
+        if (assetFileDescriptorLength == AssetFileDescriptor.UNKNOWN_LENGTH) {
+          // The asset must extend to the end of the file.
+          bytesRemaining = inputStream.available();
+          if (bytesRemaining == 0) {
+            // FileInputStream.available() returns 0 if the remaining length cannot be determined,
+            // or if it's greater than Integer.MAX_VALUE. We don't know the true length in either
+            // case, so treat as unbounded.
+            bytesRemaining = C.LENGTH_UNSET;
+          }
+        } else {
+          bytesRemaining = assetFileDescriptorLength - skipped;
         }
       }
     } catch (IOException e) {

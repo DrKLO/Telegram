@@ -110,7 +110,7 @@ public:
 class TL_config : public TLObject {
 
 public:
-    static const uint32_t constructor = 0x7feec888;
+    static const uint32_t constructor = 0x9c840964;
 
     int32_t flags;
     int32_t date;
@@ -134,6 +134,8 @@ public:
     int32_t edit_time_limit;
     int32_t rating_e_decay;
     int32_t stickers_recent_limit;
+    int32_t stickers_faved_limit;
+    int32_t channels_read_media_period;
     int32_t tmp_sessions;
     int32_t pinned_dialogs_count_max;
     int32_t call_receive_timeout_ms;

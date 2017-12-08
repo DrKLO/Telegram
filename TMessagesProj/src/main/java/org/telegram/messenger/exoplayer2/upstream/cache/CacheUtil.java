@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2017 The Android Open Source Project                     
- *                                                                       
- * Licensed under the Apache License, Version 2.0 (the "License");        
- * you may not use this file except in compliance with the License.       
- * You may obtain a copy of the License at                                
- *                                                                       
- *     http://www.apache.org/licenses/LICENSE-2.0                        
- *                                                                       
- * Unless required by applicable law or agreed to in writing, software    
- * distributed under the License is distributed on an "AS IS" BASIS,      
+ * Copyright (C) 2017 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and    
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 package org.telegram.messenger.exoplayer2.upstream.cache;
@@ -22,27 +22,35 @@ import org.telegram.messenger.exoplayer2.upstream.DataSpec;
 import org.telegram.messenger.exoplayer2.util.Assertions;
 import org.telegram.messenger.exoplayer2.util.PriorityTaskManager;
 import org.telegram.messenger.exoplayer2.util.Util;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.NavigableSet;
 
 /**
  * Caching related utility methods.
  */
+@SuppressWarnings({"NonAtomicVolatileUpdate", "NonAtomicOperationOnVolatileField"})
 public final class CacheUtil {
 
-  /** Holds the counters used during caching. */
+  /** Counters used during caching. */
   public static class CachingCounters {
-    /** Total number of already cached bytes. */
-    public long alreadyCachedBytes;
+    /** The number of bytes already in the cache. */
+    public volatile long alreadyCachedBytes;
+    /** The number of newly cached bytes. */
+    public volatile long newlyCachedBytes;
+    /** The length of the content being cached in bytes, or {@link C#LENGTH_UNSET} if unknown. */
+    public volatile long contentLength = C.LENGTH_UNSET;
+
     /**
-     * Total number of downloaded bytes.
-     *
-     * <p>{@link #getCached(DataSpec, Cache, CachingCounters)} sets it to the count of the missing
-     * bytes or to {@link C#LENGTH_UNSET} if {@code dataSpec} is unbounded and content length isn't
-     * available in the {@code cache}.
+     * Returns the sum of {@link #alreadyCachedBytes} and {@link #newlyCachedBytes}.
      */
-    public long downloadedBytes;
+    public long totalCachedBytes() {
+      return alreadyCachedBytes + newlyCachedBytes;
+    }
   }
+
+  /** Default buffer size to be used while caching. */
+  public static final int DEFAULT_BUFFER_SIZE_BYTES = 128 * 1024;
 
   /**
    * Generates a cache key out of the given {@link Uri}.
@@ -64,26 +72,57 @@ public final class CacheUtil {
   }
 
   /**
-   * Returns already cached and missing bytes in the {@cache} for the data defined by {@code
-   * dataSpec}.
+   * Sets a {@link CachingCounters} to contain the number of bytes already downloaded and the
+   * length for the content defined by a {@code dataSpec}. {@link CachingCounters#newlyCachedBytes}
+   * is reset to 0.
    *
    * @param dataSpec Defines the data to be checked.
    * @param cache A {@link Cache} which has the data.
-   * @param counters The counters to be set. If null a new {@link CachingCounters} is created and
-   *     used.
-   * @return The used {@link CachingCounters} instance.
+   * @param counters The {@link CachingCounters} to update.
    */
-  public static CachingCounters getCached(DataSpec dataSpec, Cache cache,
-      CachingCounters counters) {
-    try {
-      return internalCache(dataSpec, cache, null, null, null, 0, counters);
-    } catch (IOException | InterruptedException e) {
-      throw new IllegalStateException(e);
+  public static void getCached(DataSpec dataSpec, Cache cache, CachingCounters counters) {
+    String key = getKey(dataSpec);
+    long start = dataSpec.absoluteStreamPosition;
+    long left = dataSpec.length != C.LENGTH_UNSET ? dataSpec.length : cache.getContentLength(key);
+    counters.contentLength = left;
+    counters.alreadyCachedBytes = 0;
+    counters.newlyCachedBytes = 0;
+    while (left != 0) {
+      long blockLength = cache.getCachedBytes(key, start,
+          left != C.LENGTH_UNSET ? left : Long.MAX_VALUE);
+      if (blockLength > 0) {
+        counters.alreadyCachedBytes += blockLength;
+      } else {
+        blockLength = -blockLength;
+        if (blockLength == Long.MAX_VALUE) {
+          return;
+        }
+      }
+      start += blockLength;
+      left -= left == C.LENGTH_UNSET ? 0 : blockLength;
     }
   }
 
   /**
-   * Caches the data defined by {@code dataSpec} while skipping already cached data.
+   * Caches the data defined by {@code dataSpec}, skipping already cached data. Caching stops early
+   * if the end of the input is reached.
+   *
+   * @param dataSpec Defines the data to be cached.
+   * @param cache A {@link Cache} to store the data.
+   * @param upstream A {@link DataSource} for reading data not in the cache.
+   * @param counters Counters to update during caching.
+   * @throws IOException If an error occurs reading from the source.
+   * @throws InterruptedException If the thread was interrupted.
+   */
+  public static void cache(DataSpec dataSpec, Cache cache, DataSource upstream,
+      CachingCounters counters) throws IOException, InterruptedException {
+    cache(dataSpec, cache, new CacheDataSource(cache, upstream),
+        new byte[DEFAULT_BUFFER_SIZE_BYTES], null, 0, counters, false);
+  }
+
+  /**
+   * Caches the data defined by {@code dataSpec} while skipping already cached data. Caching stops
+   * early if end of input is reached and {@code enableEOFException} is false.
    *
    * @param dataSpec Defines the data to be cached.
    * @param cache A {@link Cache} to store the data.
@@ -92,123 +131,109 @@ public final class CacheUtil {
    * @param priorityTaskManager If not null it's used to check whether it is allowed to proceed with
    *     caching.
    * @param priority The priority of this task. Used with {@code priorityTaskManager}.
-   * @param counters The counters to be set during caching. If not null its values reset to
-   *     zero before using. If null a new {@link CachingCounters} is created and used.
-   * @return The used {@link CachingCounters} instance.
+   * @param counters Counters to update during caching.
+   * @param enableEOFException Whether to throw an {@link EOFException} if end of input has been
+   *     reached unexpectedly.
    * @throws IOException If an error occurs reading from the source.
    * @throws InterruptedException If the thread was interrupted.
    */
-  public static CachingCounters cache(DataSpec dataSpec, Cache cache, CacheDataSource dataSource,
+  public static void cache(DataSpec dataSpec, Cache cache, CacheDataSource dataSource,
       byte[] buffer, PriorityTaskManager priorityTaskManager, int priority,
-      CachingCounters counters) throws IOException, InterruptedException {
+      CachingCounters counters, boolean enableEOFException)
+      throws IOException, InterruptedException {
     Assertions.checkNotNull(dataSource);
     Assertions.checkNotNull(buffer);
-    return internalCache(dataSpec, cache, dataSource, buffer, priorityTaskManager, priority,
-        counters);
-  }
 
-  /**
-   * Caches the data defined by {@code dataSpec} while skipping already cached data. If {@code
-   * dataSource} or {@code buffer} is null performs a dry run.
-   *
-   * @param dataSpec Defines the data to be cached.
-   * @param cache A {@link Cache} to store the data.
-   * @param dataSource A {@link CacheDataSource} that works on the {@code cache}. If null a dry run
-   *     is performed.
-   * @param buffer The buffer to be used while caching. If null a dry run is performed.
-   * @param priorityTaskManager If not null it's used to check whether it is allowed to proceed with
-   *     caching.
-   * @param priority The priority of this task. Used with {@code priorityTaskManager}.
-   * @param counters The counters to be set during caching. If not null its values reset to
-   *     zero before using. If null a new {@link CachingCounters} is created and used.
-   * @return The used {@link CachingCounters} instance.
-   * @throws IOException If not dry run and an error occurs reading from the source.
-   * @throws InterruptedException If not dry run and the thread was interrupted.
-   */
-  private static CachingCounters internalCache(DataSpec dataSpec, Cache cache,
-      CacheDataSource dataSource, byte[] buffer, PriorityTaskManager priorityTaskManager,
-      int priority, CachingCounters counters) throws IOException, InterruptedException {
-    long start = dataSpec.position;
-    long left = dataSpec.length;
-    String key = getKey(dataSpec);
-    if (left == C.LENGTH_UNSET) {
-      left = cache.getContentLength(key);
-      if (left == C.LENGTH_UNSET) {
-        left = Long.MAX_VALUE;
-      }
-    }
-    if (counters == null) {
-      counters = new CachingCounters();
+    if (counters != null) {
+      // Initialize the CachingCounter values.
+      getCached(dataSpec, cache, counters);
     } else {
-      counters.alreadyCachedBytes = 0;
-      counters.downloadedBytes = 0;
+      // Dummy CachingCounters. No need to initialize as they will not be visible to the caller.
+      counters = new CachingCounters();
     }
-    while (left > 0) {
-      long blockLength = cache.getCachedBytes(key, start, left);
-      // Skip already cached data
+
+    String key = getKey(dataSpec);
+    long start = dataSpec.absoluteStreamPosition;
+    long left = dataSpec.length != C.LENGTH_UNSET ? dataSpec.length : cache.getContentLength(key);
+    while (left != 0) {
+      long blockLength = cache.getCachedBytes(key, start,
+          left != C.LENGTH_UNSET ? left : Long.MAX_VALUE);
       if (blockLength > 0) {
-        counters.alreadyCachedBytes += blockLength;
+        // Skip already cached data.
       } else {
         // There is a hole in the cache which is at least "-blockLength" long.
         blockLength = -blockLength;
-        if (dataSource != null && buffer != null) {
-          DataSpec subDataSpec = new DataSpec(dataSpec.uri, start,
-              blockLength == Long.MAX_VALUE ? C.LENGTH_UNSET : blockLength, key);
-          long read = readAndDiscard(subDataSpec, dataSource, buffer, priorityTaskManager,
-              priority);
-          counters.downloadedBytes += read;
-          if (read < blockLength) {
-            // Reached end of data.
-            break;
+        long read = readAndDiscard(dataSpec, start, blockLength, dataSource, buffer,
+            priorityTaskManager, priority, counters);
+        if (read < blockLength) {
+          // Reached to the end of the data.
+          if (enableEOFException && left != C.LENGTH_UNSET) {
+            throw new EOFException();
           }
-        } else if (blockLength == Long.MAX_VALUE) {
-          counters.downloadedBytes = C.LENGTH_UNSET;
           break;
-        } else {
-          counters.downloadedBytes += blockLength;
         }
       }
       start += blockLength;
-      if (left != Long.MAX_VALUE) {
-        left -= blockLength;
-      }
+      left -= left == C.LENGTH_UNSET ? 0 : blockLength;
     }
-    return counters;
   }
 
   /**
    * Reads and discards all data specified by the {@code dataSpec}.
    *
-   * @param dataSpec Defines the data to be read.
+   * @param dataSpec Defines the data to be read. {@code absoluteStreamPosition} and {@code length}
+   *     fields are overwritten by the following parameters.
+   * @param absoluteStreamPosition The absolute position of the data to be read.
+   * @param length Length of the data to be read, or {@link C#LENGTH_UNSET} if it is unknown.
    * @param dataSource The {@link DataSource} to read the data from.
    * @param buffer The buffer to be used while downloading.
    * @param priorityTaskManager If not null it's used to check whether it is allowed to proceed with
    *     caching.
    * @param priority The priority of this task.
+   * @param counters Counters to be set during reading.
    * @return Number of read bytes, or 0 if no data is available because the end of the opened range
-   * has been reached.
+   *     has been reached.
    */
-  private static long readAndDiscard(DataSpec dataSpec, DataSource dataSource, byte[] buffer,
-      PriorityTaskManager priorityTaskManager, int priority)
-      throws IOException, InterruptedException {
+  private static long readAndDiscard(DataSpec dataSpec, long absoluteStreamPosition, long length,
+      DataSource dataSource, byte[] buffer, PriorityTaskManager priorityTaskManager, int priority,
+      CachingCounters counters) throws IOException, InterruptedException {
     while (true) {
       if (priorityTaskManager != null) {
         // Wait for any other thread with higher priority to finish its job.
         priorityTaskManager.proceed(priority);
       }
       try {
-        dataSource.open(dataSpec);
+        if (Thread.interrupted()) {
+          throw new InterruptedException();
+        }
+        // Create a new dataSpec setting length to C.LENGTH_UNSET to prevent getting an error in
+        // case the given length exceeds the end of input.
+        dataSpec = new DataSpec(dataSpec.uri, dataSpec.postBody, absoluteStreamPosition,
+            dataSpec.position + absoluteStreamPosition - dataSpec.absoluteStreamPosition,
+            C.LENGTH_UNSET, dataSpec.key,
+            dataSpec.flags | DataSpec.FLAG_ALLOW_CACHING_UNKNOWN_LENGTH);
+        long resolvedLength = dataSource.open(dataSpec);
+        if (counters.contentLength == C.LENGTH_UNSET && resolvedLength != C.LENGTH_UNSET) {
+          counters.contentLength = dataSpec.absoluteStreamPosition + resolvedLength;
+        }
         long totalRead = 0;
-        while (true) {
+        while (totalRead != length) {
           if (Thread.interrupted()) {
             throw new InterruptedException();
           }
-          int read = dataSource.read(buffer, 0, buffer.length);
+          int read = dataSource.read(buffer, 0,
+              length != C.LENGTH_UNSET ? (int) Math.min(buffer.length, length - totalRead)
+                  : buffer.length);
           if (read == C.RESULT_END_OF_INPUT) {
-            return totalRead;
+            if (counters.contentLength == C.LENGTH_UNSET) {
+              counters.contentLength = dataSpec.absoluteStreamPosition + totalRead;
+            }
+            break;
           }
           totalRead += read;
+          counters.newlyCachedBytes += read;
         }
+        return totalRead;
       } catch (PriorityTaskManager.PriorityTooLowException exception) {
         // catch and try again
       } finally {

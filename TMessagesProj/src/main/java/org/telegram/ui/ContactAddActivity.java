@@ -21,7 +21,6 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -43,13 +42,14 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class ContactAddActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private View doneButton;
-    private EditText firstNameField;
-    private EditText lastNameField;
+    private EditTextBoldCursor firstNameField;
+    private EditTextBoldCursor lastNameField;
     private BackupImageView avatarImage;
     private TextView nameTextView;
     private TextView onlineTextView;
@@ -154,7 +154,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         onlineTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
         frameLayout.addView(onlineTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 80, 32, LocaleController.isRTL ? 80 : 0, 0));
 
-        firstNameField = new EditText(context);
+        firstNameField = new EditTextBoldCursor(context);
         firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         firstNameField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         firstNameField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -166,7 +166,9 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         firstNameField.setImeOptions(EditorInfo.IME_ACTION_NEXT);
         firstNameField.setHint(LocaleController.getString("FirstName", R.string.FirstName));
-        AndroidUtilities.clearCursorDrawable(firstNameField);
+        firstNameField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        firstNameField.setCursorSize(AndroidUtilities.dp(20));
+        firstNameField.setCursorWidth(1.5f);
         linearLayout.addView(firstNameField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 24, 24, 24, 0));
         firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -180,7 +182,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             }
         });
 
-        lastNameField = new EditText(context);
+        lastNameField = new EditTextBoldCursor(context);
         lastNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         lastNameField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         lastNameField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -192,7 +194,9 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         lastNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         lastNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
         lastNameField.setHint(LocaleController.getString("LastName", R.string.LastName));
-        AndroidUtilities.clearCursorDrawable(lastNameField);
+        lastNameField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        lastNameField.setCursorSize(AndroidUtilities.dp(20));
+        lastNameField.setCursorWidth(1.5f);
         linearLayout.addView(lastNameField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 24, 16, 24, 0));
         lastNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -300,7 +304,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                 new ThemeDescription(lastNameField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField),
                 new ThemeDescription(lastNameField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated),
 
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, сellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, сellDelegate, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),

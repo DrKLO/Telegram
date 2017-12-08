@@ -104,11 +104,18 @@ import java.io.IOException;
       input.peekFully(buffer.data, 0, headerSize);
       long atomSize = buffer.readUnsignedInt();
       int atomType = buffer.readInt();
-      if (atomSize == Atom.LONG_SIZE_PREFIX) {
+      if (atomSize == Atom.DEFINES_LARGE_SIZE) {
+        // Read the large atom size.
         headerSize = Atom.LONG_HEADER_SIZE;
         input.peekFully(buffer.data, Atom.HEADER_SIZE, Atom.LONG_HEADER_SIZE - Atom.HEADER_SIZE);
         buffer.setLimit(Atom.LONG_HEADER_SIZE);
         atomSize = buffer.readUnsignedLongToLong();
+      } else if (atomSize == Atom.EXTENDS_TO_END_SIZE) {
+        // The atom extends to the end of the file.
+        long endPosition = input.getLength();
+        if (endPosition != C.LENGTH_UNSET) {
+          atomSize = endPosition - input.getPosition() + headerSize;
+        }
       }
 
       if (atomSize < headerSize) {

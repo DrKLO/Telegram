@@ -67,7 +67,7 @@ import java.util.Collections;
         hasOutputFormat = true;
       } else if (audioFormat == AUDIO_FORMAT_ALAW || audioFormat == AUDIO_FORMAT_ULAW) {
         String type = audioFormat == AUDIO_FORMAT_ALAW ? MimeTypes.AUDIO_ALAW
-            : MimeTypes.AUDIO_ULAW;
+            : MimeTypes.AUDIO_MLAW;
         int pcmEncoding = (header & 0x01) == 1 ? C.ENCODING_PCM_16BIT : C.ENCODING_PCM_8BIT;
         Format format = Format.createAudioSampleFormat(null, type, null, Format.NO_VALUE,
             Format.NO_VALUE, 1, 8000, pcmEncoding, null, null, 0, null);

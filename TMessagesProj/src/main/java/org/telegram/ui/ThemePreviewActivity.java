@@ -543,7 +543,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
             View view = null;
             if (viewType == 0) {
-                view = new DialogCell(mContext);
+                view = new DialogCell(mContext, false);
             } else if (viewType == 1) {
                 view = new LoadingCell(mContext);
             }
@@ -708,7 +708,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             messageObject.useCustomPhoto = true;
             messages.add(messageObject);
 
-            message = new TLRPC.Message();
+            message = new TLRPC.TL_message();
             message.message = LocaleController.formatDateChat(date);
             message.id = 0;
             message.date = date;
@@ -810,6 +810,11 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                     public void didPressedInstantButton(ChatMessageCell cell, int type) {
 
                     }
+
+                    @Override
+                    public boolean isChatAdminCell(int uid) {
+                        return false;
+                    }
                 });
             } else if (viewType == 1) {
                 view = new ChatActionCell(mContext);
@@ -869,7 +874,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                     pinnedTop = false;
                 }
                 messageCell.setFullyDraw(true);
-                messageCell.setMessageObject(message, pinnedBotton, pinnedTop);
+                messageCell.setMessageObject(message, null, pinnedBotton, pinnedTop);
             } else if (view instanceof ChatActionCell) {
                 ChatActionCell actionCell = (ChatActionCell) view;
                 actionCell.setMessageObject(message);

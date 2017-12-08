@@ -91,7 +91,6 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         if (currentMessageObject == null) {
-            super.onLayout(changed, left, top, right, bottom);
             return;
         }
 

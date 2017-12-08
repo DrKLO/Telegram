@@ -20,7 +20,7 @@ import org.json.JSONObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 
-import static android.support.v4.net.ConnectivityManagerCompat.RESTRICT_BACKGROUND_STATUS_ENABLED;
+import android.net.ConnectivityManager;
 
 public class GcmPushListenerService extends GcmListenerService {
 
@@ -93,7 +93,10 @@ public class GcmPushListenerService extends GcmListenerService {
                             if (time == -1 || UserConfig.lastAppPauseTime < time) {
                                 ConnectivityManager connectivityManager = (ConnectivityManager) ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
                                 NetworkInfo netInfo = connectivityManager.getActiveNetworkInfo();
-                                if (connectivityManager.getRestrictBackgroundStatus() == RESTRICT_BACKGROUND_STATUS_ENABLED && netInfo.getType() == ConnectivityManager.TYPE_MOBILE) {
+                                if (BuildVars.DEBUG_VERSION) {
+                                    FileLog.d("try show notification in background with time " + time + " with nework info " + netInfo + " and status " + connectivityManager.getRestrictBackgroundStatus());
+                                }
+                                if (connectivityManager.getRestrictBackgroundStatus() == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED && netInfo.getType() == ConnectivityManager.TYPE_MOBILE) {
                                     NotificationsController.getInstance().showSingleBackgroundNotification();
                                 }
                             }

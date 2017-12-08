@@ -85,6 +85,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
+import org.telegram.ui.GroupStickersActivity;
 import org.telegram.ui.StickersActivity;
 
 import java.io.File;
@@ -218,6 +219,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private int editingMessageReqId;
     private boolean editingCaption;
 
+    private TLRPC.ChatFull info;
+
     private boolean hasRecordVideo;
 
     private int currentPopupContentType = -1;
@@ -305,22 +308,25 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     lastKnownPage = curPage;
                     boolean prevOpen = stickersTabOpen;
                     stickersTabOpen = curPage == 1 || curPage == 2;
-                    if (prevOpen != stickersTabOpen && curPage != 2)
-                        checkSendButton(false);
-                    if (!stickersTabOpen && stickersExpanded)
+                    if (prevOpen != stickersTabOpen) {
+                        checkSendButton(true);
+                    }
+                    if (!stickersTabOpen && stickersExpanded) {
                         setStickersExpanded(false, true);
+                    }
                 }
             }
         }
     };
-    private Property<View, Integer> roundedTranslationYProperty=new Property<View, Integer>(Integer.class, "translationY"){
+
+    private Property<View, Integer> roundedTranslationYProperty = new Property<View, Integer>(Integer.class, "translationY") {
         @Override
-        public Integer get(View object){
+        public Integer get(View object) {
             return Math.round(object.getTranslationY());
         }
 
         @Override
-        public void set(View object, Integer value){
+        public void set(View object, Integer value) {
             object.setTranslationY(value);
         }
     };
@@ -1167,7 +1173,6 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         recordTimeContainer.addView(recordDot, LayoutHelper.createLinear(11, 11, Gravity.CENTER_VERTICAL, 0, 1, 0, 0));
 
         recordTimeText = new TextView(context);
-        recordTimeText.setText("00:00");
         recordTimeText.setTextColor(Theme.getColor(Theme.key_chat_recordTime));
         recordTimeText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         recordTimeContainer.addView(recordTimeText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 6, 0, 0, 0));
@@ -1369,8 +1374,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         expandStickersButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!stickersDragging)
+                if (expandStickersButton.getVisibility() != VISIBLE || expandStickersButton.getAlpha() != 1.0f) {
+                    return;
+                }
+                if (!stickersDragging) {
                     setStickersExpanded(!stickersExpanded, true);
+                }
             }
         });
 
@@ -1432,6 +1441,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     @Override
     public boolean hasOverlappingRendering() {
         return false;
+    }
+
+    public boolean isSendButtonVisible() {
+        return sendButton.getVisibility() == VISIBLE;
     }
 
     private void setRecordVideoButtonVisible(boolean visible, boolean animated) {
@@ -1546,9 +1559,14 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         setEmojiButtonImage();
     }
 
+    public void addEmojiToRecent(String code) {
+        createEmojiView();
+        emojiView.addEmojiToRecent(code);
+    }
+
     public void setOpenGifsTabFirst() {
         createEmojiView();
-        StickersQuery.loadRecents(StickersQuery.TYPE_IMAGE, true, true);
+        StickersQuery.loadRecents(StickersQuery.TYPE_IMAGE, true, true, false);
         emojiView.switchToGifRecent();
     }
 
@@ -1848,6 +1866,13 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         updateFieldHint();
     }
 
+    public void setChatInfo(TLRPC.ChatFull chatInfo) {
+        info = chatInfo;
+        if (emojiView != null) {
+            emojiView.setChatInfo(info);
+        }
+    }
+
     public void checkRoundVideo() {
         if (hasRecordVideo) {
             return;
@@ -1874,6 +1899,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             if (isChannel && !chat.creator && (chat.admin_rights == null || !chat.admin_rights.post_messages)) {
                 hasRecordVideo = false;
             }
+        }
+        if (!MediaController.getInstance().canInAppCamera()) {
+            hasRecordVideo = false;
         }
         if (hasRecordVideo) {
             CameraController.getInstance().initCamera();
@@ -2444,7 +2472,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             recordPanel.setVisibility(VISIBLE);
             recordCircle.setVisibility(VISIBLE);
             recordCircle.setAmplitude(0);
-            recordTimeText.setText("00:00");
+            recordTimeText.setText(String.format("%02d:%02d.%02d", 0, 0, 0));
             recordDot.resetAlpha();
             lastTimeString = null;
             lastTypingSendTime = -1;
@@ -2553,9 +2581,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         } else {
             TLRPC.User user = messageObject != null && (int) dialog_id < 0 ? MessagesController.getInstance().getUser(messageObject.messageOwner.from_id) : null;
             if ((botCount != 1 || username) && user != null && user.bot && !command.contains("@")) {
-                SendMessagesHelper.getInstance().sendMessage(String.format(Locale.US, "%s@%s", command, user.username), dialog_id, null, null, false, null, null, null);
+                SendMessagesHelper.getInstance().sendMessage(String.format(Locale.US, "%s@%s", command, user.username), dialog_id, replyingMessageObject, null, false, null, null, null);
             } else {
-                SendMessagesHelper.getInstance().sendMessage(command, dialog_id, null, null, false, null, null, null);
+                SendMessagesHelper.getInstance().sendMessage(command, dialog_id, replyingMessageObject, null, false, null, null, null);
             }
         }
     }
@@ -2732,10 +2760,13 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         return 0;
     }
 
-    public void replaceWithText(int start, int len, CharSequence text) {
+    public void replaceWithText(int start, int len, CharSequence text, boolean parseEmoji) {
         try {
             SpannableStringBuilder builder = new SpannableStringBuilder(messageEditText.getText());
             builder.replace(start, start + len, text);
+            if (parseEmoji) {
+                Emoji.replaceEmoji(builder, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+            }
             messageEditText.setText(builder);
             messageEditText.setSelection(start + text.length());
         } catch (Exception e) {
@@ -2861,7 +2892,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         botReplyMarkup = messageObject != null && messageObject.messageOwner.reply_markup instanceof TLRPC.TL_replyKeyboardMarkup ? (TLRPC.TL_replyKeyboardMarkup) messageObject.messageOwner.reply_markup : null;
 
         botKeyboardView.setPanelHeight(AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? keyboardHeightLand : keyboardHeight);
-        botKeyboardView.setButtons(botReplyMarkup != null ? botReplyMarkup : null);
+        botKeyboardView.setButtons(botReplyMarkup);
         if (botReplyMarkup != null) {
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             boolean keyboardHidden = preferences.getInt("hidekeyboard_" + dialog_id, 0) == messageObject.getId();
@@ -2936,7 +2967,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 DialogsActivity fragment = new DialogsActivity(args);
                 fragment.setDelegate(new DialogsActivity.DialogsActivityDelegate() {
                     @Override
-                    public void didSelectDialog(DialogsActivity fragment, long did, boolean param) {
+                    public void didSelectDialogs(DialogsActivity fragment, ArrayList<Long> dids, CharSequence message, boolean param) {
                         int uid = messageObject.messageOwner.from_id;
                         if (messageObject.messageOwner.via_bot_id != 0) {
                             uid = messageObject.messageOwner.via_bot_id;
@@ -2946,6 +2977,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             fragment.finishFragment();
                             return;
                         }
+                        long did = dids.get(0);
                         DraftQuery.saveDraft(did, "@" + user.username + " " + button.query, null, null, true);
                         if (did != dialog_id) {
                             int lower_part = (int) did;
@@ -2992,7 +3024,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         if (emojiView != null) {
             return;
         }
-        emojiView = new EmojiView(allowStickers, allowGifs, parentActivity);
+        emojiView = new EmojiView(allowStickers, allowGifs, parentActivity, info);
         emojiView.setVisibility(GONE);
         emojiView.setListener(new EmojiView.Listener() {
             public boolean onBackspace() {
@@ -3022,10 +3054,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
 
             public void onStickerSelected(TLRPC.Document sticker) {
-                if(stickersExpanded)
+                if (stickersExpanded) {
                     setStickersExpanded(false, true);
+                }
                 ChatActivityEnterView.this.onStickerSelected(sticker);
-                StickersQuery.addRecentSticker(StickersQuery.TYPE_IMAGE, sticker, (int) (System.currentTimeMillis() / 1000));
+                StickersQuery.addRecentSticker(StickersQuery.TYPE_IMAGE, sticker, (int) (System.currentTimeMillis() / 1000), false);
                 if ((int) dialog_id == 0) {
                     MessagesController.getInstance().saveGif(sticker);
                 }
@@ -3040,8 +3073,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
             @Override
             public void onGifSelected(TLRPC.Document gif) {
-				if(stickersExpanded)
-				    setStickersExpanded(false, true);
+                if (stickersExpanded) {
+                    setStickersExpanded(false, true);
+                }
                 SendMessagesHelper.getInstance().sendSticker(gif, dialog_id, replyingMessageObject);
                 StickersQuery.addRecentGif(gif, (int) (System.currentTimeMillis() / 1000));
                 if ((int) dialog_id == 0) {
@@ -3112,6 +3146,18 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             @Override
             public void onStickerSetRemove(TLRPC.StickerSetCovered stickerSet) {
                 StickersQuery.removeStickersSet(parentActivity, stickerSet.set, 0, parentFragment, false);
+            }
+
+            @Override
+            public void onStickersGroupClick(int chatId) {
+                if (parentFragment != null) {
+                    if (AndroidUtilities.isTablet()) {
+                        hidePopup(false);
+                    }
+                    GroupStickersActivity fragment = new GroupStickersActivity(chatId);
+                    fragment.setInfo(info);
+                    parentFragment.presentFragment(fragment);
+                }
             }
         });
         emojiView.setDragListener(new EmojiView.DragListener() {
@@ -3274,8 +3320,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         if (stickersTabOpen) {
             checkSendButton(true);
         }
-        if (stickersExpanded && show != 1)
+        if (stickersExpanded && show != 1) {
             setStickersExpanded(false, false);
+        }
     }
 
     private void setEmojiButtonImage() {
@@ -3292,7 +3339,6 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         } else if (currentPage == 2) {
             emojiButton.setImageResource(R.drawable.ic_msg_panel_gif);
         }
-        stickersTabOpen = currentPage == 1 || currentPage == 2;
     }
 
     public void hidePopup(boolean byBackButton) {
@@ -3625,13 +3671,15 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     private void setStickersExpanded(boolean expanded, boolean animated) {
-        if(expanded && !emojiView.areThereAnyStickers())
+        if (emojiView == null || expanded && !emojiView.areThereAnyStickers()) {
             return;
+        }
         stickersExpanded = expanded;
-        //expandStickersButton.setRotationX(stickersExpanded ? 0 : 180);
         final int origHeight = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? keyboardHeightLand : keyboardHeight;
-        if (stickersExpansionAnim != null)
+        if (stickersExpansionAnim != null) {
             stickersExpansionAnim.cancel();
+            stickersExpansionAnim = null;
+        }
         if (stickersExpanded) {
             stickersExpandedHeight = sizeNotifierLayout.getHeight() - (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? AndroidUtilities.statusBarHeight : 0) - ActionBar.getCurrentActionBarHeight() - getHeight() + Theme.chat_composeShadowDrawable.getIntrinsicHeight();
             emojiView.getLayoutParams().height = stickersExpandedHeight;
@@ -3650,7 +3698,6 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 ((ObjectAnimator) anims.getChildAnimations().get(0)).addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                     @Override
                     public void onAnimationUpdate(ValueAnimator animation) {
-                        //stickersExpansionProgress=animation.getAnimatedFraction();
                         stickersExpansionProgress = getTranslationY() / (-(stickersExpandedHeight - origHeight));
                         sizeNotifierLayout.invalidate();
                     }

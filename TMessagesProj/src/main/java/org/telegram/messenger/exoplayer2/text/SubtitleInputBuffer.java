@@ -37,6 +37,9 @@ public final class SubtitleInputBuffer extends DecoderInputBuffer
 
   @Override
   public int compareTo(@NonNull SubtitleInputBuffer other) {
+    if (isEndOfStream() != other.isEndOfStream()) {
+      return isEndOfStream() ? 1 : -1;
+    }
     long delta = timeUs - other.timeUs;
     if (delta == 0) {
       return 0;

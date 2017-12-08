@@ -52,11 +52,11 @@ public final class CryptoInfo {
   /**
    * @see android.media.MediaCodec.CryptoInfo.Pattern
    */
-  public int patternBlocksToEncrypt;
+  public int encryptedBlocks;
   /**
    * @see android.media.MediaCodec.CryptoInfo.Pattern
    */
-  public int patternBlocksToSkip;
+  public int clearBlocks;
 
   private final android.media.MediaCodec.CryptoInfo frameworkCryptoInfo;
   private final PatternHolderV24 patternHolder;
@@ -70,25 +70,17 @@ public final class CryptoInfo {
    * @see android.media.MediaCodec.CryptoInfo#set(int, int[], int[], byte[], byte[], int)
    */
   public void set(int numSubSamples, int[] numBytesOfClearData, int[] numBytesOfEncryptedData,
-      byte[] key, byte[] iv, @C.CryptoMode int mode) {
+      byte[] key, byte[] iv, @C.CryptoMode int mode, int encryptedBlocks, int clearBlocks) {
     this.numSubSamples = numSubSamples;
     this.numBytesOfClearData = numBytesOfClearData;
     this.numBytesOfEncryptedData = numBytesOfEncryptedData;
     this.key = key;
     this.iv = iv;
     this.mode = mode;
-    patternBlocksToEncrypt = 0;
-    patternBlocksToSkip = 0;
+    this.encryptedBlocks = encryptedBlocks;
+    this.clearBlocks = clearBlocks;
     if (Util.SDK_INT >= 16) {
       updateFrameworkCryptoInfoV16();
-    }
-  }
-
-  public void setPattern(int patternBlocksToEncrypt, int patternBlocksToSkip) {
-    this.patternBlocksToEncrypt = patternBlocksToEncrypt;
-    this.patternBlocksToSkip = patternBlocksToSkip;
-    if (Util.SDK_INT >= 24) {
-      patternHolder.set(patternBlocksToEncrypt, patternBlocksToSkip);
     }
   }
 
@@ -122,7 +114,7 @@ public final class CryptoInfo {
     frameworkCryptoInfo.iv = iv;
     frameworkCryptoInfo.mode = mode;
     if (Util.SDK_INT >= 24) {
-      patternHolder.set(patternBlocksToEncrypt, patternBlocksToSkip);
+      patternHolder.set(encryptedBlocks, clearBlocks);
     }
   }
 
@@ -137,8 +129,8 @@ public final class CryptoInfo {
       pattern = new android.media.MediaCodec.CryptoInfo.Pattern(0, 0);
     }
 
-    private void set(int blocksToEncrypt, int blocksToSkip) {
-      pattern.set(blocksToEncrypt, blocksToSkip);
+    private void set(int encryptedBlocks, int clearBlocks) {
+      pattern.set(encryptedBlocks, clearBlocks);
       frameworkCryptoInfo.setPattern(pattern);
     }
 

@@ -12,7 +12,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.text.Layout;
 import android.text.StaticLayout;
@@ -25,7 +24,6 @@ import android.widget.FrameLayout;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -38,7 +36,6 @@ import org.telegram.ui.Components.LetterDrawable;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.ActionBar.Theme;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -271,21 +268,8 @@ public class SharedLinkCell extends FrameLayout {
             }
             linkImageView.setImageCoords(x, AndroidUtilities.dp(10), maxPhotoWidth, maxPhotoWidth);
             String fileName = FileLoader.getAttachFileName(currentPhotoObject);
-            boolean photoExist = true;
-            File cacheFile = FileLoader.getPathToAttach(currentPhotoObject, true);
-            if (!cacheFile.exists()) {
-                photoExist = false;
-            }
             String filter = String.format(Locale.US, "%d_%d", maxPhotoWidth, maxPhotoWidth);
-            if (photoExist || MediaController.getInstance().canDownloadMedia(MediaController.AUTODOWNLOAD_MASK_PHOTO) || FileLoader.getInstance().isLoadingFile(fileName)) {
-                linkImageView.setImage(currentPhotoObject.location, filter, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, String.format(Locale.US, "%d_%d_b", maxPhotoWidth, maxPhotoWidth), 0, null, 0);
-            } else {
-                if (currentPhotoObjectThumb != null) {
-                    linkImageView.setImage(null, null, currentPhotoObjectThumb.location, String.format(Locale.US, "%d_%d_b", maxPhotoWidth, maxPhotoWidth), 0, null, 0);
-                } else {
-                    linkImageView.setImageBitmap((Drawable) null);
-                }
-            }
+            linkImageView.setImage(currentPhotoObject.location, filter, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, String.format(Locale.US, "%d_%d_b", maxPhotoWidth, maxPhotoWidth), 0, null, 0);
             drawLinkImageView = true;
         }
 

@@ -483,13 +483,8 @@ public final class Id3Decoder implements MetadataDecoder {
     int ownerEndIndex = indexOfZeroByte(data, 0);
     String owner = new String(data, 0, ownerEndIndex, "ISO-8859-1");
 
-    byte[] privateData;
     int privateDataStartIndex = ownerEndIndex + 1;
-    if (privateDataStartIndex < data.length) {
-      privateData = Arrays.copyOfRange(data, privateDataStartIndex, data.length);
-    } else {
-      privateData = new byte[0];
-    }
+    byte[] privateData = copyOfRangeIfValid(data, privateDataStartIndex, data.length);
 
     return new PrivFrame(owner, privateData);
   }
@@ -516,7 +511,7 @@ public final class Id3Decoder implements MetadataDecoder {
         descriptionEndIndex - descriptionStartIndex, charset);
 
     int objectDataStartIndex = descriptionEndIndex + delimiterLength(encoding);
-    byte[] objectData = Arrays.copyOfRange(data, objectDataStartIndex, data.length);
+    byte[] objectData = copyOfRangeIfValid(data, objectDataStartIndex, data.length);
 
     return new GeobFrame(mimeType, filename, description, objectData);
   }
@@ -553,7 +548,7 @@ public final class Id3Decoder implements MetadataDecoder {
         descriptionEndIndex - descriptionStartIndex, charset);
 
     int pictureDataStartIndex = descriptionEndIndex + delimiterLength(encoding);
-    byte[] pictureData = Arrays.copyOfRange(data, pictureDataStartIndex, data.length);
+    byte[] pictureData = copyOfRangeIfValid(data, pictureDataStartIndex, data.length);
 
     return new ApicFrame(mimeType, description, pictureType, pictureData);
   }
@@ -747,6 +742,22 @@ public final class Id3Decoder implements MetadataDecoder {
   private static int delimiterLength(int encodingByte) {
     return (encodingByte == ID3_TEXT_ENCODING_ISO_8859_1 || encodingByte == ID3_TEXT_ENCODING_UTF_8)
         ? 1 : 2;
+  }
+
+  /**
+   * Copies the specified range of an array, or returns a zero length array if the range is invalid.
+   *
+   * @param data The array from which to copy.
+   * @param from The start of the range to copy (inclusive).
+   * @param to The end of the range to copy (exclusive).
+   * @return The copied data, or a zero length array if the range is invalid.
+   */
+  private static byte[] copyOfRangeIfValid(byte[] data, int from, int to) {
+    if (to <= from) {
+      // Invalid or zero length range.
+      return new byte[0];
+    }
+    return Arrays.copyOfRange(data, from, to);
   }
 
   private static final class Id3Header {

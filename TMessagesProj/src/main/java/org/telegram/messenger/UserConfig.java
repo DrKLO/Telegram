@@ -27,7 +27,7 @@ public class UserConfig {
     public static int lastSendMessageId = -210000;
     public static int lastLocalId = -210000;
     public static int lastBroadcastId = -1;
-    public static String contactsHash = "";
+    public static int contactsSavedCount;
     public static boolean blockedUsersLoaded;
     private final static Object sync = new Object();
     public static boolean saveIncomingPhotos;
@@ -48,6 +48,11 @@ public class UserConfig {
     public static boolean notificationsConverted = true;
     public static boolean pinnedDialogsLoaded = true;
     public static TLRPC.TL_account_tmpPassword tmpPassword;
+    public static int ratingLoadTime;
+    public static int botRatingLoadTime;
+    public static boolean contactsReimported;
+
+    private static boolean configLoaded;
 
     public static int migrateOffsetId = -1;
     public static int migrateOffsetDate = -1;
@@ -86,7 +91,7 @@ public class UserConfig {
                 editor.putString("pushString2", pushString);
                 editor.putInt("lastSendMessageId", lastSendMessageId);
                 editor.putInt("lastLocalId", lastLocalId);
-                editor.putString("contactsHash", contactsHash);
+                editor.putInt("contactsSavedCount", contactsSavedCount);
                 editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
                 editor.putInt("lastBroadcastId", lastBroadcastId);
                 editor.putBoolean("blockedUsersLoaded", blockedUsersLoaded);
@@ -105,6 +110,9 @@ public class UserConfig {
                 editor.putBoolean("notificationsConverted", notificationsConverted);
                 editor.putBoolean("allowScreenCapture", allowScreenCapture);
                 editor.putBoolean("pinnedDialogsLoaded", pinnedDialogsLoaded);
+                editor.putInt("ratingLoadTime", ratingLoadTime);
+                editor.putInt("botRatingLoadTime", botRatingLoadTime);
+                editor.putBoolean("contactsReimported", contactsReimported);
 
                 editor.putInt("3migrateOffsetId", migrateOffsetId);
                 if (migrateOffsetId != -1) {
@@ -182,6 +190,9 @@ public class UserConfig {
 
     public static void loadConfig() {
         synchronized (sync) {
+            if (configLoaded) {
+                return;
+            }
             final File configFile = new File(ApplicationLoader.getFilesDirFixed(), "user.dat");
             if (configFile.exists()) {
                 try {
@@ -197,7 +208,7 @@ public class UserConfig {
                         pushString = data.readString(false);
                         lastSendMessageId = data.readInt32(false);
                         lastLocalId = data.readInt32(false);
-                        contactsHash = data.readString(false);
+                        data.readString(false);
                         data.readString(false);
                         saveIncomingPhotos = data.readBool(false);
                         MessagesStorage.lastQtsValue = data.readInt32(false);
@@ -222,7 +233,7 @@ public class UserConfig {
                         pushString = preferences.getString("pushString2", "");
                         lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
                         lastLocalId = preferences.getInt("lastLocalId", -210000);
-                        contactsHash = preferences.getString("contactsHash", "");
+                        contactsSavedCount = preferences.getInt("contactsHash", 0);
                         saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
                     }
                     if (lastLocalId > -210000) {
@@ -247,7 +258,7 @@ public class UserConfig {
                 pushString = preferences.getString("pushString2", "");
                 lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
                 lastLocalId = preferences.getInt("lastLocalId", -210000);
-                contactsHash = preferences.getString("contactsHash", "");
+                contactsSavedCount = preferences.getInt("contactsSavedCount", 0);
                 saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
                 lastBroadcastId = preferences.getInt("lastBroadcastId", -1);
                 blockedUsersLoaded = preferences.getBoolean("blockedUsersLoaded", false);
@@ -265,6 +276,9 @@ public class UserConfig {
                 notificationsConverted = preferences.getBoolean("notificationsConverted", false);
                 allowScreenCapture = preferences.getBoolean("allowScreenCapture", false);
                 pinnedDialogsLoaded = preferences.getBoolean("pinnedDialogsLoaded", false);
+                contactsReimported = preferences.getBoolean("contactsReimported", false);
+                ratingLoadTime = preferences.getInt("ratingLoadTime", 0);
+                botRatingLoadTime = preferences.getInt("botRatingLoadTime", 0);
 
                 if (UserConfig.passcodeHash.length() > 0 && lastPauseTime == 0) {
                     lastPauseTime = (int) (System.currentTimeMillis() / 1000 - 60 * 10);
@@ -278,12 +292,6 @@ public class UserConfig {
                     migrateOffsetChannelId = preferences.getInt("3migrateOffsetChannelId", 0);
                     migrateOffsetAccess = preferences.getLong("3migrateOffsetAccess", 0);
                 }
-//                migrateOffsetId = 0;
-//                migrateOffsetDate = 0;
-//                migrateOffsetUserId = 0;
-//                migrateOffsetChatId = 0;
-//                migrateOffsetChannelId = 0;
-//                migrateOffsetAccess = 0;
 
                 dialogsLoadOffsetId = preferences.getInt("2dialogsLoadOffsetId", -1);
                 totalDialogsLoadCount = preferences.getInt("2totalDialogsLoadCount", 0);
@@ -292,14 +300,6 @@ public class UserConfig {
                 dialogsLoadOffsetChatId = preferences.getInt("2dialogsLoadOffsetChatId", -1);
                 dialogsLoadOffsetChannelId = preferences.getInt("2dialogsLoadOffsetChannelId", -1);
                 dialogsLoadOffsetAccess = preferences.getLong("2dialogsLoadOffsetAccess", -1);
-
-//                dialogsLoadOffsetId = -1;
-//                totalDialogsLoadCount = 0;
-//                dialogsLoadOffsetDate = -1;
-//                dialogsLoadOffsetUserId = -1;
-//                dialogsLoadOffsetChatId = -1;
-//                dialogsLoadOffsetChannelId = -1;
-//                dialogsLoadOffsetAccess = -1;
 
                 String string = preferences.getString("tmpPassword", null);
                 if (string != null) {
@@ -404,6 +404,7 @@ public class UserConfig {
                     saveConfig(false);
                 }
             }
+            configLoaded = true;
         }
     }
 
@@ -445,7 +446,7 @@ public class UserConfig {
     public static void clearConfig() {
         currentUser = null;
         registeredForPush = false;
-        contactsHash = "";
+        contactsSavedCount = 0;
         lastSendMessageId = -210000;
         lastBroadcastId = -1;
         saveIncomingPhotos = false;
@@ -463,6 +464,8 @@ public class UserConfig {
         dialogsLoadOffsetChatId = 0;
         dialogsLoadOffsetChannelId = 0;
         dialogsLoadOffsetAccess = 0;
+        ratingLoadTime = 0;
+        botRatingLoadTime = 0;
         appLocked = false;
         passcodeType = 0;
         passcodeHash = "";
@@ -472,6 +475,7 @@ public class UserConfig {
         useFingerprint = true;
         draftsLoaded = true;
         notificationsConverted = true;
+        contactsReimported = true;
         isWaitingForPasscodeEnter = false;
         allowScreenCapture = false;
         pinnedDialogsLoaded = false;

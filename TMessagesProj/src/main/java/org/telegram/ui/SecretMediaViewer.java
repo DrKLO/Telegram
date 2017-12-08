@@ -1155,7 +1155,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         }
         closeTime = System.currentTimeMillis();
         final PhotoViewer.PlaceProviderObject object;
-        if (currentMessageObject.messageOwner.media.photo instanceof TLRPC.TL_photoEmpty || currentMessageObject.messageOwner.media.document instanceof TLRPC.TL_documentEmpty) {
+        if (currentProvider == null || currentMessageObject.messageOwner.media.photo instanceof TLRPC.TL_photoEmpty || currentMessageObject.messageOwner.media.document instanceof TLRPC.TL_documentEmpty) {
             object = null;
         } else {
             object = currentProvider.getPlaceForPhoto(currentMessageObject, null, 0);

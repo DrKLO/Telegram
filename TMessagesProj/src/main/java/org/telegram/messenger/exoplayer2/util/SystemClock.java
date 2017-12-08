@@ -18,11 +18,16 @@ package org.telegram.messenger.exoplayer2.util;
 /**
  * The standard implementation of {@link Clock}.
  */
-public final class SystemClock implements Clock {
+/* package */ final class SystemClock implements Clock {
 
   @Override
   public long elapsedRealtime() {
     return android.os.SystemClock.elapsedRealtime();
+  }
+
+  @Override
+  public void sleep(long sleepTimeMs) {
+    android.os.SystemClock.sleep(sleepTimeMs);
   }
 
 }

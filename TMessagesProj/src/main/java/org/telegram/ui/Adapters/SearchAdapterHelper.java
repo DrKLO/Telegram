@@ -44,8 +44,10 @@ public class SearchAdapterHelper {
     private int lastReqId;
     private String lastFoundUsername = null;
     private ArrayList<TLObject> globalSearch = new ArrayList<>();
+    private HashMap<Integer, TLObject> globalSearchMap = new HashMap<>();
     private ArrayList<TLRPC.ChannelParticipant> groupSearch = new ArrayList<>();
     private ArrayList<TLRPC.ChannelParticipant> groupSearch2 = new ArrayList<>();
+    private ArrayList<TLObject> localSearchResults;
 
     private int channelReqId = 0;
     private int channelLastReqId;
@@ -58,6 +60,12 @@ public class SearchAdapterHelper {
     private ArrayList<HashtagObject> hashtags;
     private HashMap<String, HashtagObject> hashtagsByText;
     private boolean hashtagsLoadedFromDb = false;
+
+    protected static final class DialogSearchResult {
+        public TLObject object;
+        public int date;
+        public CharSequence name;
+    }
 
     public void queryServerSearch(final String query, final boolean allowUsername, final boolean allowChats, final boolean allowBots, final boolean allowSelf, final int channelId, final boolean kicked) {
         if (reqId != 0) {
@@ -76,6 +84,7 @@ public class SearchAdapterHelper {
             groupSearch.clear();
             groupSearch2.clear();
             globalSearch.clear();
+            globalSearchMap.clear();
             lastReqId = 0;
             channelLastReqId = 0;
             channelLastReqId2 = 0;
@@ -165,9 +174,15 @@ public class SearchAdapterHelper {
                                     if (error == null) {
                                         TLRPC.TL_contacts_found res = (TLRPC.TL_contacts_found) response;
                                         globalSearch.clear();
+                                        globalSearchMap.clear();
+                                        MessagesController.getInstance().putChats(res.chats, false);
+                                        MessagesController.getInstance().putUsers(res.users, false);
+                                        MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
                                         if (allowChats) {
                                             for (int a = 0; a < res.chats.size(); a++) {
-                                                globalSearch.add(res.chats.get(a));
+                                                TLRPC.Chat chat = res.chats.get(a);
+                                                globalSearch.add(chat);
+                                                globalSearchMap.put(-chat.id, chat);
                                             }
                                         }
                                         for (int a = 0; a < res.users.size(); a++) {
@@ -175,9 +190,13 @@ public class SearchAdapterHelper {
                                             if (!allowBots && user.bot || !allowSelf && user.self) {
                                                 continue;
                                             }
-                                            globalSearch.add(res.users.get(a));
+                                            globalSearch.add(user);
+                                            globalSearchMap.put(user.id, user);
                                         }
                                         lastFoundUsername = query.toLowerCase();
+                                        if (localSearchResults != null) {
+                                            mergeResults(localSearchResults);
+                                        }
                                         delegate.onDataSetChanged();
                                     }
                                 }
@@ -188,6 +207,7 @@ public class SearchAdapterHelper {
                 }, ConnectionsManager.RequestFlagFailOnServerErrors);
             } else {
                 globalSearch.clear();
+                globalSearchMap.clear();
                 lastReqId = 0;
                 delegate.onDataSetChanged();
             }
@@ -241,6 +261,32 @@ public class SearchAdapterHelper {
             }
         });
         return false;
+    }
+
+    public void mergeResults(ArrayList<TLObject> localResults) {
+        localSearchResults = localResults;
+        if (globalSearch.isEmpty() || localResults == null) {
+            return;
+        }
+        int count = localResults.size();
+        for (int a = 0; a < count; a++) {
+            TLObject obj = localResults.get(a);
+            if (obj instanceof TLRPC.User) {
+                TLRPC.User user = (TLRPC.User) obj;
+                TLRPC.User u = (TLRPC.User) globalSearchMap.get(user.id);
+                if (u != null) {
+                    globalSearch.remove(u);
+                    globalSearchMap.remove(u.id);
+                }
+            } else if (obj instanceof TLRPC.Chat) {
+                TLRPC.Chat chat = (TLRPC.Chat) obj;
+                TLRPC.Chat c = (TLRPC.Chat) globalSearchMap.get(-chat.id);
+                if (c != null) {
+                    globalSearch.remove(c);
+                    globalSearchMap.remove(-c.id);
+                }
+            }
+        }
     }
 
     public void setDelegate(SearchAdapterHelperDelegate searchAdapterHelperDelegate) {

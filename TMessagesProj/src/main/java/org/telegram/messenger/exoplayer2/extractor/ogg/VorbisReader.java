@@ -101,7 +101,7 @@ import java.util.ArrayList;
     codecInitialisationData.add(vorbisSetup.setupHeaderData);
 
     setupData.format = Format.createAudioSampleFormat(null, MimeTypes.AUDIO_VORBIS, null,
-        this.vorbisSetup.idHeader.bitrateNominal, OggPageHeader.MAX_PAGE_PAYLOAD,
+        this.vorbisSetup.idHeader.bitrateNominal, Format.NO_VALUE,
         this.vorbisSetup.idHeader.channels, (int) this.vorbisSetup.idHeader.sampleRate,
         codecInitialisationData, null, 0, null);
     return true;

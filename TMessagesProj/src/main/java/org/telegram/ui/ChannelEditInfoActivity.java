@@ -63,6 +63,7 @@ import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.AvatarUpdater;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
@@ -71,12 +72,13 @@ import java.util.concurrent.Semaphore;
 public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdater.AvatarUpdaterDelegate, NotificationCenter.NotificationCenterDelegate {
 
     private View doneButton;
-    private EditText nameTextView;
-    private EditText usernameTextView;
-    private EditText descriptionTextView;
+    private EditTextBoldCursor nameTextView;
+    private EditTextBoldCursor usernameTextView;
+    private EditTextBoldCursor descriptionTextView;
     private EditText editText;
     private TextInfoPrivacyCell typeInfoCell;
     private HeaderCell headerCell;
+    private HeaderCell headerCell2;
     private TextView checkTextView;
     private LinearLayout linearLayout;
     private BackupImageView avatarImage;
@@ -86,8 +88,11 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
     private LinearLayout linearLayout2;
     private LinearLayout linearLayout3;
     private LinearLayout linearLayoutTypeContainer;
+    private LinearLayout linearLayoutInviteContainer;
     private RadioButtonCell radioButtonCell1;
     private RadioButtonCell radioButtonCell2;
+    private RadioButtonCell radioButtonCell3;
+    private RadioButtonCell radioButtonCell4;
     private LinearLayout adminnedChannelsLayout;
     private LinearLayout linkContainer;
     private LinearLayout publicContainer;
@@ -101,12 +106,17 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
     private FrameLayout container4;
     private ShadowSectionCell sectionCell;
     private ShadowSectionCell sectionCell2;
+    private ShadowSectionCell sectionCell3;
     private TextCheckCell textCheckCell;
     private TextInfoPrivacyCell infoCell;
     private TextSettingsCell textCell;
     private TextInfoPrivacyCell infoCell2;
+    private TextSettingsCell textCell2;
+    private TextInfoPrivacyCell infoCell3;
 
     private boolean isPrivate;
+
+    private boolean historyHidden;
 
     private TLRPC.FileLocation avatar;
     private TLRPC.Chat currentChat;
@@ -216,6 +226,13 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
     public void onResume() {
         super.onResume();
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
+        if (textCell2 != null && info != null) {
+            if (info.stickerset != null) {
+                textCell2.setTextAndValue(LocaleController.getString("GroupStickers", R.string.GroupStickers), info.stickerset.title, false);
+            } else {
+                textCell2.setText(LocaleController.getString("GroupStickers", R.string.GroupStickers), false);
+            }
+        }
     }
 
     @Override
@@ -288,6 +305,10 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                     }
                     if (info != null && !info.about.equals(descriptionTextView.getText().toString())) {
                         MessagesController.getInstance().updateChannelAbout(chatId, descriptionTextView.getText().toString(), info);
+                    }
+                    if (headerCell2 != null && headerCell2.getVisibility() == View.VISIBLE && info != null && currentChat.creator && info.hidden_prehistory != historyHidden) {
+                        info.hidden_prehistory = historyHidden;
+                        MessagesController.getInstance().toogleChannelInvitesHistory(chatId, historyHidden);
                     }
                     if (signMessages != currentChat.signatures) {
                         currentChat.signatures = true;
@@ -364,7 +385,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
             }
         });
 
-        nameTextView = new EditText(context);
+        nameTextView = new EditTextBoldCursor(context);
         if (currentChat.megagroup) {
             nameTextView.setHint(LocaleController.getString("GroupName", R.string.GroupName));
         } else {
@@ -383,8 +404,10 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
         InputFilter[] inputFilters = new InputFilter[1];
         inputFilters[0] = new InputFilter.LengthFilter(100);
         nameTextView.setFilters(inputFilters);
-        AndroidUtilities.clearCursorDrawable(nameTextView);
+        nameTextView.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        nameTextView.setCursorSize(AndroidUtilities.dp(20));
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        nameTextView.setCursorWidth(1.5f);
         frameLayout.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 16 : 96, 0, LocaleController.isRTL ? 96 : 16, 0));
         nameTextView.addTextChangedListener(new TextWatcher() {
             @Override
@@ -413,7 +436,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
         linearLayout3.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         linearLayout.addView(linearLayout3, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        descriptionTextView = new EditText(context);
+        descriptionTextView = new EditTextBoldCursor(context);
         descriptionTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         descriptionTextView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         descriptionTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -428,7 +451,9 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
         inputFilters[0] = new InputFilter.LengthFilter(255);
         descriptionTextView.setFilters(inputFilters);
         descriptionTextView.setHint(LocaleController.getString("DescriptionOptionalPlaceholder", R.string.DescriptionOptionalPlaceholder));
-        AndroidUtilities.clearCursorDrawable(descriptionTextView);
+        descriptionTextView.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        descriptionTextView.setCursorSize(AndroidUtilities.dp(20));
+        descriptionTextView.setCursorWidth(1.5f);
         linearLayout3.addView(descriptionTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 17, 12, 17, 6));
         descriptionTextView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -458,7 +483,6 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
         });
 
         sectionCell = new ShadowSectionCell(context);
-        sectionCell.setSize(20);
         linearLayout.addView(sectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         container1 = new FrameLayout(context);
@@ -539,7 +563,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
             editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
             publicContainer.addView(editText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 36));
 
-            usernameTextView = new EditText(context);
+            usernameTextView = new EditTextBoldCursor(context);
             usernameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             if (!isPrivate) {
                 usernameTextView.setText(currentChat.username);
@@ -554,7 +578,9 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
             usernameTextView.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
             usernameTextView.setImeOptions(EditorInfo.IME_ACTION_DONE);
             usernameTextView.setHint(LocaleController.getString("ChannelUsernamePlaceholder", R.string.ChannelUsernamePlaceholder));
-            AndroidUtilities.clearCursorDrawable(usernameTextView);
+            usernameTextView.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            usernameTextView.setCursorSize(AndroidUtilities.dp(20));
+            usernameTextView.setCursorWidth(1.5f);
             publicContainer.addView(usernameTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36));
             usernameTextView.addTextChangedListener(new TextWatcher() {
                 @Override
@@ -612,8 +638,50 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
             linearLayout.addView(adminnedChannelsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             adminedInfoCell = new ShadowSectionCell(context);
-            adminedInfoCell.setSize(20);
             linearLayout.addView(adminedInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            updatePrivatePublic();
+        }
+
+        if (currentChat.creator && currentChat.megagroup) {
+            headerCell2 = new HeaderCell(context);
+            headerCell2.setText(LocaleController.getString("ChatHistory", R.string.ChatHistory));
+            headerCell2.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            linearLayout.addView(headerCell2);
+
+            linearLayoutInviteContainer = new LinearLayout(context);
+            linearLayoutInviteContainer.setOrientation(LinearLayout.VERTICAL);
+            linearLayoutInviteContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            linearLayout.addView(linearLayoutInviteContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            radioButtonCell3 = new RadioButtonCell(context);
+            radioButtonCell3.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+            radioButtonCell3.setTextAndValue(LocaleController.getString("ChatHistoryVisible", R.string.ChatHistoryVisible), LocaleController.getString("ChatHistoryVisibleInfo", R.string.ChatHistoryVisibleInfo), !historyHidden);
+            linearLayoutInviteContainer.addView(radioButtonCell3, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            radioButtonCell3.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    radioButtonCell3.setChecked(true, true);
+                    radioButtonCell4.setChecked(false, true);
+                    historyHidden = false;
+                }
+            });
+
+            radioButtonCell4 = new RadioButtonCell(context);
+            radioButtonCell4.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+            radioButtonCell4.setTextAndValue(LocaleController.getString("ChatHistoryHidden", R.string.ChatHistoryHidden), LocaleController.getString("ChatHistoryHiddenInfo", R.string.ChatHistoryHiddenInfo), historyHidden);
+            linearLayoutInviteContainer.addView(radioButtonCell4, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            radioButtonCell4.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    radioButtonCell3.setChecked(false, true);
+                    radioButtonCell4.setChecked(true, true);
+                    historyHidden = true;
+                }
+            });
+
+            sectionCell3 = new ShadowSectionCell(context);
+            linearLayout.addView(sectionCell3, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             updatePrivatePublic();
         }
@@ -652,6 +720,28 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
             infoCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
             infoCell.setText(LocaleController.getString("ChannelSignMessagesInfo", R.string.ChannelSignMessagesInfo));
             linearLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        } else if (info != null && info.can_set_stickers) {
+            textCell2 = new TextSettingsCell(context);
+            textCell2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            textCell2.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+            if (info.stickerset != null) {
+                textCell2.setTextAndValue(LocaleController.getString("GroupStickers", R.string.GroupStickers), info.stickerset.title, false);
+            } else {
+                textCell2.setText(LocaleController.getString("GroupStickers", R.string.GroupStickers), false);
+            }
+            container3.addView(textCell2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            textCell2.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    GroupStickersActivity groupStickersActivity = new GroupStickersActivity(currentChat.id);
+                    groupStickersActivity.setInfo(info);
+                    presentFragment(groupStickersActivity);
+                }
+            });
+
+            infoCell3 = new TextInfoPrivacyCell(context);
+            infoCell3.setText(LocaleController.getString("GroupStickersInfo", R.string.GroupStickersInfo));
+            linearLayout.addView(infoCell3, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
         if (currentChat.creator) {
@@ -687,7 +777,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                             } else {
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                             }
-                            MessagesController.getInstance().deleteUserFromChat(chatId, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), info);
+                            MessagesController.getInstance().deleteUserFromChat(chatId, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), info, true);
                             finishFragment();
                         }
                     });
@@ -706,12 +796,22 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
             linearLayout.addView(infoCell2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         } else {
             if (currentChat.megagroup) {
-                sectionCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                if (infoCell3 == null) {
+                    sectionCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                }
             } else {
                 infoCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
             }
             lineView3.setVisibility(View.GONE);
             lineView2.setVisibility(View.GONE);
+        }
+
+        if (infoCell3 != null) {
+            if (infoCell2 == null) {
+                infoCell3.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+            } else {
+                infoCell3.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+            }
         }
 
         nameTextView.setText(currentChat.title);
@@ -736,6 +836,11 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
             if (chatFull.id == chatId) {
                 if (info == null) {
                     descriptionTextView.setText(chatFull.about);
+                    historyHidden = chatFull.hidden_prehistory;
+                    if (radioButtonCell3 != null) {
+                        radioButtonCell3.setChecked(!historyHidden, false);
+                        radioButtonCell4.setChecked(historyHidden, false);
+                    }
                 }
                 info = chatFull;
                 invite = chatFull.exported_invite;
@@ -794,6 +899,9 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
     }
 
     public void setInfo(TLRPC.ChatFull chatFull) {
+        if (info == null && chatFull != null) {
+            historyHidden = chatFull.hidden_prehistory;
+        }
         info = chatFull;
         if (chatFull != null) {
             if (chatFull.exported_invite instanceof TLRPC.TL_chatInviteExported) {
@@ -904,12 +1012,17 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                 loadingAdminedCell.setVisibility(View.GONE);
                 adminnedChannelsLayout.setVisibility(View.VISIBLE);
             }
+            if (headerCell2 != null) {
+                headerCell2.setVisibility(View.GONE);
+                linearLayoutInviteContainer.setVisibility(View.GONE);
+                sectionCell3.setVisibility(View.GONE);
+            }
         } else {
             typeInfoCell.setTag(Theme.key_windowBackgroundWhiteGrayText4);
             typeInfoCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
             sectionCell2.setVisibility(View.VISIBLE);
             adminedInfoCell.setVisibility(View.GONE);
-            typeInfoCell.setBackgroundDrawable(Theme.getThemedDrawable(typeInfoCell.getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+            typeInfoCell.setBackgroundDrawable(Theme.getThemedDrawable(typeInfoCell.getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
             adminnedChannelsLayout.setVisibility(View.GONE);
             linkContainer.setVisibility(View.VISIBLE);
             loadingAdminedCell.setVisibility(View.GONE);
@@ -925,6 +1038,11 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
             linkContainer.setPadding(0, 0, 0, isPrivate ? 0 : AndroidUtilities.dp(7));
             privateContainer.setText(invite != null ? invite.link : LocaleController.getString("Loading", R.string.Loading), false);
             checkTextView.setVisibility(!isPrivate && checkTextView.length() != 0 ? View.VISIBLE : View.GONE);
+            if (headerCell2 != null) {
+                headerCell2.setVisibility(isPrivate ? View.VISIBLE : View.GONE);
+                linearLayoutInviteContainer.setVisibility(isPrivate ? View.VISIBLE : View.GONE);
+                sectionCell3.setVisibility(isPrivate ? View.VISIBLE : View.GONE);
+            }
         }
         radioButtonCell1.setChecked(!isPrivate, true);
         radioButtonCell2.setChecked(isPrivate, true);
@@ -1113,7 +1231,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                 new ThemeDescription(container3, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
                 new ThemeDescription(container4, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
 
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, сellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, сellDelegate, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
 
                 new ThemeDescription(lineView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_divider),
@@ -1122,6 +1240,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
 
                 new ThemeDescription(sectionCell, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
                 new ThemeDescription(sectionCell2, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+                new ThemeDescription(sectionCell3, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
 
                 new ThemeDescription(textCheckCell, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
                 new ThemeDescription(textCheckCell, 0, new Class[]{TextCheckCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
@@ -1135,9 +1254,13 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
 
                 new ThemeDescription(textCell, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
                 new ThemeDescription(textCell, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteRedText5),
+                new ThemeDescription(textCell2, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+                new ThemeDescription(textCell2, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
 
                 new ThemeDescription(infoCell2, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
                 new ThemeDescription(infoCell2, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4),
+                new ThemeDescription(infoCell3, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+                new ThemeDescription(infoCell3, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4),
 
                 new ThemeDescription(usernameTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(usernameTextView, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText),
@@ -1145,6 +1268,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                 new ThemeDescription(linearLayoutTypeContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
                 new ThemeDescription(linkContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
                 new ThemeDescription(headerCell, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader),
+                new ThemeDescription(headerCell2, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader),
                 new ThemeDescription(editText, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(editText, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText),
                 new ThemeDescription(checkTextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundWhiteRedText4),
@@ -1171,11 +1295,23 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                 new ThemeDescription(radioButtonCell2, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{RadioButtonCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(radioButtonCell2, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{RadioButtonCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
 
+                new ThemeDescription(linearLayoutInviteContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(radioButtonCell3, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+                new ThemeDescription(radioButtonCell3, ThemeDescription.FLAG_CHECKBOX, new Class[]{RadioButtonCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackground),
+                new ThemeDescription(radioButtonCell3, ThemeDescription.FLAG_CHECKBOXCHECK, new Class[]{RadioButtonCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackgroundChecked),
+                new ThemeDescription(radioButtonCell3, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{RadioButtonCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(radioButtonCell3, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{RadioButtonCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+                new ThemeDescription(radioButtonCell4, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+                new ThemeDescription(radioButtonCell4, ThemeDescription.FLAG_CHECKBOX, new Class[]{RadioButtonCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackground),
+                new ThemeDescription(radioButtonCell4, ThemeDescription.FLAG_CHECKBOXCHECK, new Class[]{RadioButtonCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackgroundChecked),
+                new ThemeDescription(radioButtonCell4, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{RadioButtonCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(radioButtonCell4, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{RadioButtonCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+
                 new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText),
                 new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_LINKCOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteLinkText),
                 new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"deleteButton"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText),
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, сellDelegate2, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, сellDelegate2, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate2, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate2, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate2, Theme.key_avatar_backgroundViolet),

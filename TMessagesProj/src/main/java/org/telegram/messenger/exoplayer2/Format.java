@@ -286,9 +286,14 @@ public final class Format implements Parcelable {
         OFFSET_SAMPLE_RELATIVE, null, null, null);
   }
 
-  public static Format createTextSampleFormat(String id, String sampleMimeType, String codecs,
-      int bitrate, @C.SelectionFlags int selectionFlags, String language, DrmInitData drmInitData) {
-    return createTextSampleFormat(id, sampleMimeType, codecs, bitrate, selectionFlags, language,
+  public static Format createTextSampleFormat(String id, String sampleMimeType,
+      @C.SelectionFlags int selectionFlags, String language) {
+    return createTextSampleFormat(id, sampleMimeType, selectionFlags, language, null);
+  }
+
+  public static Format createTextSampleFormat(String id, String sampleMimeType,
+     @C.SelectionFlags int selectionFlags, String language, DrmInitData drmInitData) {
+    return createTextSampleFormat(id, sampleMimeType, null, NO_VALUE, selectionFlags, language,
         NO_VALUE, drmInitData, OFFSET_SAMPLE_RELATIVE, Collections.<byte[]>emptyList());
   }
 

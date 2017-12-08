@@ -85,6 +85,7 @@ public class ChannelEditActivity extends BaseFragment implements NotificationCen
     private int eventLogRow;
     private int blockedUsersRow;
     private int managementRow;
+    private int permissionsRow;
     private int membersSectionRow;
     private int membersStartRow;
     private int membersEndRow;
@@ -254,6 +255,10 @@ public class ChannelEditActivity extends BaseFragment implements NotificationCen
                             args.putInt("type", 1);
                         }
                         presentFragment(new ChannelUsersActivity(args));
+                    } else if (position == permissionsRow) {
+                        ChannelPermissionsActivity permissions = new ChannelPermissionsActivity(chat_id);
+                        permissions.setInfo(info);
+                        presentFragment(permissions);
                     } else if (position == eventLogRow) {
                         presentFragment(new ChannelAdminLogActivity(currentChat));
                     } else if (position == infoRow) {
@@ -399,9 +404,13 @@ public class ChannelEditActivity extends BaseFragment implements NotificationCen
         } else {
             infoRow = -1;
         }
+        permissionsRow = -1;
+        /*if (currentChat.creator) {
+            permissionsRow = rowCount++;
+        }*/
         eventLogRow = rowCount++;
         managementRow = rowCount++;
-        if (currentChat.megagroup) {
+        if (currentChat.megagroup || info != null && (info.banned_count != 0 || info.kicked_count != 0)) {
             blockedUsersRow = rowCount++;
         } else {
             blockedUsersRow = -1;
@@ -423,14 +432,6 @@ public class ChannelEditActivity extends BaseFragment implements NotificationCen
             loadMoreMembersRow = -1;
             membersSection2Row = -1;
         }
-
-        /*
-        if (!ChatObject.isNotInChat(currentChat) && !currentChat.megagroup && (currentChat.creator || currentChat.admin_rights != null && currentChat.admin_rights.add_admins)) {
-            managementRow = rowCount++;
-        }
-        if (!ChatObject.isNotInChat(currentChat) && currentChat.megagroup && (currentChat.creator || currentChat.admin_rights != null && currentChat.admin_rights.ban_users)) {
-            blockedUsersRow = rowCount++;
-        }*/
     }
 
     private boolean createMenuForParticipant(TLRPC.TL_chatChannelParticipant user, TLRPC.ChannelParticipant channelParticipant, boolean resultOnly) {
@@ -653,15 +654,21 @@ public class ChannelEditActivity extends BaseFragment implements NotificationCen
                 case 0: {
                     TLObject object = getItem(position);
                     TLRPC.User user;
+                    boolean isAdmin;
                     if (object instanceof TLRPC.User) {
                         user = (TLRPC.User) object;
+                        TLRPC.ChatParticipant part = participantsMap.get(user.id);
+                        if (part instanceof TLRPC.TL_chatChannelParticipant) {
+                            TLRPC.ChannelParticipant channelParticipant = ((TLRPC.TL_chatChannelParticipant) part).channelParticipant;
+                            isAdmin = channelParticipant instanceof TLRPC.TL_channelParticipantCreator || channelParticipant instanceof TLRPC.TL_channelParticipantAdmin;
+                        } else {
+                            isAdmin = part instanceof TLRPC.TL_chatParticipantAdmin;
+                        }
                     } else {
+                        isAdmin = object instanceof TLRPC.TL_channelParticipantAdmin || object instanceof TLRPC.TL_channelParticipantCreator;
                         user = MessagesController.getInstance().getUser(((TLRPC.ChannelParticipant) object).user_id);
                     }
-                    String un = user.username;
-                    CharSequence username = null;
                     CharSequence name = null;
-
                     String nameSearch = searchAdapterHelper.getLastFoundChannel();
 
                     if (nameSearch != null) {
@@ -675,7 +682,9 @@ public class ChannelEditActivity extends BaseFragment implements NotificationCen
 
                     ManageChatUserCell userCell = (ManageChatUserCell) holder.itemView;
                     userCell.setTag(position);
-                    userCell.setData(user, name, username);
+                    userCell.setIsAdmin(isAdmin);
+                    userCell.setData(user, name, null);
+
                     break;
                 }
             }
@@ -755,6 +764,8 @@ public class ChannelEditActivity extends BaseFragment implements NotificationCen
                         textCell.setText(LocaleController.getString("EventLog", R.string.EventLog), null, R.drawable.group_log, true);
                     } else if (i == infoRow) {
                         textCell.setText(currentChat.megagroup ? LocaleController.getString("EventLogFilterGroupInfo", R.string.EventLogFilterGroupInfo) : LocaleController.getString("EventLogFilterChannelInfo", R.string.EventLogFilterChannelInfo), null, R.drawable.group_edit, true);
+                    } else if (i == permissionsRow) {
+                        //textCell.setText(LocaleController.getString("ChatPermissions", R.string.ChatPermissions), null, R.drawable.group_log, true); //TODO icon
                     }
                     break;
                 case 1:
@@ -767,6 +778,12 @@ public class ChannelEditActivity extends BaseFragment implements NotificationCen
                         part = info.participants.participants.get(i - membersStartRow);
                     }
                     if (part != null) {
+                        if (part instanceof TLRPC.TL_chatChannelParticipant) {
+                            TLRPC.ChannelParticipant channelParticipant = ((TLRPC.TL_chatChannelParticipant) part).channelParticipant;
+                            userCell.setIsAdmin(channelParticipant instanceof TLRPC.TL_channelParticipantCreator || channelParticipant instanceof TLRPC.TL_channelParticipantAdmin);
+                        } else {
+                            userCell.setIsAdmin(part instanceof TLRPC.TL_chatParticipantAdmin);
+                        }
                         userCell.setData(MessagesController.getInstance().getUser(part.user_id), null, null);
                     }
                     break;
@@ -793,7 +810,7 @@ public class ChannelEditActivity extends BaseFragment implements NotificationCen
 
         @Override
         public int getItemViewType(int i) {
-            if (i == managementRow || i == blockedUsersRow || i == infoRow || i == eventLogRow) {
+            if (i == managementRow || i == blockedUsersRow || i == infoRow || i == eventLogRow || i == permissionsRow) {
                 return 0;
             } else if (i >= membersStartRow && i < membersEndRow) {
                 return 1;
@@ -841,7 +858,7 @@ public class ChannelEditActivity extends BaseFragment implements NotificationCen
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"statusColor"}, null, null, сellDelegate, Theme.key_windowBackgroundWhiteGrayText),
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"statusOnlineColor"}, null, null, сellDelegate, Theme.key_windowBackgroundWhiteBlueText),
-                new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),

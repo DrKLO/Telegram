@@ -63,7 +63,8 @@ public interface Extractor {
   void init(ExtractorOutput output);
 
   /**
-   * Extracts data read from a provided {@link ExtractorInput}.
+   * Extracts data read from a provided {@link ExtractorInput}. Must not be called before
+   * {@link #init(ExtractorOutput)}.
    * <p>
    * A single call to this method will block until some progress has been made, but will not block
    * for longer than this. Hence each call will consume only a small amount of input data.

@@ -29,7 +29,6 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -54,13 +53,14 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
 
 public class ChangeUsernameActivity extends BaseFragment {
 
-    private EditText firstNameField;
+    private EditTextBoldCursor firstNameField;
     private View doneButton;
     private TextView checkTextView;
     private TextView helpTextView;
@@ -151,7 +151,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             }
         });
 
-        firstNameField = new EditText(context);
+        firstNameField = new EditTextBoldCursor(context);
         firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         firstNameField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         firstNameField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -164,7 +164,9 @@ public class ChangeUsernameActivity extends BaseFragment {
         firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         firstNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
         firstNameField.setHint(LocaleController.getString("UsernamePlaceholder", R.string.UsernamePlaceholder));
-        AndroidUtilities.clearCursorDrawable(firstNameField);
+        firstNameField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        firstNameField.setCursorSize(AndroidUtilities.dp(20));
+        firstNameField.setCursorWidth(1.5f);
         firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
@@ -196,7 +198,9 @@ public class ChangeUsernameActivity extends BaseFragment {
                     String text = LocaleController.formatString("UsernameHelpLink", R.string.UsernameHelpLink, url);
                     int index = text.indexOf(url);
                     SpannableStringBuilder textSpan = new SpannableStringBuilder(text);
-                    textSpan.setSpan(new LinkSpan(url), index, index + url.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    if (index >= 0) {
+                        textSpan.setSpan(new LinkSpan(url), index, index + url.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
                     helpTextView.setText(TextUtils.concat(infoText, "\n\n", textSpan));
                 } else {
                     helpTextView.setText(infoText);

@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Components;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -17,6 +19,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
+import android.text.TextPaint;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -29,6 +32,7 @@ public class CheckBox extends View {
     private static Paint eraser2;
     private static Paint checkPaint;
     private static Paint backgroundPaint;
+    private static TextPaint textPaint;
 
     private Bitmap drawBitmap;
     private Bitmap checkBitmap;
@@ -47,7 +51,8 @@ public class CheckBox extends View {
 
     private int size = 22;
     private int checkOffset;
-    private int color; //default 0xff5ec245
+    private int color;
+    private String checkedText;
 
     private final static float progressBounceDiff = 0.2f;
 
@@ -67,6 +72,9 @@ public class CheckBox extends View {
             backgroundPaint.setColor(0xffffffff);
             backgroundPaint.setStyle(Paint.Style.STROKE);
             backgroundPaint.setStrokeWidth(AndroidUtilities.dp(2));
+            textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            textPaint.setTextSize(AndroidUtilities.dp(18));
+            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         }
 
         checkDrawable = context.getResources().getDrawable(resId).mutate();
@@ -114,6 +122,7 @@ public class CheckBox extends View {
     public void setColor(int backgroundColor, int checkColor) {
         color = backgroundColor;
         checkDrawable.setColorFilter(new PorterDuffColorFilter(checkColor, PorterDuff.Mode.MULTIPLY));
+        textPaint.setColor(checkColor);
         invalidate();
     }
 
@@ -124,18 +133,31 @@ public class CheckBox extends View {
 
     public void setCheckColor(int checkColor) {
         checkDrawable.setColorFilter(new PorterDuffColorFilter(checkColor, PorterDuff.Mode.MULTIPLY));
+        textPaint.setColor(checkColor);
         invalidate();
     }
 
     private void cancelCheckAnimator() {
         if (checkAnimator != null) {
             checkAnimator.cancel();
+            checkAnimator = null;
         }
     }
 
     private void animateToCheckedState(boolean newCheckedState) {
         isCheckAnimation = newCheckedState;
         checkAnimator = ObjectAnimator.ofFloat(this, "progress", newCheckedState ? 1 : 0);
+        checkAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (animation.equals(checkAnimator)) {
+                    checkAnimator = null;
+                }
+                if (!isChecked) {
+                    checkedText = null;
+                }
+            }
+        });
         checkAnimator.setDuration(300);
         checkAnimator.start();
     }
@@ -158,6 +180,22 @@ public class CheckBox extends View {
     }
 
     public void setChecked(boolean checked, boolean animated) {
+        setChecked(-1, checked, animated);
+    }
+
+    public void setNum(int num) {
+        if (num >= 0) {
+            checkedText = "" + (num + 1);
+        } else if (checkAnimator == null) {
+            checkedText = null;
+        }
+        invalidate();
+    }
+
+    public void setChecked(int num, boolean checked, boolean animated) {
+        if (num >= 0) {
+            checkedText = "" + (num + 1);
+        }
         if (checked == isChecked) {
             return;
         }
@@ -211,13 +249,18 @@ public class CheckBox extends View {
             canvas.drawBitmap(drawBitmap, 0, 0, null);
 
             checkBitmap.eraseColor(0);
-            int w = checkDrawable.getIntrinsicWidth();
-            int h = checkDrawable.getIntrinsicHeight();
-            int x = (getMeasuredWidth() - w) / 2;
-            int y = (getMeasuredHeight() - h) / 2;
+            if (checkedText != null) {
+                int w = (int) Math.ceil(textPaint.measureText(checkedText));
+                checkCanvas.drawText(checkedText, (getMeasuredWidth() - w) / 2, AndroidUtilities.dp(21), textPaint);
+            } else {
+                int w = checkDrawable.getIntrinsicWidth();
+                int h = checkDrawable.getIntrinsicHeight();
+                int x = (getMeasuredWidth() - w) / 2;
+                int y = (getMeasuredHeight() - h) / 2;
 
-            checkDrawable.setBounds(x, y + checkOffset, x + w, y + h + checkOffset);
-            checkDrawable.draw(checkCanvas);
+                checkDrawable.setBounds(x, y + checkOffset, x + w, y + h + checkOffset);
+                checkDrawable.draw(checkCanvas);
+            }
             checkCanvas.drawCircle(getMeasuredWidth() / 2 - AndroidUtilities.dp(2.5f), getMeasuredHeight() / 2 + AndroidUtilities.dp(4), ((getMeasuredWidth() + AndroidUtilities.dp(6)) / 2) * (1 - checkProgress), eraser2);
 
             canvas.drawBitmap(checkBitmap, 0, 0, null);

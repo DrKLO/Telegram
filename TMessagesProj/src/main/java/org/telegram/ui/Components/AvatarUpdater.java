@@ -24,6 +24,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -39,7 +40,6 @@ import org.telegram.ui.PhotoViewer;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Objects;
 
 public class AvatarUpdater implements NotificationCenter.NotificationCenterDelegate, PhotoCropActivity.PhotoEditActivityDelegate {
 
@@ -103,9 +103,9 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
         PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(true, false, false, null);
         fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
             @Override
-            public void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<Integer> ttls, ArrayList<MediaController.PhotoEntry> videos, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos) {
+            public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos) {
                 if (!photos.isEmpty()) {
-                    Bitmap bitmap = ImageLoader.loadBitmap(photos.get(0), null, 800, 800, true);
+                    Bitmap bitmap = ImageLoader.loadBitmap(photos.get(0).path, null, 800, 800, true);
                     processBitmap(bitmap);
                 }
             }
@@ -186,6 +186,11 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
 
                     @Override
                     public boolean allowCaption() {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean canScrollAway() {
                         return false;
                     }
                 }, null);

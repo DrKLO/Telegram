@@ -54,8 +54,8 @@ public final class CacheDataSource implements DataSource {
       FLAG_IGNORE_CACHE_FOR_UNSET_LENGTH_REQUESTS})
   public @interface Flags {}
   /**
-   * A flag indicating whether we will block reads if the cache key is locked. If this flag is
-   * set, then we will read from upstream if the cache key is locked.
+   * A flag indicating whether we will block reads if the cache key is locked. If unset then data is
+   * read from upstream if the cache key is locked, regardless of whether the data is cached.
    */
   public static final int FLAG_BLOCK_ON_CACHE = 1 << 0;
 
@@ -110,7 +110,23 @@ public final class CacheDataSource implements DataSource {
 
   /**
    * Constructs an instance with default {@link DataSource} and {@link DataSink} instances for
-   * reading and writing the cache and with {@link #DEFAULT_MAX_CACHE_FILE_SIZE}.
+   * reading and writing the cache.
+   *
+   * @param cache The cache.
+   * @param upstream A {@link DataSource} for reading data not in the cache.
+   */
+  public CacheDataSource(Cache cache, DataSource upstream) {
+    this(cache, upstream, 0, DEFAULT_MAX_CACHE_FILE_SIZE);
+  }
+
+  /**
+   * Constructs an instance with default {@link DataSource} and {@link DataSink} instances for
+   * reading and writing the cache.
+   *
+   * @param cache The cache.
+   * @param upstream A {@link DataSource} for reading data not in the cache.
+   * @param flags A combination of {@link #FLAG_BLOCK_ON_CACHE}, {@link #FLAG_IGNORE_CACHE_ON_ERROR}
+   *     and {@link #FLAG_IGNORE_CACHE_FOR_UNSET_LENGTH_REQUESTS}, or 0.
    */
   public CacheDataSource(Cache cache, DataSource upstream, @Flags int flags) {
     this(cache, upstream, flags, DEFAULT_MAX_CACHE_FILE_SIZE);
@@ -123,8 +139,8 @@ public final class CacheDataSource implements DataSource {
    *
    * @param cache The cache.
    * @param upstream A {@link DataSource} for reading data not in the cache.
-   * @param flags A combination of {@link #FLAG_BLOCK_ON_CACHE} and {@link
-   *     #FLAG_IGNORE_CACHE_ON_ERROR} or 0.
+   * @param flags A combination of {@link #FLAG_BLOCK_ON_CACHE}, {@link #FLAG_IGNORE_CACHE_ON_ERROR}
+   *     and {@link #FLAG_IGNORE_CACHE_FOR_UNSET_LENGTH_REQUESTS}, or 0.
    * @param maxCacheFileSize The maximum size of a cache file, in bytes. If the cached data size
    *     exceeds this value, then the data will be fragmented into multiple cache files. The
    *     finer-grained this is the finer-grained the eviction policy can be.
@@ -145,8 +161,8 @@ public final class CacheDataSource implements DataSource {
    * @param cacheReadDataSource A {@link DataSource} for reading data from the cache.
    * @param cacheWriteDataSink A {@link DataSink} for writing data to the cache. If null, cache is
    *     accessed read-only.
-   * @param flags A combination of {@link #FLAG_BLOCK_ON_CACHE} and {@link
-   *     #FLAG_IGNORE_CACHE_ON_ERROR} or 0.
+   * @param flags A combination of {@link #FLAG_BLOCK_ON_CACHE}, {@link #FLAG_IGNORE_CACHE_ON_ERROR}
+   *     and {@link #FLAG_IGNORE_CACHE_FOR_UNSET_LENGTH_REQUESTS}, or 0.
    * @param eventListener An optional {@link EventListener} to receive events.
    */
   public CacheDataSource(Cache cache, DataSource upstream, DataSource cacheReadDataSource,

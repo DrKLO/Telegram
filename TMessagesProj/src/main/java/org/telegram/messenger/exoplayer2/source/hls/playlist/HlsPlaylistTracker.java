@@ -41,6 +41,38 @@ import java.util.List;
 public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable<HlsPlaylist>> {
 
   /**
+   * Thrown when a playlist is considered to be stuck due to a server side error.
+   */
+  public static final class PlaylistStuckException extends IOException {
+
+    /**
+     * The url of the stuck playlist.
+     */
+    public final String url;
+
+    private PlaylistStuckException(String url) {
+      this.url = url;
+    }
+
+  }
+
+  /**
+   * Thrown when the media sequence of a new snapshot indicates the server has reset.
+   */
+  public static final class PlaylistResetException extends IOException {
+
+    /**
+     * The url of the reset playlist.
+     */
+    public final String url;
+
+    private PlaylistResetException(String url) {
+      this.url = url;
+    }
+
+  }
+
+  /**
    * Listener for primary playlist changes.
    */
   public interface PrimaryPlaylistListener {
@@ -76,14 +108,14 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
   }
 
   /**
-   * The minimum number of milliseconds that a url is kept as primary url, if no
-   * {@link #getPlaylistSnapshot} call is made for that url.
+   * Coefficient applied on the target duration of a playlist to determine the amount of time after
+   * which an unchanging playlist is considered stuck.
    */
-  private static final long PRIMARY_URL_KEEPALIVE_MS = 15000;
+  private static final double PLAYLIST_STUCK_TARGET_DURATION_COEFFICIENT = 3.5;
 
   private final Uri initialPlaylistUri;
   private final HlsDataSourceFactory dataSourceFactory;
-  private final HlsPlaylistParser playlistParser;
+  private final ParsingLoadable.Parser<HlsPlaylist> playlistParser;
   private final int minRetryCount;
   private final IdentityHashMap<HlsUrl, MediaPlaylistBundle> playlistBundles;
   private final Handler playlistRefreshHandler;
@@ -108,15 +140,16 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
    */
   public HlsPlaylistTracker(Uri initialPlaylistUri, HlsDataSourceFactory dataSourceFactory,
       EventDispatcher eventDispatcher, int minRetryCount,
-      PrimaryPlaylistListener primaryPlaylistListener) {
+      PrimaryPlaylistListener primaryPlaylistListener,
+      ParsingLoadable.Parser<HlsPlaylist> playlistParser) {
     this.initialPlaylistUri = initialPlaylistUri;
     this.dataSourceFactory = dataSourceFactory;
     this.eventDispatcher = eventDispatcher;
     this.minRetryCount = minRetryCount;
     this.primaryPlaylistListener = primaryPlaylistListener;
+    this.playlistParser = playlistParser;
     listeners = new ArrayList<>();
     initialPlaylistLoader = new Loader("HlsPlaylistTracker:MasterPlaylist");
-    playlistParser = new HlsPlaylistParser();
     playlistBundles = new IdentityHashMap<>();
     playlistRefreshHandler = new Handler();
   }
@@ -200,16 +233,27 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
   }
 
   /**
-   * If the tracker is having trouble refreshing the primary playlist or loading an irreplaceable
-   * playlist, this method throws the underlying error. Otherwise, does nothing.
+   * If the tracker is having trouble refreshing the master playlist or the primary playlist, this
+   * method throws the underlying error. Otherwise, does nothing.
    *
    * @throws IOException The underlying error.
    */
-  public void maybeThrowPlaylistRefreshError() throws IOException {
+  public void maybeThrowPrimaryPlaylistRefreshError() throws IOException {
     initialPlaylistLoader.maybeThrowError();
     if (primaryHlsUrl != null) {
-      playlistBundles.get(primaryHlsUrl).mediaPlaylistLoader.maybeThrowError();
+      maybeThrowPlaylistRefreshError(primaryHlsUrl);
     }
+  }
+
+  /**
+   * If the playlist is having trouble refreshing the playlist referenced by the given
+   * {@link HlsUrl}, this method throws the underlying error.
+   *
+   * @param url The {@link HlsUrl}.
+   * @throws IOException The underyling error.
+   */
+  public void maybeThrowPlaylistRefreshError(HlsUrl url) throws IOException {
+    playlistBundles.get(url).maybeThrowPlaylistRefreshError();
   }
 
   /**
@@ -295,27 +339,22 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
   }
 
   private void maybeSetPrimaryUrl(HlsUrl url) {
-    if (!masterPlaylist.variants.contains(url)
+    if (url == primaryHlsUrl
+        || !masterPlaylist.variants.contains(url)
         || (primaryUrlSnapshot != null && primaryUrlSnapshot.hasEndTag)) {
-      // Only allow variant urls to be chosen as primary. Also prevent changing the primary url if
-      // the last primary snapshot contains an end tag.
+      // Ignore if the primary url is unchanged, if the url is not a variant url, or if the last
+      // primary snapshot contains an end tag.
       return;
     }
-    MediaPlaylistBundle currentPrimaryBundle = playlistBundles.get(primaryHlsUrl);
-    long primarySnapshotAccessAgeMs =
-        currentPrimaryBundle.lastSnapshotAccessTimeMs - SystemClock.elapsedRealtime();
-    if (primarySnapshotAccessAgeMs > PRIMARY_URL_KEEPALIVE_MS) {
-      primaryHlsUrl = url;
-      playlistBundles.get(primaryHlsUrl).loadPlaylist();
-    }
+    primaryHlsUrl = url;
+    playlistBundles.get(primaryHlsUrl).loadPlaylist();
   }
 
   private void createBundles(List<HlsUrl> urls) {
     int listSize = urls.size();
-    long currentTimeMs = SystemClock.elapsedRealtime();
     for (int i = 0; i < listSize; i++) {
       HlsUrl url = urls.get(i);
-      MediaPlaylistBundle bundle = new MediaPlaylistBundle(url, currentTimeMs);
+      MediaPlaylistBundle bundle = new MediaPlaylistBundle(url);
       playlistBundles.put(url, bundle);
     }
   }
@@ -325,9 +364,8 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
    *
    * @param url The url of the playlist.
    * @param newSnapshot The new snapshot.
-   * @return True if a refresh should be scheduled.
    */
-  private boolean onPlaylistUpdated(HlsUrl url, HlsMediaPlaylist newSnapshot) {
+  private void onPlaylistUpdated(HlsUrl url, HlsMediaPlaylist newSnapshot) {
     if (url == primaryHlsUrl) {
       if (primaryUrlSnapshot == null) {
         // This is the first primary url snapshot.
@@ -340,8 +378,6 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
     for (int i = 0; i < listenersSize; i++) {
       listeners.get(i).onPlaylistChanged();
     }
-    // If the primary playlist is not the final one, we should schedule a refresh.
-    return url == primaryHlsUrl && !newSnapshot.hasEndTag;
   }
 
   private void notifyPlaylistBlacklisting(HlsUrl url, long blacklistMs) {
@@ -430,13 +466,14 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
 
     private HlsMediaPlaylist playlistSnapshot;
     private long lastSnapshotLoadMs;
-    private long lastSnapshotAccessTimeMs;
+    private long lastSnapshotChangeMs;
+    private long earliestNextLoadTimeMs;
     private long blacklistUntilMs;
-    private boolean pendingRefresh;
+    private boolean loadPending;
+    private IOException playlistError;
 
-    public MediaPlaylistBundle(HlsUrl playlistUrl, long initialLastSnapshotAccessTimeMs) {
+    public MediaPlaylistBundle(HlsUrl playlistUrl) {
       this.playlistUrl = playlistUrl;
-      lastSnapshotAccessTimeMs = initialLastSnapshotAccessTimeMs;
       mediaPlaylistLoader = new Loader("HlsPlaylistTracker:MediaPlaylist");
       mediaPlaylistLoadable = new ParsingLoadable<>(
           dataSourceFactory.createDataSource(C.DATA_TYPE_MANIFEST),
@@ -445,7 +482,6 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
     }
 
     public HlsMediaPlaylist getPlaylistSnapshot() {
-      lastSnapshotAccessTimeMs = SystemClock.elapsedRealtime();
       return playlistSnapshot;
     }
 
@@ -467,8 +503,23 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
 
     public void loadPlaylist() {
       blacklistUntilMs = 0;
-      if (!pendingRefresh && !mediaPlaylistLoader.isLoading()) {
-        mediaPlaylistLoader.startLoading(mediaPlaylistLoadable, this, minRetryCount);
+      if (loadPending || mediaPlaylistLoader.isLoading()) {
+        // Load already pending or in progress. Do nothing.
+        return;
+      }
+      long currentTimeMs = SystemClock.elapsedRealtime();
+      if (currentTimeMs < earliestNextLoadTimeMs) {
+        loadPending = true;
+        playlistRefreshHandler.postDelayed(this, earliestNextLoadTimeMs - currentTimeMs);
+      } else {
+        loadPlaylistImmediately();
+      }
+    }
+
+    public void maybeThrowPlaylistRefreshError() throws IOException {
+      mediaPlaylistLoader.maybeThrowError();
+      if (playlistError != null) {
+        throw playlistError;
       }
     }
 
@@ -483,8 +534,7 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
         eventDispatcher.loadCompleted(loadable.dataSpec, C.DATA_TYPE_MANIFEST, elapsedRealtimeMs,
             loadDurationMs, loadable.bytesLoaded());
       } else {
-        onLoadError(loadable, elapsedRealtimeMs, loadDurationMs,
-            new ParserException("Loaded playlist has unexpected type."));
+        playlistError = new ParserException("Loaded playlist has unexpected type.");
       }
     }
 
@@ -506,11 +556,7 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
       }
       boolean shouldRetry = true;
       if (ChunkedTrackBlacklistUtil.shouldBlacklist(error)) {
-        blacklistUntilMs =
-            SystemClock.elapsedRealtime() + ChunkedTrackBlacklistUtil.DEFAULT_TRACK_BLACKLIST_MS;
-        notifyPlaylistBlacklisting(playlistUrl,
-            ChunkedTrackBlacklistUtil.DEFAULT_TRACK_BLACKLIST_MS);
-        shouldRetry = primaryHlsUrl == playlistUrl && !maybeSelectNewPrimaryUrl();
+        shouldRetry = blacklistPlaylist();
       }
       return shouldRetry ? Loader.RETRY : Loader.DONT_RETRY;
     }
@@ -519,28 +565,60 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
 
     @Override
     public void run() {
-      pendingRefresh = false;
-      loadPlaylist();
+      loadPending = false;
+      loadPlaylistImmediately();
     }
 
     // Internal methods.
 
+    private void loadPlaylistImmediately() {
+      mediaPlaylistLoader.startLoading(mediaPlaylistLoadable, this, minRetryCount);
+    }
+
     private void processLoadedPlaylist(HlsMediaPlaylist loadedPlaylist) {
       HlsMediaPlaylist oldPlaylist = playlistSnapshot;
-      lastSnapshotLoadMs = SystemClock.elapsedRealtime();
+      long currentTimeMs = SystemClock.elapsedRealtime();
+      lastSnapshotLoadMs = currentTimeMs;
       playlistSnapshot = getLatestPlaylistSnapshot(oldPlaylist, loadedPlaylist);
-      long refreshDelayUs = C.TIME_UNSET;
       if (playlistSnapshot != oldPlaylist) {
-        if (onPlaylistUpdated(playlistUrl, playlistSnapshot)) {
-          refreshDelayUs = playlistSnapshot.targetDurationUs;
-        }
+        playlistError = null;
+        lastSnapshotChangeMs = currentTimeMs;
+        onPlaylistUpdated(playlistUrl, playlistSnapshot);
       } else if (!playlistSnapshot.hasEndTag) {
-        refreshDelayUs = playlistSnapshot.targetDurationUs / 2;
+        if (loadedPlaylist.mediaSequence + loadedPlaylist.segments.size()
+            < playlistSnapshot.mediaSequence) {
+          // The media sequence jumped backwards. The server has probably reset.
+          playlistError = new PlaylistResetException(playlistUrl.url);
+        } else if (currentTimeMs - lastSnapshotChangeMs
+            > C.usToMs(playlistSnapshot.targetDurationUs)
+                * PLAYLIST_STUCK_TARGET_DURATION_COEFFICIENT) {
+          // The playlist seems to be stuck. Blacklist it.
+          playlistError = new PlaylistStuckException(playlistUrl.url);
+          blacklistPlaylist();
+        }
       }
-      if (refreshDelayUs != C.TIME_UNSET) {
-        // See HLS spec v20, section 6.3.4 for more information on media playlist refreshing.
-        pendingRefresh = playlistRefreshHandler.postDelayed(this, C.usToMs(refreshDelayUs));
+      // Do not allow the playlist to load again within the target duration if we obtained a new
+      // snapshot, or half the target duration otherwise.
+      earliestNextLoadTimeMs = currentTimeMs + C.usToMs(playlistSnapshot != oldPlaylist
+          ? playlistSnapshot.targetDurationUs : (playlistSnapshot.targetDurationUs / 2));
+      // Schedule a load if this is the primary playlist and it doesn't have an end tag. Else the
+      // next load will be scheduled when refreshPlaylist is called, or when this playlist becomes
+      // the primary.
+      if (playlistUrl == primaryHlsUrl && !playlistSnapshot.hasEndTag) {
+        loadPlaylist();
       }
+    }
+
+    /**
+     * Blacklists the playlist.
+     *
+     * @return Whether the playlist is the primary, despite being blacklisted.
+     */
+    private boolean blacklistPlaylist() {
+      blacklistUntilMs = SystemClock.elapsedRealtime()
+          + ChunkedTrackBlacklistUtil.DEFAULT_TRACK_BLACKLIST_MS;
+      notifyPlaylistBlacklisting(playlistUrl, ChunkedTrackBlacklistUtil.DEFAULT_TRACK_BLACKLIST_MS);
+      return primaryHlsUrl == playlistUrl && !maybeSelectNewPrimaryUrl();
     }
 
   }

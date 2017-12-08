@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <jni.h>
 
-static int is_initialized = 0;
+static int32_t is_initialized = 0;
 static float _coefficientsX[TIMING_NUM][4], _coefficientsY[TIMING_NUM][4];
 static const float _c0x = 0.0;
 static const float _c0y = 0.0;
@@ -89,9 +89,9 @@ static const float r2 = 70;
 static double ms0;
 static float date, date0;
 static float duration_const = 0.3f;
-static int direct;
-static int i;
-static int current_page, prev_page;
+static int32_t direct;
+static int32_t i;
+static int32_t current_page, prev_page;
 static float time;
 static mat4x4 ic_matrix;
 static LayerParams ic_pin_layer, ic_cam_layer, ic_videocam_layer, ic_smile_layer, ic_bubble_layer, ic_pencil_layer;
@@ -99,7 +99,7 @@ static float time_local = 0;
 static float knot_delays[4];
 static float offset_y;
 static float ribbonLength = 86.5f;
-static int starsFar = 500;
+static int32_t starsFar = 500;
 static float scroll_offset;
 
 static float calculated_speedometer_sin;
@@ -121,12 +121,12 @@ int anim_smile_blink_one;
 int anim_smile_stage;
 static float scale;
 float anim_pin_start_time, anim_pin_duration;
-static int anim_pencil_period;
+static int32_t anim_pencil_period;
 static mat4x4 private_matrix;
 float cloud_scroll_offset;
 
 static inline void vec2_add(vec2 r, vec2 a, vec2 b) {
-    int i;
+    int32_t i;
     for (i = 0; i < 2; ++i) {
         r[i] = a[i] + b[i];
     }
@@ -134,9 +134,9 @@ static inline void vec2_add(vec2 r, vec2 a, vec2 b) {
 
 static inline float vec2_mul_inner(vec2 a, vec2 b) {
     float p = 0.f;
-    int i;
+    int32_t i;
     for (i = 0; i < 2; ++i) {
-        p += b[i]*a[i];
+        p += b[i] * a[i];
     }
     return p;
 }
@@ -146,7 +146,7 @@ static inline float vec2_len(vec2 v) {
 }
 
 static inline void vec2_scale(vec2 r, vec2 v, float s) {
-    int i;
+    int32_t i;
     for (i = 0; i < 2; ++i) {
         r[i] = v[i] * s;
     }
@@ -158,7 +158,7 @@ static inline void vec2_norm(vec2 r, vec2 v) {
 }
 
 static inline void mat4x4_identity(mat4x4 M) {
-    int i, j;
+    int32_t i, j;
     for (i = 0; i < 4; ++i) {
         for (j = 0; j < 4; ++j) {
             M[i][j] = i == j ? 1.f : 0.f;
@@ -167,7 +167,7 @@ static inline void mat4x4_identity(mat4x4 M) {
 }
 
 static inline void mat4x4_dup(mat4x4 M, mat4x4 N) {
-    int i, j;
+    int32_t i, j;
     for (i = 0; i < 4; ++i) {
         for (j = 0; j < 4; ++j) {
             M[i][j] = N[i][j];
@@ -176,7 +176,7 @@ static inline void mat4x4_dup(mat4x4 M, mat4x4 N) {
 }
 
 static inline void vec4_scale(vec4 r, vec4 v, float s) {
-    int i;
+    int32_t i;
     for (i = 0; i < 4; ++i) {
         r[i] = v[i] * s;
     }
@@ -189,7 +189,7 @@ static inline void mat4x4_scale_aniso(mat4x4 M, mat4x4 a, float x, float y, floa
 }
 
 static inline void mat4x4_mul(mat4x4 M, mat4x4 a, mat4x4 b) {
-    int k, r, c;
+    int32_t k, r, c;
     for (c = 0; c < 4; ++c) {
         for (r = 0; r < 4; ++r) {
             M[c][r] = 0.f;
@@ -201,7 +201,7 @@ static inline void mat4x4_mul(mat4x4 M, mat4x4 a, mat4x4 b) {
 }
 
 static inline void mat4x4_mul_vec4(vec4 r, mat4x4 M, vec4 v) {
-    int i, j;
+    int32_t i, j;
     for (j = 0; j < 4; ++j) {
         r[j] = 0.f;
         for (i = 0; i < 4; ++i) {
@@ -235,15 +235,15 @@ static inline void mat4x4_rotate_Z(mat4x4 Q, float angle) {
     mat4x4_rotate_Z2(Q, temp, angle);
 }
 
-static inline void mat4x4_translate_in_place(mat4x4 m, float x, float y, float z)  {
-    int i;
+static inline void mat4x4_translate_in_place(mat4x4 m, float x, float y, float z) {
+    int32_t i;
     for (i = 0; i < 4; ++i) {
         m[3][i] += m[0][i] * x + m[1][i] * y + m[2][i] * z;
     }
 }
 
 static inline float deg_to_radf(float deg) {
-    return deg * (float)M_PI / 180.0f;
+    return deg * (float) M_PI / 180.0f;
 }
 
 static inline float MAXf(float a, float b) {
@@ -279,7 +279,7 @@ GLuint build_program(const GLchar * vertex_shader_source, const GLint vertex_sha
     return link_program(vertex_shader, fragment_shader);
 }
 
-GLuint create_vbo(const size_t size, const GLvoid* data, const GLenum usage) {
+GLuint create_vbo(const GLsizeiptr size, const GLvoid* data, const GLenum usage) {
     GLuint vbo_object;
     glGenBuffers(1, &vbo_object);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_object);
@@ -291,8 +291,8 @@ GLuint create_vbo(const size_t size, const GLvoid* data, const GLenum usage) {
 TextureProgram get_texture_program(GLuint program) {
     return (TextureProgram) {
             program,
-            glGetAttribLocation(program, "a_Position"),
-            glGetAttribLocation(program, "a_TextureCoordinates"),
+            (GLuint) glGetAttribLocation(program, "a_Position"),
+            (GLuint) glGetAttribLocation(program, "a_TextureCoordinates"),
             glGetUniformLocation(program, "u_MvpMatrix"),
             glGetUniformLocation(program, "u_TextureUnit"),
             glGetUniformLocation(program, "u_Alpha")};
@@ -301,7 +301,7 @@ TextureProgram get_texture_program(GLuint program) {
 ColorProgram get_color_program(GLuint program) {
     return (ColorProgram) {
             program,
-            glGetAttribLocation(program, "a_Position"),
+            (GLuint) glGetAttribLocation(program, "a_Position"),
             glGetUniformLocation(program, "u_MvpMatrix"),
             glGetUniformLocation(program, "u_Color"),
             glGetUniformLocation(program, "u_Alpha")};
@@ -311,8 +311,8 @@ float frand(float from, float to) {
     return (float) (((double) random() / RAND_MAX) * (to - from) + from);
 }
 
-int irand(int from, int to) {
-    return (int) (((double) random() / RAND_MAX) * (to - from + 1) + from);
+int irand(int32_t from, int32_t to) {
+    return (int32_t) (((double) random() / RAND_MAX) * (to - from + 1) + from);
 }
 
 int signrand() {
@@ -320,16 +320,16 @@ int signrand() {
 }
 
 static inline float evaluateAtParameterWithCoefficients(float t, float coefficients[]) {
-    return coefficients[0] + t*coefficients[1] + t*t*coefficients[2] + t*t*t*coefficients[3];
+    return coefficients[0] + t * coefficients[1] + t * t * coefficients[2] + t * t * t * coefficients[3];
 }
 
 static inline float evaluateDerivationAtParameterWithCoefficients(float t, float coefficients[]) {
-    return coefficients[1] + 2*t*coefficients[2] + 3*t*t*coefficients[3];
+    return coefficients[1] + 2 * t * coefficients[2] + 3 * t * t * coefficients[3];
 }
 
 static inline float calcParameterViaNewtonRaphsonUsingXAndCoefficientsForX(float x, float coefficientsX[]) {
     float t = x;
-    int i;
+    int32_t i;
     for (i = 0; i < 10; i++) {
         float x2 = evaluateAtParameterWithCoefficients(t, coefficientsX) - x;
         float d = evaluateDerivationAtParameterWithCoefficients(t, coefficientsX);
@@ -337,10 +337,6 @@ static inline float calcParameterViaNewtonRaphsonUsingXAndCoefficientsForX(float
         t = t - dt;
     }
     return t;
-}
-
-static inline float calcParameterUsingXAndCoefficientsForX (float x, float coefficientsX[]) {
-    return calcParameterViaNewtonRaphsonUsingXAndCoefficientsForX(x, coefficientsX);
 }
 
 float timing(float x, timing_type type) {
@@ -372,7 +368,7 @@ float timing(float x, timing_type type) {
         c[Linear][1] = 0.0;
         c[Linear][2] = 1.0;
         c[Linear][3] = 1.0;
-        int i;
+        int32_t i;
         for (i = 0; i < TIMING_NUM; i++) {
             float _c1x = c[i][0];
             float _c1y = c[i][1];
@@ -392,7 +388,7 @@ float timing(float x, timing_type type) {
     if (x == 0.0 || x == 1.0) {
         return x;
     }
-    float t = calcParameterUsingXAndCoefficientsForX(x, _coefficientsX[type]);
+    float t = calcParameterViaNewtonRaphsonUsingXAndCoefficientsForX(x, _coefficientsX[type]);
     float y = evaluateAtParameterWithCoefficients(t, _coefficientsY[type]);
     return y;
 }
@@ -404,157 +400,157 @@ void set_y_offset_objects(float a) {
 void setup_shaders() {
     const char *vshader =
             "uniform mat4 u_MvpMatrix;"
-            "attribute vec4 a_Position;"
-            "void main(){"
-            "   gl_Position = u_MvpMatrix * a_Position;"
-            "}";
+                    "attribute vec4 a_Position;"
+                    "void main(){"
+                    "   gl_Position = u_MvpMatrix * a_Position;"
+                    "}";
 
     const char *fshader =
             "precision lowp float;"
-            "uniform vec4 u_Color;"
-            "uniform float u_Alpha;"
-            "void main() {"
-            "   gl_FragColor = u_Color;"
-            "   gl_FragColor.w*=u_Alpha;"
-            "}";
+                    "uniform vec4 u_Color;"
+                    "uniform float u_Alpha;"
+                    "void main() {"
+                    "   gl_FragColor = u_Color;"
+                    "   gl_FragColor.w*=u_Alpha;"
+                    "}";
 
-    color_program = get_color_program(build_program(vshader, (GLint)strlen(vshader), fshader, (GLint)strlen(fshader)));
+    color_program = get_color_program(build_program(vshader, (GLint) strlen(vshader), fshader, (GLint) strlen(fshader)));
 
     const char *vshader_texture =
             "uniform mat4 u_MvpMatrix;"
-            "attribute vec4 a_Position;"
-            "attribute vec2 a_TextureCoordinates;"
-            "varying vec2 v_TextureCoordinates;"
-            "void main(){"
-            "    v_TextureCoordinates = a_TextureCoordinates;"
-            "    gl_Position = u_MvpMatrix * a_Position;"
-            "}";
+                    "attribute vec4 a_Position;"
+                    "attribute vec2 a_TextureCoordinates;"
+                    "varying vec2 v_TextureCoordinates;"
+                    "void main(){"
+                    "    v_TextureCoordinates = a_TextureCoordinates;"
+                    "    gl_Position = u_MvpMatrix * a_Position;"
+                    "}";
 
     const char *fshader_texture =
             "precision lowp float;"
-            "uniform sampler2D u_TextureUnit;"
-            "varying vec2 v_TextureCoordinates;"
-            "uniform float u_Alpha;"
-            "void main(){"
-            "    gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
-            "    gl_FragColor.w *= u_Alpha;"
-            "}";
+                    "uniform sampler2D u_TextureUnit;"
+                    "varying vec2 v_TextureCoordinates;"
+                    "uniform float u_Alpha;"
+                    "void main(){"
+                    "    gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
+                    "    gl_FragColor.w *= u_Alpha;"
+                    "}";
 
-    texture_program = get_texture_program(build_program(vshader_texture, (GLint)strlen(vshader_texture), fshader_texture, (GLint)strlen(fshader_texture)));
+    texture_program = get_texture_program(build_program(vshader_texture, (GLint) strlen(vshader_texture), fshader_texture, (GLint) strlen(fshader_texture)));
 
     const char *vshader_texture_blue =
             "uniform mat4 u_MvpMatrix;"
-            "attribute vec4 a_Position;"
-            "attribute vec2 a_TextureCoordinates;"
-            "varying vec2 v_TextureCoordinates;"
-            "void main(){"
-            "    v_TextureCoordinates = a_TextureCoordinates;"
-            "    gl_Position = u_MvpMatrix * a_Position;"
-            "}";
+                    "attribute vec4 a_Position;"
+                    "attribute vec2 a_TextureCoordinates;"
+                    "varying vec2 v_TextureCoordinates;"
+                    "void main(){"
+                    "    v_TextureCoordinates = a_TextureCoordinates;"
+                    "    gl_Position = u_MvpMatrix * a_Position;"
+                    "}";
 
-    const char *fshader_texture_blue  =
+    const char *fshader_texture_blue =
             "precision lowp float;"
-            "uniform sampler2D u_TextureUnit;"
-            "varying vec2 v_TextureCoordinates;"
-            "uniform float u_Alpha;"
-            "void main(){"
-            "    gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
-            "   float p = u_Alpha*gl_FragColor.w;"
-            "   gl_FragColor = vec4(0,0.6,0.898,p);"
-            "}";
+                    "uniform sampler2D u_TextureUnit;"
+                    "varying vec2 v_TextureCoordinates;"
+                    "uniform float u_Alpha;"
+                    "void main(){"
+                    "    gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
+                    "   float p = u_Alpha*gl_FragColor.w;"
+                    "   gl_FragColor = vec4(0,0.6,0.898,p);"
+                    "}";
 
-    texture_program_blue = get_texture_program(build_program(vshader_texture_blue, (GLint)strlen(vshader_texture_blue), fshader_texture_blue, (GLint)strlen(fshader_texture_blue)));
+    texture_program_blue = get_texture_program(build_program(vshader_texture_blue, (GLint) strlen(vshader_texture_blue), fshader_texture_blue, (GLint) strlen(fshader_texture_blue)));
 
-    const char *vshader_texture_red  =
+    const char *vshader_texture_red =
             "uniform mat4 u_MvpMatrix;"
-            "attribute vec4 a_Position;"
-            "attribute vec2 a_TextureCoordinates;"
-            "varying vec2 v_TextureCoordinates;"
-            "void main(){"
-            "    v_TextureCoordinates = a_TextureCoordinates;"
-            "    gl_Position = u_MvpMatrix * a_Position;"
-            "}";
+                    "attribute vec4 a_Position;"
+                    "attribute vec2 a_TextureCoordinates;"
+                    "varying vec2 v_TextureCoordinates;"
+                    "void main(){"
+                    "    v_TextureCoordinates = a_TextureCoordinates;"
+                    "    gl_Position = u_MvpMatrix * a_Position;"
+                    "}";
 
-    const char *fshader_texture_red  =
+    const char *fshader_texture_red =
             "precision lowp float;"
-            "uniform sampler2D u_TextureUnit;"
-            "varying vec2 v_TextureCoordinates;"
-            "uniform float u_Alpha;"
-            "void main(){"
-            "   gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
-            "   float p = gl_FragColor.w*u_Alpha;"
-            "   gl_FragColor = vec4(210./255.,57./255.,41./255.,p);"
-            "}";
+                    "uniform sampler2D u_TextureUnit;"
+                    "varying vec2 v_TextureCoordinates;"
+                    "uniform float u_Alpha;"
+                    "void main(){"
+                    "   gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
+                    "   float p = gl_FragColor.w*u_Alpha;"
+                    "   gl_FragColor = vec4(210./255.,57./255.,41./255.,p);"
+                    "}";
 
-    texture_program_red = get_texture_program(build_program(vshader_texture_red, (GLint)strlen(vshader_texture_red), fshader_texture_red, (GLint)strlen(fshader_texture_red)));
+    texture_program_red = get_texture_program(build_program(vshader_texture_red, (GLint) strlen(vshader_texture_red), fshader_texture_red, (GLint) strlen(fshader_texture_red)));
 
     vshader =
             "uniform mat4 u_MvpMatrix;"
-            "attribute vec4 a_Position;"
-            "attribute vec2 a_TextureCoordinates;"
-            "varying vec2 v_TextureCoordinates;"
-            "void main(){"
-            "    v_TextureCoordinates = a_TextureCoordinates;"
-            "    gl_Position = u_MvpMatrix * a_Position;"
-            "}";
+                    "attribute vec4 a_Position;"
+                    "attribute vec2 a_TextureCoordinates;"
+                    "varying vec2 v_TextureCoordinates;"
+                    "void main(){"
+                    "    v_TextureCoordinates = a_TextureCoordinates;"
+                    "    gl_Position = u_MvpMatrix * a_Position;"
+                    "}";
 
-    fshader  =
+    fshader =
             "precision lowp float;"
-            "uniform sampler2D u_TextureUnit;"
-            "varying vec2 v_TextureCoordinates;"
-            "uniform float u_Alpha;"
-            "void main(){"
-            "    gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
-            "    float p = u_Alpha*gl_FragColor.w;"
-            "    gl_FragColor = vec4(246./255., 73./255., 55./255., p);"
-            "}";
+                    "uniform sampler2D u_TextureUnit;"
+                    "varying vec2 v_TextureCoordinates;"
+                    "uniform float u_Alpha;"
+                    "void main(){"
+                    "    gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
+                    "    float p = u_Alpha*gl_FragColor.w;"
+                    "    gl_FragColor = vec4(246./255., 73./255., 55./255., p);"
+                    "}";
 
-    texture_program_light_red = get_texture_program(build_program(vshader, (GLint)strlen(vshader), fshader, (GLint)strlen(fshader)));
+    texture_program_light_red = get_texture_program(build_program(vshader, (GLint) strlen(vshader), fshader, (GLint) strlen(fshader)));
 
-    vshader  =
+    vshader =
             "uniform mat4 u_MvpMatrix;"
-            "attribute vec4 a_Position;"
-            "attribute vec2 a_TextureCoordinates;"
-            "varying vec2 v_TextureCoordinates;"
-            "void main(){"
-            "    v_TextureCoordinates = a_TextureCoordinates;"
-            "    gl_Position = u_MvpMatrix * a_Position;"
-            "}";
+                    "attribute vec4 a_Position;"
+                    "attribute vec2 a_TextureCoordinates;"
+                    "varying vec2 v_TextureCoordinates;"
+                    "void main(){"
+                    "    v_TextureCoordinates = a_TextureCoordinates;"
+                    "    gl_Position = u_MvpMatrix * a_Position;"
+                    "}";
 
-    fshader  =
+    fshader =
             "precision lowp float;"
-            "uniform sampler2D u_TextureUnit;"
-            "varying vec2 v_TextureCoordinates;"
-            "uniform float u_Alpha;"
-            "void main(){"
-            "    gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
-            "    float p = u_Alpha*gl_FragColor.w;"
-            "    gl_FragColor = vec4(42./255.,180./255.,247./255.,p);"
-            "}";
+                    "uniform sampler2D u_TextureUnit;"
+                    "varying vec2 v_TextureCoordinates;"
+                    "uniform float u_Alpha;"
+                    "void main(){"
+                    "    gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
+                    "    float p = u_Alpha*gl_FragColor.w;"
+                    "    gl_FragColor = vec4(42./255.,180./255.,247./255.,p);"
+                    "}";
 
-    texture_program_light_blue = get_texture_program(build_program(vshader, (GLint)strlen(vshader), fshader, (GLint)strlen(fshader)));
+    texture_program_light_blue = get_texture_program(build_program(vshader, (GLint) strlen(vshader), fshader, (GLint) strlen(fshader)));
 
-    vshader  =
+    vshader =
             "uniform mat4 u_MvpMatrix;"
-            "attribute vec4 a_Position;"
-            "attribute vec2 a_TextureCoordinates;"
-            "varying vec2 v_TextureCoordinates;"
-            "void main(){"
-            "    v_TextureCoordinates = a_TextureCoordinates;"
-            "    gl_Position = u_MvpMatrix * a_Position;"
-            "}";
+                    "attribute vec4 a_Position;"
+                    "attribute vec2 a_TextureCoordinates;"
+                    "varying vec2 v_TextureCoordinates;"
+                    "void main(){"
+                    "    v_TextureCoordinates = a_TextureCoordinates;"
+                    "    gl_Position = u_MvpMatrix * a_Position;"
+                    "}";
 
-    fshader  =
+    fshader =
             "precision lowp float;"
-            "uniform sampler2D u_TextureUnit;"
-            "varying vec2 v_TextureCoordinates;"
-            "uniform float u_Alpha;"
-            "void main(){"
-            "    gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
-            "    gl_FragColor *= u_Alpha;"
-            "}";
+                    "uniform sampler2D u_TextureUnit;"
+                    "varying vec2 v_TextureCoordinates;"
+                    "uniform float u_Alpha;"
+                    "void main(){"
+                    "    gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);"
+                    "    gl_FragColor *= u_Alpha;"
+                    "}";
 
-    texture_program_one = get_texture_program(build_program(vshader, (GLint)strlen(vshader), fshader, (GLint)strlen(fshader)));
+    texture_program_one = get_texture_program(build_program(vshader, (GLint) strlen(vshader), fshader, (GLint) strlen(fshader)));
 }
 
 CPoint CPointMake(float x, float y) {
@@ -568,11 +564,11 @@ CSize CSizeMake(float width, float height) {
 }
 
 float D2R(float a) {
-    return (float)(a * M_PI / 180.0);
+    return (float) (a * M_PI / 180.0);
 }
 
 float R2D(float a) {
-    return (float)(a * 180.0 / M_PI);
+    return (float) (a * 180.0 / M_PI);
 }
 
 xyz xyzMake(float x, float y, float z) {
@@ -677,7 +673,7 @@ void draw_textured_shape(const TexturedShape* shape, mat4x4 view_projection_matr
             mat4x4_mul_vec4(pos, model_view_projection_matrix, vertex);
             vec4 p_NDC = {pos[0] / pos[3], pos[1] / pos[3], pos[2] / pos[3], pos[3] / pos[3]};
             vec4 p_window = {p_NDC[0] * width, -p_NDC[1] * height, 0, 0};
-            int d = 160;
+            int32_t d = 160;
             if (fabs(p_window[0]) > d || p_window[1] > y_offset_absolute * 2 + d || p_window[1] < y_offset_absolute * 2 - d) {
                 return;
             }
@@ -715,16 +711,12 @@ void draw_textured_shape(const TexturedShape* shape, mat4x4 view_projection_matr
     }
 }
 
-static inline int size_of_rounded_rectangle_in_vertices(int round_count) {
-    return 4*(2+round_count)+2;
-}
-
-static inline void gen_rounded_rectangle(CPoint* out, CSize size, float radius, int round_count) {
-    int offset = 0;
+static inline void gen_rounded_rectangle(CPoint* out, CSize size, float radius, int32_t round_count) {
+    int32_t offset = 0;
     out[offset++] = CPointMake(0, 0);
     float k = (float) (M_PI / 2 / (round_count + 1));
-    int i = 0;
-    int n = 0;
+    int32_t i = 0;
+    int32_t n = 0;
     for (i = (round_count + 2) * n; i <= round_count + 1 + (round_count + 1) * n; i++) {
         out[offset++] = CPointMake(size.width / 2 - radius + cosf(i * k) * radius, size.height / 2 - radius + sinf(i * k) * radius);
     }
@@ -743,8 +735,8 @@ static inline void gen_rounded_rectangle(CPoint* out, CSize size, float radius, 
     out[offset] = CPointMake(size.width / 2, size.height / 2 - radius);
 }
 
-Shape create_rounded_rectangle(CSize size, float radius, int round_count, const vec4 color) {
-    int real_vertex_count = size_of_rounded_rectangle_in_vertices(round_count);
+Shape create_rounded_rectangle(CSize size, float radius, int32_t round_count, const vec4 color) {
+    int32_t real_vertex_count = 4 * (2 + round_count) + 2;
 
     Params params = default_params();
     params.const_params.datasize = sizeof(CPoint) * real_vertex_count * 2;
@@ -753,7 +745,7 @@ Shape create_rounded_rectangle(CSize size, float radius, int round_count, const 
 
     params.var_params.size = size;
     params.var_params.radius = radius;
-    CPoint *data = malloc(params.const_params.datasize);
+    CPoint *data = malloc((size_t) params.const_params.datasize);
     gen_rounded_rectangle(data, params.var_params.size, params.var_params.radius, params.const_params.round_count);
     return (Shape) {{color[0], color[1], color[2], color[3]}, data, create_vbo(params.const_params.datasize, data, GL_DYNAMIC_DRAW), real_vertex_count, params};
 }
@@ -768,10 +760,6 @@ void change_rounded_rectangle(Shape* shape, CSize size, float radius) {
         glBufferSubData(GL_ARRAY_BUFFER, 0, shape->params.const_params.datasize, shape->data);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
-}
-
-static inline int size_of_segmented_square_in_vertices() {
-    return 7;
 }
 
 static inline CPoint square_point(float angle, float radius) {
@@ -795,7 +783,7 @@ static inline CPoint square_texture_point(CPoint p, float side_length) {
 static inline void gen_segmented_square(CPoint* out, float side_length, float start_angle, float end_angle) {
     CPoint p;
     float radius = side_length;
-    int offset = 0;
+    int32_t offset = 0;
     float k = 1;
     float da = D2R(-2.6f * 2) * k;
     p = CPointMake(sinf(start_angle + end_angle) * 6 * k, -cosf(start_angle + end_angle) * 6 * k);
@@ -804,9 +792,9 @@ static inline void gen_segmented_square(CPoint* out, float side_length, float st
     p = square_point(start_angle + da, radius);
     out[offset++] = p;
     out[offset++] = square_texture_point(p, side_length);
-    int q = 0;
-    int i;
-    for (i = (int) start_angle; i < floorf(R2D(start_angle + end_angle + da)); i++) {
+    int32_t q = 0;
+    int32_t i;
+    for (i = (int32_t) start_angle; i < floorf(R2D(start_angle + end_angle + da)); i++) {
         if ((i + 45) % 90 == 0) {
             p = square_point(D2R(i), radius);
             out[offset++] = p;
@@ -825,11 +813,11 @@ static inline void gen_segmented_square(CPoint* out, float side_length, float st
 }
 
 TexturedShape create_segmented_square(float side_length, float start_angle, float end_angle, GLuint texture) {
-    int real_vertex_count = size_of_segmented_square_in_vertices();
+    int32_t real_vertex_count = 7;
     Params params = default_params();
     params.const_params.datasize = sizeof(CPoint) * real_vertex_count * 2 * 2;
     params.const_params.triangle_mode = GL_TRIANGLE_FAN;
-    CPoint *data = malloc(params.const_params.datasize);
+    CPoint *data = malloc((size_t) params.const_params.datasize);
     gen_segmented_square(data, side_length, start_angle, end_angle);
     return (TexturedShape) {texture, data, create_vbo(params.const_params.datasize, data, GL_DYNAMIC_DRAW), real_vertex_count, params};
 }
@@ -854,11 +842,11 @@ static inline void gen_rectangle(CPoint* out, CSize size) {
 }
 
 Shape create_rectangle(CSize size, const vec4 color) {
-    int real_vertex_count = 4;
+    int32_t real_vertex_count = 4;
     Params params = default_params();
     params.const_params.datasize = sizeof(CPoint) * real_vertex_count;
     params.const_params.triangle_mode = GL_TRIANGLE_STRIP;
-    CPoint *data = malloc(params.const_params.datasize);
+    CPoint *data = malloc((size_t) params.const_params.datasize);
     gen_rectangle(data, size);
     return (Shape) {{color[0], color[1], color[2], color[3]}, data, create_vbo(params.const_params.datasize, data, GL_DYNAMIC_DRAW), real_vertex_count, params};
 }
@@ -879,11 +867,11 @@ static inline void gen_textured_rectangle(CPoint* out, CSize size) {
 }
 
 TexturedShape create_textured_rectangle(CSize size, GLuint texture) {
-    int real_vertex_count = 4;
+    int32_t real_vertex_count = 4;
     Params params = default_params();
     params.const_params.datasize = sizeof(CPoint) * real_vertex_count * 2;
     params.const_params.triangle_mode = GL_TRIANGLE_STRIP;
-    CPoint *data = malloc(params.const_params.datasize);
+    CPoint *data = malloc((size_t) params.const_params.datasize);
     gen_textured_rectangle(data, size);
     return (TexturedShape) {texture, data, create_vbo(params.const_params.datasize, data, GL_STATIC_DRAW), real_vertex_count, params};
 }
@@ -896,12 +884,12 @@ static inline void gen_ribbon(CPoint* out, float length) {
 }
 
 Shape create_ribbon(float length, const vec4 color) {
-    int real_vertex_count = 4;
-    Params params=default_params();
+    int32_t real_vertex_count = 4;
+    Params params = default_params();
     params.const_params.datasize = sizeof(CPoint) * real_vertex_count;
     params.const_params.triangle_mode = GL_TRIANGLE_STRIP;
     params.var_params.side_length = length;
-    CPoint *data = malloc(params.const_params.datasize);
+    CPoint *data = malloc((size_t) params.const_params.datasize);
     gen_ribbon(data, length);
     return (Shape) {{color[0], color[1], color[2], color[3]}, data, create_vbo(params.const_params.datasize, data, GL_DYNAMIC_DRAW), real_vertex_count, params};
 }
@@ -916,35 +904,31 @@ void change_ribbon(Shape* shape, float length) {
     }
 }
 
-static inline int size_of_segmented_circle_in_vertices(int num_points) {
-    return 1 + (num_points + 1);
-}
-
-static inline void gen_circle(CPoint* out, float radius, int vertex_count) {
-    int offset = 0;
+static inline void gen_circle(CPoint* out, float radius, int32_t vertex_count) {
+    int32_t offset = 0;
     out[offset++] = CPointMake(0, 0);
-    int i;
+    int32_t i;
     for (i = 0; i <= vertex_count; i++) {
         out[offset++] = CPointMake(radius * (cosf(2 * (float) M_PI * (i / (float) vertex_count))), radius * sinf(2 * (float) M_PI * (i / (float) vertex_count)));
     }
 }
 
-Shape create_circle(float radius, int vertex_count, const vec4 color) {
-    int real_vertex_count = size_of_segmented_circle_in_vertices(vertex_count);
+Shape create_circle(float radius, int32_t vertex_count, const vec4 color) {
+    int32_t real_vertex_count = vertex_count + 2;
     Params params = default_params();
     params.const_params.datasize = sizeof(CPoint) * real_vertex_count;
     params.const_params.triangle_mode = GL_TRIANGLE_FAN;
     params.const_params.round_count = vertex_count;
-    CPoint *data = (CPoint *) malloc(params.const_params.datasize);
+    CPoint *data = (CPoint *) malloc((size_t) params.const_params.datasize);
     gen_circle(data, radius, vertex_count);
     return (Shape) {{color[0], color[1], color[2], color[3]}, data, create_vbo(params.const_params.datasize, data, GL_STATIC_DRAW), real_vertex_count, params};
 }
 
-int size_of_infinity_in_vertices(int segment_count) {
+int size_of_infinity_in_vertices(int32_t segment_count) {
     return (segment_count + 1) * 2;
 }
 
-static inline void gen_infinity(CPoint* out, float width, float angle, int segment_count) {
+static inline void gen_infinity(CPoint* out, float width, float angle, int32_t segment_count) {
     CPoint path[13];
     path[0] = CPointMake(53, 23);
     path[1] = CPointMake(49, 31);
@@ -959,13 +943,13 @@ static inline void gen_infinity(CPoint* out, float width, float angle, int segme
     path[10] = CPointMake(39, 0);
     path[11] = CPointMake(48, 15);
     path[12] = CPointMake(52, 21);
-    int offset = 0;
-    int seg;
+    int32_t offset = 0;
+    int32_t seg;
     for (seg = 0; seg <= segment_count; seg++) {
         float tt = ((float) seg / (float) segment_count) * angle;
-        int q = 4;
+        int32_t q = 4;
         float tstep = 1.f / q;
-        int n = (int) floor(tt / tstep);
+        int32_t n = (int32_t) floor(tt / tstep);
         CPoint a = path[0 + 3 * n];;
         CPoint p1 = path[1 + 3 * n];
         CPoint p2 = path[2 + 3 * n];
@@ -998,15 +982,15 @@ static inline void gen_infinity(CPoint* out, float width, float angle, int segme
     }
 }
 
-Shape create_infinity(float width, float angle, int segment_count, const vec4 color) {
-    int real_vertex_count = size_of_infinity_in_vertices(segment_count);
+Shape create_infinity(float width, float angle, int32_t segment_count, const vec4 color) {
+    int32_t real_vertex_count = size_of_infinity_in_vertices(segment_count);
     Params params = default_params();
     params.const_params.datasize = sizeof(CPoint) * real_vertex_count;
     params.const_params.triangle_mode = GL_TRIANGLE_STRIP;
     params.const_params.round_count = segment_count;
     params.var_params.width = width;
     params.var_params.angle = angle;
-    CPoint *data = malloc(params.const_params.datasize);
+    CPoint *data = malloc((size_t) params.const_params.datasize);
     gen_infinity(data, width, angle, segment_count);
     return (Shape) {{color[0], color[1], color[2], color[3]}, data, create_vbo(params.const_params.datasize, data, GL_DYNAMIC_DRAW), real_vertex_count, params};
 }
@@ -1021,16 +1005,12 @@ void change_infinity(Shape* shape, float angle) {
     }
 }
 
-static inline int size_of_rounded_rectangle_stroked_in_vertices(int round_count) {
-    return 4 * (2 + round_count) * 2 + 2;
-}
-
-static inline void gen_rounded_rectangle_stroked(CPoint* out, CSize size, float radius, float stroke_width, int round_count) {
-    int offset = 0;
+static inline void gen_rounded_rectangle_stroked(CPoint* out, CSize size, float radius, float stroke_width, int32_t round_count) {
+    int32_t offset = 0;
     float k = (float) (M_PI / 2 / (round_count + 1));
     float inner_radius = radius - stroke_width;
-    int i = 0;
-    int n = 0;
+    int32_t i = 0;
+    int32_t n = 0;
     for (i = (round_count + 2) * n; i <= round_count + 1 + (round_count + 1) * n; i++) {
         out[offset++] = CPointMake(size.width / 2 - radius + cosf(i * k) * radius, size.height / 2 - radius + sinf(i * k) * radius);
         out[offset++] = CPointMake(size.width / 2 - radius + cosf(i * k) * inner_radius, size.height / 2 - radius + sinf(i * k) * inner_radius);
@@ -1055,21 +1035,21 @@ static inline void gen_rounded_rectangle_stroked(CPoint* out, CSize size, float 
     out[offset] = CPointMake(size.width / 2 - radius + cosf(i * k) * inner_radius, size.height / 2 - radius + sinf(i * k) * inner_radius);
 }
 
-Shape create_rounded_rectangle_stroked(CSize size, float radius, float stroke_width, int round_count, const vec4 color) {
-    int real_vertex_count = size_of_rounded_rectangle_stroked_in_vertices(round_count);
+Shape create_rounded_rectangle_stroked(CSize size, float radius, float stroke_width, int32_t round_count, const vec4 color) {
+    int32_t real_vertex_count = 4 * (2 + round_count) * 2 + 2;
     Params params = default_params();
     params.const_params.round_count = round_count;
     params.const_params.datasize = sizeof(CPoint) * real_vertex_count * 2;
     params.var_params.size = size;
     params.var_params.radius = radius;
     params.var_params.width = stroke_width;
-    CPoint *data = (CPoint *) malloc(params.const_params.datasize);
+    CPoint *data = (CPoint *) malloc((size_t) params.const_params.datasize);
     gen_rounded_rectangle_stroked(data, params.var_params.size, params.var_params.radius, params.var_params.width, params.const_params.round_count);
     params.const_params.triangle_mode = GL_TRIANGLE_STRIP;
     return (Shape) {{color[0], color[1], color[2], color[3]}, data, create_vbo(params.const_params.datasize, data, GL_DYNAMIC_DRAW), real_vertex_count, params};
 }
 
-void change_rounded_rectangle_stroked(Shape* shape, CSize size, float radius, __unused float stroke_width) {
+void change_rounded_rectangle_stroked(Shape* shape, CSize size, float radius) {
     if ((*shape).params.var_params.size.width != size.width || (*shape).params.var_params.size.height != size.height || (*shape).params.var_params.radius != radius) {
         (*shape).params.var_params.size.width = size.width;
         (*shape).params.var_params.size.height = size.height;
@@ -1094,15 +1074,14 @@ float t(float start_value, float end_value, float start_time, float duration, ti
 }
 
 float t_reversed(float end_value, float start_value, float start_time, float duration, timing_type type) {
-    if (time>start_time+duration) {
+    if (time > start_time + duration) {
         return end_value;
     }
     if (type == Linear) {
-        return start_value + (end_value - start_value)*MINf(duration+start_time, MAXf(0.0f, (time - start_time))) /duration;
+        return start_value + (end_value - start_value) * MINf(duration + start_time, MAXf(0.0f, (time - start_time))) / duration;
     }
-    return start_value + (end_value - start_value) * timing(MINf(duration+start_time, MAXf(0.0f, (time - start_time))) / duration, type);
+    return start_value + (end_value - start_value) * timing(MINf(duration + start_time, MAXf(0.0f, (time - start_time))) / duration, type);
 }
-
 
 float t_local(float start_value, float end_value, float start_time, float duration, timing_type type) {
     if (type == Sin) {
@@ -1121,19 +1100,15 @@ float t_local(float start_value, float end_value, float start_time, float durati
 
 xyz star_create_position(float far) {
     starsFar = 1500;
-
-    int minR = 100;
-    int maxR = 1000;
-
+    int32_t minR = 100;
+    int32_t maxR = 1000;
     return xyzMake(signrand() * frand(minR, maxR), signrand() * frand(minR, maxR), far);
 }
 
-xyz star_initial_position(int randZ, int forward) {
+xyz star_initial_position(int32_t randZ, int32_t forward) {
     starsFar = 1500;
-
-    int minR = 100;
-    int maxR = 1000;
-
+    int32_t minR = 100;
+    int32_t maxR = 1000;
     float z = 0;
     if (forward == 1) {
         if (randZ == 0) {
@@ -1179,9 +1154,8 @@ void draw_stars() {
 
         star.params.scale = xyzMake(s, s, 1);
         float far = starsFar;
-        float k = 10.;
-        star.params.alpha = (1 - (-stars[i].position.z) / far) * k;
-        star.params.alpha = star.params.alpha * star.params.alpha / k;
+        star.params.alpha = (1 - (-stars[i].position.z) / far) * 10.0f;
+        star.params.alpha = star.params.alpha * star.params.alpha / 10.0f;
 
 
         draw_textured_shape(&star, stars_matrix, NORMAL);
@@ -1192,8 +1166,8 @@ void draw_stars() {
     set_y_offset_objects(offset_y);
 }
 
-static inline void mat4x4_plain(mat4x4 M, int width, int height) {
-    int i, j;
+static inline void mat4x4_plain(mat4x4 M, int32_t width, int32_t height) {
+    int32_t i, j;
     for (i = 0; i < 4; ++i) {
         for (j = 0; j < 4; ++j) {
             M[i][j] = 0.0f;
@@ -1209,11 +1183,10 @@ static inline void mat4x4_plain(mat4x4 M, int width, int height) {
     M[3][3] = (float) width / 2.0f;
 }
 
-static inline void mat4x4_stars(mat4x4 m, float y_fov_in_degrees, float aspect, float n, float f, int width, int height) {
-    int is_iOS = 0;
+static inline void mat4x4_stars(mat4x4 m, float y_fov_in_degrees, float aspect, float n, float f, int32_t width, int32_t height) {
     if (height >= width) {
         float k = (float) width / (float) height;
-        float q = !is_iOS ? 1.4f : 0.7f;
+        float q = 1.4f;
         m[0][0] = 1.0f / q;
         m[1][0] = 0.0f;
         m[2][0] = 0.0f;
@@ -1235,7 +1208,7 @@ static inline void mat4x4_stars(mat4x4 m, float y_fov_in_degrees, float aspect, 
         m[3][3] = width * k;
     } else {
         float k = (float) height / (float) width;
-        float q = !is_iOS ? 2.0f : 0.7f;
+        float q = 2.0f;
 
         m[0][0] = 1.0f / q;
         m[1][0] = 0.0f;
@@ -1263,7 +1236,7 @@ static inline void mat4x4_stars(mat4x4 m, float y_fov_in_degrees, float aspect, 
 void rglNormalDraw() {
     glDisable(GL_DEPTH_TEST);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glColorMask(1,1,1,1);
+    glColorMask(1, 1, 1, 1);
     glDepthMask(0);
 }
 
@@ -1278,7 +1251,7 @@ void rglMaskDraw() {
 }
 
 void rglNormalDrawThroughMask() {
-    glColorMask(1,1,1,1);
+    glColorMask(1, 1, 1, 1);
     glDepthFunc(GL_LESS);
     glDepthMask(0);
 }
@@ -1343,12 +1316,12 @@ static void reset_ic() {
     anim_pencil_period = 1;
 }
 
-static void draw_ic(int type) {
+static void draw_ic(int32_t type) {
     float rotation;
     float beginTimeK;
     float commonDelay;
     float beginY = 250;
-    int bounce;
+    int32_t bounce;
     texture_program_type COLOR, LIGHT_COLOR;
     if (type == 0) {
         beginTimeK = 2.0f;
@@ -1460,7 +1433,7 @@ static void draw_ic(int type) {
         anim_cam_old_position = anim_cam_position;
         anim_cam_start_time = time_local;
         anim_cam_next_time = time_local + 10000000;
-        int r = irand(0, 1);
+        int32_t r = irand(0, 1);
         if (r == 0) {
             anim_cam_position = CPointMake(-8 + 4, 0);
             anim_cam_angle = signrand() * 10;
@@ -1566,7 +1539,7 @@ static void draw_ic(int type) {
         anim_smile_blink_one = 0;
     }
 
-    int stop_time = 5;
+    int32_t stop_time = 5;
     float eye_scale = t_local(1, 0, anim_smile_blink_start_time, 0.1f, Sin);
     ic_smile_eye.params.scale = xyzMake(1, eye_scale, 1);
     if (time > stop_time) ic_smile_eye.params.scale = xyzMake(1, 1, 1);
@@ -1686,7 +1659,7 @@ static void draw_ic(int type) {
     draw_textured_shape(&ic_pencil, ic_matrix, COLOR);
 }
 
-void draw_safe(int type, float alpha, float screw_alpha) {
+void draw_safe(int32_t type, float alpha, float screw_alpha) {
     float screw_distance = 53;
 
     private_screw.params.alpha = alpha * screw_alpha;
@@ -1726,8 +1699,8 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
         }
 
         for (i = 0; i < 10; i++) {
-            int j1 = irand(0, 3);
-            int j2 = irand(0, 3);
+            int32_t j1 = irand(0, 3);
+            int32_t j2 = irand(0, 3);
             float temp = knot_delays[j1];
             knot_delays[j1] = knot_delays[j2];
             knot_delays[j2] = temp;
@@ -1896,28 +1869,28 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
             mask1.params.rotation = private_scroll_offset + t_reversed(180.0f + 90.0f + 90.0f, 180.0f + 90.0f + 90.0f + 90.0f, 0, duration_const * k, EaseOut);
 
             k = 1.0f * private_back_k;
-            int sublayer2_radius = 33;
+            int32_t sublayer2_radius = 33;
             cloud_extra_mask1.params.position = xyzMake(t_reversed(0, -122 / 2, 0, duration_const * k, EaseOut), t_reversed(0, 54 / 2 - 1, 0, duration_const * k, EaseOut), cloud_extra_mask1.params.position.z);
             scale = t_reversed(0, sublayer2_radius, 0, duration_const * k, EaseOut);
             cloud_extra_mask1.params.scale = xyzMake(scale, scale, 1);
             draw_shape(&cloud_extra_mask1, main_matrix);
 
             k = 1.15f * private_back_k;
-            int sublayer3_radius = 94 / 4;
+            int32_t sublayer3_radius = 94 / 4;
             cloud_extra_mask2.params.position = xyzMake(t_reversed(0, -84 / 2, 0, duration_const * k, EaseOut), t_reversed(0, -29 / 2, 0, duration_const * k, EaseOut), cloud_extra_mask2.params.position.z);
             scale = t_reversed(0, sublayer3_radius, 0, duration_const * k, EaseOut);
             cloud_extra_mask2.params.scale = xyzMake(scale, scale, 1);
             draw_shape(&cloud_extra_mask2, main_matrix);
 
             k = 1.3f * private_back_k;
-            int sublayer4_radius = 124 / 4;
+            int32_t sublayer4_radius = 124 / 4;
             cloud_extra_mask3.params.position = xyzMake(t_reversed(0, 128 / 2, 0, duration_const * k, EaseOut), t_reversed(0, 56 / 2, 0, duration_const * k, EaseOut), cloud_extra_mask3.params.position.z);
             scale = t_reversed(0, sublayer4_radius, 0, duration_const * k, EaseOut);
             cloud_extra_mask3.params.scale = xyzMake(scale, scale, 1);
             draw_shape(&cloud_extra_mask3, main_matrix);
 
             k = 1.5f * private_back_k;
-            int sublayer5_radius = 64;
+            int32_t sublayer5_radius = 64;
             cloud_extra_mask4.params.position = xyzMake(t_reversed(0, 0, 0, duration_const * k, EaseOut), t_reversed(0, 50, 0, duration_const * k, EaseOut), cloud_extra_mask4.params.position.z);
             scale = t_reversed(0, sublayer5_radius, 0, duration_const * k, EaseOut);
             cloud_extra_mask4.params.scale = xyzMake(scale, scale, 1);
@@ -1931,7 +1904,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
         mask1.params.rotation = t(180.0f + 90.0f + 90.0f, 180.0f + 90.0f + 90.0f + 90.0f, 0, duration_const * k, EaseOut);
 
         k = 1.0f;
-        int sublayer2_radius = 33;
+        int32_t sublayer2_radius = 33;
         cloud_extra_mask1.params.position = xyzMake(t(0, -122 / 2, 0, duration_const * k, EaseOut), t(0, 54 / 2 - 1, 0, duration_const * k, EaseOut), cloud_extra_mask1.params.position.z);
         scale = t(0, sublayer2_radius, 0, duration_const * k, EaseOut);
         cloud_extra_mask1.params.scale = xyzMake(scale, scale, 1);
@@ -1939,7 +1912,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
 
 
         k = 1.15;
-        int sublayer3_radius = 94 / 4;
+        int32_t sublayer3_radius = 94 / 4;
         cloud_extra_mask2.params.position = xyzMake(t(0, -84 / 2, 0, duration_const * k, EaseOut), t(0, -29 / 2, 0, duration_const * k, EaseOut), cloud_extra_mask2.params.position.z);
         scale = t(0, sublayer3_radius, 0, duration_const * k, EaseOut);
         cloud_extra_mask2.params.scale = xyzMake(scale, scale, 1);
@@ -1947,7 +1920,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
 
 
         k = 1.3;
-        int sublayer4_radius = 124 / 4;
+        int32_t sublayer4_radius = 124 / 4;
         cloud_extra_mask3.params.position = xyzMake(t(0, 128 / 2, 0, duration_const * k, EaseOut), t(0, 56 / 2, 0, duration_const * k, EaseOut), cloud_extra_mask3.params.position.z);
         scale = t(0, sublayer4_radius, 0, duration_const * k, EaseOut);
         cloud_extra_mask3.params.scale = xyzMake(scale, scale, 1);
@@ -1955,7 +1928,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
 
 
         k = 1.5f;
-        int sublayer5_radius = 64;
+        int32_t sublayer5_radius = 64;
         cloud_extra_mask4.params.position = xyzMake(t(0, 0, 0, duration_const * k, EaseOut), t(0, 50, 0, duration_const * k, EaseOut), cloud_extra_mask4.params.position.z);
         scale = t(0, sublayer5_radius, 0, duration_const * k, EaseOut);
         cloud_extra_mask4.params.scale = xyzMake(scale, scale, 1);
@@ -1964,9 +1937,9 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
     }
     draw_shape(&mask1, main_matrix);
 
-    int rr = 30;
-    int seg = 15;
-    int ang = 180;
+    int32_t rr = 30;
+    int32_t seg = 15;
+    int32_t ang = 180;
     rglNormalDrawThroughMask();
     if (current_page == 0) {
         if (direct == 0) {
@@ -2238,7 +2211,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             ribbon1.params.alpha = ribbon2.params.alpha = ribbon3.params.alpha = ribbon4.params.alpha = t(0, 1, 0, dur, EaseInEaseOut);
 
-            int ribbon_k = time > duration_const ? 1 : 0;
+            int32_t ribbon_k = time > duration_const ? 1 : 0;
 
             change_ribbon(&ribbon1, ribbonLength - 8.0f * ribbon_k - free_scroll_offset / 5.0f * (30 - 8 * ribbon_k));
             ribbon1.params.position.x = scroll_offset * 30 * 0 + t(-dribbon, 0, 0, duration_const, EaseInEaseOut);
@@ -2305,10 +2278,10 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
             ribbon2.params.rotation = t_reversed(90, 90 + a2, 0, duration_const, EaseOut);
             ribbon4.params.rotation = t_reversed(270, 270 + a2, 0, duration_const, EaseOut);
 
-            float k = .9;
+            float k = 0.9f;
             ribbon2.params.alpha = ribbon4.params.alpha = t_reversed(1, 0, duration_const * 0.5f, duration_const * 0.1f, Linear);
 
-            int ribbon_k = 0;
+            int32_t ribbon_k = 0;
             change_ribbon(&ribbon1, t_reversed(ribbonLength - 8.0f * ribbon_k, 0, 0, duration_const * 0.9f, Linear) - free_scroll_offset / 5.0f * (30 - 8 * ribbon_k));
             ribbon1.params.position.x = 0;
             draw_shape(&ribbon1, ribbons_layer);
@@ -2375,10 +2348,10 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
             ribbon2.params.rotation = t(90, 90 + a2, 0, duration_const, EaseOut);
             ribbon4.params.rotation = t(270, 270 + a2, 0, duration_const, EaseOut);
 
-            float k = .5;
+            float k = 0.5f;
             ribbon2.params.alpha = ribbon4.params.alpha = t(1, 0, duration_const * k * 0.5f, duration_const * k * 0.1f, Linear);
 
-            int ribbon_k = time > duration_const ? 1 : 0;
+            int32_t ribbon_k = time > duration_const ? 1 : 0;
 
             change_ribbon(&ribbon1, t(ribbonLength - 8.0f * ribbon_k - free_scroll_offset / 5.0f * (30 - 8 * ribbon_k), 0, 0, duration_const * 0.9f, Linear));
             draw_shape(&ribbon1, ribbons_layer);
@@ -2443,7 +2416,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
             private_stroke.params.alpha = t(1, 0, 0, duration_const, Linear);
             private_stroke.params.position = xyzMake(0, t(0, -6, 0, duration_const, EaseOut), 0);
             scale = t_reversed(63 * 2.0f, 63 * 2, 0, duration_const, EaseOut);
-            change_rounded_rectangle_stroked(&private_stroke, CSizeMake(scale, scale), scale / 2.0f, 9);
+            change_rounded_rectangle_stroked(&private_stroke, CSizeMake(scale, scale), scale / 2.0f);
             draw_shape(&private_stroke, main_matrix);
 
             float infinityDurK = 1.1;
@@ -2526,7 +2499,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
             private_stroke.params.alpha = 1;
             private_stroke.params.position = xyzMake(0, 0, 0);
             scale = t(63, 63 * 2, 0, duration_const, EaseOut);
-            change_rounded_rectangle_stroked(&private_stroke, CSizeMake(scale, scale), scale / 2.0f, 9);
+            change_rounded_rectangle_stroked(&private_stroke, CSizeMake(scale, scale), scale / 2.0f);
             draw_shape(&private_stroke, main_matrix);
 
             glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
@@ -2548,7 +2521,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
             private_stroke.params.alpha = t(0, 1, 0, duration_const * 0.25f, Linear);
             private_stroke.params.position = xyzMake(0, 0, 0);
             scale = t(63, 63 * 2, 0, duration_const * private_back_k, EaseOut);
-            change_rounded_rectangle_stroked(&private_stroke, CSizeMake(scale, scale), scale / 2.0f, 9);
+            change_rounded_rectangle_stroked(&private_stroke, CSizeMake(scale, scale), scale / 2.0f);
             draw_shape(&private_stroke, main_matrix);
 
             glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
@@ -2579,7 +2552,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
         private_stroke.params.rotation = private_scroll_offset;
         private_stroke.params.alpha = t(1, 0, 0, duration_const * private_fade_k * 0.5f, EaseOut);
         scale = t(244 / 2, r2 * 2, 0, duration_const, EaseOut);
-        change_rounded_rectangle_stroked(&private_stroke, CSizeMake(scale, scale), scale / 2.0f, 9);
+        change_rounded_rectangle_stroked(&private_stroke, CSizeMake(scale, scale), scale / 2.0f);
         draw_shape(&private_stroke, main_matrix);
 
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
@@ -2600,7 +2573,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_setScrollOffset(JNIEnv *env, jc
     scroll_offset = a_offset;
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Intro_setPage(JNIEnv *env, jclass class, int page) {
+JNIEXPORT void Java_org_telegram_messenger_Intro_setPage(JNIEnv *env, jclass class, int32_t page) {
     if (current_page == page) {
         return;
     } else {
@@ -2717,7 +2690,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onSurfaceCreated(JNIEnv *env, j
 
     mask1 = create_rounded_rectangle(CSizeMake(60, 60), 0, 16, black_color);
 
-    telegram_sphere = create_textured_rectangle(CSizeMake(148, 148), telegram_sphere_texture);
+    telegram_sphere = create_textured_rectangle(CSizeMake(150, 150), telegram_sphere_texture);
     telegram_plane = create_textured_rectangle(CSizeMake(82, 74), telegram_plane_texture);
     telegram_plane.params.anchor = xyzMake(6, -5, 0);
 
@@ -2730,7 +2703,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onSurfaceCreated(JNIEnv *env, j
     fast_arrow = create_textured_rectangle(CSizeMake(164 / 2, 44 / 2), fast_arrow_texture);
     fast_arrow.params.anchor.x = fast_arrow_shadow.params.anchor.x = -19;
 
-    int ang = 180;
+    int32_t ang = 180;
     spiral = create_segmented_square(r1, D2R(35 + 1), D2R(35 + 1 - 10 + ang), fast_spiral_texture);
 
     vec4 free_bg_color = {246 / 255.0f, 73 / 255.0f, 55 / 255.0f, 1};
@@ -2815,7 +2788,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onSurfaceCreated(JNIEnv *env, j
     private_screw = create_textured_rectangle(CSizeMake(30 / 3, 30 / 3), private_screw_texture);
     private_stroke = create_rounded_rectangle_stroked(CSizeMake(244 / 2, 244 / 2), 21, 9, 16, white_color);
 
-    int cloud_polygons_count = 64;
+    int32_t cloud_polygons_count = 64;
     cloud_extra_mask1 = create_circle(1, cloud_polygons_count, black_color);
     cloud_extra_mask2 = create_circle(1, cloud_polygons_count, black_color);
     cloud_extra_mask3 = create_circle(1, cloud_polygons_count, black_color);
@@ -2828,14 +2801,14 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onSurfaceCreated(JNIEnv *env, j
     cloud_bg = create_rectangle(CSizeMake(160 * 2, 160 * 2), cloud_color);
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Intro_onSurfaceChanged(JNIEnv *env, jclass class, int a_width_px, int a_height_px, float a_scale_factor, int a1) {
+JNIEXPORT void Java_org_telegram_messenger_Intro_onSurfaceChanged(JNIEnv *env, jclass class, int32_t a_width_px, int32_t a_height_px, float a_scale_factor, int32_t a1) {
     glViewport(0, 0, a_width_px, a_height_px);
-    width = (int) (a_width_px / a_scale_factor);
-    height = (int) (a_height_px / a_scale_factor);
+    width = (int32_t) (a_width_px / a_scale_factor);
+    height = (int32_t) (a_height_px / a_scale_factor);
     scale_factor = a_scale_factor;
-    mat4x4_plain(main_matrix, (int)((float)a_width_px / a_scale_factor), (int)((float)a_height_px / a_scale_factor));
-    offset_y = a1*main_matrix[1][1];
+    mat4x4_plain(main_matrix, (int32_t) ((float) a_width_px / a_scale_factor), (int32_t) ((float) a_height_px / a_scale_factor));
+    offset_y = a1 * main_matrix[1][1];
     set_y_offset_objects(offset_y);
     y_offset_absolute = a1;
-    mat4x4_stars(stars_matrix, 45, 1, -1000, 0, (int)((float)a_width_px / a_scale_factor), (int)((float)a_height_px / a_scale_factor));
+    mat4x4_stars(stars_matrix, 45, 1, -1000, 0, (int32_t) ((float) a_width_px / a_scale_factor), (int32_t) ((float) a_height_px / a_scale_factor));
 }

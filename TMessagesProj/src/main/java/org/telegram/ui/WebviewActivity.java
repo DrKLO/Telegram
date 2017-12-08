@@ -14,8 +14,11 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Build;
 import android.text.TextUtils;
 import android.view.View;
@@ -83,7 +86,7 @@ public class WebviewActivity extends BaseFragment {
                             currentMessageObject.messageOwner.with_my_score = true;
                             break;
                     }
-                    showDialog(new ShareAlert(getParentActivity(), currentMessageObject, null, false, linkToCopy, false));
+                    showDialog(ShareAlert.createShareAlert(getParentActivity(), currentMessageObject, null, false, linkToCopy, false));
                 }
             });
         }
@@ -144,7 +147,7 @@ public class WebviewActivity extends BaseFragment {
                     finishFragment();
                 } else if (id == share) {
                     currentMessageObject.messageOwner.with_my_score = false;
-                    showDialog(new ShareAlert(getParentActivity(), currentMessageObject, null, false, linkToCopy, false));
+                    showDialog(ShareAlert.createShareAlert(getParentActivity(), currentMessageObject, null, false, linkToCopy, false));
                 } else if (id == open_in) {
                     openGameInBrowser(currentUrl, currentMessageObject, getParentActivity(), short_param, currentBot);
                 }
@@ -174,9 +177,39 @@ public class WebviewActivity extends BaseFragment {
         }
 
         webView.setWebViewClient(new WebViewClient() {
+
+            private boolean isInternalUrl(String url) {
+                if (TextUtils.isEmpty(url)) {
+                    return false;
+                }
+                Uri uri = Uri.parse(url);
+                if ("tg".equals(uri.getScheme())) {
+                    finishFragment(false);
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                        ComponentName componentName = new ComponentName(ApplicationLoader.applicationContext.getPackageName(), LaunchActivity.class.getName());
+                        intent.setComponent(componentName);
+                        intent.putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, ApplicationLoader.applicationContext.getPackageName());
+                        ApplicationLoader.applicationContext.startActivity(intent);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    return true;
+                }
+                return false;
+            }
+
             @Override
             public void onLoadResource(WebView view, String url) {
+                if (isInternalUrl(url)) {
+                    return;
+                }
                 super.onLoadResource(view, url);
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return isInternalUrl(url) || super.shouldOverrideUrlLoading(view, url);
             }
 
             @Override

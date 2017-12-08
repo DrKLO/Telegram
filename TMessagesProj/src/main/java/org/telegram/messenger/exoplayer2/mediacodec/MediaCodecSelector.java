@@ -55,8 +55,7 @@ public interface MediaCodecSelector {
   /**
    * Selects a decoder to instantiate for audio passthrough.
    *
-   * @return A {@link MediaCodecInfo} describing the decoder, or null if no suitable decoder
-   *     exists.
+   * @return A {@link MediaCodecInfo} describing the decoder, or null if no suitable decoder exists.
    * @throws DecoderQueryException Thrown if there was an error querying decoders.
    */
   MediaCodecInfo getPassthroughDecoderInfo() throws DecoderQueryException;

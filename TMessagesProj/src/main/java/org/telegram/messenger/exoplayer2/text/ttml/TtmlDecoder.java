@@ -17,7 +17,6 @@ package org.telegram.messenger.exoplayer2.text.ttml;
 
 import android.text.Layout;
 import android.util.Log;
-import android.util.Pair;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.text.Cue;
 import org.telegram.messenger.exoplayer2.text.SimpleSubtitleDecoder;
@@ -100,7 +99,7 @@ public final class TtmlDecoder extends SimpleSubtitleDecoder {
       XmlPullParser xmlParser = xmlParserFactory.newPullParser();
       Map<String, TtmlStyle> globalStyles = new HashMap<>();
       Map<String, TtmlRegion> regionMap = new HashMap<>();
-      regionMap.put(TtmlNode.ANONYMOUS_REGION_ID, new TtmlRegion());
+      regionMap.put(TtmlNode.ANONYMOUS_REGION_ID, new TtmlRegion(null));
       ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes, 0, length);
       xmlParser.setInput(inputStream, null);
       TtmlSubtitle ttmlSubtitle = null;
@@ -211,9 +210,9 @@ public final class TtmlDecoder extends SimpleSubtitleDecoder {
           globalStyles.put(style.getId(), style);
         }
       } else if (XmlPullParserUtil.isStartTag(xmlParser, TtmlNode.TAG_REGION)) {
-        Pair<String, TtmlRegion> ttmlRegionInfo = parseRegionAttributes(xmlParser);
-        if (ttmlRegionInfo != null) {
-          globalRegions.put(ttmlRegionInfo.first, ttmlRegionInfo.second);
+        TtmlRegion ttmlRegion = parseRegionAttributes(xmlParser);
+        if (ttmlRegion != null) {
+          globalRegions.put(ttmlRegion.id, ttmlRegion);
         }
       }
     } while (!XmlPullParserUtil.isEndTag(xmlParser, TtmlNode.TAG_HEAD));
@@ -221,41 +220,92 @@ public final class TtmlDecoder extends SimpleSubtitleDecoder {
   }
 
   /**
-   * Parses a region declaration. Supports origin and extent definition but only when defined in
-   * terms of percentage of the viewport. Regions that do not correctly declare origin are ignored.
+   * Parses a region declaration.
+   * <p>
+   * If the region defines an origin and extent, it is required that they're defined as percentages
+   * of the viewport. Region declarations that define origin and extent in other formats are
+   * unsupported, and null is returned.
    */
-  private Pair<String, TtmlRegion> parseRegionAttributes(XmlPullParser xmlParser) {
+  private TtmlRegion parseRegionAttributes(XmlPullParser xmlParser) {
     String regionId = XmlPullParserUtil.getAttributeValue(xmlParser, TtmlNode.ATTR_ID);
-    String regionOrigin = XmlPullParserUtil.getAttributeValue(xmlParser, TtmlNode.ATTR_TTS_ORIGIN);
-    String regionExtent = XmlPullParserUtil.getAttributeValue(xmlParser, TtmlNode.ATTR_TTS_EXTENT);
-    if (regionOrigin == null || regionId == null) {
+    if (regionId == null) {
       return null;
     }
-    float position = Cue.DIMEN_UNSET;
-    float line = Cue.DIMEN_UNSET;
-    Matcher originMatcher = PERCENTAGE_COORDINATES.matcher(regionOrigin);
-    if (originMatcher.matches()) {
-      try {
-        position = Float.parseFloat(originMatcher.group(1)) / 100.f;
-        line = Float.parseFloat(originMatcher.group(2)) / 100.f;
-      } catch (NumberFormatException e) {
-        Log.w(TAG, "Ignoring region with malformed origin: '" + regionOrigin + "'", e);
-        position = Cue.DIMEN_UNSET;
+
+    float position;
+    float line;
+    String regionOrigin = XmlPullParserUtil.getAttributeValue(xmlParser, TtmlNode.ATTR_TTS_ORIGIN);
+    if (regionOrigin != null) {
+      Matcher originMatcher = PERCENTAGE_COORDINATES.matcher(regionOrigin);
+      if (originMatcher.matches()) {
+        try {
+          position = Float.parseFloat(originMatcher.group(1)) / 100f;
+          line = Float.parseFloat(originMatcher.group(2)) / 100f;
+        } catch (NumberFormatException e) {
+          Log.w(TAG, "Ignoring region with malformed origin: " + regionOrigin);
+          return null;
+        }
+      } else {
+        Log.w(TAG, "Ignoring region with unsupported origin: " + regionOrigin);
+        return null;
       }
+    } else {
+      Log.w(TAG, "Ignoring region without an origin");
+      return null;
+      // TODO: Should default to top left as below in this case, but need to fix
+      // https://github.com/google/ExoPlayer/issues/2953 first.
+      // Origin is omitted. Default to top left.
+      // position = 0;
+      // line = 0;
     }
-    float width = Cue.DIMEN_UNSET;
+
+    float width;
+    float height;
+    String regionExtent = XmlPullParserUtil.getAttributeValue(xmlParser, TtmlNode.ATTR_TTS_EXTENT);
     if (regionExtent != null) {
       Matcher extentMatcher = PERCENTAGE_COORDINATES.matcher(regionExtent);
       if (extentMatcher.matches()) {
         try {
-          width = Float.parseFloat(extentMatcher.group(1)) / 100.f;
+          width = Float.parseFloat(extentMatcher.group(1)) / 100f;
+          height = Float.parseFloat(extentMatcher.group(2)) / 100f;
         } catch (NumberFormatException e) {
-          Log.w(TAG, "Ignoring malformed region extent: '" + regionExtent + "'", e);
+          Log.w(TAG, "Ignoring region with malformed extent: " + regionOrigin);
+          return null;
         }
+      } else {
+        Log.w(TAG, "Ignoring region with unsupported extent: " + regionOrigin);
+        return null;
+      }
+    } else {
+      Log.w(TAG, "Ignoring region without an extent");
+      return null;
+      // TODO: Should default to extent of parent as below in this case, but need to fix
+      // https://github.com/google/ExoPlayer/issues/2953 first.
+      // Extent is omitted. Default to extent of parent.
+      // width = 1;
+      // height = 1;
+    }
+
+    @Cue.AnchorType int lineAnchor = Cue.ANCHOR_TYPE_START;
+    String displayAlign = XmlPullParserUtil.getAttributeValue(xmlParser,
+        TtmlNode.ATTR_TTS_DISPLAY_ALIGN);
+    if (displayAlign != null) {
+      switch (Util.toLowerInvariant(displayAlign)) {
+        case "center":
+          lineAnchor = Cue.ANCHOR_TYPE_MIDDLE;
+          line += height / 2;
+          break;
+        case "after":
+          lineAnchor = Cue.ANCHOR_TYPE_END;
+          line += height;
+          break;
+        default:
+          // Default "before" case. Do nothing.
+          break;
       }
     }
-    return position != Cue.DIMEN_UNSET ? new Pair<>(regionId, new TtmlRegion(position, line,
-        Cue.LINE_TYPE_FRACTION, width)) : null;
+
+    return new TtmlRegion(regionId, position, line, Cue.LINE_TYPE_FRACTION, lineAnchor, width);
   }
 
   private String[] parseStyleIds(String parentStyleIds) {
@@ -277,7 +327,7 @@ public final class TtmlDecoder extends SimpleSubtitleDecoder {
           try {
             style.setBackgroundColor(ColorParser.parseTtmlColor(attributeValue));
           } catch (IllegalArgumentException e) {
-            Log.w(TAG, "failed parsing background value: '" + attributeValue + "'");
+            Log.w(TAG, "Failed parsing background value: " + attributeValue);
           }
           break;
         case TtmlNode.ATTR_TTS_COLOR:
@@ -285,7 +335,7 @@ public final class TtmlDecoder extends SimpleSubtitleDecoder {
           try {
             style.setFontColor(ColorParser.parseTtmlColor(attributeValue));
           } catch (IllegalArgumentException e) {
-            Log.w(TAG, "failed parsing color value: '" + attributeValue + "'");
+            Log.w(TAG, "Failed parsing color value: " + attributeValue);
           }
           break;
         case TtmlNode.ATTR_TTS_FONT_FAMILY:
@@ -296,7 +346,7 @@ public final class TtmlDecoder extends SimpleSubtitleDecoder {
             style = createIfNull(style);
             parseFontSize(attributeValue, style);
           } catch (SubtitleDecoderException e) {
-            Log.w(TAG, "failed parsing fontSize value: '" + attributeValue + "'");
+            Log.w(TAG, "Failed parsing fontSize value: " + attributeValue);
           }
           break;
         case TtmlNode.ATTR_TTS_FONT_WEIGHT:

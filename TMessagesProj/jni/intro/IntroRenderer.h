@@ -42,8 +42,8 @@ typedef struct {
 
 typedef struct {
     GLuint program;
-    GLint a_position_location;
-    GLint a_texture_coordinates_location;
+    GLuint a_position_location;
+    GLuint a_texture_coordinates_location;
     GLint u_mvp_matrix_location;
     GLint u_texture_unit_location;
     GLint u_alpha_loaction;
@@ -51,7 +51,7 @@ typedef struct {
 
 typedef struct {
     GLuint program;
-    GLint a_position_location;
+    GLuint a_position_location;
     GLint u_mvp_matrix_location;
     GLint u_color_location;
     GLint u_alpha_loaction;
@@ -68,7 +68,7 @@ typedef struct {
 } VarParams;
 
 typedef struct {
-    size_t datasize;
+    GLsizeiptr datasize;
     int round_count;
     GLenum triangle_mode;
     int is_star;

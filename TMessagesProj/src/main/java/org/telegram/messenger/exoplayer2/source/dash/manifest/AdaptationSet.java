@@ -41,31 +41,40 @@ public class AdaptationSet {
   public final int type;
 
   /**
-   * The {@link Representation}s in the adaptation set.
+   * {@link Representation}s in the adaptation set.
    */
   public final List<Representation> representations;
 
   /**
-   * The accessibility descriptors in the adaptation set.
+   * Accessibility descriptors in the adaptation set.
    */
-  public final List<SchemeValuePair> accessibilityDescriptors;
+  public final List<Descriptor> accessibilityDescriptors;
+
+  /**
+   * Supplemental properties in the adaptation set.
+   */
+  public final List<Descriptor> supplementalProperties;
 
   /**
    * @param id A non-negative identifier for the adaptation set that's unique in the scope of its
    *     containing period, or {@link #ID_UNSET} if not specified.
    * @param type The type of the adaptation set. One of the {@link org.telegram.messenger.exoplayer2.C}
    *     {@code TRACK_TYPE_*} constants.
-   * @param representations The {@link Representation}s in the adaptation set.
-   * @param accessibilityDescriptors The accessibility descriptors in the adaptation set.
+   * @param representations {@link Representation}s in the adaptation set.
+   * @param accessibilityDescriptors Accessibility descriptors in the adaptation set.
+   * @param supplementalProperties Supplemental properties in the adaptation set.
    */
   public AdaptationSet(int id, int type, List<Representation> representations,
-      List<SchemeValuePair> accessibilityDescriptors) {
+      List<Descriptor> accessibilityDescriptors, List<Descriptor> supplementalProperties) {
     this.id = id;
     this.type = type;
     this.representations = Collections.unmodifiableList(representations);
     this.accessibilityDescriptors = accessibilityDescriptors == null
-        ? Collections.<SchemeValuePair>emptyList()
+        ? Collections.<Descriptor>emptyList()
         : Collections.unmodifiableList(accessibilityDescriptors);
+    this.supplementalProperties = supplementalProperties == null
+        ? Collections.<Descriptor>emptyList()
+        : Collections.unmodifiableList(supplementalProperties);
   }
 
 }

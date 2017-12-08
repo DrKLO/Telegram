@@ -225,7 +225,7 @@ public final class H265Reader implements ElementaryStreamReader {
     ParsableNalUnitBitArray bitArray = new ParsableNalUnitBitArray(sps.nalData, 0, sps.nalLength);
     bitArray.skipBits(40 + 4); // NAL header, sps_video_parameter_set_id
     int maxSubLayersMinus1 = bitArray.readBits(3);
-    bitArray.skipBits(1); // sps_temporal_id_nesting_flag
+    bitArray.skipBit(); // sps_temporal_id_nesting_flag
 
     // profile_tier_level(1, sps_max_sub_layers_minus1)
     bitArray.skipBits(88); // if (profilePresentFlag) {...}
@@ -247,7 +247,7 @@ public final class H265Reader implements ElementaryStreamReader {
     bitArray.readUnsignedExpGolombCodedInt(); // sps_seq_parameter_set_id
     int chromaFormatIdc = bitArray.readUnsignedExpGolombCodedInt();
     if (chromaFormatIdc == 3) {
-      bitArray.skipBits(1); // separate_colour_plane_flag
+      bitArray.skipBit(); // separate_colour_plane_flag
     }
     int picWidthInLumaSamples = bitArray.readUnsignedExpGolombCodedInt();
     int picHeightInLumaSamples = bitArray.readUnsignedExpGolombCodedInt();
@@ -288,7 +288,7 @@ public final class H265Reader implements ElementaryStreamReader {
       bitArray.skipBits(8);
       bitArray.readUnsignedExpGolombCodedInt(); // log2_min_pcm_luma_coding_block_size_minus3
       bitArray.readUnsignedExpGolombCodedInt(); // log2_diff_max_min_pcm_luma_coding_block_size
-      bitArray.skipBits(1); // pcm_loop_filter_disabled_flag
+      bitArray.skipBit(); // pcm_loop_filter_disabled_flag
     }
     // Skips all short term reference picture sets.
     skipShortTermRefPicSets(bitArray);
@@ -365,11 +365,11 @@ public final class H265Reader implements ElementaryStreamReader {
         interRefPicSetPredictionFlag = bitArray.readBit();
       }
       if (interRefPicSetPredictionFlag) {
-        bitArray.skipBits(1); // delta_rps_sign
+        bitArray.skipBit(); // delta_rps_sign
         bitArray.readUnsignedExpGolombCodedInt(); // abs_delta_rps_minus1
         for (int j = 0; j <= previousNumDeltaPocs; j++) {
           if (bitArray.readBit()) { // used_by_curr_pic_flag[j]
-            bitArray.skipBits(1); // use_delta_flag[j]
+            bitArray.skipBit(); // use_delta_flag[j]
           }
         }
       } else {
@@ -378,11 +378,11 @@ public final class H265Reader implements ElementaryStreamReader {
         previousNumDeltaPocs = numNegativePics + numPositivePics;
         for (int i = 0; i < numNegativePics; i++) {
           bitArray.readUnsignedExpGolombCodedInt(); // delta_poc_s0_minus1[i]
-          bitArray.skipBits(1); // used_by_curr_pic_s0_flag[i]
+          bitArray.skipBit(); // used_by_curr_pic_s0_flag[i]
         }
         for (int i = 0; i < numPositivePics; i++) {
           bitArray.readUnsignedExpGolombCodedInt(); // delta_poc_s1_minus1[i]
-          bitArray.skipBits(1); // used_by_curr_pic_s1_flag[i]
+          bitArray.skipBit(); // used_by_curr_pic_s1_flag[i]
         }
       }
     }

@@ -255,7 +255,7 @@ public class GridLayoutManager extends LinearLayoutManager {
         return mSpanSizeLookup;
     }
 
-    private void updateMeasurements() {
+    protected void updateMeasurements() {
         int totalSpace;
         if (getOrientation() == VERTICAL) {
             totalSpace = getWidth() - getPaddingRight() - getPaddingLeft();
@@ -301,7 +301,7 @@ public class GridLayoutManager extends LinearLayoutManager {
      * @return The updated array. Might be the same instance as the provided array if its size
      * has not changed.
      */
-    static int[] calculateItemBorders(int[] cachedBorders, int spanCount, int totalSpace) {
+    protected int[] calculateItemBorders(int[] cachedBorders, int spanCount, int totalSpace) {
         if (cachedBorders == null || cachedBorders.length != spanCount + 1
                 || cachedBorders[cachedBorders.length - 1] != totalSpace) {
             cachedBorders = new int[spanCount + 1];
@@ -447,7 +447,7 @@ public class GridLayoutManager extends LinearLayoutManager {
         return mSpanSizeLookup.getSpanGroupIndex(adapterPosition, mSpanCount);
     }
 
-    private int getSpanIndex(RecyclerView.Recycler recycler, RecyclerView.State state, int pos) {
+    protected int getSpanIndex(RecyclerView.Recycler recycler, RecyclerView.State state, int pos) {
         if (!state.isPreLayout()) {
             return mSpanSizeLookup.getCachedSpanIndex(pos, mSpanCount);
         }
@@ -468,7 +468,7 @@ public class GridLayoutManager extends LinearLayoutManager {
         return mSpanSizeLookup.getCachedSpanIndex(adapterPosition, mSpanCount);
     }
 
-    private int getSpanSize(RecyclerView.Recycler recycler, RecyclerView.State state, int pos) {
+    protected int getSpanSize(RecyclerView.Recycler recycler, RecyclerView.State state, int pos) {
         if (!state.isPreLayout()) {
             return mSpanSizeLookup.getSpanSize(pos);
         }
@@ -692,7 +692,7 @@ public class GridLayoutManager extends LinearLayoutManager {
      *                               orientation
      * @param alreadyMeasured True if we've already measured this view once
      */
-    private void measureChild(View view, int otherDirParentSpecMode, boolean alreadyMeasured) {
+    protected void measureChild(View view, int otherDirParentSpecMode, boolean alreadyMeasured) {
         final LayoutParams lp = (LayoutParams) view.getLayoutParams();
         final Rect decorInsets = lp.mDecorInsets;
         final int verticalInsets = decorInsets.top + decorInsets.bottom
@@ -726,13 +726,13 @@ public class GridLayoutManager extends LinearLayoutManager {
      * @param maxSizeInOther The maximum size per span ratio from the measurement of the children.
      * @param currentOtherDirSize The size before this layout chunk. There is no reason to go below.
      */
-    private void guessMeasurement(float maxSizeInOther, int currentOtherDirSize) {
+    protected void guessMeasurement(float maxSizeInOther, int currentOtherDirSize) {
         final int contentSize = Math.round(maxSizeInOther * mSpanCount);
         // always re-calculate because borders were stretched during the fill
         calculateItemBorders(Math.max(contentSize, currentOtherDirSize));
     }
 
-    private void measureChildWithDecorationsAndMargin(View child, int widthSpec, int heightSpec,
+    protected void measureChildWithDecorationsAndMargin(View child, int widthSpec, int heightSpec,
             boolean alreadyMeasured) {
         RecyclerView.LayoutParams lp = (RecyclerView.LayoutParams) child.getLayoutParams();
         final boolean measure;
@@ -746,7 +746,7 @@ public class GridLayoutManager extends LinearLayoutManager {
         }
     }
 
-    private void assignSpans(RecyclerView.Recycler recycler, RecyclerView.State state, int count,
+    protected void assignSpans(RecyclerView.Recycler recycler, RecyclerView.State state, int count,
             int consumedSpanCount, boolean layingOutInPrimaryDirection) {
         // spans are always assigned from 0 to N no matter if it is RTL or not.
         // RTL is used only when positioning the view.

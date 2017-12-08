@@ -24,7 +24,9 @@ import android.media.NotProvisionedException;
 import android.media.ResourceBusyException;
 import android.media.UnsupportedSchemeException;
 import android.support.annotation.NonNull;
+import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.util.Assertions;
+import org.telegram.messenger.exoplayer2.util.Util;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -163,7 +165,12 @@ public final class FrameworkMediaDrm implements ExoMediaDrm<FrameworkMediaCrypto
   @Override
   public FrameworkMediaCrypto createMediaCrypto(UUID uuid, byte[] initData)
       throws MediaCryptoException {
-    return new FrameworkMediaCrypto(new MediaCrypto(uuid, initData));
+    // Work around a bug prior to Lollipop where L1 Widevine forced into L3 mode would still
+    // indicate that it required secure video decoders [Internal ref: b/11428937].
+    boolean forceAllowInsecureDecoderComponents = Util.SDK_INT < 21
+        && C.WIDEVINE_UUID.equals(uuid) && "L3".equals(getPropertyString("securityLevel"));
+    return new FrameworkMediaCrypto(new MediaCrypto(uuid, initData),
+        forceAllowInsecureDecoderComponents);
   }
 
 }

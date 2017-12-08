@@ -40,17 +40,16 @@ public class SharedMediaQuery {
     public final static int MEDIA_MUSIC = 4;
     public final static int MEDIA_TYPES_COUNT = 5;
 
-    public static void loadMedia(final long uid, final int offset, final int count, final int max_id, final int type, final boolean fromCache, final int classGuid) {
+    public static void loadMedia(final long uid, final int count, final int max_id, final int type, final boolean fromCache, final int classGuid) {
         final boolean isChannel = (int) uid < 0 && ChatObject.isChannel(-(int) uid);
 
         int lower_part = (int)uid;
         if (fromCache || lower_part == 0) {
-            loadMediaDatabase(uid, offset, count, max_id, type, classGuid, isChannel);
+            loadMediaDatabase(uid, count, max_id, type, classGuid, isChannel);
         } else {
             TLRPC.TL_messages_search req = new TLRPC.TL_messages_search();
-            req.offset = offset;
             req.limit = count + 1;
-            req.max_id = max_id;
+            req.offset_id = max_id;
             if (type == MEDIA_PHOTOVIDEO) {
                 req.filter = new TLRPC.TL_inputMessagesFilterPhotoVideo();
             } else if (type == MEDIA_FILE) {
@@ -79,7 +78,7 @@ public class SharedMediaQuery {
                         } else {
                             topReached = true;
                         }
-                        processLoadedMedia(res, uid, offset, count, max_id, type, false, classGuid, isChannel, topReached);
+                        processLoadedMedia(res, uid, count, max_id, type, false, classGuid, isChannel, topReached);
                     }
                 }
             });
@@ -93,9 +92,8 @@ public class SharedMediaQuery {
             getMediaCountDatabase(uid, type, classGuid);
         } else {
             TLRPC.TL_messages_search req = new TLRPC.TL_messages_search();
-            req.offset = 0;
             req.limit = 1;
-            req.max_id = 0;
+            req.offset_id = 0;
             if (type == MEDIA_PHOTOVIDEO) {
                 req.filter = new TLRPC.TL_inputMessagesFilterPhotoVideo();
             } else if (type == MEDIA_FILE) {
@@ -188,10 +186,10 @@ public class SharedMediaQuery {
         return false;
     }
 
-    private static void processLoadedMedia(final TLRPC.messages_Messages res, final long uid, int offset, int count, int max_id, final int type, final boolean fromCache, final int classGuid, final boolean isChannel, final boolean topReached) {
+    private static void processLoadedMedia(final TLRPC.messages_Messages res, final long uid, int count, int max_id, final int type, final boolean fromCache, final int classGuid, final boolean isChannel, final boolean topReached) {
         int lower_part = (int)uid;
         if (fromCache && res.messages.isEmpty() && lower_part != 0) {
-            loadMedia(uid, offset, count, max_id, type, false, classGuid);
+            loadMedia(uid, count, max_id, type, false, classGuid);
         } else {
             if (!fromCache) {
                 ImageLoader.saveMessagesThumbs(res.messages);
@@ -289,7 +287,7 @@ public class SharedMediaQuery {
         });
     }
 
-    private static void loadMediaDatabase(final long uid, final int offset, final int count, final int max_id, final int type, final int classGuid, final boolean isChannel) {
+    private static void loadMediaDatabase(final long uid, final int count, final int max_id, final int type, final int classGuid, final boolean isChannel) {
         MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -362,9 +360,9 @@ public class SharedMediaQuery {
                             }
                             cursor.dispose();
                             if (holeMessageId > 1) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid >= %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d,%d", uid, holeMessageId, type, offset, countToLoad));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid >= %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d", uid, holeMessageId, type, countToLoad));
                             } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid > 0 AND type = %d ORDER BY date DESC, mid DESC LIMIT %d,%d", uid, type, offset, countToLoad));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid > 0 AND type = %d ORDER BY date DESC, mid DESC LIMIT %d", uid, type, countToLoad));
                             }
                         }
                     } else {
@@ -372,7 +370,7 @@ public class SharedMediaQuery {
                         if (max_id != 0) {
                             cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, r.random_id FROM media_v2 as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d AND type = %d ORDER BY m.mid ASC LIMIT %d", uid, max_id, type, countToLoad));
                         } else {
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, r.random_id FROM media_v2 as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND type = %d ORDER BY m.mid ASC LIMIT %d,%d", uid, type, offset, countToLoad));
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, r.random_id FROM media_v2 as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND type = %d ORDER BY m.mid ASC LIMIT %d", uid, type, countToLoad));
                         }
                     }
 
@@ -418,7 +416,7 @@ public class SharedMediaQuery {
                     res.users.clear();
                     FileLog.e(e);
                 } finally {
-                    processLoadedMedia(res, uid, offset, count, max_id, type, true, classGuid, isChannel, topReached);
+                    processLoadedMedia(res, uid, count, max_id, type, true, classGuid, isChannel, topReached);
                 }
             }
         });
@@ -474,13 +472,19 @@ public class SharedMediaQuery {
         });
     }
 
-    public static void loadMusic(final long uid, final int max_id) {
+    public static void loadMusic(final long uid, final long max_id) {
         MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
             @Override
             public void run() {
                 final ArrayList<MessageObject> arrayList = new ArrayList<>();
                 try {
-                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, max_id, MEDIA_MUSIC));
+                    int lower_id = (int) uid;
+                    SQLiteCursor cursor;
+                    if (lower_id != 0) {
+                        cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, max_id, MEDIA_MUSIC));
+                    } else {
+                        cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid > %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, max_id, MEDIA_MUSIC));
+                    }
 
                     while (cursor.next()) {
                         NativeByteBuffer data = cursor.byteBufferValue(0);

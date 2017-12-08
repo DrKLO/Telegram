@@ -1,7 +1,5 @@
 #include <jni.h>
 #include <stdio.h>
-#include "breakpad/client/linux/handler/exception_handler.h"
-#include "breakpad/client/linux/handler/minidump_descriptor.h"
 
 /*static google_breakpad::ExceptionHandler *exceptionHandler;
 

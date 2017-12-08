@@ -45,6 +45,7 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.voip.VoIPHelper;
 
 import java.util.ArrayList;
 
@@ -90,11 +91,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         privacySectionRow = rowCount++;
         blockedRow = rowCount++;
         lastSeenRow = rowCount++;
-        if (MessagesController.getInstance().callsEnabled) {
-            callsRow = rowCount++;
-        } else {
-            callsRow = -1;
-        }
+        callsRow = rowCount++;
         groupsRow = rowCount++;
         groupsDetailRow = rowCount++;
         securitySectionRow = rowCount++;
@@ -108,6 +105,10 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         paymentsSectionRow = rowCount++;
         paymentsClearRow = rowCount++;
         paymentsDetailRow = rowCount++;
+        callsSectionRow = rowCount++;
+        callsP2PRow = rowCount++;
+        callsDetailRow = rowCount++;
+
         if (MessagesController.getInstance().secretWebpagePreview != 1) {
             secretSectionRow = rowCount++;
             secretWebpageRow = rowCount++;
@@ -117,17 +118,9 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             secretWebpageRow = -1;
             secretDetailRow = -1;
         }
-        if(MessagesController.getInstance().callsEnabled){
-            callsSectionRow=rowCount++;
-            callsP2PRow=rowCount++;
-            callsDetailRow=rowCount++;
-        }else{
-            callsSectionRow=-1;
-            callsP2PRow=-1;
-            callsDetailRow=-1;
-        }
 
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.privacyRulesUpdated);
+        VoIPHelper.upgradeP2pSetting();
 
         return true;
     }
@@ -254,12 +247,22 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         ((TextCheckCell) view).setChecked(MessagesController.getInstance().secretWebpagePreview == 1);
                     }
                 } else if (position == callsP2PRow) {
-                    SharedPreferences prefs=getParentActivity().getSharedPreferences("mainconfig", Context.MODE_PRIVATE);
-					boolean enableP2p=!prefs.getBoolean("calls_p2p", true);
-                    prefs.edit().putBoolean("calls_p2p", enableP2p).commit();
-                    if (view instanceof TextCheckCell) {
-                        ((TextCheckCell) view).setChecked(enableP2p);
-                    }
+                    new AlertDialog.Builder(getParentActivity())
+                            .setTitle(LocaleController.getString("PrivacyCallsP2PTitle", R.string.PrivacyCallsP2PTitle))
+							.setItems(new String[]{
+							        LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody),
+                                    LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts),
+                                    LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody)
+                            }, new DialogInterface.OnClickListener(){
+                                @Override
+                                public void onClick(DialogInterface dialog, int which){
+                                    SharedPreferences prefs=getParentActivity().getSharedPreferences("mainconfig", Context.MODE_PRIVATE);
+                                    prefs.edit().putInt("calls_p2p_new", which).apply();
+                                    listAdapter.notifyDataSetChanged();
+                                }
+                            })
+                            .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
+                            .show();
                 } else if (position == paymentsClearRow) {
                     BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
                     builder.setApplyTopPadding(false);
@@ -496,6 +499,22 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         textCell.setTextAndValue(LocaleController.getString("DeleteAccountIfAwayFor", R.string.DeleteAccountIfAwayFor), value, false);
                     } else if (position == paymentsClearRow) {
                         textCell.setText(LocaleController.getString("PrivacyPaymentsClear", R.string.PrivacyPaymentsClear), false);
+                    } else if (position == callsP2PRow) {
+                        SharedPreferences prefs=getParentActivity().getSharedPreferences("mainconfig", Context.MODE_PRIVATE);
+                        String value;
+                        switch(prefs.getInt("calls_p2p_new", MessagesController.getInstance().defaultP2pContacts ? 1 : 0)){
+                            case 1:
+                                value=LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts);
+                                break;
+                            case 2:
+                                value=LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody);
+                                break;
+                            case 0:
+                            default:
+                                value=LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody);
+                                break;
+                        }
+                        textCell.setTextAndValue(LocaleController.getString("PrivacyCallsP2PTitle", R.string.PrivacyCallsP2PTitle), value, false);
                     }
                     break;
                 case 1:
@@ -540,9 +559,6 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
                     if (position == secretWebpageRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("SecretWebPage", R.string.SecretWebPage), MessagesController.getInstance().secretWebpagePreview == 1, true);
-                    } else if (position == callsP2PRow) {
-                        SharedPreferences prefs=getParentActivity().getSharedPreferences("mainconfig", Context.MODE_PRIVATE);
-                        textCheckCell.setTextAndCheck(LocaleController.getString("PrivacyCallsP2PTitle", R.string.PrivacyCallsP2PTitle), prefs.getBoolean("calls_p2p", true), true);
                     }
                     break;
             }
@@ -550,13 +566,13 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
         @Override
         public int getItemViewType(int position) {
-            if (position == lastSeenRow || position == blockedRow || position == deleteAccountRow || position == sessionsRow || position == passwordRow || position == passcodeRow || position == groupsRow || position == paymentsClearRow) {
+            if (position == lastSeenRow || position == blockedRow || position == deleteAccountRow || position == sessionsRow || position == passwordRow || position == passcodeRow || position == groupsRow || position == paymentsClearRow || position == callsP2PRow) {
                 return 0;
             } else if (position == deleteAccountDetailRow || position == groupsDetailRow || position == sessionsDetailRow || position == secretDetailRow || position == paymentsDetailRow || position==callsDetailRow) {
                 return 1;
             } else if (position == securitySectionRow || position == deleteAccountSectionRow || position == privacySectionRow || position == secretSectionRow || position == paymentsSectionRow || position==callsSectionRow) {
                 return 2;
-            } else if (position == secretWebpageRow || position==callsP2PRow) {
+            } else if (position == secretWebpageRow) {
                 return 3;
             }
             return 0;

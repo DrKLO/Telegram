@@ -39,6 +39,7 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 import org.telegram.messenger.exoplayer2.util.TimestampAdjuster;
 import org.telegram.messenger.exoplayer2.util.Util;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -104,7 +105,8 @@ import java.util.concurrent.atomic.AtomicInteger;
    * @param dataSpec Defines the data to be loaded.
    * @param initDataSpec Defines the initialization data to be fed to new extractors. May be null.
    * @param hlsUrl The url of the playlist from which this chunk was obtained.
-   * @param muxedCaptionFormats List of muxed caption {@link Format}s.
+   * @param muxedCaptionFormats List of muxed caption {@link Format}s. Null if no closed caption
+   *     information is available in the master playlist.
    * @param trackSelectionReason See {@link #trackSelectionReason}.
    * @param trackSelectionData See {@link #trackSelectionData}.
    * @param startTimeUs The start time of the chunk in microseconds.
@@ -208,7 +210,7 @@ import java.util.concurrent.atomic.AtomicInteger;
       // According to spec, for packed audio, initDataSpec is expected to be null.
       return;
     }
-    DataSpec initSegmentDataSpec = Util.getRemainderDataSpec(initDataSpec, initSegmentBytesLoaded);
+    DataSpec initSegmentDataSpec = initDataSpec.subrange(initSegmentBytesLoaded);
     try {
       ExtractorInput input = new DefaultExtractorInput(initDataSource,
           initSegmentDataSpec.absoluteStreamPosition, initDataSource.open(initSegmentDataSpec));
@@ -237,7 +239,7 @@ import java.util.concurrent.atomic.AtomicInteger;
       loadDataSpec = dataSpec;
       skipLoadedBytes = bytesLoaded != 0;
     } else {
-      loadDataSpec = Util.getRemainderDataSpec(dataSpec, bytesLoaded);
+      loadDataSpec = dataSpec.subrange(bytesLoaded);
       skipLoadedBytes = false;
     }
     if (!isMasterTimestampSource) {
@@ -356,9 +358,12 @@ import java.util.concurrent.atomic.AtomicInteger;
       // This flag ensures the change of pid between streams does not affect the sample queues.
       @DefaultTsPayloadReaderFactory.Flags
       int esReaderFactoryFlags = DefaultTsPayloadReaderFactory.FLAG_IGNORE_SPLICE_INFO_STREAM;
-      if (!muxedCaptionFormats.isEmpty()) {
+      List<Format> closedCaptionFormats = muxedCaptionFormats;
+      if (closedCaptionFormats != null) {
         // The playlist declares closed caption renditions, we should ignore descriptors.
         esReaderFactoryFlags |= DefaultTsPayloadReaderFactory.FLAG_OVERRIDE_CAPTION_DESCRIPTORS;
+      } else {
+        closedCaptionFormats = Collections.emptyList();
       }
       String codecs = trackFormat.codecs;
       if (!TextUtils.isEmpty(codecs)) {
@@ -373,7 +378,7 @@ import java.util.concurrent.atomic.AtomicInteger;
         }
       }
       extractor = new TsExtractor(TsExtractor.MODE_HLS, timestampAdjuster,
-          new DefaultTsPayloadReaderFactory(esReaderFactoryFlags, muxedCaptionFormats));
+          new DefaultTsPayloadReaderFactory(esReaderFactoryFlags, closedCaptionFormats));
     }
     if (usingNewExtractor) {
       extractor.init(extractorOutput);
@@ -391,7 +396,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     } else if (lastPathSegment.endsWith(MP3_FILE_EXTENSION)) {
       extractor = new Mp3Extractor(0, startTimeUs);
     } else {
-      throw new IllegalArgumentException("Unkown extension for audio file: " + lastPathSegment);
+      throw new IllegalArgumentException("Unknown extension for audio file: " + lastPathSegment);
     }
     extractor.init(extractorOutput);
     return extractor;

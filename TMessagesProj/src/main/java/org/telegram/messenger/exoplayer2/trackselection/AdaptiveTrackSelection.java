@@ -154,23 +154,24 @@ public class AdaptiveTrackSelection extends BaseTrackSelection {
   @Override
   public void updateSelectedTrack(long bufferedDurationUs) {
     long nowMs = SystemClock.elapsedRealtime();
-    // Get the current and ideal selections.
+    // Stash the current selection, then make a new one.
     int currentSelectedIndex = selectedIndex;
-    Format currentFormat = getSelectedFormat();
-    int idealSelectedIndex = determineIdealSelectedIndex(nowMs);
-    Format idealFormat = getFormat(idealSelectedIndex);
-    // Assume we can switch to the ideal selection.
-    selectedIndex = idealSelectedIndex;
-    // Revert back to the current selection if conditions are not suitable for switching.
-    if (currentFormat != null && !isBlacklisted(selectedIndex, nowMs)) {
-      if (idealFormat.bitrate > currentFormat.bitrate
+    selectedIndex = determineIdealSelectedIndex(nowMs);
+    if (selectedIndex == currentSelectedIndex) {
+      return;
+    }
+    if (!isBlacklisted(currentSelectedIndex, nowMs)) {
+      // Revert back to the current selection if conditions are not suitable for switching.
+      Format currentFormat = getFormat(currentSelectedIndex);
+      Format selectedFormat = getFormat(selectedIndex);
+      if (selectedFormat.bitrate > currentFormat.bitrate
           && bufferedDurationUs < minDurationForQualityIncreaseUs) {
-        // The ideal track is a higher quality, but we have insufficient buffer to safely switch
+        // The selected track is a higher quality, but we have insufficient buffer to safely switch
         // up. Defer switching up for now.
         selectedIndex = currentSelectedIndex;
-      } else if (idealFormat.bitrate < currentFormat.bitrate
+      } else if (selectedFormat.bitrate < currentFormat.bitrate
           && bufferedDurationUs >= maxDurationForQualityDecreaseUs) {
-        // The ideal track is a lower quality, but we have sufficient buffer to defer switching
+        // The selected track is a lower quality, but we have sufficient buffer to defer switching
         // down for now.
         selectedIndex = currentSelectedIndex;
       }

@@ -399,9 +399,9 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
       case C.MSG_SET_VOLUME:
         audioTrack.setVolume((Float) message);
         break;
-      case C.MSG_SET_STREAM_TYPE:
-        @C.StreamType int streamType = (Integer) message;
-        audioTrack.setStreamType(streamType);
+      case C.MSG_SET_AUDIO_ATTRIBUTES:
+        AudioAttributes audioAttributes = (AudioAttributes) message;
+        audioTrack.setAudioAttributes(audioAttributes);
         break;
       default:
         super.handleMessage(messageType, message);

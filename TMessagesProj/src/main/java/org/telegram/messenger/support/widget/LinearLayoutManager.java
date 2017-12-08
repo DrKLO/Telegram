@@ -124,6 +124,8 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
      */
     int mPendingScrollPosition = NO_POSITION;
 
+    boolean mPendingScrollPositionBottom = true;
+
     /**
      * Used to keep the offset value when {@link #scrollToPositionWithOffset(int, int)} is
      * called.
@@ -515,7 +517,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
             if (existing != null) {
                 final int current;
                 final int upcomingOffset;
-                if (mShouldReverseLayout) {
+                if (mPendingScrollPositionBottom) {
                     current = mOrientationHelper.getEndAfterPadding() -
                             mOrientationHelper.getDecoratedEnd(existing);
                     upcomingOffset = current - mPendingScrollPositionOffset;
@@ -847,16 +849,16 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
                     // get position of any child, does not matter
                     int pos = getPosition(getChildAt(0));
                     anchorInfo.mLayoutFromEnd = mPendingScrollPosition < pos
-                            == mShouldReverseLayout;
+                            == mPendingScrollPositionBottom;
                 }
                 anchorInfo.assignCoordinateFromPadding();
             }
             return true;
         }
         // override layout from end values for consistency
-        anchorInfo.mLayoutFromEnd = mShouldReverseLayout;
+        anchorInfo.mLayoutFromEnd = mPendingScrollPositionBottom;
         // if this changes, we should update prepareForDrop as well
-        if (mShouldReverseLayout) {
+        if (mPendingScrollPositionBottom) {
             anchorInfo.mCoordinate = mOrientationHelper.getEndAfterPadding() -
                     mPendingScrollPositionOffset;
         } else {
@@ -1010,9 +1012,15 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
      * @see #setReverseLayout(boolean)
      * @see #scrollToPosition(int)
      */
+
     public void scrollToPositionWithOffset(int position, int offset) {
+        scrollToPositionWithOffset(position, offset, mShouldReverseLayout);
+    }
+
+    public void scrollToPositionWithOffset(int position, int offset, boolean bottom) {
         mPendingScrollPosition = position;
         mPendingScrollPositionOffset = offset;
+        mPendingScrollPositionBottom = bottom;
         if (mPendingSavedState != null) {
             mPendingSavedState.invalidateAnchor();
         }
@@ -1334,7 +1342,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
      * @param startIndex inclusive
      * @param endIndex   exclusive
      */
-    private void recycleChildren(RecyclerView.Recycler recycler, int startIndex, int endIndex) {
+    protected void recycleChildren(RecyclerView.Recycler recycler, int startIndex, int endIndex) {
         if (startIndex == endIndex) {
             return;
         }
@@ -1362,7 +1370,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
      *                 to detect children that will go out of bounds after scrolling, without
      *                 actually moving them.
      */
-    private void recycleViewsFromStart(RecyclerView.Recycler recycler, int dt) {
+    protected void recycleViewsFromStart(RecyclerView.Recycler recycler, int dt) {
         if (dt < 0) {
             if (DEBUG) {
                 Log.d(TAG, "Called recycle from start with a negative value. This might happen"
@@ -1407,7 +1415,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
      *                 to detect children that will go out of bounds after scrolling, without
      *                 actually moving them.
      */
-    private void recycleViewsFromEnd(RecyclerView.Recycler recycler, int dt) {
+    protected void recycleViewsFromEnd(RecyclerView.Recycler recycler, int dt) {
         final int childCount = getChildCount();
         if (dt < 0) {
             if (DEBUG) {

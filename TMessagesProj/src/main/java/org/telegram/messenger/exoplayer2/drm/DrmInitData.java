@@ -17,6 +17,7 @@ package org.telegram.messenger.exoplayer2.drm;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.drm.DrmInitData.SchemeData;
 import org.telegram.messenger.exoplayer2.util.Assertions;
@@ -102,6 +103,33 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
     return schemeDatas[index];
   }
 
+  /**
+   * Returns a copy of the {@link DrmInitData} instance whose {@link SchemeData}s have been updated
+   * to have the specified scheme type.
+   *
+   * @param schemeType A protection scheme type. May be null.
+   * @return A copy of the {@link DrmInitData} instance whose {@link SchemeData}s have been updated
+   *     to have the specified scheme type.
+   */
+  public DrmInitData copyWithSchemeType(@Nullable String schemeType) {
+    boolean isCopyRequired = false;
+    for (SchemeData schemeData : schemeDatas) {
+      if (!Util.areEqual(schemeData.type, schemeType)) {
+        isCopyRequired = true;
+        break;
+      }
+    }
+    if (isCopyRequired) {
+      SchemeData[] schemeDatas = new SchemeData[this.schemeDatas.length];
+      for (int i = 0; i < schemeDatas.length; i++) {
+        schemeDatas[i] = this.schemeDatas[i].copyWithSchemeType(schemeType);
+      }
+      return new DrmInitData(schemeDatas);
+    } else {
+      return this;
+    }
+  }
+
   @Override
   public int hashCode() {
     if (hashCode == 0) {
@@ -168,6 +196,10 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
      */
     private final UUID uuid;
     /**
+     * The protection scheme type, or null if not applicable or unknown.
+     */
+    @Nullable public final String type;
+    /**
      * The mimeType of {@link #data}.
      */
     public final String mimeType;
@@ -183,22 +215,26 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
     /**
      * @param uuid The {@link UUID} of the DRM scheme, or {@link C#UUID_NIL} if the data is
      *     universal (i.e. applies to all schemes).
+     * @param type The type of the protection scheme, or null if not applicable or unknown.
      * @param mimeType The mimeType of the initialization data.
      * @param data The initialization data.
      */
-    public SchemeData(UUID uuid, String mimeType, byte[] data) {
-      this(uuid, mimeType, data, false);
+    public SchemeData(UUID uuid, @Nullable String type, String mimeType, byte[] data) {
+      this(uuid, type, mimeType, data, false);
     }
 
     /**
      * @param uuid The {@link UUID} of the DRM scheme, or {@link C#UUID_NIL} if the data is
      *     universal (i.e. applies to all schemes).
+     * @param type The type of the protection scheme, or null if not applicable or unknown.
      * @param mimeType The mimeType of the initialization data.
      * @param data The initialization data.
      * @param requiresSecureDecryption Whether secure decryption is required.
      */
-    public SchemeData(UUID uuid, String mimeType, byte[] data, boolean requiresSecureDecryption) {
+    public SchemeData(UUID uuid, @Nullable String type, String mimeType, byte[] data,
+        boolean requiresSecureDecryption) {
       this.uuid = Assertions.checkNotNull(uuid);
+      this.type = type;
       this.mimeType = Assertions.checkNotNull(mimeType);
       this.data = Assertions.checkNotNull(data);
       this.requiresSecureDecryption = requiresSecureDecryption;
@@ -206,6 +242,7 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
 
     /* package */ SchemeData(Parcel in) {
       uuid = new UUID(in.readLong(), in.readLong());
+      type = in.readString();
       mimeType = in.readString();
       data = in.createByteArray();
       requiresSecureDecryption = in.readByte() != 0;
@@ -221,6 +258,19 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
       return C.UUID_NIL.equals(uuid) || schemeUuid.equals(uuid);
     }
 
+    /**
+     * Returns a copy of the {@link SchemeData} instance with the given scheme type.
+     *
+     * @param type A protection scheme type.
+     * @return A copy of the {@link SchemeData} instance with the given scheme type.
+     */
+    public SchemeData copyWithSchemeType(String type) {
+      if (Util.areEqual(this.type, type)) {
+        return this;
+      }
+      return new SchemeData(uuid, type, mimeType, data, requiresSecureDecryption);
+    }
+
     @Override
     public boolean equals(Object obj) {
       if (!(obj instanceof SchemeData)) {
@@ -231,13 +281,14 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
       }
       SchemeData other = (SchemeData) obj;
       return mimeType.equals(other.mimeType) && Util.areEqual(uuid, other.uuid)
-          && Arrays.equals(data, other.data);
+          && Util.areEqual(type, other.type) && Arrays.equals(data, other.data);
     }
 
     @Override
     public int hashCode() {
       if (hashCode == 0) {
         int result = uuid.hashCode();
+        result = 31 * result + (type == null ? 0 : type.hashCode());
         result = 31 * result + mimeType.hashCode();
         result = 31 * result + Arrays.hashCode(data);
         hashCode = result;
@@ -256,6 +307,7 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
       dest.writeLong(uuid.getMostSignificantBits());
       dest.writeLong(uuid.getLeastSignificantBits());
+      dest.writeString(type);
       dest.writeString(mimeType);
       dest.writeByteArray(data);
       dest.writeByte((byte) (requiresSecureDecryption ? 1 : 0));

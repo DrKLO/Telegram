@@ -452,6 +452,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         editText.setHintColor(Theme.getColor(Theme.key_groupcreate_hintText));
         editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         editText.setCursorColor(Theme.getColor(Theme.key_groupcreate_cursor));
+        editText.setCursorWidth(1.5f);
         editText.setInputType(InputType.TYPE_TEXT_VARIATION_FILTER | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         editText.setSingleLine(true);
         editText.setBackgroundDrawable(null);
@@ -505,13 +506,20 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             }
         });
         editText.setOnKeyListener(new View.OnKeyListener() {
+
+            private boolean wasEmpty;
+
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
-                if (keyCode == KeyEvent.KEYCODE_DEL && event.getAction() == KeyEvent.ACTION_UP && editText.length() == 0 && !allSpans.isEmpty()) {
-                    spansContainer.removeSpan(allSpans.get(allSpans.size() - 1));
-                    updateHint();
-                    checkVisibleRows();
-                    return true;
+                if (keyCode == KeyEvent.KEYCODE_DEL) {
+                    if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                        wasEmpty = editText.length() == 0;
+                    } else if (event.getAction() == KeyEvent.ACTION_UP && wasEmpty && !allSpans.isEmpty()){
+                        spansContainer.removeSpan(allSpans.get(allSpans.size() - 1));
+                        updateHint();
+                        checkVisibleRows();
+                        return true;
+                    }
                 }
                 return false;
             }
@@ -1103,7 +1111,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{GroupCreateUserCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_groupcreate_checkboxCheck),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{GroupCreateUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_groupcreate_onlineText),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{GroupCreateUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_groupcreate_offlineText),
-                new ThemeDescription(listView, 0, new Class[]{GroupCreateUserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(listView, 0, new Class[]{GroupCreateUserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),

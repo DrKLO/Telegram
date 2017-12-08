@@ -24,14 +24,14 @@ public interface RendererCapabilities {
 
   /**
    * A mask to apply to the result of {@link #supportsFormat(Format)} to obtain one of
-   * {@link #FORMAT_HANDLED}, {@link #FORMAT_EXCEEDS_CAPABILITIES},
+   * {@link #FORMAT_HANDLED}, {@link #FORMAT_EXCEEDS_CAPABILITIES}, {@link #FORMAT_UNSUPPORTED_DRM},
    * {@link #FORMAT_UNSUPPORTED_SUBTYPE} and {@link #FORMAT_UNSUPPORTED_TYPE}.
    */
-  int FORMAT_SUPPORT_MASK = 0b11;
+  int FORMAT_SUPPORT_MASK = 0b111;
   /**
    * The {@link Renderer} is capable of rendering the format.
    */
-  int FORMAT_HANDLED = 0b11;
+  int FORMAT_HANDLED = 0b100;
   /**
    * The {@link Renderer} is capable of rendering formats with the same mime type, but the
    * properties of the format exceed the renderer's capability.
@@ -40,7 +40,16 @@ public interface RendererCapabilities {
    * {@link MimeTypes#VIDEO_H264}, but the format's resolution exceeds the maximum limit supported
    * by the underlying H264 decoder.
    */
-  int FORMAT_EXCEEDS_CAPABILITIES = 0b10;
+  int FORMAT_EXCEEDS_CAPABILITIES = 0b011;
+  /**
+   * The {@link Renderer} is capable of rendering formats with the same mime type, but the
+   * drm scheme used is not supported.
+   * <p>
+   * Example: The {@link Renderer} is capable of rendering H264 and the format's mime type is
+   * {@link MimeTypes#VIDEO_H264}, but the format indicates cbcs encryption, which is not supported
+   * by the underlying content decryption module.
+   */
+  int FORMAT_UNSUPPORTED_DRM = 0b010;
   /**
    * The {@link Renderer} is a general purpose renderer for formats of the same top-level type,
    * but is not capable of rendering the format or any other format with the same mime type because
@@ -49,7 +58,7 @@ public interface RendererCapabilities {
    * Example: The {@link Renderer} is a general purpose audio renderer and the format's
    * mime type matches audio/[subtype], but there does not exist a suitable decoder for [subtype].
    */
-  int FORMAT_UNSUPPORTED_SUBTYPE = 0b01;
+  int FORMAT_UNSUPPORTED_SUBTYPE = 0b001;
   /**
    * The {@link Renderer} is not capable of rendering the format, either because it does not
    * support the format's top-level type, or because it's a specialized renderer for a different
@@ -58,40 +67,40 @@ public interface RendererCapabilities {
    * Example: The {@link Renderer} is a general purpose video renderer, but the format has an
    * audio mime type.
    */
-  int FORMAT_UNSUPPORTED_TYPE = 0b00;
+  int FORMAT_UNSUPPORTED_TYPE = 0b000;
 
   /**
    * A mask to apply to the result of {@link #supportsFormat(Format)} to obtain one of
    * {@link #ADAPTIVE_SEAMLESS}, {@link #ADAPTIVE_NOT_SEAMLESS} and {@link #ADAPTIVE_NOT_SUPPORTED}.
    */
-  int ADAPTIVE_SUPPORT_MASK = 0b1100;
+  int ADAPTIVE_SUPPORT_MASK = 0b11000;
   /**
    * The {@link Renderer} can seamlessly adapt between formats.
    */
-  int ADAPTIVE_SEAMLESS = 0b1000;
+  int ADAPTIVE_SEAMLESS = 0b10000;
   /**
    * The {@link Renderer} can adapt between formats, but may suffer a brief discontinuity
    * (~50-100ms) when adaptation occurs.
    */
-  int ADAPTIVE_NOT_SEAMLESS = 0b0100;
+  int ADAPTIVE_NOT_SEAMLESS = 0b01000;
   /**
    * The {@link Renderer} does not support adaptation between formats.
    */
-  int ADAPTIVE_NOT_SUPPORTED = 0b0000;
+  int ADAPTIVE_NOT_SUPPORTED = 0b00000;
 
   /**
    * A mask to apply to the result of {@link #supportsFormat(Format)} to obtain one of
    * {@link #TUNNELING_SUPPORTED} and {@link #TUNNELING_NOT_SUPPORTED}.
    */
-  int TUNNELING_SUPPORT_MASK = 0b10000;
+  int TUNNELING_SUPPORT_MASK = 0b100000;
   /**
    * The {@link Renderer} supports tunneled output.
    */
-  int TUNNELING_SUPPORTED = 0b10000;
+  int TUNNELING_SUPPORTED = 0b100000;
   /**
    * The {@link Renderer} does not support tunneled output.
    */
-  int TUNNELING_NOT_SUPPORTED = 0b00000;
+  int TUNNELING_NOT_SUPPORTED = 0b000000;
 
   /**
    * Returns the track type that the {@link Renderer} handles. For example, a video renderer will
@@ -108,8 +117,8 @@ public interface RendererCapabilities {
    * the bitwise OR of three properties:
    * <ul>
    * <li>The level of support for the format itself. One of {@link #FORMAT_HANDLED},
-   * {@link #FORMAT_EXCEEDS_CAPABILITIES}, {@link #FORMAT_UNSUPPORTED_SUBTYPE} and
-   * {@link #FORMAT_UNSUPPORTED_TYPE}.</li>
+   * {@link #FORMAT_EXCEEDS_CAPABILITIES}, {@link #FORMAT_UNSUPPORTED_DRM},
+   * {@link #FORMAT_UNSUPPORTED_SUBTYPE} and {@link #FORMAT_UNSUPPORTED_TYPE}.</li>
    * <li>The level of support for adapting from the format to another format of the same mime type.
    * One of {@link #ADAPTIVE_SEAMLESS}, {@link #ADAPTIVE_NOT_SEAMLESS} and
    * {@link #ADAPTIVE_NOT_SUPPORTED}.</li>
