@@ -1289,12 +1289,12 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
             networkMessage->message->bytes = request->getObjectSize();
             networkMessage->message->body = std::unique_ptr<TLObject>(request);
             networkMessage->message->seqno = connection->generateMessageSeqNo(false);
+            resendRequests[networkMessage->message->msg_id] = response->answer_msg_id;
 
             std::vector<std::unique_ptr<NetworkMessage>> array;
             array.push_back(std::unique_ptr<NetworkMessage>(networkMessage));
 
             sendMessagesToConnection(array, connection, false);
-            resendRequests[networkMessage->message->msg_id] = response->answer_msg_id;
         } else if (confirm) {
             connection->addMessageToConfirm(response->answer_msg_id);
         }

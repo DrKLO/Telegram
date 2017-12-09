@@ -193,17 +193,17 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
 
             if (MediaController.getInstance().isDownloadingCurrentMessage()) {
                 playbackState.setState(PlaybackState.STATE_BUFFERING, 0, 1).setActions(0);
-                bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, null, pendingPrev).build())
-                        .addAction(new Notification.Action.Builder(R.drawable.loading_animation2, null, null).build())
-                        .addAction(new Notification.Action.Builder(R.drawable.ic_action_next, null, pendingNext).build());
+                bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, "", pendingPrev).build())
+                        .addAction(new Notification.Action.Builder(R.drawable.loading_animation2, "", null).build())
+                        .addAction(new Notification.Action.Builder(R.drawable.ic_action_next, "", pendingNext).build());
             } else {
                 playbackState.setState(isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
                         MediaController.getInstance().getPlayingMessageObject().audioProgressSec * 1000L,
                         isPlaying ? 1 : 0)
                         .setActions(PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT);
-                bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, null, pendingPrev).build())
-                        .addAction(new Notification.Action.Builder(isPlaying ? R.drawable.ic_action_pause : R.drawable.ic_action_play, null, pendingPlaypause).build())
-                        .addAction(new Notification.Action.Builder(R.drawable.ic_action_next, null, pendingNext).build());
+                bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, "", pendingPrev).build())
+                        .addAction(new Notification.Action.Builder(isPlaying ? R.drawable.ic_action_pause : R.drawable.ic_action_play, "", pendingPlaypause).build())
+                        .addAction(new Notification.Action.Builder(R.drawable.ic_action_next, "", pendingNext).build());
             }
 
             mediaSession.setPlaybackState(playbackState.build());
