@@ -277,11 +277,18 @@ public class Emoji {
 
         @Override
         public void draw(Canvas canvas) {
-            /*if (MessagesController.getInstance().useSystemEmoji) {
-                //textPaint.setTextSize(getBounds().width());
-                canvas.drawText(EmojiData.data[info.page][info.emojiIndex], getBounds().left, getBounds().bottom, textPaint);
+            if (MessagesController.getInstance().useSystemEmoji) {
+                String emoji = EmojiData.data[info.page][info.emojiIndex];
+                if (EmojiData.emojiToFE0FMap.containsKey(emoji.charAt(0))) {
+                    emoji = emoji.substring(0, 1) + "\uFE0F" + emoji.substring(1);
+                }
+                textPaint.setColor(Theme.getColor(Theme.key_chat_emojiPanelIcon));
+                textPaint.setTextSize(getBounds().width() * 4.0f);
+                textPaint.setTextSize(getBounds().width() * 0.7f * 4.0f * Math.min(0.3f, getBounds().width() / textPaint.measureText(emoji)));
+                textPaint.setTextAlign(Paint.Align.CENTER);
+                canvas.drawText(emoji, getBounds().left + getBounds().width() / 2.0f, getBounds().bottom - getBounds().height() / 5.0f, textPaint);
                 return;
-            }*/
+            }
             if (emojiBmp[info.page][info.page2] == null) {
                 if (loadingEmoji[info.page][info.page2]) {
                     return;
@@ -354,7 +361,7 @@ public class Emoji {
     }
 
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size, boolean createNew, int[] emojiOnly) {
-        if (MessagesController.getInstance().useSystemEmoji || cs == null || cs.length() == 0) {
+        if (cs == null || cs.length() == 0) {
             return cs;
         }
         //String str = "\"\uD83D\uDC68\uD83C\uDFFB\u200D\uD83C\uDFA4\""
@@ -365,6 +372,9 @@ public class Emoji {
             s = (Spannable) cs;
         } else {
             s = Spannable.Factory.getInstance().newSpannable(cs.toString());
+        }
+        if (MessagesController.getInstance().useSystemEmoji) {
+            return s;
         }
         long buf = 0;
         int emojiCount = 0;
