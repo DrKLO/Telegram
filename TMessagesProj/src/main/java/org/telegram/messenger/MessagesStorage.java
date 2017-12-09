@@ -4863,7 +4863,7 @@ public class MessagesStorage {
                     mentionsIdsMap.put(messageId, message.dialog_id);
                 }
 
-                if (!MessageObject.isOut(message) && (message.id > 0 || MessageObject.isUnread(message))) {
+                if (!(message.action instanceof TLRPC.TL_messageActionHistoryClear) && !MessageObject.isOut(message) && (message.id > 0 || MessageObject.isUnread(message))) {
                     Integer currentMaxId = dialogsReadMax.get(message.dialog_id);
                     if (currentMaxId == null) {
                         SQLiteCursor cursor = database.queryFinalized("SELECT inbox_max FROM dialogs WHERE did = " + message.dialog_id);

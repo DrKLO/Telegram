@@ -476,7 +476,7 @@ int32_t NativeByteBuffer::readBigInt32(bool *error) {
 }
 
 int64_t NativeByteBuffer::readInt64(bool *error) {
-    if (_position + 4 > _limit) {
+    if (_position + 8 > _limit) {
         if (error != nullptr) {
             *error = true;
         }
@@ -521,7 +521,7 @@ bool NativeByteBuffer::readBool(bool *error) {
 }
 
 void NativeByteBuffer::readBytes(uint8_t *b, uint32_t length, bool *error) {
-    if (_position + length > _limit) {
+    if (length > _limit - _position) {
         if (error != nullptr) {
             *error = true;
         }
@@ -533,7 +533,7 @@ void NativeByteBuffer::readBytes(uint8_t *b, uint32_t length, bool *error) {
 }
 
 ByteArray *NativeByteBuffer::readBytes(uint32_t length, bool *error) {
-    if (_position + length > _limit) {
+    if (length > _limit - _position) {
         if (error != nullptr) {
             *error = true;
         }

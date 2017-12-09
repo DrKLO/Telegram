@@ -808,18 +808,23 @@ public class FileLoader {
     }
 
     public static String getDocumentFileName(TLRPC.Document document) {
+        String fileName = null;
         if (document != null) {
             if (document.file_name != null) {
-                return document.file_name;
-            }
-            for (int a = 0; a < document.attributes.size(); a++) {
-                TLRPC.DocumentAttribute documentAttribute = document.attributes.get(a);
-                if (documentAttribute instanceof TLRPC.TL_documentAttributeFilename) {
-                    return documentAttribute.file_name;
+                fileName = document.file_name;
+            } else {
+                for (int a = 0; a < document.attributes.size(); a++) {
+                    TLRPC.DocumentAttribute documentAttribute = document.attributes.get(a);
+                    if (documentAttribute instanceof TLRPC.TL_documentAttributeFilename) {
+                        fileName = documentAttribute.file_name;
+                    }
                 }
             }
         }
-        return "";
+        if (fileName != null) {
+            fileName = fileName.replaceAll("[\u0001-\u001f<>:\"/\\\\|?*\u007f]+", "").trim();
+        }
+        return fileName != null ? fileName : "";
     }
 
     public static String getExtensionByMime(String mime) {
