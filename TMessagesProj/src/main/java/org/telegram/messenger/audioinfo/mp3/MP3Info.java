@@ -15,9 +15,14 @@
  */
 package org.telegram.messenger.audioinfo.mp3;
 
+import android.media.MediaPlayer;
+import android.net.Uri;
+
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.audioinfo.AudioInfo;
 
 import java.io.EOFException;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Level;
@@ -30,11 +35,12 @@ public class MP3Info extends AudioInfo {
 		boolean stopRead(MP3Input data) throws IOException;
 	}
 
-	public MP3Info(InputStream input, long fileLength) throws IOException, ID3v2Exception, MP3Exception {
-		this(input, fileLength, Level.FINEST);
+	public MP3Info(InputStream input, File file) throws IOException, ID3v2Exception, MP3Exception {
+		this(input, file, Level.FINEST);
 	}
 
-	public MP3Info(InputStream input, final long fileLength, Level debugLevel) throws IOException, ID3v2Exception, MP3Exception {
+	public MP3Info(InputStream input, File file, Level debugLevel) throws IOException, ID3v2Exception, MP3Exception {
+		final long fileLength = file.length();
 		brand = "MP3";
 		version = "0";
 		MP3Input data = new MP3Input(input);
@@ -72,7 +78,17 @@ public class MP3Info extends AudioInfo {
 				});
 			} catch (MP3Exception e) {
 				if (LOGGER.isLoggable(debugLevel)) {
-					LOGGER.log(debugLevel, "Could not determine MP3 duration", e);
+					LOGGER.log(debugLevel, "Could not determine MP3 duration by reading file structure", e);
+				}
+
+				// Try to determine duration using Media Player
+				try {
+					MediaPlayer mp = MediaPlayer.create(ApplicationLoader.applicationContext, Uri.fromFile(file));
+					duration = mp.getDuration();
+				} catch (Exception exception) {
+					if (LOGGER.isLoggable(debugLevel)) {
+						LOGGER.log(debugLevel, "Could not determine MP3 duration", exception);
+					}
 				}
 			}
 		}

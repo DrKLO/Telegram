@@ -3695,7 +3695,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 ext = path.substring(idx + 1);
             }
         }
-        if (ext.toLowerCase().equals("mp3") || ext.toLowerCase().equals("m4a")) {
+        if (ext.toLowerCase().equals("mp3") || ext.toLowerCase().equals("m4a") || ext.toLowerCase().equals("wav") || ext.toLowerCase().equals("aac")) {
             AudioInfo audioInfo = AudioInfo.getAudioInfo(f);
             if (audioInfo != null && audioInfo.getDuration() != 0) {
                 attributeAudio = new TLRPC.TL_documentAttributeAudio();

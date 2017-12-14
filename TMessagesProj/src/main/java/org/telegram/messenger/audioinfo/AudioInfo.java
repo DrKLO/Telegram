@@ -145,7 +145,7 @@ public abstract class AudioInfo {
             if (header[4] == 'f' && header[5] == 't' && header[6] == 'y' && header[7] == 'p') {
                 return new M4AInfo(input);
             } else {
-                return new MP3Info(input, file.length());
+                return new MP3Info(input, file);
             }
         } catch (Exception e) {
             return null;
