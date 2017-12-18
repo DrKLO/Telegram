@@ -128,7 +128,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             return;
         }
         float size4to3 = 4.0f / 3.0f;
-        float size16to9 = 16.0f / 9.0f;
+        float size16to10 = 16.0f / 10.0f;
         float screenSize = (float) Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) / Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
         org.telegram.messenger.camera.Size aspectRatio;
         int wantedWidth;
@@ -142,6 +142,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
                 aspectRatio = new Size(4, 3);
                 wantedWidth = 1280;
                 wantedHeight = 960;
+            } else if (Math.abs(screenSize - size16to10) < 0.1f) {
+                aspectRatio = new Size(16, 10);
+                wantedWidth = 1280;
+                wantedHeight = 800;
             } else {
                 aspectRatio = new Size(16, 9);
                 wantedWidth = 1280;
@@ -157,6 +161,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         if (pictureSize.getWidth() >= 1280 && pictureSize.getHeight() >= 1280) {
             if (Math.abs(screenSize - size4to3) < 0.1f) {
                 aspectRatio = new Size(3, 4);
+            } else if (Math.abs(screenSize - size16to10) < 0.1f) {
+                aspectRatio = new Size(10, 16);
             } else {
                 aspectRatio = new Size(9, 16);
             }
