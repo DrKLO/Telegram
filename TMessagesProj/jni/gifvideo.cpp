@@ -252,16 +252,27 @@ jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *
             //LOGD("decoded frame with w = %d, h = %d, format = %d", info->frame->width, info->frame->height, info->frame->format);
             if (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_BGRA || info->frame->format == AV_PIX_FMT_YUVJ420P) {
                 jint *dataArr = env->GetIntArrayElements(data, 0);
+                int wantedWidth;
+                int wantedHeight;
                 if (dataArr != nullptr) {
+                    wantedWidth = dataArr[0];
+                    wantedHeight = dataArr[1];
                     dataArr[3] = (int) (1000 * info->frame->pkt_pts * av_q2d(info->video_stream->time_base));
                     env->ReleaseIntArrayElements(data, dataArr, 0);
+                } else {
+                    AndroidBitmapInfo bitmapInfo;
+                    AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
+                    wantedWidth = bitmapInfo.width;
+                    wantedHeight = bitmapInfo.height;
                 }
                 
                 void *pixels;
                 if (AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0) {
                     if (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_YUVJ420P) {
                         //LOGD("y %d, u %d, v %d, width %d, height %d", info->frame->linesize[0], info->frame->linesize[2], info->frame->linesize[1], info->frame->width, info->frame->height);
-                        libyuv::I420ToARGB(info->frame->data[0], info->frame->linesize[0], info->frame->data[2], info->frame->linesize[2], info->frame->data[1], info->frame->linesize[1], (uint8_t *) pixels, info->frame->width * 4, info->frame->width, info->frame->height);
+                        if (wantedWidth == info->frame->width && wantedHeight == info->frame->height || wantedWidth == info->frame->height && wantedHeight == info->frame->width) {
+                            libyuv::I420ToARGB(info->frame->data[0], info->frame->linesize[0], info->frame->data[2], info->frame->linesize[2], info->frame->data[1], info->frame->linesize[1], (uint8_t *) pixels, info->frame->width * 4, info->frame->width, info->frame->height);
+                        }
                     } else if (info->frame->format == AV_PIX_FMT_BGRA) {
                         libyuv::ABGRToARGB(info->frame->data[0], info->frame->linesize[0], (uint8_t *) pixels, info->frame->width * 4, info->frame->width, info->frame->height);
                     }

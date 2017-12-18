@@ -38,14 +38,18 @@ Connection::~Connection() {
 }
 
 void Connection::suspendConnection() {
+    suspendConnection(false);
+}
+
+void Connection::suspendConnection(bool idle) {
     reconnectTimer->stop();
     if (connectionState == TcpConnectionStageIdle || connectionState == TcpConnectionStageSuspended) {
         return;
     }
     DEBUG_D("connection(%p, dc%u, type %d) suspend", this, currentDatacenter->getDatacenterId(), connectionType);
-    connectionState = TcpConnectionStageSuspended;
+    connectionState = idle ? TcpConnectionStageIdle : TcpConnectionStageSuspended;
     dropConnection();
-    ConnectionsManager::getInstance().onConnectionClosed(this);
+    ConnectionsManager::getInstance().onConnectionClosed(this, 0);
     firstPacketSent = false;
     if (restOfTheData != nullptr) {
         restOfTheData->reuse();
@@ -216,33 +220,36 @@ void Connection::onReceivedData(NativeByteBuffer *buffer) {
 
 void Connection::connect() {
     if (!ConnectionsManager::getInstance().isNetworkAvailable()) {
-        ConnectionsManager::getInstance().onConnectionClosed(this);
+        ConnectionsManager::getInstance().onConnectionClosed(this, 0);
         return;
     }
     if ((connectionState == TcpConnectionStageConnected || connectionState == TcpConnectionStageConnecting)) {
         return;
     }
     connectionState = TcpConnectionStageConnecting;
-    bool ipv6 = ConnectionsManager::getInstance().isIpv6Enabled();
+    uint32_t ipv6 = ConnectionsManager::getInstance().isIpv6Enabled() ? TcpAddressFlagIpv6 : 0;
+    uint32_t isStatic = !ConnectionsManager::getInstance().proxyAddress.empty() ? TcpAddressFlagStatic : 0;
     if (connectionType == ConnectionTypeDownload) {
-        currentAddressFlags = 2;
-        hostAddress = currentDatacenter->getCurrentAddress(currentAddressFlags | (ipv6 ? 1 : 0));
+        currentAddressFlags = TcpAddressFlagDownload | isStatic;
+        hostAddress = currentDatacenter->getCurrentAddress(currentAddressFlags | ipv6);
         if (hostAddress.empty()) {
-            currentAddressFlags = 0;
-            hostAddress = currentDatacenter->getCurrentAddress(currentAddressFlags | (ipv6 ? 1 : 0));
+            currentAddressFlags = isStatic;
+            hostAddress = currentDatacenter->getCurrentAddress(currentAddressFlags | ipv6);
         }
         if (hostAddress.empty() && ipv6) {
-            currentAddressFlags = 2;
+            ipv6 = 0;
+            currentAddressFlags = TcpAddressFlagDownload | isStatic;
             hostAddress = currentDatacenter->getCurrentAddress(currentAddressFlags);
             if (hostAddress.empty()) {
-                currentAddressFlags = 0;
+                currentAddressFlags = isStatic;
                 hostAddress = currentDatacenter->getCurrentAddress(currentAddressFlags);
             }
         }
     } else {
-        currentAddressFlags = 0;
-        hostAddress = currentDatacenter->getCurrentAddress(currentAddressFlags | (ipv6 ? 1 : 0));
-        if (ipv6 && hostAddress.empty()) {
+        currentAddressFlags = isStatic;
+        hostAddress = currentDatacenter->getCurrentAddress(currentAddressFlags | ipv6);
+        if (hostAddress.empty() && ipv6) {
+            ipv6 = 0;
             hostAddress = currentDatacenter->getCurrentAddress(currentAddressFlags);
         }
     }
@@ -259,7 +266,7 @@ void Connection::connect() {
     lastPacketLength = 0;
     wasConnected = false;
     hasSomeDataSinceLastConnect = false;
-    openConnection(hostAddress, hostPort, ipv6, ConnectionsManager::getInstance().currentNetworkType);
+    openConnection(hostAddress, hostPort, ipv6 != 0, ConnectionsManager::getInstance().currentNetworkType);
     if (connectionType == ConnectionTypePush) {
         if (isTryingNextPort) {
             setTimeout(20);
@@ -273,16 +280,24 @@ void Connection::connect() {
             if (connectionType == ConnectionTypeUpload) {
                 setTimeout(25);
             } else {
-                setTimeout(15);
+                setTimeout(12);
             }
         }
     }
 }
 
 void Connection::reconnect() {
-    suspendConnection();
-    connectionState = TcpConnectionStageReconnecting;
+    forceNextPort = true;
+    suspendConnection(true);
     connect();
+}
+
+bool Connection::hasUsefullData() {
+    return usefullData;
+}
+
+void Connection::setHasUsefullData() {
+    usefullData = true;
 }
 
 void Connection::sendData(NativeByteBuffer *buff, bool reportAck) {
@@ -379,7 +394,7 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck) {
 void Connection::onDisconnected(int reason) {
     reconnectTimer->stop();
     DEBUG_D("connection(%p, dc%u, type %d) disconnected with reason %d", this, currentDatacenter->getDatacenterId(), connectionType, reason);
-    bool switchToNextPort = wasConnected && !hasSomeDataSinceLastConnect && reason == 2;
+    bool switchToNextPort = wasConnected && !hasSomeDataSinceLastConnect && reason == 2 || forceNextPort;
     firstPacketSent = false;
     if (restOfTheData != nullptr) {
         restOfTheData->reuse();
@@ -391,15 +406,15 @@ void Connection::onDisconnected(int reason) {
     if (connectionState != TcpConnectionStageSuspended && connectionState != TcpConnectionStageIdle) {
         connectionState = TcpConnectionStageIdle;
     }
-    ConnectionsManager::getInstance().onConnectionClosed(this);
+    ConnectionsManager::getInstance().onConnectionClosed(this, reason);
 
     uint32_t datacenterId = currentDatacenter->getDatacenterId();
-    if (connectionState == TcpConnectionStageIdle && connectionType == ConnectionTypeGeneric && (currentDatacenter->isHandshaking() || datacenterId == ConnectionsManager::getInstance().currentDatacenterId || datacenterId == ConnectionsManager::getInstance().movingToDatacenterId)) {
+    if (connectionState == TcpConnectionStageIdle) {
         connectionState = TcpConnectionStageReconnecting;
         failedConnectionCount++;
         if (failedConnectionCount == 1) {
-            if (hasSomeDataSinceLastConnect) {
-                willRetryConnectCount = 5;
+            if (usefullData) {
+                willRetryConnectCount = 3;
             } else {
                 willRetryConnectCount = 1;
             }
@@ -411,10 +426,14 @@ void Connection::onDisconnected(int reason) {
                 failedConnectionCount = 0;
             }
         }
-        DEBUG_D("connection(%p, dc%u, type %d) reconnect %s:%hu", this, currentDatacenter->getDatacenterId(), connectionType, hostAddress.c_str(), hostPort);
-        reconnectTimer->setTimeout(1000, false);
-        reconnectTimer->start();
+        if (connectionType == ConnectionTypeGeneric && (currentDatacenter->isHandshaking() || datacenterId == ConnectionsManager::getInstance().currentDatacenterId || datacenterId == ConnectionsManager::getInstance().movingToDatacenterId)) {
+            DEBUG_D("connection(%p, dc%u, type %d) reconnect %s:%hu", this, currentDatacenter->getDatacenterId(), connectionType, hostAddress.c_str(), hostPort);
+            reconnectTimer->setTimeout(1000, false);
+            reconnectTimer->start();
+        }
+
     }
+    usefullData = false;
 }
 
 void Connection::onConnected() {

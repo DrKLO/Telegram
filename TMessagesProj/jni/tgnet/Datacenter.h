@@ -19,6 +19,7 @@ class TL_future_salt;
 class Connection;
 class NativeByteBuffer;
 class TL_future_salt;
+class TL_help_configSimple;
 class ByteArray;
 class TLObject;
 class Config;
@@ -28,14 +29,13 @@ class Datacenter {
 public:
     Datacenter(uint32_t id);
     Datacenter(NativeByteBuffer *data);
-    void switchTo443Port();
     uint32_t getDatacenterId();
     std::string getCurrentAddress(uint32_t flags);
     int32_t getCurrentPort(uint32_t flags);
     void addAddressAndPort(std::string address, uint32_t port, uint32_t flags);
     void nextAddressOrPort(uint32_t flags);
     void storeCurrentAddressAndPortNum();
-    void replaceAddressesAndPorts(std::vector<std::string> &newAddresses, std::map<std::string, uint32_t> &newPorts, uint32_t flags);
+    void replaceAddresses(std::vector<TcpAddress> &newAddresses, uint32_t flags);
     void serializeToStream(NativeByteBuffer *stream);
     void clear();
     void clearServerSalts();
@@ -55,6 +55,7 @@ public:
     Connection *getUploadConnection(uint8_t num, bool create);
     Connection *getGenericConnection(bool create);
     Connection *getPushConnection(bool create);
+    Connection *getTempConnection(bool create);
     Connection *getConnectionByType(uint32_t connectionType, bool create);
 
     static void aesIgeEncryption(uint8_t *buffer, uint8_t *key, uint8_t *iv, bool encrypt, bool changeIv, uint32_t length);
@@ -67,26 +68,29 @@ private:
     bool decryptServerResponse(int64_t keyId, uint8_t *key, uint8_t *data, uint32_t length);
     TLObject *getCurrentHandshakeRequest();
 
-    const int32_t *defaultPorts = new int32_t[11] {-1, 80, -1, 443, -1, 443, -1, 80, -1, 443, -1};
-    const int32_t *defaultPorts8888 = new int32_t[11] {-1, 8888, -1, 443, -1, 8888,  -1, 80, -1, 8888, -1};
+    const int32_t *defaultPorts = new int32_t[15] {-1, 80, -1, 443, -1, 5222, -1, 443, -1, 80, -1,  -1, 5222, 443, -1};
+    const int32_t *defaultPorts8888 = new int32_t[15] {-1, 8888, -1, 443, -1, 5222, -1, 8888,  -1, 80, -1, 5222, -1, 8888, -1};
 
     uint32_t datacenterId;
     Connection *genericConnection = nullptr;
-    Connection *downloadConnections[DOWNLOAD_CONNECTIONS_COUNT];
+    Connection *tempConnection = nullptr;
+    Connection *downloadConnection[DOWNLOAD_CONNECTIONS_COUNT];
     Connection *uploadConnection[UPLOAD_CONNECTIONS_COUNT];
     Connection *pushConnection = nullptr;
 
     uint32_t lastInitVersion = 0;
     bool authorized = false;
 
-    std::vector<std::string> addressesIpv4;
-    std::vector<std::string> addressesIpv6;
-    std::vector<std::string> addressesIpv4Download;
-    std::vector<std::string> addressesIpv6Download;
-    std::map<std::string, uint32_t> ports;
+    std::vector<TcpAddress> addressesIpv4;
+    std::vector<TcpAddress> addressesIpv6;
+    std::vector<TcpAddress> addressesIpv4Download;
+    std::vector<TcpAddress> addressesIpv6Download;
+    std::vector<TcpAddress> addressesIpv4Temp;
     std::vector<std::unique_ptr<TL_future_salt>> serverSalts;
     uint32_t currentPortNumIpv4 = 0;
     uint32_t currentAddressNumIpv4 = 0;
+    uint32_t currentPortNumIpv4Temp = 0;
+    uint32_t currentAddressNumIpv4Temp = 0;
     uint32_t currentPortNumIpv6 = 0;
     uint32_t currentAddressNumIpv6 = 0;
     uint32_t currentPortNumIpv4Download = 0;
@@ -97,13 +101,15 @@ private:
     int64_t authKeyId = 0;
     int32_t overridePort = -1;
     Config *config = nullptr;
+    bool isCdnDatacenter = false;
 
-    const uint32_t configVersion = 5;
+    const uint32_t configVersion = 7;
     const uint32_t paramsConfigVersion = 1;
 
     Connection *createDownloadConnection(uint8_t num);
     Connection *createUploadConnection(uint8_t num);
     Connection *createGenericConnection();
+    Connection *createTempConnection();
     Connection *createPushConnection();
     Connection *createConnectionByType(uint32_t connectionType);
 
@@ -120,10 +126,15 @@ private:
     void sendRequestData(TLObject *object, bool important);
     void cleanupHandshake();
     void sendAckRequest(int64_t messageId);
-    int32_t selectPublicKey(std::vector<int64_t> &fingerprints);
 
     bool exportingAuthorization = false;
     void exportAuthorization();
+
+    static void saveCdnConfig();
+    static void saveCdnConfigInternal(NativeByteBuffer *buffer);
+    static void loadCdnConfig(Datacenter *datacenter);
+
+    static TL_help_configSimple *decodeSimpleConfig(NativeByteBuffer *buffer);
 
     friend class ConnectionsManager;
 };

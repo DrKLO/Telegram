@@ -30,7 +30,10 @@ public:
 
     void connect();
     void suspendConnection();
+    void suspendConnection(bool idle);
     void sendData(NativeByteBuffer *buffer, bool reportAck);
+    bool hasUsefullData();
+    void setHasUsefullData();
     uint32_t getConnectionToken();
     ConnectionType getConnectionType();
     Datacenter *getDatacenter();
@@ -68,6 +71,8 @@ private:
     bool wasConnected = false;
     uint32_t willRetryConnectCount = 5;
     Timer *reconnectTimer;
+    bool usefullData = false;
+    bool forceNextPort = false;
     
     AES_KEY encryptKey;
     uint8_t encryptIv[16];
