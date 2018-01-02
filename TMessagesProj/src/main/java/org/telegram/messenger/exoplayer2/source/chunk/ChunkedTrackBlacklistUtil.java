@@ -51,9 +51,9 @@ public final class ChunkedTrackBlacklistUtil {
 
   /**
    * Blacklists {@code trackSelectionIndex} in {@code trackSelection} for
-   * {@code blacklistDurationMs} if {@code e} is an {@link InvalidResponseCodeException} with
-   * {@link InvalidResponseCodeException#responseCode} equal to 404 or 410. Else does nothing. Note
-   * that blacklisting will fail if the track is the only non-blacklisted track in the selection.
+   * {@code blacklistDurationMs} if calling {@link #shouldBlacklist(Exception)} for {@code e}
+   * returns true. Else does nothing. Note that blacklisting will fail if the track is the only
+   * non-blacklisted track in the selection.
    *
    * @param trackSelection The track selection.
    * @param trackSelectionIndex The index in the selection to consider blacklisting.
@@ -63,24 +63,33 @@ public final class ChunkedTrackBlacklistUtil {
    */
   public static boolean maybeBlacklistTrack(TrackSelection trackSelection, int trackSelectionIndex,
       Exception e, long blacklistDurationMs) {
-    if (trackSelection.length() == 1) {
-      // Blacklisting won't ever work if there's only one track in the selection.
-      return false;
-    }
-    if (e instanceof InvalidResponseCodeException) {
-      InvalidResponseCodeException responseCodeException = (InvalidResponseCodeException) e;
-      int responseCode = responseCodeException.responseCode;
-      if (responseCode == 404 || responseCode == 410) {
-        boolean blacklisted = trackSelection.blacklist(trackSelectionIndex, blacklistDurationMs);
-        if (blacklisted) {
-          Log.w(TAG, "Blacklisted: duration=" + blacklistDurationMs + ", responseCode="
-              + responseCode + ", format=" + trackSelection.getFormat(trackSelectionIndex));
-        } else {
-          Log.w(TAG, "Blacklisting failed (cannot blacklist last enabled track): responseCode="
-              + responseCode + ", format=" + trackSelection.getFormat(trackSelectionIndex));
-        }
-        return blacklisted;
+    if (shouldBlacklist(e)) {
+      boolean blacklisted = trackSelection.blacklist(trackSelectionIndex, blacklistDurationMs);
+      int responseCode = ((InvalidResponseCodeException) e).responseCode;
+      if (blacklisted) {
+        Log.w(TAG, "Blacklisted: duration=" + blacklistDurationMs + ", responseCode="
+            + responseCode + ", format=" + trackSelection.getFormat(trackSelectionIndex));
+      } else {
+        Log.w(TAG, "Blacklisting failed (cannot blacklist last enabled track): responseCode="
+            + responseCode + ", format=" + trackSelection.getFormat(trackSelectionIndex));
       }
+      return blacklisted;
+    }
+    return false;
+  }
+
+  /**
+   * Returns whether a loading error is an {@link InvalidResponseCodeException} with
+   * {@link InvalidResponseCodeException#responseCode} equal to 404 or 410.
+   *
+   * @param e The loading error.
+   * @return Wheter the loading error is an {@link InvalidResponseCodeException} with
+   *     {@link InvalidResponseCodeException#responseCode} equal to 404 or 410.
+   */
+  public static boolean shouldBlacklist(Exception e) {
+    if (e instanceof InvalidResponseCodeException) {
+      int responseCode = ((InvalidResponseCodeException) e).responseCode;
+      return responseCode == 404 || responseCode == 410;
     }
     return false;
   }

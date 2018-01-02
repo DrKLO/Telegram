@@ -5,6 +5,7 @@
  *
  * Copyright Nikolai Kudashov, 2013-2017.
  */
+
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
@@ -19,10 +20,10 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.DrawerActionCell;
 import org.telegram.ui.Cells.DividerCell;
-import org.telegram.ui.Cells.EmptyCell;
+import org.telegram.ui.Cells.DrawerActionCell;
 import org.telegram.ui.Cells.DrawerProfileCell;
+import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
@@ -115,9 +116,9 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             //items.add(null); // divider
             items.add(new Item(6, LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts));
             items.add(null);
-            if (MessagesController.getInstance().callsEnabled) {
+            //if (MessagesController.getInstance().callsEnabled) {
                 items.add(new Item(10, LocaleController.getString("Calls", R.string.Calls), R.drawable.menu_calls));
-            }
+            //}
             items.add(new Item(7, LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite));
             items.add(new Item(8, LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings));
             items.add(new Item(9, LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help));
@@ -127,9 +128,9 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast));
             items.add(null); // divider
             items.add(new Item(6, LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts));
-            if (MessagesController.getInstance().callsEnabled) {
+            //if (MessagesController.getInstance().callsEnabled) {
                 items.add(new Item(10, LocaleController.getString("Calls", R.string.Calls), R.drawable.menu_calls));
-            }
+            //}
             items.add(new Item(7, LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite));
             items.add(new Item(8, LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings));
             items.add(new Item(9, LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help));

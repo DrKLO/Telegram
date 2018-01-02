@@ -65,6 +65,7 @@ public class BaseFragment {
             ViewGroup parent = (ViewGroup) fragmentView.getParent();
             if (parent != null) {
                 try {
+                    onRemoveFromParent();
                     parent.removeView(fragmentView);
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -86,6 +87,10 @@ public class BaseFragment {
         parentLayout = null;
     }
 
+    protected void onRemoveFromParent() {
+
+    }
+
     protected void setParentLayout(ActionBarLayout layout) {
         if (parentLayout != layout) {
             parentLayout = layout;
@@ -93,6 +98,7 @@ public class BaseFragment {
                 ViewGroup parent = (ViewGroup) fragmentView.getParent();
                 if (parent != null) {
                     try {
+                        onRemoveFromParent();
                         parent.removeView(fragmentView);
                     } catch (Exception e) {
                         FileLog.e(e);
@@ -185,6 +191,13 @@ public class BaseFragment {
         } catch (Exception e) {
             FileLog.e(e);
         }
+    }
+
+    public BaseFragment getFragmentForAlert(int offset) {
+        if (parentLayout == null || parentLayout.fragmentsStack.size() <= 1 + offset) {
+            return this;
+        }
+        return parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 2 - offset);
     }
 
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {

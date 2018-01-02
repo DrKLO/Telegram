@@ -316,11 +316,19 @@ public class CacheControlActivity extends BaseFragment {
                 }
                 if (position == keepMediaRow) {
                     BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
-                    builder.setItems(new CharSequence[]{LocaleController.formatPluralString("Weeks", 1), LocaleController.formatPluralString("Months", 1), LocaleController.getString("KeepMediaForever", R.string.KeepMediaForever)}, new DialogInterface.OnClickListener() {
+                    builder.setItems(new CharSequence[]{LocaleController.formatPluralString("Days", 3), LocaleController.formatPluralString("Weeks", 1), LocaleController.formatPluralString("Months", 1), LocaleController.getString("KeepMediaForever", R.string.KeepMediaForever)}, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, final int which) {
                             SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit();
-                            editor.putInt("keep_media", which).commit();
+                            if (which == 0) {
+                                editor.putInt("keep_media", 3).commit();
+                            } else if (which == 1) {
+                                editor.putInt("keep_media", 0).commit();
+                            } else if (which == 2) {
+                                editor.putInt("keep_media", 1).commit();
+                            } else if (which == 3) {
+                                editor.putInt("keep_media", 2).commit();
+                            }
                             if (listAdapter != null) {
                                 listAdapter.notifyDataSetChanged();
                             }
@@ -587,6 +595,8 @@ public class CacheControlActivity extends BaseFragment {
                             value = LocaleController.formatPluralString("Weeks", 1);
                         } else if (keepMedia == 1) {
                             value = LocaleController.formatPluralString("Months", 1);
+                        } else if (keepMedia == 3) {
+                            value = LocaleController.formatPluralString("Days", 3);
                         } else {
                             value = LocaleController.getString("KeepMediaForever", R.string.KeepMediaForever);
                         }

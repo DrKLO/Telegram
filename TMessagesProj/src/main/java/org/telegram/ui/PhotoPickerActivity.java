@@ -8,14 +8,20 @@
 
 package org.telegram.ui;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.Surface;
 import android.view.View;
@@ -24,6 +30,8 @@ import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -74,24 +82,26 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 
-public class PhotoPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
+public class PhotoPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     public interface PhotoPickerActivityDelegate {
         void selectedPhotosChanged();
-
         void actionButtonPressed(boolean canceled);
-
-        void didSelectVideo(String path, VideoEditedInfo info, long estimatedSize, long estimatedDuration, String caption);
     }
 
     private int type;
-    private HashMap<String, MediaController.SearchImage> selectedWebPhotos;
-    private HashMap<Integer, MediaController.PhotoEntry> selectedPhotos;
-    private ArrayList<MediaController.SearchImage> recentImages;
+    private HashMap<Object, Object> selectedPhotos;
+    private ArrayList<Object> selectedPhotosOrder;
+    private boolean allowIndices;
 
+    private ArrayList<MediaController.SearchImage> recentImages;
     private ArrayList<MediaController.SearchImage> searchResult = new ArrayList<>();
     private HashMap<String, MediaController.SearchImage> searchResultKeys = new HashMap<>();
     private HashMap<String, MediaController.SearchImage> searchResultUrls = new HashMap<>();
+
+    private TextView hintTextView;
+    private Runnable hintHideRunnable;
+    private AnimatorSet hintAnimation;
 
     private boolean searching;
     private boolean bingSearchEndReached = true;
@@ -110,8 +120,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     private ListAdapter listAdapter;
     private GridLayoutManager layoutManager;
     private PickerBottomLayout pickerBottomLayout;
+    private ImageView imageOrderToggleButton;
     private EmptyTextProgressView emptyView;
     private ActionBarMenuItem searchItem;
+    private FrameLayout frameLayout;
     private int itemWidth = 100;
     private boolean sendPressed;
     private boolean singlePhoto;
@@ -119,19 +131,262 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
     private PhotoPickerActivityDelegate delegate;
 
-    public PhotoPickerActivity(int type, MediaController.AlbumEntry selectedAlbum, HashMap<Integer, MediaController.PhotoEntry> selectedPhotos, HashMap<String, MediaController.SearchImage> selectedWebPhotos, ArrayList<MediaController.SearchImage> recentImages, boolean onlyOnePhoto, boolean allowCaption, ChatActivity chatActivity) {
+    private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
+        @Override
+        public boolean scaleToFill() {
+            return false;
+        }
+
+        @Override
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+            PhotoPickerPhotoCell cell = getCellForIndex(index);
+            if (cell != null) {
+                int coords[] = new int[2];
+                cell.photoImage.getLocationInWindow(coords);
+                PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
+                object.viewX = coords[0];
+                object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
+                object.parentView = listView;
+                object.imageReceiver = cell.photoImage.getImageReceiver();
+                object.thumb = object.imageReceiver.getBitmap();
+                object.scale = cell.photoImage.getScaleX();
+                cell.showCheck(false);
+                return object;
+            }
+            return null;
+        }
+
+        @Override
+        public void updatePhotoAtIndex(int index) {
+            PhotoPickerPhotoCell cell = getCellForIndex(index);
+            if (cell != null) {
+                if (selectedAlbum != null) {
+                    cell.photoImage.setOrientation(0, true);
+                    MediaController.PhotoEntry photoEntry = selectedAlbum.photos.get(index);
+                    if (photoEntry.thumbPath != null) {
+                        cell.photoImage.setImage(photoEntry.thumbPath, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
+                    } else if (photoEntry.path != null) {
+                        cell.photoImage.setOrientation(photoEntry.orientation, true);
+                        if (photoEntry.isVideo) {
+                            cell.photoImage.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
+                        } else {
+                            cell.photoImage.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
+                        }
+                    } else {
+                        cell.photoImage.setImageResource(R.drawable.nophotos);
+                    }
+                } else {
+                    ArrayList<MediaController.SearchImage> array;
+                    if (searchResult.isEmpty() && lastSearchString == null) {
+                        array = recentImages;
+                    } else {
+                        array = searchResult;
+                    }
+                    MediaController.SearchImage photoEntry = array.get(index);
+                    if (photoEntry.document != null && photoEntry.document.thumb != null) {
+                        cell.photoImage.setImage(photoEntry.document.thumb.location, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
+                    } else if (photoEntry.thumbPath != null) {
+                        cell.photoImage.setImage(photoEntry.thumbPath, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
+                    } else if (photoEntry.thumbUrl != null && photoEntry.thumbUrl.length() > 0) {
+                        cell.photoImage.setImage(photoEntry.thumbUrl, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
+                    } else {
+                        cell.photoImage.setImageResource(R.drawable.nophotos);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public boolean allowCaption() {
+            return allowCaption;
+        }
+
+        @Override
+        public Bitmap getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+            PhotoPickerPhotoCell cell = getCellForIndex(index);
+            if (cell != null) {
+                return cell.photoImage.getImageReceiver().getBitmap();
+            }
+            return null;
+        }
+
+        @Override
+        public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+            int count = listView.getChildCount();
+            for (int a = 0; a < count; a++) {
+                View view = listView.getChildAt(a);
+                if (view.getTag() == null) {
+                    continue;
+                }
+                PhotoPickerPhotoCell cell = (PhotoPickerPhotoCell) view;
+                int num = (Integer) view.getTag();
+                if (selectedAlbum != null) {
+                    if (num < 0 || num >= selectedAlbum.photos.size()) {
+                        continue;
+                    }
+                } else {
+                    ArrayList<MediaController.SearchImage> array;
+                    if (searchResult.isEmpty() && lastSearchString == null) {
+                        array = recentImages;
+                    } else {
+                        array = searchResult;
+                    }
+                    if (num < 0 || num >= array.size()) {
+                        continue;
+                    }
+                }
+                if (num == index) {
+                    cell.showCheck(true);
+                    break;
+                }
+            }
+        }
+
+        @Override
+        public void willHidePhotoViewer() {
+            int count = listView.getChildCount();
+            for (int a = 0; a < count; a++) {
+                View view = listView.getChildAt(a);
+                if (view instanceof PhotoPickerPhotoCell) {
+                    PhotoPickerPhotoCell cell = (PhotoPickerPhotoCell) view;
+                    cell.showCheck(true);
+                }
+            }
+        }
+
+        @Override
+        public boolean isPhotoChecked(int index) {
+            if (selectedAlbum != null) {
+                return !(index < 0 || index >= selectedAlbum.photos.size()) && selectedPhotos.containsKey(selectedAlbum.photos.get(index).imageId);
+            } else {
+                ArrayList<MediaController.SearchImage> array;
+                if (searchResult.isEmpty() && lastSearchString == null) {
+                    array = recentImages;
+                } else {
+                    array = searchResult;
+                }
+                return !(index < 0 || index >= array.size()) && selectedPhotos.containsKey(array.get(index).id);
+            }
+        }
+
+        @Override
+        public int setPhotoChecked(int index, VideoEditedInfo videoEditedInfo) {
+            boolean add = true;
+            int num;
+            if (selectedAlbum != null) {
+                if (index < 0 || index >= selectedAlbum.photos.size()) {
+                    return -1;
+                }
+                MediaController.PhotoEntry photoEntry = selectedAlbum.photos.get(index);
+                if ((num = addToSelectedPhotos(photoEntry, -1)) == -1) {
+                    photoEntry.editedInfo = videoEditedInfo;
+                    num = selectedPhotosOrder.indexOf(photoEntry.imageId);
+                } else {
+                    add = false;
+                    photoEntry.editedInfo = null;
+                }
+            } else {
+                ArrayList<MediaController.SearchImage> array;
+                if (searchResult.isEmpty() && lastSearchString == null) {
+                    array = recentImages;
+                } else {
+                    array = searchResult;
+                }
+                if (index < 0 || index >= array.size()) {
+                    return -1;
+                }
+                MediaController.SearchImage photoEntry = array.get(index);
+                if ((num = addToSelectedPhotos(photoEntry, -1)) == -1) {
+                    num = selectedPhotosOrder.indexOf(photoEntry.id);
+                } else {
+                    add = false;
+                }
+            }
+            int count = listView.getChildCount();
+            for (int a = 0; a < count; a++) {
+                View view = listView.getChildAt(a);
+                int tag = (Integer) view.getTag();
+                if (tag == index) {
+                    ((PhotoPickerPhotoCell) view).setChecked(allowIndices ? num : -1, add, false);
+                    break;
+                }
+            }
+            pickerBottomLayout.updateSelectedCount(selectedPhotos.size(), true);
+            delegate.selectedPhotosChanged();
+            return num;
+        }
+
+        @Override
+        public boolean cancelButtonPressed() {
+            delegate.actionButtonPressed(true);
+            finishFragment();
+            return true;
+        }
+
+        @Override
+        public int getSelectedCount() {
+            return selectedPhotos.size();
+        }
+
+        @Override
+        public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo) {
+            if (selectedPhotos.isEmpty()) {
+                if (selectedAlbum != null) {
+                    if (index < 0 || index >= selectedAlbum.photos.size()) {
+                        return;
+                    }
+                    MediaController.PhotoEntry photoEntry = selectedAlbum.photos.get(index);
+                    photoEntry.editedInfo = videoEditedInfo;
+                    addToSelectedPhotos(photoEntry, -1);
+                } else {
+                    ArrayList<MediaController.SearchImage> array;
+                    if (searchResult.isEmpty() && lastSearchString == null) {
+                        array = recentImages;
+                    } else {
+                        array = searchResult;
+                    }
+                    if (index < 0 || index >= array.size()) {
+                        return;
+                    }
+                    addToSelectedPhotos(array.get(index), -1);
+                }
+            }
+            sendSelectedPhotos();
+        }
+
+        @Override
+        public void toggleGroupPhotosEnabled() {
+            if (imageOrderToggleButton != null) {
+                imageOrderToggleButton.setColorFilter(MediaController.getInstance().isGroupPhotosEnabled() ? new PorterDuffColorFilter(0xff66bffa, PorterDuff.Mode.MULTIPLY) : null);
+            }
+        }
+
+        @Override
+        public ArrayList<Object> getSelectedPhotosOrder() {
+            return selectedPhotosOrder;
+        }
+
+        @Override
+        public HashMap<Object, Object> getSelectedPhotos() {
+            return selectedPhotos;
+        }
+
+        @Override
+        public boolean allowGroupPhotos() {
+            return imageOrderToggleButton != null;
+        }
+    };
+
+    public PhotoPickerActivity(int type, MediaController.AlbumEntry selectedAlbum, HashMap<Object, Object> selectedPhotos, ArrayList<Object> selectedPhotosOrder, ArrayList<MediaController.SearchImage> recentImages, boolean onlyOnePhoto, boolean allowCaption, ChatActivity chatActivity) {
         super();
         this.selectedAlbum = selectedAlbum;
         this.selectedPhotos = selectedPhotos;
-        this.selectedWebPhotos = selectedWebPhotos;
+        this.selectedPhotosOrder = selectedPhotosOrder;
         this.type = type;
         this.recentImages = recentImages;
         this.singlePhoto = onlyOnePhoto;
         this.chatActivity = chatActivity;
         this.allowCaption = allowCaption;
-        if (selectedAlbum != null && selectedAlbum.isVideo) {
-            singlePhoto = true;
-        }
     }
 
     @Override
@@ -266,7 +521,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
         fragmentView = new FrameLayout(context);
 
-        FrameLayout frameLayout = (FrameLayout) fragmentView;
+        frameLayout = (FrameLayout) fragmentView;
         frameLayout.setBackgroundColor(0xff000000);
 
         listView = new RecyclerListView(context);
@@ -302,64 +557,24 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
-                if (selectedAlbum != null && selectedAlbum.isVideo) {
-                    if (position < 0 || position >= selectedAlbum.photos.size()) {
-                        return;
-                    }
-
-                    String path = selectedAlbum.photos.get(position).path;
-                    if (Build.VERSION.SDK_INT >= 16) {
-                        Bundle args = new Bundle();
-                        args.putString("videoPath", path);
-                        VideoEditorActivity fragment = new VideoEditorActivity(args);
-                        fragment.setDelegate(new VideoEditorActivity.VideoEditorActivityDelegate() {
-                            @Override
-                            public void didFinishEditVideo(String videoPath, long startTime, long endTime, int resultWidth, int resultHeight, int rotationValue, int originalWidth, int originalHeight, int bitrate, long estimatedSize, long estimatedDuration, String caption) {
-                                removeSelfFromStack();
-                                VideoEditedInfo videoEditedInfo = new VideoEditedInfo();
-                                videoEditedInfo.startTime = startTime;
-                                videoEditedInfo.endTime = endTime;
-                                videoEditedInfo.rotationValue = rotationValue;
-                                videoEditedInfo.originalWidth = originalWidth;
-                                videoEditedInfo.originalHeight = originalHeight;
-                                videoEditedInfo.bitrate = bitrate;
-                                videoEditedInfo.resultWidth = resultWidth;
-                                videoEditedInfo.resultHeight = resultHeight;
-                                videoEditedInfo.originalPath = videoPath;
-                                delegate.didSelectVideo(videoPath, videoEditedInfo, estimatedSize, estimatedDuration, caption);
-                            }
-                        });
-
-                        if (!fragment.onFragmentCreate()) {
-                            delegate.didSelectVideo(path, null, 0, 0, null);
-                            finishFragment();
-                        } else if (parentLayout.presentFragment(fragment, false, false, true)) {
-                            fragment.setParentChatActivity(chatActivity);
-                        }
-                    } else {
-                        delegate.didSelectVideo(path, null, 0, 0, null);
-                        finishFragment();
-                    }
+                ArrayList<Object> arrayList;
+                if (selectedAlbum != null) {
+                    arrayList = (ArrayList) selectedAlbum.photos;
                 } else {
-                    ArrayList<Object> arrayList;
-                    if (selectedAlbum != null) {
-                        arrayList = (ArrayList) selectedAlbum.photos;
+                    if (searchResult.isEmpty() && lastSearchString == null) {
+                        arrayList = (ArrayList) recentImages;
                     } else {
-                        if (searchResult.isEmpty() && lastSearchString == null) {
-                            arrayList = (ArrayList) recentImages;
-                        } else {
-                            arrayList = (ArrayList) searchResult;
-                        }
+                        arrayList = (ArrayList) searchResult;
                     }
-                    if (position < 0 || position >= arrayList.size()) {
-                        return;
-                    }
-                    if (searchItem != null) {
-                        AndroidUtilities.hideKeyboard(searchItem.getSearchField());
-                    }
-                    PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                    PhotoViewer.getInstance().openPhotoForSelect(arrayList, position, singlePhoto ? 1 : 0, PhotoPickerActivity.this, chatActivity);
                 }
+                if (position < 0 || position >= arrayList.size()) {
+                    return;
+                }
+                if (searchItem != null) {
+                    AndroidUtilities.hideKeyboard(searchItem.getSearchField());
+                }
+                PhotoViewer.getInstance().setParentActivity(getParentActivity());
+                PhotoViewer.getInstance().openPhotoForSelect(arrayList, position, singlePhoto ? 1 : 0, provider, chatActivity);
             }
         });
 
@@ -451,10 +666,26 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         });
         if (singlePhoto) {
             pickerBottomLayout.setVisibility(View.GONE);
+        } else if ((selectedAlbum != null || type == 0) && chatActivity != null && chatActivity.allowGroupPhotos()) {
+            imageOrderToggleButton = new ImageView(context);
+            imageOrderToggleButton.setScaleType(ImageView.ScaleType.CENTER);
+            imageOrderToggleButton.setImageResource(R.drawable.photos_group);
+            pickerBottomLayout.addView(imageOrderToggleButton, LayoutHelper.createFrame(48, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
+            imageOrderToggleButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    MediaController.getInstance().toggleGroupPhotosEnabled();
+                    imageOrderToggleButton.setColorFilter(MediaController.getInstance().isGroupPhotosEnabled() ? new PorterDuffColorFilter(0xff66bffa, PorterDuff.Mode.MULTIPLY) : null);
+                    showHint(false, MediaController.getInstance().isGroupPhotosEnabled());
+                    updateCheckedPhotoIndices();
+                }
+            });
+            imageOrderToggleButton.setColorFilter(MediaController.getInstance().isGroupPhotosEnabled() ? new PorterDuffColorFilter(0xff66bffa, PorterDuff.Mode.MULTIPLY) : null);
         }
+        allowIndices = (selectedAlbum != null || type == 0);
 
         listView.setEmptyView(emptyView);
-        pickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
+        pickerBottomLayout.updateSelectedCount(selectedPhotos.size(), true);
 
         return fragmentView;
     }
@@ -492,6 +723,126 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         }
     }
 
+    private void hideHint() {
+        hintAnimation = new AnimatorSet();
+        hintAnimation.playTogether(
+                ObjectAnimator.ofFloat(hintTextView, "alpha", 0.0f)
+        );
+        hintAnimation.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (animation.equals(hintAnimation)) {
+                    hintAnimation = null;
+                    hintHideRunnable = null;
+                    if (hintTextView != null) {
+                        hintTextView.setVisibility(View.GONE);
+                    }
+                }
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                if (animation.equals(hintAnimation)) {
+                    hintHideRunnable = null;
+                    hintHideRunnable = null;
+                }
+            }
+        });
+        hintAnimation.setDuration(300);
+        hintAnimation.start();
+    }
+
+    private void showHint(boolean hide, boolean enabled) {
+        if (getParentActivity() == null || fragmentView == null || hide && hintTextView == null) {
+            return;
+        }
+        if (hintTextView == null) {
+            hintTextView = new TextView(getParentActivity());
+            hintTextView.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(3), Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
+            hintTextView.setTextColor(Theme.getColor(Theme.key_chat_gifSaveHintText));
+            hintTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            hintTextView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(7), AndroidUtilities.dp(8), AndroidUtilities.dp(7));
+            hintTextView.setGravity(Gravity.CENTER_VERTICAL);
+            hintTextView.setAlpha(0.0f);
+            frameLayout.addView(hintTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 5, 0, 5, 48 + 3));
+        }
+        if (hide) {
+            if (hintAnimation != null) {
+                hintAnimation.cancel();
+                hintAnimation = null;
+            }
+            AndroidUtilities.cancelRunOnUIThread(hintHideRunnable);
+            hintHideRunnable = null;
+            hideHint();
+            return;
+        }
+
+        hintTextView.setText(enabled ? LocaleController.getString("GroupPhotosHelp", R.string.GroupPhotosHelp) : LocaleController.getString("SinglePhotosHelp", R.string.SinglePhotosHelp));
+
+        if (hintHideRunnable != null) {
+            if (hintAnimation != null) {
+                hintAnimation.cancel();
+                hintAnimation = null;
+            } else {
+                AndroidUtilities.cancelRunOnUIThread(hintHideRunnable);
+                AndroidUtilities.runOnUIThread(hintHideRunnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        hideHint();
+                    }
+                }, 2000);
+                return;
+            }
+        } else if (hintAnimation != null) {
+            return;
+        }
+
+        hintTextView.setVisibility(View.VISIBLE);
+        hintAnimation = new AnimatorSet();
+        hintAnimation.playTogether(
+                ObjectAnimator.ofFloat(hintTextView, "alpha", 1.0f)
+        );
+        hintAnimation.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (animation.equals(hintAnimation)) {
+                    hintAnimation = null;
+                    AndroidUtilities.runOnUIThread(hintHideRunnable = new Runnable() {
+                        @Override
+                        public void run() {
+                            hideHint();
+                        }
+                    }, 2000);
+                }
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                if (animation.equals(hintAnimation)) {
+                    hintAnimation = null;
+                }
+            }
+        });
+        hintAnimation.setDuration(300);
+        hintAnimation.start();
+    }
+
+    private void updateCheckedPhotoIndices() {
+        if (selectedAlbum == null) {
+            return;
+        }
+        int count = listView.getChildCount();
+        for (int a = 0; a < count; a++) {
+            View view = listView.getChildAt(a);
+            if (view instanceof PhotoPickerPhotoCell) {
+                PhotoPickerPhotoCell cell = (PhotoPickerPhotoCell) view;
+                Integer index = (Integer) cell.getTag();
+                MediaController.PhotoEntry photoEntry = selectedAlbum.photos.get(index);
+                cell.setNum(allowIndices ? selectedPhotosOrder.indexOf(photoEntry.imageId) : -1);
+            }
+        }
+    }
+
     private PhotoPickerPhotoCell getCellForIndex(int index) {
         int count = listView.getChildCount();
 
@@ -523,227 +874,39 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         return null;
     }
 
-    @Override
-    public boolean scaleToFill() {
-        return false;
-    }
-
-    @Override
-    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
-        PhotoPickerPhotoCell cell = getCellForIndex(index);
-        if (cell != null) {
-            int coords[] = new int[2];
-            cell.photoImage.getLocationInWindow(coords);
-            PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
-            object.viewX = coords[0];
-            object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
-            object.parentView = listView;
-            object.imageReceiver = cell.photoImage.getImageReceiver();
-            object.thumb = object.imageReceiver.getBitmap();
-            object.scale = cell.photoImage.getScaleX();
-            cell.checkBox.setVisibility(View.GONE);
-            return object;
+    private int addToSelectedPhotos(Object object, int index) {
+        Object key = null;
+        if (object instanceof MediaController.PhotoEntry) {
+            key = ((MediaController.PhotoEntry) object).imageId;
+        } else if (object instanceof MediaController.SearchImage) {
+            key = ((MediaController.SearchImage) object).id;
         }
-        return null;
-    }
-
-    @Override
-    public void updatePhotoAtIndex(int index) {
-        PhotoPickerPhotoCell cell = getCellForIndex(index);
-        if (cell != null) {
-            if (selectedAlbum != null) {
-                cell.photoImage.setOrientation(0, true);
-                MediaController.PhotoEntry photoEntry = selectedAlbum.photos.get(index);
-                if (photoEntry.thumbPath != null) {
-                    cell.photoImage.setImage(photoEntry.thumbPath, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
-                } else if (photoEntry.path != null) {
-                    cell.photoImage.setOrientation(photoEntry.orientation, true);
-                    if (photoEntry.isVideo) {
-                        cell.photoImage.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
-                    } else {
-                        cell.photoImage.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
-                    }
-                } else {
-                    cell.photoImage.setImageResource(R.drawable.nophotos);
-                }
-            } else {
-                ArrayList<MediaController.SearchImage> array;
-                if (searchResult.isEmpty() && lastSearchString == null) {
-                    array = recentImages;
-                } else {
-                    array = searchResult;
-                }
-                MediaController.SearchImage photoEntry = array.get(index);
-                if (photoEntry.document != null && photoEntry.document.thumb != null) {
-                    cell.photoImage.setImage(photoEntry.document.thumb.location, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
-                } else if (photoEntry.thumbPath != null) {
-                    cell.photoImage.setImage(photoEntry.thumbPath, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
-                } else if (photoEntry.thumbUrl != null && photoEntry.thumbUrl.length() > 0) {
-                    cell.photoImage.setImage(photoEntry.thumbUrl, null, cell.getContext().getResources().getDrawable(R.drawable.nophotos));
-                } else {
-                    cell.photoImage.setImageResource(R.drawable.nophotos);
-                }
-            }
+        if (key == null) {
+            return -1;
         }
-    }
-
-    @Override
-    public boolean allowCaption() {
-        return allowCaption;
-    }
-
-    @Override
-    public Bitmap getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
-        PhotoPickerPhotoCell cell = getCellForIndex(index);
-        if (cell != null) {
-            return cell.photoImage.getImageReceiver().getBitmap();
-        }
-        return null;
-    }
-
-    @Override
-    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
-        int count = listView.getChildCount();
-        for (int a = 0; a < count; a++) {
-            View view = listView.getChildAt(a);
-            if (view.getTag() == null) {
-                continue;
+        if (selectedPhotos.containsKey(key)) {
+            selectedPhotos.remove(key);
+            int position = selectedPhotosOrder.indexOf(key);
+            if (position >= 0) {
+                selectedPhotosOrder.remove(position);
             }
-            PhotoPickerPhotoCell cell = (PhotoPickerPhotoCell) view;
-            int num = (Integer) view.getTag();
-            if (selectedAlbum != null) {
-                if (num < 0 || num >= selectedAlbum.photos.size()) {
-                    continue;
-                }
-            } else {
-                ArrayList<MediaController.SearchImage> array;
-                if (searchResult.isEmpty() && lastSearchString == null) {
-                    array = recentImages;
-                } else {
-                    array = searchResult;
-                }
-                if (num < 0 || num >= array.size()) {
-                    continue;
-                }
+            if (allowIndices) {
+                updateCheckedPhotoIndices();
             }
-            if (num == index) {
-                cell.checkBox.setVisibility(View.VISIBLE);
-                break;
-            }
-        }
-    }
-
-    @Override
-    public void willHidePhotoViewer() {
-        int count = listView.getChildCount();
-        for (int a = 0; a < count; a++) {
-            View view = listView.getChildAt(a);
-            if (view instanceof PhotoPickerPhotoCell) {
-                PhotoPickerPhotoCell cell = (PhotoPickerPhotoCell) view;
-                if (cell.checkBox.getVisibility() != View.VISIBLE) {
-                    cell.checkBox.setVisibility(View.VISIBLE);
+            if (index >= 0) {
+                if (object instanceof MediaController.PhotoEntry) {
+                    ((MediaController.PhotoEntry) object).reset();
+                } else if (object instanceof MediaController.SearchImage) {
+                    ((MediaController.SearchImage) object).reset();
                 }
+                provider.updatePhotoAtIndex(index);
             }
-        }
-    }
-
-    @Override
-    public boolean isPhotoChecked(int index) {
-        if (selectedAlbum != null) {
-            return !(index < 0 || index >= selectedAlbum.photos.size()) && selectedPhotos.containsKey(selectedAlbum.photos.get(index).imageId);
+            return position;
         } else {
-            ArrayList<MediaController.SearchImage> array;
-            if (searchResult.isEmpty() && lastSearchString == null) {
-                array = recentImages;
-            } else {
-                array = searchResult;
-            }
-            return !(index < 0 || index >= array.size()) && selectedWebPhotos.containsKey(array.get(index).id);
+            selectedPhotos.put(key, object);
+            selectedPhotosOrder.add(key);
+            return -1;
         }
-    }
-
-    @Override
-    public void setPhotoChecked(int index) {
-        boolean add = true;
-        if (selectedAlbum != null) {
-            if (index < 0 || index >= selectedAlbum.photos.size()) {
-                return;
-            }
-            MediaController.PhotoEntry photoEntry = selectedAlbum.photos.get(index);
-            if (selectedPhotos.containsKey(photoEntry.imageId)) {
-                selectedPhotos.remove(photoEntry.imageId);
-                add = false;
-            } else {
-                selectedPhotos.put(photoEntry.imageId, photoEntry);
-            }
-        } else {
-            MediaController.SearchImage photoEntry;
-            ArrayList<MediaController.SearchImage> array;
-            if (searchResult.isEmpty() && lastSearchString == null) {
-                array = recentImages;
-            } else {
-                array = searchResult;
-            }
-            if (index < 0 || index >= array.size()) {
-                return;
-            }
-            photoEntry = array.get(index);
-            if (selectedWebPhotos.containsKey(photoEntry.id)) {
-                selectedWebPhotos.remove(photoEntry.id);
-                add = false;
-            } else {
-                selectedWebPhotos.put(photoEntry.id, photoEntry);
-            }
-        }
-        int count = listView.getChildCount();
-        for (int a = 0; a < count; a++) {
-            View view = listView.getChildAt(a);
-            int num = (Integer) view.getTag();
-            if (num == index) {
-                ((PhotoPickerPhotoCell) view).setChecked(add, false);
-                break;
-            }
-        }
-        pickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
-        delegate.selectedPhotosChanged();
-    }
-
-    @Override
-    public boolean cancelButtonPressed() {
-        delegate.actionButtonPressed(true);
-        finishFragment();
-        return true;
-    }
-
-    @Override
-    public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo) {
-        if (selectedAlbum != null) {
-            if (selectedPhotos.isEmpty()) {
-                if (index < 0 || index >= selectedAlbum.photos.size()) {
-                    return;
-                }
-                MediaController.PhotoEntry photoEntry = selectedAlbum.photos.get(index);
-                selectedPhotos.put(photoEntry.imageId, photoEntry);
-            }
-        } else if (selectedPhotos.isEmpty()) {
-            ArrayList<MediaController.SearchImage> array;
-            if (searchResult.isEmpty() && lastSearchString == null) {
-                array = recentImages;
-            } else {
-                array = searchResult;
-            }
-            if (index < 0 || index >= array.size()) {
-                return;
-            }
-            MediaController.SearchImage photoEntry = array.get(index);
-            selectedWebPhotos.put(photoEntry.id, photoEntry);
-        }
-        sendSelectedPhotos();
-    }
-
-    @Override
-    public int getSelectedCount() {
-        return selectedPhotos.size() + selectedWebPhotos.size();
     }
 
     @Override
@@ -1063,7 +1226,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     }
 
     private void sendSelectedPhotos() {
-        if (selectedPhotos.isEmpty() && selectedWebPhotos.isEmpty() || delegate == null || sendPressed) {
+        if (selectedPhotos.isEmpty() || delegate == null || sendPressed) {
             return;
         }
         sendPressed = true;
@@ -1165,23 +1328,17 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             View view;
             switch (viewType) {
                 case 0:
-                    PhotoPickerPhotoCell cell = new PhotoPickerPhotoCell(mContext);
+                    PhotoPickerPhotoCell cell = new PhotoPickerPhotoCell(mContext, true);
                     cell.checkFrame.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             int index = (Integer) ((View) v.getParent()).getTag();
                             if (selectedAlbum != null) {
                                 MediaController.PhotoEntry photoEntry = selectedAlbum.photos.get(index);
-                                if (selectedPhotos.containsKey(photoEntry.imageId)) {
-                                    selectedPhotos.remove(photoEntry.imageId);
-                                    photoEntry.imagePath = null;
-                                    photoEntry.thumbPath = null;
-                                    photoEntry.stickers.clear();
-                                    updatePhotoAtIndex(index);
-                                } else {
-                                    selectedPhotos.put(photoEntry.imageId, photoEntry);
-                                }
-                                ((PhotoPickerPhotoCell) v.getParent()).setChecked(selectedPhotos.containsKey(photoEntry.imageId), true);
+                                boolean added = !selectedPhotos.containsKey(photoEntry.imageId);
+                                int num = allowIndices && added ? selectedPhotosOrder.size() : -1;
+                                ((PhotoPickerPhotoCell) v.getParent()).setChecked(num, added, true);
+                                addToSelectedPhotos(photoEntry, index);
                             } else {
                                 AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
                                 MediaController.SearchImage photoEntry;
@@ -1190,17 +1347,12 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                                 } else {
                                     photoEntry = searchResult.get((Integer) ((View) v.getParent()).getTag());
                                 }
-                                if (selectedWebPhotos.containsKey(photoEntry.id)) {
-                                    selectedWebPhotos.remove(photoEntry.id);
-                                    photoEntry.imagePath = null;
-                                    photoEntry.thumbPath = null;
-                                    updatePhotoAtIndex(index);
-                                } else {
-                                    selectedWebPhotos.put(photoEntry.id, photoEntry);
-                                }
-                                ((PhotoPickerPhotoCell) v.getParent()).setChecked(selectedWebPhotos.containsKey(photoEntry.id), true);
+                                boolean added = !selectedPhotos.containsKey(photoEntry.id);
+                                int num = allowIndices && added ? selectedPhotosOrder.size() : -1;
+                                ((PhotoPickerPhotoCell) v.getParent()).setChecked(num, added, true);
+                                addToSelectedPhotos(photoEntry, index);
                             }
-                            pickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
+                            pickerBottomLayout.updateSelectedCount(selectedPhotos.size(), true);
                             delegate.selectedPhotosChanged();
                         }
                     });
@@ -1238,14 +1390,19 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                         } else if (photoEntry.path != null) {
                             imageView.setOrientation(photoEntry.orientation, true);
                             if (photoEntry.isVideo) {
+                                cell.videoInfoContainer.setVisibility(View.VISIBLE);
+                                int minutes = photoEntry.duration / 60;
+                                int seconds = photoEntry.duration - minutes * 60;
+                                cell.videoTextView.setText(String.format("%d:%02d", minutes, seconds));
                                 imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, mContext.getResources().getDrawable(R.drawable.nophotos));
                             } else {
+                                cell.videoInfoContainer.setVisibility(View.INVISIBLE);
                                 imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, mContext.getResources().getDrawable(R.drawable.nophotos));
                             }
                         } else {
                             imageView.setImageResource(R.drawable.nophotos);
                         }
-                        cell.setChecked(selectedPhotos.containsKey(photoEntry.imageId), false);
+                        cell.setChecked(allowIndices ? selectedPhotosOrder.indexOf(photoEntry.imageId) : -1, selectedPhotos.containsKey(photoEntry.imageId), false);
                         showing = PhotoViewer.getInstance().isShowingImage(photoEntry.path);
                     } else {
                         MediaController.SearchImage photoEntry;
@@ -1263,7 +1420,8 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                         } else {
                             imageView.setImageResource(R.drawable.nophotos);
                         }
-                        cell.setChecked(selectedWebPhotos.containsKey(photoEntry.id), false);
+                        cell.videoInfoContainer.setVisibility(View.INVISIBLE);
+                        cell.setChecked(allowIndices ? selectedPhotosOrder.indexOf(photoEntry.id) : -1, selectedPhotos.containsKey(photoEntry.id), false);
                         if (photoEntry.document != null) {
                             showing = PhotoViewer.getInstance().isShowingImage(FileLoader.getPathToAttach(photoEntry.document, true).getAbsolutePath());
                         } else {

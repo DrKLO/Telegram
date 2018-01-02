@@ -30,6 +30,7 @@ public class ColorPicker extends FrameLayout {
         void onColorValueChanged();
         void onFinishedColorPicking();
         void onSettingsPressed();
+        void onUndoPressed();
     }
 
     private ColorPickerDelegate delegate;
@@ -63,6 +64,7 @@ public class ColorPicker extends FrameLayout {
     };
 
     private ImageView settingsButton;
+    private ImageView undoButton;
     private Drawable shadowDrawable;
 
     private Paint gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -97,8 +99,26 @@ public class ColorPicker extends FrameLayout {
             }
         });
 
+        undoButton = new ImageView(context);
+        undoButton.setScaleType(ImageView.ScaleType.CENTER);
+        undoButton.setImageResource(R.drawable.photo_undo);
+        addView(undoButton, LayoutHelper.createFrame(60, 52));
+        undoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (delegate != null) {
+                    delegate.onUndoPressed();
+                }
+            }
+        });
+
         location = context.getSharedPreferences("paint", Activity.MODE_PRIVATE).getFloat("last_color_location", 1.0f);
         setLocation(location);
+    }
+
+    public void setUndoEnabled(boolean enabled) {
+        undoButton.setAlpha(enabled ? 1.0f : 0.3f);
+        undoButton.setEnabled(enabled);
     }
 
     public void setDelegate(ColorPickerDelegate colorPickerDelegate) {
@@ -202,7 +222,7 @@ public class ColorPicker extends FrameLayout {
         float x = event.getX() - rectF.left;
         float y = event.getY() - rectF.top;
 
-        if (!interacting && x < -AndroidUtilities.dp(10)) {
+        if (!interacting && y < -AndroidUtilities.dp(10)) {
             return false;
         }
 
@@ -225,14 +245,14 @@ public class ColorPicker extends FrameLayout {
                 }
             }
 
-            float colorLocation = Math.max(0.0f, Math.min(1.0f, y / rectF.height()));
+            float colorLocation = Math.max(0.0f, Math.min(1.0f, x / rectF.width()));
             setLocation(colorLocation);
 
             setDragging(true, true);
 
-            if (x < -AndroidUtilities.dp(10)) {
+            if (y < -AndroidUtilities.dp(10)) {
                 changingWeight = true;
-                float weightLocation = (-x - AndroidUtilities.dp(10)) / AndroidUtilities.dp(190);
+                float weightLocation = (-y - AndroidUtilities.dp(10)) / AndroidUtilities.dp(190);
                 weightLocation = Math.max(0.0f, Math.min(1.0f, weightLocation));
                 setWeight(weightLocation);
             }
@@ -251,21 +271,20 @@ public class ColorPicker extends FrameLayout {
         int width = right - left;
         int height = bottom - top;
 
-        int backHeight = getMeasuredHeight() - AndroidUtilities.dp(26) - AndroidUtilities.dp(64);
-        gradientPaint.setShader(new LinearGradient(0, AndroidUtilities.dp(26), 0, backHeight + AndroidUtilities.dp(26), COLORS, LOCATIONS, Shader.TileMode.REPEAT));
-        int x = width - AndroidUtilities.dp(26) - AndroidUtilities.dp(8);
-        int y = AndroidUtilities.dp(26);
-        rectF.set(x, y, x + AndroidUtilities.dp(8), y + backHeight);
+        gradientPaint.setShader(new LinearGradient(AndroidUtilities.dp(56), 0, width - AndroidUtilities.dp(56), 0, COLORS, LOCATIONS, Shader.TileMode.REPEAT));
+        int y = height - AndroidUtilities.dp(32);
+        rectF.set(AndroidUtilities.dp(56), y, width - AndroidUtilities.dp(56), y + AndroidUtilities.dp(12));
 
         settingsButton.layout(width - settingsButton.getMeasuredWidth(), height - AndroidUtilities.dp(52), width, height);
+        undoButton.layout(0, height - AndroidUtilities.dp(52), settingsButton.getMeasuredWidth(), height);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.drawRoundRect(rectF, AndroidUtilities.dp(6), AndroidUtilities.dp(6), gradientPaint);
 
-        int cx = (int) (rectF.centerX() + draggingFactor * -AndroidUtilities.dp(70) - (changingWeight ? weight * AndroidUtilities.dp(190) : 0.0f));
-        int cy = (int) (rectF.top - AndroidUtilities.dp(22) + rectF.height() * location) + AndroidUtilities.dp(22);
+        int cx = (int) (rectF.left + rectF.width() * location);
+        int cy = (int) (rectF.centerY() + draggingFactor * -AndroidUtilities.dp(70) - (changingWeight ? weight * AndroidUtilities.dp(190) : 0.0f));
 
         int side = (int) (AndroidUtilities.dp(24) * (0.5f * (1 + draggingFactor)));
         shadowDrawable.setBounds(cx - side, cy - side, cx + side, cy + side);

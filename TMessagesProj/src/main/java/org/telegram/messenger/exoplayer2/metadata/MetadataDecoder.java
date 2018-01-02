@@ -21,21 +21,12 @@ package org.telegram.messenger.exoplayer2.metadata;
 public interface MetadataDecoder {
 
   /**
-   * Checks whether the decoder supports a given mime type.
+   * Decodes a {@link Metadata} element from the provided input buffer.
    *
-   * @param mimeType A metadata mime type.
-   * @return Whether the mime type is supported.
-   */
-  boolean canDecode(String mimeType);
-
-  /**
-   * Decodes a metadata object from the provided binary data.
-   *
-   * @param data The raw binary data from which to decode the metadata.
-   * @param size The size of the input data.
+   * @param inputBuffer The input buffer to decode.
    * @return The decoded metadata object.
    * @throws MetadataDecoderException If a problem occurred decoding the data.
    */
-  Metadata decode(byte[] data, int size) throws MetadataDecoderException;
+  Metadata decode(MetadataInputBuffer inputBuffer) throws MetadataDecoderException;
 
 }

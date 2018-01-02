@@ -53,6 +53,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
     private VideoTakeCallback onVideoTakeCallback;
     private boolean recordingSmallVideo;
     private boolean cameraInitied;
+    private boolean loadingCameras;
 
     private static volatile CameraController Instance = null;
 
@@ -78,9 +79,10 @@ public class CameraController implements MediaRecorder.OnInfoListener {
     }
 
     public void initCamera() {
-        if (cameraInitied) {
+        if (loadingCameras || cameraInitied) {
             return;
         }
+        loadingCameras = true;
         threadPool.execute(new Runnable() {
             @Override
             public void run() {
@@ -100,32 +102,67 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                             List<Camera.Size> list = params.getSupportedPreviewSizes();
                             for (int a = 0; a < list.size(); a++) {
                                 Camera.Size size = list.get(a);
+                                if (size.width == 1280 && size.height != 720) {
+                                    continue;
+                                }
                                 if (size.height < 2160 && size.width < 2160) {
                                     cameraInfo.previewSizes.add(new Size(size.width, size.height));
+                                    FileLog.e("preview size = " + size.width + " " + size.height);
                                 }
                             }
 
                             list = params.getSupportedPictureSizes();
                             for (int a = 0; a < list.size(); a++) {
                                 Camera.Size size = list.get(a);
+                                if (size.width == 1280 && size.height != 720) {
+                                    continue;
+                                }
                                 if (!"samsung".equals(Build.MANUFACTURER) || !"jflteuc".equals(Build.PRODUCT) || size.width < 2048) {
                                     cameraInfo.pictureSizes.add(new Size(size.width, size.height));
+                                    FileLog.e("picture size = " + size.width + " " + size.height);
                                 }
                             }
 
                             camera.release();
                             result.add(cameraInfo);
+                            Comparator<Size> comparator = new Comparator<Size>() {
+                                @Override
+                                public int compare(Size o1, Size o2) {
+                                    if (o1.mWidth < o2.mWidth) {
+                                        return 1;
+                                    } else if (o1.mWidth > o2.mWidth) {
+                                        return -1;
+                                    } else {
+                                        if (o1.mHeight < o2.mHeight) {
+                                            return 1;
+                                        } else if (o1.mHeight > o2.mHeight) {
+                                            return -1;
+                                        }
+                                        return 0;
+                                    }
+                                }
+                            };
+                            Collections.sort(cameraInfo.previewSizes, comparator);
+                            Collections.sort(cameraInfo.pictureSizes, comparator);
                         }
                         cameraInfos = result;
                     }
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
+                            loadingCameras = false;
                             cameraInitied = true;
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.cameraInitied);
                         }
                     });
                 } catch (Exception e) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            loadingCameras = false;
+                            cameraInitied = false;
+                        }
+                    });
                     FileLog.e(e);
                 }
             }
@@ -392,6 +429,44 @@ public class CameraController implements MediaRecorder.OnInfoListener {
         });
     }
 
+    public void openRound(final CameraSession session, final SurfaceTexture texture, final Runnable callback, final Runnable configureCallback) {
+        if (session == null || texture == null) {
+            FileLog.e("failed to open round " + session + " tex = " + texture);
+            return;
+        }
+        threadPool.execute(new Runnable() {
+            @SuppressLint("NewApi")
+            @Override
+            public void run() {
+                Camera camera = session.cameraInfo.camera;
+                try {
+                    FileLog.e("start creating round camera session");
+                    if (camera == null) {
+                        camera = session.cameraInfo.camera = Camera.open(session.cameraInfo.cameraId);
+                    }
+                    Camera.Parameters params = camera.getParameters();
+
+                    session.configureRoundCamera();
+                    if (configureCallback != null) {
+                        configureCallback.run();
+                    }
+                    camera.setPreviewTexture(texture);
+                    camera.startPreview();
+                    if (callback != null) {
+                        AndroidUtilities.runOnUIThread(callback);
+                    }
+                    FileLog.e("round camera session created");
+                } catch (Exception e) {
+                    session.cameraInfo.camera = null;
+                    if (camera != null) {
+                        camera.release();
+                    }
+                    FileLog.e(e);
+                }
+            }
+        });
+    }
+
     public void open(final CameraSession session, final SurfaceTexture texture, final Runnable callback, final Runnable prestartCallback) {
         if (session == null || texture == null) {
             return;
@@ -477,7 +552,9 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                             if (recordingSmallVideo) {
                                 pictureSize = new Size(4, 3);
                                 pictureSize = CameraController.chooseOptimalSize(info.getPictureSizes(), 640, 480, pictureSize);
-                                recorder.setVideoEncodingBitRate(900000);
+                                recorder.setVideoEncodingBitRate(900000 * 2);
+                                recorder.setAudioEncodingBitRate(32000);
+                                recorder.setAudioChannels(1);
                             } else {
                                 pictureSize = new Size(16, 9);
                                 pictureSize = CameraController.chooseOptimalSize(info.getPictureSizes(), 720, 480, pictureSize);
@@ -596,7 +673,6 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                         onVideoTakeCallback = null;
                     }
                 } catch (Exception e) {
-                    FileLog.e(e);
                 }
             }
         });

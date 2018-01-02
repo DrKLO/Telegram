@@ -22,6 +22,8 @@ import org.telegram.messenger.exoplayer2.util.Util;
 import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +39,175 @@ public interface HttpDataSource extends DataSource {
 
     @Override
     HttpDataSource createDataSource();
+
+    /**
+     * Gets the default request properties used by all {@link HttpDataSource}s created by the
+     * factory. Changes to the properties will be reflected in any future requests made by
+     * {@link HttpDataSource}s created by the factory.
+     *
+     * @return The default request properties of the factory.
+     */
+    RequestProperties getDefaultRequestProperties();
+
+    /**
+     * Sets a default request header for {@link HttpDataSource} instances created by the factory.
+     *
+     * @deprecated Use {@link #getDefaultRequestProperties} instead.
+     * @param name The name of the header field.
+     * @param value The value of the field.
+     */
+    @Deprecated
+    void setDefaultRequestProperty(String name, String value);
+
+    /**
+     * Clears a default request header for {@link HttpDataSource} instances created by the factory.
+     *
+     * @deprecated Use {@link #getDefaultRequestProperties} instead.
+     * @param name The name of the header field.
+     */
+    @Deprecated
+    void clearDefaultRequestProperty(String name);
+
+    /**
+     * Clears all default request headers for all {@link HttpDataSource} instances created by the
+     * factory.
+     *
+     * @deprecated Use {@link #getDefaultRequestProperties} instead.
+     */
+    @Deprecated
+    void clearAllDefaultRequestProperties();
+
+  }
+
+  /**
+   * Stores HTTP request properties (aka HTTP headers) and provides methods to modify the headers
+   * in a thread safe way to avoid the potential of creating snapshots of an inconsistent or
+   * unintended state.
+   */
+  final class RequestProperties {
+
+    private final Map<String, String> requestProperties;
+    private Map<String, String> requestPropertiesSnapshot;
+
+    public RequestProperties() {
+      requestProperties = new HashMap<>();
+    }
+
+    /**
+     * Sets the specified property {@code value} for the specified {@code name}. If a property for
+     * this name previously existed, the old value is replaced by the specified value.
+     *
+     * @param name The name of the request property.
+     * @param value The value of the request property.
+     */
+    public synchronized void set(String name, String value) {
+      requestPropertiesSnapshot = null;
+      requestProperties.put(name, value);
+    }
+
+    /**
+     * Sets the keys and values contained in the map. If a property previously existed, the old
+     * value is replaced by the specified value. If a property previously existed and is not in the
+     * map, the property is left unchanged.
+     *
+     * @param properties The request properties.
+     */
+    public synchronized void set(Map<String, String> properties) {
+      requestPropertiesSnapshot = null;
+      requestProperties.putAll(properties);
+    }
+
+    /**
+     * Removes all properties previously existing and sets the keys and values of the map.
+     *
+     * @param properties The request properties.
+     */
+    public synchronized void clearAndSet(Map<String, String> properties) {
+      requestPropertiesSnapshot = null;
+      requestProperties.clear();
+      requestProperties.putAll(properties);
+    }
+
+    /**
+     * Removes a request property by name.
+     *
+     * @param name The name of the request property to remove.
+     */
+    public synchronized void remove(String name) {
+      requestPropertiesSnapshot = null;
+      requestProperties.remove(name);
+    }
+
+    /**
+     * Clears all request properties.
+     */
+    public synchronized void clear() {
+      requestPropertiesSnapshot = null;
+      requestProperties.clear();
+    }
+
+    /**
+     * Gets a snapshot of the request properties.
+     *
+     * @return A snapshot of the request properties.
+     */
+    public synchronized Map<String, String> getSnapshot() {
+      if (requestPropertiesSnapshot == null) {
+        requestPropertiesSnapshot = Collections.unmodifiableMap(new HashMap<>(requestProperties));
+      }
+      return requestPropertiesSnapshot;
+    }
+
+  }
+
+  /**
+   * Base implementation of {@link Factory} that sets default request properties.
+   */
+  abstract class BaseFactory implements Factory {
+
+    private final RequestProperties defaultRequestProperties;
+
+    public BaseFactory() {
+      defaultRequestProperties = new RequestProperties();
+    }
+
+    @Override
+    public final HttpDataSource createDataSource() {
+      return createDataSourceInternal(defaultRequestProperties);
+    }
+
+    @Override
+    public final RequestProperties getDefaultRequestProperties() {
+      return defaultRequestProperties;
+    }
+
+    @Deprecated
+    @Override
+    public final void setDefaultRequestProperty(String name, String value) {
+      defaultRequestProperties.set(name, value);
+    }
+
+    @Deprecated
+    @Override
+    public final void clearDefaultRequestProperty(String name) {
+      defaultRequestProperties.remove(name);
+    }
+
+    @Deprecated
+    @Override
+    public final void clearAllDefaultRequestProperties() {
+      defaultRequestProperties.clear();
+    }
+
+    /**
+     * Called by {@link #createDataSource()} to create a {@link HttpDataSource} instance.
+     *
+     * @param defaultRequestProperties The default {@code RequestProperties} to be used by the
+     *     {@link HttpDataSource} instance.
+     * @return A {@link HttpDataSource} instance.
+     */
+    protected abstract HttpDataSource createDataSourceInternal(RequestProperties
+        defaultRequestProperties);
 
   }
 
@@ -67,8 +238,7 @@ public interface HttpDataSource extends DataSource {
     public static final int TYPE_READ = 2;
     public static final int TYPE_CLOSE = 3;
 
-    @Type
-    public final int type;
+    @Type public final int type;
 
     /**
      * The {@link DataSpec} associated with the current connection.
@@ -150,7 +320,7 @@ public interface HttpDataSource extends DataSource {
   int read(byte[] buffer, int offset, int readLength) throws HttpDataSourceException;
 
   /**
-   * Sets the value of a request header field. The value will be used for subsequent connections
+   * Sets the value of a request header. The value will be used for subsequent connections
    * established by the source.
    *
    * @param name The name of the header field.
@@ -159,7 +329,7 @@ public interface HttpDataSource extends DataSource {
   void setRequestProperty(String name, String value);
 
   /**
-   * Clears the value of a request header field. The change will apply to subsequent connections
+   * Clears the value of a request header. The change will apply to subsequent connections
    * established by the source.
    *
    * @param name The name of the header field.
@@ -167,7 +337,7 @@ public interface HttpDataSource extends DataSource {
   void clearRequestProperty(String name);
 
   /**
-   * Clears all request header fields that were set by {@link #setRequestProperty(String, String)}.
+   * Clears all request headers that were set by {@link #setRequestProperty(String, String)}.
    */
   void clearAllRequestProperties();
 

@@ -17,9 +17,11 @@ package org.telegram.messenger.exoplayer2.extractor.ts;
 
 import android.util.SparseArray;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
-import org.telegram.messenger.exoplayer2.extractor.TimestampAdjuster;
 import org.telegram.messenger.exoplayer2.extractor.TrackOutput;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
+import org.telegram.messenger.exoplayer2.util.TimestampAdjuster;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Parses TS packet payload data.
@@ -60,18 +62,45 @@ public interface TsPayloadReader {
 
     public final int streamType;
     public final String language;
+    public final List<DvbSubtitleInfo> dvbSubtitleInfos;
     public final byte[] descriptorBytes;
 
     /**
      * @param streamType The type of the stream as defined by the
      *     {@link TsExtractor}{@code .TS_STREAM_TYPE_*}.
      * @param language The language of the stream, as defined by ISO/IEC 13818-1, section 2.6.18.
+     * @param dvbSubtitleInfos Information about DVB subtitles associated to the stream.
      * @param descriptorBytes The descriptor bytes associated to the stream.
      */
-    public EsInfo(int streamType, String language, byte[] descriptorBytes) {
+    public EsInfo(int streamType, String language, List<DvbSubtitleInfo> dvbSubtitleInfos,
+        byte[] descriptorBytes) {
       this.streamType = streamType;
       this.language = language;
+      this.dvbSubtitleInfos = dvbSubtitleInfos == null ? Collections.<DvbSubtitleInfo>emptyList()
+          : Collections.unmodifiableList(dvbSubtitleInfos);
       this.descriptorBytes = descriptorBytes;
+    }
+
+  }
+
+  /**
+   * Holds information about a DVB subtitle, as defined in ETSI EN 300 468 V1.11.1 section 6.2.41.
+   */
+  final class DvbSubtitleInfo {
+
+    public final String language;
+    public final int type;
+    public final byte[] initializationData;
+
+    /**
+     * @param language The ISO 639-2 three character language.
+     * @param type The subtitling type.
+     * @param initializationData The composition and ancillary page ids.
+     */
+    public DvbSubtitleInfo(String language, int type, byte[] initializationData) {
+      this.language = language;
+      this.type = type;
+      this.initializationData = initializationData;
     }
 
   }
@@ -81,17 +110,63 @@ public interface TsPayloadReader {
    */
   final class TrackIdGenerator {
 
-    private final int firstId;
-    private final int idIncrement;
-    private int generatedIdCount;
+    private static final int ID_UNSET = Integer.MIN_VALUE;
 
-    public TrackIdGenerator(int firstId, int idIncrement) {
-      this.firstId = firstId;
-      this.idIncrement = idIncrement;
+    private final String formatIdPrefix;
+    private final int firstTrackId;
+    private final int trackIdIncrement;
+    private int trackId;
+    private String formatId;
+
+    public TrackIdGenerator(int firstTrackId, int trackIdIncrement) {
+      this(ID_UNSET, firstTrackId, trackIdIncrement);
     }
 
-    public int getNextId() {
-      return firstId + idIncrement * generatedIdCount++;
+    public TrackIdGenerator(int programNumber, int firstTrackId, int trackIdIncrement) {
+      this.formatIdPrefix = programNumber != ID_UNSET ? programNumber + "/" : "";
+      this.firstTrackId = firstTrackId;
+      this.trackIdIncrement = trackIdIncrement;
+      trackId = ID_UNSET;
+    }
+
+    /**
+     * Generates a new set of track and track format ids. Must be called before {@code get*}
+     * methods.
+     */
+    public void generateNewId() {
+      trackId = trackId == ID_UNSET ? firstTrackId : trackId + trackIdIncrement;
+      formatId = formatIdPrefix + trackId;
+    }
+
+    /**
+     * Returns the last generated track id. Must be called after the first {@link #generateNewId()}
+     * call.
+     *
+     * @return The last generated track id.
+     */
+    public int getTrackId() {
+      maybeThrowUninitializedError();
+      return trackId;
+    }
+
+    /**
+     * Returns the last generated format id, with the format {@code "programNumber/trackId"}. If no
+     * {@code programNumber} was provided, the {@code trackId} alone is used as format id. Must be
+     * called after the first {@link #generateNewId()} call.
+     *
+     * @return The last generated format id, with the format {@code "programNumber/trackId"}. If no
+     *     {@code programNumber} was provided, the {@code trackId} alone is used as
+     *     format id.
+     */
+    public String getFormatId() {
+      maybeThrowUninitializedError();
+      return formatId;
+    }
+
+    private void maybeThrowUninitializedError() {
+      if (trackId == ID_UNSET) {
+        throw new IllegalStateException("generateNewId() must be called before retrieving ids.");
+      }
     }
 
   }

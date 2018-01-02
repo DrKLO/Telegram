@@ -13,7 +13,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.view.View;
@@ -30,6 +29,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
     public interface IconTabProvider {
         Drawable getPageIconDrawable(int position);
         void customOnDraw(Canvas canvas, int position);
+        boolean canScrollToTab(int position);
     }
 
     private LinearLayout.LayoutParams defaultTabLayoutParams;
@@ -103,15 +103,18 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
-                if (Build.VERSION.SDK_INT < 16) {
-                    getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                } else {
-                    getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                }
+                getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 currentPosition = pager.getCurrentItem();
                 scrollToChild(currentPosition, 0);
             }
         });
+    }
+
+    public View getTab(int position) {
+        if (position < 0 || position >= tabsContainer.getChildCount()) {
+            return null;
+        }
+        return tabsContainer.getChildAt(position);
     }
 
     private void addIconTab(final int position, Drawable drawable) {
@@ -130,6 +133,11 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         tab.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (pager.getAdapter() instanceof IconTabProvider) {
+                    if (!((IconTabProvider) pager.getAdapter()).canScrollToTab(position)) {
+                        return;
+                    }
+                }
                 pager.setCurrentItem(position);
             }
         });

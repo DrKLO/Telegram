@@ -16,7 +16,6 @@
 package org.telegram.messenger.exoplayer2;
 
 import android.content.Context;
-import android.os.Looper;
 import org.telegram.messenger.exoplayer2.drm.DrmSessionManager;
 import org.telegram.messenger.exoplayer2.drm.FrameworkMediaCrypto;
 import org.telegram.messenger.exoplayer2.trackselection.TrackSelector;
@@ -26,46 +25,42 @@ import org.telegram.messenger.exoplayer2.trackselection.TrackSelector;
  */
 public final class ExoPlayerFactory {
 
-  /**
-   * The default maximum duration for which a video renderer can attempt to seamlessly join an
-   * ongoing playback.
-   */
-  public static final long DEFAULT_ALLOWED_VIDEO_JOINING_TIME_MS = 5000;
-
   private ExoPlayerFactory() {}
 
   /**
-   * Creates a {@link SimpleExoPlayer} instance. Must be called from a thread that has an associated
-   * {@link Looper}.
+   * Creates a {@link SimpleExoPlayer} instance.
    *
    * @param context A {@link Context}.
    * @param trackSelector The {@link TrackSelector} that will be used by the instance.
    * @param loadControl The {@link LoadControl} that will be used by the instance.
+   * @deprecated Use {@link #newSimpleInstance(RenderersFactory, TrackSelector, LoadControl)}.
    */
+  @Deprecated
   public static SimpleExoPlayer newSimpleInstance(Context context, TrackSelector trackSelector,
       LoadControl loadControl) {
-    return newSimpleInstance(context, trackSelector, loadControl, null);
+    RenderersFactory renderersFactory = new DefaultRenderersFactory(context);
+    return newSimpleInstance(renderersFactory, trackSelector, loadControl);
   }
 
   /**
-   * Creates a {@link SimpleExoPlayer} instance. Must be called from a thread that has an associated
-   * {@link Looper}. Available extension renderers are not used.
+   * Creates a {@link SimpleExoPlayer} instance. Available extension renderers are not used.
    *
    * @param context A {@link Context}.
    * @param trackSelector The {@link TrackSelector} that will be used by the instance.
    * @param loadControl The {@link LoadControl} that will be used by the instance.
    * @param drmSessionManager An optional {@link DrmSessionManager}. May be null if the instance
    *     will not be used for DRM protected playbacks.
+   * @deprecated Use {@link #newSimpleInstance(RenderersFactory, TrackSelector, LoadControl)}.
    */
+  @Deprecated
   public static SimpleExoPlayer newSimpleInstance(Context context, TrackSelector trackSelector,
       LoadControl loadControl, DrmSessionManager<FrameworkMediaCrypto> drmSessionManager) {
-    return newSimpleInstance(context, trackSelector, loadControl,
-        drmSessionManager, SimpleExoPlayer.EXTENSION_RENDERER_MODE_OFF);
+    RenderersFactory renderersFactory = new DefaultRenderersFactory(context, drmSessionManager);
+    return newSimpleInstance(renderersFactory, trackSelector, loadControl);
   }
 
   /**
-   * Creates a {@link SimpleExoPlayer} instance. Must be called from a thread that has an associated
-   * {@link Looper}.
+   * Creates a {@link SimpleExoPlayer} instance.
    *
    * @param context A {@link Context}.
    * @param trackSelector The {@link TrackSelector} that will be used by the instance.
@@ -75,17 +70,19 @@ public final class ExoPlayerFactory {
    * @param extensionRendererMode The extension renderer mode, which determines if and how available
    *     extension renderers are used. Note that extensions must be included in the application
    *     build for them to be considered available.
+   * @deprecated Use {@link #newSimpleInstance(RenderersFactory, TrackSelector, LoadControl)}.
    */
+  @Deprecated
   public static SimpleExoPlayer newSimpleInstance(Context context, TrackSelector trackSelector,
       LoadControl loadControl, DrmSessionManager<FrameworkMediaCrypto> drmSessionManager,
-      @SimpleExoPlayer.ExtensionRendererMode int extensionRendererMode) {
-    return newSimpleInstance(context, trackSelector, loadControl, drmSessionManager,
-        extensionRendererMode, DEFAULT_ALLOWED_VIDEO_JOINING_TIME_MS);
+      @DefaultRenderersFactory.ExtensionRendererMode int extensionRendererMode) {
+    RenderersFactory renderersFactory = new DefaultRenderersFactory(context, drmSessionManager,
+        extensionRendererMode);
+    return newSimpleInstance(renderersFactory, trackSelector, loadControl);
   }
 
   /**
-   * Creates a {@link SimpleExoPlayer} instance. Must be called from a thread that has an associated
-   * {@link Looper}.
+   * Creates a {@link SimpleExoPlayer} instance.
    *
    * @param context A {@link Context}.
    * @param trackSelector The {@link TrackSelector} that will be used by the instance.
@@ -97,18 +94,53 @@ public final class ExoPlayerFactory {
    *     build for them to be considered available.
    * @param allowedVideoJoiningTimeMs The maximum duration for which a video renderer can attempt to
    *     seamlessly join an ongoing playback.
+   * @deprecated Use {@link #newSimpleInstance(RenderersFactory, TrackSelector, LoadControl)}.
    */
+  @Deprecated
   public static SimpleExoPlayer newSimpleInstance(Context context, TrackSelector trackSelector,
       LoadControl loadControl, DrmSessionManager<FrameworkMediaCrypto> drmSessionManager,
-      @SimpleExoPlayer.ExtensionRendererMode int extensionRendererMode,
+      @DefaultRenderersFactory.ExtensionRendererMode int extensionRendererMode,
       long allowedVideoJoiningTimeMs) {
-    return new SimpleExoPlayer(context, trackSelector, loadControl, drmSessionManager,
+    RenderersFactory renderersFactory = new DefaultRenderersFactory(context, drmSessionManager,
         extensionRendererMode, allowedVideoJoiningTimeMs);
+    return newSimpleInstance(renderersFactory, trackSelector, loadControl);
   }
 
   /**
-   * Creates an {@link ExoPlayer} instance. Must be called from a thread that has an associated
-   * {@link Looper}.
+   * Creates a {@link SimpleExoPlayer} instance.
+   *
+   * @param context A {@link Context}.
+   * @param trackSelector The {@link TrackSelector} that will be used by the instance.
+   */
+  public static SimpleExoPlayer newSimpleInstance(Context context, TrackSelector trackSelector) {
+    return newSimpleInstance(new DefaultRenderersFactory(context), trackSelector);
+  }
+
+  /**
+   * Creates a {@link SimpleExoPlayer} instance.
+   *
+   * @param renderersFactory A factory for creating {@link Renderer}s to be used by the instance.
+   * @param trackSelector The {@link TrackSelector} that will be used by the instance.
+   */
+  public static SimpleExoPlayer newSimpleInstance(RenderersFactory renderersFactory,
+      TrackSelector trackSelector) {
+    return newSimpleInstance(renderersFactory, trackSelector, new DefaultLoadControl());
+  }
+
+  /**
+   * Creates a {@link SimpleExoPlayer} instance.
+   *
+   * @param renderersFactory A factory for creating {@link Renderer}s to be used by the instance.
+   * @param trackSelector The {@link TrackSelector} that will be used by the instance.
+   * @param loadControl The {@link LoadControl} that will be used by the instance.
+   */
+  public static SimpleExoPlayer newSimpleInstance(RenderersFactory renderersFactory,
+      TrackSelector trackSelector, LoadControl loadControl) {
+    return new SimpleExoPlayer(renderersFactory, trackSelector, loadControl);
+  }
+
+  /**
+   * Creates an {@link ExoPlayer} instance.
    *
    * @param renderers The {@link Renderer}s that will be used by the instance.
    * @param trackSelector The {@link TrackSelector} that will be used by the instance.
@@ -118,8 +150,7 @@ public final class ExoPlayerFactory {
   }
 
   /**
-   * Creates an {@link ExoPlayer} instance. Must be called from a thread that has an associated
-   * {@link Looper}.
+   * Creates an {@link ExoPlayer} instance.
    *
    * @param renderers The {@link Renderer}s that will be used by the instance.
    * @param trackSelector The {@link TrackSelector} that will be used by the instance.

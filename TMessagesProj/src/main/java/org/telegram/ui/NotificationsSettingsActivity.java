@@ -140,14 +140,10 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         } else {
             inappPriorityRow = -1;
         }
-        if (MessagesController.getInstance().callsEnabled) {
-            callsSectionRow2 = rowCount++;
-            callsSectionRow = rowCount++;
-            callsVibrateRow = rowCount++;
-            callsRingtoneRow = rowCount++;
-        } else {
-            callsSectionRow2 = callsSectionRow = callsVibrateRow = callsRingtoneRow = -1;
-        }
+        callsSectionRow2 = rowCount++;
+        callsSectionRow = rowCount++;
+        callsVibrateRow = rowCount++;
+        callsRingtoneRow = rowCount++;
         eventsSectionRow2 = rowCount++;
         eventsSectionRow = rowCount++;
         contactJoinedRow = rowCount++;

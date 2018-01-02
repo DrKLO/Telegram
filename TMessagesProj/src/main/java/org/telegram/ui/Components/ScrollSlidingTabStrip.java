@@ -13,7 +13,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -88,11 +87,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             return;
         }
         View tab = tabsContainer.getChildAt(num);
-        if (Build.VERSION.SDK_INT >= 15) {
-            tab.callOnClick();
-        } else {
-            tab.performClick();
-        }
+        tab.performClick();
     }
 
     public TextView addIconTabWithCounter(Drawable drawable) {
@@ -143,7 +138,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         tab.setSelected(position == currentPosition);
     }
 
-    public void addStickerTab(TLRPC.Document sticker) {
+    public void addStickerTab(TLRPC.Chat chat) {
         final int position = tabCount++;
         FrameLayout tab = new FrameLayout(getContext());
         tab.setFocusable(true);
@@ -156,9 +151,35 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         tabsContainer.addView(tab);
         tab.setSelected(position == currentPosition);
         BackupImageView imageView = new BackupImageView(getContext());
-        if (sticker != null && sticker.thumb != null) {
-            imageView.setImage(sticker.thumb.location, null, "webp", null);
+        imageView.setRoundRadius(AndroidUtilities.dp(15));
+        TLRPC.FileLocation photo = null;
+
+        AvatarDrawable avatarDrawable = new AvatarDrawable();
+        if (chat.photo != null) {
+            photo = chat.photo.photo_small;
         }
+        avatarDrawable.setTextSize(AndroidUtilities.dp(14));
+        avatarDrawable.setInfo(chat);
+        imageView.setImage(photo, "50_50", avatarDrawable);
+
+        imageView.setAspectFit(true);
+        tab.addView(imageView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));
+    }
+
+    public void addStickerTab(TLRPC.Document sticker) {
+        final int position = tabCount++;
+        FrameLayout tab = new FrameLayout(getContext());
+        tab.setTag(sticker);
+        tab.setFocusable(true);
+        tab.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                delegate.onPageSelected(position);
+            }
+        });
+        tabsContainer.addView(tab);
+        tab.setSelected(position == currentPosition);
+        BackupImageView imageView = new BackupImageView(getContext());
         imageView.setAspectFit(true);
         tab.addView(imageView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));
     }
@@ -191,8 +212,57 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
     }
 
     @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b);
+        setImages();
+    }
+
+    public void setImages() {
+        int tabSize = AndroidUtilities.dp(52);
+        int start = getScrollX() / tabSize;
+        int end = Math.min(tabsContainer.getChildCount(), start + (int) Math.ceil(getMeasuredWidth() / (float) tabSize) + 1);
+
+        for (int a = start; a < end; a++) {
+            View child = tabsContainer.getChildAt(a);
+            Object object = child.getTag();
+            if (!(object instanceof TLRPC.Document)) {
+                continue;
+            }
+            BackupImageView imageView = (BackupImageView) ((FrameLayout) child).getChildAt(0);
+            TLRPC.Document sticker = (TLRPC.Document) object;
+            imageView.setImage(sticker.thumb.location, null, "webp", null);
+        }
+    }
+
+    @Override
     protected void onScrollChanged(int l, int t, int oldl, int oldt) {
         super.onScrollChanged(l, t, oldl, oldt);
+
+        int tabSize = AndroidUtilities.dp(52);
+        int oldStart = oldl / tabSize;
+        int newStart = l / tabSize;
+
+        int count = (int) Math.ceil(getMeasuredWidth() / (float) tabSize) + 1;
+        int start = Math.max(0, Math.min(oldStart, newStart));
+        int end = Math.min(tabsContainer.getChildCount(), Math.max(oldStart, newStart) + count);
+
+        for (int a = start; a < end; a++) {
+            View child = tabsContainer.getChildAt(a);
+            if (child == null) {
+                continue;
+            }
+            Object object = child.getTag();
+            if (!(object instanceof TLRPC.Document)) {
+                continue;
+            }
+            BackupImageView imageView = (BackupImageView) ((FrameLayout) child).getChildAt(0);
+            if (a < newStart || a >= newStart + count) {
+                imageView.setImageDrawable(null);
+            } else {
+                TLRPC.Document sticker = (TLRPC.Document) object;
+                imageView.setImage(sticker.thumb.location, null, "webp", null);
+            }
+        }
     }
 
     @Override

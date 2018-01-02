@@ -193,6 +193,9 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     showDialog(builder.create());
                 } else if (position >= otherSessionsStartRow && position < otherSessionsEndRow) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setMessage(LocaleController.getString("TerminateSessionQuestion", R.string.TerminateSessionQuestion));
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));

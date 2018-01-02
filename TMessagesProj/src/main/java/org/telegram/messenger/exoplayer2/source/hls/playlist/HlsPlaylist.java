@@ -15,9 +15,8 @@
  */
 package org.telegram.messenger.exoplayer2.source.hls.playlist;
 
-import android.support.annotation.IntDef;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Represents an HLS playlist.
@@ -25,21 +24,21 @@ import java.lang.annotation.RetentionPolicy;
 public abstract class HlsPlaylist {
 
   /**
-   * The type of playlist.
+   * The base uri. Used to resolve relative paths.
    */
-  @Retention(RetentionPolicy.SOURCE)
-  @IntDef({TYPE_MASTER, TYPE_MEDIA})
-  public @interface Type {}
-  public static final int TYPE_MASTER = 0;
-  public static final int TYPE_MEDIA = 1;
-
   public final String baseUri;
-  @Type
-  public final int type;
+  /**
+   * The list of tags in the playlist.
+   */
+  public final List<String> tags;
 
-  protected HlsPlaylist(String baseUri, @Type int type) {
+  /**
+   * @param baseUri See {@link #baseUri}.
+   * @param tags See {@link #tags}.
+   */
+  protected HlsPlaylist(String baseUri, List<String> tags) {
     this.baseUri = baseUri;
-    this.type = type;
+    this.tags = Collections.unmodifiableList(tags);
   }
 
 }

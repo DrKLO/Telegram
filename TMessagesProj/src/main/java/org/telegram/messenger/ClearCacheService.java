@@ -38,7 +38,15 @@ public class ClearCacheService extends IntentService {
             @Override
             public void run() {
                 long currentTime = System.currentTimeMillis();
-                long diff = 60 * 60 * 1000 * 24 * (keepMedia == 0 ? 7 : 30);
+                int days;
+                if (keepMedia == 0) {
+                    days = 7;
+                } else if (keepMedia == 1) {
+                    days = 30;
+                } else {
+                    days = 3;
+                }
+                long diff = 60 * 60 * 1000 * 24 * days;
                 final HashMap<Integer, File> paths = ImageLoader.getInstance().createMediaPaths();
                 for (HashMap.Entry<Integer, File> entry : paths.entrySet()) {
                     if (entry.getKey() == FileLoader.MEDIA_DIR_CACHE) {

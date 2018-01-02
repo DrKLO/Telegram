@@ -79,10 +79,14 @@ public class MessagesQuery {
                 if (data != null) {
                     result = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                     data.reuse();
-                    result.id = cursor.intValue(1);
-                    result.date = cursor.intValue(2);
-                    result.dialog_id = -channelId;
-                    MessagesStorage.addUsersAndChatsFromMessage(result, usersToLoad, chatsToLoad);
+                    if (result.action instanceof TLRPC.TL_messageActionHistoryClear) {
+                        result = null;
+                    } else {
+                        result.id = cursor.intValue(1);
+                        result.date = cursor.intValue(2);
+                        result.dialog_id = -channelId;
+                        MessagesStorage.addUsersAndChatsFromMessage(result, usersToLoad, chatsToLoad);
+                    }
                 }
             }
             cursor.dispose();
@@ -94,7 +98,7 @@ public class MessagesQuery {
                     if (data != null) {
                         result = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                         data.reuse();
-                        if (result.id != mid) {
+                        if (result.id != mid || result.action instanceof TLRPC.TL_messageActionHistoryClear) {
                             result = null;
                         } else {
                             result.dialog_id = -channelId;
@@ -115,6 +119,7 @@ public class MessagesQuery {
                         boolean ok = false;
                         if (error == null) {
                             TLRPC.messages_Messages messagesRes = (TLRPC.messages_Messages) response;
+                            removeEmptyMessages(messagesRes.messages);
                             if (!messagesRes.messages.isEmpty()) {
                                 ImageLoader.saveMessagesThumbs(messagesRes.messages);
                                 broadcastPinnedMessage(messagesRes.messages.get(0), messagesRes.users, messagesRes.chats, false, false);
@@ -197,6 +202,16 @@ public class MessagesQuery {
         return null;
     }
 
+    private static void removeEmptyMessages(ArrayList<TLRPC.Message> messages) {
+        for (int a = 0; a < messages.size(); a++) {
+            TLRPC.Message message = messages.get(a);
+            if (message == null || message instanceof TLRPC.TL_messageEmpty || message.action instanceof TLRPC.TL_messageActionHistoryClear) {
+                messages.remove(a);
+                a--;
+            }
+        }
+    }
+
     public static void loadReplyMessagesForMessages(final ArrayList<MessageObject> messages, final long dialogId) {
         if ((int) dialogId == 0) {
             final ArrayList<Long> replyMessages = new ArrayList<>();
@@ -246,6 +261,9 @@ public class MessagesQuery {
                                         MessageObject object = arrayList.get(b);
                                         object.replyMessageObject = messageObject;
                                         object.messageOwner.reply_to_msg_id = messageObject.getId();
+                                        if (object.isMegagroup()) {
+                                            object.replyMessageObject.messageOwner.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
+                                        }
                                     }
                                 }
                             }
@@ -348,6 +366,7 @@ public class MessagesQuery {
                                     public void run(TLObject response, TLRPC.TL_error error) {
                                         if (error == null) {
                                             TLRPC.messages_Messages messagesRes = (TLRPC.messages_Messages) response;
+                                            removeEmptyMessages(messagesRes.messages);
                                             ImageLoader.saveMessagesThumbs(messagesRes.messages);
                                             broadcastReplyMessages(messagesRes.messages, replyMessageOwners, messagesRes.users, messagesRes.chats, dialogId, false);
                                             MessagesStorage.getInstance().putUsersAndChats(messagesRes.users, messagesRes.chats, true, true);
@@ -363,6 +382,7 @@ public class MessagesQuery {
                                     public void run(TLObject response, TLRPC.TL_error error) {
                                         if (error == null) {
                                             TLRPC.messages_Messages messagesRes = (TLRPC.messages_Messages) response;
+                                            removeEmptyMessages(messagesRes.messages);
                                             ImageLoader.saveMessagesThumbs(messagesRes.messages);
                                             broadcastReplyMessages(messagesRes.messages, replyMessageOwners, messagesRes.users, messagesRes.chats, dialogId, false);
                                             MessagesStorage.getInstance().putUsersAndChats(messagesRes.users, messagesRes.chats, true, true);
@@ -447,6 +467,9 @@ public class MessagesQuery {
                                 m.generateGameMessageText(null);
                             } else if (m.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSent) {
                                 m.generatePaymentSentMessageText(null);
+                            }
+                            if (m.isMegagroup()) {
+                                m.replyMessageObject.messageOwner.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
                             }
                         }
                         changed = true;

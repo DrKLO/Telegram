@@ -14,12 +14,12 @@ import android.view.ViewGroup;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Constants;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.support.widget.RecyclerView;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.support.widget.RecyclerView;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.LetterSectionCell;
@@ -251,9 +251,14 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                             textCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
                         } else if (position == 1) {
                             textCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
+                            //CloudVeil Start
+                            if (!Constants.LOCK_DISABLE_SECRET_CHAT) {
+                                textCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
+                            }
                             if (Constants.LOCK_DISABLE_SECRET_CHAT) {
                                 textCell.setVisibility(View.INVISIBLE);
                             }
+                            //CloudVeil End
                         } else if (position == 2) {
                             textCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast);
                         }

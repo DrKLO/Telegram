@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.upstream.cache;
 
+import android.util.Log;
 import android.util.SparseArray;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.upstream.cache.Cache.CacheException;
@@ -26,6 +27,7 @@ import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -47,7 +49,7 @@ import javax.crypto.spec.SecretKeySpec;
 /**
  * This class maintains the index of cached content.
  */
-/*package*/ final class CachedContentIndex {
+/*package*/ class CachedContentIndex {
 
   public static final String FILE_NAME = "cached_content_index.exi";
 
@@ -55,24 +57,49 @@ import javax.crypto.spec.SecretKeySpec;
 
   private static final int FLAG_ENCRYPTED_INDEX = 1;
 
+  private static final String TAG = "CachedContentIndex";
+
   private final HashMap<String, CachedContent> keyToContent;
   private final SparseArray<String> idToKey;
   private final AtomicFile atomicFile;
   private final Cipher cipher;
   private final SecretKeySpec secretKeySpec;
+  private final boolean encrypt;
   private boolean changed;
   private ReusableBufferedOutputStream bufferedOutputStream;
 
-  /** Creates a CachedContentIndex which works on the index file in the given cacheDir. */
+  /**
+   * Creates a CachedContentIndex which works on the index file in the given cacheDir.
+   *
+   * @param cacheDir Directory where the index file is kept.
+   */
   public CachedContentIndex(File cacheDir) {
     this(cacheDir, null);
   }
 
-  /** Creates a CachedContentIndex which works on the index file in the given cacheDir. */
+  /**
+   * Creates a CachedContentIndex which works on the index file in the given cacheDir.
+   *
+   * @param cacheDir Directory where the index file is kept.
+   * @param secretKey 16 byte AES key for reading and writing the cache index.
+   */
   public CachedContentIndex(File cacheDir, byte[] secretKey) {
+    this(cacheDir, secretKey, secretKey != null);
+  }
+
+  /**
+   * Creates a CachedContentIndex which works on the index file in the given cacheDir.
+   *
+   * @param cacheDir Directory where the index file is kept.
+   * @param secretKey 16 byte AES key for reading, and optionally writing, the cache index.
+   * @param encrypt When false, a plaintext index will be written.
+   */
+  public CachedContentIndex(File cacheDir, byte[] secretKey, boolean encrypt) {
+    this.encrypt = encrypt;
     if (secretKey != null) {
+      Assertions.checkArgument(secretKey.length == 16);
       try {
-        cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+        cipher = getCipher();
         secretKeySpec = new SecretKeySpec(secretKey, "AES");
       } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
         throw new IllegalStateException(e); // Should never happen.
@@ -224,7 +251,7 @@ import javax.crypto.spec.SecretKeySpec;
           return false;
         }
         byte[] initializationVector = new byte[16];
-        input.read(initializationVector);
+        input.readFully(initializationVector);
         IvParameterSpec ivParameterSpec = new IvParameterSpec(initializationVector);
         try {
           cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
@@ -232,19 +259,26 @@ import javax.crypto.spec.SecretKeySpec;
           throw new IllegalStateException(e);
         }
         input = new DataInputStream(new CipherInputStream(inputStream, cipher));
+      } else {
+        if (cipher != null) {
+          changed = true; // Force index to be rewritten encrypted after read.
+        }
       }
 
       int count = input.readInt();
       int hashCode = 0;
       for (int i = 0; i < count; i++) {
         CachedContent cachedContent = new CachedContent(input);
-        addNew(cachedContent);
+        add(cachedContent);
         hashCode += cachedContent.headerHashCode();
       }
       if (input.readInt() != hashCode) {
         return false;
       }
+    } catch (FileNotFoundException e) {
+      return false;
     } catch (IOException e) {
+      Log.e(TAG, "Error reading cache content index file.", e);
       return false;
     } finally {
       if (input != null) {
@@ -266,10 +300,11 @@ import javax.crypto.spec.SecretKeySpec;
       output = new DataOutputStream(bufferedOutputStream);
       output.writeInt(VERSION);
 
-      int flags = cipher != null ? FLAG_ENCRYPTED_INDEX : 0;
+      boolean writeEncrypted = encrypt && cipher != null;
+      int flags = writeEncrypted ? FLAG_ENCRYPTED_INDEX : 0;
       output.writeInt(flags);
 
-      if (cipher != null) {
+      if (writeEncrypted) {
         byte[] initializationVector = new byte[16];
         new Random().nextBytes(initializationVector);
         output.write(initializationVector);
@@ -291,6 +326,9 @@ import javax.crypto.spec.SecretKeySpec;
       }
       output.writeInt(hashCode);
       atomicFile.endWrite(output);
+      // Avoid calling close twice. Duplicate CipherOutputStream.close calls did
+      // not used to be no-ops: https://android-review.googlesource.com/#/c/272799/
+      output = null;
     } catch (IOException e) {
       throw new CacheException(e);
     } finally {
@@ -298,10 +336,14 @@ import javax.crypto.spec.SecretKeySpec;
     }
   }
 
-  /** Adds the given CachedContent to the index. */
-  /*package*/ void addNew(CachedContent cachedContent) {
+  private void add(CachedContent cachedContent) {
     keyToContent.put(cachedContent.key, cachedContent);
     idToKey.put(cachedContent.id, cachedContent.key);
+  }
+
+  /** Adds the given CachedContent to the index. */
+  /*package*/ void addNew(CachedContent cachedContent) {
+    add(cachedContent);
     changed = true;
   }
 
@@ -310,6 +352,18 @@ import javax.crypto.spec.SecretKeySpec;
     CachedContent cachedContent = new CachedContent(id, key, length);
     addNew(cachedContent);
     return cachedContent;
+  }
+
+  private static Cipher getCipher() throws NoSuchPaddingException, NoSuchAlgorithmException {
+    // Workaround for https://issuetracker.google.com/issues/36976726
+    if (Util.SDK_INT == 18) {
+      try {
+        return Cipher.getInstance("AES/CBC/PKCS5PADDING", "BC");
+      } catch (Throwable ignored) {
+        // ignored
+      }
+    }
+    return Cipher.getInstance("AES/CBC/PKCS5PADDING");
   }
 
   /**

@@ -33,7 +33,6 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ScrollView;
@@ -57,6 +56,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.SlideView;
@@ -428,7 +428,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
 
         private String phone;
         private String phoneHash;
-        private EditText codeField;
+        private EditTextBoldCursor codeField;
         private TextView confirmTextView;
         private TextView timeText;
         private TextView problemText;
@@ -482,10 +482,12 @@ public class CancelAccountDeletionActivity extends BaseFragment {
                 addView(confirmTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
             }
 
-            codeField = new EditText(context);
+            codeField = new EditTextBoldCursor(context);
             codeField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             codeField.setHint(LocaleController.getString("Code", R.string.Code));
-            AndroidUtilities.clearCursorDrawable(codeField);
+            codeField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            codeField.setCursorWidth(1.5f);
+            codeField.setCursorSize(AndroidUtilities.dp(20));
             codeField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
             codeField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             codeField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);

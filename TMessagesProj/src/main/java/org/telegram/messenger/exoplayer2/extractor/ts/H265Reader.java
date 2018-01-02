@@ -30,7 +30,7 @@ import java.util.Collections;
 /**
  * Parses a continuous H.265 byte stream and extracts individual frames.
  */
-/* package */ final class H265Reader implements ElementaryStreamReader {
+public final class H265Reader implements ElementaryStreamReader {
 
   private static final String TAG = "H265Reader";
 
@@ -44,9 +44,11 @@ import java.util.Collections;
   private static final int PREFIX_SEI_NUT = 39;
   private static final int SUFFIX_SEI_NUT = 40;
 
+  private final SeiReader seiReader;
+
+  private String formatId;
   private TrackOutput output;
   private SampleReader sampleReader;
-  private SeiReader seiReader;
 
   // State that should not be reset on seek.
   private boolean hasOutputFormat;
@@ -66,7 +68,11 @@ import java.util.Collections;
   // Scratch variables to avoid allocations.
   private final ParsableByteArray seiWrapper;
 
-  public H265Reader() {
+  /**
+   * @param seiReader An SEI reader for consuming closed caption channels.
+   */
+  public H265Reader(SeiReader seiReader) {
+    this.seiReader = seiReader;
     prefixFlags = new boolean[3];
     vps = new NalUnitTargetBuffer(VPS_NUT, 128);
     sps = new NalUnitTargetBuffer(SPS_NUT, 128);
@@ -90,9 +96,11 @@ import java.util.Collections;
 
   @Override
   public void createTracks(ExtractorOutput extractorOutput, TrackIdGenerator idGenerator) {
-    output = extractorOutput.track(idGenerator.getNextId());
+    idGenerator.generateNewId();
+    formatId = idGenerator.getFormatId();
+    output = extractorOutput.track(idGenerator.getTrackId(), C.TRACK_TYPE_VIDEO);
     sampleReader = new SampleReader(output);
-    seiReader = new SeiReader(extractorOutput.track(idGenerator.getNextId()));
+    seiReader.createTracks(extractorOutput, idGenerator);
   }
 
   @Override
@@ -183,7 +191,7 @@ import java.util.Collections;
       sps.endNalUnit(discardPadding);
       pps.endNalUnit(discardPadding);
       if (vps.isCompleted() && sps.isCompleted() && pps.isCompleted()) {
-        output.format(parseMediaFormat(vps, sps, pps));
+        output.format(parseMediaFormat(formatId, vps, sps, pps));
         hasOutputFormat = true;
       }
     }
@@ -205,8 +213,8 @@ import java.util.Collections;
     }
   }
 
-  private static Format parseMediaFormat(NalUnitTargetBuffer vps, NalUnitTargetBuffer sps,
-      NalUnitTargetBuffer pps) {
+  private static Format parseMediaFormat(String formatId, NalUnitTargetBuffer vps,
+      NalUnitTargetBuffer sps, NalUnitTargetBuffer pps) {
     // Build codec-specific data.
     byte[] csd = new byte[vps.nalLength + sps.nalLength + pps.nalLength];
     System.arraycopy(vps.nalData, 0, csd, 0, vps.nalLength);
@@ -217,7 +225,7 @@ import java.util.Collections;
     ParsableNalUnitBitArray bitArray = new ParsableNalUnitBitArray(sps.nalData, 0, sps.nalLength);
     bitArray.skipBits(40 + 4); // NAL header, sps_video_parameter_set_id
     int maxSubLayersMinus1 = bitArray.readBits(3);
-    bitArray.skipBits(1); // sps_temporal_id_nesting_flag
+    bitArray.skipBit(); // sps_temporal_id_nesting_flag
 
     // profile_tier_level(1, sps_max_sub_layers_minus1)
     bitArray.skipBits(88); // if (profilePresentFlag) {...}
@@ -239,7 +247,7 @@ import java.util.Collections;
     bitArray.readUnsignedExpGolombCodedInt(); // sps_seq_parameter_set_id
     int chromaFormatIdc = bitArray.readUnsignedExpGolombCodedInt();
     if (chromaFormatIdc == 3) {
-      bitArray.skipBits(1); // separate_colour_plane_flag
+      bitArray.skipBit(); // separate_colour_plane_flag
     }
     int picWidthInLumaSamples = bitArray.readUnsignedExpGolombCodedInt();
     int picHeightInLumaSamples = bitArray.readUnsignedExpGolombCodedInt();
@@ -280,7 +288,7 @@ import java.util.Collections;
       bitArray.skipBits(8);
       bitArray.readUnsignedExpGolombCodedInt(); // log2_min_pcm_luma_coding_block_size_minus3
       bitArray.readUnsignedExpGolombCodedInt(); // log2_diff_max_min_pcm_luma_coding_block_size
-      bitArray.skipBits(1); // pcm_loop_filter_disabled_flag
+      bitArray.skipBit(); // pcm_loop_filter_disabled_flag
     }
     // Skips all short term reference picture sets.
     skipShortTermRefPicSets(bitArray);
@@ -311,7 +319,7 @@ import java.util.Collections;
       }
     }
 
-    return Format.createVideoSampleFormat(null, MimeTypes.VIDEO_H265, null, Format.NO_VALUE,
+    return Format.createVideoSampleFormat(formatId, MimeTypes.VIDEO_H265, null, Format.NO_VALUE,
         Format.NO_VALUE, picWidthInLumaSamples, picHeightInLumaSamples, Format.NO_VALUE,
         Collections.singletonList(csd), Format.NO_VALUE, pixelWidthHeightRatio, null);
   }
@@ -357,11 +365,11 @@ import java.util.Collections;
         interRefPicSetPredictionFlag = bitArray.readBit();
       }
       if (interRefPicSetPredictionFlag) {
-        bitArray.skipBits(1); // delta_rps_sign
+        bitArray.skipBit(); // delta_rps_sign
         bitArray.readUnsignedExpGolombCodedInt(); // abs_delta_rps_minus1
         for (int j = 0; j <= previousNumDeltaPocs; j++) {
           if (bitArray.readBit()) { // used_by_curr_pic_flag[j]
-            bitArray.skipBits(1); // use_delta_flag[j]
+            bitArray.skipBit(); // use_delta_flag[j]
           }
         }
       } else {
@@ -370,11 +378,11 @@ import java.util.Collections;
         previousNumDeltaPocs = numNegativePics + numPositivePics;
         for (int i = 0; i < numNegativePics; i++) {
           bitArray.readUnsignedExpGolombCodedInt(); // delta_poc_s0_minus1[i]
-          bitArray.skipBits(1); // used_by_curr_pic_s0_flag[i]
+          bitArray.skipBit(); // used_by_curr_pic_s0_flag[i]
         }
         for (int i = 0; i < numPositivePics; i++) {
           bitArray.readUnsignedExpGolombCodedInt(); // delta_poc_s1_minus1[i]
-          bitArray.skipBits(1); // used_by_curr_pic_s1_flag[i]
+          bitArray.skipBit(); // used_by_curr_pic_s1_flag[i]
         }
       }
     }

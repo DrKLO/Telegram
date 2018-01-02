@@ -18,6 +18,7 @@ package org.telegram.messenger.exoplayer2.extractor;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.upstream.DataSource;
 import org.telegram.messenger.exoplayer2.util.Assertions;
+import org.telegram.messenger.exoplayer2.util.Util;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
@@ -27,6 +28,8 @@ import java.util.Arrays;
  */
 public final class DefaultExtractorInput implements ExtractorInput {
 
+  private static final int PEEK_MIN_FREE_SPACE_AFTER_RESIZE = 64 * 1024;
+  private static final int PEEK_MAX_FREE_SPACE = 512 * 1024;
   private static final byte[] SCRATCH_SPACE = new byte[4096];
 
   private final DataSource dataSource;
@@ -46,7 +49,7 @@ public final class DefaultExtractorInput implements ExtractorInput {
     this.dataSource = dataSource;
     this.position = position;
     this.streamLength = length;
-    peekBuffer = new byte[8 * 1024];
+    peekBuffer = new byte[PEEK_MIN_FREE_SPACE_AFTER_RESIZE];
   }
 
   @Override
@@ -176,7 +179,9 @@ public final class DefaultExtractorInput implements ExtractorInput {
   private void ensureSpaceForPeek(int length) {
     int requiredLength = peekBufferPosition + length;
     if (requiredLength > peekBuffer.length) {
-      peekBuffer = Arrays.copyOf(peekBuffer, Math.max(peekBuffer.length * 2, requiredLength));
+      int newPeekCapacity = Util.constrainValue(peekBuffer.length * 2,
+          requiredLength + PEEK_MIN_FREE_SPACE_AFTER_RESIZE, requiredLength + PEEK_MAX_FREE_SPACE);
+      peekBuffer = Arrays.copyOf(peekBuffer, newPeekCapacity);
     }
   }
 
@@ -218,7 +223,12 @@ public final class DefaultExtractorInput implements ExtractorInput {
   private void updatePeekBuffer(int bytesConsumed) {
     peekBufferLength -= bytesConsumed;
     peekBufferPosition = 0;
-    System.arraycopy(peekBuffer, bytesConsumed, peekBuffer, 0, peekBufferLength);
+    byte[] newPeekBuffer = peekBuffer;
+    if (peekBufferLength < peekBuffer.length - PEEK_MAX_FREE_SPACE) {
+      newPeekBuffer = new byte[peekBufferLength + PEEK_MIN_FREE_SPACE_AFTER_RESIZE];
+    }
+    System.arraycopy(peekBuffer, bytesConsumed, newPeekBuffer, 0, peekBufferLength);
+    peekBuffer = newPeekBuffer;
   }
 
   /**

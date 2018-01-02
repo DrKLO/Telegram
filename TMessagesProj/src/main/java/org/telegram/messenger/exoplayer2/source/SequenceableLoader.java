@@ -17,6 +17,7 @@ package org.telegram.messenger.exoplayer2.source;
 
 import org.telegram.messenger.exoplayer2.C;
 
+// TODO: Clarify the requirements for implementing this interface [Internal ref: b/36250203].
 /**
  * A loader that can proceed in approximate synchronization with other loaders.
  */
@@ -34,6 +35,14 @@ public interface SequenceableLoader {
     void onContinueLoadingRequested(T source);
 
   }
+
+  /**
+   * Returns an estimate of the position up to which data is buffered.
+   *
+   * @return An estimate of the absolute position in microseconds up to which data is buffered, or
+   *     {@link C#TIME_END_OF_SOURCE} if the data is fully buffered.
+   */
+  long getBufferedPositionUs();
 
   /**
    * Returns the next load time, or {@link C#TIME_END_OF_SOURCE} if loading has finished.

@@ -30,13 +30,14 @@ import java.util.Collections;
 /**
  * Parses a continuous H262 byte stream and extracts individual frames.
  */
-/* package */ final class H262Reader implements ElementaryStreamReader {
+public final class H262Reader implements ElementaryStreamReader {
 
   private static final int START_PICTURE = 0x00;
   private static final int START_SEQUENCE_HEADER = 0xB3;
   private static final int START_EXTENSION = 0xB5;
   private static final int START_GROUP = 0xB8;
 
+  private String formatId;
   private TrackOutput output;
 
   // Maps (frame_rate_code - 1) indices to values, as defined in ITU-T H.262 Table 6-4.
@@ -50,17 +51,17 @@ import java.util.Collections;
   // State that should be reset on seek.
   private final boolean[] prefixFlags;
   private final CsdBuffer csdBuffer;
-  private boolean foundFirstFrameInGroup;
   private long totalBytesWritten;
+  private boolean startedFirstSample;
 
   // Per packet state that gets reset at the start of each packet.
   private long pesTimeUs;
-  private boolean pesPtsUsAvailable;
 
-  // Per sample state that gets reset at the start of each frame.
-  private boolean isKeyframe;
-  private long framePosition;
-  private long frameTimeUs;
+  // Per sample state that gets reset at the start of each sample.
+  private long samplePosition;
+  private long sampleTimeUs;
+  private boolean sampleIsKeyframe;
+  private boolean sampleHasPicture;
 
   public H262Reader() {
     prefixFlags = new boolean[4];
@@ -71,22 +72,20 @@ import java.util.Collections;
   public void seek() {
     NalUnitUtil.clearPrefixFlags(prefixFlags);
     csdBuffer.reset();
-    pesPtsUsAvailable = false;
-    foundFirstFrameInGroup = false;
     totalBytesWritten = 0;
+    startedFirstSample = false;
   }
 
   @Override
   public void createTracks(ExtractorOutput extractorOutput, TrackIdGenerator idGenerator) {
-    output = extractorOutput.track(idGenerator.getNextId());
+    idGenerator.generateNewId();
+    formatId = idGenerator.getFormatId();
+    output = extractorOutput.track(idGenerator.getTrackId(), C.TRACK_TYPE_VIDEO);
   }
 
   @Override
   public void packetStarted(long pesTimeUs, boolean dataAlignmentIndicator) {
-    pesPtsUsAvailable = pesTimeUs != C.TIME_UNSET;
-    if (pesPtsUsAvailable) {
-      this.pesTimeUs = pesTimeUs;
-    }
+    this.pesTimeUs = pesTimeUs;
   }
 
   @Override
@@ -99,9 +98,8 @@ import java.util.Collections;
     totalBytesWritten += data.bytesLeft();
     output.sampleData(data, data.bytesLeft());
 
-    int searchOffset = offset;
     while (true) {
-      int startCodeOffset = NalUnitUtil.findNalUnit(dataArray, searchOffset, limit, prefixFlags);
+      int startCodeOffset = NalUnitUtil.findNalUnit(dataArray, offset, limit, prefixFlags);
 
       if (startCodeOffset == limit) {
         // We've scanned to the end of the data without finding another start code.
@@ -122,38 +120,40 @@ import java.util.Collections;
           csdBuffer.onData(dataArray, offset, startCodeOffset);
         }
         // This is the number of bytes belonging to the next start code that have already been
-        // passed to csdDataTargetBuffer.
+        // passed to csdBuffer.
         int bytesAlreadyPassed = lengthToStartCode < 0 ? -lengthToStartCode : 0;
         if (csdBuffer.onStartCode(startCodeValue, bytesAlreadyPassed)) {
           // The csd data is complete, so we can decode and output the media format.
-          Pair<Format, Long> result = parseCsdBuffer(csdBuffer);
+          Pair<Format, Long> result = parseCsdBuffer(csdBuffer, formatId);
           output.format(result.first);
           frameDurationUs = result.second;
           hasOutputFormat = true;
         }
       }
 
-      if (hasOutputFormat && (startCodeValue == START_GROUP || startCodeValue == START_PICTURE)) {
+      if (startCodeValue == START_PICTURE || startCodeValue == START_SEQUENCE_HEADER) {
         int bytesWrittenPastStartCode = limit - startCodeOffset;
-        if (foundFirstFrameInGroup) {
-          @C.BufferFlags int flags = isKeyframe ? C.BUFFER_FLAG_KEY_FRAME : 0;
-          int size = (int) (totalBytesWritten - framePosition) - bytesWrittenPastStartCode;
-          output.sampleMetadata(frameTimeUs, flags, size, bytesWrittenPastStartCode, null);
-          isKeyframe = false;
+        if (startedFirstSample && sampleHasPicture && hasOutputFormat) {
+          // Output the sample.
+          @C.BufferFlags int flags = sampleIsKeyframe ? C.BUFFER_FLAG_KEY_FRAME : 0;
+          int size = (int) (totalBytesWritten - samplePosition) - bytesWrittenPastStartCode;
+          output.sampleMetadata(sampleTimeUs, flags, size, bytesWrittenPastStartCode, null);
         }
-        if (startCodeValue == START_GROUP) {
-          foundFirstFrameInGroup = false;
-          isKeyframe = true;
-        } else /* startCodeValue == START_PICTURE */ {
-          frameTimeUs = pesPtsUsAvailable ? pesTimeUs : (frameTimeUs + frameDurationUs);
-          framePosition = totalBytesWritten - bytesWrittenPastStartCode;
-          pesPtsUsAvailable = false;
-          foundFirstFrameInGroup = true;
+        if (!startedFirstSample || sampleHasPicture) {
+          // Start the next sample.
+          samplePosition = totalBytesWritten - bytesWrittenPastStartCode;
+          sampleTimeUs = pesTimeUs != C.TIME_UNSET ? pesTimeUs
+              : (startedFirstSample ? (sampleTimeUs + frameDurationUs) : 0);
+          sampleIsKeyframe = false;
+          pesTimeUs = C.TIME_UNSET;
+          startedFirstSample = true;
         }
+        sampleHasPicture = startCodeValue == START_PICTURE;
+      } else if (startCodeValue == START_GROUP) {
+        sampleIsKeyframe = true;
       }
 
-      offset = startCodeOffset;
-      searchOffset = offset + 3;
+      offset = startCodeOffset + 3;
     }
   }
 
@@ -166,10 +166,11 @@ import java.util.Collections;
    * Parses the {@link Format} and frame duration from a csd buffer.
    *
    * @param csdBuffer The csd buffer.
+   * @param formatId The id for the generated format. May be null.
    * @return A pair consisting of the {@link Format} and the frame duration in microseconds, or
    *     0 if the duration could not be determined.
    */
-  private static Pair<Format, Long> parseCsdBuffer(CsdBuffer csdBuffer) {
+  private static Pair<Format, Long> parseCsdBuffer(CsdBuffer csdBuffer, String formatId) {
     byte[] csdData = Arrays.copyOf(csdBuffer.data, csdBuffer.length);
 
     int firstByte = csdData[4] & 0xFF;
@@ -195,7 +196,7 @@ import java.util.Collections;
         break;
     }
 
-    Format format = Format.createVideoSampleFormat(null, MimeTypes.VIDEO_MPEG2, null,
+    Format format = Format.createVideoSampleFormat(formatId, MimeTypes.VIDEO_MPEG2, null,
         Format.NO_VALUE, Format.NO_VALUE, width, height, Format.NO_VALUE,
         Collections.singletonList(csdData), Format.NO_VALUE, pixelWidthHeightRatio, null);
 
@@ -216,6 +217,8 @@ import java.util.Collections;
   }
 
   private static final class CsdBuffer {
+
+    private static final byte[] START_CODE = new byte[] {0, 0, 1};
 
     private boolean isFilling;
 
@@ -240,24 +243,25 @@ import java.util.Collections;
      * Called when a start code is encountered in the stream.
      *
      * @param startCodeValue The start code value.
-     * @param bytesAlreadyPassed The number of bytes of the start code that have already been
-     *     passed to {@link #onData(byte[], int, int)}, or 0.
+     * @param bytesAlreadyPassed The number of bytes of the start code that have been passed to
+     *     {@link #onData(byte[], int, int)}, or 0.
      * @return Whether the csd data is now complete. If true is returned, neither
-     *     this method or {@link #onData(byte[], int, int)} should be called again without an
+     *     this method nor {@link #onData(byte[], int, int)} should be called again without an
      *     interleaving call to {@link #reset()}.
      */
     public boolean onStartCode(int startCodeValue, int bytesAlreadyPassed) {
       if (isFilling) {
+        length -= bytesAlreadyPassed;
         if (sequenceExtensionPosition == 0 && startCodeValue == START_EXTENSION) {
           sequenceExtensionPosition = length;
         } else {
-          length -= bytesAlreadyPassed;
           isFilling = false;
           return true;
         }
       } else if (startCodeValue == START_SEQUENCE_HEADER) {
         isFilling = true;
       }
+      onData(START_CODE, 0, START_CODE.length);
       return false;
     }
 

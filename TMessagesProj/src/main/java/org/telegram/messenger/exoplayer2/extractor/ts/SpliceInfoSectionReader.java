@@ -18,31 +18,45 @@ package org.telegram.messenger.exoplayer2.extractor.ts;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
-import org.telegram.messenger.exoplayer2.extractor.TimestampAdjuster;
 import org.telegram.messenger.exoplayer2.extractor.TrackOutput;
 import org.telegram.messenger.exoplayer2.util.MimeTypes;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
+import org.telegram.messenger.exoplayer2.util.TimestampAdjuster;
 
 /**
  * Parses splice info sections as defined by SCTE35.
  */
 public final class SpliceInfoSectionReader implements SectionPayloadReader {
 
+  private TimestampAdjuster timestampAdjuster;
   private TrackOutput output;
+  private boolean formatDeclared;
 
   @Override
   public void init(TimestampAdjuster timestampAdjuster, ExtractorOutput extractorOutput,
       TsPayloadReader.TrackIdGenerator idGenerator) {
-    output = extractorOutput.track(idGenerator.getNextId());
-    output.format(Format.createSampleFormat(null, MimeTypes.APPLICATION_SCTE35, null,
-        Format.NO_VALUE, null));
+    this.timestampAdjuster = timestampAdjuster;
+    idGenerator.generateNewId();
+    output = extractorOutput.track(idGenerator.getTrackId(), C.TRACK_TYPE_METADATA);
+    output.format(Format.createSampleFormat(idGenerator.getFormatId(), MimeTypes.APPLICATION_SCTE35,
+        null, Format.NO_VALUE, null));
   }
 
   @Override
   public void consume(ParsableByteArray sectionData) {
+    if (!formatDeclared) {
+      if (timestampAdjuster.getTimestampOffsetUs() == C.TIME_UNSET) {
+        // There is not enough information to initialize the timestamp adjuster.
+        return;
+      }
+      output.format(Format.createSampleFormat(null, MimeTypes.APPLICATION_SCTE35,
+          timestampAdjuster.getTimestampOffsetUs()));
+      formatDeclared = true;
+    }
     int sampleSize = sectionData.bytesLeft();
     output.sampleData(sectionData, sampleSize);
-    output.sampleMetadata(0, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+    output.sampleMetadata(timestampAdjuster.getLastAdjustedTimestampUs(), C.BUFFER_FLAG_KEY_FRAME,
+        sampleSize, 0, null);
   }
 
 }

@@ -97,7 +97,7 @@ public class ThemeCell extends FrameLayout {
 
     public void setTheme(Theme.ThemeInfo themeInfo, boolean divider) {
         currentThemeInfo = themeInfo;
-        String text = themeInfo.name;
+        String text = themeInfo.getName();
         if (text.endsWith(".attheme")) {
             text = text.substring(0, text.lastIndexOf('.'));
         }

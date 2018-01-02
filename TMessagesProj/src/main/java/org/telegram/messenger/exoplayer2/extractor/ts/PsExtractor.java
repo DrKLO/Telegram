@@ -23,10 +23,10 @@ import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorsFactory;
 import org.telegram.messenger.exoplayer2.extractor.PositionHolder;
 import org.telegram.messenger.exoplayer2.extractor.SeekMap;
-import org.telegram.messenger.exoplayer2.extractor.TimestampAdjuster;
 import org.telegram.messenger.exoplayer2.extractor.ts.TsPayloadReader.TrackIdGenerator;
 import org.telegram.messenger.exoplayer2.util.ParsableBitArray;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
+import org.telegram.messenger.exoplayer2.util.TimestampAdjuster;
 import java.io.IOException;
 
 /**
@@ -127,7 +127,7 @@ public final class PsExtractor implements Extractor {
   }
 
   @Override
-  public void seek(long position) {
+  public void seek(long position, long timeUs) {
     timestampAdjuster.reset();
     for (int i = 0; i < psPayloadReaders.size(); i++) {
       psPayloadReaders.valueAt(i).seek();

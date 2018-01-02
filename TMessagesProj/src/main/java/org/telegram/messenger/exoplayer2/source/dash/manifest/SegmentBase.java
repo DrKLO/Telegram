@@ -84,7 +84,7 @@ public abstract class SegmentBase {
       this.indexLength = indexLength;
     }
 
-    public SingleSegmentBase(String uri) {
+    public SingleSegmentBase() {
       this(null, 1, 0, 0, 0);
     }
 
@@ -130,20 +130,24 @@ public abstract class SegmentBase {
      */
     public int getSegmentNum(long timeUs, long periodDurationUs) {
       final int firstSegmentNum = getFirstSegmentNum();
-      int lowIndex = firstSegmentNum;
-      int highIndex = getLastSegmentNum(periodDurationUs);
+      final int segmentCount = getSegmentCount(periodDurationUs);
+      if (segmentCount == 0) {
+        return firstSegmentNum;
+      }
       if (segmentTimeline == null) {
         // All segments are of equal duration (with the possible exception of the last one).
         long durationUs = (duration * C.MICROS_PER_SECOND) / timescale;
         int segmentNum = startNumber + (int) (timeUs / durationUs);
         // Ensure we stay within bounds.
-        return segmentNum < lowIndex ? lowIndex
-            : highIndex != DashSegmentIndex.INDEX_UNBOUNDED && segmentNum > highIndex ? highIndex
-            : segmentNum;
+        return segmentNum < firstSegmentNum ? firstSegmentNum
+            : segmentCount == DashSegmentIndex.INDEX_UNBOUNDED ? segmentNum
+            : Math.min(segmentNum, firstSegmentNum + segmentCount - 1);
       } else {
-        // The high index cannot be unbounded. Identify the segment using binary search.
+        // The index cannot be unbounded. Identify the segment using binary search.
+        int lowIndex = firstSegmentNum;
+        int highIndex = firstSegmentNum + segmentCount - 1;
         while (lowIndex <= highIndex) {
-          int midIndex = (lowIndex + highIndex) / 2;
+          int midIndex = lowIndex + (highIndex - lowIndex) / 2;
           long midTimeUs = getSegmentTimeUs(midIndex);
           if (midTimeUs < timeUs) {
             lowIndex = midIndex + 1;
@@ -165,7 +169,9 @@ public abstract class SegmentBase {
         long duration = segmentTimeline.get(sequenceNumber - startNumber).duration;
         return (duration * C.MICROS_PER_SECOND) / timescale;
       } else {
-        return sequenceNumber == getLastSegmentNum(periodDurationUs)
+        int segmentCount = getSegmentCount(periodDurationUs);
+        return segmentCount != DashSegmentIndex.INDEX_UNBOUNDED
+            && sequenceNumber == (getFirstSegmentNum() + segmentCount - 1)
             ? (periodDurationUs - getSegmentTimeUs(sequenceNumber))
             : ((duration * C.MICROS_PER_SECOND) / timescale);
       }
@@ -201,9 +207,9 @@ public abstract class SegmentBase {
     }
 
     /**
-     * @see DashSegmentIndex#getLastSegmentNum(long)
+     * @see DashSegmentIndex#getSegmentCount(long)
      */
-    public abstract int getLastSegmentNum(long periodDurationUs);
+    public abstract int getSegmentCount(long periodDurationUs);
 
     /**
      * @see DashSegmentIndex#isExplicit()
@@ -250,8 +256,8 @@ public abstract class SegmentBase {
     }
 
     @Override
-    public int getLastSegmentNum(long periodDurationUs) {
-      return startNumber + mediaSegments.size() - 1;
+    public int getSegmentCount(long periodDurationUs) {
+      return mediaSegments.size();
     }
 
     @Override
@@ -322,14 +328,14 @@ public abstract class SegmentBase {
     }
 
     @Override
-    public int getLastSegmentNum(long periodDurationUs) {
+    public int getSegmentCount(long periodDurationUs) {
       if (segmentTimeline != null) {
-        return segmentTimeline.size() + startNumber - 1;
-      } else if (periodDurationUs == C.TIME_UNSET) {
-        return DashSegmentIndex.INDEX_UNBOUNDED;
-      } else {
+        return segmentTimeline.size();
+      } else if (periodDurationUs != C.TIME_UNSET) {
         long durationUs = (duration * C.MICROS_PER_SECOND) / timescale;
-        return startNumber + (int) Util.ceilDivide(periodDurationUs, durationUs) - 1;
+        return (int) Util.ceilDivide(periodDurationUs, durationUs);
+      } else {
+        return DashSegmentIndex.INDEX_UNBOUNDED;
       }
     }
 

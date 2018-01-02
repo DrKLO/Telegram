@@ -24,9 +24,12 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -34,45 +37,46 @@ import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.IntRange;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.graphics.Palette;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.CharacterStyle;
+import android.text.style.ForegroundColorSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.NumberPicker;
-import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLog;
+import org.telegram.messenger.EmojiData;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.voip.EncryptionKeyEmojifier;
+import org.telegram.messenger.voip.VoIPBaseService;
 import org.telegram.messenger.voip.VoIPController;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
@@ -87,13 +91,13 @@ import org.telegram.ui.Components.voip.FabBackgroundDrawable;
 import org.telegram.ui.Components.voip.VoIPHelper;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 
 public class VoIPActivity extends Activity implements VoIPService.StateListener, NotificationCenter.NotificationCenterDelegate{
 
     private static final String TAG = "tg-voip-ui";
     private TextView stateText, nameText, stateText2;
     private TextView durationText;
+    private TextView brandingText;
     private View endBtn, acceptBtn, declineBtn, endBtnIcon, cancelBtn;
     private CheckableImageView spkToggle, micToggle;
     private ImageView chatBtn;
@@ -125,9 +129,8 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
     private FrameLayout content;
     private boolean retrying;
     private AnimatorSet retryAnim;
-
-    private int audioBitrate = 25;
-    private int packetLossPercent = 5;
+    private int signalBarsCount;
+    private SignalBarsDrawable signalBarsDrawable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -256,6 +259,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                                             break;
                                     }
                                     onAudioSettingsChanged();
+                                    VoIPService.getSharedInstance().updateOutputGainControlState();
                                 }
                             });
                     bldr.show();
@@ -269,6 +273,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                 }else{
 					am.setBluetoothScoOn(checked);
                 }
+                svc.updateOutputGainControlState();
             }
         });
         micToggle.setOnClickListener(new View.OnClickListener() {
@@ -477,12 +482,15 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         Drawable logo=getResources().getDrawable(R.drawable.notification).mutate();
         logo.setAlpha(0xCC);
         logo.setBounds(0, 0, AndroidUtilities.dp(15), AndroidUtilities.dp(15));
-        branding.setCompoundDrawables(LocaleController.isRTL ? null : logo, null, LocaleController.isRTL ? logo : null, null);
+        signalBarsDrawable=new SignalBarsDrawable();
+        signalBarsDrawable.setBounds(0, 0, signalBarsDrawable.getIntrinsicWidth(), signalBarsDrawable.getIntrinsicHeight());
+        branding.setCompoundDrawables(LocaleController.isRTL ? signalBarsDrawable : logo, null, LocaleController.isRTL ? logo : signalBarsDrawable, null);
         branding.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         branding.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         branding.setCompoundDrawablePadding(AndroidUtilities.dp(5));
         branding.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        content.addView(branding, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP|Gravity.LEFT, 18, 18, 18, 0));
+        content.addView(branding, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP|(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 18, 18, 18, 0));
+        brandingText=branding;
 
         TextView name=new TextView(this);
         name.setSingleLine();
@@ -628,7 +636,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         });
         //keyEmojiText=new TextView(this);
         //keyEmojiText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        content.addView(emojiWrap, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP|Gravity.RIGHT));
+        content.addView(emojiWrap, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP|(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT)));
         emojiWrap.setOnLongClickListener(new View.OnLongClickListener(){
             @Override
             public boolean onLongClick(View v){
@@ -749,6 +757,10 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == 101) {
+            if(VoIPService.getSharedInstance()==null){
+                finish();
+                return;
+            }
             if (grantResults.length>0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 VoIPService.getSharedInstance().acceptIncomingCall();
                 callAccepted();
@@ -774,9 +786,9 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
             return;
         IdenticonDrawable img = new IdenticonDrawable();
         img.setColors(new int[]{0x00FFFFFF, 0xFFFFFFFF, 0x99FFFFFF, 0x33FFFFFF});
-        TLRPC.EncryptedChat encryptedChat = new TLRPC.EncryptedChat();
-        try{
-            ByteArrayOutputStream buf=new ByteArrayOutputStream();
+        TLRPC.EncryptedChat encryptedChat = new TLRPC.TL_encryptedChat();
+        try {
+            ByteArrayOutputStream buf = new ByteArrayOutputStream();
             buf.write(VoIPService.getSharedInstance().getEncryptionKey());
 			buf.write(VoIPService.getSharedInstance().getGA());
             encryptedChat.auth_key = buf.toByteArray();
@@ -784,88 +796,94 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         byte[] sha256 = Utilities.computeSHA256(encryptedChat.auth_key, 0, encryptedChat.auth_key.length);
         String[] emoji=EncryptionKeyEmojifier.emojifyForCall(sha256);
         //keyEmojiText.setText(Emoji.replaceEmoji(TextUtils.join(" ", emoji), keyEmojiText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(32), false));
-        for(int i=0;i<4;i++){
-            Drawable drawable=Emoji.getEmojiDrawable(emoji[i]);
-            drawable.setBounds(0, 0, AndroidUtilities.dp(22), AndroidUtilities.dp(22));
-            keyEmojiViews[i].setImageDrawable(drawable);
+        for(int i=0;i<4;i++) {
+            Drawable drawable = Emoji.getEmojiDrawable(emoji[i]);
+            if (drawable != null) {
+                drawable.setBounds(0, 0, AndroidUtilities.dp(22), AndroidUtilities.dp(22));
+                keyEmojiViews[i].setImageDrawable(drawable);
+            }
         }
+    }
+
+    private CharSequence getFormattedDebugString(){
+        String in=VoIPService.getSharedInstance().getDebugString();
+        SpannableString ss=new SpannableString(in);
+
+        int offset=0;
+        do{
+            int lineEnd=in.indexOf('\n', offset+1);
+            if(lineEnd==-1)
+                lineEnd=in.length();
+            String line=in.substring(offset, lineEnd);
+            if(line.contains("IN_USE")){
+                ss.setSpan(new ForegroundColorSpan(0xFF00FF00), offset, lineEnd, 0);
+            }else{
+                if(line.contains(": ")){
+                    ss.setSpan(new ForegroundColorSpan(0xAAFFFFFF), offset, offset+line.indexOf(':')+1, 0);
+                }
+            }
+        }while((offset=in.indexOf('\n', offset+1))!=-1);
+
+        return ss;
     }
 
     private void showDebugAlert() {
         if(VoIPService.getSharedInstance()==null)
             return;
-        final AlertDialog dlg = new AlertDialog.Builder(this)
-                .setTitle("libtgvoip v" + VoIPController.getVersion() + " debug")
-                .setMessage(VoIPService.getSharedInstance().getDebugString())
-                .setPositiveButton("Close", null)
-                .create();
+		VoIPService.getSharedInstance().forceRating();
+		final LinearLayout debugOverlay=new LinearLayout(this);
+        debugOverlay.setOrientation(LinearLayout.VERTICAL);
+        debugOverlay.setBackgroundColor(0xCC000000);
+        int pad=AndroidUtilities.dp(16);
+        debugOverlay.setPadding(pad, pad*2, pad, pad*2);
+
+        TextView title=new TextView(this);
+        title.setTextColor(0xFFFFFFFF);
+        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setGravity(Gravity.CENTER);
+        title.setText("libtgvoip v"+VoIPController.getVersion());
+        debugOverlay.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16));
+
+        ScrollView scroll=new ScrollView(this);
+        final TextView debugText=new TextView(this);
+        debugText.setTypeface(Typeface.MONOSPACE);
+        debugText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+        debugText.setMaxWidth(AndroidUtilities.dp(350));
+        debugText.setTextColor(0xFFFFFFFF);
+        debugText.setText(getFormattedDebugString());
+        scroll.addView(debugText);
+        debugOverlay.addView(scroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 1f));
+
+        TextView closeBtn=new TextView(this);
+        closeBtn.setBackgroundColor(0xFFFFFFFF);
+        closeBtn.setTextColor(0xFF000000);
+        closeBtn.setPadding(pad, pad, pad, pad);
+        closeBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        closeBtn.setText(LocaleController.getString("Close", R.string.Close));
+        debugOverlay.addView(closeBtn, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 0));
+
+        final WindowManager wm=(WindowManager) getSystemService(WINDOW_SERVICE);
+        wm.addView(debugOverlay, new WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.TYPE_APPLICATION_PANEL, 0, PixelFormat.TRANSLUCENT));
+
+        closeBtn.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                wm.removeView(debugOverlay);
+            }
+        });
+
         final Runnable r = new Runnable() {
             @Override
             public void run() {
-                if (!dlg.isShowing() || isFinishing() || VoIPService.getSharedInstance() == null) {
+                if (isFinishing() || VoIPService.getSharedInstance() == null) {
                     return;
                 }
-                dlg.setMessage(VoIPService.getSharedInstance().getDebugString());
-                dlg.getWindow().getDecorView().postDelayed(this, 500);
+                debugText.setText(getFormattedDebugString());
+                debugOverlay.postDelayed(this, 500);
             }
         };
-        dlg.show();
-        dlg.getWindow().getDecorView().postDelayed(r, 500);
-    }
-
-    private void showDebugCtlAlert() {
-        new AlertDialog.Builder(this)
-                .setItems(new String[]{"Set audio bitrate", "Set expect packet loss %", "Disable p2p", "Enable p2p", "Disable AEC", "Enable AEC"}, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        switch (which) {
-                            case 0:
-                                showNumberPickerDialog(8, 32, audioBitrate, "Audio bitrate (kbit/s)", new NumberPicker.OnValueChangeListener() {
-                                    @Override
-                                    public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
-                                        audioBitrate = newVal;
-                                        VoIPService.getSharedInstance().debugCtl(1, newVal * 1000);
-                                    }
-                                });
-                                break;
-                            case 1:
-                                showNumberPickerDialog(0, 100, packetLossPercent, "Expected packet loss %", new NumberPicker.OnValueChangeListener() {
-                                    @Override
-                                    public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
-                                        packetLossPercent = newVal;
-                                        VoIPService.getSharedInstance().debugCtl(2, newVal);
-                                    }
-                                });
-                                break;
-                            case 2:
-                                VoIPService.getSharedInstance().debugCtl(3, 0);
-                                break;
-                            case 3:
-                                VoIPService.getSharedInstance().debugCtl(3, 1);
-                                break;
-                            case 4:
-                                VoIPService.getSharedInstance().debugCtl(4, 0);
-                                break;
-                            case 5:
-                                VoIPService.getSharedInstance().debugCtl(4, 1);
-                                break;
-                        }
-                    }
-                })
-                .show();
-    }
-
-    private void showNumberPickerDialog(int min, int max, int value, String title, NumberPicker.OnValueChangeListener listener) {
-        NumberPicker picker = new NumberPicker(this);
-        picker.setMinValue(min);
-        picker.setMaxValue(max);
-        picker.setValue(value);
-        picker.setOnValueChangedListener(listener);
-        new AlertDialog.Builder(this)
-                .setTitle(title)
-                .setView(picker)
-                .setPositiveButton("Done", null)
-                .show();
+        debugOverlay.postDelayed(r, 500);
     }
 
     private void startUpdatingCallDuration() {
@@ -875,7 +893,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                 if (isFinishing() || VoIPService.getSharedInstance() == null) {
                     return;
                 }
-                if(callState==VoIPService.STATE_ESTABLISHED){
+                if(callState==VoIPService.STATE_ESTABLISHED || callState==VoIPService.STATE_RECONNECTING){
                     long duration=VoIPService.getSharedInstance().getCallDuration()/1000;
                     durationText.setText(duration>3600 ? String.format("%d:%02d:%02d", duration/3600, duration%3600/60, duration%60) : String.format("%d:%02d", duration/60, duration%60));
                     durationText.postDelayed(this, 500);
@@ -1058,12 +1076,14 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
 
     @Override
     public void onStateChanged(final int state) {
+        final int prevState=callState;
         callState=state;
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 boolean wasFirstStateChange=firstStateChange;
                 if (firstStateChange) {
+                    spkToggle.setChecked(((AudioManager)getSystemService(AUDIO_SERVICE)).isSpeakerphoneOn());
                     if (isIncomingWaiting = state == VoIPService.STATE_WAITING_INCOMING) {
                         swipeViewsWrap.setVisibility(View.VISIBLE);
                         endBtn.setVisibility(View.GONE);
@@ -1089,7 +1109,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                     firstStateChange = false;
                 }
 
-                if (isIncomingWaiting && state != VoIPService.STATE_WAITING_INCOMING && state!=VoIPService.STATE_ENDED && state!=VoIPService.STATE_HANGING_UP) {
+                if (isIncomingWaiting && state != VoIPService.STATE_WAITING_INCOMING && state!=VoIPBaseService.STATE_ENDED && state!=VoIPService.STATE_HANGING_UP) {
                     isIncomingWaiting = false;
                     if (!didAcceptFromHere)
                         callAccepted();
@@ -1110,7 +1130,9 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                     setStateTextAnimated(LocaleController.getString("VoipRequesting", R.string.VoipRequesting), true);
                 } else if (state == VoIPService.STATE_HANGING_UP) {
                     setStateTextAnimated(LocaleController.getString("VoipHangingUp", R.string.VoipHangingUp), true);
-                } else if (state == VoIPService.STATE_ENDED) {
+                    endBtnIcon.setAlpha(.5f);
+                    endBtn.setEnabled(false);
+                } else if (state == VoIPBaseService.STATE_ENDED) {
                     setStateTextAnimated(LocaleController.getString("VoipCallEnded", R.string.VoipCallEnded), false);
                     stateText.postDelayed(new Runnable() {
                         @Override
@@ -1128,8 +1150,8 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                         }
                     }, 2000);*/
                     showRetry();
-                } else if (state == VoIPService.STATE_ESTABLISHED) {
-                    if(!wasFirstStateChange){
+                } else if (state == VoIPService.STATE_ESTABLISHED || state==VoIPService.STATE_RECONNECTING) {
+                    if(!wasFirstStateChange && state==VoIPService.STATE_ESTABLISHED){
                         int count=getSharedPreferences("mainconfig", MODE_PRIVATE).getInt("call_emoji_tooltip_count", 0);
                         if(count<3){
                             setEmojiTooltipVisible(true);
@@ -1143,13 +1165,15 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                             getSharedPreferences("mainconfig", MODE_PRIVATE).edit().putInt("call_emoji_tooltip_count", count+1).apply();
                         }
                     }
-                    setStateTextAnimated("0:00", false);
-                    startUpdatingCallDuration();
-                    updateKeyView();
-                    if (emojiWrap.getVisibility() != View.VISIBLE) {
-                        emojiWrap.setVisibility(View.VISIBLE);
-                        emojiWrap.setAlpha(0f);
-                        emojiWrap.animate().alpha(1).setDuration(200).setInterpolator(new DecelerateInterpolator()).start();
+                    if(prevState!=VoIPService.STATE_ESTABLISHED && prevState!=VoIPService.STATE_RECONNECTING){
+                        setStateTextAnimated("0:00", false);
+                        startUpdatingCallDuration();
+                        updateKeyView();
+                        if(emojiWrap.getVisibility()!=View.VISIBLE){
+                            emojiWrap.setVisibility(View.VISIBLE);
+                            emojiWrap.setAlpha(0f);
+                            emojiWrap.animate().alpha(1).setDuration(200).setInterpolator(new DecelerateInterpolator()).start();
+                        }
                     }
                 } else if (state == VoIPService.STATE_FAILED) {
                     setStateTextAnimated(LocaleController.getString("VoipFailed", R.string.VoipFailed), false);
@@ -1176,6 +1200,18 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                         }, 1000);
                     }
                 }
+                brandingText.invalidate();
+            }
+        });
+    }
+
+    @Override
+    public void onSignalBarsCountChanged(final int count){
+        runOnUiThread(new Runnable(){
+            @Override
+            public void run(){
+                signalBarsCount=count;
+                brandingText.invalidate();
             }
         });
     }
@@ -1425,6 +1461,53 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         @Override
         public void updateDrawState(TextPaint tp){
             tp.setAlpha(alpha);
+        }
+    }
+
+    private class SignalBarsDrawable extends Drawable{
+
+        private int[] barHeights={AndroidUtilities.dp(3), AndroidUtilities.dp(6), AndroidUtilities.dp(9), AndroidUtilities.dp(12)};
+        private Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+        private RectF rect=new RectF();
+        private int offsetStart=6;
+
+        @Override
+        public void draw(@NonNull Canvas canvas){
+            if(callState!=VoIPService.STATE_ESTABLISHED && callState!=VoIPService.STATE_RECONNECTING)
+                return;
+            paint.setColor(0xFFFFFFFF);
+            int x=getBounds().left+AndroidUtilities.dp(LocaleController.isRTL ? 0 : offsetStart);
+            int y=getBounds().top;
+            for(int i=0;i<4;i++){
+                paint.setAlpha(i+1<=signalBarsCount ? 242 : 102);
+                rect.set(x+AndroidUtilities.dp(4*i), y+getIntrinsicHeight()-barHeights[i], x+AndroidUtilities.dp(4)*i+AndroidUtilities.dp(3), y+getIntrinsicHeight());
+                canvas.drawRoundRect(rect, AndroidUtilities.dp(.3f), AndroidUtilities.dp(.3f), paint);
+            }
+        }
+
+        @Override
+        public void setAlpha(@IntRange(from=0, to=255) int alpha){
+
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter){
+
+        }
+
+        @Override
+        public int getIntrinsicWidth(){
+            return AndroidUtilities.dp(15+offsetStart);
+        }
+
+        @Override
+        public int getIntrinsicHeight(){
+            return AndroidUtilities.dp(12);
+        }
+
+        @Override
+        public int getOpacity(){
+            return PixelFormat.TRANSLUCENT;
         }
     }
 }

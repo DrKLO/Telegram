@@ -180,7 +180,7 @@ public class Bitmaps {
         if (config != null) {
             switch (config) {
                 case RGB_565:
-                    newConfig = Bitmap.Config.RGB_565;
+                    newConfig = Bitmap.Config.ARGB_8888;
                     break;
                 case ALPHA_8:
                     newConfig = Bitmap.Config.ALPHA_8;

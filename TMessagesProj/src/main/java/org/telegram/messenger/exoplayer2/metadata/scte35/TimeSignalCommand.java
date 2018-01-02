@@ -18,6 +18,7 @@ package org.telegram.messenger.exoplayer2.metadata.scte35;
 import android.os.Parcel;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
+import org.telegram.messenger.exoplayer2.util.TimestampAdjuster;
 
 /**
  * Represents a time signal command as defined in SCTE35, Section 9.3.4.
@@ -25,14 +26,18 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 public final class TimeSignalCommand extends SpliceCommand {
 
   public final long ptsTime;
+  public final long playbackPositionUs;
 
-  private TimeSignalCommand(long ptsTime) {
+  private TimeSignalCommand(long ptsTime, long playbackPositionUs) {
     this.ptsTime = ptsTime;
+    this.playbackPositionUs = playbackPositionUs;
   }
 
   /* package */ static TimeSignalCommand parseFromSection(ParsableByteArray sectionData,
-      long ptsAdjustment) {
-    return new TimeSignalCommand(parseSpliceTime(sectionData, ptsAdjustment));
+      long ptsAdjustment, TimestampAdjuster timestampAdjuster) {
+    long ptsTime = parseSpliceTime(sectionData, ptsAdjustment);
+    long playbackPositionUs = timestampAdjuster.adjustTsTimestamp(ptsTime);
+    return new TimeSignalCommand(ptsTime, playbackPositionUs);
   }
 
   /**
@@ -61,6 +66,7 @@ public final class TimeSignalCommand extends SpliceCommand {
   @Override
   public void writeToParcel(Parcel dest, int flags) {
     dest.writeLong(ptsTime);
+    dest.writeLong(playbackPositionUs);
   }
 
   public static final Creator<TimeSignalCommand> CREATOR =
@@ -68,7 +74,7 @@ public final class TimeSignalCommand extends SpliceCommand {
 
     @Override
     public TimeSignalCommand createFromParcel(Parcel in) {
-      return new TimeSignalCommand(in.readLong());
+      return new TimeSignalCommand(in.readLong(), in.readLong());
     }
 
     @Override

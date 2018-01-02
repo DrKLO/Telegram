@@ -75,6 +75,8 @@ public final class CodecSpecificDataUtil {
   private static final int AUDIO_OBJECT_TYPE_ER_BSAC = 22;
   // Parametric Stereo.
   private static final int AUDIO_OBJECT_TYPE_PS = 29;
+  // Escape code for extended audio object types.
+  private static final int AUDIO_OBJECT_TYPE_ESCAPE = 31;
 
   private CodecSpecificDataUtil() {}
 
@@ -86,15 +88,8 @@ public final class CodecSpecificDataUtil {
    */
   public static Pair<Integer, Integer> parseAacAudioSpecificConfig(byte[] audioSpecificConfig) {
     ParsableBitArray bitArray = new ParsableBitArray(audioSpecificConfig);
-    int audioObjectType = bitArray.readBits(5);
-    int frequencyIndex = bitArray.readBits(4);
-    int sampleRate;
-    if (frequencyIndex == AUDIO_SPECIFIC_CONFIG_FREQUENCY_INDEX_ARBITRARY) {
-      sampleRate = bitArray.readBits(24);
-    } else {
-      Assertions.checkArgument(frequencyIndex < 13);
-      sampleRate = AUDIO_SPECIFIC_CONFIG_SAMPLING_RATE_TABLE[frequencyIndex];
-    }
+    int audioObjectType = getAacAudioObjectType(bitArray);
+    int sampleRate = getAacSamplingFrequency(bitArray);
     int channelConfiguration = bitArray.readBits(4);
     if (audioObjectType == AUDIO_OBJECT_TYPE_SBR || audioObjectType == AUDIO_OBJECT_TYPE_PS) {
       // For an AAC bitstream using spectral band replication (SBR) or parametric stereo (PS) with
@@ -102,14 +97,8 @@ public final class CodecSpecificDataUtil {
       // content; this is identical to the sample rate of the decoded output but may differ from
       // the sample rate set above.
       // Use the extensionSamplingFrequencyIndex.
-      frequencyIndex = bitArray.readBits(4);
-      if (frequencyIndex == AUDIO_SPECIFIC_CONFIG_FREQUENCY_INDEX_ARBITRARY) {
-        sampleRate = bitArray.readBits(24);
-      } else {
-        Assertions.checkArgument(frequencyIndex < 13);
-        sampleRate = AUDIO_SPECIFIC_CONFIG_SAMPLING_RATE_TABLE[frequencyIndex];
-      }
-      audioObjectType = bitArray.readBits(5);
+      sampleRate = getAacSamplingFrequency(bitArray);
+      audioObjectType = getAacAudioObjectType(bitArray);
       if (audioObjectType == AUDIO_OBJECT_TYPE_ER_BSAC) {
         // Use the extensionChannelConfiguration.
         channelConfiguration = bitArray.readBits(4);
@@ -245,6 +234,39 @@ public final class CodecSpecificDataUtil {
       }
     }
     return true;
+  }
+
+  /**
+   * Returns the AAC audio object type as specified in 14496-3 (2005) Table 1.14.
+   *
+   * @param bitArray The bit array containing the audio specific configuration.
+   * @return The audio object type.
+   */
+  private static int getAacAudioObjectType(ParsableBitArray bitArray) {
+    int audioObjectType = bitArray.readBits(5);
+    if (audioObjectType == AUDIO_OBJECT_TYPE_ESCAPE) {
+      audioObjectType = 32 + bitArray.readBits(6);
+    }
+    return audioObjectType;
+  }
+
+  /**
+   * Returns the AAC sampling frequency (or extension sampling frequency) as specified in 14496-3
+   * (2005) Table 1.13.
+   *
+   * @param bitArray The bit array containing the audio specific configuration.
+   * @return The sampling frequency.
+   */
+  private static int getAacSamplingFrequency(ParsableBitArray bitArray) {
+    int samplingFrequency;
+    int frequencyIndex = bitArray.readBits(4);
+    if (frequencyIndex == AUDIO_SPECIFIC_CONFIG_FREQUENCY_INDEX_ARBITRARY) {
+      samplingFrequency = bitArray.readBits(24);
+    } else {
+      Assertions.checkArgument(frequencyIndex < 13);
+      samplingFrequency = AUDIO_SPECIFIC_CONFIG_SAMPLING_RATE_TABLE[frequencyIndex];
+    }
+    return samplingFrequency;
   }
 
 }

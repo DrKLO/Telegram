@@ -8,7 +8,6 @@
 
 package org.telegram.messenger.video;
 
-import android.annotation.TargetApi;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 
@@ -50,7 +49,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-@TargetApi(16)
 public class MP4Builder {
 
     private InterleaveChunkMdat mdat = null;
@@ -132,11 +130,11 @@ public class MP4Builder {
         return flush;
     }
 
-    public int addTrack(MediaFormat mediaFormat, boolean isAudio) throws Exception {
+    public int addTrack(MediaFormat mediaFormat, boolean isAudio) {
         return currentMp4Movie.addTrack(mediaFormat, isAudio);
     }
 
-    public void finishMovie(boolean error) throws Exception {
+    public void finishMovie() throws Exception {
         if (mdat.getContentSize() != 0) {
             flushCurrentMdat();
         }

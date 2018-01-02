@@ -61,8 +61,16 @@ public class DecoderInputBuffer extends Buffer {
    */
   public long timeUs;
 
-  @BufferReplacementMode
-  private final int bufferReplacementMode;
+  @BufferReplacementMode private final int bufferReplacementMode;
+
+  /**
+   * Creates a new instance for which {@link #isFlagsOnly()} will return true.
+   *
+   * @return A new flags only input buffer.
+   */
+  public static DecoderInputBuffer newFlagsOnlyInstance() {
+    return new DecoderInputBuffer(BUFFER_REPLACEMENT_MODE_DISABLED);
+  }
 
   /**
    * @param bufferReplacementMode Determines the behavior of {@link #ensureSpaceForWrite(int)}. One
@@ -108,6 +116,14 @@ public class DecoderInputBuffer extends Buffer {
     }
     // Set the new buffer.
     data = newData;
+  }
+
+  /**
+   * Returns whether the buffer is only able to hold flags, meaning {@link #data} is null and
+   * its replacement mode is {@link #BUFFER_REPLACEMENT_MODE_DISABLED}.
+   */
+  public final boolean isFlagsOnly() {
+    return data == null && bufferReplacementMode == BUFFER_REPLACEMENT_MODE_DISABLED;
   }
 
   /**

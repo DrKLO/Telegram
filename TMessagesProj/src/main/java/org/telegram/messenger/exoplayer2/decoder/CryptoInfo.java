@@ -49,24 +49,36 @@ public final class CryptoInfo {
    * @see android.media.MediaCodec.CryptoInfo#numSubSamples
    */
   public int numSubSamples;
+  /**
+   * @see android.media.MediaCodec.CryptoInfo.Pattern
+   */
+  public int encryptedBlocks;
+  /**
+   * @see android.media.MediaCodec.CryptoInfo.Pattern
+   */
+  public int clearBlocks;
 
   private final android.media.MediaCodec.CryptoInfo frameworkCryptoInfo;
+  private final PatternHolderV24 patternHolder;
 
   public CryptoInfo() {
     frameworkCryptoInfo = Util.SDK_INT >= 16 ? newFrameworkCryptoInfoV16() : null;
+    patternHolder = Util.SDK_INT >= 24 ? new PatternHolderV24(frameworkCryptoInfo) : null;
   }
 
   /**
    * @see android.media.MediaCodec.CryptoInfo#set(int, int[], int[], byte[], byte[], int)
    */
   public void set(int numSubSamples, int[] numBytesOfClearData, int[] numBytesOfEncryptedData,
-      byte[] key, byte[] iv, @C.CryptoMode int mode) {
+      byte[] key, byte[] iv, @C.CryptoMode int mode, int encryptedBlocks, int clearBlocks) {
     this.numSubSamples = numSubSamples;
     this.numBytesOfClearData = numBytesOfClearData;
     this.numBytesOfEncryptedData = numBytesOfEncryptedData;
     this.key = key;
     this.iv = iv;
     this.mode = mode;
+    this.encryptedBlocks = encryptedBlocks;
+    this.clearBlocks = clearBlocks;
     if (Util.SDK_INT >= 16) {
       updateFrameworkCryptoInfoV16();
     }
@@ -93,8 +105,35 @@ public final class CryptoInfo {
 
   @TargetApi(16)
   private void updateFrameworkCryptoInfoV16() {
-    frameworkCryptoInfo.set(numSubSamples, numBytesOfClearData, numBytesOfEncryptedData, key, iv,
-        mode);
+    // Update fields directly because the framework's CryptoInfo.set performs an unnecessary object
+    // allocation on Android N.
+    frameworkCryptoInfo.numSubSamples = numSubSamples;
+    frameworkCryptoInfo.numBytesOfClearData = numBytesOfClearData;
+    frameworkCryptoInfo.numBytesOfEncryptedData = numBytesOfEncryptedData;
+    frameworkCryptoInfo.key = key;
+    frameworkCryptoInfo.iv = iv;
+    frameworkCryptoInfo.mode = mode;
+    if (Util.SDK_INT >= 24) {
+      patternHolder.set(encryptedBlocks, clearBlocks);
+    }
+  }
+
+  @TargetApi(24)
+  private static final class PatternHolderV24 {
+
+    private final android.media.MediaCodec.CryptoInfo frameworkCryptoInfo;
+    private final android.media.MediaCodec.CryptoInfo.Pattern pattern;
+
+    private PatternHolderV24(android.media.MediaCodec.CryptoInfo frameworkCryptoInfo) {
+      this.frameworkCryptoInfo = frameworkCryptoInfo;
+      pattern = new android.media.MediaCodec.CryptoInfo.Pattern(0, 0);
+    }
+
+    private void set(int encryptedBlocks, int clearBlocks) {
+      pattern.set(encryptedBlocks, clearBlocks);
+      frameworkCryptoInfo.setPattern(pattern);
+    }
+
   }
 
 }

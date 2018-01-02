@@ -54,7 +54,7 @@ public final class PriorityTaskManager {
   /**
    * Register a new task. The task must call {@link #remove(int)} when done.
    *
-   * @param priority The priority of the task.
+   * @param priority The priority of the task. Larger values indicate higher priorities.
    */
   public void add(int priority) {
     synchronized (lock) {

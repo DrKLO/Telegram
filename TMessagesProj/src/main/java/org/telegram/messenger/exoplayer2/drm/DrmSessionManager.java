@@ -25,6 +25,16 @@ import android.os.Looper;
 public interface DrmSessionManager<T extends ExoMediaCrypto> {
 
   /**
+   * Returns whether the manager is capable of acquiring a session for the given
+   * {@link DrmInitData}.
+   *
+   * @param drmInitData DRM initialization data.
+   * @return Whether the manager is capable of acquiring a session for the given
+   *     {@link DrmInitData}.
+   */
+  boolean canAcquireSession(DrmInitData drmInitData);
+
+  /**
    * Acquires a {@link DrmSession} for the specified {@link DrmInitData}. The {@link DrmSession}
    * must be returned to {@link #releaseSession(DrmSession)} when it is no longer required.
    *

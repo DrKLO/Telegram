@@ -94,8 +94,7 @@ public final class CaptionStyleCompat {
    * <li>{@link #EDGE_TYPE_DEPRESSED}
    * </ul>
    */
-  @EdgeType
-  public final int edgeType;
+  @EdgeType public final int edgeType;
 
   /**
    * The preferred edge color, if using an edge type other than {@link #EDGE_TYPE_NONE}.

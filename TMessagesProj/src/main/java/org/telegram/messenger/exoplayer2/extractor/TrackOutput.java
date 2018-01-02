@@ -20,11 +20,77 @@ import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Receives track level data extracted by an {@link Extractor}.
  */
 public interface TrackOutput {
+
+  /**
+   * Holds data required to decrypt a sample.
+   */
+  final class CryptoData {
+
+    /**
+     * The encryption mode used for the sample.
+     */
+    @C.CryptoMode public final int cryptoMode;
+
+    /**
+     * The encryption key associated with the sample. Its contents must not be modified.
+     */
+    public final byte[] encryptionKey;
+
+    /**
+     * The number of encrypted blocks in the encryption pattern, 0 if pattern encryption does not
+     * apply.
+     */
+    public final int encryptedBlocks;
+
+    /**
+     * The number of clear blocks in the encryption pattern, 0 if pattern encryption does not
+     * apply.
+     */
+    public final int clearBlocks;
+
+    /**
+     * @param cryptoMode See {@link #cryptoMode}.
+     * @param encryptionKey See {@link #encryptionKey}.
+     * @param encryptedBlocks See {@link #encryptedBlocks}.
+     * @param clearBlocks See {@link #clearBlocks}.
+     */
+    public CryptoData(@C.CryptoMode int cryptoMode, byte[] encryptionKey, int encryptedBlocks,
+        int clearBlocks) {
+      this.cryptoMode = cryptoMode;
+      this.encryptionKey = encryptionKey;
+      this.encryptedBlocks = encryptedBlocks;
+      this.clearBlocks = clearBlocks;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      CryptoData other = (CryptoData) obj;
+      return cryptoMode == other.cryptoMode && encryptedBlocks == other.encryptedBlocks
+          && clearBlocks == other.clearBlocks && Arrays.equals(encryptionKey, other.encryptionKey);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = cryptoMode;
+      result = 31 * result + Arrays.hashCode(encryptionKey);
+      result = 31 * result + encryptedBlocks;
+      result = 31 * result + clearBlocks;
+      return result;
+    }
+
+  }
 
   /**
    * Called when the {@link Format} of the track has been extracted from the stream.
@@ -70,9 +136,9 @@ public interface TrackOutput {
    *     {@link #sampleData(ExtractorInput, int, boolean)} or
    *     {@link #sampleData(ParsableByteArray, int)} since the last byte belonging to the sample
    *     whose metadata is being passed.
-   * @param encryptionKey The encryption key associated with the sample. May be null.
+   * @param encryptionData The encryption data required to decrypt the sample. May be null.
    */
   void sampleMetadata(long timeUs, @C.BufferFlags int flags, int size, int offset,
-      byte[] encryptionKey);
+      CryptoData encryptionData);
 
 }

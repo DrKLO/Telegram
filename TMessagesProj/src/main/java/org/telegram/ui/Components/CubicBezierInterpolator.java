@@ -5,10 +5,11 @@ import android.view.animation.Interpolator;
 
 public class CubicBezierInterpolator implements Interpolator {
 
-    public static final CubicBezierInterpolator DEFAULT=new CubicBezierInterpolator(0.25, 0.1, 0.25, 1);
-    public static final CubicBezierInterpolator EASE_OUT=new CubicBezierInterpolator(0, 0, .58, 1);
-    public static final CubicBezierInterpolator EASE_IN=new CubicBezierInterpolator(.42, 0, 1, 1);
-    public static final CubicBezierInterpolator EASE_BOTH=new CubicBezierInterpolator(.42, 0, .58, 1);
+    public static final CubicBezierInterpolator DEFAULT = new CubicBezierInterpolator(0.25, 0.1, 0.25, 1);
+    public static final CubicBezierInterpolator EASE_OUT = new CubicBezierInterpolator(0, 0, .58, 1);
+    public static final CubicBezierInterpolator EASE_OUT_QUINT = new CubicBezierInterpolator(.23, 1, .32, 1);
+    public static final CubicBezierInterpolator EASE_IN = new CubicBezierInterpolator(.42, 0, 1, 1);
+    public static final CubicBezierInterpolator EASE_BOTH = new CubicBezierInterpolator(.42, 0, .58, 1);
 
     protected PointF start;
     protected PointF end;

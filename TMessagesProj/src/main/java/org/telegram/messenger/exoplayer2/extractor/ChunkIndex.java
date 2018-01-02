@@ -61,7 +61,11 @@ public final class ChunkIndex implements SeekMap {
     this.durationsUs = durationsUs;
     this.timesUs = timesUs;
     length = sizes.length;
-    durationUs = durationsUs[length - 1] + timesUs[length - 1];
+    if (length > 0) {
+      durationUs = durationsUs[length - 1] + timesUs[length - 1];
+    } else {
+      durationUs = 0;
+    }
   }
 
   /**

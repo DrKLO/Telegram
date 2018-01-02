@@ -302,7 +302,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                     progressView.setVisibility(View.VISIBLE);
                     loadingSize = size;
                     selectedColor = 0;
-                    FileLoader.getInstance().loadFile(size, null, true);
+                    FileLoader.getInstance().loadFile(size, null, 1);
                     backgroundImage.setBackgroundColor(0);
                 } else {
                     if (loadingFile != null) {

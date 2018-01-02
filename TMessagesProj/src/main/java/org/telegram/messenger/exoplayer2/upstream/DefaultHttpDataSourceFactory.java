@@ -15,10 +15,11 @@
  */
 package org.telegram.messenger.exoplayer2.upstream;
 
+import org.telegram.messenger.exoplayer2.upstream.HttpDataSource.BaseFactory;
 import org.telegram.messenger.exoplayer2.upstream.HttpDataSource.Factory;
 
 /** A {@link Factory} that produces {@link DefaultHttpDataSource} instances. */
-public final class DefaultHttpDataSourceFactory implements Factory {
+public final class DefaultHttpDataSourceFactory extends BaseFactory {
 
   private final String userAgent;
   private final TransferListener<? super DataSource> listener;
@@ -75,8 +76,10 @@ public final class DefaultHttpDataSourceFactory implements Factory {
   }
 
   @Override
-  public DefaultHttpDataSource createDataSource() {
+  protected DefaultHttpDataSource createDataSourceInternal(
+      HttpDataSource.RequestProperties defaultRequestProperties) {
     return new DefaultHttpDataSource(userAgent, null, listener, connectTimeoutMillis,
-        readTimeoutMillis, allowCrossProtocolRedirects);
+        readTimeoutMillis, allowCrossProtocolRedirects, defaultRequestProperties);
   }
+
 }

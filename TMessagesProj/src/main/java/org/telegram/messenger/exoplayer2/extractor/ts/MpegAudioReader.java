@@ -26,7 +26,7 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 /**
  * Parses a continuous MPEG Audio byte stream and extracts individual frames.
  */
-/* package */ final class MpegAudioReader implements ElementaryStreamReader {
+public final class MpegAudioReader implements ElementaryStreamReader {
 
   private static final int STATE_FINDING_HEADER = 0;
   private static final int STATE_READING_HEADER = 1;
@@ -38,6 +38,7 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
   private final MpegAudioHeader header;
   private final String language;
 
+  private String formatId;
   private TrackOutput output;
 
   private int state;
@@ -76,7 +77,9 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 
   @Override
   public void createTracks(ExtractorOutput extractorOutput, TrackIdGenerator idGenerator) {
-    output = extractorOutput.track(idGenerator.getNextId());
+    idGenerator.generateNewId();
+    formatId = idGenerator.getFormatId();
+    output = extractorOutput.track(idGenerator.getTrackId(), C.TRACK_TYPE_AUDIO);
   }
 
   @Override
@@ -176,9 +179,9 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
     frameSize = header.frameSize;
     if (!hasOutputFormat) {
       frameDurationUs = (C.MICROS_PER_SECOND * header.samplesPerFrame) / header.sampleRate;
-      Format format = Format.createAudioSampleFormat(null, header.mimeType, null, Format.NO_VALUE,
-          MpegAudioHeader.MAX_FRAME_SIZE_BYTES, header.channels, header.sampleRate, null, null, 0,
-          language);
+      Format format = Format.createAudioSampleFormat(formatId, header.mimeType, null,
+          Format.NO_VALUE, MpegAudioHeader.MAX_FRAME_SIZE_BYTES, header.channels, header.sampleRate,
+          null, null, 0, language);
       output.format(format);
       hasOutputFormat = true;
     }

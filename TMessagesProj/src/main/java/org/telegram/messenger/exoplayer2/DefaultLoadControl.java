@@ -19,6 +19,7 @@ import org.telegram.messenger.exoplayer2.source.TrackGroupArray;
 import org.telegram.messenger.exoplayer2.trackselection.TrackSelectionArray;
 import org.telegram.messenger.exoplayer2.upstream.Allocator;
 import org.telegram.messenger.exoplayer2.upstream.DefaultAllocator;
+import org.telegram.messenger.exoplayer2.util.PriorityTaskManager;
 import org.telegram.messenger.exoplayer2.util.Util;
 
 /**
@@ -60,6 +61,7 @@ public final class DefaultLoadControl implements LoadControl {
   private final long maxBufferUs;
   private final long bufferForPlaybackUs;
   private final long bufferForPlaybackAfterRebufferUs;
+  private final PriorityTaskManager priorityTaskManager;
 
   private int targetBufferSize;
   private boolean isBuffering;
@@ -97,11 +99,36 @@ public final class DefaultLoadControl implements LoadControl {
    */
   public DefaultLoadControl(DefaultAllocator allocator, int minBufferMs, int maxBufferMs,
       long bufferForPlaybackMs, long bufferForPlaybackAfterRebufferMs) {
+    this(allocator, minBufferMs, maxBufferMs, bufferForPlaybackMs, bufferForPlaybackAfterRebufferMs,
+        null);
+  }
+
+  /**
+   * Constructs a new instance.
+   *
+   * @param allocator The {@link DefaultAllocator} used by the loader.
+   * @param minBufferMs The minimum duration of media that the player will attempt to ensure is
+   *     buffered at all times, in milliseconds.
+   * @param maxBufferMs The maximum duration of media that the player will attempt buffer, in
+   *     milliseconds.
+   * @param bufferForPlaybackMs The duration of media that must be buffered for playback to start or
+   *     resume following a user action such as a seek, in milliseconds.
+   * @param bufferForPlaybackAfterRebufferMs The default duration of media that must be buffered for
+   *     playback to resume after a rebuffer, in milliseconds. A rebuffer is defined to be caused by
+   *     buffer depletion rather than a user action.
+   * @param priorityTaskManager If not null, registers itself as a task with priority
+   *     {@link C#PRIORITY_PLAYBACK} during loading periods, and unregisters itself during draining
+   *     periods.
+   */
+  public DefaultLoadControl(DefaultAllocator allocator, int minBufferMs, int maxBufferMs,
+      long bufferForPlaybackMs, long bufferForPlaybackAfterRebufferMs,
+      PriorityTaskManager priorityTaskManager) {
     this.allocator = allocator;
     minBufferUs = minBufferMs * 1000L;
     maxBufferUs = maxBufferMs * 1000L;
     bufferForPlaybackUs = bufferForPlaybackMs * 1000L;
     bufferForPlaybackAfterRebufferUs = bufferForPlaybackAfterRebufferMs * 1000L;
+    this.priorityTaskManager = priorityTaskManager;
   }
 
   @Override
@@ -146,8 +173,16 @@ public final class DefaultLoadControl implements LoadControl {
   public boolean shouldContinueLoading(long bufferedDurationUs) {
     int bufferTimeState = getBufferTimeState(bufferedDurationUs);
     boolean targetBufferSizeReached = allocator.getTotalBytesAllocated() >= targetBufferSize;
+    boolean wasBuffering = isBuffering;
     isBuffering = bufferTimeState == BELOW_LOW_WATERMARK
         || (bufferTimeState == BETWEEN_WATERMARKS && isBuffering && !targetBufferSizeReached);
+    if (priorityTaskManager != null && isBuffering != wasBuffering) {
+      if (isBuffering) {
+        priorityTaskManager.add(C.PRIORITY_PLAYBACK);
+      } else {
+        priorityTaskManager.remove(C.PRIORITY_PLAYBACK);
+      }
+    }
     return isBuffering;
   }
 
@@ -158,6 +193,9 @@ public final class DefaultLoadControl implements LoadControl {
 
   private void reset(boolean resetAllocator) {
     targetBufferSize = 0;
+    if (priorityTaskManager != null && isBuffering) {
+      priorityTaskManager.remove(C.PRIORITY_PLAYBACK);
+    }
     isBuffering = false;
     if (resetAllocator) {
       allocator.reset();

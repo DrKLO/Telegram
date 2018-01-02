@@ -63,7 +63,8 @@ public interface Extractor {
   void init(ExtractorOutput output);
 
   /**
-   * Extracts data read from a provided {@link ExtractorInput}.
+   * Extracts data read from a provided {@link ExtractorInput}. Must not be called before
+   * {@link #init(ExtractorOutput)}.
    * <p>
    * A single call to this method will block until some progress has been made, but will not block
    * for longer than this. Hence each call will consume only a small amount of input data.
@@ -93,12 +94,14 @@ public interface Extractor {
    * position} in the stream. Valid random access positions are the start of the stream and
    * positions that can be obtained from any {@link SeekMap} passed to the {@link ExtractorOutput}.
    *
-   * @param position The seek position.
+   * @param position The byte offset in the stream from which data will be provided.
+   * @param timeUs The seek time in microseconds.
    */
-  void seek(long position);
+  void seek(long position, long timeUs);
 
   /**
    * Releases all kept resources.
    */
   void release();
+
 }

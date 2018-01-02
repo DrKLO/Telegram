@@ -108,7 +108,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
             } else {
                 len += 4;
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             FileLog.e("write int32 error");
         }
     }
@@ -120,7 +120,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
             } else {
                 len += 8;
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             FileLog.e("write int64 error");
         }
     }
@@ -180,25 +180,25 @@ public class NativeByteBuffer extends AbstractSerializedData {
     public void writeString(String s) {
         try {
             writeByteArray(s.getBytes("UTF-8"));
-        } catch(Exception e) {
+        } catch (Exception e) {
             FileLog.e("write string error");
         }
     }
 
     public void writeByteArray(byte[] b, int offset, int count) {
         try {
-            if(count <= 253) {
+            if (count <= 253) {
                 if (!justCalc) {
-                    buffer.put((byte)count);
+                    buffer.put((byte) count);
                 } else {
                     len += 1;
                 }
             } else {
                 if (!justCalc) {
-                    buffer.put((byte)254);
-                    buffer.put((byte)count);
-                    buffer.put((byte)(count >> 8));
-                    buffer.put((byte)(count >> 16));
+                    buffer.put((byte) 254);
+                    buffer.put((byte) count);
+                    buffer.put((byte) (count >> 8));
+                    buffer.put((byte) (count >> 16));
                 } else {
                     len += 4;
                 }
@@ -211,7 +211,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
             int i = count <= 253 ? 1 : 4;
             while ((count + i) % 4 != 0) {
                 if (!justCalc) {
-                    buffer.put((byte)0);
+                    buffer.put((byte) 0);
                 } else {
                     len += 1;
                 }
@@ -246,7 +246,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
                 len += b.length;
             }
             int i = b.length <= 253 ? 1 : 4;
-            while((b.length + i) % 4 != 0) {
+            while ((b.length + i) % 4 != 0) {
                 if (!justCalc) {
                     buffer.put((byte) 0);
                 } else {
@@ -262,7 +262,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
     public void writeDouble(double d) {
         try {
             writeInt64(Double.doubleToRawLongBits(d));
-        } catch(Exception e) {
+        } catch (Exception e) {
             FileLog.e("write double error");
         }
     }
@@ -293,7 +293,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
                 len += l;
             }
             int i = l <= 253 ? 1 : 4;
-            while((l + i) % 4 != 0) {
+            while ((l + i) % 4 != 0) {
                 if (!justCalc) {
                     buffer.put((byte) 0);
                 } else {
@@ -316,7 +316,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
     }
 
     public int getIntFromByte(byte b) {
-        return b >= 0 ? b : ((int)b) + 256;
+        return b >= 0 ? b : ((int) b) + 256;
     }
 
     public int length() {
@@ -401,17 +401,18 @@ public class NativeByteBuffer extends AbstractSerializedData {
     }
 
     public String readString(boolean exception) {
+        int startReadPosition = getPosition();
         try {
             int sl = 1;
             int l = getIntFromByte(buffer.get());
-            if(l >= 254) {
+            if (l >= 254) {
                 l = getIntFromByte(buffer.get()) | (getIntFromByte(buffer.get()) << 8) | (getIntFromByte(buffer.get()) << 16);
                 sl = 4;
             }
             byte[] b = new byte[l];
             buffer.get(b);
             int i = sl;
-            while((l + i) % 4 != 0) {
+            while ((l + i) % 4 != 0) {
                 buffer.get();
                 i++;
             }
@@ -422,6 +423,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
             } else {
                 FileLog.e("read string error");
             }
+            position(startReadPosition);
         }
         return "";
     }
@@ -437,7 +439,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
             byte[] b = new byte[l];
             buffer.get(b);
             int i = sl;
-            while((l + i) % 4 != 0) {
+            while ((l + i) % 4 != 0) {
                 buffer.get();
                 i++;
             }
@@ -467,7 +469,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
             buffer.limit(old);
             b.buffer.position(0);
             int i = sl;
-            while((l + i) % 4 != 0) {
+            while ((l + i) % 4 != 0) {
                 buffer.get();
                 i++;
             }
@@ -485,7 +487,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
     public double readDouble(boolean exception) {
         try {
             return Double.longBitsToDouble(readInt64(exception));
-        } catch(Exception e) {
+        } catch (Exception e) {
             if (exception) {
                 throw new RuntimeException("read double error", e);
             } else {

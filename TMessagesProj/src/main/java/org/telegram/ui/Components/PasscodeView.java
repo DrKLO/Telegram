@@ -40,7 +40,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -403,7 +402,7 @@ public class PasscodeView extends FrameLayout {
     private ArrayList<FrameLayout> numberFrameLayouts;
     private FrameLayout passwordFrameLayout;
     private ImageView eraseView;
-    private EditText passwordEditText;
+    private EditTextBoldCursor passwordEditText;
     private AnimatingTextView passwordEditText2;
     private FrameLayout backgroundFrameLayout;
     private TextView passcodeTextView;
@@ -483,7 +482,7 @@ public class PasscodeView extends FrameLayout {
         layoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
         passwordEditText2.setLayoutParams(layoutParams);
 
-        passwordEditText = new EditText(context);
+        passwordEditText = new EditTextBoldCursor(context);
         passwordEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 36);
         passwordEditText.setTextColor(0xffffffff);
         passwordEditText.setMaxLines(1);
@@ -493,14 +492,14 @@ public class PasscodeView extends FrameLayout {
         passwordEditText.setImeOptions(EditorInfo.IME_ACTION_DONE);
         passwordEditText.setTypeface(Typeface.DEFAULT);
         passwordEditText.setBackgroundDrawable(null);
-        AndroidUtilities.clearCursorDrawable(passwordEditText);
+        passwordEditText.setCursorColor(0xffffffff);
+        passwordEditText.setCursorSize(AndroidUtilities.dp(32));
         passwordFrameLayout.addView(passwordEditText);
         layoutParams = (FrameLayout.LayoutParams) passwordEditText.getLayoutParams();
         layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.leftMargin = AndroidUtilities.dp(70);
         layoutParams.rightMargin = AndroidUtilities.dp(70);
-        layoutParams.bottomMargin = AndroidUtilities.dp(6);
         layoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
         passwordEditText.setLayoutParams(layoutParams);
         passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -855,9 +854,9 @@ public class PasscodeView extends FrameLayout {
                     relativeLayout.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
 
                     TextView fingerprintTextView = new TextView(getContext());
-                    fingerprintTextView.setTextColor(0xff939393);
                     fingerprintTextView.setId(id_fingerprint_textview);
                     fingerprintTextView.setTextAppearance(android.R.style.TextAppearance_Material_Subhead);
+                    fingerprintTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
                     fingerprintTextView.setText(LocaleController.getString("FingerprintInfo", R.string.FingerprintInfo));
                     relativeLayout.addView(fingerprintTextView);
                     RelativeLayout.LayoutParams layoutParams = LayoutHelper.createRelative(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
@@ -874,7 +873,7 @@ public class PasscodeView extends FrameLayout {
                     fingerprintStatusTextView.setGravity(Gravity.CENTER_VERTICAL);
                     fingerprintStatusTextView.setText(LocaleController.getString("FingerprintHelp", R.string.FingerprintHelp));
                     fingerprintStatusTextView.setTextAppearance(android.R.style.TextAppearance_Material_Body1);
-                    fingerprintStatusTextView.setTextColor(0x42000000);
+                    fingerprintStatusTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack) & 0x42ffffff);
                     relativeLayout.addView(fingerprintStatusTextView);
                     layoutParams = LayoutHelper.createRelative(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
                     layoutParams.setMarginStart(AndroidUtilities.dp(16));
@@ -970,16 +969,21 @@ public class PasscodeView extends FrameLayout {
         }
         setAlpha(1.0f);
         setTranslationY(0);
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        int selectedBackground = preferences.getInt("selectedBackground", 1000001);
-        if (selectedBackground == 1000001) {
-            backgroundFrameLayout.setBackgroundColor(0xff517c9e);
-        } else {
+        if (Theme.isCustomTheme()) {
             backgroundDrawable = Theme.getCachedWallpaper();
-            if (backgroundDrawable != null) {
-                backgroundFrameLayout.setBackgroundColor(0xbf000000);
-            } else {
+            backgroundFrameLayout.setBackgroundColor(0xbf000000);
+        } else {
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+            int selectedBackground = preferences.getInt("selectedBackground", 1000001);
+            if (selectedBackground == 1000001) {
                 backgroundFrameLayout.setBackgroundColor(0xff517c9e);
+            } else {
+                backgroundDrawable = Theme.getCachedWallpaper();
+                if (backgroundDrawable != null) {
+                    backgroundFrameLayout.setBackgroundColor(0xbf000000);
+                } else {
+                    backgroundFrameLayout.setBackgroundColor(0xff517c9e);
+                }
             }
         }
 

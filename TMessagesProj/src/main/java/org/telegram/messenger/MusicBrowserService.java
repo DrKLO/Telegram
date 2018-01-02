@@ -108,9 +108,9 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
 
         updatePlaybackState(null);
 
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioPlayStateChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioDidStarted);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioDidReset);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingDidStarted);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingDidReset);
     }
 
     @Override
@@ -363,7 +363,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
             if (messageObject == null) {
                 onPlayFromMediaId(lastSelectedDialog + "_" + 0, null);
             } else {
-                MediaController.getInstance().playAudio(messageObject);
+                MediaController.getInstance().playMessage(messageObject);
             }
         }
 
@@ -486,7 +486,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
             if (MediaController.getInstance().isDownloadingCurrentMessage()) {
                 state = PlaybackState.STATE_BUFFERING;
             } else {
-                state = MediaController.getInstance().isAudioPaused() ? PlaybackState.STATE_PAUSED : PlaybackState.STATE_PLAYING;
+                state = MediaController.getInstance().isMessagePaused() ? PlaybackState.STATE_PAUSED : PlaybackState.STATE_PLAYING;
             }
         }
 
@@ -508,7 +508,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
         long actions = PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PLAY_FROM_MEDIA_ID | PlaybackState.ACTION_PLAY_FROM_SEARCH;
         MessageObject playingMessageObject = MediaController.getInstance().getPlayingMessageObject();
         if (playingMessageObject != null) {
-            if (!MediaController.getInstance().isAudioPaused()) {
+            if (!MediaController.getInstance().isMessagePaused()) {
                 actions |= PlaybackState.ACTION_PAUSE;
             }
             actions |= PlaybackState.ACTION_SKIP_TO_PREVIOUS;
@@ -523,9 +523,9 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
         updatePlaybackState(withError);
         stopSelf();
         serviceStarted = false;
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioPlayStateChanged);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidStarted);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidReset);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingDidStarted);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingDidReset);
     }
 
     private void handlePlayRequest() {
@@ -558,7 +558,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
     }
 
     private void handlePauseRequest() {
-        MediaController.getInstance().pauseAudio(MediaController.getInstance().getPlayingMessageObject());
+        MediaController.getInstance().pauseMessage(MediaController.getInstance().getPlayingMessageObject());
         delayedStopHandler.removeCallbacksAndMessages(null);
         delayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
     }
@@ -581,7 +581,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
             MusicBrowserService service = mWeakReference.get();
             if (service != null) {
                 MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
-                if (messageObject != null && !MediaController.getInstance().isAudioPaused()) {
+                if (messageObject != null && !MediaController.getInstance().isMessagePaused()) {
                     return;
                 }
                 service.stopSelf();

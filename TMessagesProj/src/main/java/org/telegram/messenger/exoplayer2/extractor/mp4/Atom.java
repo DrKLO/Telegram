@@ -39,9 +39,14 @@ import java.util.List;
   public static final int LONG_HEADER_SIZE = 16;
 
   /**
-   * Value for the first 32 bits of atomSize when the atom size is actually a long value.
+   * Value for the size field in an atom that defines its size in the largesize field.
    */
-  public static final int LONG_SIZE_PREFIX = 1;
+  public static final int DEFINES_LARGE_SIZE = 1;
+
+  /**
+   * Value for the size field in an atom that extends to the end of the file.
+   */
+  public static final int EXTENDS_TO_END_SIZE = 0;
 
   public static final int TYPE_ftyp = Util.getIntegerCodeForString("ftyp");
   public static final int TYPE_avc1 = Util.getIntegerCodeForString("avc1");
@@ -127,6 +132,7 @@ import java.util.List;
   public static final int TYPE_mean = Util.getIntegerCodeForString("mean");
   public static final int TYPE_name = Util.getIntegerCodeForString("name");
   public static final int TYPE_data = Util.getIntegerCodeForString("data");
+  public static final int TYPE_emsg = Util.getIntegerCodeForString("emsg");
   public static final int TYPE_st3d = Util.getIntegerCodeForString("st3d");
   public static final int TYPE_sv3d = Util.getIntegerCodeForString("sv3d");
   public static final int TYPE_proj = Util.getIntegerCodeForString("proj");
@@ -134,6 +140,7 @@ import java.util.List;
   public static final int TYPE_vp09 = Util.getIntegerCodeForString("vp09");
   public static final int TYPE_vpcC = Util.getIntegerCodeForString("vpcC");
   public static final int TYPE_camm = Util.getIntegerCodeForString("camm");
+  public static final int TYPE_alac = Util.getIntegerCodeForString("alac");
 
   public final int type;
 

@@ -58,7 +58,6 @@ public class GridLayoutManager extends LinearLayoutManager {
     // re-used variable to acquire decor insets from RecyclerView
     final Rect mDecorInsets = new Rect();
 
-
     /**
      * Creates a vertical GridLayoutManager
      *
@@ -256,7 +255,7 @@ public class GridLayoutManager extends LinearLayoutManager {
         return mSpanSizeLookup;
     }
 
-    private void updateMeasurements() {
+    protected void updateMeasurements() {
         int totalSpace;
         if (getOrientation() == VERTICAL) {
             totalSpace = getWidth() - getPaddingRight() - getPaddingLeft();
@@ -302,7 +301,7 @@ public class GridLayoutManager extends LinearLayoutManager {
      * @return The updated array. Might be the same instance as the provided array if its size
      * has not changed.
      */
-    static int[] calculateItemBorders(int[] cachedBorders, int spanCount, int totalSpace) {
+    protected int[] calculateItemBorders(int[] cachedBorders, int spanCount, int totalSpace) {
         if (cachedBorders == null || cachedBorders.length != spanCount + 1
                 || cachedBorders[cachedBorders.length - 1] != totalSpace) {
             cachedBorders = new int[spanCount + 1];
@@ -448,7 +447,7 @@ public class GridLayoutManager extends LinearLayoutManager {
         return mSpanSizeLookup.getSpanGroupIndex(adapterPosition, mSpanCount);
     }
 
-    private int getSpanIndex(RecyclerView.Recycler recycler, RecyclerView.State state, int pos) {
+    protected int getSpanIndex(RecyclerView.Recycler recycler, RecyclerView.State state, int pos) {
         if (!state.isPreLayout()) {
             return mSpanSizeLookup.getCachedSpanIndex(pos, mSpanCount);
         }
@@ -469,7 +468,7 @@ public class GridLayoutManager extends LinearLayoutManager {
         return mSpanSizeLookup.getCachedSpanIndex(adapterPosition, mSpanCount);
     }
 
-    private int getSpanSize(RecyclerView.Recycler recycler, RecyclerView.State state, int pos) {
+    protected int getSpanSize(RecyclerView.Recycler recycler, RecyclerView.State state, int pos) {
         if (!state.isPreLayout()) {
             return mSpanSizeLookup.getSpanSize(pos);
         }
@@ -497,7 +496,7 @@ public class GridLayoutManager extends LinearLayoutManager {
         int count = 0;
         while (count < mSpanCount && layoutState.hasMore(state) && remainingSpan > 0) {
             final int pos = layoutState.mCurrentPosition;
-            layoutPrefetchRegistry.addPosition(pos, layoutState.mScrollingOffset);
+            layoutPrefetchRegistry.addPosition(pos, Math.max(0, layoutState.mScrollingOffset));
             final int spanSize = mSpanSizeLookup.getSpanSize(pos);
             remainingSpan -= spanSize;
             layoutState.mCurrentPosition += layoutState.mItemDirection;
@@ -679,7 +678,7 @@ public class GridLayoutManager extends LinearLayoutManager {
             if (params.isItemRemoved() || params.isItemChanged()) {
                 result.mIgnoreConsumed = true;
             }
-            result.mFocusable |= view.isFocusable();
+            result.mFocusable |= view.hasFocusable();
         }
         Arrays.fill(mSet, null);
     }
@@ -693,7 +692,7 @@ public class GridLayoutManager extends LinearLayoutManager {
      *                               orientation
      * @param alreadyMeasured True if we've already measured this view once
      */
-    private void measureChild(View view, int otherDirParentSpecMode, boolean alreadyMeasured) {
+    protected void measureChild(View view, int otherDirParentSpecMode, boolean alreadyMeasured) {
         final LayoutParams lp = (LayoutParams) view.getLayoutParams();
         final Rect decorInsets = lp.mDecorInsets;
         final int verticalInsets = decorInsets.top + decorInsets.bottom
@@ -727,13 +726,13 @@ public class GridLayoutManager extends LinearLayoutManager {
      * @param maxSizeInOther The maximum size per span ratio from the measurement of the children.
      * @param currentOtherDirSize The size before this layout chunk. There is no reason to go below.
      */
-    private void guessMeasurement(float maxSizeInOther, int currentOtherDirSize) {
+    protected void guessMeasurement(float maxSizeInOther, int currentOtherDirSize) {
         final int contentSize = Math.round(maxSizeInOther * mSpanCount);
         // always re-calculate because borders were stretched during the fill
         calculateItemBorders(Math.max(contentSize, currentOtherDirSize));
     }
 
-    private void measureChildWithDecorationsAndMargin(View child, int widthSpec, int heightSpec,
+    protected void measureChildWithDecorationsAndMargin(View child, int widthSpec, int heightSpec,
             boolean alreadyMeasured) {
         RecyclerView.LayoutParams lp = (RecyclerView.LayoutParams) child.getLayoutParams();
         final boolean measure;
@@ -747,7 +746,7 @@ public class GridLayoutManager extends LinearLayoutManager {
         }
     }
 
-    private void assignSpans(RecyclerView.Recycler recycler, RecyclerView.State state, int count,
+    protected void assignSpans(RecyclerView.Recycler recycler, RecyclerView.State state, int count,
             int consumedSpanCount, boolean layingOutInPrimaryDirection) {
         // spans are always assigned from 0 to N no matter if it is RTL or not.
         // RTL is used only when positioning the view.
@@ -1003,47 +1002,98 @@ public class GridLayoutManager extends LinearLayoutManager {
             limit = getChildCount();
         }
         final boolean preferLastSpan = mOrientation == VERTICAL && isLayoutRTL();
-        View weakCandidate = null; // somewhat matches but not strong
-        int weakCandidateSpanIndex = -1;
-        int weakCandidateOverlap = 0; // how many spans overlap
 
+        // The focusable candidate to be picked if no perfect focusable candidate is found.
+        // The best focusable candidate is the one with the highest amount of span overlap with
+        // the currently focused view.
+        View focusableWeakCandidate = null; // somewhat matches but not strong
+        int focusableWeakCandidateSpanIndex = -1;
+        int focusableWeakCandidateOverlap = 0; // how many spans overlap
+
+        // The unfocusable candidate to become visible on the screen next, if no perfect or
+        // weak focusable candidates are found to receive focus next.
+        // We are only interested in partially visible unfocusable views. These are views that are
+        // not fully visible, that is either partially overlapping, or out-of-bounds and right below
+        // or above RV's padded bounded area. The best unfocusable candidate is the one with the
+        // highest amount of span overlap with the currently focused view.
+        View unfocusableWeakCandidate = null; // somewhat matches but not strong
+        int unfocusableWeakCandidateSpanIndex = -1;
+        int unfocusableWeakCandidateOverlap = 0; // how many spans overlap
+
+        // The span group index of the start child. This indicates the span group index of the
+        // next focusable item to receive focus, if a focusable item within the same span group
+        // exists. Any focusable item beyond this group index are not relevant since they
+        // were already stored in the layout before onFocusSearchFailed call and were not picked
+        // by the focusSearch algorithm.
+        int focusableSpanGroupIndex = getSpanGroupIndex(recycler, state, start);
         for (int i = start; i != limit; i += inc) {
+            int spanGroupIndex = getSpanGroupIndex(recycler, state, i);
             View candidate = getChildAt(i);
             if (candidate == prevFocusedChild) {
                 break;
             }
-            if (!candidate.isFocusable()) {
+
+            if (candidate.hasFocusable() && spanGroupIndex != focusableSpanGroupIndex) {
+                // We are past the allowable span group index for the next focusable item.
+                // The search only continues if no focusable weak candidates have been found up
+                // until this point, in order to find the best unfocusable candidate to become
+                // visible on the screen next.
+                if (focusableWeakCandidate != null) {
+                    break;
+                }
                 continue;
             }
+
             final LayoutParams candidateLp = (LayoutParams) candidate.getLayoutParams();
             final int candidateStart = candidateLp.mSpanIndex;
             final int candidateEnd = candidateLp.mSpanIndex + candidateLp.mSpanSize;
-            if (candidateStart == prevSpanStart && candidateEnd == prevSpanEnd) {
+            if (candidate.hasFocusable() && candidateStart == prevSpanStart
+                    && candidateEnd == prevSpanEnd) {
                 return candidate; // perfect match
             }
             boolean assignAsWeek = false;
-            if (weakCandidate == null) {
+            if ((candidate.hasFocusable() && focusableWeakCandidate == null)
+                    || (!candidate.hasFocusable() && unfocusableWeakCandidate == null)) {
                 assignAsWeek = true;
             } else {
                 int maxStart = Math.max(candidateStart, prevSpanStart);
                 int minEnd = Math.min(candidateEnd, prevSpanEnd);
                 int overlap = minEnd - maxStart;
-                if (overlap > weakCandidateOverlap) {
-                    assignAsWeek = true;
-                } else if (overlap == weakCandidateOverlap &&
-                        preferLastSpan == (candidateStart > weakCandidateSpanIndex)) {
-                    assignAsWeek = true;
+                if (candidate.hasFocusable()) {
+                    if (overlap > focusableWeakCandidateOverlap) {
+                        assignAsWeek = true;
+                    } else if (overlap == focusableWeakCandidateOverlap
+                            && preferLastSpan == (candidateStart
+                            > focusableWeakCandidateSpanIndex)) {
+                        assignAsWeek = true;
+                    }
+                } else if (focusableWeakCandidate == null
+                        && isViewPartiallyVisible(candidate, false, true)) {
+                    if (overlap > unfocusableWeakCandidateOverlap) {
+                        assignAsWeek = true;
+                    } else if (overlap == unfocusableWeakCandidateOverlap
+                            && preferLastSpan == (candidateStart
+                                    > unfocusableWeakCandidateSpanIndex)) {
+                        assignAsWeek = true;
+                    }
                 }
             }
 
             if (assignAsWeek) {
-                weakCandidate = candidate;
-                weakCandidateSpanIndex = candidateLp.mSpanIndex;
-                weakCandidateOverlap = Math.min(candidateEnd, prevSpanEnd) -
-                        Math.max(candidateStart, prevSpanStart);
+                if (candidate.hasFocusable()) {
+                    focusableWeakCandidate = candidate;
+                    focusableWeakCandidateSpanIndex = candidateLp.mSpanIndex;
+                    focusableWeakCandidateOverlap = Math.min(candidateEnd, prevSpanEnd)
+                            - Math.max(candidateStart, prevSpanStart);
+                } else {
+                    unfocusableWeakCandidate = candidate;
+                    unfocusableWeakCandidateSpanIndex = candidateLp.mSpanIndex;
+                    unfocusableWeakCandidateOverlap = Math.min(candidateEnd, prevSpanEnd)
+                            - Math.max(candidateStart, prevSpanStart);
+                }
             }
         }
-        return weakCandidate;
+        return (focusableWeakCandidate != null) ? focusableWeakCandidate : unfocusableWeakCandidate;
     }
 
     @Override

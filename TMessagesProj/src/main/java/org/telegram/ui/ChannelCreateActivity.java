@@ -59,6 +59,7 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.AvatarUpdater;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
@@ -66,13 +67,13 @@ import java.util.ArrayList;
 public class ChannelCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, AvatarUpdater.AvatarUpdaterDelegate {
 
     private View doneButton;
-    private EditText nameTextView;
+    private EditTextBoldCursor nameTextView;
     private AlertDialog progressDialog;
     private ShadowSectionCell sectionCell;
     private BackupImageView avatarImage;
     private AvatarDrawable avatarDrawable;
     private AvatarUpdater avatarUpdater;
-    private EditText descriptionTextView;
+    private EditTextBoldCursor descriptionTextView;
     private TLRPC.FileLocation avatar;
     private String nameToSet;
     private LinearLayout linearLayout2;
@@ -330,7 +331,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 }
             });
 
-            nameTextView = new EditText(context);
+            nameTextView = new EditTextBoldCursor(context);
             nameTextView.setHint(LocaleController.getString("EnterChannelName", R.string.EnterChannelName));
             if (nameToSet != null) {
                 nameTextView.setText(nameToSet);
@@ -348,7 +349,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             inputFilters[0] = new InputFilter.LengthFilter(100);
             nameTextView.setFilters(inputFilters);
             nameTextView.setPadding(0, 0, 0, AndroidUtilities.dp(8));
-            AndroidUtilities.clearCursorDrawable(nameTextView);
+            nameTextView.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            nameTextView.setCursorSize(AndroidUtilities.dp(20));
+            nameTextView.setCursorWidth(1.5f);
             frameLayout.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 16 : 96, 0, LocaleController.isRTL ? 96 : 16, 0));
             nameTextView.addTextChangedListener(new TextWatcher() {
                 @Override
@@ -368,7 +371,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 }
             });
 
-            descriptionTextView = new EditText(context);
+            descriptionTextView = new EditTextBoldCursor(context);
             descriptionTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             descriptionTextView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
             descriptionTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -381,7 +384,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             inputFilters[0] = new InputFilter.LengthFilter(120);
             descriptionTextView.setFilters(inputFilters);
             descriptionTextView.setHint(LocaleController.getString("DescriptionPlaceholder", R.string.DescriptionPlaceholder));
-            AndroidUtilities.clearCursorDrawable(descriptionTextView);
+            descriptionTextView.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            descriptionTextView.setCursorSize(AndroidUtilities.dp(20));
+            descriptionTextView.setCursorWidth(1.5f);
             linearLayout.addView(descriptionTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 18, 24, 0));
             descriptionTextView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
@@ -486,7 +491,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
             publicContainer.addView(editText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 36));
 
-            nameTextView = new EditText(context);
+            nameTextView = new EditTextBoldCursor(context);
             nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             nameTextView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
             nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -498,7 +503,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             nameTextView.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
             nameTextView.setImeOptions(EditorInfo.IME_ACTION_DONE);
             nameTextView.setHint(LocaleController.getString("ChannelUsernamePlaceholder", R.string.ChannelUsernamePlaceholder));
-            AndroidUtilities.clearCursorDrawable(nameTextView);
+            nameTextView.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            nameTextView.setCursorSize(AndroidUtilities.dp(20));
+            nameTextView.setCursorWidth(1.5f);
             publicContainer.addView(nameTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36));
             nameTextView.addTextChangedListener(new TextWatcher() {
                 @Override
@@ -919,9 +926,6 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             case "USERNAME_OCCUPIED":
                 builder.setMessage(LocaleController.getString("LinkInUse", R.string.LinkInUse));
                 break;
-            case "USERNAMES_UNAVAILABLE":
-                builder.setMessage(LocaleController.getString("FeatureUnavailable", R.string.FeatureUnavailable));
-                break;
             default:
                 builder.setMessage(LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred));
                 break;
@@ -1004,7 +1008,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText),
                 new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_LINKCOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteLinkText),
                 new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"deleteButton"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText),
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, сellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, сellDelegate, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),

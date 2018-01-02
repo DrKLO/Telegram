@@ -92,6 +92,7 @@ public interface Renderer extends ExoPlayerComponent {
    * This method may be called when the renderer is in the following states:
    * {@link #STATE_DISABLED}.
    *
+   * @param configuration The renderer configuration.
    * @param formats The enabled formats.
    * @param stream The {@link SampleStream} from which the renderer should consume.
    * @param positionUs The player's current position.
@@ -100,8 +101,8 @@ public interface Renderer extends ExoPlayerComponent {
    *     before they are rendered.
    * @throws ExoPlaybackException If an error occurs.
    */
-  void enable(Format[] formats, SampleStream stream, long positionUs, boolean joining,
-      long offsetUs) throws ExoPlaybackException;
+  void enable(RendererConfiguration configuration, Format[] formats, SampleStream stream,
+      long positionUs, boolean joining, long offsetUs) throws ExoPlaybackException;
 
   /**
    * Starts the renderer, meaning that calls to {@link #render(long, long)} will cause media to be
@@ -149,7 +150,13 @@ public interface Renderer extends ExoPlayerComponent {
    * This method may be called when the renderer is in the following states:
    * {@link #STATE_ENABLED}, {@link #STATE_STARTED}.
    */
-  void setCurrentStreamIsFinal();
+  void setCurrentStreamFinal();
+
+  /**
+   * Returns whether the current {@link SampleStream} will be the final one supplied before the
+   * renderer is next disabled or reset.
+   */
+  boolean isCurrentStreamFinal();
 
   /**
    * Throws an error that's preventing the renderer from reading from its {@link SampleStream}. Does

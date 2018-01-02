@@ -72,7 +72,6 @@ public class ActionBarPopupWindow extends PopupWindow {
     public static class ActionBarPopupWindowLayout extends FrameLayout {
 
         private OnDispatchKeyEventListener mOnDispatchKeyEventListener;
-        protected Drawable backgroundDrawable;
         private float backScaleX = 1;
         private float backScaleY = 1;
         private int backAlpha = 255;
@@ -83,6 +82,8 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         private ScrollView scrollView;
         protected LinearLayout linearLayout;
+
+        protected Drawable backgroundDrawable;
 
         public ActionBarPopupWindowLayout(Context context) {
             super(context);
@@ -170,6 +171,10 @@ public class ActionBarPopupWindow extends PopupWindow {
                 }
             }
             invalidate();
+        }
+
+        public void setBackgroundDrawable(Drawable drawable) {
+            backgroundDrawable = drawable;
         }
 
         private void startChildAnimation(View child) {

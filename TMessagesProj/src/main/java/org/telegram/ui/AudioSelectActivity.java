@@ -69,7 +69,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioDidReset);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingDidReset);
         loadAudio();
         return true;
     }
@@ -78,8 +78,8 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidReset);
-        if (playingAudio != null && MediaController.getInstance().isPlayingAudio(playingAudio)) {
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingDidReset);
+        if (playingAudio != null && MediaController.getInstance().isPlayingMessage(playingAudio)) {
             MediaController.getInstance().cleanupPlayer(true, true);
         }
     }
@@ -168,7 +168,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.closeChats) {
             removeSelfFromStack();
-        } else if (id == NotificationCenter.audioDidReset) {
+        } else if (id == NotificationCenter.messagePlayingDidReset) {
             if (listViewAdapter != null) {
                 listViewAdapter.notifyDataSetChanged();
             }
@@ -225,6 +225,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
                         message.message = "-1";
                         message.attachPath = audioEntry.path;
                         message.media = new TLRPC.TL_messageMediaDocument();
+                        message.media.flags |= 3;
                         message.media.document = new TLRPC.TL_document();
                         message.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
 

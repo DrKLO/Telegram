@@ -18,8 +18,11 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ShortcutInfo;
+import android.content.pm.ShortcutManager;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.database.Cursor;
@@ -38,6 +41,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -59,13 +63,13 @@ import android.view.Display;
 import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.OvershootInterpolator;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.EdgeEffect;
-import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.ScrollView;
-import android.widget.TextView;
 
 import com.android.internal.telephony.ITelephony;
 
@@ -80,6 +84,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.TypefaceSpan;
 
@@ -111,12 +116,16 @@ public class AndroidUtilities {
     public static int statusBarHeight = 0;
     public static float density = 1;
     public static Point displaySize = new Point();
+    public static int roundMessageSize;
     public static boolean incorrectDisplaySizeFix;
     public static Integer photoSize = null;
     public static DisplayMetrics displayMetrics = new DisplayMetrics();
     public static int leftBaseline;
     public static boolean usingHardwareInput;
     public static boolean isInMultiwindow;
+
+    public static DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator();
+    public static OvershootInterpolator overshootInterpolator = new OvershootInterpolator();
 
     private static Boolean isTablet = null;
     private static int adjustOwnerClassGuid = 0;
@@ -549,6 +558,13 @@ public class AndroidUtilities {
                     displaySize.y = newSize;
                 }
             }
+            if (roundMessageSize == 0) {
+                if (AndroidUtilities.isTablet()) {
+                    roundMessageSize = (int) (AndroidUtilities.getMinTabletSide() * 0.6f);
+                } else {
+                    roundMessageSize = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.6f);
+                }
+            }
             FileLog.e("display size = " + displaySize.x + " " + displaySize.y + " " + displayMetrics.xdpi + "x" + displayMetrics.ydpi);
         } catch (Exception e) {
             FileLog.e(e);
@@ -628,16 +644,12 @@ public class AndroidUtilities {
 
     public static int getPhotoSize() {
         if (photoSize == null) {
-            if (Build.VERSION.SDK_INT >= 16) {
-                photoSize = 1280;
-            } else {
-                photoSize = 800;
-            }
+            photoSize = 1280;
         }
         return photoSize;
     }
 
-    public static void clearCursorDrawable(EditText editText) {
+    /*public static void clearCursorDrawable(EditText editText) {
         if (editText == null) {
             return;
         }
@@ -648,7 +660,7 @@ public class AndroidUtilities {
         } catch (Exception e) {
             FileLog.e(e);
         }
-    }
+    }*/
 
     private static ContentObserver callLogContentObserver;
     private static Runnable unregisterRunnable;
@@ -807,79 +819,110 @@ public class AndroidUtilities {
         }
     }
 
-    private static Intent createShortcutIntent(long did, boolean forDelete) {
+    private static Intent createIntrnalShortcutIntent(long did) {
         Intent shortcutIntent = new Intent(ApplicationLoader.applicationContext, OpenChatReceiver.class);
 
         int lower_id = (int) did;
         int high_id = (int) (did >> 32);
 
-        TLRPC.User user = null;
-        TLRPC.Chat chat = null;
         if (lower_id == 0) {
             shortcutIntent.putExtra("encId", high_id);
             TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(high_id);
             if (encryptedChat == null) {
                 return null;
             }
-            user = MessagesController.getInstance().getUser(encryptedChat.user_id);
         } else if (lower_id > 0) {
             shortcutIntent.putExtra("userId", lower_id);
-            user = MessagesController.getInstance().getUser(lower_id);
         } else if (lower_id < 0) {
-            chat = MessagesController.getInstance().getChat(-lower_id);
             shortcutIntent.putExtra("chatId", -lower_id);
         } else {
             return null;
         }
-        if (user == null && chat == null) {
-            return null;
-        }
-
-        String name;
-        TLRPC.FileLocation photo = null;
-
-        if (user != null) {
-            name = ContactsController.formatName(user.first_name, user.last_name);
-            if (user.photo != null) {
-                photo = user.photo.photo_small;
-            }
-        } else {
-            name = chat.title;
-            if (chat.photo != null) {
-                photo = chat.photo.photo_small;
-            }
-        }
-
         shortcutIntent.setAction("com.tmessages.openchat" + did);
         shortcutIntent.addFlags(0x4000000);
+        return shortcutIntent;
+    }
 
-        Intent addIntent = new Intent();
-        addIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent);
-        addIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, name);
-        addIntent.putExtra("duplicate", false);
-        if (!forDelete) {
+    public static void installShortcut(long did) {
+        try {
+
+            Intent shortcutIntent = createIntrnalShortcutIntent(did);
+
+            int lower_id = (int) did;
+            int high_id = (int) (did >> 32);
+
+            TLRPC.User user = null;
+            TLRPC.Chat chat = null;
+            if (lower_id == 0) {
+                TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(high_id);
+                if (encryptedChat == null) {
+                    return;
+                }
+                user = MessagesController.getInstance().getUser(encryptedChat.user_id);
+            } else if (lower_id > 0) {
+                user = MessagesController.getInstance().getUser(lower_id);
+            } else if (lower_id < 0) {
+                chat = MessagesController.getInstance().getChat(-lower_id);
+            } else {
+                return;
+            }
+            if (user == null && chat == null) {
+                return;
+            }
+
+            String name;
+            TLRPC.FileLocation photo = null;
+
+            boolean selfUser = false;
+
+            if (user != null) {
+                if (UserObject.isUserSelf(user)) {
+                    name = LocaleController.getString("SavedMessages", R.string.SavedMessages);
+                    selfUser = true;
+                } else {
+                    name = ContactsController.formatName(user.first_name, user.last_name);
+                    if (user.photo != null) {
+                        photo = user.photo.photo_small;
+                    }
+                }
+            } else {
+                name = chat.title;
+                if (chat.photo != null) {
+                    photo = chat.photo.photo_small;
+                }
+            }
+
             Bitmap bitmap = null;
-            if (photo != null) {
+            if (selfUser || photo != null) {
                 try {
-                    File path = FileLoader.getPathToAttach(photo, true);
-                    bitmap = BitmapFactory.decodeFile(path.toString());
-                    if (bitmap != null) {
+                    if (!selfUser) {
+                        File path = FileLoader.getPathToAttach(photo, true);
+                        bitmap = BitmapFactory.decodeFile(path.toString());
+                    }
+                    if (selfUser || bitmap != null) {
                         int size = AndroidUtilities.dp(58);
                         Bitmap result = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
                         result.eraseColor(Color.TRANSPARENT);
                         Canvas canvas = new Canvas(result);
-                        BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-                        if (roundPaint == null) {
-                            roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                            bitmapRect = new RectF();
+                        if (selfUser) {
+                            AvatarDrawable avatarDrawable = new AvatarDrawable(user);
+                            avatarDrawable.setSavedMessages(1);
+                            avatarDrawable.setBounds(0, 0, size, size);
+                            avatarDrawable.draw(canvas);
+                        } else {
+                            BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                            if (roundPaint == null) {
+                                roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                                bitmapRect = new RectF();
+                            }
+                            float scale = size / (float) bitmap.getWidth();
+                            canvas.save();
+                            canvas.scale(scale, scale);
+                            roundPaint.setShader(shader);
+                            bitmapRect.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
+                            canvas.drawRoundRect(bitmapRect, bitmap.getWidth(), bitmap.getHeight(), roundPaint);
+                            canvas.restore();
                         }
-                        float scale = size / (float) bitmap.getWidth();
-                        canvas.save();
-                        canvas.scale(scale, scale);
-                        roundPaint.setShader(shader);
-                        bitmapRect.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
-                        canvas.drawRoundRect(bitmapRect, bitmap.getWidth(), bitmap.getHeight(), roundPaint);
-                        canvas.restore();
                         Drawable drawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.book_logo);
                         int w = AndroidUtilities.dp(15);
                         int left = size - w - AndroidUtilities.dp(2);
@@ -897,32 +940,60 @@ public class AndroidUtilities {
                     FileLog.e(e);
                 }
             }
-            if (bitmap != null) {
-                addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmap);
-            } else {
-                if (user != null) {
-                    if (user.bot) {
-                        addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(ApplicationLoader.applicationContext, R.drawable.book_bot));
-                    } else {
-                        addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(ApplicationLoader.applicationContext, R.drawable.book_user));
-                    }
-                } else if (chat != null) {
-                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                        addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(ApplicationLoader.applicationContext, R.drawable.book_channel));
-                    } else {
-                        addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(ApplicationLoader.applicationContext, R.drawable.book_group));
+
+            if (Build.VERSION.SDK_INT >= 26) {
+                ShortcutInfo.Builder pinShortcutInfo =
+                        new ShortcutInfo.Builder(ApplicationLoader.applicationContext, "sdid_" + did)
+                                .setShortLabel(name)
+                                .setIntent(shortcutIntent);
+
+                if (bitmap != null) {
+                    pinShortcutInfo.setIcon(Icon.createWithBitmap(bitmap));
+                } else {
+                    if (user != null) {
+                        if (user.bot) {
+                            pinShortcutInfo.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_bot));
+                        } else {
+                            pinShortcutInfo.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_user));
+                        }
+                    } else if (chat != null) {
+                        if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                            pinShortcutInfo.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_channel));
+                        } else {
+                            pinShortcutInfo.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_group));
+                        }
                     }
                 }
-            }
-        }
-        return addIntent;
-    }
 
-    public static void installShortcut(long did) {
-        try {
-            Intent addIntent = createShortcutIntent(did, false);
-            addIntent.setAction("com.android.launcher.action.INSTALL_SHORTCUT");
-            ApplicationLoader.applicationContext.sendBroadcast(addIntent);
+                ShortcutManager shortcutManager = ApplicationLoader.applicationContext.getSystemService(ShortcutManager.class);
+                shortcutManager.requestPinShortcut(pinShortcutInfo.build(), null);
+            } else {
+                Intent addIntent = new Intent();
+                if (bitmap != null) {
+                    addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmap);
+                } else {
+                    if (user != null) {
+                        if (user.bot) {
+                            addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(ApplicationLoader.applicationContext, R.drawable.book_bot));
+                        } else {
+                            addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(ApplicationLoader.applicationContext, R.drawable.book_user));
+                        }
+                    } else if (chat != null) {
+                        if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                            addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(ApplicationLoader.applicationContext, R.drawable.book_channel));
+                        } else {
+                            addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(ApplicationLoader.applicationContext, R.drawable.book_group));
+                        }
+                    }
+                }
+
+                addIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent);
+                addIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, name);
+                addIntent.putExtra("duplicate", false);
+
+                addIntent.setAction("com.android.launcher.action.INSTALL_SHORTCUT");
+                ApplicationLoader.applicationContext.sendBroadcast(addIntent);
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -930,9 +1001,50 @@ public class AndroidUtilities {
 
     public static void uninstallShortcut(long did) {
         try {
-            Intent addIntent = createShortcutIntent(did, true);
-            addIntent.setAction("com.android.launcher.action.UNINSTALL_SHORTCUT");
-            ApplicationLoader.applicationContext.sendBroadcast(addIntent);
+            if (Build.VERSION.SDK_INT >= 26) {
+                ShortcutManager shortcutManager = ApplicationLoader.applicationContext.getSystemService(ShortcutManager.class);
+                ArrayList<String> arrayList = new ArrayList<>();
+                arrayList.add("sdid_" + did);
+                shortcutManager.removeDynamicShortcuts(arrayList);
+            } else {
+                int lower_id = (int) did;
+                int high_id = (int) (did >> 32);
+
+                TLRPC.User user = null;
+                TLRPC.Chat chat = null;
+                if (lower_id == 0) {
+                    TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(high_id);
+                    if (encryptedChat == null) {
+                        return;
+                    }
+                    user = MessagesController.getInstance().getUser(encryptedChat.user_id);
+                } else if (lower_id > 0) {
+                    user = MessagesController.getInstance().getUser(lower_id);
+                } else if (lower_id < 0) {
+                    chat = MessagesController.getInstance().getChat(-lower_id);
+                } else {
+                    return;
+                }
+                if (user == null && chat == null) {
+                    return;
+                }
+
+                String name;
+
+                if (user != null) {
+                    name = ContactsController.formatName(user.first_name, user.last_name);
+                } else {
+                    name = chat.title;
+                }
+
+                Intent addIntent = new Intent();
+                addIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, createIntrnalShortcutIntent(did));
+                addIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, name);
+                addIntent.putExtra("duplicate", false);
+
+                addIntent.setAction("com.android.launcher.action.UNINSTALL_SHORTCUT");
+                ApplicationLoader.applicationContext.sendBroadcast(addIntent);
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -1107,6 +1219,15 @@ public class AndroidUtilities {
                     bolds.add(start);
                     bolds.add(end);
                 }
+                while ((start = stringBuilder.indexOf("**")) != -1) {
+                    stringBuilder.replace(start, start + 2, "");
+                    end = stringBuilder.indexOf("**");
+                    if (end >= 0) {
+                        stringBuilder.replace(end, end + 2, "");
+                        bolds.add(start);
+                        bolds.add(end);
+                    }
+                }
             }
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(stringBuilder);
             for (int a = 0; a < bolds.size() / 2; a++) {
@@ -1125,7 +1246,8 @@ public class AndroidUtilities {
             ForegroundDetector.getInstance().resetBackgroundVar();
         }
         return UserConfig.passcodeHash.length() > 0 && wasInBackground &&
-                (UserConfig.appLocked || UserConfig.autoLockIn != 0 && UserConfig.lastPauseTime != 0 && !UserConfig.appLocked && (UserConfig.lastPauseTime + UserConfig.autoLockIn) <= ConnectionsManager.getInstance().getCurrentTime());
+                (UserConfig.appLocked || UserConfig.autoLockIn != 0 && UserConfig.lastPauseTime != 0 && !UserConfig.appLocked &&
+                        (UserConfig.lastPauseTime + UserConfig.autoLockIn) <= ConnectionsManager.getInstance().getCurrentTime() || ConnectionsManager.getInstance().getCurrentTime() + 5 < UserConfig.lastPauseTime);
     }
 
     public static void shakeView(final View view, final float x, final int num) {
@@ -1337,8 +1459,8 @@ public class AndroidUtilities {
                 }
                 return value;
             }
-        } catch (Exception e) {
-            FileLog.e(e);
+        } catch (Exception ignore) {
+
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -1362,7 +1484,9 @@ public class AndroidUtilities {
     public static File generatePicturePath() {
         try {
             File storageDir = getAlbumDir();
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
+            Date date = new Date();
+            date.setTime(System.currentTimeMillis() + Utilities.random.nextInt(1000) + 1);
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(date);
             return new File(storageDir, "IMG_" + timeStamp + ".jpg");
         } catch (Exception e) {
             FileLog.e(e);
@@ -1409,7 +1533,7 @@ public class AndroidUtilities {
             lastIndex = end;
         }
 
-        if (lastIndex != -1 && lastIndex != wholeString.length()) {
+        if (lastIndex != -1 && lastIndex < wholeString.length()) {
             builder.append(wholeString.substring(lastIndex, wholeString.length()));
         }
 
@@ -1419,7 +1543,9 @@ public class AndroidUtilities {
     public static File generateVideoPath() {
         try {
             File storageDir = getAlbumDir();
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
+            Date date = new Date();
+            date.setTime(System.currentTimeMillis() + Utilities.random.nextInt(1000) + 1);
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(date);
             return new File(storageDir, "VID_" + timeStamp + ".mp4");
         } catch (Exception e) {
             FileLog.e(e);
@@ -1606,6 +1732,10 @@ public class AndroidUtilities {
         }
     }
 
+    public static boolean isBannedForever(int time) {
+        return Math.abs(time - System.currentTimeMillis() / 1000) > 5 * 365 * 24 * 60 * 60;
+    }
+
     public static void setRectToRect(Matrix matrix, RectF src, RectF dst, int rotation, Matrix.ScaleToFit align) {
         float tx, sx;
         float ty, sy;
@@ -1640,5 +1770,105 @@ public class AndroidUtilities {
 
         matrix.preScale(sx, sy);
         matrix.preTranslate(tx, ty);
+    }
+
+    public static boolean handleProxyIntent(Activity activity, Intent intent) {
+        if (intent == null) {
+            return false;
+        }
+        try {
+            if ((intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) {
+                return false;
+            }
+            Uri data = intent.getData();
+            if (data != null) {
+                String user = null;
+                String password = null;
+                String port = null;
+                String address = null;
+                String scheme = data.getScheme();
+                if (scheme != null) {
+                    if ((scheme.equals("http") || scheme.equals("https"))) {
+                        String host = data.getHost().toLowerCase();
+                        if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog") || host.equals("telesco.pe")) {
+                            String path = data.getPath();
+                            if (path != null) {
+                                if (path.startsWith("/socks")) {
+                                    address = data.getQueryParameter("server");
+                                    port = data.getQueryParameter("port");
+                                    user = data.getQueryParameter("user");
+                                    password = data.getQueryParameter("pass");
+                                }
+                            }
+                        }
+                    } else if (scheme.equals("tg")) {
+                        String url = data.toString();
+                        if (url.startsWith("tg:socks") || url.startsWith("tg://socks")) {
+                            url = url.replace("tg:proxy", "tg://telegram.org").replace("tg://proxy", "tg://telegram.org");
+                            data = Uri.parse(url);
+                            address = data.getQueryParameter("server");
+                            port = data.getQueryParameter("port");
+                            user = data.getQueryParameter("user");
+                            password = data.getQueryParameter("pass");
+                        }
+                    }
+                }
+                if (!TextUtils.isEmpty(address) && !TextUtils.isEmpty(port)) {
+                    if (user == null) {
+                        user = "";
+                    }
+                    if (password == null) {
+                        password = "";
+                    }
+                    showProxyAlert(activity, address, port, user, password);
+                    return true;
+                }
+            }
+        } catch (Exception ignore) {
+
+        }
+        return false;
+    }
+
+    public static void showProxyAlert(Activity activity, final String address, final String port, final String user, final String password) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        builder.setTitle(LocaleController.getString("Proxy", R.string.Proxy));
+        StringBuilder stringBuilder = new StringBuilder(LocaleController.getString("EnableProxyAlert", R.string.EnableProxyAlert));
+        stringBuilder.append("\n\n");
+        stringBuilder.append(LocaleController.getString("UseProxyAddress", R.string.UseProxyAddress)).append(": ").append(address).append("\n");
+        stringBuilder.append(LocaleController.getString("UseProxyPort", R.string.UseProxyPort)).append(": ").append(port).append("\n");
+        if (!TextUtils.isEmpty(user)) {
+            stringBuilder.append(LocaleController.getString("UseProxyUsername", R.string.UseProxyUsername)).append(": ").append(user).append("\n");
+        }
+        if (!TextUtils.isEmpty(password)) {
+            stringBuilder.append(LocaleController.getString("UseProxyPassword", R.string.UseProxyPassword)).append(": ").append(password).append("\n");
+        }
+        stringBuilder.append("\n").append(LocaleController.getString("EnableProxyAlert2", R.string.EnableProxyAlert2));
+        builder.setMessage(stringBuilder.toString());
+        builder.setPositiveButton(LocaleController.getString("ConnectingToProxyEnable", R.string.ConnectingToProxyEnable), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit();
+                editor.putBoolean("proxy_enabled", true);
+                editor.putString("proxy_ip", address);
+                int p = Utilities.parseInt(port);
+                editor.putInt("proxy_port", p);
+                if (TextUtils.isEmpty(password)) {
+                    editor.remove("proxy_pass");
+                } else {
+                    editor.putString("proxy_pass", password);
+                }
+                if (TextUtils.isEmpty(user)) {
+                    editor.remove("proxy_user");
+                } else {
+                    editor.putString("proxy_user", user);
+                }
+                editor.commit();
+                ConnectionsManager.native_setProxySettings(address, p, user, password);
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+        builder.show().setCanceledOnTouchOutside(true);
     }
 }

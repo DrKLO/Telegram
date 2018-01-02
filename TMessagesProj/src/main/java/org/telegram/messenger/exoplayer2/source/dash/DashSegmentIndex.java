@@ -26,12 +26,10 @@ public interface DashSegmentIndex {
   int INDEX_UNBOUNDED = -1;
 
   /**
-   * Returns the segment number of the segment containing a given media time.
-   * <p>
-   * If the given media time is outside the range of the index, then the returned segment number is
-   * clamped to {@link #getFirstSegmentNum()} (if the given media time is earlier the start of the
-   * first segment) or {@link #getLastSegmentNum(long)} (if the given media time is later then the
-   * end of the last segment).
+   * Returns {@code getFirstSegmentNum()} if the index has no segments or if the given media time is
+   * earlier than the start of the first segment. Returns {@code getFirstSegmentNum() +
+   * getSegmentCount() - 1} if the given media time is later than the end of the last segment.
+   * Otherwise, returns the segment number of the segment containing the given media time.
    *
    * @param timeUs The time in microseconds.
    * @param periodDurationUs The duration of the enclosing period in microseconds, or
@@ -74,7 +72,7 @@ public interface DashSegmentIndex {
   int getFirstSegmentNum();
 
   /**
-   * Returns the segment number of the last segment, or {@link #INDEX_UNBOUNDED}.
+   * Returns the number of segments in the index, or {@link #INDEX_UNBOUNDED}.
    * <p>
    * An unbounded index occurs if a dynamic manifest uses SegmentTemplate elements without a
    * SegmentTimeline element, and if the period duration is not yet known. In this case the caller
@@ -82,9 +80,9 @@ public interface DashSegmentIndex {
    *
    * @param periodDurationUs The duration of the enclosing period in microseconds, or
    *     {@link C#TIME_UNSET} if the period's duration is not yet known.
-   * @return The segment number of the last segment, or {@link #INDEX_UNBOUNDED}.
+   * @return The number of segments in the index, or {@link #INDEX_UNBOUNDED}.
    */
-  int getLastSegmentNum(long periodDurationUs);
+  int getSegmentCount(long periodDurationUs);
 
   /**
    * Returns true if segments are defined explicitly by the index.

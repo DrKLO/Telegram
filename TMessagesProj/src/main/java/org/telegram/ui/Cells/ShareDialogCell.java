@@ -17,8 +17,10 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -66,16 +68,21 @@ public class ShareDialogCell extends FrameLayout {
         TLRPC.FileLocation photo = null;
         if (uid > 0) {
             TLRPC.User user = MessagesController.getInstance().getUser(uid);
-            if (name != null) {
-                nameTextView.setText(name);
-            } else if (user != null) {
-                nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
-            } else {
-                nameTextView.setText("");
-            }
             avatarDrawable.setInfo(user);
-            if (user != null && user.photo != null) {
-                photo = user.photo.photo_small;
+            if (UserObject.isUserSelf(user)) {
+                nameTextView.setText(LocaleController.getString("SavedMessages", R.string.SavedMessages));
+                avatarDrawable.setSavedMessages(1);
+            } else {
+                if (name != null) {
+                    nameTextView.setText(name);
+                } else if (user != null) {
+                    nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
+                } else {
+                    nameTextView.setText("");
+                }
+                if (user != null && user.photo != null) {
+                    photo = user.photo.photo_small;
+                }
             }
         } else {
             TLRPC.Chat chat = MessagesController.getInstance().getChat(-uid);

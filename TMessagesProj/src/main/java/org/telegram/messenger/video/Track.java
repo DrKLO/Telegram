@@ -8,7 +8,6 @@
 
 package org.telegram.messenger.video;
 
-import android.annotation.TargetApi;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
@@ -35,7 +34,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-@TargetApi(16)
 public class Track {
 
     private class SamplePresentationTime {
@@ -84,12 +82,10 @@ public class Track {
         samplingFrequencyIndexMap.put(8000, 0xb);
     }
 
-    public Track(int id, MediaFormat format, boolean audio) throws Exception {
+    public Track(int id, MediaFormat format, boolean audio) {
         trackId = id;
         isAudio = audio;
         if (!isAudio) {
-            //sampleDurations.add((long) 3015);
-            //duration = 3015;
             width = format.getInteger(MediaFormat.KEY_WIDTH);
             height = format.getInteger(MediaFormat.KEY_HEIGHT);
             timeScale = 90000;
@@ -210,8 +206,6 @@ public class Track {
                 sampleDescriptionBox.addBox(visualSampleEntry);
             }
         } else {
-            //sampleDurations.add((long) 1024);
-            //duration = 1024;
             volume = 1;
             timeScale = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
             handler = "soun";
@@ -235,8 +229,12 @@ public class Track {
             decoderConfigDescriptor.setObjectTypeIndication(0x40);
             decoderConfigDescriptor.setStreamType(5);
             decoderConfigDescriptor.setBufferSizeDB(1536);
-            decoderConfigDescriptor.setMaxBitRate(96000);
-            decoderConfigDescriptor.setAvgBitRate(96000);
+            if (format.containsKey("max-bitrate")) {
+                decoderConfigDescriptor.setMaxBitRate(format.getInteger("max-bitrate"));
+            } else {
+                decoderConfigDescriptor.setMaxBitRate(96000);
+            }
+            decoderConfigDescriptor.setAvgBitRate(timeScale);
 
             AudioSpecificConfig audioSpecificConfig = new AudioSpecificConfig();
             audioSpecificConfig.setAudioObjectType(2);

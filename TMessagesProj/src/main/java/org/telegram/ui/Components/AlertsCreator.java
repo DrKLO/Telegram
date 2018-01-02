@@ -14,8 +14,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -27,6 +30,7 @@ import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SecretChatHelper;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
@@ -35,8 +39,11 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.CacheControlActivity;
 import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.TextColorCell;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ReportOtherActivity;
 
 public class AlertsCreator {
@@ -49,7 +56,8 @@ public class AlertsCreator {
                 request instanceof TLRPC.TL_channels_editAdmin ||
                 request instanceof TLRPC.TL_channels_inviteToChannel ||
                 request instanceof TLRPC.TL_messages_addChatUser ||
-                request instanceof TLRPC.TL_messages_startBot) {
+                request instanceof TLRPC.TL_messages_startBot ||
+                request instanceof TLRPC.TL_channels_editBanned) {
             if (fragment != null) {
                 AlertsCreator.showAddUserAlert(error.text, fragment, (Boolean) args[0]);
             } else {
@@ -158,9 +166,6 @@ public class AlertsCreator {
                     break;
                 case "USERNAME_OCCUPIED":
                     showSimpleAlert(fragment, LocaleController.getString("UsernameInUse", R.string.UsernameInUse));
-                    break;
-                case "USERNAMES_UNAVAILABLE":
-                    showSimpleAlert(fragment, LocaleController.getString("FeatureUnavailable", R.string.FeatureUnavailable));
                     break;
                 default:
                     showSimpleAlert(fragment, LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred));
@@ -352,6 +357,21 @@ public class AlertsCreator {
         fragment.showDialog(builder.create(), true, null);
     }
 
+    public static void showSendMediaAlert(int result, final BaseFragment fragment) {
+        if (result == 0) {
+            return;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
+        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        if (result == 1) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedStickers", R.string.ErrorSendRestrictedStickers));
+        } else if (result == 2) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedMedia", R.string.ErrorSendRestrictedMedia));
+        }
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+        fragment.showDialog(builder.create(), true, null);
+    }
+
     public static void showAddUserAlert(String error, final BaseFragment fragment, boolean isChannel) {
         if (error == null || fragment == null || fragment.getParentActivity() == null) {
             return;
@@ -421,8 +441,18 @@ public class AlertsCreator {
             case "YOU_BLOCKED_USER":
                 builder.setMessage(LocaleController.getString("YouBlockedUser", R.string.YouBlockedUser));
                 break;
+            case "CHAT_ADMIN_BAN_REQUIRED":
+            case "USER_KICKED":
+                builder.setMessage(LocaleController.getString("AddAdminErrorBlacklisted", R.string.AddAdminErrorBlacklisted));
+                break;
+            case "CHAT_ADMIN_INVITE_REQUIRED":
+                builder.setMessage(LocaleController.getString("AddAdminErrorNotAMember", R.string.AddAdminErrorNotAMember));
+                break;
+            case "USER_ADMIN_INVALID":
+                builder.setMessage(LocaleController.getString("AddBannedErrorAdmin", R.string.AddBannedErrorAdmin));
+                break;
             default:
-                builder.setMessage(error);
+                builder.setMessage(LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error);
                 break;
         }
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
@@ -586,7 +616,7 @@ public class AlertsCreator {
             RadioColorCell cell = new RadioColorCell(parentActivity);
             cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
             cell.setTag(a);
-            cell.setCheckColor(0xffb3b3b3, 0xff37a9f0);
+            cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
             cell.setTextAndValue(descriptions[a], selected[0] == a);
             linearLayout.addView(cell);
             cell.setOnClickListener(new View.OnClickListener() {
@@ -636,6 +666,154 @@ public class AlertsCreator {
         return builder.create();
     }
 
+    public static Dialog createLocationUpdateDialog(final Activity parentActivity, TLRPC.User user, final MessagesStorage.IntCallback callback) {
+        final int selected[] = new int[1];
+
+        String[] descriptions = new String[]{
+                LocaleController.getString("SendLiveLocationFor15m", R.string.SendLiveLocationFor15m),
+                LocaleController.getString("SendLiveLocationFor1h", R.string.SendLiveLocationFor1h),
+                LocaleController.getString("SendLiveLocationFor8h", R.string.SendLiveLocationFor8h),
+        };
+
+        final LinearLayout linearLayout = new LinearLayout(parentActivity);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+
+        TextView titleTextView = new TextView(parentActivity);
+        if (user != null) {
+            titleTextView.setText(LocaleController.formatString("LiveLocationAlertPrivate", R.string.LiveLocationAlertPrivate, UserObject.getFirstName(user)));
+        } else {
+            titleTextView.setText(LocaleController.getString("LiveLocationAlertGroup", R.string.LiveLocationAlertGroup));
+        }
+        titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        titleTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+        linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 0, 24, 8));
+
+        for (int a = 0; a < descriptions.length; a++) {
+            RadioColorCell cell = new RadioColorCell(parentActivity);
+            cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+            cell.setTag(a);
+            cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
+            cell.setTextAndValue(descriptions[a], selected[0] == a);
+            linearLayout.addView(cell);
+            cell.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    int num = (Integer) v.getTag();
+                    selected[0] = num;
+                    int count = linearLayout.getChildCount();
+                    for (int a = 0; a < count; a++) {
+                        View child = linearLayout.getChildAt(a);
+                        if (child instanceof RadioColorCell) {
+                            ((RadioColorCell) child).setChecked(child == v, true);
+                        }
+                    }
+                }
+            });
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+        builder.setTopImage(new ShareLocationDrawable(parentActivity, false), Theme.getColor(Theme.key_dialogTopBackground));
+        builder.setView(linearLayout);
+        builder.setPositiveButton(LocaleController.getString("ShareFile", R.string.ShareFile), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                int time;
+                if (selected[0] == 0) {
+                    time = 15 * 60;
+                } else if (selected[0] == 1) {
+                    time = 60 * 60;
+                } else {
+                    time = 8 * 60 * 60;
+                }
+                callback.run(time);
+            }
+        });
+        builder.setNeutralButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+        return builder.create();
+    }
+
+    public static Dialog createFreeSpaceDialog(final LaunchActivity parentActivity) {
+        final int selected[] = new int[1];
+
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        int keepMedia = preferences.getInt("keep_media", 2);
+        if (keepMedia == 2) {
+            selected[0] = 3;
+        } else if (keepMedia == 0) {
+            selected[0] = 1;
+        } else if (keepMedia == 1) {
+            selected[0] = 2;
+        } else if (keepMedia == 3) {
+            selected[0] = 0;
+        }
+
+        String[] descriptions = new String[]{
+                LocaleController.formatPluralString("Days", 3),
+                LocaleController.formatPluralString("Weeks", 1),
+                LocaleController.formatPluralString("Months", 1),
+                LocaleController.getString("LowDiskSpaceNeverRemove", R.string.LowDiskSpaceNeverRemove)
+        };
+
+        final LinearLayout linearLayout = new LinearLayout(parentActivity);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+
+        TextView titleTextView = new TextView(parentActivity);
+        titleTextView.setText(LocaleController.getString("LowDiskSpaceTitle2", R.string.LowDiskSpaceTitle2));
+        titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+        linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 0, 24, 8));
+
+        for (int a = 0; a < descriptions.length; a++) {
+            RadioColorCell cell = new RadioColorCell(parentActivity);
+            cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+            cell.setTag(a);
+            cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
+            cell.setTextAndValue(descriptions[a], selected[0] == a);
+            linearLayout.addView(cell);
+            cell.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    int num = (Integer) v.getTag();
+                    if (num == 0) {
+                        selected[0] = 3;
+                    } else if (num == 1) {
+                        selected[0] = 0;
+                    } else if (num == 2) {
+                        selected[0] = 1;
+                    } else if (num == 3) {
+                        selected[0] = 2;
+                    }
+                    int count = linearLayout.getChildCount();
+                    for (int a = 0; a < count; a++) {
+                        View child = linearLayout.getChildAt(a);
+                        if (child instanceof RadioColorCell) {
+                            ((RadioColorCell) child).setChecked(child == v, true);
+                        }
+                    }
+                }
+            });
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+        builder.setTitle(LocaleController.getString("LowDiskSpaceTitle", R.string.LowDiskSpaceTitle));
+        builder.setMessage(LocaleController.getString("LowDiskSpaceMessage", R.string.LowDiskSpaceMessage));
+        builder.setView(linearLayout);
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit().putInt("keep_media", selected[0]).commit();
+            }
+        });
+        builder.setNeutralButton(LocaleController.getString("ClearMediaCache", R.string.ClearMediaCache), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                parentActivity.presentFragment(new CacheControlActivity());
+            }
+        });
+        return builder.create();
+    }
+
     public static Dialog createPrioritySelectDialog(Activity parentActivity, final BaseFragment parentFragment, final long dialog_id, final boolean globalGroup, final boolean globalAll, final Runnable onSelect) {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
         final int selected[] = new int[1];
@@ -673,7 +851,7 @@ public class AlertsCreator {
             RadioColorCell cell = new RadioColorCell(parentActivity);
             cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
             cell.setTag(a);
-            cell.setCheckColor(0xffb3b3b3, 0xff37a9f0);
+            cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
             cell.setTextAndValue(descriptions[a], selected[0] == a);
             linearLayout.addView(cell);
             cell.setOnClickListener(new View.OnClickListener() {
@@ -732,7 +910,7 @@ public class AlertsCreator {
             RadioColorCell cell = new RadioColorCell(parentActivity);
             cell.setTag(a);
             cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
-            cell.setCheckColor(0xffb3b3b3, 0xff37a9f0);
+            cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
             cell.setTextAndValue(descriptions[a], selected[0] == a);
             linearLayout.addView(cell);
             cell.setOnClickListener(new View.OnClickListener() {
@@ -768,7 +946,7 @@ public class AlertsCreator {
             RadioColorCell cell = new RadioColorCell(parentActivity);
             cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
             cell.setTag(a);
-            cell.setCheckColor(0xffb3b3b3, 0xff37a9f0);
+            cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
             cell.setTextAndValue(options[a], selected == a);
             linearLayout.addView(cell);
             cell.setOnClickListener(new View.OnClickListener() {

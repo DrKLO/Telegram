@@ -17,16 +17,16 @@ import android.view.ViewGroup;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Constants;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
@@ -52,8 +52,9 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     private boolean onlyMutual;
     private boolean allowChats;
     private boolean allowBots;
+    private int channelId;
 
-    public SearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats, boolean bots) {
+    public SearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats, boolean bots, int searchChannelId) {
         mContext = context;
         ignoreUsers = arg1;
         onlyMutual = mutual;
@@ -63,6 +64,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
         if (Constants.LOCK_DISABLE_BOTS) {
             allowBots = false;
         }
+        channelId = searchChannelId;
         searchAdapterHelper = new SearchAdapterHelper();
         searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
             @Override
@@ -97,7 +99,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
             searchResult.clear();
             searchResultNames.clear();
             if (allowUsernameSearch) {
-                searchAdapterHelper.queryServerSearch(null, allowChats, allowBots, true);
+                searchAdapterHelper.queryServerSearch(null, true, allowChats, allowBots, true, channelId, false);
             }
             notifyDataSetChanged();
         } else {
@@ -122,7 +124,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
             @Override
             public void run() {
                 if (allowUsernameSearch) {
-                    searchAdapterHelper.queryServerSearch(query, allowChats, allowBots, true);
+                    searchAdapterHelper.queryServerSearch(query, true, allowChats, allowBots, true, channelId, false);
                 }
                 final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>();
                 contactsCopy.addAll(ContactsController.getInstance().contacts);
@@ -305,7 +307,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                     }
                 } else {
                     ProfileSearchCell profileSearchCell = (ProfileSearchCell) holder.itemView;
-                    profileSearchCell.setData(object, null, name, username, false);
+                    profileSearchCell.setData(object, null, name, username, false, false);
                     profileSearchCell.useSeparator = (position != getItemCount() - 1 && position != searchResult.size() - 1);
                     /*if (ignoreUsers != null) {
                         if (ignoreUsers.containsKey(id)) {

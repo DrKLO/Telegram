@@ -16,6 +16,7 @@
 package org.telegram.messenger.exoplayer2.extractor.mp4;
 
 import android.support.annotation.IntDef;
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
 import java.lang.annotation.Retention;
@@ -75,34 +76,30 @@ public final class Track {
    * One of {@code TRANSFORMATION_*}. Defines the transformation to apply before outputting each
    * sample.
    */
-  @Transformation
-  public final int sampleTransformation;
-
-  /**
-   * Track encryption boxes for the different track sample descriptions. Entries may be null.
-   */
-  public final TrackEncryptionBox[] sampleDescriptionEncryptionBoxes;
+  @Transformation public final int sampleTransformation;
 
   /**
    * Durations of edit list segments in the movie timescale. Null if there is no edit list.
    */
-  public final long[] editListDurations;
+  @Nullable public final long[] editListDurations;
 
   /**
    * Media times for edit list segments in the track timescale. Null if there is no edit list.
    */
-  public final long[] editListMediaTimes;
+  @Nullable public final long[] editListMediaTimes;
 
   /**
-   * For H264 video tracks, the length in bytes of the NALUnitLength field in each sample. -1 for
+   * For H264 video tracks, the length in bytes of the NALUnitLength field in each sample. 0 for
    * other track types.
    */
   public final int nalUnitLengthFieldLength;
 
+  @Nullable private final TrackEncryptionBox[] sampleDescriptionEncryptionBoxes;
+
   public Track(int id, int type, long timescale, long movieTimescale, long durationUs,
       Format format, @Transformation int sampleTransformation,
-      TrackEncryptionBox[] sampleDescriptionEncryptionBoxes, int nalUnitLengthFieldLength,
-      long[] editListDurations, long[] editListMediaTimes) {
+      @Nullable TrackEncryptionBox[] sampleDescriptionEncryptionBoxes, int nalUnitLengthFieldLength,
+      @Nullable long[] editListDurations, @Nullable long[] editListMediaTimes) {
     this.id = id;
     this.type = type;
     this.timescale = timescale;
@@ -114,6 +111,18 @@ public final class Track {
     this.nalUnitLengthFieldLength = nalUnitLengthFieldLength;
     this.editListDurations = editListDurations;
     this.editListMediaTimes = editListMediaTimes;
+  }
+
+  /**
+   * Returns the {@link TrackEncryptionBox} for the given sample description index.
+   *
+   * @param sampleDescriptionIndex The given sample description index
+   * @return The {@link TrackEncryptionBox} for the given sample description index. Maybe null if no
+   *     such entry exists.
+   */
+  public TrackEncryptionBox getSampleDescriptionEncryptionBox(int sampleDescriptionIndex) {
+    return sampleDescriptionEncryptionBoxes == null ? null
+        : sampleDescriptionEncryptionBoxes[sampleDescriptionIndex];
   }
 
 }

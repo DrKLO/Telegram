@@ -25,22 +25,32 @@ public class AudioTrackJNI{
 	private Thread thread;
 	private int bufferSize;
 	private long nativeInst;
+	private boolean needResampling;
 
 	public AudioTrackJNI(long nativeInst) {
 		this.nativeInst = nativeInst;
 	}
 
-	private int getBufferSize(int min) {
-		return Math.max(AudioTrack.getMinBufferSize(48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT), min);
+	private int getBufferSize(int min, int sampleRate) {
+		return Math.max(AudioTrack.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT), min);
 	}
 
 	public void init(int sampleRate, int bitsPerSample, int channels, int bufferSize) {
 		if (audioTrack != null) {
 			throw new IllegalStateException("already inited");
 		}
-		int size = getBufferSize(bufferSize);
+		int size = getBufferSize(bufferSize, 48000);
 		this.bufferSize = bufferSize;
-		audioTrack=new AudioTrack(AudioManager.STREAM_VOICE_CALL, sampleRate, channels==1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT, size, AudioTrack.MODE_STREAM);
+		audioTrack=new AudioTrack(AudioManager.STREAM_VOICE_CALL, 48000, channels==1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT, size, AudioTrack.MODE_STREAM);
+		if(audioTrack.getState()!=AudioTrack.STATE_INITIALIZED){
+			try{
+				audioTrack.release();
+			}catch(Throwable x){}
+			size=getBufferSize(bufferSize*6, 44100);
+			FileLog.d("buffer size: "+size);
+			audioTrack=new AudioTrack(AudioManager.STREAM_VOICE_CALL, 44100, channels==1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT, size, AudioTrack.MODE_STREAM);
+			needResampling=true;
+		}
 	}
 
 	public void stop() {
@@ -86,10 +96,22 @@ public class AudioTrackJNI{
 					FileLog.e("error starting AudioTrack", x);
 					return;
 				}
+				ByteBuffer tmp48=needResampling ? ByteBuffer.allocateDirect(960*2) : null;
+				ByteBuffer tmp44=needResampling ? ByteBuffer.allocateDirect(882*2) : null;
 				while (running) {
 					try {
-						nativeCallback(buffer);
-						audioTrack.write(buffer, 0, 960*2);
+						if(needResampling){
+							nativeCallback(buffer);
+							tmp48.rewind();
+							tmp48.put(buffer);
+							Resampler.convert48to44(tmp48, tmp44);
+							tmp44.rewind();
+							tmp44.get(buffer, 0, 882*2);
+							audioTrack.write(buffer, 0, 882*2);
+						}else{
+							nativeCallback(buffer);
+							audioTrack.write(buffer, 0, 960*2);
+						}
 						if (!running) {
 							audioTrack.stop();
 							break;

@@ -24,6 +24,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,23 +35,27 @@ import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.Constants;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.Constants;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.ContactsAdapter;
@@ -60,10 +65,6 @@ import org.telegram.ui.Cells.LetterSectionCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
@@ -77,6 +78,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private EmptyTextProgressView emptyView;
     private RecyclerListView listView;
     private SearchAdapter searchListViewAdapter;
+    private ActionBarMenuItem addItem;
 
     private boolean searchWas;
     private boolean searching;
@@ -88,6 +90,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean creatingChat;
     private boolean allowBots = true;
     private boolean needForwardCount = true;
+    private boolean needFinishFragment = true;
     private boolean addingToChannel;
     private int chat_id;
     private String selectAlertString = null;
@@ -103,7 +106,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private final static int add_button = 1;
 
     public interface ContactsActivityDelegate {
-        void didSelectContact(TLRPC.User user, String param);
+        void didSelectContact(TLRPC.User user, String param, ContactsActivity activity);
     }
 
     public ContactsActivity(Bundle args) {
@@ -128,11 +131,12 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             needForwardCount = arguments.getBoolean("needForwardCount", true);
             allowBots = arguments.getBoolean("allowBots", true);
             addingToChannel = arguments.getBoolean("addingToChannel", false);
+            needFinishFragment = arguments.getBoolean("needFinishFragment", true);
             chat_id = arguments.getInt("chat_id", 0);
         } else {
             needPhonebook = true;
         }
-        // Cloudveil Start
+// Cloudveil Start
         if (Constants.LOCK_DISABLE_BOTS) {
             allowBots = false;
         }
@@ -140,7 +144,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             createSecretChat = false;
         }
         //CloudVeil End
-
         ContactsController.getInstance().checkInviteText();
 
         return true;
@@ -194,10 +197,16 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             @Override
             public void onSearchExpand() {
                 searching = true;
+                if (addItem != null) {
+                    addItem.setVisibility(View.GONE);
+                }
             }
 
             @Override
             public void onSearchCollapse() {
+                if (addItem != null) {
+                    addItem.setVisibility(View.VISIBLE);
+                }
                 searchListViewAdapter.searchDialogs(null);
                 searching = false;
                 searchWas = false;
@@ -231,10 +240,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         });
         item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
         if (!createSecretChat && !returnAsResult) {
-            menu.addItem(add_button, R.drawable.add);
+            addItem = menu.addItem(add_button, R.drawable.add);
         }
 
-        searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch, false, false, allowBots);
+        searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch, false, false, allowBots, 0);
         listViewAdapter = new ContactsAdapter(context, onlyUsers ? 1 : 0, needPhonebook, ignoreUsers, chat_id != 0);
 
         fragmentView = new FrameLayout(context);
@@ -297,14 +306,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     if ((!onlyUsers || chat_id != 0) && section == 0) {
                         if (needPhonebook) {
                             if (row == 0) {
-                                try {
-                                    Intent intent = new Intent(Intent.ACTION_SEND);
-                                    intent.setType("text/plain");
-                                    intent.putExtra(Intent.EXTRA_TEXT, ContactsController.getInstance().getInviteText());
-                                    getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString("InviteFriends", R.string.InviteFriends)), 500);
-                                } catch (Exception e) {
-                                    FileLog.e(e);
-                                }
+                                presentFragment(new InviteContactsActivity());
                             }
                         } else if (chat_id != 0) {
                             if (row == 0) {
@@ -378,7 +380,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 public void onClick(DialogInterface dialogInterface, int i) {
                                     try {
                                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", arg1, null));
-                                        intent.putExtra("sms_body", LocaleController.getString("InviteText", R.string.InviteText));
+                                        intent.putExtra("sms_body", ContactsController.getInstance().getInviteText(1));
                                         getParentActivity().startActivityForResult(intent, 500);
                                     } catch (Exception e) {
                                         FileLog.e(e);
@@ -430,8 +432,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             if (!user.bot && needForwardCount) {
                 message = String.format("%s\n\n%s", message, LocaleController.getString("AddToTheGroupForwardCount", R.string.AddToTheGroupForwardCount));
                 editText = new EditText(getParentActivity());
-                editText.setTextSize(18);
+                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
                 editText.setText("50");
+                editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
                 editText.setGravity(Gravity.CENTER);
                 editText.setInputType(InputType.TYPE_CLASS_NUMBER);
                 editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
@@ -489,17 +492,20 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     if (layoutParams instanceof FrameLayout.LayoutParams) {
                         ((FrameLayout.LayoutParams) layoutParams).gravity = Gravity.CENTER_HORIZONTAL;
                     }
-                    layoutParams.rightMargin = layoutParams.leftMargin = AndroidUtilities.dp(10);
+                    layoutParams.rightMargin = layoutParams.leftMargin = AndroidUtilities.dp(24);
+                    layoutParams.height = AndroidUtilities.dp(36);
                     editText.setLayoutParams(layoutParams);
                 }
                 editText.setSelection(editText.getText().length());
             }
         } else {
             if (delegate != null) {
-                delegate.didSelectContact(user, param);
+                delegate.didSelectContact(user, param, this);
                 delegate = null;
             }
-            finishFragment();
+            if (needFinishFragment) {
+                finishFragment();
+            }
         }
     }
 
@@ -539,15 +545,13 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @TargetApi(Build.VERSION_CODES.M)
     private void askForPermissons() {
         Activity activity = getParentActivity();
-        if (activity == null) {
+        if (activity == null || activity.checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             return;
         }
         ArrayList<String> permissons = new ArrayList<>();
-        if (activity.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            permissons.add(Manifest.permission.READ_CONTACTS);
-            permissons.add(Manifest.permission.WRITE_CONTACTS);
-            permissons.add(Manifest.permission.GET_ACCOUNTS);
-        }
+        permissons.add(Manifest.permission.READ_CONTACTS);
+        permissons.add(Manifest.permission.WRITE_CONTACTS);
+        permissons.add(Manifest.permission.GET_ACCOUNTS);
         String[] items = permissons.toArray(new String[permissons.size()]);
         activity.requestPermissions(items, 1);
     }
@@ -561,7 +565,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 }
                 switch (permissions[a]) {
                     case Manifest.permission.READ_CONTACTS:
-                        ContactsController.getInstance().readContacts();
+                        ContactsController.getInstance().forceImportContacts();
                         break;
                 }
             }
@@ -665,7 +669,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusColor"}, null, null, сellDelegate, Theme.key_windowBackgroundWhiteGrayText),
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusOnlineColor"}, null, null, сellDelegate, Theme.key_windowBackgroundWhiteBlueText),
-                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),

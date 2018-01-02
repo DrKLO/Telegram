@@ -19,14 +19,14 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Constants;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.query.StickersQuery;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.query.StickersQuery;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.support.widget.helper.ItemTouchHelper;
@@ -153,7 +153,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (currentType == StickersQuery.TYPE_IMAGE) {
-            actionBar.setTitle(LocaleController.getString("Stickers", R.string.Stickers));
+            actionBar.setTitle(LocaleController.getString("StickersName", R.string.StickersName));
         } else {
             actionBar.setTitle(LocaleController.getString("Masks", R.string.Masks));
         }
@@ -412,7 +412,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
             View view = null;
             switch (viewType) {
                 case 0:
-                    view = new StickerSetCell(mContext);
+                    view = new StickerSetCell(mContext, 1);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     ((StickerSetCell) view).setOnOptionsClick(new View.OnClickListener() {
                         @Override

@@ -32,7 +32,6 @@ import java.net.HttpURLConnection;
 import java.net.NoRouteToHostException;
 import java.net.ProtocolException;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,8 +43,8 @@ import java.util.regex.Pattern;
  * <p>
  * By default this implementation will not follow cross-protocol redirects (i.e. redirects from
  * HTTP to HTTPS or vice versa). Cross-protocol redirects can be enabled by using the
- * {@link #DefaultHttpDataSource(String, Predicate, TransferListener, int, int, boolean)}
- * constructor and passing {@code true} as the final argument.
+ * {@link #DefaultHttpDataSource(String, Predicate, TransferListener, int, int, boolean,
+ * RequestProperties)} constructor and passing {@code true} as the second last argument.
  */
 public class DefaultHttpDataSource implements HttpDataSource {
 
@@ -70,7 +69,8 @@ public class DefaultHttpDataSource implements HttpDataSource {
   private final int readTimeoutMillis;
   private final String userAgent;
   private final Predicate<String> contentTypePredicate;
-  private final HashMap<String, String> requestProperties;
+  private final RequestProperties defaultRequestProperties;
+  private final RequestProperties requestProperties;
   private final TransferListener<? super DefaultHttpDataSource> listener;
 
   private DataSpec dataSpec;
@@ -121,7 +121,8 @@ public class DefaultHttpDataSource implements HttpDataSource {
   public DefaultHttpDataSource(String userAgent, Predicate<String> contentTypePredicate,
       TransferListener<? super DefaultHttpDataSource> listener, int connectTimeoutMillis,
       int readTimeoutMillis) {
-    this(userAgent, contentTypePredicate, listener, connectTimeoutMillis, readTimeoutMillis, false);
+    this(userAgent, contentTypePredicate, listener, connectTimeoutMillis, readTimeoutMillis, false,
+        null);
   }
 
   /**
@@ -137,17 +138,21 @@ public class DefaultHttpDataSource implements HttpDataSource {
    *     as an infinite timeout. Pass {@link #DEFAULT_READ_TIMEOUT_MILLIS} to use the default value.
    * @param allowCrossProtocolRedirects Whether cross-protocol redirects (i.e. redirects from HTTP
    *     to HTTPS and vice versa) are enabled.
+   * @param defaultRequestProperties The default request properties to be sent to the server as
+   *     HTTP headers or {@code null} if not required.
    */
   public DefaultHttpDataSource(String userAgent, Predicate<String> contentTypePredicate,
       TransferListener<? super DefaultHttpDataSource> listener, int connectTimeoutMillis,
-      int readTimeoutMillis, boolean allowCrossProtocolRedirects) {
+      int readTimeoutMillis, boolean allowCrossProtocolRedirects,
+      RequestProperties defaultRequestProperties) {
     this.userAgent = Assertions.checkNotEmpty(userAgent);
     this.contentTypePredicate = contentTypePredicate;
     this.listener = listener;
-    this.requestProperties = new HashMap<>();
+    this.requestProperties = new RequestProperties();
     this.connectTimeoutMillis = connectTimeoutMillis;
     this.readTimeoutMillis = readTimeoutMillis;
     this.allowCrossProtocolRedirects = allowCrossProtocolRedirects;
+    this.defaultRequestProperties = defaultRequestProperties;
   }
 
   @Override
@@ -164,24 +169,18 @@ public class DefaultHttpDataSource implements HttpDataSource {
   public void setRequestProperty(String name, String value) {
     Assertions.checkNotNull(name);
     Assertions.checkNotNull(value);
-    synchronized (requestProperties) {
-      requestProperties.put(name, value);
-    }
+    requestProperties.set(name, value);
   }
 
   @Override
   public void clearRequestProperty(String name) {
     Assertions.checkNotNull(name);
-    synchronized (requestProperties) {
-      requestProperties.remove(name);
-    }
+    requestProperties.remove(name);
   }
 
   @Override
   public void clearAllRequestProperties() {
-    synchronized (requestProperties) {
-      requestProperties.clear();
-    }
+    requestProperties.clear();
   }
 
   @Override
@@ -230,7 +229,7 @@ public class DefaultHttpDataSource implements HttpDataSource {
     bytesToSkip = responseCode == 200 && dataSpec.position != 0 ? dataSpec.position : 0;
 
     // Determine the length of the data to be read, after skipping.
-    if ((dataSpec.flags & DataSpec.FLAG_ALLOW_GZIP) == 0) {
+    if (!dataSpec.isFlagSet(DataSpec.FLAG_ALLOW_GZIP)) {
       if (dataSpec.length != C.LENGTH_UNSET) {
         bytesToRead = dataSpec.length;
       } else {
@@ -343,7 +342,7 @@ public class DefaultHttpDataSource implements HttpDataSource {
     byte[] postBody = dataSpec.postBody;
     long position = dataSpec.position;
     long length = dataSpec.length;
-    boolean allowGzip = (dataSpec.flags & DataSpec.FLAG_ALLOW_GZIP) != 0;
+    boolean allowGzip = dataSpec.isFlagSet(DataSpec.FLAG_ALLOW_GZIP);
 
     if (!allowCrossProtocolRedirects) {
       // HttpURLConnection disallows cross-protocol redirects, but otherwise performs redirection
@@ -394,10 +393,13 @@ public class DefaultHttpDataSource implements HttpDataSource {
     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
     connection.setConnectTimeout(connectTimeoutMillis);
     connection.setReadTimeout(readTimeoutMillis);
-    synchronized (requestProperties) {
-      for (Map.Entry<String, String> property : requestProperties.entrySet()) {
+    if (defaultRequestProperties != null) {
+      for (Map.Entry<String, String> property : defaultRequestProperties.getSnapshot().entrySet()) {
         connection.setRequestProperty(property.getKey(), property.getValue());
       }
+    }
+    for (Map.Entry<String, String> property : requestProperties.getSnapshot().entrySet()) {
+      connection.setRequestProperty(property.getKey(), property.getValue());
     }
     if (!(position == 0 && length == C.LENGTH_UNSET)) {
       String rangeRequest = "bytes=" + position + "-";
