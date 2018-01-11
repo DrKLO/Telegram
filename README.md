@@ -1,3 +1,5 @@
+[//]: # (Bug in search. Many users write me everyday what they unable to add bots to channel adminidtrators.Ru: Мне каждый день пишут что не могут добавить бота в админы канала. Баг не у всех, но у большинства юзеров. К сожалению код на гитхабе старый. Баг, предположительно с 30 декабря. Часть ботов просто не находится даже по полному имени. Например @blogfatherbot @telefeedbot Сори, я не нашел ишью и как с тобой связаться. Если обновите сорцы - я поищу где баг vadim-kulibaba@yandex.ru описание -  http://recoilmeblog.tggram.com/post/74)
+
 ## Telegram messenger for Android
 
 [Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
