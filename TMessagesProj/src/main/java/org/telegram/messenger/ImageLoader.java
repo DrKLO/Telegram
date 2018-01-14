@@ -547,7 +547,7 @@ public class ImageLoader {
                         removeTask();
                         return;
                     }
-                    originalBitmap = ImageLoader.loadBitmap(path, null, size, size, false);
+                    originalBitmap = ImageLoader.loadBitmap(originalPath.toString(), null, size, size, false);
                 }
                 if (originalBitmap == null) {
                     removeTask();
