@@ -27,11 +27,14 @@ dependencies {
     compile 'com.google.android.gms:play-services-gcm:10.2.0'
     compile 'com.google.android.gms:play-services-maps:10.2.0'
     compile 'com.google.android.gms:play-services-vision:10.2.0'
+    compile 'com.google.android.gms:play-services-wearable:10.2.0'
+    compile 'com.google.android.gms:play-services-wallet:10.2.0'
     compile 'com.android.support:support-core-ui:25.3.0'
     compile 'com.android.support:support-compat:25.3.0'
     compile 'com.android.support:support-core-utils:25.3.0'
     compile 'com.android.support:support-v13:25.3.0'
     compile 'com.android.support:palette-v7:25.3.0'
+    compile 'com.android.support:multidex:1.0.1'
     compile 'net.hockeyapp.android:HockeySDK:4.1.2'
     compile 'com.stripe:stripe-android:2.0.2'
     compile 'com.googlecode.mp4parser:isoparser:1.0.6'
@@ -41,7 +44,7 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 25
+    compileSdkVersion 26
     buildToolsVersion '25.0.2'
 
     useLibrary 'org.apache.http.legacy'
@@ -57,6 +60,7 @@ android {
 
     dexOptions {
         jumboMode = true
+        javaMaxHeapSize "2g"
     }
 
     compileOptions {
@@ -179,10 +183,11 @@ android {
         minSdkVersion 14
         targetSdkVersion 25
         versionName "4.2.0"
+        multiDexEnabled true
 
         externalNativeBuild {
             ndkBuild {
-                arguments "NDK_APPLICATION_MK:=jni/Application.mk", "APP_PLATFORM:=android-14"
+                arguments "NDK_APPLICATION_MK:=jni/Application.mk", "APP_PLATFORM:=android-14", "LOCAL_SHORT_COMMANDS=true", "APP_SHORT_COMMANDS=true"
                 abiFilters "armeabi-v7a", "x86"
             }
         }

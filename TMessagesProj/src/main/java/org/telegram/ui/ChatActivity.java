@@ -1380,8 +1380,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             //updateBotButtons();
             //CloudVeil Start
             if (!Constants.LOCK_DISABLE_BOTS) {
-                headerItem.addSubItem(bot_settings, LocaleController.getString("BotSettings", R.string.BotSettings), 0);
-                headerItem.addSubItem(bot_help, LocaleController.getString("BotHelp", R.string.BotHelp), 0);
+                headerItem.addSubItem(bot_settings, LocaleController.getString("BotSettings", R.string.BotSettings));
+                headerItem.addSubItem(bot_help, LocaleController.getString("BotHelp", R.string.BotHelp));
                 updateBotButtons();
             }
             //CloudVeil End

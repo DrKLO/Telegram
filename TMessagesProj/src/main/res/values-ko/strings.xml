@@ -1602,7 +1602,7 @@
     <string name="VoipAudioRoutingBluetooth">블루투스</string>
     <string name="ReturnToCall">전화로 돌아가기</string>
     <string name="CallNotAvailable">죄송합니다, **%1$s** 님은 수신거부 상태입니다.</string>
-    <string name="CallEmojiKeyTooltip">화면 속 이모지가 %1$s 님과 같다면 이 통화는 100% 안전합니다</string>
+    <string name="CallEmojiKeyTooltip">화면 속 이모지가 %1$s 님과 같다면 이 통화는 100%% 안전합니다</string>
     <string name="CallMessageReportProblem">전화 평가</string>
     <string name="CallReportHint">무엇이 잘못됬나요?</string>
     <string name="CallReportIncludeLogs">기술적 정보 포함</string>
