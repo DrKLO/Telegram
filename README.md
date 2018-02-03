@@ -50,10 +50,10 @@ https://developer.android.com/studio/index.html
 
     Contents of `keystore.properties` should look like:
     
-    storeFileCloudVeil=path/to/jks/file.jks
-    storePasswordCloudVeil=store.password
-    keyAliasCloudVeil=key.alias
-    keyPasswordCloudVeil=key.password
+    storeFileCloudVeil=path/to/jks/file.jks  
+    storePasswordCloudVeil=store.password  
+    keyAliasCloudVeil=key.alias  
+    keyPasswordCloudVeil=key.password  
     ```
 1. Open Android studio
 1. Open project in Android studio.
