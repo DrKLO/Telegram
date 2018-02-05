@@ -59,6 +59,7 @@ import org.telegram.messenger.exoplayer2.ExoPlayer;
 import org.telegram.messenger.exoplayer2.ui.AspectRatioFrameLayout;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.Paint.Texture;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -191,6 +192,14 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
 
     private abstract class function {
         public abstract Object run(Object[] args);
+    }
+
+    public static boolean isYoutubeUrl(String url) {
+        if(TextUtils.isEmpty(url)) {
+            return false;
+        }
+        Matcher matcher = youtubeIdRegex.matcher(url);
+        return matcher.find();
     }
 
     private class JSExtractor {

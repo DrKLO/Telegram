@@ -347,6 +347,7 @@
                     android:scheme="wear" />
             </intent-filter>
         </service>
+        <service android:name="org.cloudveil.messenger.service.ChannelCheckingService"/>
 
         <receiver android:name=".MusicPlayerReceiver">
             <intent-filter>

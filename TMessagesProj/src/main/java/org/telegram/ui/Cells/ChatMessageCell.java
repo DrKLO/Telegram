@@ -43,6 +43,7 @@ import android.view.ViewStructure;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.Constants;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLoader;
@@ -73,6 +74,7 @@ import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanBotCommand;
 import org.telegram.ui.Components.URLSpanMono;
 import org.telegram.ui.Components.URLSpanNoUnderline;
+import org.telegram.ui.Components.WebPlayerView;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.SecretMediaViewer;
 
@@ -807,7 +809,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                         } else {
                             TLRPC.WebPage webPage = currentMessageObject.messageOwner.media.webpage;
-                            if (webPage != null && !TextUtils.isEmpty(webPage.embed_url)) {
+                            //CloudVeil Start
+                            boolean isYoutube = !Constants.LOCK_DISABLE_YOUTUBE_VIDEO || (webPage != null && WebPlayerView.isYoutubeUrl(webPage.embed_url));
+                            if (webPage != null && !TextUtils.isEmpty(webPage.embed_url) && !isYoutube) {
                                 delegate.needOpenWebView(webPage.embed_url, webPage.site_name, webPage.title, webPage.url, webPage.embed_width, webPage.embed_height);
                             } else if (buttonState == -1 || buttonState == 3) {
                                 delegate.didPressedImage(this);
@@ -815,6 +819,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             } else if (webPage != null) {
                                 Browser.openUrl(getContext(), webPage.url);
                             }
+                            //CloudVeil End
                         }
                         resetPressedLink(2);
                         return true;

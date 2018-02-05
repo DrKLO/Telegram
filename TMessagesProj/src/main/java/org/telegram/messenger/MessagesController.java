@@ -729,6 +729,12 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         return users;
     }
 
+    //CloudVeil start
+    public ConcurrentHashMap<Integer, TLRPC.Chat> getChats() {
+        return chats;
+    }
+    //CloudVeil end
+
     public TLRPC.Chat getChat(Integer id) {
         return chats.get(id);
     }
