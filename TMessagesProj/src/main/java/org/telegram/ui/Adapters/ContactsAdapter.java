@@ -12,8 +12,8 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Constants;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -252,10 +252,10 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                         } else if (position == 1) {
                             textCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
                             //CloudVeil Start
-                            if (!Constants.LOCK_DISABLE_SECRET_CHAT) {
+                            if (!GlobalSecuritySettings.isDisabledSecretChat()) {
                                 textCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
                             }
-                            if (Constants.LOCK_DISABLE_SECRET_CHAT) {
+                            if (GlobalSecuritySettings.isDisabledSecretChat()) {
                                 textCell.setVisibility(View.INVISIBLE);
                             }
                             //CloudVeil End

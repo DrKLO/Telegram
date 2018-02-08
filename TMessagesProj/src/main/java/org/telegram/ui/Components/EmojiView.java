@@ -48,9 +48,9 @@ import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.Constants;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.EmojiData;
 import org.telegram.messenger.FileLog;
@@ -726,7 +726,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     return StickerPreviewViewer.getInstance().onTouch(event, stickersGridView, EmojiView.this.getMeasuredHeight(), stickersOnItemClickListener, stickerPreviewViewerDelegate);
                 }
             });
-            if (!Constants.LOCK_DISABLE_STICKERS) {
+            if (!GlobalSecuritySettings.LOCK_DISABLE_STICKERS) {
                 stickersOnItemClickListener = new RecyclerListView.OnItemClickListener() {
                     @Override
                     public void onItemClick(View view, int position) {

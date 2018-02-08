@@ -33,10 +33,10 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.Constants;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -137,10 +137,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             needPhonebook = true;
         }
 // Cloudveil Start
-        if (Constants.LOCK_DISABLE_BOTS) {
+        if (GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
             allowBots = false;
         }
-        if (Constants.LOCK_DISABLE_SECRET_CHAT) {
+        if (GlobalSecuritySettings.isDisabledSecretChat()) {
             createSecretChat = false;
         }
         //CloudVeil End

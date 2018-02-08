@@ -12,7 +12,7 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.view.ViewGroup;
 
-import org.telegram.messenger.Constants;
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.query.StickersQuery;
@@ -197,7 +197,7 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
         } else if (i == stickers.size() - 1) {
             side = 1;
         }
-        if (!Constants.LOCK_DISABLE_STICKERS) {
+        if (!GlobalSecuritySettings.LOCK_DISABLE_STICKERS) {
             ((StickerCell) viewHolder.itemView).setSticker(stickers.get(i), side);
         }
     }

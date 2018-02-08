@@ -16,7 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Constants;
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -61,7 +61,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
         allowUsernameSearch = usernameSearch;
         allowChats = chats;
         allowBots = bots;
-        if (Constants.LOCK_DISABLE_BOTS) {
+        if (GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
             allowBots = false;
         }
         channelId = searchChannelId;

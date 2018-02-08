@@ -53,12 +53,12 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.Constants;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -523,7 +523,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     }
                 } else if (position == autoplayGifsRow) {
                     //CloudVeil Start
-                    if (!Constants.LOCK_DISABLE_AUTOPLAY_GIFS) {
+                    if (!GlobalSecuritySettings.LOCK_DISABLE_AUTOPLAY_GIFS) {
                         MediaController.getInstance().toggleAutoplayGifs();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(MediaController.getInstance().canAutoplayGifs());
@@ -537,7 +537,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     }
                 } else if (position == customTabsRow) {
                     //CloudVeil Start
-                    if (!Constants.LOCK_DISABLE_IN_APP_BROWSER) {
+                    if (!GlobalSecuritySettings.LOCK_DISABLE_IN_APP_BROWSER) {
                         MediaController.getInstance().toggleCustomTabs();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(MediaController.getInstance().canCustomTabs());
@@ -1273,7 +1273,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (position == autoplayGifsRow) {
                         textCell.setTextAndCheck(LocaleController.getString("AutoplayGifs", R.string.AutoplayGifs), MediaController.getInstance().canAutoplayGifs(), true);
                         /*CloudVeil Change Start */
-                        if (Constants.LOCK_DISABLE_AUTOPLAY_GIFS) {
+                        if (GlobalSecuritySettings.LOCK_DISABLE_AUTOPLAY_GIFS) {
                             textCell.setEnabled(false);
                         }
                         /*CloudVeil Change End */
@@ -1282,7 +1282,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (position == customTabsRow) {
                         textCell.setTextAndValueAndCheck(LocaleController.getString("ChromeCustomTabs", R.string.ChromeCustomTabs), LocaleController.getString("ChromeCustomTabsInfo", R.string.ChromeCustomTabsInfo), MediaController.getInstance().canCustomTabs(), false, true);
                         /*CloudVeil Change Start */
-                        if (Constants.LOCK_DISABLE_IN_APP_BROWSER) {
+                        if (GlobalSecuritySettings.LOCK_DISABLE_IN_APP_BROWSER) {
                             textCell.setEnabled(false);
                         }
                         /*CloudVeil Change End */

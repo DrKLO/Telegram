@@ -74,13 +74,13 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.Constants;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.EmojiSuggestion;
@@ -107,7 +107,6 @@ import org.telegram.messenger.query.BotQuery;
 import org.telegram.messenger.query.DraftQuery;
 import org.telegram.messenger.query.MessagesQuery;
 import org.telegram.messenger.query.MessagesSearchQuery;
-import org.telegram.messenger.query.SearchQuery;
 import org.telegram.messenger.query.StickersQuery;
 import org.telegram.messenger.support.widget.GridLayoutManager;
 import org.telegram.messenger.support.widget.GridLayoutManagerFixed;
@@ -543,7 +542,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             sendBotInlineResult((TLRPC.BotInlineResult) botContextResults.get(index));
             //CloudVeil Start
-            if (!Constants.LOCK_DISABLE_BOTS) {
+            if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
                 sendBotInlineResult((TLRPC.BotInlineResult) botContextResults.get(index));
             }
             //CloudVeil End */
@@ -682,10 +681,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             //    MessagesController.getInstance().sendBotStart(currentUser, inlineQuery);
             //}
             //CloudVeil Start
-            if (Constants.LOCK_DISABLE_BOTS) {
+            if (GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
                 botUser = "";
             }
-            if (!Constants.LOCK_DISABLE_BOTS) {
+            if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
                 if (inlineQuery != null) {
                     MessagesController.getInstance().sendBotStart(currentUser, inlineQuery);
                 }
@@ -843,7 +842,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (userId != 0 && currentUser.bot) {
             //BotQuery.loadBotInfo(userId, true, classGuid);
             //CloudVeil Start
-            if (!Constants.LOCK_DISABLE_BOTS) {
+            if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
                 BotQuery.loadBotInfo(userId, true, classGuid);
             }
             //CloudVeil End
@@ -854,7 +853,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (user != null && user.bot) {
                     // BotQuery.loadBotInfo(user.id, true, classGuid);
                     //CloudVeil Start
-                    if (!Constants.LOCK_DISABLE_BOTS) {
+                    if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
                         BotQuery.loadBotInfo(user.id, true, classGuid);
                     }
                     //CloudVeil End
@@ -1064,7 +1063,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     // createDeleteMessagesAlert(null, null);
                     //CloudVeil Start
-                    if (!Constants.LOCK_DISABLE_DELETE_CHAT) {
+                    if (!GlobalSecuritySettings.LOCK_DISABLE_DELETE_CHAT) {
                         createDeleteMessagesAlert(null, null);
                     }
                     //CloudVeil End
@@ -1202,14 +1201,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else if (id == bot_help) {
                     //SendMessagesHelper.getInstance().sendMessage("/help", dialog_id, null, null, false, null, null, null);
                     //CloudVeil Start
-                    if (!Constants.LOCK_DISABLE_BOTS) {
+                    if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
                         SendMessagesHelper.getInstance().sendMessage("/help", dialog_id, null, null, false, null, null, null);
                     }
                     //CloudVeil End
                 } else if (id == bot_settings) {
                     //SendMessagesHelper.getInstance().sendMessage("/settings", dialog_id, null, null, false, null, null, null);
                     //CloudVeil Start
-                    if (!Constants.LOCK_DISABLE_BOTS) {
+                    if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
                         SendMessagesHelper.getInstance().sendMessage("/settings", dialog_id, null, null, false, null, null, null);
                     }
                     //CloudVeil End
@@ -1379,7 +1378,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             //headerItem.addSubItem(bot_help, LocaleController.getString("BotHelp", R.string.BotHelp));
             //updateBotButtons();
             //CloudVeil Start
-            if (!Constants.LOCK_DISABLE_BOTS) {
+            if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
                 headerItem.addSubItem(bot_settings, LocaleController.getString("BotSettings", R.string.BotSettings));
                 headerItem.addSubItem(bot_help, LocaleController.getString("BotHelp", R.string.BotHelp));
                 updateBotButtons();
@@ -1488,7 +1487,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         actionMode.getItem(copy).setVisibility(selectedMessagesCanCopyIds[0].size() + selectedMessagesCanCopyIds[1].size() != 0 ? View.VISIBLE : View.GONE);
         actionMode.getItem(star).setVisibility(selectedMessagesCanStarIds[0].size() + selectedMessagesCanStarIds[1].size() != 0 ? View.VISIBLE : View.GONE);
         actionMode.getItem(delete).setVisibility(cantDeleteMessagesCount == 0 ? View.VISIBLE : View.GONE);
-        if (Constants.LOCK_DISABLE_DELETE_CHAT) {
+        if (GlobalSecuritySettings.LOCK_DISABLE_DELETE_CHAT) {
             actionMode.getItem(delete).setVisibility(View.GONE);
         }
         checkActionBarMenu();
@@ -1603,7 +1602,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             int height;
                             mentionListViewIgnoreLayout = true;
                            // if (mentionsAdapter.isBotContext() && mentionsAdapter.isMediaLayout()) {
-                            if (mentionsAdapter.isBotContext() && mentionsAdapter.isMediaLayout() && !Constants.LOCK_DISABLE_BOTS) {
+                            if (mentionsAdapter.isBotContext() && mentionsAdapter.isMediaLayout() && !GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
                                 int size = mentionGridLayoutManager.getRowsCount(widthSize);
                                 int maxHeight = size * 102;
                                 if (mentionsAdapter.isBotContext()) {
@@ -1622,7 +1621,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 int size = mentionsAdapter.getItemCount();
                                 int maxHeight = 0;
                                 //CloudVeil Start
-                                if (!Constants.LOCK_DISABLE_BOTS) {
+                                if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
                                     if (mentionsAdapter.isBotContext()) {
                                         if (mentionsAdapter.getBotContextSwitch() != null) {
                                             maxHeight += 36;
@@ -1820,7 +1819,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 super.onLayout(changed, l, t, r, b);
                 forceScrollToTop = false;
                 //CloudVeil Start
-                if (!Constants.LOCK_DISABLE_BOTS) {
+                if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
                     if (chatAdapter.isBot) {
                         int childCount = getChildCount();
                         for (int a = 0; a < childCount; a++) {
@@ -2608,7 +2607,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         canvas.drawRect(0, 0, getMeasuredWidth(), top, Theme.chat_composeBackgroundPaint);
                     } else {
                         int top;
-                        if (Constants.LOCK_DISABLE_BOTS && mentionsAdapter.isBotContext() && mentionsAdapter.isMediaLayout() && mentionsAdapter.getBotContextSwitch() == null) {
+                        if (GlobalSecuritySettings.LOCK_DISABLE_BOTS && mentionsAdapter.isBotContext() && mentionsAdapter.isMediaLayout() && mentionsAdapter.getBotContextSwitch() == null) {
                             top = mentionListViewScrollOffsetY - AndroidUtilities.dp(4);
                         } else {
                             top = mentionListViewScrollOffsetY - AndroidUtilities.dp(2);
@@ -2691,7 +2690,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     if (newPosition != -1) {
                         mentionListViewIgnoreLayout = true;
-                        if (Constants.LOCK_DISABLE_BOTS && mentionsAdapter.isBotContext() && mentionsAdapter.isMediaLayout()) {
+                        if (GlobalSecuritySettings.LOCK_DISABLE_BOTS && mentionsAdapter.isBotContext() && mentionsAdapter.isMediaLayout()) {
                             mentionGridLayoutManager.scrollToPositionWithOffset(newPosition, newTop);
                         } else {
                             mentionLayoutManager.scrollToPositionWithOffset(newPosition, newTop);
@@ -2730,7 +2729,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     Object object = mentionsAdapter.getItem(i);
                     //CloudVeil Start
-                    if (!Constants.LOCK_DISABLE_BOTS) {
+                    if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
                         if (object instanceof TLRPC.BotInlineResult) {
                             TLRPC.BotInlineResult inlineResult = (TLRPC.BotInlineResult) object;
                             if (inlineResult.document != null) {
@@ -2811,7 +2810,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             mentionListView.setAdapter(mentionsAdapter = new MentionsAdapter(context, false, dialog_id, new MentionsAdapter.MentionsAdapterDelegate() {
                 @Override
                 public void needChangePanelVisibility(boolean show) {
-                    if (!Constants.LOCK_DISABLE_BOTS && mentionsAdapter.isBotContext() && mentionsAdapter.isMediaLayout()) {
+                    if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS && mentionsAdapter.isBotContext() && mentionsAdapter.isMediaLayout()) {
                         mentionListView.setLayoutManager(mentionGridLayoutManager);
                     } else {
                         mentionListView.setLayoutManager(mentionLayoutManager);
@@ -2829,7 +2828,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             mentionContainer.setAlpha(1.0f);
                             return;
                         }
-                        if (!Constants.LOCK_DISABLE_BOTS && mentionsAdapter.isBotContext() && mentionsAdapter.isMediaLayout()) {
+                        if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS && mentionsAdapter.isBotContext() && mentionsAdapter.isMediaLayout()) {
                             mentionGridLayoutManager.scrollToPositionWithOffset(0, 10000);
                         } else {
                             mentionLayoutManager.scrollToPositionWithOffset(0, 10000);
@@ -2983,14 +2982,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             }
                         }
                     } else if (object instanceof String) {
-                        if (!Constants.LOCK_DISABLE_BOTS && mentionsAdapter.isBotCommands()) {
+                        if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS && mentionsAdapter.isBotCommands()) {
                             SendMessagesHelper.getInstance().sendMessage((String) object, dialog_id, replyingMessageObject, null, false, null, null, null);
                             chatActivityEnterView.setFieldText("");
                             showReplyPanel(false, null, null, null, false);
                         } else {
                             chatActivityEnterView.replaceWithText(start, len, object + " ", false);
                         }
-                    } else if (!Constants.LOCK_DISABLE_BOTS && object instanceof TLRPC.BotInlineResult) {
+                    } else if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS && object instanceof TLRPC.BotInlineResult) {
                         if (chatActivityEnterView.getFieldText() == null) {
                             return;
                         }
@@ -3004,7 +3003,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         } else {
                             sendBotInlineResult(result);
                         }
-                    } else if (!Constants.LOCK_DISABLE_BOTS && object instanceof TLRPC.TL_inlineBotSwitchPM) {
+                    } else if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS && object instanceof TLRPC.TL_inlineBotSwitchPM) {
                         processInlineBotContextPM((TLRPC.TL_inlineBotSwitchPM) object);
                     } else if (object instanceof EmojiSuggestion) {
                         String code = ((EmojiSuggestion) object).emoji;
@@ -3022,7 +3021,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     Object object = mentionsAdapter.getItem(position);
                     if (object instanceof String) {
-                        if (!Constants.LOCK_DISABLE_BOTS && mentionsAdapter.isBotCommands()) {
+                        if (!GlobalSecuritySettings.LOCK_DISABLE_BOTS && mentionsAdapter.isBotCommands()) {
                             if (URLSpanBotCommand.enabled) {
                                 chatActivityEnterView.setFieldText("");
                                 chatActivityEnterView.setCommand(null, (String) object, true, currentChat != null && currentChat.megagroup);
@@ -4355,7 +4354,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             return;
         }
         //CloudVeil Start
-        if (Constants.LOCK_DISABLE_GIFS) {
+        if (GlobalSecuritySettings.LOCK_DISABLE_GIFS) {
             return;
         }
         //CloudVeil End
@@ -6072,7 +6071,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 int newCopyVisible = copyItem.getVisibility();
                 int newStarVisible = starItem.getVisibility();
                 actionBar.createActionMode().getItem(delete).setVisibility(cantDeleteMessagesCount == 0 ? View.VISIBLE : View.GONE);
-                if (Constants.LOCK_DISABLE_DELETE_CHAT) {
+                if (GlobalSecuritySettings.LOCK_DISABLE_DELETE_CHAT) {
                     actionBar.createActionMode().getItem(delete).setVisibility(View.GONE);
                 }
                 if (editItem != null) {
@@ -10293,7 +10292,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
 
         //CloudVeil Start
-        if (!Constants.LOCK_DISABLE_DELETE_CHAT) {
+        if (!GlobalSecuritySettings.LOCK_DISABLE_DELETE_CHAT) {
             item.setVisibility(View.GONE);
         }
         //CloudVeil End
@@ -10456,7 +10455,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
 
                 //CloudVeil Start
-                if (!Constants.LOCK_DISABLE_DELETE_CHAT) {
+                if (!GlobalSecuritySettings.LOCK_DISABLE_DELETE_CHAT) {
                     createDeleteMessagesAlert(selectedObject, selectedObjectGroup);
                 }
                 //CloudVeil End

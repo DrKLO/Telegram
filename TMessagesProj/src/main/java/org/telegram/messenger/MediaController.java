@@ -55,6 +55,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.messenger.exoplayer2.ExoPlayer;
 import org.telegram.messenger.exoplayer2.ui.AspectRatioFrameLayout;
@@ -864,14 +865,14 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         saveToGallery = preferences.getBoolean("save_gallery", false);
         autoplayGifs = preferences.getBoolean("autoplay_gif", true);
         //CloudVeil Start
-        if (Constants.LOCK_DISABLE_AUTOPLAY_GIFS) {
+        if (GlobalSecuritySettings.LOCK_DISABLE_AUTOPLAY_GIFS) {
             autoplayGifs = false;
         }
         //CloudVeil End
         raiseToSpeak = preferences.getBoolean("raise_to_speak", true);
         customTabs = preferences.getBoolean("custom_tabs", true);
         //CloudVeil Start
-        if (Constants.LOCK_DISABLE_IN_APP_BROWSER) {
+        if (GlobalSecuritySettings.LOCK_DISABLE_IN_APP_BROWSER) {
             customTabs = false;
         }
         //CloudVeil End

@@ -20,7 +20,7 @@ import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.Constants;
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -186,7 +186,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
-                if (!Constants.LOCK_DISABLE_STICKERS) {
+                if (!GlobalSecuritySettings.LOCK_DISABLE_STICKERS) {
                     if (position >= stickersStartRow && position < stickersEndRow && getParentActivity() != null) {
                         sendReorder();
                         final TLRPC.TL_messages_stickerSet stickerSet = StickersQuery.getStickerSets(currentType).get(position - stickersStartRow);

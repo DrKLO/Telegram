@@ -8,10 +8,10 @@
 
 package org.telegram.ui.Adapters;
 
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Constants;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -184,7 +184,7 @@ public class SearchAdapterHelper {
                                                 TLRPC.Chat chat = res.chats.get(a);
                                                 //globalSearch.add(chat);
                                                 //CloudVeil Start
-                                                if (!Constants.LOCK_DISABLE_GLOBAL_SEARCH) {
+                                                if (!GlobalSecuritySettings.LOCK_DISABLE_GLOBAL_SEARCH) {
                                                     globalSearch.add(chat);
                                                 }
                                                 //CloudVeil End
@@ -198,7 +198,7 @@ public class SearchAdapterHelper {
                                             }
                                             //globalSearch.add(user);
                                             //CloudVeil Start
-                                            if (!Constants.LOCK_DISABLE_GLOBAL_SEARCH) {
+                                            if (!GlobalSecuritySettings.LOCK_DISABLE_GLOBAL_SEARCH) {
                                                 globalSearch.add(user);
                                             }
                                             //CloudVeil End

@@ -44,8 +44,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
 
 public class MessagesController implements NotificationCenter.NotificationCenterDelegate {
@@ -54,6 +56,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private ConcurrentHashMap<Integer, TLRPC.EncryptedChat> encryptedChats = new ConcurrentHashMap<>(10, 1.0f, 2);
     private ConcurrentHashMap<Integer, TLRPC.User> users = new ConcurrentHashMap<>(100, 1.0f, 2);
     private ConcurrentHashMap<String, TLObject> objectsByUsernames = new ConcurrentHashMap<>(100, 1.0f, 2);
+
+    //CLoudVeil start
+    public ConcurrentHashMap<Long, Boolean> allowedDialogs = new ConcurrentHashMap<>();
+    public ConcurrentHashMap<Long, Boolean> allowedBots = new ConcurrentHashMap<>();
+    //CLoudVeil end
 
     private ArrayList<Integer> joiningToChannels = new ArrayList<>();
 
@@ -97,6 +104,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private HashMap<Integer, Integer> channelsPts = new HashMap<>();
     private HashMap<Integer, Boolean> gettingDifferenceChannels = new HashMap<>();
 
+
     private HashMap<Integer, Boolean> gettingUnknownChannels = new HashMap<>();
     private HashMap<Integer, Boolean> checkingLastMessagesDialogs = new HashMap<>();
 
@@ -120,6 +128,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private HashMap<Long, ArrayList<MessageObject>> reloadingWebpagesPending = new HashMap<>();
 
     private HashMap<Long, ArrayList<Integer>> reloadingMessages = new HashMap<>();
+
 
     private boolean gettingNewDeleteTask;
     private int currentDeletingTaskTime;
@@ -172,6 +181,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private String installReferer;
 
     private ArrayList<TLRPC.TL_disabledFeature> disabledFeatures = new ArrayList<>();
+
 
     private class UserActionUpdatesSeq extends TLRPC.Updates {
 
@@ -729,12 +739,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         return users;
     }
 
-    //CloudVeil start
-    public ConcurrentHashMap<Integer, TLRPC.Chat> getChats() {
-        return chats;
-    }
-    //CloudVeil end
-
     public TLRPC.Chat getChat(Integer id) {
         return chats.get(id);
     }
@@ -821,7 +825,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         oldUser.photo = user.photo;
                         oldUser.flags |= 32;
                     } else {
-                        oldUser.flags = oldUser.flags &~ 32;
+                        oldUser.flags = oldUser.flags & ~32;
                         oldUser.photo = null;
                     }
                 }
@@ -855,7 +859,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     user.photo = oldUser.photo;
                     user.flags |= 32;
                 } else {
-                    user.flags = user.flags &~ 32;
+                    user.flags = user.flags & ~32;
                     user.photo = null;
                 }
                 users.put(user.id, user);
@@ -913,7 +917,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         oldChat.username = chat.username;
                         oldChat.flags |= 64;
                     } else {
-                        oldChat.flags = oldChat.flags &~ 64;
+                        oldChat.flags = oldChat.flags & ~64;
                         oldChat.username = null;
                     }
                     if (chat.participants_count != 0) {
@@ -959,7 +963,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     chat.username = oldChat.username;
                     chat.flags |= 64;
                 } else {
-                    chat.flags = chat.flags &~ 64;
+                    chat.flags = chat.flags & ~64;
                     chat.username = null;
                 }
                 if (oldChat.participants_count != 0 && chat.participants_count == 0) {
@@ -8242,8 +8246,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             TLRPC.PhoneCall call = upd.phone_call;
                             VoIPService svc = VoIPService.getSharedInstance();
                             if (BuildVars.DEBUG_VERSION) {
-                                FileLog.d("Received call in update: "+call);
-                                FileLog.d("call id "+call.id);
+                                FileLog.d("Received call in update: " + call);
+                                FileLog.d("call id " + call.id);
                             }
                             if (call instanceof TLRPC.TL_phoneCallRequested) {
                                 if (call.date + callRingTimeout / 1000 < ConnectionsManager.getInstance().getCurrentTime()) {
@@ -8252,9 +8256,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                     continue;
                                 }
                                 TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
-                                if (svc != null || VoIPService.callIShouldHavePutIntoIntent!=null || tm.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
+                                if (svc != null || VoIPService.callIShouldHavePutIntoIntent != null || tm.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
                                     if (BuildVars.DEBUG_VERSION) {
-                                        FileLog.d("Auto-declining call "+call.id+" because there's already active one");
+                                        FileLog.d("Auto-declining call " + call.id + " because there's already active one");
                                     }
                                     TLRPC.TL_phone_discardCall req = new TLRPC.TL_phone_discardCall();
                                     req.peer = new TLRPC.TL_inputPhoneCall();
@@ -8273,7 +8277,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                     continue;
                                 }
                                 if (BuildVars.DEBUG_VERSION) {
-                                    FileLog.d("Starting service for call "+call.id);
+                                    FileLog.d("Starting service for call " + call.id);
                                 }
                                 VoIPService.callIShouldHavePutIntoIntent = call;
                                 Intent intent = new Intent(ApplicationLoader.applicationContext, VoIPService.class);
@@ -8961,7 +8965,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             if (fragment.getParentActivity() == null) {
                 return;
             }
-            final AlertDialog progressDialog[] = new AlertDialog[] {new AlertDialog(fragment.getParentActivity(), 1)};
+            final AlertDialog progressDialog[] = new AlertDialog[]{new AlertDialog(fragment.getParentActivity(), 1)};
 
             TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
             req.username = username;
@@ -9026,4 +9030,60 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }, 500);
         }
     }
+
+    //CLoudVeil start
+    public boolean isDialogAllowed(TLRPC.TL_dialog dialog) {
+        return isDialogIdAllowed(dialog.id);
+    }
+
+    public boolean isDialogIdAllowed(long currentDialogId) {
+        int lower_id = (int) currentDialogId;
+        int high_id = (int) (currentDialogId >> 32);
+        TLRPC.Chat chat = null;
+        TLRPC.User user = null;
+        if (lower_id != 0) {
+            if (high_id == 1) {
+                chat = MessagesController.getInstance().getChat(lower_id);
+            } else {
+                if (lower_id < 0) {
+                    chat = MessagesController.getInstance().getChat(-lower_id);
+                    if (chat != null && chat.migrated_to != null) {
+                        TLRPC.Chat chat2 = MessagesController.getInstance().getChat(chat.migrated_to.channel_id);
+                        if (chat2 != null) {
+                            chat = chat2;
+                        }
+                    }
+                } else {
+                    user = MessagesController.getInstance().getUser(lower_id);
+                }
+            }
+        } else {
+            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(high_id);
+            if (encryptedChat != null) {
+                user = MessagesController.getInstance().getUser(encryptedChat.user_id);
+            }
+        }
+
+        if (chat != null) {
+            return allowedDialogs.containsKey(currentDialogId);
+        } else if (user != null) {
+            return !user.bot || allowedBots.containsKey(currentDialogId);
+        }
+        return false;
+    }
+
+    public ArrayList<TLRPC.TL_dialog> filterDialogs(ArrayList<TLRPC.TL_dialog> dialogs) {
+        ArrayList<TLRPC.TL_dialog> filtered = new ArrayList<>();
+        if (dialogs == null) {
+            return filtered;
+        }
+        int i = 0;
+        for (TLRPC.TL_dialog dlg : dialogs) {
+            if (isDialogAllowed(dlg)) {
+                filtered.add(dlg);
+            }
+        }
+        return filtered;
+    }
+    //CloudVeil end
 }

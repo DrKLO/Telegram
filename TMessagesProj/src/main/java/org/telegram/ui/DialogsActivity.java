@@ -20,6 +20,7 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Outline;
@@ -28,6 +29,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -43,7 +45,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.Constants;
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
@@ -98,7 +100,7 @@ import org.telegram.ui.Components.StickersAlert;
 import java.util.ArrayList;
 
 public class DialogsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
-    
+
     private RecyclerListView listView;
     private LinearLayoutManager layoutManager;
     private DialogsAdapter dialogsAdapter;
@@ -175,6 +177,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             NotificationCenter.getInstance().addObserver(this, NotificationCenter.needReloadRecentDialogsSearch);
             NotificationCenter.getInstance().addObserver(this, NotificationCenter.didLoadedReplyMessages);
             NotificationCenter.getInstance().addObserver(this, NotificationCenter.reloadHints);
+            //CloudVeil start
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.filterDialogsReady);
+            //CloudVeil end
         }
 
         if (!dialogsLoaded) {
@@ -208,12 +213,37 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             NotificationCenter.getInstance().removeObserver(this, NotificationCenter.needReloadRecentDialogsSearch);
             NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didLoadedReplyMessages);
             NotificationCenter.getInstance().removeObserver(this, NotificationCenter.reloadHints);
+
+            //CloudVeil start
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.filterDialogsReady);
+            //CloudVeil end
         }
         if (commentView != null) {
             commentView.onDestroy();
         }
         delegate = null;
     }
+
+    //CloudVeil start
+    private void showPopup(Context context) {
+        SharedPreferences defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        if(defaultSharedPreferences.getBoolean("popupShown", false)) {
+            return;
+        }
+
+        defaultSharedPreferences.edit().putBoolean("popupShown", true).apply();
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(context.getString(R.string.warning))
+                .setMessage(context.getString(R.string.cloudveil_message_warning))
+                .setPositiveButton(context.getString(R.string.OK), new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        });
+        showDialog(builder.create());
+    }
+    //CloudVeil end
 
     @Override
     public View createView(final Context context) {
@@ -262,7 +292,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 searching = false;
                 searchWas = false;
                 if (listView != null) {
-                    if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
+                    //CloudVeil start
+                    if (MessagesController.getInstance().loadingDialogs && getDialogsArray().isEmpty()) {
+                        //CloudVeil end
                         listView.setEmptyView(progressView);
                     } else {
                         progressView.setVisibility(View.GONE);
@@ -480,7 +512,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         };
         fragmentView = contentView;
-        
+
         listView = new RecyclerListView(context);
         listView.setVerticalScrollBarEnabled(true);
         listView.setItemAnimator(null);
@@ -560,7 +592,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     } else if (obj instanceof TLRPC.Chat) {
                         if (dialogsSearchAdapter.isGlobalSearch(position)) {
                             //CloudVeil Start
-                            if (Constants.LOCK_DISABLE_GLOBAL_SEARCH) {
+                            if (GlobalSecuritySettings.LOCK_DISABLE_GLOBAL_SEARCH) {
                                 ArrayList<TLRPC.Chat> chats = new ArrayList<>();
                                 chats.add((TLRPC.Chat) obj);
                                 MessagesController.getInstance().putChats(chats, false);
@@ -1038,7 +1070,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         });
 
-        if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
+        //CloudVeil start
+        if (MessagesController.getInstance().loadingDialogs && getDialogsArray().isEmpty()) {
+            //CloudVeil end
             searchEmptyView.setVisibility(View.GONE);
             listView.setEmptyView(progressView);
         } else {
@@ -1148,6 +1182,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             });
         }
+
+        //CloudVeil start
+        showPopup(context);
+        //CloadVeil end
 
         return fragmentView;
     }
@@ -1315,9 +1353,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     @Override
     @SuppressWarnings("unchecked")
     public void didReceivedNotification(int id, Object... args) {
+        //CloudVeil start
         if (id == NotificationCenter.dialogsNeedReload) {
-            //CloudVeil start
             ChannelCheckingService.startDataChecking(ApplicationLoader.applicationContext);
+        }
+        if (id == NotificationCenter.filterDialogsReady) {
             //CloudVeil end
             if (dialogsAdapter != null) {
                 if (dialogsAdapter.isDataSetChanged()) {
@@ -1393,16 +1433,22 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private ArrayList<TLRPC.TL_dialog> getDialogsArray() {
+        //CloudVeil start
+        ArrayList<TLRPC.TL_dialog> dialogs = null;
         if (dialogsType == 0) {
-            return MessagesController.getInstance().dialogs;
+            dialogs = MessagesController.getInstance().dialogs;
         } else if (dialogsType == 1) {
-            return MessagesController.getInstance().dialogsServerOnly;
+            dialogs = MessagesController.getInstance().dialogsServerOnly;
         } else if (dialogsType == 2) {
-            return MessagesController.getInstance().dialogsGroupsOnly;
+            dialogs = MessagesController.getInstance().dialogsGroupsOnly;
         } else if (dialogsType == 3) {
-            return MessagesController.getInstance().dialogsForward;
+            dialogs = MessagesController.getInstance().dialogsForward;
+        } else {
+            return null;
         }
-        return null;
+        dialogs = MessagesController.getInstance().filterDialogs(dialogs);
+        //CloudVeil end
+        return dialogs;
     }
 
     public void setSideMenu(RecyclerView recyclerView) {

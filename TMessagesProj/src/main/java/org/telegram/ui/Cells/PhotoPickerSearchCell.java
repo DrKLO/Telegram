@@ -20,8 +20,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Constants;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
@@ -88,7 +88,7 @@ public class PhotoPickerSearchCell extends LinearLayout {
         setOrientation(HORIZONTAL);
 
         /* Start Disable Giphy */
-        if (!Constants.LOCK_DISABLE_GIFS) {
+        if (!GlobalSecuritySettings.LOCK_DISABLE_GIFS) {
             SearchButton searchButton = new SearchButton(context);
             searchButton.textView1.setText(LocaleController.getString("SearchImages", R.string.SearchImages));
             searchButton.textView2.setText(LocaleController.getString("SearchImagesInfo", R.string.SearchImagesInfo));

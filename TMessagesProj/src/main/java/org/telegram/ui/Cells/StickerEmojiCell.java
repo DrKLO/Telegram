@@ -18,7 +18,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Constants;
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.query.StickersQuery;
 import org.telegram.tgnet.TLRPC;
@@ -64,7 +64,7 @@ public class StickerEmojiCell extends FrameLayout {
     }
 
     public void setSticker(TLRPC.Document document, boolean showEmoji) {
-        if (!Constants.LOCK_DISABLE_STICKERS) {
+        if (!GlobalSecuritySettings.LOCK_DISABLE_STICKERS) {
             if (document != null) {
                 sticker = document;
                 if (document.thumb != null) {

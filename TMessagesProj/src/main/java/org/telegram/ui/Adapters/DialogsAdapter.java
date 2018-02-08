@@ -89,16 +89,22 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     private ArrayList<TLRPC.TL_dialog> getDialogsArray() {
+        //CloudVeil start
+        ArrayList<TLRPC.TL_dialog> dialogs = null;
         if (dialogsType == 0) {
-            return MessagesController.getInstance().dialogs;
+            dialogs = MessagesController.getInstance().dialogs;
         } else if (dialogsType == 1) {
-            return MessagesController.getInstance().dialogsServerOnly;
+            dialogs = MessagesController.getInstance().dialogsServerOnly;
         } else if (dialogsType == 2) {
-            return MessagesController.getInstance().dialogsGroupsOnly;
+            dialogs = MessagesController.getInstance().dialogsGroupsOnly;
         } else if (dialogsType == 3) {
-            return MessagesController.getInstance().dialogsForward;
+            dialogs = MessagesController.getInstance().dialogsForward;
+        } else {
+            return null;
         }
-        return null;
+        dialogs = MessagesController.getInstance().filterDialogs(dialogs);
+        //CloudVeil end
+        return dialogs;
     }
 
     @Override
@@ -107,9 +113,11 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         if (count == 0 && MessagesController.getInstance().loadingDialogs) {
             return 0;
         }
-        if (!MessagesController.getInstance().dialogsEndReached || count == 0) {
+        //CloudVeil start
+        /*if (!MessagesController.getInstance().dialogsEndReached || count == 0) {
             count++;
-        }
+        }*/
+        //CloudVeil end
         if (hasHints) {
             count += 2 + MessagesController.getInstance().hintDialogs.size();
         }
@@ -130,6 +138,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         if (i < 0 || i >= arrayList.size()) {
             return null;
         }
+
         return arrayList.get(i);
     }
 
@@ -216,8 +225,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             case 0: {
                 DialogCell cell = (DialogCell) holder.itemView;
                 TLRPC.TL_dialog dialog = (TLRPC.TL_dialog) getItem(i);
+                MessagesController messagesController = MessagesController.getInstance();
                 if (hasHints) {
-                    i -= 2 + MessagesController.getInstance().hintDialogs.size();
+                    i -= 2 + messagesController.hintDialogs.size();
                 }
                 cell.useSeparator = (i != getItemCount() - 1);
                 if (dialogsType == 0) {
@@ -229,6 +239,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                     cell.setChecked(selectedDialogs.contains(dialog.id), false);
                 }
                 cell.setDialog(dialog, i, dialogsType);
+
                 break;
             }
             case 4: {

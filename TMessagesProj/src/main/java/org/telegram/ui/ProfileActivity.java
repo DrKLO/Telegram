@@ -49,11 +49,11 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.Constants;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -2828,7 +2828,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                     } else if (i == startSecretChatRow) {
                         //CloudVeil Start
-                        if (!Constants.LOCK_DISABLE_SECRET_CHAT) {
+                        if (!GlobalSecuritySettings.isDisabledSecretChat()) {
                             textCell.setText(LocaleController.getString("StartEncryptedChat", R.string.StartEncryptedChat));
                             textCell.setTag(Theme.key_windowBackgroundWhiteGreenText2);
                             textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGreenText2));

@@ -679,11 +679,14 @@ public class NotificationsController {
                         if (popup != 0) {
                             popupArray.add(0, messageObject);
                         }
-                        delayedPushMessages.add(messageObject);
-                        pushMessages.add(0, messageObject);
-                        pushMessagesDict.put(mid, messageObject);
-                        if (original_dialog_id != dialog_id) {
-                            pushDialogsOverrideMention.put(original_dialog_id, 1);
+                        //CloudVeil start
+                        if(MessagesController.getInstance().isDialogIdAllowed(dialog_id)) {
+                            delayedPushMessages.add(messageObject);
+                            pushMessages.add(0, messageObject);
+                            pushMessagesDict.put(mid, messageObject);
+                            if (original_dialog_id != dialog_id) {
+                                pushDialogsOverrideMention.put(original_dialog_id, 1);
+                            }
                         }
                     }
                 }
