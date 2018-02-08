@@ -80,6 +80,7 @@ public class ChannelCheckingService extends Service {
         request.userName = UserConfig.getCurrentUser().username;
 
         if (request.isEmpty()) {
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.filterDialogsReady);
             return;
         }
 
@@ -133,6 +134,7 @@ public class ChannelCheckingService extends Service {
         }
 
         GlobalSecuritySettings.setDisableSecretChat(!settingsResponse.secretChat);
+        GlobalSecuritySettings.setMinSecretChatTtl(settingsResponse.secretChatMinimumLength);
 
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.filterDialogsReady);
     }

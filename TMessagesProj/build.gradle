@@ -186,7 +186,7 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 25
-        versionName "4.2.0"
+        versionName "4.6.0"
         multiDexEnabled true
 
         externalNativeBuild {

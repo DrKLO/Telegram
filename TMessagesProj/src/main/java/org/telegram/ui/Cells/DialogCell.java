@@ -854,16 +854,22 @@ public class DialogCell extends BaseCell {
     }
 
     private ArrayList<TLRPC.TL_dialog> getDialogsArray() {
+        //CloudVeil start
+        ArrayList<TLRPC.TL_dialog> dialogs = null;
         if (dialogsType == 0) {
-            return MessagesController.getInstance().dialogs;
+            dialogs = MessagesController.getInstance().dialogs;
         } else if (dialogsType == 1) {
-            return MessagesController.getInstance().dialogsServerOnly;
+            dialogs = MessagesController.getInstance().dialogsServerOnly;
         } else if (dialogsType == 2) {
-            return MessagesController.getInstance().dialogsGroupsOnly;
+            dialogs = MessagesController.getInstance().dialogsGroupsOnly;
         } else if (dialogsType == 3) {
-            return MessagesController.getInstance().dialogsForward;
+            dialogs = MessagesController.getInstance().dialogsForward;
+        } else {
+            return null;
         }
-        return null;
+        dialogs = MessagesController.getInstance().filterDialogs(dialogs);
+        //CloudVeil end
+        return dialogs;
     }
 
     public void checkCurrentDialogIndex() {

@@ -82,6 +82,7 @@
             android:enabled="false"
             android:exported="false" />
 
+        <service android:name="org.cloudveil.messenger.service.ChannelCheckingService"/>
     </application>
 
 </manifest>

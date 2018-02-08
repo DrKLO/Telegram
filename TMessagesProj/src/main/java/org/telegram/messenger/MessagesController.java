@@ -21,6 +21,7 @@ import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.widget.Toast;
 
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.query.BotQuery;
 import org.telegram.messenger.query.DraftQuery;
@@ -9041,6 +9042,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         int high_id = (int) (currentDialogId >> 32);
         TLRPC.Chat chat = null;
         TLRPC.User user = null;
+        TLRPC.EncryptedChat encryptedChat = null;
         if (lower_id != 0) {
             if (high_id == 1) {
                 chat = MessagesController.getInstance().getChat(lower_id);
@@ -9058,13 +9060,16 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             }
         } else {
-            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(high_id);
+            encryptedChat = MessagesController.getInstance().getEncryptedChat(high_id);
             if (encryptedChat != null) {
                 user = MessagesController.getInstance().getUser(encryptedChat.user_id);
             }
         }
 
-        if (chat != null) {
+        if(encryptedChat != null && GlobalSecuritySettings.isDisabledSecretChat()) {
+            return false;
+        }
+        else if (chat != null) {
             return allowedDialogs.containsKey(currentDialogId);
         } else if (user != null) {
             return !user.bot || allowedBots.containsKey(currentDialogId);

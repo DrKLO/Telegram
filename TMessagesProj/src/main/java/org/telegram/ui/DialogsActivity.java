@@ -225,23 +225,44 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     //CloudVeil start
-    private void showPopup(Context context) {
+    private void showPopup(final Context context) {
         SharedPreferences defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        if(defaultSharedPreferences.getBoolean("popupShown", false)) {
+        if (defaultSharedPreferences.getBoolean("popupShown", false)) {
             return;
         }
-
-        defaultSharedPreferences.edit().putBoolean("popupShown", true).apply();
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(context.getString(R.string.warning))
                 .setMessage(context.getString(R.string.cloudveil_message_warning))
                 .setPositiveButton(context.getString(R.string.OK), new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                dialog.dismiss();
-                            }
-                        });
-        showDialog(builder.create());
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        setPopupShown();
+                    }
+                })
+                .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialog) {
+                        setPopupShown();
+                    }
+                })
+                .setOnBackButtonListener(new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        setPopupShown();
+                    }
+                });
+        showDialog(builder.create(), new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                setPopupShown();
+            }
+        });
+    }
+
+    private void setPopupShown() {
+        SharedPreferences defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(ApplicationLoader.applicationContext);
+        defaultSharedPreferences.edit().putBoolean("popupShown", true).apply();
     }
     //CloudVeil end
 
@@ -1183,10 +1204,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             });
         }
 
-        //CloudVeil start
-        showPopup(context);
-        //CloadVeil end
-
         return fragmentView;
     }
 
@@ -1224,6 +1241,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
             }
+        } else {
+            showPopup(getParentActivity());
         }
     }
 

@@ -21,6 +21,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -972,8 +973,33 @@ public class AlertsCreator {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle(LocaleController.getString("MessageLifetime", R.string.MessageLifetime));
         final NumberPicker numberPicker = new NumberPicker(context);
-        numberPicker.setMinValue(0);
+
+        //CloudVeil start
+        int ttls[] = new int[] {
+                0,
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                30, 60, 60*60, 60*60*24, 60*60*24*7
+        };
+
+        int serverMinLength = GlobalSecuritySettings.getMinSecretChatTtl();
+        int minValue = 0;
+        int minLength = 0;
+        for(int i=0; i<ttls.length; i++) {
+            if(ttls[i] >= serverMinLength) {
+                minValue = i;
+                minLength = ttls[i];
+                break;
+            }
+        }
+
+        numberPicker.setMinValue(minValue);
         numberPicker.setMaxValue(20);
+
+        if(encryptedChat.ttl < minLength) {
+            encryptedChat.ttl = minLength;
+        }
+        //CloudVeil end
+
         if (encryptedChat.ttl > 0 && encryptedChat.ttl < 16) {
             numberPicker.setValue(encryptedChat.ttl);
         } else if (encryptedChat.ttl == 30) {
@@ -989,6 +1015,7 @@ public class AlertsCreator {
         } else if (encryptedChat.ttl == 0) {
             numberPicker.setValue(0);
         }
+
         numberPicker.setFormatter(new NumberPicker.Formatter() {
             @Override
             public String format(int value) {
@@ -1010,7 +1037,12 @@ public class AlertsCreator {
                 return "";
             }
         });
+
         builder.setView(numberPicker);
+
+        //CloudVeil start
+        final int actualMinLength = minLength;
+
         builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -1029,12 +1061,17 @@ public class AlertsCreator {
                 } else if (which == 20) {
                     encryptedChat.ttl = 60 * 60 * 24 * 7;
                 }
+                if(encryptedChat.ttl < actualMinLength) {
+                    encryptedChat.ttl = actualMinLength;
+                }
+
                 if (oldValue != encryptedChat.ttl) {
                     SecretChatHelper.getInstance().sendTTLMessage(encryptedChat, null);
                     MessagesStorage.getInstance().updateEncryptedChatTTL(encryptedChat);
                 }
             }
         });
+        //CloudVeil end
         return builder;
     }
 //

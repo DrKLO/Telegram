@@ -22,6 +22,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import org.cloudveil.messenger.GlobalSecuritySettings;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
@@ -206,6 +207,9 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public void setNeedBotContext(boolean value) {
+        if(GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
+            value = false;
+        }
         needBotContext = value;
     }
 

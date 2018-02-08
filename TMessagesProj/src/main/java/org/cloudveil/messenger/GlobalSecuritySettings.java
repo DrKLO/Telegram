@@ -20,6 +20,7 @@ public class GlobalSecuritySettings {
 
 
     private static boolean DEFAULT_LOCK_DISABLE_SECRET_CHAT = false;
+    private static int DEFAULT_MIN_SECRET_CHAT_TTL = 0;
     public static final boolean LOCK_DISABLE_IN_APP_BROWSER = true;
     public static final boolean LOCK_DISABLE_AUTOPLAY_GIFS = true;
     public static final boolean LOCK_DISABLE_GIFS = true;
@@ -34,5 +35,15 @@ public class GlobalSecuritySettings {
     public static void setDisableSecretChat(boolean isDisabled) {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(GlobalSecuritySettings.class.getCanonicalName(), Activity.MODE_PRIVATE);
         preferences.edit().putBoolean("disabledSecretChat", isDisabled).apply();
+    }
+
+    public static int getMinSecretChatTtl() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(GlobalSecuritySettings.class.getCanonicalName(), Activity.MODE_PRIVATE);
+        return preferences.getInt("minChatTtl", DEFAULT_MIN_SECRET_CHAT_TTL);
+    }
+
+    public static void setMinSecretChatTtl(int ttl) {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(GlobalSecuritySettings.class.getCanonicalName(), Activity.MODE_PRIVATE);
+        preferences.edit().putInt("minChatTtl", ttl).apply();
     }
 }
