@@ -72,7 +72,7 @@ public class ChannelCheckingService extends Service {
     };
 
     private void sendDataCheckRequest() {
-        SettingsRequest request = new SettingsRequest();
+        final SettingsRequest request = new SettingsRequest();
         addDialogsToRequest(request);
 
         request.userPhone = UserConfig.getCurrentUser().phone;
@@ -87,7 +87,7 @@ public class ChannelCheckingService extends Service {
         final SettingsResponse cached = loadFromCache();
         if(!ConnectionsManager.isNetworkOnline()) {
             if(cached != null) {
-                processResponse(cached);
+                processResponse(request, cached);
             }
             return;
         }
@@ -100,7 +100,7 @@ public class ChannelCheckingService extends Service {
 
                     @Override
                     public void accept(SettingsResponse settingsResponse) throws Exception {
-                        processResponse(settingsResponse);
+                        processResponse(request, settingsResponse);
                         freeSubscription();
 
                         saveToCache(settingsResponse);
@@ -110,13 +110,13 @@ public class ChannelCheckingService extends Service {
                     public void accept(Throwable throwable) throws Exception {
                         freeSubscription();
                         if(cached != null) {
-                            processResponse(cached);
+                            processResponse(request, cached);
                         }
                     }
                 });
     }
 
-    private void processResponse(@NonNull SettingsResponse settingsResponse) {
+    private void processResponse(@NonNull SettingsRequest request, @NonNull SettingsResponse settingsResponse) {
         ConcurrentHashMap<Long, Boolean> allowedDialogs = MessagesController.getInstance().allowedDialogs;
         allowedDialogs.clear();
         for (Long channelId : settingsResponse.channels) {
@@ -126,6 +126,9 @@ public class ChannelCheckingService extends Service {
             allowedDialogs.put(groupId, true);
         }
 
+        addBlackListedDialogs(request.channels);
+        addBlackListedDialogs(request.groups);
+        addBlackListedBots(request.bots);
 
         ConcurrentHashMap<Long, Boolean> allowedBots = MessagesController.getInstance().allowedBots;
         allowedBots.clear();
@@ -136,7 +139,27 @@ public class ChannelCheckingService extends Service {
         GlobalSecuritySettings.setDisableSecretChat(!settingsResponse.secretChat);
         GlobalSecuritySettings.setMinSecretChatTtl(settingsResponse.secretChatMinimumLength);
 
+
+
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.filterDialogsReady);
+    }
+
+    private void addBlackListedDialogs(ArrayList<SettingsRequest.Row> rows) {
+        ConcurrentHashMap<Long, Boolean> allowedDialogs = MessagesController.getInstance().allowedDialogs;
+        for(SettingsRequest.Row dlg : rows) {
+            if(!allowedDialogs.containsKey(dlg.id)) {
+                allowedDialogs.put(dlg.id, false);
+            }
+        }
+    }
+
+    private void addBlackListedBots(ArrayList<SettingsRequest.Row> rows) {
+        ConcurrentHashMap<Long, Boolean> allowedBots = MessagesController.getInstance().allowedBots;
+        for(SettingsRequest.Row dlg : rows) {
+            if(!allowedBots.containsKey(dlg.id)) {
+                allowedBots.put(dlg.id, false);
+            }
+        }
     }
 
     private SettingsResponse loadFromCache() {

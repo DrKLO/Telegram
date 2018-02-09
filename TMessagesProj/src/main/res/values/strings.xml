@@ -1783,4 +1783,5 @@
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <string name="cloudveil_message_warning">CloudVeil Messenger uses a server based system to control access to Bots, Channels, and Groups and other policy rules. This is used to block unacceptable content. Your Telegram id and list of channels, bots, and groups will be sent to our system to allow this to work. We do not have access to your messages themselves.</string>
     <string name="warning">Warning</string>
+    <string name="cloudveil_message_dialog_forbidden">This channel/group/bot is blocked by our server policy.  Please contact CloudVeil Support at support@cloudveil.org to request it be unblocked.</string>
 </resources>

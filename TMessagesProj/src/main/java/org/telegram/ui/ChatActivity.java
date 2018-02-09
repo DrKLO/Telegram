@@ -9312,9 +9312,45 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         super.dismissCurrentDialig();
     }
 
+    private void showWarning(Context context) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(context.getString(R.string.warning))
+                .setMessage(context.getString(R.string.cloudveil_message_dialog_forbidden))
+                .setPositiveButton(context.getString(R.string.OK), new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        finishFragment();
+                    }
+                })
+                .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialog) {
+                        finishFragment();
+                    }
+                })
+                .setOnBackButtonListener(new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        finishFragment();
+                    }
+                });
+        showDialog(builder.create(), new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                finishFragment();
+            }
+        });
+    }
+
     @Override
     public void onResume() {
         super.onResume();
+
+        //CloudVeil start
+        if(!MessagesController.getInstance().isDialogIdAllowed(dialog_id)) {
+            showWarning(getParentActivity());
+        }
+        //CloudVeil end
 
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
         MediaController.getInstance().startRaiseToEarSensors(this);

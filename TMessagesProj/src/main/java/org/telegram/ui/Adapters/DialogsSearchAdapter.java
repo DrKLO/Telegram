@@ -259,8 +259,14 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                                 }
                                 for (int a = 0; a < res.messages.size(); a++) {
                                     TLRPC.Message message = res.messages.get(a);
-                                    searchResultMessages.add(new MessageObject(message, null, false));
+                                    //CloudVeil start
                                     long dialog_id = MessageObject.getDialogId(message);
+                                    if(!MessagesController.getInstance().isDialogIdAllowed(dialog_id)) {
+                                        continue;
+                                    }
+                                    //CloudVeil end
+                                    searchResultMessages.add(new MessageObject(message, null, false));
+
                                     ConcurrentHashMap<Long, Integer> read_max = message.out ? MessagesController.getInstance().dialogs_read_outbox_max : MessagesController.getInstance().dialogs_read_inbox_max;
                                     Integer value = read_max.get(dialog_id);
                                     if (value == null) {
@@ -516,6 +522,12 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT did, date FROM dialogs ORDER BY date DESC LIMIT 600");
                     while (cursor.next()) {
                         long id = cursor.longValue(0);
+                        //CloudVeil start
+                        if(!MessagesController.getInstance().isDialogIdAllowed(id)) {
+                            continue;
+                        }
+                        //CloudVeil end
+
                         DialogSearchResult dialogSearchResult = new DialogSearchResult();
                         dialogSearchResult.date = cursor.intValue(1);
                         dialogsResult.put(id, dialogSearchResult);

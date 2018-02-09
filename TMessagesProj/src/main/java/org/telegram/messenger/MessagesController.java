@@ -9066,16 +9066,16 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
         }
 
-        if(encryptedChat != null && GlobalSecuritySettings.isDisabledSecretChat()) {
+        if (encryptedChat != null && GlobalSecuritySettings.isDisabledSecretChat()) {
             return false;
-        }
-        else if (chat != null) {
-            return allowedDialogs.containsKey(currentDialogId);
+        } else if (chat != null) {
+            return !allowedDialogs.containsKey(currentDialogId) || allowedDialogs.get(currentDialogId);
         } else if (user != null) {
-            return !user.bot || allowedBots.containsKey(currentDialogId);
+            return !user.bot || (!allowedBots.containsKey(currentDialogId) || allowedBots.get(currentDialogId));
         }
         return false;
     }
+
 
     public ArrayList<TLRPC.TL_dialog> filterDialogs(ArrayList<TLRPC.TL_dialog> dialogs) {
         ArrayList<TLRPC.TL_dialog> filtered = new ArrayList<>();
