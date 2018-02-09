@@ -137,9 +137,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             needPhonebook = true;
         }
 // Cloudveil Start
-        if (GlobalSecuritySettings.LOCK_DISABLE_BOTS) {
-            allowBots = false;
-        }
+        allowBots = !GlobalSecuritySettings.LOCK_DISABLE_BOTS;
         if (GlobalSecuritySettings.isDisabledSecretChat()) {
             createSecretChat = false;
         }

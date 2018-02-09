@@ -9071,7 +9071,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         } else if (chat != null) {
             return !allowedDialogs.containsKey(currentDialogId) || allowedDialogs.get(currentDialogId);
         } else if (user != null) {
-            return !user.bot || (!allowedBots.containsKey(currentDialogId) || allowedBots.get(currentDialogId));
+            return !user.bot || (GlobalSecuritySettings.LOCK_DISABLE_BOTS || !allowedBots.containsKey(currentDialogId) || allowedBots.get(currentDialogId));
         }
         return false;
     }
