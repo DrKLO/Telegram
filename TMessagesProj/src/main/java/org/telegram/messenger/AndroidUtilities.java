@@ -479,6 +479,14 @@ public class AndroidUtilities {
         } catch (Exception e) {
             FileLog.e(e);
         }
+        try {
+            File file = ApplicationLoader.applicationContext.getCacheDir();
+            if (file != null) {
+                return file;
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
         if (state == null || state.startsWith(Environment.MEDIA_MOUNTED)) {
             try {
                 File file = ApplicationLoader.applicationContext.getExternalCacheDir();
@@ -488,14 +496,6 @@ public class AndroidUtilities {
             } catch (Exception e) {
                 FileLog.e(e);
             }
-        }
-        try {
-            File file = ApplicationLoader.applicationContext.getCacheDir();
-            if (file != null) {
-                return file;
-            }
-        } catch (Exception e) {
-            FileLog.e(e);
         }
         return new File("");
     }
