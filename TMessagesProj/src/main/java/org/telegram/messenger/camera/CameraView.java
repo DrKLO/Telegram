@@ -45,7 +45,6 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private Matrix txform = new Matrix();
     private Matrix matrix = new Matrix();
     private int focusAreaSize;
-    private boolean circleShape = false;
 
     private long lastDrawTime;
     private float focusProgress = 1.0f;
