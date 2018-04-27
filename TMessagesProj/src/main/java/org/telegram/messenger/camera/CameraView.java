@@ -108,10 +108,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         }
         initied = false;
         isFrontface = !isFrontface;
-        initCamera(isFrontface);
+        initCamera();
     }
 
-    private void initCamera(boolean front) {
+    private void initCamera() {
         CameraInfo info = null;
         ArrayList<CameraInfo> cameraInfos = CameraController.getInstance().getCameras();
         if (cameraInfos == null) {
@@ -194,7 +194,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-        initCamera(isFrontface);
+        initCamera();
     }
 
     @Override
