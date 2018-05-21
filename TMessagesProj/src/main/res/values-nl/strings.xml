@@ -110,7 +110,7 @@ Betalingen gaan direct naar de ontwikkelaar van %1$s. Telegram kan geen garantie
     <string name="PaymentEmailToProvider">E-mail wordt doorgegeven aan %1$s als factuurinformatie.</string>
     <string name="PaymentPhoneEmailToProvider">Telefoonnummer en E-mail worden doorgegeven aan %1$s als factuurinformatie.</string>
     <!--chats view-->
-    <string name="NewConversationShortcut">NIeuwe chat</string>
+    <string name="NewConversationShortcut">Nieuwe chat</string>
     <string name="Settings">Instellingen</string>
     <string name="Contacts">Contacten</string>
     <string name="NewGroup">Nieuwe groep</string>
