@@ -1233,7 +1233,7 @@ public class LocaleController {
             lang = "en";
         }
         lang = lang.toLowerCase();
-        isRTL = lang.startsWith("ar") || BuildVars.DEBUG_VERSION && (lang.startsWith("he") || lang.startsWith("iw") || lang.startsWith("fa"));
+        isRTL = lang.startsWith("ar") || BuildVars.DEBUG_VERSION && (lang.startsWith("fa") || lang.startsWith("iw") || lang.startsWith("he"));
         nameDisplayOrder = lang.equals("ko") ? 2 : 1;
 
         formatterMonth = createFormatter(locale, getStringInternal("formatterMonth", R.string.formatterMonth), "dd MMM");
