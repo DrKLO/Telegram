@@ -17,7 +17,6 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging:17.3.0'
     implementation 'com.google.firebase:firebase-config:16.0.0'
     implementation 'com.google.android.gms:play-services-maps:15.0.1'
-    implementation 'com.google.android.gms:play-services-wallet:16.0.0'
     implementation 'com.google.android.gms:play-services-wearable:15.0.1'
     implementation 'com.android.support:support-core-ui:28.0.0-rc01'
     implementation 'com.android.support:support-compat:28.0.0-rc01'
