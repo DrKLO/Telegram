@@ -19,14 +19,17 @@ public class ScreenReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
-            FileLog.e("screen off");
-            ConnectionsManager.getInstance().setAppPaused(true, true);
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("screen off");
+            }
+            ConnectionsManager.getInstance(UserConfig.selectedAccount).setAppPaused(true, true);
             ApplicationLoader.isScreenOn = false;
         } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
-            FileLog.e("screen on");
-            ConnectionsManager.getInstance().setAppPaused(false, true);
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("screen on");
+            }
+            ConnectionsManager.getInstance(UserConfig.selectedAccount).setAppPaused(false, true);
             ApplicationLoader.isScreenOn = true;
         }
-        NotificationCenter.getInstance().postNotificationName(NotificationCenter.screenStateChanged);
     }
 }

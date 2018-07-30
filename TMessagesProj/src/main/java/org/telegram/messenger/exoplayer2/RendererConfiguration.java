@@ -15,6 +15,8 @@
  */
 package org.telegram.messenger.exoplayer2;
 
+import android.support.annotation.Nullable;
+
 /**
  * The configuration of a {@link Renderer}.
  */
@@ -41,7 +43,7 @@ public final class RendererConfiguration {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(@Nullable Object obj) {
     if (this == obj) {
       return true;
     }

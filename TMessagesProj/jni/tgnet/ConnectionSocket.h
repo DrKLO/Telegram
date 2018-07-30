@@ -1,9 +1,9 @@
 /*
- * This is the source code of tgnet library v. 1.0
+ * This is the source code of tgnet library v. 1.1
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2015.
+ * Copyright Nikolai Kudashov, 2015-2018.
  */
 
 #ifndef CONNECTIONSOCKET_H
@@ -21,7 +21,7 @@ class EventObject;
 class ConnectionSocket {
 
 public:
-    ConnectionSocket();
+    ConnectionSocket(int32_t instance);
     virtual ~ConnectionSocket();
 
     void writeBuffer(uint8_t *data, uint32_t size);
@@ -31,13 +31,21 @@ public:
     time_t getTimeout();
     bool isDisconnected();
     void dropConnection();
+    void setOverrideProxy(std::string address, uint16_t port, std::string username, std::string password, std::string secret);
 
 protected:
+    int32_t instanceNum;
     void onEvent(uint32_t events);
     void checkTimeout(int64_t now);
     virtual void onReceivedData(NativeByteBuffer *buffer) = 0;
-    virtual void onDisconnected(int reason) = 0;
+    virtual void onDisconnected(int32_t reason, int32_t error) = 0;
     virtual void onConnected() = 0;
+
+    std::string overrideProxyUser = "";
+    std::string overrideProxyPassword = "";
+    std::string overrideProxyAddress = "";
+    std::string overrideProxySecret = "";
+    uint16_t overrideProxyPort = 1080;
 
 private:
     ByteStream *outgoingByteStream = nullptr;
@@ -54,14 +62,17 @@ private:
     std::string currentAddress;
     uint16_t currentPort;
 
+    uint8_t buffer[1024];
+
     uint8_t proxyAuthState;
 
-    bool checkSocketError();
-    void closeSocket(int reason);
+    int32_t checkSocketError(int32_t *error);
+    void closeSocket(int32_t reason, int32_t error);
     void adjustWriteOp();
 
     friend class EventObject;
     friend class ConnectionsManager;
+    friend class Connection;
 };
 
 #endif

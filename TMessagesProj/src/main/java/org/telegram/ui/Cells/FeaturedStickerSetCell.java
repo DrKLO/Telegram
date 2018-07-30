@@ -16,6 +16,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -29,9 +30,10 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.query.StickersQuery;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
@@ -51,6 +53,8 @@ public class FeaturedStickerSetCell extends FrameLayout {
     private boolean wasLayout;
 
     private boolean isInstalled;
+
+    private int currentAccount = UserConfig.selectedAccount;
 
     private boolean drawProgress;
     private float progressAlpha;
@@ -199,7 +203,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
 
                 @Override
                 public int getOpacity() {
-                    return 0;
+                    return PixelFormat.TRANSPARENT;
                 }
 
                 @Override
@@ -220,13 +224,13 @@ public class FeaturedStickerSetCell extends FrameLayout {
         valueTextView.setText(LocaleController.formatPluralString("Stickers", set.set.count));
         if (set.cover != null && set.cover.thumb != null && set.cover.thumb.location != null) {
             imageView.setImage(set.cover.thumb.location, null, "webp", null);
-        } else if (!set.covers.isEmpty()) {
+        } else if (!set.covers.isEmpty() && set.covers.get(0).thumb != null) {
             imageView.setImage(set.covers.get(0).thumb.location, null, "webp", null);
         }
 
         if (sameSet) {
             boolean wasInstalled = isInstalled;
-            if (isInstalled = StickersQuery.isStickerPackInstalled(set.set.id)) {
+            if (isInstalled = DataQuery.getInstance(currentAccount).isStickerPackInstalled(set.set.id)) {
                 if (!wasInstalled) {
                     checkImage.setVisibility(VISIBLE);
                     addButton.setClickable(false);
@@ -286,7 +290,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
                 }
             }
         } else {
-            if (isInstalled = StickersQuery.isStickerPackInstalled(set.set.id)) {
+            if (isInstalled = DataQuery.getInstance(currentAccount).isStickerPackInstalled(set.set.id)) {
                 addButton.setVisibility(INVISIBLE);
                 addButton.setClickable(false);
                 checkImage.setVisibility(VISIBLE);

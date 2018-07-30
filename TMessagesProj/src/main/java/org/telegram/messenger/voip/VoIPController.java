@@ -8,7 +8,6 @@
 
 package org.telegram.messenger.voip;
 
-import android.app.Activity;
 import android.content.SharedPreferences;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.os.Build;
@@ -16,6 +15,7 @@ import android.os.SystemClock;
 
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.MessagesController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.voip.VoIPHelper;
 
@@ -50,6 +50,8 @@ public class VoIPController {
 	public static final int DATA_SAVING_MOBILE=1;
 	public static final int DATA_SAVING_ALWAYS=2;
 
+	public static final int ERROR_CONNECTION_SERVICE=-5;
+	public static final int ERROR_INSECURE_UPGRADE=-4;
 	public static final int ERROR_LOCALIZED=-3;
 	public static final int ERROR_PRIVACY=-2;
 	public static final int ERROR_PEER_OUTDATED=-1;
@@ -57,6 +59,8 @@ public class VoIPController {
 	public static final int ERROR_INCOMPATIBLE=1;
 	public static final int ERROR_TIMEOUT=2;
 	public static final int ERROR_AUDIO_IO=3;
+
+	public static final int PEER_CAP_GROUP_CALLS=1;
 
 	protected long nativeInst = 0;
 	protected long callStartTime;
@@ -76,7 +80,7 @@ public class VoIPController {
 		nativeConnect(nativeInst);
 	}
 
-	public void setRemoteEndpoints(TLRPC.TL_phoneConnection[] endpoints, boolean allowP2p) {
+	public void setRemoteEndpoints(TLRPC.TL_phoneConnection[] endpoints, boolean allowP2p, boolean tcp, int connectionMaxLayer) {
 		if (endpoints.length == 0) {
 			throw new IllegalArgumentException("endpoints size is 0");
 		}
@@ -90,7 +94,7 @@ public class VoIPController {
 			}
 		}
 		ensureNativeInstance();
-		nativeSetRemoteEndpoints(nativeInst, endpoints, allowP2p);
+		nativeSetRemoteEndpoints(nativeInst, endpoints, allowP2p, tcp, connectionMaxLayer);
 	}
 
 	public void setEncryptionKey(byte[] key, boolean isOutgoing) {
@@ -141,6 +145,24 @@ public class VoIPController {
 			listener.onSignalBarCountChanged(count);
 	}
 
+	// called from native code
+	private void groupCallKeyReceived(byte[] key){
+		if(listener!=null)
+			listener.onGroupCallKeyReceived(key);
+	}
+
+	// called from native code
+	private void groupCallKeySent(){
+		if(listener!=null)
+			listener.onGroupCallKeySent();
+	}
+
+	// called from native code
+	private void callUpgradeRequestReceived(){
+		if(listener!=null)
+			listener.onCallUpgradeRequestReceived();
+	}
+
 	public void setNetworkType(int type) {
 		ensureNativeInstance();
 		nativeSetNetworkType(nativeInst, type);
@@ -166,11 +188,11 @@ public class VoIPController {
 
 			}
 		}
-		SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+		SharedPreferences preferences = MessagesController.getGlobalMainSettings();
 		boolean dump = preferences.getBoolean("dbg_dump_call_stats", false);
 		nativeSetConfig(nativeInst, recvTimeout, initTimeout, dataSavingOption,
-				Build.VERSION.SDK_INT<Build.VERSION_CODES.JELLY_BEAN || !(sysAecAvailable && VoIPServerConfig.getBoolean("use_system_aec", true)),
-				Build.VERSION.SDK_INT<Build.VERSION_CODES.JELLY_BEAN || !(sysNsAvailable && VoIPServerConfig.getBoolean("use_system_ns", true)),
+				!(sysAecAvailable && VoIPServerConfig.getBoolean("use_system_aec", true)),
+				!(sysNsAvailable && VoIPServerConfig.getBoolean("use_system_ns", true)),
 				true, BuildConfig.DEBUG ? getLogFilePath("voip") : getLogFilePath(callID), BuildConfig.DEBUG && dump ? getLogFilePath("voipStats") : null);
 	}
 
@@ -244,11 +266,35 @@ public class VoIPController {
 		nativeSetAudioOutputGainControlEnabled(nativeInst, enabled);
 	}
 
+	public int getPeerCapabilities(){
+		ensureNativeInstance();
+		return nativeGetPeerCapabilities(nativeInst);
+	}
+
+	public void sendGroupCallKey(byte[] key){
+		if(key==null)
+			throw new NullPointerException("key can not be null");
+		if(key.length!=256)
+			throw new IllegalArgumentException("key must be 256 bytes long, got "+key.length);
+		ensureNativeInstance();
+		nativeSendGroupCallKey(nativeInst, key);
+	}
+
+	public void requestCallUpgrade(){
+		ensureNativeInstance();
+		nativeRequestCallUpgrade(nativeInst);
+	}
+
+	public void setEchoCancellationStrength(int strength){
+		ensureNativeInstance();
+		nativeSetEchoCancellationStrength(nativeInst, strength);
+	}
+
 	private native long nativeInit();
 	private native void nativeStart(long inst);
 	private native void nativeConnect(long inst);
 	private static native void nativeSetNativeBufferSize(int size);
-	private native void nativeSetRemoteEndpoints(long inst, TLRPC.TL_phoneConnection[] endpoints, boolean allowP2p);
+	private native void nativeSetRemoteEndpoints(long inst, TLRPC.TL_phoneConnection[] endpoints, boolean allowP2p, boolean tcp, int connectionMaxLayer);
 	private native void nativeRelease(long inst);
 	private native void nativeSetNetworkType(long inst, int type);
 	private native void nativeSetMicMute(long inst, boolean mute);
@@ -262,11 +308,18 @@ public class VoIPController {
 	private native String nativeGetDebugString(long inst);
 	private static native String nativeGetVersion();
 	private native void nativeSetAudioOutputGainControlEnabled(long inst, boolean enabled);
+	private native void nativeSetEchoCancellationStrength(long inst, int strength);
 	private native String nativeGetDebugLog(long inst);
+	private native int nativeGetPeerCapabilities(long inst);
+	private native void nativeSendGroupCallKey(long inst, byte[] key);
+	private native void nativeRequestCallUpgrade(long inst);
 
 	public interface ConnectionStateListener {
 		void onConnectionStateChanged(int newState);
 		void onSignalBarCountChanged(int newCount);
+		void onGroupCallKeyReceived(byte[] key);
+		void onGroupCallKeySent();
+		void onCallUpgradeRequestReceived();
 	}
 
 	public static class Stats{

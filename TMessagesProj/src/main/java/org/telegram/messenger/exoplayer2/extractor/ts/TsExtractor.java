@@ -20,6 +20,7 @@ import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
 import org.telegram.messenger.exoplayer2.C;
+import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.extractor.Extractor;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorInput;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
@@ -45,7 +46,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Facilitates the extraction of data from the MPEG-2 TS container format.
+ * Extracts data from the MPEG-2 TS container format.
  */
 public final class TsExtractor implements Extractor {
 
@@ -84,7 +85,8 @@ public final class TsExtractor implements Extractor {
 
   public static final int TS_STREAM_TYPE_MPA = 0x03;
   public static final int TS_STREAM_TYPE_MPA_LSF = 0x04;
-  public static final int TS_STREAM_TYPE_AAC = 0x0F;
+  public static final int TS_STREAM_TYPE_AAC_ADTS = 0x0F;
+  public static final int TS_STREAM_TYPE_AAC_LATM = 0x11;
   public static final int TS_STREAM_TYPE_AC3 = 0x81;
   public static final int TS_STREAM_TYPE_DTS = 0x8A;
   public static final int TS_STREAM_TYPE_HDMV_DTS = 0x82;
@@ -121,6 +123,7 @@ public final class TsExtractor implements Extractor {
   private int remainingPmts;
   private boolean tracksEnded;
   private TsPayloadReader id3Reader;
+  private int bytesSinceLastSync;
 
   public TsExtractor() {
     this(0);
@@ -162,7 +165,7 @@ public final class TsExtractor implements Extractor {
       timestampAdjusters = new ArrayList<>();
       timestampAdjusters.add(timestampAdjuster);
     }
-    tsPacketBuffer = new ParsableByteArray(BUFFER_SIZE);
+    tsPacketBuffer = new ParsableByteArray(new byte[BUFFER_SIZE], 0);
     trackIds = new SparseBooleanArray();
     tsPayloadReaders = new SparseArray<>();
     continuityCounters = new SparseIntArray();
@@ -205,6 +208,7 @@ public final class TsExtractor implements Extractor {
     continuityCounters.clear();
     // Elementary stream readers' state should be cleared to get consistent behaviours when seeking.
     resetPayloadReaders();
+    bytesSinceLastSync = 0;
   }
 
   @Override
@@ -237,8 +241,9 @@ public final class TsExtractor implements Extractor {
     }
 
     // Note: See ISO/IEC 13818-1, section 2.4.3.2 for details of the header format.
-    final int limit = tsPacketBuffer.limit();
+    int limit = tsPacketBuffer.limit();
     int position = tsPacketBuffer.getPosition();
+    int searchStart = position;
     while (position < limit && data[position] != TS_SYNC_BYTE) {
       position++;
     }
@@ -246,8 +251,13 @@ public final class TsExtractor implements Extractor {
 
     int endOfPacket = position + TS_PACKET_SIZE;
     if (endOfPacket > limit) {
+      bytesSinceLastSync += position - searchStart;
+      if (mode == MODE_HLS && bytesSinceLastSync > TS_PACKET_SIZE * 2) {
+        throw new ParserException("Cannot find sync byte. Most likely not a Transport Stream.");
+      }
       return RESULT_CONTINUE;
     }
+    bytesSinceLastSync = 0;
 
     int tsPacketHeader = tsPacketBuffer.readInt();
     if ((tsPacketHeader & 0x800000) != 0) { // transport_error_indicator
@@ -262,20 +272,24 @@ public final class TsExtractor implements Extractor {
     boolean adaptationFieldExists = (tsPacketHeader & 0x20) != 0;
     boolean payloadExists = (tsPacketHeader & 0x10) != 0;
 
+    TsPayloadReader payloadReader = payloadExists ? tsPayloadReaders.get(pid) : null;
+    if (payloadReader == null) {
+      tsPacketBuffer.setPosition(endOfPacket);
+      return RESULT_CONTINUE;
+    }
+
     // Discontinuity check.
-    boolean discontinuityFound = false;
     if (mode != MODE_HLS) {
       int continuityCounter = tsPacketHeader & 0xF;
       int previousCounter = continuityCounters.get(pid, continuityCounter - 1);
       continuityCounters.put(pid, continuityCounter);
       if (previousCounter == continuityCounter) {
-        if (payloadExists) {
-          // Duplicate packet found.
-          tsPacketBuffer.setPosition(endOfPacket);
-          return RESULT_CONTINUE;
-        }
+        // Duplicate packet found.
+        tsPacketBuffer.setPosition(endOfPacket);
+        return RESULT_CONTINUE;
       } else if (continuityCounter != ((previousCounter + 1) & 0xF)) {
-        discontinuityFound = true;
+        // Discontinuity found.
+        payloadReader.seek();
       }
     }
 
@@ -286,17 +300,9 @@ public final class TsExtractor implements Extractor {
     }
 
     // Read the payload.
-    if (payloadExists) {
-      TsPayloadReader payloadReader = tsPayloadReaders.get(pid);
-      if (payloadReader != null) {
-        if (discontinuityFound) {
-          payloadReader.seek();
-        }
-        tsPacketBuffer.setLimit(endOfPacket);
-        payloadReader.consume(tsPacketBuffer, payloadUnitStartIndicator);
-        tsPacketBuffer.setLimit(limit);
-      }
-    }
+    tsPacketBuffer.setLimit(endOfPacket);
+    payloadReader.consume(tsPacketBuffer, payloadUnitStartIndicator);
+    tsPacketBuffer.setLimit(limit);
 
     tsPacketBuffer.setPosition(endOfPacket);
     return RESULT_CONTINUE;

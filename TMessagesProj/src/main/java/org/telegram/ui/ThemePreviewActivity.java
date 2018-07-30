@@ -359,13 +359,13 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
         super.onFragmentDestroy();
     }
 
@@ -389,7 +389,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
 
     @Override
     @SuppressWarnings("unchecked")
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.emojiDidLoaded) {
             if (listView == null) {
                 return;
@@ -431,8 +431,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             dialogs.add(customDialog);
 
             customDialog = new DialogCell.CustomDialog();
-            customDialog.name = "Alexandra Smith";
-            customDialog.message = "Reminds me of a Chinese prove...";
+            customDialog.name = "Your inner Competition";
+            customDialog.message = "hey, I've updated the source code.";
             customDialog.id = 1;
             customDialog.unread_count = 2;
             customDialog.pinned = false;
@@ -445,7 +445,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             dialogs.add(customDialog);
 
             customDialog = new DialogCell.CustomDialog();
-            customDialog.name = "Make Apple";
+            customDialog.name = "Mike Apple";
             customDialog.message = "\uD83E\uDD37\u200D♂️ Sticker";
             customDialog.id = 2;
             customDialog.unread_count = 3;
@@ -588,27 +588,27 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             message.date = date + 60;
             message.dialog_id = 1;
             message.flags = 259;
-            message.from_id = UserConfig.getClientUserId();
+            message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
             message.id = 1;
             message.media = new TLRPC.TL_messageMediaEmpty();
             message.out = true;
             message.to_id = new TLRPC.TL_peerUser();
             message.to_id.user_id = 0;
-            MessageObject replyMessageObject = new MessageObject(message, null, true);
+            MessageObject replyMessageObject = new MessageObject(currentAccount, message, true);
 
             message = new TLRPC.TL_message();
             message.message = "I can't even take you seriously right now.";
             message.date = date + 960;
             message.dialog_id = 1;
             message.flags = 259;
-            message.from_id = UserConfig.getClientUserId();
+            message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
             message.id = 1;
             message.media = new TLRPC.TL_messageMediaEmpty();
             message.out = true;
             message.to_id = new TLRPC.TL_peerUser();
             message.to_id.user_id = 0;
             MessageObject messageObject;
-            messages.add(new MessageObject(message, null, true));
+            messages.add(new MessageObject(currentAccount, message, true));
 
             message = new TLRPC.TL_message();
             message.date = date + 130;
@@ -629,8 +629,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             message.media.document.attributes.add(audio);
             message.out = false;
             message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = UserConfig.getClientUserId();
-            messages.add(new MessageObject(message, null, true));
+            message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
+            messages.add(new MessageObject(currentAccount, message, true));
 
             message = new TLRPC.TL_message();
             message.message = "Ah, you kids today with techno music! You should enjoy the classics, like Hasselhoff!";
@@ -643,8 +643,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             message.media = new TLRPC.TL_messageMediaEmpty();
             message.out = false;
             message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = UserConfig.getClientUserId();
-            messageObject = new MessageObject(message, null, true);
+            message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
+            messageObject = new MessageObject(currentAccount, message, true);
             messageObject.customReplyName = "Lucio";
             messageObject.replyMessageObject = replyMessageObject;
             messages.add(messageObject);
@@ -653,7 +653,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             message.date = date + 120;
             message.dialog_id = 1;
             message.flags = 259;
-            message.from_id = UserConfig.getClientUserId();
+            message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
             message.id = 1;
             message.media = new TLRPC.TL_messageMediaDocument();
             message.media.flags |= 3;
@@ -672,7 +672,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             message.out = true;
             message.to_id = new TLRPC.TL_peerUser();
             message.to_id.user_id = 0;
-            messageObject = new MessageObject(message, null, true);
+            messageObject = new MessageObject(currentAccount, message, true);
             messageObject.audioProgressSec = 1;
             messageObject.audioProgress = 0.3f;
             messageObject.useCustomPhoto = true;
@@ -700,11 +700,11 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             photoSize.type = "s";
             photoSize.location = new TLRPC.TL_fileLocationUnavailable();
             message.media.photo.sizes.add(photoSize);
-            message.media.caption = "Bring it on! I LIVE for this!";
+            message.message = "Bring it on! I LIVE for this!";
             message.out = false;
             message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = UserConfig.getClientUserId();
-            messageObject = new MessageObject(message, null, true);
+            message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
+            messageObject = new MessageObject(currentAccount, message, true);
             messageObject.useCustomPhoto = true;
             messages.add(messageObject);
 
@@ -712,7 +712,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             message.message = LocaleController.formatDateChat(date);
             message.id = 0;
             message.date = date;
-            messageObject = new MessageObject(message, null, false);
+            messageObject = new MessageObject(currentAccount, message, false);
             messageObject.type = 10;
             messageObject.contentType = 1;
             messageObject.isDateObject = true;

@@ -22,55 +22,66 @@ extern "C" {
 #endif
 
 
-/* CMAC.
- *
- * CMAC is a MAC based on AES-CBC and defined in
- * https://tools.ietf.org/html/rfc4493#section-2.3. */
+// CMAC.
+//
+// CMAC is a MAC based on AES-CBC and defined in
+// https://tools.ietf.org/html/rfc4493#section-2.3.
 
 
-/* One-shot functions. */
+// One-shot functions.
 
-/* AES_CMAC calculates the 16-byte, CMAC authenticator of |in_len| bytes of
- * |in| and writes it to |out|. The |key_len| may be 16 or 32 bytes to select
- * between AES-128 and AES-256. It returns one on success or zero on error. */
+// AES_CMAC calculates the 16-byte, CMAC authenticator of |in_len| bytes of
+// |in| and writes it to |out|. The |key_len| may be 16 or 32 bytes to select
+// between AES-128 and AES-256. It returns one on success or zero on error.
 OPENSSL_EXPORT int AES_CMAC(uint8_t out[16], const uint8_t *key, size_t key_len,
                             const uint8_t *in, size_t in_len);
 
 
-/* Incremental interface. */
+// Incremental interface.
 
-/* CMAC_CTX_new allocates a fresh |CMAC_CTX| and returns it, or NULL on
- * error. */
+// CMAC_CTX_new allocates a fresh |CMAC_CTX| and returns it, or NULL on
+// error.
 OPENSSL_EXPORT CMAC_CTX *CMAC_CTX_new(void);
 
-/* CMAC_CTX_free frees a |CMAC_CTX|. */
+// CMAC_CTX_free frees a |CMAC_CTX|.
 OPENSSL_EXPORT void CMAC_CTX_free(CMAC_CTX *ctx);
 
-/* CMAC_Init configures |ctx| to use the given |key| and |cipher|. The CMAC RFC
- * only specifies the use of AES-128 thus |key_len| should be 16 and |cipher|
- * should be |EVP_aes_128_cbc()|. However, this implementation also supports
- * AES-256 by setting |key_len| to 32 and |cipher| to |EVP_aes_256_cbc()|. The
- * |engine| argument is ignored.
- *
- * It returns one on success or zero on error. */
+// CMAC_Init configures |ctx| to use the given |key| and |cipher|. The CMAC RFC
+// only specifies the use of AES-128 thus |key_len| should be 16 and |cipher|
+// should be |EVP_aes_128_cbc()|. However, this implementation also supports
+// AES-256 by setting |key_len| to 32 and |cipher| to |EVP_aes_256_cbc()|. The
+// |engine| argument is ignored.
+//
+// It returns one on success or zero on error.
 OPENSSL_EXPORT int CMAC_Init(CMAC_CTX *ctx, const void *key, size_t key_len,
                              const EVP_CIPHER *cipher, ENGINE *engine);
 
 
-/* CMAC_Reset resets |ctx| so that a fresh message can be authenticated. */
+// CMAC_Reset resets |ctx| so that a fresh message can be authenticated.
 OPENSSL_EXPORT int CMAC_Reset(CMAC_CTX *ctx);
 
-/* CMAC_Update processes |in_len| bytes of message from |in|. It returns one on
- * success or zero on error. */
+// CMAC_Update processes |in_len| bytes of message from |in|. It returns one on
+// success or zero on error.
 OPENSSL_EXPORT int CMAC_Update(CMAC_CTX *ctx, const uint8_t *in, size_t in_len);
 
-/* CMAC_Final sets |*out_len| to 16 and, if |out| is not NULL, writes 16 bytes
- * of authenticator to it. It returns one on success or zero on error. */
+// CMAC_Final sets |*out_len| to 16 and, if |out| is not NULL, writes 16 bytes
+// of authenticator to it. It returns one on success or zero on error.
 OPENSSL_EXPORT int CMAC_Final(CMAC_CTX *ctx, uint8_t *out, size_t *out_len);
 
 
 #if defined(__cplusplus)
-}  /* extern C */
+}  // extern C
+
+extern "C++" {
+
+namespace bssl {
+
+BORINGSSL_MAKE_DELETER(CMAC_CTX, CMAC_CTX_free)
+
+}  // namespace bssl
+
+}  // extern C++
+
 #endif
 
-#endif  /* OPENSSL_HEADER_CBC_H */
+#endif  // OPENSSL_HEADER_CMAC_H

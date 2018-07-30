@@ -12,12 +12,14 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.support.annotation.Keep;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 public class Switch2 extends View {
 
@@ -30,9 +32,9 @@ public class Switch2 extends View {
 
     private boolean attachedToWindow;
     private boolean isChecked;
-    private boolean isDisabled;
     private Paint paint;
     private Paint paint2;
+    private Paint shadowPaint;
 
     public Switch2(Context context) {
         super(context);
@@ -50,6 +52,7 @@ public class Switch2 extends View {
             }
         }
 
+        shadowPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint2.setStyle(Paint.Style.STROKE);
@@ -107,11 +110,6 @@ public class Switch2 extends View {
         }
     }
 
-    public void setDisabled(boolean disabled) {
-        isDisabled = disabled;
-        invalidate();
-    }
-
     public boolean isChecked() {
         return isChecked;
     }
@@ -129,24 +127,48 @@ public class Switch2 extends View {
         int tx = (int) ((width - AndroidUtilities.dp(14)) * progress) + x + AndroidUtilities.dp(7);
         int ty = getMeasuredHeight() / 2;
 
+        int color1 = Theme.getColor(Theme.key_switch2Track);
+        int color2 = Theme.getColor(Theme.key_switch2TrackChecked);
+        int r1 = Color.red(color1);
+        int r2 = Color.red(color2);
+        int g1 = Color.green(color1);
+        int g2 = Color.green(color2);
+        int b1 = Color.blue(color1);
+        int b2 = Color.blue(color2);
+        int a1 = Color.alpha(color1);
+        int a2 = Color.alpha(color2);
 
-        int red = (int) (0xff + (0xa0 - 0xff) * progress);
-        int green = (int) (0xb0 + (0xd6 - 0xb0) * progress);
-        int blue = (int) (0xad + (0xfa - 0xad) * progress);
-        paint.setColor(0xff000000 | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff));
+        int red = (int) (r1 + (r2 - r1) * progress);
+        int green = (int) (g1 + (g2 - g1) * progress);
+        int blue = (int) (b1 + (b2 - b1) * progress);
+        int alpha = (int) (a1 + (a2 - a1) * progress);
+        paint.setColor(((alpha & 0xff) << 24) | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff));
 
         rectF.set(x, y, x + width, y + AndroidUtilities.dp(14));
         canvas.drawRoundRect(rectF, AndroidUtilities.dp(7), AndroidUtilities.dp(7), paint);
 
-        red = (int) (0xdb + (0x44 - 0xdb) * progress);
-        green = (int) (0x58 + (0xa8 - 0x58) * progress);
-        blue = (int) (0x5c + (0xea - 0x5c) * progress);
-        paint.setColor(0xff000000 | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff));
+        color1 = Theme.getColor(Theme.key_switch2Thumb);
+        color2 = Theme.getColor(Theme.key_switch2ThumbChecked);
+        r1 = Color.red(color1);
+        r2 = Color.red(color2);
+        g1 = Color.green(color1);
+        g2 = Color.green(color2);
+        b1 = Color.blue(color1);
+        b2 = Color.blue(color2);
+        a1 = Color.alpha(color1);
+        a2 = Color.alpha(color2);
 
-        canvas.drawBitmap(drawBitmap, tx - AndroidUtilities.dp(12), ty - AndroidUtilities.dp(11), null);
+        red = (int) (r1 + (r2 - r1) * progress);
+        green = (int) (g1 + (g2 - g1) * progress);
+        blue = (int) (b1 + (b2 - b1) * progress);
+        alpha = (int) (a1 + (a2 - a1) * progress);
+        paint.setColor(((alpha & 0xff) << 24) | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff));
+
+        shadowPaint.setAlpha(alpha);
+        canvas.drawBitmap(drawBitmap, tx - AndroidUtilities.dp(12), ty - AndroidUtilities.dp(11), shadowPaint);
         canvas.drawCircle(tx, ty, AndroidUtilities.dp(10), paint);
 
-        paint2.setColor(0xffffffff);
+        paint2.setColor(Theme.getColor(Theme.key_switch2Check));
         tx -= AndroidUtilities.dp(10.8f) - AndroidUtilities.dp(1.3f) * progress;
         ty -= AndroidUtilities.dp(8.5f) - AndroidUtilities.dp(0.5f) * progress;
         int startX2 = (int) AndroidUtilities.dpf2(4.6f) + tx;

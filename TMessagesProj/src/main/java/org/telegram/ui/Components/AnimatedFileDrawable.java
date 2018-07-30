@@ -33,9 +33,9 @@ import java.util.concurrent.TimeUnit;
 
 public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
 
-    private static native int createDecoder(String src, int[] params);
-    private static native void destroyDecoder(int ptr);
-    private static native int getVideoFrame(int ptr, Bitmap bitmap, int[] params);
+    private static native long createDecoder(String src, int[] params);
+    private static native void destroyDecoder(long ptr);
+    private static native int getVideoFrame(long ptr, Bitmap bitmap, int[] params);
 
     private long lastFrameTime;
     private int lastTimeStamp;
@@ -72,7 +72,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private static final Handler uiHandler = new Handler(Looper.getMainLooper());
     private volatile boolean isRunning;
     private volatile boolean isRecycled;
-    private volatile int nativePtr;
+    private volatile long nativePtr;
     private static ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(2, new ThreadPoolExecutor.DiscardPolicy());
 
     private View parentView = null;

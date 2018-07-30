@@ -22,6 +22,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.support.annotation.Nullable;
 import java.util.Arrays;
 
 /**
@@ -96,7 +97,7 @@ public final class AudioCapabilities {
   }
 
   @Override
-  public boolean equals(Object other) {
+  public boolean equals(@Nullable Object other) {
     if (this == other) {
       return true;
     }

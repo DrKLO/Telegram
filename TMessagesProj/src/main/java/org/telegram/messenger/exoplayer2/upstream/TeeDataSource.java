@@ -28,6 +28,9 @@ public final class TeeDataSource implements DataSource {
   private final DataSource upstream;
   private final DataSink dataSink;
 
+  private boolean dataSinkNeedsClosing;
+  private long bytesRemaining;
+
   /**
    * @param upstream The upstream {@link DataSource}.
    * @param dataSink The {@link DataSink} into which data is written.
@@ -39,24 +42,40 @@ public final class TeeDataSource implements DataSource {
 
   @Override
   public long open(DataSpec dataSpec) throws IOException {
-    long dataLength = upstream.open(dataSpec);
-    if (dataSpec.length == C.LENGTH_UNSET && dataLength != C.LENGTH_UNSET) {
-      // Reconstruct dataSpec in order to provide the resolved length to the sink.
-      dataSpec = new DataSpec(dataSpec.uri, dataSpec.absoluteStreamPosition, dataSpec.position,
-          dataLength, dataSpec.key, dataSpec.flags);
+    bytesRemaining = upstream.open(dataSpec);
+    if (bytesRemaining == 0) {
+      return 0;
     }
+    if (dataSpec.length == C.LENGTH_UNSET && bytesRemaining != C.LENGTH_UNSET) {
+      // Reconstruct dataSpec in order to provide the resolved length to the sink.
+      dataSpec =
+          new DataSpec(
+              dataSpec.uri,
+              dataSpec.absoluteStreamPosition,
+              dataSpec.position,
+              bytesRemaining,
+              dataSpec.key,
+              dataSpec.flags);
+    }
+    dataSinkNeedsClosing = true;
     dataSink.open(dataSpec);
-    return dataLength;
+    return bytesRemaining;
   }
 
   @Override
   public int read(byte[] buffer, int offset, int max) throws IOException {
-    int num = upstream.read(buffer, offset, max);
-    if (num > 0) {
-      // TODO: Consider continuing even if disk writes fail.
-      dataSink.write(buffer, offset, num);
+    if (bytesRemaining == 0) {
+      return C.RESULT_END_OF_INPUT;
     }
-    return num;
+    int bytesRead = upstream.read(buffer, offset, max);
+    if (bytesRead > 0) {
+      // TODO: Consider continuing even if writes to the sink fail.
+      dataSink.write(buffer, offset, bytesRead);
+      if (bytesRemaining != C.LENGTH_UNSET) {
+        bytesRemaining -= bytesRead;
+      }
+    }
+    return bytesRead;
   }
 
   @Override
@@ -69,7 +88,10 @@ public final class TeeDataSource implements DataSource {
     try {
       upstream.close();
     } finally {
-      dataSink.close();
+      if (dataSinkNeedsClosing) {
+        dataSinkNeedsClosing = false;
+        dataSink.close();
+      }
     }
   }
 

@@ -26,14 +26,31 @@ import org.telegram.messenger.exoplayer2.upstream.LoaderErrorThrower;
  */
 public interface SsChunkSource extends ChunkSource {
 
+  /** Factory for {@link SsChunkSource}s. */
   interface Factory {
 
-    SsChunkSource createChunkSource(LoaderErrorThrower manifestLoaderErrorThrower,
-        SsManifest manifest, int elementIndex, TrackSelection trackSelection,
+    /**
+     * Creates a new {@link SsChunkSource}.
+     *
+     * @param manifestLoaderErrorThrower Throws errors affecting loading of manifests.
+     * @param manifest The initial manifest.
+     * @param streamElementIndex The index of the corresponding stream element in the manifest.
+     * @param trackSelection The track selection.
+     * @param trackEncryptionBoxes Track encryption boxes for the stream.
+     * @return The created {@link SsChunkSource}.
+     */
+    SsChunkSource createChunkSource(
+        LoaderErrorThrower manifestLoaderErrorThrower,
+        SsManifest manifest,
+        int streamElementIndex,
+        TrackSelection trackSelection,
         TrackEncryptionBox[] trackEncryptionBoxes);
-
   }
 
+  /**
+   * Updates the manifest.
+   *
+   * @param newManifest The new manifest.
+   */
   void updateManifest(SsManifest newManifest);
-
 }

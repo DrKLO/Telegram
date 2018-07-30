@@ -19,6 +19,7 @@ import android.util.Log;
 import android.util.Pair;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
+import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.extractor.DummyTrackOutput;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
 import org.telegram.messenger.exoplayer2.extractor.TrackOutput;
@@ -128,7 +129,7 @@ public final class AdtsReader implements ElementaryStreamReader {
   }
 
   @Override
-  public void consume(ParsableByteArray data) {
+  public void consume(ParsableByteArray data) throws ParserException {
     while (data.bytesLeft() > 0) {
       switch (state) {
         case STATE_FINDING_SAMPLE:
@@ -276,7 +277,7 @@ public final class AdtsReader implements ElementaryStreamReader {
   /**
    * Parses the sample header.
    */
-  private void parseAdtsHeader() {
+  private void parseAdtsHeader() throws ParserException {
     adtsScratch.setPosition(0);
 
     if (!hasOutputFormat) {

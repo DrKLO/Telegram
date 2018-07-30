@@ -46,6 +46,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     private ChatActivity parentFragment;
     private StatusDrawable[] statusDrawables = new StatusDrawable[5];
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
+    private int currentAccount = UserConfig.selectedAccount;
+    private boolean occupyStatusBar = true;
 
     private int onlineCount = -1;
     private int currentConnectionState;
@@ -97,7 +99,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                         Bundle args = new Bundle();
                         if (UserObject.isUserSelf(user)) {
                             args.putLong("dialog_id", parentFragment.getDialogId());
-                            MediaActivity fragment = new MediaActivity(args);
+                            MediaActivity fragment = new MediaActivity(args, new int[]{-1, -1, -1, -1, -1});
                             fragment.setChatInfo(parentFragment.getCurrentChatInfo());
                             parentFragment.presentFragment(fragment);
                         } else {
@@ -132,6 +134,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         }
     }
 
+    public void setOccupyStatusBar(boolean value) {
+        occupyStatusBar = value;
+    }
+
     public void setTitleColors(int title, int subtitle) {
         titleTextView.setTextColor(title);
         subtitleTextView.setTextColor(title);
@@ -153,7 +159,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         int actionBarHeight = ActionBar.getCurrentActionBarHeight();
-        int viewTop = (actionBarHeight - AndroidUtilities.dp(42)) / 2 + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+        int viewTop = (actionBarHeight - AndroidUtilities.dp(42)) / 2 + (Build.VERSION.SDK_INT >= 21 && occupyStatusBar ? AndroidUtilities.statusBarHeight : 0);
         avatarImageView.layout(AndroidUtilities.dp(8), viewTop, AndroidUtilities.dp(42 + 8), viewTop + AndroidUtilities.dp(42));
         if (subtitleTextView.getVisibility() == VISIBLE) {
             titleTextView.layout(AndroidUtilities.dp(8 + 54), viewTop + AndroidUtilities.dp(1.3f), AndroidUtilities.dp(8 + 54) + titleTextView.getMeasuredWidth(), viewTop + titleTextView.getTextHeight() + AndroidUtilities.dp(1.3f));
@@ -224,7 +230,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     private void setTypingAnimation(boolean start) {
         if (start) {
             try {
-                Integer type = MessagesController.getInstance().printingStringsTypes.get(parentFragment.getDialogId());
+                Integer type = MessagesController.getInstance(currentAccount).printingStringsTypes.get(parentFragment.getDialogId());
                 subtitleTextView.setLeftDrawable(statusDrawables[type]);
                 for (int a = 0; a < statusDrawables.length; a++) {
                     if (a == type) {
@@ -256,7 +262,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             return;
         }
         TLRPC.Chat chat = parentFragment.getCurrentChat();
-        CharSequence printString = MessagesController.getInstance().printingStrings.get(parentFragment.getDialogId());
+        CharSequence printString = MessagesController.getInstance(currentAccount).printingStrings.get(parentFragment.getDialogId());
         if (printString != null) {
             printString = TextUtils.replace(printString, new String[]{"..."}, new String[]{""});
         }
@@ -311,19 +317,19 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                     }
                 }
             } else if (user != null) {
-                TLRPC.User newUser = MessagesController.getInstance().getUser(user.id);
+                TLRPC.User newUser = MessagesController.getInstance(currentAccount).getUser(user.id);
                 if (newUser != null) {
                     user = newUser;
                 }
                 String newStatus;
-                if (user.id == UserConfig.getClientUserId()) {
+                if (user.id == UserConfig.getInstance(currentAccount).getClientUserId()) {
                     newStatus = LocaleController.getString("ChatYourSelf", R.string.ChatYourSelf);
                 } else if (user.id == 333000 || user.id == 777000) {
                     newStatus = LocaleController.getString("ServiceNotifications", R.string.ServiceNotifications);
                 } else if (user.bot) {
                     newStatus = LocaleController.getString("Bot", R.string.Bot);
                 } else {
-                    newStatus = LocaleController.formatUserStatus(user);
+                    newStatus = LocaleController.formatUserStatus(currentAccount, user);
                 }
                 newSubtitle = newStatus;
             } else {
@@ -399,12 +405,12 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (info == null) {
             return;
         }
-        int currentTime = ConnectionsManager.getInstance().getCurrentTime();
+        int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
         if (info instanceof TLRPC.TL_chatFull || info instanceof TLRPC.TL_channelFull && info.participants_count <= 200 && info.participants != null) {
             for (int a = 0; a < info.participants.participants.size(); a++) {
                 TLRPC.ChatParticipant participant = info.participants.participants.get(a);
-                TLRPC.User user = MessagesController.getInstance().getUser(participant.user_id);
-                if (user != null && user.status != null && (user.status.expires > currentTime || user.id == UserConfig.getClientUserId()) && user.status.expires > 10000) {
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(participant.user_id);
+                if (user != null && user.status != null && (user.status.expires > currentTime || user.id == UserConfig.getInstance(currentAccount).getClientUserId()) && user.status.expires > 10000) {
                     onlineCount++;
                 }
             }
@@ -415,8 +421,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         if (parentFragment != null) {
-            NotificationCenter.getInstance().addObserver(this, NotificationCenter.didUpdatedConnectionState);
-            currentConnectionState = ConnectionsManager.getInstance().getConnectionState();
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didUpdatedConnectionState);
+            currentConnectionState = ConnectionsManager.getInstance(currentAccount).getConnectionState();
             updateCurrentConnectionState();
         }
     }
@@ -425,14 +431,14 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         if (parentFragment != null) {
-            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didUpdatedConnectionState);
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didUpdatedConnectionState);
         }
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.didUpdatedConnectionState) {
-            int state = ConnectionsManager.getInstance().getConnectionState();
+            int state = ConnectionsManager.getInstance(currentAccount).getConnectionState();
             if (currentConnectionState != state) {
                 currentConnectionState = state;
                 updateCurrentConnectionState();

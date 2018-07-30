@@ -79,175 +79,169 @@ extern "C" {
 #endif
 
 
-/* ec_key.h contains functions that handle elliptic-curve points that are
- * public/private keys. */
+// ec_key.h contains functions that handle elliptic-curve points that are
+// public/private keys.
 
 
-/* EC key objects. */
+// EC key objects.
 
-/* EC_KEY_new returns a fresh |EC_KEY| object or NULL on error. */
+// EC_KEY_new returns a fresh |EC_KEY| object or NULL on error.
 OPENSSL_EXPORT EC_KEY *EC_KEY_new(void);
 
-/* EC_KEY_new_method acts the same as |EC_KEY_new|, but takes an explicit
- * |ENGINE|. */
+// EC_KEY_new_method acts the same as |EC_KEY_new|, but takes an explicit
+// |ENGINE|.
 OPENSSL_EXPORT EC_KEY *EC_KEY_new_method(const ENGINE *engine);
 
-/* EC_KEY_new_by_curve_name returns a fresh EC_KEY for group specified by |nid|
- * or NULL on error. */
+// EC_KEY_new_by_curve_name returns a fresh EC_KEY for group specified by |nid|
+// or NULL on error.
 OPENSSL_EXPORT EC_KEY *EC_KEY_new_by_curve_name(int nid);
 
-/* EC_KEY_free frees all the data owned by |key| and |key| itself. */
+// EC_KEY_free frees all the data owned by |key| and |key| itself.
 OPENSSL_EXPORT void EC_KEY_free(EC_KEY *key);
 
-/* EC_KEY_copy sets |dst| equal to |src| and returns |dst| or NULL on error. */
+// EC_KEY_copy sets |dst| equal to |src| and returns |dst| or NULL on error.
 OPENSSL_EXPORT EC_KEY *EC_KEY_copy(EC_KEY *dst, const EC_KEY *src);
 
-/* EC_KEY_dup returns a fresh copy of |src| or NULL on error. */
+// EC_KEY_dup returns a fresh copy of |src| or NULL on error.
 OPENSSL_EXPORT EC_KEY *EC_KEY_dup(const EC_KEY *src);
 
-/* EC_KEY_up_ref increases the reference count of |key|. It returns one on
- * success and zero otherwise. */
+// EC_KEY_up_ref increases the reference count of |key| and returns one.
 OPENSSL_EXPORT int EC_KEY_up_ref(EC_KEY *key);
 
-/* EC_KEY_is_opaque returns one if |key| is opaque and doesn't expose its key
- * material. Otherwise it return zero. */
+// EC_KEY_is_opaque returns one if |key| is opaque and doesn't expose its key
+// material. Otherwise it return zero.
 OPENSSL_EXPORT int EC_KEY_is_opaque(const EC_KEY *key);
 
-/* EC_KEY_get0_group returns a pointer to the |EC_GROUP| object inside |key|. */
+// EC_KEY_get0_group returns a pointer to the |EC_GROUP| object inside |key|.
 OPENSSL_EXPORT const EC_GROUP *EC_KEY_get0_group(const EC_KEY *key);
 
-/* EC_KEY_set_group sets the |EC_GROUP| object that |key| will use to |group|.
- * It returns one on success and zero otherwise. */
+// EC_KEY_set_group sets the |EC_GROUP| object that |key| will use to |group|.
+// It returns one on success and zero otherwise. If |key| already has a group,
+// it is an error to change to a different one.
 OPENSSL_EXPORT int EC_KEY_set_group(EC_KEY *key, const EC_GROUP *group);
 
-/* EC_KEY_get0_private_key returns a pointer to the private key inside |key|. */
+// EC_KEY_get0_private_key returns a pointer to the private key inside |key|.
 OPENSSL_EXPORT const BIGNUM *EC_KEY_get0_private_key(const EC_KEY *key);
 
-/* EC_KEY_set_private_key sets the private key of |key| to |priv|. It returns
- * one on success and zero otherwise. */
+// EC_KEY_set_private_key sets the private key of |key| to |priv|. It returns
+// one on success and zero otherwise. |key| must already have had a group
+// configured (see |EC_KEY_set_group| and |EC_KEY_new_by_curve_name|).
 OPENSSL_EXPORT int EC_KEY_set_private_key(EC_KEY *key, const BIGNUM *prv);
 
-/* EC_KEY_get0_public_key returns a pointer to the public key point inside
- * |key|. */
+// EC_KEY_get0_public_key returns a pointer to the public key point inside
+// |key|.
 OPENSSL_EXPORT const EC_POINT *EC_KEY_get0_public_key(const EC_KEY *key);
 
-/* EC_KEY_set_public_key sets the public key of |key| to |pub|, by copying it.
- * It returns one on success and zero otherwise. */
+// EC_KEY_set_public_key sets the public key of |key| to |pub|, by copying it.
+// It returns one on success and zero otherwise. |key| must already have had a
+// group configured (see |EC_KEY_set_group| and |EC_KEY_new_by_curve_name|), and
+// |pub| must also belong to that group.
 OPENSSL_EXPORT int EC_KEY_set_public_key(EC_KEY *key, const EC_POINT *pub);
 
 #define EC_PKEY_NO_PARAMETERS 0x001
 #define EC_PKEY_NO_PUBKEY 0x002
 
-/* EC_KEY_get_enc_flags returns the encoding flags for |key|, which is a
- * bitwise-OR of |EC_PKEY_*| values. */
+// EC_KEY_get_enc_flags returns the encoding flags for |key|, which is a
+// bitwise-OR of |EC_PKEY_*| values.
 OPENSSL_EXPORT unsigned EC_KEY_get_enc_flags(const EC_KEY *key);
 
-/* EC_KEY_set_enc_flags sets the encoding flags for |key|, which is a
- * bitwise-OR of |EC_PKEY_*| values. */
+// EC_KEY_set_enc_flags sets the encoding flags for |key|, which is a
+// bitwise-OR of |EC_PKEY_*| values.
 OPENSSL_EXPORT void EC_KEY_set_enc_flags(EC_KEY *key, unsigned flags);
 
-/* EC_KEY_get_conv_form returns the conversation form that will be used by
- * |key|. */
+// EC_KEY_get_conv_form returns the conversation form that will be used by
+// |key|.
 OPENSSL_EXPORT point_conversion_form_t EC_KEY_get_conv_form(const EC_KEY *key);
 
-/* EC_KEY_set_conv_form sets the conversion form to be used by |key|. */
+// EC_KEY_set_conv_form sets the conversion form to be used by |key|.
 OPENSSL_EXPORT void EC_KEY_set_conv_form(EC_KEY *key,
                                          point_conversion_form_t cform);
 
-/* EC_KEY_precompute_mult precomputes multiplies of the generator of the
- * underlying group in order to speed up operations that calculate generator
- * multiples. If |ctx| is not NULL, it may be used. It returns one on success
- * and zero otherwise. */
-OPENSSL_EXPORT int EC_KEY_precompute_mult(EC_KEY *key, BN_CTX *ctx);
-
-/* EC_KEY_check_key performs several checks on |key| (possibly including an
- * expensive check that the public key is in the primary subgroup). It returns
- * one if all checks pass and zero otherwise. If it returns zero then detail
- * about the problem can be found on the error stack. */
+// EC_KEY_check_key performs several checks on |key| (possibly including an
+// expensive check that the public key is in the primary subgroup). It returns
+// one if all checks pass and zero otherwise. If it returns zero then detail
+// about the problem can be found on the error stack.
 OPENSSL_EXPORT int EC_KEY_check_key(const EC_KEY *key);
 
-/* EC_KEY_set_public_key_affine_coordinates sets the public key in |key| to
- * (|x|, |y|). It returns one on success and zero otherwise. */
+// EC_KEY_check_fips performs a signing pairwise consistency test (FIPS 140-2
+// 4.9.2). It returns one if it passes and zero otherwise.
+OPENSSL_EXPORT int EC_KEY_check_fips(const EC_KEY *key);
+
+// EC_KEY_set_public_key_affine_coordinates sets the public key in |key| to
+// (|x|, |y|). It returns one on success and zero otherwise.
 OPENSSL_EXPORT int EC_KEY_set_public_key_affine_coordinates(EC_KEY *key,
                                                             BIGNUM *x,
                                                             BIGNUM *y);
 
 
-/* Key generation. */
+// Key generation.
 
-/* EC_KEY_generate_key generates a random, private key, calculates the
- * corresponding public key and stores both in |key|. It returns one on success
- * or zero otherwise. */
+// EC_KEY_generate_key generates a random, private key, calculates the
+// corresponding public key and stores both in |key|. It returns one on success
+// or zero otherwise.
 OPENSSL_EXPORT int EC_KEY_generate_key(EC_KEY *key);
 
-
-/* Serialisation. */
-
-/* d2i_ECPrivateKey parses an ASN.1, DER-encoded, private key from |len| bytes
- * at |*inp|. If |out_key| is not NULL then, on exit, a pointer to the result
- * is in |*out_key|. If |*out_key| is already non-NULL on entry then the result
- * is written directly into |*out_key|, otherwise a fresh |EC_KEY| is
- * allocated. On successful exit, |*inp| is advanced past the DER structure. It
- * returns the result or NULL on error. */
-OPENSSL_EXPORT EC_KEY *d2i_ECPrivateKey(EC_KEY **out_key, const uint8_t **inp,
-                                        long len);
-
-/* i2d_ECPrivateKey marshals an EC private key from |key| to an ASN.1, DER
- * structure. If |outp| is not NULL then the result is written to |*outp| and
- * |*outp| is advanced just past the output. It returns the number of bytes in
- * the result, whether written or not, or a negative value on error. */
-OPENSSL_EXPORT int i2d_ECPrivateKey(const EC_KEY *key, uint8_t **outp);
-
-/* d2i_ECParameters parses an ASN.1, DER-encoded, set of EC parameters from
- * |len| bytes at |*inp|. If |out_key| is not NULL then, on exit, a pointer to
- * the result is in |*out_key|. If |*out_key| is already non-NULL on entry then
- * the result is written directly into |*out_key|, otherwise a fresh |EC_KEY|
- * is allocated. On successful exit, |*inp| is advanced past the DER structure.
- * It returns the result or NULL on error. */
-OPENSSL_EXPORT EC_KEY *d2i_ECParameters(EC_KEY **out_key, const uint8_t **inp,
-                                        long len);
-
-/* i2d_ECParameters marshals EC parameters from |key| to an ASN.1, DER
- * structure. If |outp| is not NULL then the result is written to |*outp| and
- * |*outp| is advanced just past the output. It returns the number of bytes in
- * the result, whether written or not, or a negative value on error. */
-OPENSSL_EXPORT int i2d_ECParameters(const EC_KEY *key, uint8_t **outp);
-
-/* o2i_ECPublicKey parses an EC point from |len| bytes at |*inp| into
- * |*out_key|. Note that this differs from the d2i format in that |*out_key|
- * must be non-NULL with a group set. On successful exit, |*inp| is advanced by
- * |len| bytes. It returns |*out_key| or NULL on error. */
-OPENSSL_EXPORT EC_KEY *o2i_ECPublicKey(EC_KEY **out_key, const uint8_t **inp,
-                                       long len);
-
-/* i2o_ECPublicKey marshals an EC point from |key|. If |outp| is not NULL then
- * the result is written to |*outp| and |*outp| is advanced just past the
- * output. It returns the number of bytes in the result, whether written or
- * not, or a negative value on error. */
-OPENSSL_EXPORT int i2o_ECPublicKey(const EC_KEY *key, unsigned char **outp);
+// EC_KEY_generate_key_fips behaves like |EC_KEY_generate_key| but performs
+// additional checks for FIPS compliance.
+OPENSSL_EXPORT int EC_KEY_generate_key_fips(EC_KEY *key);
 
 
-/* ex_data functions.
- *
- * These functions are wrappers. See |ex_data.h| for details. */
+// Serialisation.
+
+// EC_KEY_parse_private_key parses a DER-encoded ECPrivateKey structure (RFC
+// 5915) from |cbs| and advances |cbs|. It returns a newly-allocated |EC_KEY| or
+// NULL on error. If |group| is non-null, the parameters field of the
+// ECPrivateKey may be omitted (but must match |group| if present). Otherwise,
+// the parameters field is required.
+OPENSSL_EXPORT EC_KEY *EC_KEY_parse_private_key(CBS *cbs,
+                                                const EC_GROUP *group);
+
+// EC_KEY_marshal_private_key marshals |key| as a DER-encoded ECPrivateKey
+// structure (RFC 5915) and appends the result to |cbb|. It returns one on
+// success and zero on failure. |enc_flags| is a combination of |EC_PKEY_*|
+// values and controls whether corresponding fields are omitted.
+OPENSSL_EXPORT int EC_KEY_marshal_private_key(CBB *cbb, const EC_KEY *key,
+                                              unsigned enc_flags);
+
+// EC_KEY_parse_curve_name parses a DER-encoded OBJECT IDENTIFIER as a curve
+// name from |cbs| and advances |cbs|. It returns a newly-allocated |EC_GROUP|
+// or NULL on error.
+OPENSSL_EXPORT EC_GROUP *EC_KEY_parse_curve_name(CBS *cbs);
+
+// EC_KEY_marshal_curve_name marshals |group| as a DER-encoded OBJECT IDENTIFIER
+// and appends the result to |cbb|. It returns one on success and zero on
+// failure.
+OPENSSL_EXPORT int EC_KEY_marshal_curve_name(CBB *cbb, const EC_GROUP *group);
+
+// EC_KEY_parse_parameters parses a DER-encoded ECParameters structure (RFC
+// 5480) from |cbs| and advances |cbs|. It returns a newly-allocated |EC_GROUP|
+// or NULL on error. It supports the namedCurve and specifiedCurve options, but
+// use of specifiedCurve is deprecated. Use |EC_KEY_parse_curve_name|
+// instead.
+OPENSSL_EXPORT EC_GROUP *EC_KEY_parse_parameters(CBS *cbs);
+
+
+// ex_data functions.
+//
+// These functions are wrappers. See |ex_data.h| for details.
 
 OPENSSL_EXPORT int EC_KEY_get_ex_new_index(long argl, void *argp,
-                                           CRYPTO_EX_new *new_func,
-                                           CRYPTO_EX_dup *dup_func,
+                                           CRYPTO_EX_unused *unused,
+                                           CRYPTO_EX_dup *dup_unused,
                                            CRYPTO_EX_free *free_func);
 OPENSSL_EXPORT int EC_KEY_set_ex_data(EC_KEY *r, int idx, void *arg);
 OPENSSL_EXPORT void *EC_KEY_get_ex_data(const EC_KEY *r, int idx);
 
 
-/* ECDSA method. */
+// ECDSA method.
 
-/* ECDSA_FLAG_OPAQUE specifies that this ECDSA_METHOD does not expose its key
- * material. This may be set if, for instance, it is wrapping some other crypto
- * API, like a platform key store. */
+// ECDSA_FLAG_OPAQUE specifies that this ECDSA_METHOD does not expose its key
+// material. This may be set if, for instance, it is wrapping some other crypto
+// API, like a platform key store.
 #define ECDSA_FLAG_OPAQUE 1
 
-/* ecdsa_method_st is a structure of function pointers for implementing ECDSA.
- * See engine.h. */
+// ecdsa_method_st is a structure of function pointers for implementing ECDSA.
+// See engine.h.
 struct ecdsa_method_st {
   struct openssl_method_common_st common;
 
@@ -256,31 +250,96 @@ struct ecdsa_method_st {
   int (*init)(EC_KEY *key);
   int (*finish)(EC_KEY *key);
 
-  /* group_order_size returns the number of bytes needed to represent the order
-   * of the group. This is used to calculate the maximum size of an ECDSA
-   * signature in |ECDSA_size|. */
+  // group_order_size returns the number of bytes needed to represent the order
+  // of the group. This is used to calculate the maximum size of an ECDSA
+  // signature in |ECDSA_size|.
   size_t (*group_order_size)(const EC_KEY *key);
 
-  /* sign matches the arguments and behaviour of |ECDSA_sign|. */
+  // sign matches the arguments and behaviour of |ECDSA_sign|.
   int (*sign)(const uint8_t *digest, size_t digest_len, uint8_t *sig,
               unsigned int *sig_len, EC_KEY *eckey);
-
-  /* verify matches the arguments and behaviour of |ECDSA_verify|. */
-  int (*verify)(const uint8_t *digest, size_t digest_len, const uint8_t *sig,
-                size_t sig_len, EC_KEY *eckey);
 
   int flags;
 };
 
 
-/* Deprecated functions. */
+// Deprecated functions.
 
-/* EC_KEY_set_asn1_flag does nothing. */
+// EC_KEY_set_asn1_flag does nothing.
 OPENSSL_EXPORT void EC_KEY_set_asn1_flag(EC_KEY *key, int flag);
+
+// d2i_ECPrivateKey parses an ASN.1, DER-encoded, private key from |len| bytes
+// at |*inp|. If |out_key| is not NULL then, on exit, a pointer to the result
+// is in |*out_key|. Note that, even if |*out_key| is already non-NULL on entry,
+// it * will not be written to. Rather, a fresh |EC_KEY| is allocated and the
+// previous * one is freed. On successful exit, |*inp| is advanced past the DER
+// structure. It returns the result or NULL on error.
+//
+// On input, if |*out_key| is non-NULL and has a group configured, the
+// parameters field may be omitted but must match that group if present.
+//
+// Use |EC_KEY_parse_private_key| instead.
+OPENSSL_EXPORT EC_KEY *d2i_ECPrivateKey(EC_KEY **out_key, const uint8_t **inp,
+                                        long len);
+
+// i2d_ECPrivateKey marshals an EC private key from |key| to an ASN.1, DER
+// structure. If |outp| is not NULL then the result is written to |*outp| and
+// |*outp| is advanced just past the output. It returns the number of bytes in
+// the result, whether written or not, or a negative value on error.
+//
+// Use |EC_KEY_marshal_private_key| instead.
+OPENSSL_EXPORT int i2d_ECPrivateKey(const EC_KEY *key, uint8_t **outp);
+
+// d2i_ECParameters parses an ASN.1, DER-encoded, set of EC parameters from
+// |len| bytes at |*inp|. If |out_key| is not NULL then, on exit, a pointer to
+// the result is in |*out_key|. Note that, even if |*out_key| is already
+// non-NULL on entry, it will not be written to. Rather, a fresh |EC_KEY| is
+// allocated and the previous one is freed. On successful exit, |*inp| is
+// advanced past the DER structure. It returns the result or NULL on error.
+//
+// Use |EC_KEY_parse_parameters| or |EC_KEY_parse_curve_name| instead.
+OPENSSL_EXPORT EC_KEY *d2i_ECParameters(EC_KEY **out_key, const uint8_t **inp,
+                                        long len);
+
+// i2d_ECParameters marshals EC parameters from |key| to an ASN.1, DER
+// structure. If |outp| is not NULL then the result is written to |*outp| and
+// |*outp| is advanced just past the output. It returns the number of bytes in
+// the result, whether written or not, or a negative value on error.
+//
+// Use |EC_KEY_marshal_curve_name| instead.
+OPENSSL_EXPORT int i2d_ECParameters(const EC_KEY *key, uint8_t **outp);
+
+// o2i_ECPublicKey parses an EC point from |len| bytes at |*inp| into
+// |*out_key|. Note that this differs from the d2i format in that |*out_key|
+// must be non-NULL with a group set. On successful exit, |*inp| is advanced by
+// |len| bytes. It returns |*out_key| or NULL on error.
+//
+// Use |EC_POINT_oct2point| instead.
+OPENSSL_EXPORT EC_KEY *o2i_ECPublicKey(EC_KEY **out_key, const uint8_t **inp,
+                                       long len);
+
+// i2o_ECPublicKey marshals an EC point from |key|. If |outp| is not NULL then
+// the result is written to |*outp| and |*outp| is advanced just past the
+// output. It returns the number of bytes in the result, whether written or
+// not, or a negative value on error.
+//
+// Use |EC_POINT_point2cbb| instead.
+OPENSSL_EXPORT int i2o_ECPublicKey(const EC_KEY *key, unsigned char **outp);
 
 
 #if defined(__cplusplus)
-}  /* extern C */
+}  // extern C
+
+extern "C++" {
+
+namespace bssl {
+
+BORINGSSL_MAKE_DELETER(EC_KEY, EC_KEY_free)
+
+}  // namespace bssl
+
+}  // extern C++
+
 #endif
 
-#endif  /* OPENSSL_HEADER_EC_KEY_H */
+#endif  // OPENSSL_HEADER_EC_KEY_H

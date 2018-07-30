@@ -18,6 +18,7 @@ package org.telegram.messenger.exoplayer2.extractor.flv;
 import android.util.Pair;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
+import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.extractor.TrackOutput;
 import org.telegram.messenger.exoplayer2.util.CodecSpecificDataUtil;
 import org.telegram.messenger.exoplayer2.util.MimeTypes;
@@ -85,7 +86,7 @@ import java.util.Collections;
   }
 
   @Override
-  protected void parsePayload(ParsableByteArray data, long timeUs) {
+  protected void parsePayload(ParsableByteArray data, long timeUs) throws ParserException {
     if (audioFormat == AUDIO_FORMAT_MP3) {
       int sampleSize = data.bytesLeft();
       output.sampleData(data, sampleSize);

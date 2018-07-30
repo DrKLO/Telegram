@@ -57,7 +57,7 @@ public class ConvertGroupActivity extends BaseFragment implements NotificationCe
         convertRow = rowCount++;
         convertDetailRow = rowCount++;
 
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.closeChats);
 
         return true;
     }
@@ -65,7 +65,7 @@ public class ConvertGroupActivity extends BaseFragment implements NotificationCe
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.closeChats);
     }
 
     @Override
@@ -103,7 +103,7 @@ public class ConvertGroupActivity extends BaseFragment implements NotificationCe
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            MessagesController.getInstance().convertToMegaGroup(getParentActivity(), chat_id);
+                            MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chat_id);
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -124,7 +124,7 @@ public class ConvertGroupActivity extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.closeChats) {
             removeSelfFromStack();
         }

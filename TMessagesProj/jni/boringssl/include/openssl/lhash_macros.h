@@ -16,12 +16,12 @@
 #error "Don't include this file directly. Include lhash.h"
 #endif
 
-/* ASN1_OBJECT */
-#define lh_ASN1_OBJECT_new(hash, comp)                                        \
-  ((LHASH_OF(ASN1_OBJECT) *)lh_new(                                           \
-      CHECKED_CAST(lhash_hash_func, uint32_t (*)(const ASN1_OBJECT *), hash), \
-      CHECKED_CAST(lhash_cmp_func,                                            \
-                   int (*)(const ASN1_OBJECT *a, const ASN1_OBJECT *b),       \
+// ASN1_OBJECT
+#define lh_ASN1_OBJECT_new(hash, comp)                                       \
+  ((LHASH_OF(ASN1_OBJECT) *)lh_new(                                          \
+      CHECKED_CAST(lhash_hash_func, uint32_t(*)(const ASN1_OBJECT *), hash), \
+      CHECKED_CAST(lhash_cmp_func,                                           \
+                   int (*)(const ASN1_OBJECT *a, const ASN1_OBJECT *b),      \
                    comp)))
 
 #define lh_ASN1_OBJECT_free(lh) \
@@ -55,11 +55,12 @@
                             void (*)(ASN1_OBJECT *, void *), func), \
                arg);
 
-/* CONF_VALUE */
-#define lh_CONF_VALUE_new(hash, comp)                                        \
-  ((LHASH_OF(CONF_VALUE) *)lh_new(                                           \
-      CHECKED_CAST(lhash_hash_func, uint32_t (*)(const CONF_VALUE *), hash), \
-      CHECKED_CAST(lhash_cmp_func,                                           \
+
+// CONF_VALUE
+#define lh_CONF_VALUE_new(hash, comp)                                       \
+  ((LHASH_OF(CONF_VALUE) *)lh_new(                                          \
+      CHECKED_CAST(lhash_hash_func, uint32_t(*)(const CONF_VALUE *), hash), \
+      CHECKED_CAST(lhash_cmp_func,                                          \
                    int (*)(const CONF_VALUE *a, const CONF_VALUE *b), comp)))
 
 #define lh_CONF_VALUE_free(lh) \
@@ -92,12 +93,53 @@
                             void (*)(CONF_VALUE *, void *), func), \
                arg);
 
-/* SSL_SESSION */
-#define lh_SSL_SESSION_new(hash, comp)                                        \
-  ((LHASH_OF(SSL_SESSION) *)lh_new(                                           \
-      CHECKED_CAST(lhash_hash_func, uint32_t (*)(const SSL_SESSION *), hash), \
-      CHECKED_CAST(lhash_cmp_func,                                            \
-                   int (*)(const SSL_SESSION *a, const SSL_SESSION *b),       \
+
+// CRYPTO_BUFFER
+#define lh_CRYPTO_BUFFER_new(hash, comp)                                       \
+  ((LHASH_OF(CRYPTO_BUFFER) *)lh_new(                                          \
+      CHECKED_CAST(lhash_hash_func, uint32_t(*)(const CRYPTO_BUFFER *), hash), \
+      CHECKED_CAST(lhash_cmp_func,                                             \
+                   int (*)(const CRYPTO_BUFFER *a, const CRYPTO_BUFFER *b),    \
+                   comp)))
+
+#define lh_CRYPTO_BUFFER_free(lh) \
+  lh_free(CHECKED_CAST(_LHASH *, LHASH_OF(CRYPTO_BUFFER) *, lh));
+
+#define lh_CRYPTO_BUFFER_num_items(lh) \
+  lh_num_items(CHECKED_CAST(_LHASH *, LHASH_OF(CRYPTO_BUFFER) *, lh))
+
+#define lh_CRYPTO_BUFFER_retrieve(lh, data)                  \
+  ((CRYPTO_BUFFER *)lh_retrieve(                             \
+      CHECKED_CAST(_LHASH *, LHASH_OF(CRYPTO_BUFFER) *, lh), \
+      CHECKED_CAST(void *, CRYPTO_BUFFER *, data)))
+
+#define lh_CRYPTO_BUFFER_insert(lh, old_data, data)                \
+  lh_insert(CHECKED_CAST(_LHASH *, LHASH_OF(CRYPTO_BUFFER) *, lh), \
+            CHECKED_CAST(void **, CRYPTO_BUFFER **, old_data),     \
+            CHECKED_CAST(void *, CRYPTO_BUFFER *, data))
+
+#define lh_CRYPTO_BUFFER_delete(lh, data)                    \
+  ((CRYPTO_BUFFER *)lh_delete(                               \
+      CHECKED_CAST(_LHASH *, LHASH_OF(CRYPTO_BUFFER) *, lh), \
+      CHECKED_CAST(void *, CRYPTO_BUFFER *, data)))
+
+#define lh_CRYPTO_BUFFER_doall(lh, func)                          \
+  lh_doall(CHECKED_CAST(_LHASH *, LHASH_OF(CRYPTO_BUFFER) *, lh), \
+           CHECKED_CAST(void (*)(void *), void (*)(CRYPTO_BUFFER *), func));
+
+#define lh_CRYPTO_BUFFER_doall_arg(lh, func, arg)                     \
+  lh_doall_arg(CHECKED_CAST(_LHASH *, LHASH_OF(CRYPTO_BUFFER) *, lh), \
+               CHECKED_CAST(void (*)(void *, void *),                 \
+                            void (*)(CRYPTO_BUFFER *, void *), func), \
+               arg);
+
+
+// SSL_SESSION
+#define lh_SSL_SESSION_new(hash, comp)                                       \
+  ((LHASH_OF(SSL_SESSION) *)lh_new(                                          \
+      CHECKED_CAST(lhash_hash_func, uint32_t(*)(const SSL_SESSION *), hash), \
+      CHECKED_CAST(lhash_cmp_func,                                           \
+                   int (*)(const SSL_SESSION *a, const SSL_SESSION *b),      \
                    comp)))
 
 #define lh_SSL_SESSION_free(lh) \

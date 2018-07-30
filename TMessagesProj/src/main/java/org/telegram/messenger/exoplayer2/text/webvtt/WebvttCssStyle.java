@@ -31,10 +31,11 @@ import java.util.List;
  * @see <a href="https://w3c.github.io/webvtt/#applying-css-properties">W3C specification - Apply
  *     CSS properties</a>
  */
-/* package */ final class WebvttCssStyle {
+public final class WebvttCssStyle {
 
   public static final int UNSPECIFIED = -1;
 
+  /** Style flag enum */
   @Retention(RetentionPolicy.SOURCE)
   @IntDef(flag = true, value = {UNSPECIFIED, STYLE_NORMAL, STYLE_BOLD, STYLE_ITALIC,
       STYLE_BOLD_ITALIC})
@@ -44,6 +45,7 @@ import java.util.List;
   public static final int STYLE_ITALIC = Typeface.ITALIC;
   public static final int STYLE_BOLD_ITALIC = Typeface.BOLD_ITALIC;
 
+  /** Font size unit enum */
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({UNSPECIFIED, FONT_SIZE_UNIT_PIXEL, FONT_SIZE_UNIT_EM, FONT_SIZE_UNIT_PERCENT})
   public @interface FontSizeUnit {}

@@ -288,7 +288,8 @@ public class VideoTimelineView extends View {
                 FileLog.e(e);
             }
         }
-        for (Bitmap bitmap : frames) {
+        for (int a = 0; a < frames.size(); a++) {
+            Bitmap bitmap = frames.get(a);
             if (bitmap != null) {
                 bitmap.recycle();
             }
@@ -301,7 +302,8 @@ public class VideoTimelineView extends View {
     }
 
     public void clearFrames() {
-        for (Bitmap bitmap : frames) {
+        for (int a = 0; a < frames.size(); a++) {
+            Bitmap bitmap = frames.get(a);
             if (bitmap != null) {
                 bitmap.recycle();
             }

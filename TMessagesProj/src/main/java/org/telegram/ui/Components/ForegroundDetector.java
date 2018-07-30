@@ -14,6 +14,7 @@ import android.app.Application;
 import android.os.Build;
 import android.os.Bundle;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -63,7 +64,9 @@ public class ForegroundDetector implements Application.ActivityLifecycleCallback
             if (System.currentTimeMillis() - enterBackgroundTime < 200) {
                 wasInBackground = false;
             }
-            FileLog.e("switch to foreground");
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("switch to foreground");
+            }
             for (Listener listener : listeners) {
                 try {
                     listener.onBecameForeground();
@@ -90,7 +93,9 @@ public class ForegroundDetector implements Application.ActivityLifecycleCallback
         if (--refs == 0) {
             enterBackgroundTime = System.currentTimeMillis();
             wasInBackground = true;
-            FileLog.e("switch to background");
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("switch to background");
+            }
             for (Listener listener : listeners) {
                 try {
                     listener.onBecameBackground();

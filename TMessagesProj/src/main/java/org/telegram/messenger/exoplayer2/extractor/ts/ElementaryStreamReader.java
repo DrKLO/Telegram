@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.extractor.ts;
 
+import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
 import org.telegram.messenger.exoplayer2.extractor.TrackOutput;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
@@ -50,8 +51,9 @@ public interface ElementaryStreamReader {
    * Consumes (possibly partial) data from the current packet.
    *
    * @param data The data to consume.
+   * @throws ParserException If the data could not be parsed.
    */
-  void consume(ParsableByteArray data);
+  void consume(ParsableByteArray data) throws ParserException;
 
   /**
    * Called when a packet ends.

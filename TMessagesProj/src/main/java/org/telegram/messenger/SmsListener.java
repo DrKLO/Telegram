@@ -50,7 +50,7 @@ public class SmsListener extends BroadcastReceiver {
                                     AndroidUtilities.runOnUIThread(new Runnable() {
                                         @Override
                                         public void run() {
-                                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.didReceiveSmsCode, matcher.group(0));
+                                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didReceiveSmsCode, matcher.group(0));
                                         }
                                     });
                                 }

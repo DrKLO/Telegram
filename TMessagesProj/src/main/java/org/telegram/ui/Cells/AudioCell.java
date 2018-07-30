@@ -26,6 +26,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -42,6 +43,7 @@ public class AudioCell extends FrameLayout {
     private TextView timeTextView;
     private CheckBox checkBox;
 
+    private int currentAccount = UserConfig.selectedAccount;
     private MediaController.AudioEntry audioEntry;
     private boolean needDivider;
 

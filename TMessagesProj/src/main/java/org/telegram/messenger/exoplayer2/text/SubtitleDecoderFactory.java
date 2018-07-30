@@ -19,6 +19,7 @@ import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.text.cea.Cea608Decoder;
 import org.telegram.messenger.exoplayer2.text.cea.Cea708Decoder;
 import org.telegram.messenger.exoplayer2.text.dvb.DvbDecoder;
+import org.telegram.messenger.exoplayer2.text.pgs.PgsDecoder;
 import org.telegram.messenger.exoplayer2.text.ssa.SsaDecoder;
 import org.telegram.messenger.exoplayer2.text.subrip.SubripDecoder;
 import org.telegram.messenger.exoplayer2.text.ttml.TtmlDecoder;
@@ -52,64 +53,69 @@ public interface SubtitleDecoderFactory {
 
   /**
    * Default {@link SubtitleDecoderFactory} implementation.
-   * <p>
-   * The formats supported by this factory are:
+   *
+   * <p>The formats supported by this factory are:
+   *
    * <ul>
-   * <li>WebVTT ({@link WebvttDecoder})</li>
-   * <li>WebVTT (MP4) ({@link Mp4WebvttDecoder})</li>
-   * <li>TTML ({@link TtmlDecoder})</li>
-   * <li>SubRip ({@link SubripDecoder})</li>
-   * <li>SSA/ASS ({@link SsaDecoder})</li>
-   * <li>TX3G ({@link Tx3gDecoder})</li>
-   * <li>Cea608 ({@link Cea608Decoder})</li>
-   * <li>Cea708 ({@link Cea708Decoder})</li>
-   * <li>DVB ({@link DvbDecoder})</li>
+   *   <li>WebVTT ({@link WebvttDecoder})
+   *   <li>WebVTT (MP4) ({@link Mp4WebvttDecoder})
+   *   <li>TTML ({@link TtmlDecoder})
+   *   <li>SubRip ({@link SubripDecoder})
+   *   <li>SSA/ASS ({@link SsaDecoder})
+   *   <li>TX3G ({@link Tx3gDecoder})
+   *   <li>Cea608 ({@link Cea608Decoder})
+   *   <li>Cea708 ({@link Cea708Decoder})
+   *   <li>DVB ({@link DvbDecoder})
+   *   <li>PGS ({@link PgsDecoder})
    * </ul>
    */
-  SubtitleDecoderFactory DEFAULT = new SubtitleDecoderFactory() {
+  SubtitleDecoderFactory DEFAULT =
+      new SubtitleDecoderFactory() {
 
-    @Override
-    public boolean supportsFormat(Format format) {
-      String mimeType = format.sampleMimeType;
-      return MimeTypes.TEXT_VTT.equals(mimeType)
-          || MimeTypes.TEXT_SSA.equals(mimeType)
-          || MimeTypes.APPLICATION_TTML.equals(mimeType)
-          || MimeTypes.APPLICATION_MP4VTT.equals(mimeType)
-          || MimeTypes.APPLICATION_SUBRIP.equals(mimeType)
-          || MimeTypes.APPLICATION_TX3G.equals(mimeType)
-          || MimeTypes.APPLICATION_CEA608.equals(mimeType)
-          || MimeTypes.APPLICATION_MP4CEA608.equals(mimeType)
-          || MimeTypes.APPLICATION_CEA708.equals(mimeType)
-          || MimeTypes.APPLICATION_DVBSUBS.equals(mimeType);
-    }
+        @Override
+        public boolean supportsFormat(Format format) {
+          String mimeType = format.sampleMimeType;
+          return MimeTypes.TEXT_VTT.equals(mimeType)
+              || MimeTypes.TEXT_SSA.equals(mimeType)
+              || MimeTypes.APPLICATION_TTML.equals(mimeType)
+              || MimeTypes.APPLICATION_MP4VTT.equals(mimeType)
+              || MimeTypes.APPLICATION_SUBRIP.equals(mimeType)
+              || MimeTypes.APPLICATION_TX3G.equals(mimeType)
+              || MimeTypes.APPLICATION_CEA608.equals(mimeType)
+              || MimeTypes.APPLICATION_MP4CEA608.equals(mimeType)
+              || MimeTypes.APPLICATION_CEA708.equals(mimeType)
+              || MimeTypes.APPLICATION_DVBSUBS.equals(mimeType)
+              || MimeTypes.APPLICATION_PGS.equals(mimeType);
+        }
 
-    @Override
-    public SubtitleDecoder createDecoder(Format format) {
-      switch (format.sampleMimeType) {
-        case MimeTypes.TEXT_VTT:
-          return new WebvttDecoder();
-        case MimeTypes.TEXT_SSA:
-          return new SsaDecoder(format.initializationData);
-        case MimeTypes.APPLICATION_MP4VTT:
-          return new Mp4WebvttDecoder();
-        case MimeTypes.APPLICATION_TTML:
-          return new TtmlDecoder();
-        case MimeTypes.APPLICATION_SUBRIP:
-          return new SubripDecoder();
-        case MimeTypes.APPLICATION_TX3G:
-          return new Tx3gDecoder(format.initializationData);
-        case MimeTypes.APPLICATION_CEA608:
-        case MimeTypes.APPLICATION_MP4CEA608:
-          return new Cea608Decoder(format.sampleMimeType, format.accessibilityChannel);
-        case MimeTypes.APPLICATION_CEA708:
-          return new Cea708Decoder(format.accessibilityChannel);
-        case MimeTypes.APPLICATION_DVBSUBS:
-          return new DvbDecoder(format.initializationData);
-        default:
-          throw new IllegalArgumentException("Attempted to create decoder for unsupported format");
-      }
-    }
-
-  };
-
+        @Override
+        public SubtitleDecoder createDecoder(Format format) {
+          switch (format.sampleMimeType) {
+            case MimeTypes.TEXT_VTT:
+              return new WebvttDecoder();
+            case MimeTypes.TEXT_SSA:
+              return new SsaDecoder(format.initializationData);
+            case MimeTypes.APPLICATION_MP4VTT:
+              return new Mp4WebvttDecoder();
+            case MimeTypes.APPLICATION_TTML:
+              return new TtmlDecoder();
+            case MimeTypes.APPLICATION_SUBRIP:
+              return new SubripDecoder();
+            case MimeTypes.APPLICATION_TX3G:
+              return new Tx3gDecoder(format.initializationData);
+            case MimeTypes.APPLICATION_CEA608:
+            case MimeTypes.APPLICATION_MP4CEA608:
+              return new Cea608Decoder(format.sampleMimeType, format.accessibilityChannel);
+            case MimeTypes.APPLICATION_CEA708:
+              return new Cea708Decoder(format.accessibilityChannel);
+            case MimeTypes.APPLICATION_DVBSUBS:
+              return new DvbDecoder(format.initializationData);
+            case MimeTypes.APPLICATION_PGS:
+              return new PgsDecoder();
+            default:
+              throw new IllegalArgumentException(
+                  "Attempted to create decoder for unsupported format");
+          }
+        }
+      };
 }

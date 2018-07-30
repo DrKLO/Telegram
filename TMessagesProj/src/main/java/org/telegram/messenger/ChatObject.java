@@ -82,13 +82,13 @@ public class ChatObject {
         return chat != null && (chat.creator || chat.admin_rights != null && chat.admin_rights.change_info);
     }
 
-    public static boolean isChannel(int chatId) {
-        TLRPC.Chat chat = MessagesController.getInstance().getChat(chatId);
+    public static boolean isChannel(int chatId, int currentAccount) {
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
         return chat instanceof TLRPC.TL_channel || chat instanceof TLRPC.TL_channelForbidden;
     }
 
-    public static boolean isCanWriteToChannel(int chatId) {
-        TLRPC.Chat chat = MessagesController.getInstance().getChat(chatId);
+    public static boolean isCanWriteToChannel(int chatId, int currentAccount) {
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
         return chat != null && (chat.creator || chat.admin_rights != null && chat.admin_rights.post_messages || chat.megagroup);
     }
 
@@ -96,11 +96,11 @@ public class ChatObject {
         return !isChannel(chat) || chat.creator || chat.admin_rights != null && chat.admin_rights.post_messages || !chat.broadcast;
     }
 
-    public static TLRPC.Chat getChatByDialog(long did) {
+    public static TLRPC.Chat getChatByDialog(long did, int currentAccount) {
         int lower_id = (int) did;
         int high_id = (int) (did >> 32);
         if (lower_id < 0) {
-            return MessagesController.getInstance().getChat(-lower_id);
+            return MessagesController.getInstance(currentAccount).getChat(-lower_id);
         }
         return null;
     }

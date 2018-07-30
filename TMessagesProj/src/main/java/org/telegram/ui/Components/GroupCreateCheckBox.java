@@ -15,6 +15,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
+import android.support.annotation.Keep;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -22,9 +23,9 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class GroupCreateCheckBox extends View {
 
-    private static Paint backgroundPaint;
-    private static Paint backgroundInnerPaint;
-    private static Paint checkPaint;
+    private Paint backgroundPaint;
+    private Paint backgroundInnerPaint;
+    private Paint checkPaint;
     private static Paint eraser;
     private static Paint eraser2;
 
@@ -38,15 +39,19 @@ public class GroupCreateCheckBox extends View {
     private boolean attachedToWindow;
     private boolean isChecked;
 
+    private int innerRadDiff;
+    private float checkScale = 1.0f;
+
+    private String backgroundKey = Theme.key_groupcreate_checkboxCheck;
+    private String checkKey = Theme.key_groupcreate_checkboxCheck;
+    private String innerKey = Theme.key_groupcreate_checkbox;
+
+
     private final static float progressBounceDiff = 0.2f;
 
     public GroupCreateCheckBox(Context context) {
         super(context);
-        if (backgroundPaint == null) {
-            backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            backgroundInnerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            checkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            checkPaint.setStyle(Paint.Style.STROKE);
+        if (eraser == null) {
             eraser = new Paint(Paint.ANTI_ALIAS_FLAG);
             eraser.setColor(0);
             eraser.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
@@ -56,6 +61,11 @@ public class GroupCreateCheckBox extends View {
             eraser2.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
         }
 
+        backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        backgroundInnerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        checkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        checkPaint.setStyle(Paint.Style.STROKE);
+        innerRadDiff = AndroidUtilities.dp(2);
         checkPaint.setStrokeWidth(AndroidUtilities.dp(1.5f));
         eraser2.setStrokeWidth(AndroidUtilities.dp(28));
 
@@ -64,13 +74,21 @@ public class GroupCreateCheckBox extends View {
         updateColors();
     }
 
+    public void setColorKeysOverrides(String check, String inner, String back) {
+        checkKey = check;
+        innerKey = inner;
+        backgroundKey = back;
+        updateColors();
+    }
+
     public void updateColors() {
-        backgroundInnerPaint.setColor(Theme.getColor(Theme.key_groupcreate_checkbox));
-        backgroundPaint.setColor(Theme.getColor(Theme.key_groupcreate_checkboxCheck));
-        checkPaint.setColor(Theme.getColor(Theme.key_groupcreate_checkboxCheck));
+        backgroundInnerPaint.setColor(Theme.getColor(innerKey));
+        backgroundPaint.setColor(Theme.getColor(backgroundKey));
+        checkPaint.setColor(Theme.getColor(checkKey));
         invalidate();
     }
 
+    @Keep
     public void setProgress(float value) {
         if (progress == value) {
             return;
@@ -81,6 +99,10 @@ public class GroupCreateCheckBox extends View {
 
     public float getProgress() {
         return progress;
+    }
+
+    public void setCheckScale(float value) {
+        checkScale = value;
     }
 
     private void cancelCheckAnimator() {
@@ -99,6 +121,7 @@ public class GroupCreateCheckBox extends View {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        updateColors();
         attachedToWindow = true;
     }
 
@@ -124,6 +147,10 @@ public class GroupCreateCheckBox extends View {
 
     public boolean isChecked() {
         return isChecked;
+    }
+
+    public void setInnerRadDiff(int value) {
+        innerRadDiff = value;
     }
 
     @Override
@@ -155,13 +182,13 @@ public class GroupCreateCheckBox extends View {
                 canvas.drawCircle(cx, cy, (cx - AndroidUtilities.dp(2)) + AndroidUtilities.dp(2) * checkProgress - radDiff, backgroundPaint);
             }
 
-            float innerRad = cx - AndroidUtilities.dp(2) - radDiff;
+            float innerRad = cx - innerRadDiff - radDiff;
             bitmapCanvas.drawCircle(cx, cy, innerRad, backgroundInnerPaint);
             bitmapCanvas.drawCircle(cx, cy, innerRad * (1 - roundProgress), eraser);
             canvas.drawBitmap(drawBitmap, 0, 0, null);
 
-            float checkSide = AndroidUtilities.dp(10) * checkProgress;
-            float smallCheckSide = AndroidUtilities.dp(5) * checkProgress;
+            float checkSide = AndroidUtilities.dp(10) * checkProgress * checkScale;
+            float smallCheckSide = AndroidUtilities.dp(5) * checkProgress * checkScale;
             int x = cx - AndroidUtilities.dp(1);
             int y = cy + AndroidUtilities.dp(4);
             float side = (float) Math.sqrt(smallCheckSide * smallCheckSide / 2.0f);

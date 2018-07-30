@@ -33,7 +33,6 @@ import org.telegram.messenger.exoplayer2.text.SubtitleInputBuffer;
 import org.telegram.messenger.exoplayer2.util.MimeTypes;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -185,7 +184,7 @@ public final class Cea608Decoder extends CeaDecoder {
   private final ParsableByteArray ccData;
   private final int packetLength;
   private final int selectedField;
-  private final LinkedList<CueBuilder> cueBuilders;
+  private final ArrayList<CueBuilder> cueBuilders;
 
   private CueBuilder currentCueBuilder;
   private List<Cue> cues;
@@ -200,7 +199,7 @@ public final class Cea608Decoder extends CeaDecoder {
 
   public Cea608Decoder(String mimeType, int accessibilityChannel) {
     ccData = new ParsableByteArray();
-    cueBuilders = new LinkedList<>();
+    cueBuilders = new ArrayList<>();
     currentCueBuilder = new CueBuilder(CC_MODE_UNKNOWN, DEFAULT_CAPTIONS_ROW_COUNT);
     packetLength = MimeTypes.APPLICATION_MP4CEA608.equals(mimeType) ? 2 : 3;
     switch (accessibilityChannel) {
@@ -230,8 +229,8 @@ public final class Cea608Decoder extends CeaDecoder {
     cues = null;
     lastCues = null;
     setCaptionMode(CC_MODE_UNKNOWN);
+    setCaptionRowCount(DEFAULT_CAPTIONS_ROW_COUNT);
     resetCueBuilders();
-    captionRowCount = DEFAULT_CAPTIONS_ROW_COUNT;
     repeatableControlSet = false;
     repeatableControlCc1 = 0;
     repeatableControlCc2 = 0;
@@ -350,7 +349,7 @@ public final class Cea608Decoder extends CeaDecoder {
         repeatableControlSet = false;
         return true;
       } else {
-        // This is a repeatable command, but we haven't see it yet, so set the repeabable control
+        // This is a repeatable command, but we haven't see it yet, so set the repeatable control
         // flag (to ensure we ignore the next one should it be a duplicate) and continue processing
         // the command.
         repeatableControlSet = true;
@@ -434,16 +433,16 @@ public final class Cea608Decoder extends CeaDecoder {
   private void handleMiscCode(byte cc2) {
     switch (cc2) {
       case CTRL_ROLL_UP_CAPTIONS_2_ROWS:
-        captionRowCount = 2;
         setCaptionMode(CC_MODE_ROLL_UP);
+        setCaptionRowCount(2);
         return;
       case CTRL_ROLL_UP_CAPTIONS_3_ROWS:
-        captionRowCount = 3;
         setCaptionMode(CC_MODE_ROLL_UP);
+        setCaptionRowCount(3);
         return;
       case CTRL_ROLL_UP_CAPTIONS_4_ROWS:
-        captionRowCount = 4;
         setCaptionMode(CC_MODE_ROLL_UP);
+        setCaptionRowCount(4);
         return;
       case CTRL_RESUME_CAPTION_LOADING:
         setCaptionMode(CC_MODE_POP_ON);
@@ -451,6 +450,9 @@ public final class Cea608Decoder extends CeaDecoder {
       case CTRL_RESUME_DIRECT_CAPTIONING:
         setCaptionMode(CC_MODE_PAINT_ON);
         return;
+      default:
+        // Fall through.
+        break;
     }
 
     if (captionMode == CC_MODE_UNKNOWN) {
@@ -484,6 +486,9 @@ public final class Cea608Decoder extends CeaDecoder {
       case CTRL_DELETE_TO_END_OF_ROW:
         // TODO: implement
         break;
+      default:
+        // Fall through.
+        break;
     }
   }
 
@@ -515,8 +520,13 @@ public final class Cea608Decoder extends CeaDecoder {
     }
   }
 
+  private void setCaptionRowCount(int captionRowCount) {
+    this.captionRowCount = captionRowCount;
+    currentCueBuilder.setCaptionRowCount(captionRowCount);
+  }
+
   private void resetCueBuilders() {
-    currentCueBuilder.reset(captionMode, captionRowCount);
+    currentCueBuilder.reset(captionMode);
     cueBuilders.clear();
     cueBuilders.add(currentCueBuilder);
   }
@@ -594,12 +604,14 @@ public final class Cea608Decoder extends CeaDecoder {
     public CueBuilder(int captionMode, int captionRowCount) {
       preambleStyles = new ArrayList<>();
       midrowStyles = new ArrayList<>();
-      rolledUpCaptions = new LinkedList<>();
+      rolledUpCaptions = new ArrayList<>();
       captionStringBuilder = new SpannableStringBuilder();
-      reset(captionMode, captionRowCount);
+      reset(captionMode);
+      setCaptionRowCount(captionRowCount);
     }
 
-    public void reset(int captionMode, int captionRowCount) {
+    public void reset(int captionMode) {
+      this.captionMode = captionMode;
       preambleStyles.clear();
       midrowStyles.clear();
       rolledUpCaptions.clear();
@@ -607,9 +619,11 @@ public final class Cea608Decoder extends CeaDecoder {
       row = BASE_ROW;
       indent = 0;
       tabOffset = 0;
-      this.captionMode = captionMode;
-      this.captionRowCount = captionRowCount;
       underlineStartPosition = POSITION_UNSET;
+    }
+
+    public void setCaptionRowCount(int captionRowCount) {
+      this.captionRowCount = captionRowCount;
     }
 
     public boolean isEmpty() {
@@ -726,8 +740,10 @@ public final class Cea608Decoder extends CeaDecoder {
       // The number of empty columns after the end of the text, in the same range.
       int endPadding = SCREEN_CHARWIDTH - startPadding - cueString.length();
       int startEndPaddingDelta = startPadding - endPadding;
-      if (captionMode == CC_MODE_POP_ON && Math.abs(startEndPaddingDelta) < 3) {
-        // Treat approximately centered pop-on captions are middle aligned.
+      if (captionMode == CC_MODE_POP_ON && (Math.abs(startEndPaddingDelta) < 3 || endPadding < 0)) {
+        // Treat approximately centered pop-on captions as middle aligned. We also treat captions
+        // that are wider than they should be in this way. See
+        // https://github.com/google/ExoPlayer/issues/3534.
         position = 0.5f;
         positionAnchor = Cue.ANCHOR_TYPE_MIDDLE;
       } else if (captionMode == CC_MODE_POP_ON && startEndPaddingDelta > 0) {

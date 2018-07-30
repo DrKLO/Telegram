@@ -49,6 +49,8 @@ public final class SampleQueue implements TrackOutput {
 
   }
 
+  public static final int ADVANCE_FAILED = -1;
+
   private static final int INITIAL_SCRATCH_SIZE = 32;
 
   private final Allocator allocator;
@@ -180,6 +182,13 @@ public final class SampleQueue implements TrackOutput {
   }
 
   /**
+   * Returns the absolute index of the first sample.
+   */
+  public int getFirstIndex() {
+    return metadataQueue.getFirstIndex();
+  }
+
+  /**
    * Returns the current absolute read index.
    */
   public int getReadIndex() {
@@ -215,6 +224,11 @@ public final class SampleQueue implements TrackOutput {
    */
   public long getLargestQueuedTimestampUs() {
     return metadataQueue.getLargestQueuedTimestampUs();
+  }
+
+  /** Returns the timestamp of the first sample, or {@link Long#MIN_VALUE} if the queue is empty. */
+  public long getFirstTimestampUs() {
+    return metadataQueue.getFirstTimestampUs();
   }
 
   /**
@@ -255,9 +269,11 @@ public final class SampleQueue implements TrackOutput {
 
   /**
    * Advances the read position to the end of the queue.
+   *
+   * @return The number of samples that were skipped.
    */
-  public void advanceToEnd() {
-    metadataQueue.advanceToEnd();
+  public int advanceToEnd() {
+    return metadataQueue.advanceToEnd();
   }
 
   /**
@@ -268,11 +284,25 @@ public final class SampleQueue implements TrackOutput {
    *     time, rather than to any sample before or at that time.
    * @param allowTimeBeyondBuffer Whether the operation can succeed if {@code timeUs} is beyond the
    *     end of the queue, by advancing the read position to the last sample (or keyframe).
-   * @return Whether the operation was a success. A successful advance is one in which the read
-   *     position was unchanged or advanced, and is now at a sample meeting the specified criteria.
+   * @return The number of samples that were skipped if the operation was successful, which may be
+   *     equal to 0, or {@link #ADVANCE_FAILED} if the operation was not successful. A successful
+   *     advance is one in which the read position was unchanged or advanced, and is now at a sample
+   *     meeting the specified criteria.
    */
-  public boolean advanceTo(long timeUs, boolean toKeyframe, boolean allowTimeBeyondBuffer) {
+  public int advanceTo(long timeUs, boolean toKeyframe, boolean allowTimeBeyondBuffer) {
     return metadataQueue.advanceTo(timeUs, toKeyframe, allowTimeBeyondBuffer);
+  }
+
+  /**
+   * Attempts to set the read position to the specified sample index.
+   *
+   * @param sampleIndex The sample index.
+   * @return Whether the read position was set successfully. False is returned if the specified
+   *     index is smaller than the index of the first sample in the queue, or larger than the index
+   *     of the next sample that will be written.
+   */
+  public boolean setReadPosition(int sampleIndex) {
+    return metadataQueue.setReadPosition(sampleIndex);
   }
 
   /**

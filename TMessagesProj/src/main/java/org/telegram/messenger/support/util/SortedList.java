@@ -16,6 +16,9 @@
 
 package org.telegram.messenger.support.util;
 
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,7 +27,7 @@ import java.util.Comparator;
 /**
  * A Sorted list implementation that can keep items in order and also notify for changes in the
  * list
- * such that it can be bound to a {@link org.telegram.messenger.support.widget.RecyclerView.Adapter
+ * such that it can be bound to a {@link android.support.v7.widget.RecyclerView.Adapter
  * RecyclerView.Adapter}.
  * <p>
  * It keeps items ordered using the {@link Callback#compare(Object, Object)} method and uses
@@ -49,17 +52,23 @@ public class SortedList<T> {
     T[] mData;
 
     /**
-     * A copy of the previous list contents used during the merge phase of addAll.
+     * A reference to the previous set of data that is kept during a mutation operation (addAll or
+     * replaceAll).
      */
     private T[] mOldData;
+
+    /**
+     * The current index into mOldData that has not yet been processed during a mutation operation
+     * (addAll or replaceAll).
+     */
     private int mOldDataStart;
     private int mOldDataSize;
 
     /**
-     * The size of the valid portion of mData during the merge phase of addAll.
+     * The current index into the new data that has not yet been processed during a mutation
+     * operation (addAll or replaceAll).
      */
-    private int mMergedSize;
-
+    private int mNewDataStart;
 
     /**
      * The callback instance that controls the behavior of the SortedList and get notified when
@@ -126,12 +135,12 @@ public class SortedList<T> {
      * @param item The item to be added into the list.
      *
      * @return The index of the newly added item.
-     * @see {@link Callback#compare(Object, Object)}
-     * @see {@link Callback#areItemsTheSame(Object, Object)}
-     * @see {@link Callback#areContentsTheSame(Object, Object)}}
+     * @see Callback#compare(Object, Object)
+     * @see Callback#areItemsTheSame(Object, Object)
+     * @see Callback#areContentsTheSame(Object, Object)}
      */
     public int add(T item) {
-        throwIfMerging();
+        throwIfInMutationOperation();
         return add(item, true);
     }
 
@@ -140,32 +149,32 @@ public class SortedList<T> {
      * except the callback events may be in a different order/granularity since addAll can batch
      * them for better performance.
      * <p>
-     * If allowed, may modify the input array and even take the ownership over it in order
-     * to avoid extra memory allocation during sorting and deduplication.
-     * </p>
+     * If allowed, will reference the input array during, and possibly after, the operation to avoid
+     * extra memory allocation, in which case you should not continue to reference or modify the
+     * array yourself.
+     * <p>
      * @param items Array of items to be added into the list.
-     * @param mayModifyInput If true, SortedList is allowed to modify the input.
-     * @see {@link SortedList#addAll(Object[] items)}.
+     * @param mayModifyInput If true, SortedList is allowed to modify and permanently reference the
+     *                       input array.
+     * @see SortedList#addAll(T[] items)
      */
     public void addAll(T[] items, boolean mayModifyInput) {
-        throwIfMerging();
+        throwIfInMutationOperation();
         if (items.length == 0) {
             return;
         }
+
         if (mayModifyInput) {
             addAllInternal(items);
         } else {
-            T[] copy = (T[]) Array.newInstance(mTClass, items.length);
-            System.arraycopy(items, 0, copy, 0, items.length);
-            addAllInternal(copy);
+            addAllInternal(copyArray(items));
         }
-
     }
 
     /**
-     * Adds the given items to the list. Does not modify the input.
+     * Adds the given items to the list. Does not modify or retain the input.
      *
-     * @see {@link SortedList#addAll(T[] items, boolean mayModifyInput)}
+     * @see SortedList#addAll(T[] items, boolean mayModifyInput)
      *
      * @param items Array of items to be added into the list.
      */
@@ -174,9 +183,9 @@ public class SortedList<T> {
     }
 
     /**
-     * Adds the given items to the list. Does not modify the input.
+     * Adds the given items to the list. Does not modify or retain the input.
      *
-     * @see {@link SortedList#addAll(T[] items, boolean mayModifyInput)}
+     * @see SortedList#addAll(T[] items, boolean mayModifyInput)
      *
      * @param items Collection of items to be added into the list.
      */
@@ -185,26 +194,133 @@ public class SortedList<T> {
         addAll(items.toArray(copy), true);
     }
 
+    /**
+     * Replaces the current items with the new items, dispatching {@link ListUpdateCallback} events
+     * for each change detected as appropriate.
+     * <p>
+     * If allowed, will reference the input array during, and possibly after, the operation to avoid
+     * extra memory allocation, in which case you should not continue to reference or modify the
+     * array yourself.
+     * <p>
+     * Note: this method does not detect moves or dispatch
+     * {@link ListUpdateCallback#onMoved(int, int)} events. It instead treats moves as a remove
+     * followed by an add and therefore dispatches {@link ListUpdateCallback#onRemoved(int, int)}
+     * and {@link ListUpdateCallback#onRemoved(int, int)} events.  See {@link DiffUtil} if you want
+     * your implementation to dispatch move events.
+     * <p>
+     * @param items Array of items to replace current items.
+     * @param mayModifyInput If true, SortedList is allowed to modify and permanently reference the
+     *                       input array.
+     * @see #replaceAll(T[])
+     */
+    public void replaceAll(@NonNull T[] items, boolean mayModifyInput) {
+        throwIfInMutationOperation();
+
+        if (mayModifyInput) {
+            replaceAllInternal(items);
+        } else {
+            replaceAllInternal(copyArray(items));
+        }
+    }
+
+    /**
+     * Replaces the current items with the new items, dispatching {@link ListUpdateCallback} events
+     * for each change detected as appropriate.  Does not modify or retain the input.
+     *
+     * @see #replaceAll(T[], boolean)
+     *
+     * @param items Array of items to replace current items.
+     */
+    public void replaceAll(@NonNull T... items) {
+        replaceAll(items, false);
+    }
+
+    /**
+     * Replaces the current items with the new items, dispatching {@link ListUpdateCallback} events
+     * for each change detected as appropriate. Does not modify or retain the input.
+     *
+     * @see #replaceAll(T[], boolean)
+     *
+     * @param items Array of items to replace current items.
+     */
+    public void replaceAll(@NonNull Collection<T> items) {
+        T[] copy = (T[]) Array.newInstance(mTClass, items.size());
+        replaceAll(items.toArray(copy), true);
+    }
+
     private void addAllInternal(T[] newItems) {
+        if (newItems.length < 1) {
+            return;
+        }
+
+        final int newSize = sortAndDedup(newItems);
+
+        if (mSize == 0) {
+            mData = newItems;
+            mSize = newSize;
+            mCallback.onInserted(0, newSize);
+        } else {
+            merge(newItems, newSize);
+        }
+    }
+
+    private void replaceAllInternal(@NonNull T[] newData) {
         final boolean forceBatchedUpdates = !(mCallback instanceof BatchedCallback);
         if (forceBatchedUpdates) {
             beginBatchedUpdates();
         }
 
-        mOldData = mData;
         mOldDataStart = 0;
         mOldDataSize = mSize;
+        mOldData = mData;
 
-        Arrays.sort(newItems, mCallback);  // Arrays.sort is stable.
+        mNewDataStart = 0;
+        int newSize = sortAndDedup(newData);
+        mData = (T[]) Array.newInstance(mTClass, newSize);
 
-        final int newSize = deduplicate(newItems);
-        if (mSize == 0) {
-            mData = newItems;
-            mSize = newSize;
-            mMergedSize = newSize;
-            mCallback.onInserted(0, newSize);
-        } else {
-            merge(newItems, newSize);
+        while (mNewDataStart < newSize || mOldDataStart < mOldDataSize) {
+            if (mOldDataStart >= mOldDataSize) {
+                int insertIndex = mNewDataStart;
+                int itemCount = newSize - mNewDataStart;
+                System.arraycopy(newData, insertIndex, mData, insertIndex, itemCount);
+                mNewDataStart += itemCount;
+                mSize += itemCount;
+                mCallback.onInserted(insertIndex, itemCount);
+                break;
+            }
+            if (mNewDataStart >= newSize) {
+                int itemCount = mOldDataSize - mOldDataStart;
+                mSize -= itemCount;
+                mCallback.onRemoved(mNewDataStart, itemCount);
+                break;
+            }
+
+            T oldItem = mOldData[mOldDataStart];
+            T newItem = newData[mNewDataStart];
+
+            int result = mCallback.compare(oldItem, newItem);
+            if (result < 0) {
+                replaceAllRemove();
+            } else if (result > 0) {
+                replaceAllInsert(newItem);
+            } else {
+                if (!mCallback.areItemsTheSame(oldItem, newItem)) {
+                    // The items aren't the same even though they were supposed to occupy the same
+                    // place, so both notify to remove and add an item in the current location.
+                    replaceAllRemove();
+                    replaceAllInsert(newItem);
+                } else {
+                    mData[mNewDataStart] = newItem;
+                    mOldDataStart++;
+                    mNewDataStart++;
+                    if (!mCallback.areContentsTheSame(oldItem, newItem)) {
+                        // The item is the same but the contents have changed, so notify that an
+                        // onChanged event has occurred.
+                        mCallback.onChanged(mNewDataStart - 1, 1,
+                                mCallback.getChangePayload(oldItem, newItem));
+                    }
+                }
+            }
         }
 
         mOldData = null;
@@ -214,16 +330,32 @@ public class SortedList<T> {
         }
     }
 
+    private void replaceAllInsert(T newItem) {
+        mData[mNewDataStart] = newItem;
+        mNewDataStart++;
+        mSize++;
+        mCallback.onInserted(mNewDataStart - 1, 1);
+    }
+
+    private void replaceAllRemove() {
+        mSize--;
+        mOldDataStart++;
+        mCallback.onRemoved(mNewDataStart, 1);
+    }
+
     /**
-     * Remove duplicate items, leaving only the last item from each group of "same" items.
-     * Move the remaining items to the beginning of the array.
+     * Sorts and removes duplicate items, leaving only the last item from each group of "same"
+     * items. Move the remaining items to the beginning of the array.
      *
      * @return Number of deduplicated items at the beginning of the array.
      */
-    private int deduplicate(T[] items) {
+    private int sortAndDedup(@NonNull T[] items) {
         if (items.length == 0) {
-            throw new IllegalArgumentException("Input array must be non-empty");
+            return 0;
         }
+
+        // Arrays.sort is stable.
+        Arrays.sort(items, mCallback);
 
         // Keep track of the range of equal items at the end of the output.
         // Start with the range containing just the first item.
@@ -234,9 +366,6 @@ public class SortedList<T> {
             T currentItem = items[i];
 
             int compare = mCallback.compare(items[rangeStart], currentItem);
-            if (compare > 0) {
-                throw new IllegalArgumentException("Input must be sorted in ascending order.");
-            }
 
             if (compare == 0) {
                 // The range of equal items continues, update it.
@@ -276,27 +405,36 @@ public class SortedList<T> {
      * This method assumes that newItems are sorted and deduplicated.
      */
     private void merge(T[] newData, int newDataSize) {
+        final boolean forceBatchedUpdates = !(mCallback instanceof BatchedCallback);
+        if (forceBatchedUpdates) {
+            beginBatchedUpdates();
+        }
+
+        mOldData = mData;
+        mOldDataStart = 0;
+        mOldDataSize = mSize;
+
         final int mergedCapacity = mSize + newDataSize + CAPACITY_GROWTH;
         mData = (T[]) Array.newInstance(mTClass, mergedCapacity);
-        mMergedSize = 0;
+        mNewDataStart = 0;
 
         int newDataStart = 0;
         while (mOldDataStart < mOldDataSize || newDataStart < newDataSize) {
             if (mOldDataStart == mOldDataSize) {
                 // No more old items, copy the remaining new items.
                 int itemCount = newDataSize - newDataStart;
-                System.arraycopy(newData, newDataStart, mData, mMergedSize, itemCount);
-                mMergedSize += itemCount;
+                System.arraycopy(newData, newDataStart, mData, mNewDataStart, itemCount);
+                mNewDataStart += itemCount;
                 mSize += itemCount;
-                mCallback.onInserted(mMergedSize - itemCount, itemCount);
+                mCallback.onInserted(mNewDataStart - itemCount, itemCount);
                 break;
             }
 
             if (newDataStart == newDataSize) {
                 // No more new items, copy the remaining old items.
                 int itemCount = mOldDataSize - mOldDataStart;
-                System.arraycopy(mOldData, mOldDataStart, mData, mMergedSize, itemCount);
-                mMergedSize += itemCount;
+                System.arraycopy(mOldData, mOldDataStart, mData, mNewDataStart, itemCount);
+                mNewDataStart += itemCount;
                 break;
             }
 
@@ -305,35 +443,47 @@ public class SortedList<T> {
             int compare = mCallback.compare(oldItem, newItem);
             if (compare > 0) {
                 // New item is lower, output it.
-                mData[mMergedSize++] = newItem;
+                mData[mNewDataStart++] = newItem;
                 mSize++;
                 newDataStart++;
-                mCallback.onInserted(mMergedSize - 1, 1);
+                mCallback.onInserted(mNewDataStart - 1, 1);
             } else if (compare == 0 && mCallback.areItemsTheSame(oldItem, newItem)) {
                 // Items are the same. Output the new item, but consume both.
-                mData[mMergedSize++] = newItem;
+                mData[mNewDataStart++] = newItem;
                 newDataStart++;
                 mOldDataStart++;
                 if (!mCallback.areContentsTheSame(oldItem, newItem)) {
-                    mCallback.onChanged(mMergedSize - 1, 1);
+                    mCallback.onChanged(mNewDataStart - 1, 1,
+                            mCallback.getChangePayload(oldItem, newItem));
                 }
             } else {
                 // Old item is lower than or equal to (but not the same as the new). Output it.
                 // New item with the same sort order will be inserted later.
-                mData[mMergedSize++] = oldItem;
+                mData[mNewDataStart++] = oldItem;
                 mOldDataStart++;
             }
         }
-    }
 
-    private void throwIfMerging() {
-        if (mOldData != null) {
-            throw new IllegalStateException("Cannot call this method from within addAll");
+        mOldData = null;
+
+        if (forceBatchedUpdates) {
+            endBatchedUpdates();
         }
     }
 
     /**
-     * Batches adapter updates that happen between calling this method until calling
+     * Throws an exception if called while we are in the middle of a mutation operation (addAll or
+     * replaceAll).
+     */
+    private void throwIfInMutationOperation() {
+        if (mOldData != null) {
+            throw new IllegalStateException("Data cannot be mutated in the middle of a batch "
+                    + "update operation such as addAll or replaceAll.");
+        }
+    }
+
+    /**
+     * Batches adapter updates that happen after calling this method and before calling
      * {@link #endBatchedUpdates()}. For example, if you add multiple items in a loop
      * and they are placed into consecutive indices, SortedList calls
      * {@link Callback#onInserted(int, int)} only once with the proper item count. If an event
@@ -361,11 +511,11 @@ public class SortedList<T> {
      * {@link BatchedCallback#dispatchLastEvent()} right after you complete your data changes.
      * Failing to do so may create data inconsistencies with the Callback.
      * <p>
-     * If the current Callback in an instance of {@link BatchedCallback}, calling this method
+     * If the current Callback is an instance of {@link BatchedCallback}, calling this method
      * has no effect.
      */
     public void beginBatchedUpdates() {
-        throwIfMerging();
+        throwIfInMutationOperation();
         if (mCallback instanceof BatchedCallback) {
             return;
         }
@@ -379,7 +529,7 @@ public class SortedList<T> {
      * Ends the update transaction and dispatches any remaining event to the callback.
      */
     public void endBatchedUpdates() {
-        throwIfMerging();
+        throwIfInMutationOperation();
         if (mCallback instanceof BatchedCallback) {
             ((BatchedCallback) mCallback).dispatchLastEvent();
         }
@@ -401,7 +551,7 @@ public class SortedList<T> {
                     return index;
                 } else {
                     mData[index] = item;
-                    mCallback.onChanged(index, 1);
+                    mCallback.onChanged(index, 1, mCallback.getChangePayload(existing, item));
                     return index;
                 }
             }
@@ -421,7 +571,7 @@ public class SortedList<T> {
      * @return True if item is removed, false if item cannot be found in the list.
      */
     public boolean remove(T item) {
-        throwIfMerging();
+        throwIfInMutationOperation();
         return remove(item, true);
     }
 
@@ -433,7 +583,7 @@ public class SortedList<T> {
      * @return The removed item.
      */
     public T removeItemAt(int index) {
-        throwIfMerging();
+        throwIfInMutationOperation();
         T item = get(index);
         removeItemAtIndex(index, true);
         return item;
@@ -478,7 +628,7 @@ public class SortedList<T> {
      * @see #add(Object)
      */
     public void updateItemAt(int index, T item) {
-        throwIfMerging();
+        throwIfInMutationOperation();
         final T existing = get(index);
         // assume changed if the same object is given back
         boolean contentsChanged = existing == item || !mCallback.areContentsTheSame(existing, item);
@@ -488,13 +638,13 @@ public class SortedList<T> {
             if (cmp == 0) {
                 mData[index] = item;
                 if (contentsChanged) {
-                    mCallback.onChanged(index, 1);
+                    mCallback.onChanged(index, 1, mCallback.getChangePayload(existing, item));
                 }
                 return;
             }
         }
         if (contentsChanged) {
-            mCallback.onChanged(index, 1);
+            mCallback.onChanged(index, 1, mCallback.getChangePayload(existing, item));
         }
         // TODO this done in 1 pass to avoid shifting twice.
         removeItemAtIndex(index, false);
@@ -532,7 +682,7 @@ public class SortedList<T> {
      * @see #add(Object)
      */
     public void recalculatePositionOfItemAt(int index) {
-        throwIfMerging();
+        throwIfInMutationOperation();
         // TODO can be improved
         final T item = get(index);
         removeItemAtIndex(index, false);
@@ -559,8 +709,8 @@ public class SortedList<T> {
         if (mOldData != null) {
             // The call is made from a callback during addAll execution. The data is split
             // between mData and mOldData.
-            if (index >= mMergedSize) {
-                return mOldData[index - mMergedSize + mOldDataStart];
+            if (index >= mNewDataStart) {
+                return mOldData[index - mNewDataStart + mOldDataStart];
             }
         }
         return mData[index];
@@ -576,13 +726,13 @@ public class SortedList<T> {
      */
     public int indexOf(T item) {
         if (mOldData != null) {
-            int index = findIndexOf(item, mData, 0, mMergedSize, LOOKUP);
+            int index = findIndexOf(item, mData, 0, mNewDataStart, LOOKUP);
             if (index != INVALID_POSITION) {
                 return index;
             }
             index = findIndexOf(item, mOldData, mOldDataStart, mOldDataSize, LOOKUP);
             if (index != INVALID_POSITION) {
-                return index - mOldDataStart + mMergedSize;
+                return index - mOldDataStart + mNewDataStart;
             }
             return INVALID_POSITION;
         }
@@ -659,11 +809,17 @@ public class SortedList<T> {
         mSize++;
     }
 
+    private T[] copyArray(T[] items) {
+        T[] copy = (T[]) Array.newInstance(mTClass, items.length);
+        System.arraycopy(items, 0, copy, 0, items.length);
+        return copy;
+    }
+
     /**
      * Removes all items from the SortedList.
      */
     public void clear() {
-        throwIfMerging();
+        throwIfInMutationOperation();
         if (mSize == 0) {
             return;
         }
@@ -719,8 +875,8 @@ public class SortedList<T> {
          * so
          * that you can change its behavior depending on your UI.
          * <p>
-         * For example, if you are using SortedList with a {@link org.telegram.messenger.support.widget.RecyclerView.Adapter
-         * RecyclerView.Adapter}, you should
+         * For example, if you are using SortedList with a
+         * {@link android.support.v7.widget.RecyclerView.Adapter RecyclerView.Adapter}, you should
          * return whether the items' visual representations are the same or not.
          *
          * @param oldItem The previous representation of the object.
@@ -731,7 +887,7 @@ public class SortedList<T> {
         abstract public boolean areContentsTheSame(T2 oldItem, T2 newItem);
 
         /**
-         * Called by the SortedList to decide whether two object represent the same Item or not.
+         * Called by the SortedList to decide whether two objects represent the same Item or not.
          * <p>
          * For example, if your items have unique ids, this method should check their equality.
          *
@@ -741,6 +897,28 @@ public class SortedList<T> {
          * @return True if the two items represent the same object or false if they are different.
          */
         abstract public boolean areItemsTheSame(T2 item1, T2 item2);
+
+        /**
+         * When {@link #areItemsTheSame(T2, T2)} returns {@code true} for two items and
+         * {@link #areContentsTheSame(T2, T2)} returns false for them, {@link Callback} calls this
+         * method to get a payload about the change.
+         * <p>
+         * For example, if you are using {@link Callback} with
+         * {@link android.support.v7.widget.RecyclerView}, you can return the particular field that
+         * changed in the item and your
+         * {@link android.support.v7.widget.RecyclerView.ItemAnimator ItemAnimator} can use that
+         * information to run the correct animation.
+         * <p>
+         * Default implementation returns {@code null}.
+         *
+         * @param item1 The first item to check.
+         * @param item2 The second item to check.
+         * @return A payload object that represents the changes between the two items.
+         */
+        @Nullable
+        public Object getChangePayload(T2 item1, T2 item2) {
+            return null;
+        }
     }
 
     /**
@@ -801,6 +979,11 @@ public class SortedList<T> {
         }
 
         @Override
+        public void onChanged(int position, int count, Object payload) {
+            mBatchingListUpdateCallback.onChanged(position, count, payload);
+        }
+
+        @Override
         public boolean areContentsTheSame(T2 oldItem, T2 newItem) {
             return mWrappedCallback.areContentsTheSame(oldItem, newItem);
         }
@@ -808,6 +991,12 @@ public class SortedList<T> {
         @Override
         public boolean areItemsTheSame(T2 item1, T2 item2) {
             return mWrappedCallback.areItemsTheSame(item1, item2);
+        }
+
+        @Nullable
+        @Override
+        public Object getChangePayload(T2 item1, T2 item2) {
+            return mWrappedCallback.getChangePayload(item1, item2);
         }
 
         /**

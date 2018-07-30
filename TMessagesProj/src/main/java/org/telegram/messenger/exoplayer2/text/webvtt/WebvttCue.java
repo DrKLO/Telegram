@@ -23,7 +23,7 @@ import org.telegram.messenger.exoplayer2.text.Cue;
 /**
  * A representation of a WebVTT cue.
  */
-/* package */ final class WebvttCue extends Cue {
+public final class WebvttCue extends Cue {
 
   public final long startTime;
   public final long endTime;
@@ -59,7 +59,7 @@ import org.telegram.messenger.exoplayer2.text.Cue;
    * Builder for WebVTT cues.
    */
   @SuppressWarnings("hiding")
-  public static final class Builder {
+  public static class Builder {
 
     private static final String TAG = "WebvttCueBuilder";
 

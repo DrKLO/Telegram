@@ -8,7 +8,6 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -26,7 +25,6 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
@@ -100,14 +98,14 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         super.onFragmentCreate();
         checkPrivacy();
         updateRows();
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.privacyRulesUpdated);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.privacyRulesUpdated);
         return true;
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.privacyRulesUpdated);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.privacyRulesUpdated);
     }
 
     @Override
@@ -132,7 +130,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     }
 
                     if (currentType != 0 && rulesType == 0) {
-                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        final SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                         boolean showed = preferences.getBoolean("privacyAlertShowed", false);
                         if (!showed) {
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
@@ -159,9 +157,10 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             }
         });
 
+        int visibility = doneButton != null ? doneButton.getVisibility() : View.GONE;
         ActionBarMenu menu = actionBar.createMenu();
         doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
-        doneButton.setVisibility(View.GONE);
+        doneButton.setVisibility(visibility);
 
         listAdapter = new ListAdapter(context);
 
@@ -260,7 +259,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.privacyRulesUpdated) {
             checkPrivacy();
         }
@@ -278,9 +277,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         if (currentType != 0 && currentPlus.size() > 0) {
             TLRPC.TL_inputPrivacyValueAllowUsers rule = new TLRPC.TL_inputPrivacyValueAllowUsers();
             for (int a = 0; a < currentPlus.size(); a++) {
-                TLRPC.User user = MessagesController.getInstance().getUser(currentPlus.get(a));
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(currentPlus.get(a));
                 if (user != null) {
-                    TLRPC.InputUser inputUser = MessagesController.getInputUser(user);
+                    TLRPC.InputUser inputUser = MessagesController.getInstance(currentAccount).getInputUser(user);
                     if (inputUser != null) {
                         rule.users.add(inputUser);
                     }
@@ -291,9 +290,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         if (currentType != 1 && currentMinus.size() > 0) {
             TLRPC.TL_inputPrivacyValueDisallowUsers rule = new TLRPC.TL_inputPrivacyValueDisallowUsers();
             for (int a = 0; a < currentMinus.size(); a++) {
-                TLRPC.User user = MessagesController.getInstance().getUser(currentMinus.get(a));
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(currentMinus.get(a));
                 if (user != null) {
-                    TLRPC.InputUser inputUser = MessagesController.getInputUser(user);
+                    TLRPC.InputUser inputUser = MessagesController.getInstance(currentAccount).getInputUser(user);
                     if (inputUser != null) {
                         rule.users.add(inputUser);
                     }
@@ -317,7 +316,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             progressDialog.show();
         }
         final AlertDialog progressDialogFinal = progressDialog;
-        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -333,8 +332,8 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         if (error == null) {
                             finishFragment();
                             TLRPC.TL_account_privacyRules rules = (TLRPC.TL_account_privacyRules) response;
-                            MessagesController.getInstance().putUsers(rules.users, false);
-                            ContactsController.getInstance().setPrivacyRules(rules.rules, rulesType);
+                            MessagesController.getInstance(currentAccount).putUsers(rules.users, false);
+                            ContactsController.getInstance(currentAccount).setPrivacyRules(rules.rules, rulesType);
                         } else {
                             showErrorAlert();
                         }
@@ -358,7 +357,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     private void checkPrivacy() {
         currentPlus = new ArrayList<>();
         currentMinus = new ArrayList<>();
-        ArrayList<TLRPC.PrivacyRule> privacyRules = ContactsController.getInstance().getPrivacyRules(rulesType);
+        ArrayList<TLRPC.PrivacyRule> privacyRules = ContactsController.getInstance(currentAccount).getPrivacyRules(rulesType);
         if (privacyRules == null || privacyRules.size() == 0) {
             currentType = 1;
             return;

@@ -75,16 +75,16 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatInfoDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
         return true;
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatInfoDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
     }
 
     @Override
@@ -166,7 +166,7 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
             public void onItemClick(View view, int position) {
                 if (listView.getAdapter() == searchAdapter || position >= usersStartRow && position < usersEndRow) {
                     UserCell userCell = (UserCell) view;
-                    chat = MessagesController.getInstance().getChat(chat_id);
+                    chat = MessagesController.getInstance(currentAccount).getChat(chat_id);
                     TLRPC.ChatParticipant participant;
                     int index = -1;
                     if (listView.getAdapter() == searchAdapter) {
@@ -205,16 +205,16 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
                         participant = newParticipant;
                         userCell.setChecked(!(participant instanceof TLRPC.TL_chatParticipant) || chat != null && !chat.admins_enabled, true);
                         if (chat != null && chat.admins_enabled) {
-                            MessagesController.getInstance().toggleUserAdmin(chat_id, participant.user_id, !(participant instanceof TLRPC.TL_chatParticipant));
+                            MessagesController.getInstance(currentAccount).toggleUserAdmin(chat_id, participant.user_id, !(participant instanceof TLRPC.TL_chatParticipant));
                         }
                     }
                 } else {
                     if (position == allAdminsRow) {
-                        chat = MessagesController.getInstance().getChat(chat_id);
+                        chat = MessagesController.getInstance(currentAccount).getChat(chat_id);
                         if (chat != null) {
                             chat.admins_enabled = !chat.admins_enabled;
                             ((TextCheckCell) view).setChecked(!chat.admins_enabled);
-                            MessagesController.getInstance().toggleAdminMode(chat_id, chat.admins_enabled);
+                            MessagesController.getInstance(currentAccount).toggleAdminMode(chat_id, chat.admins_enabled);
                         }
                     }
                 }
@@ -234,7 +234,7 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.chatInfoDidLoaded) {
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
             if (chatFull.id == chat_id) {
@@ -299,8 +299,8 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
                         } else if (type1 < type2) {
                             return -1;
                         } else if (type1 == type2) {
-                            TLRPC.User user1 = MessagesController.getInstance().getUser(rhs.user_id);
-                            TLRPC.User user2 = MessagesController.getInstance().getUser(lhs.user_id);
+                            TLRPC.User user1 = MessagesController.getInstance(currentAccount).getUser(rhs.user_id);
+                            TLRPC.User user2 = MessagesController.getInstance(currentAccount).getUser(lhs.user_id);
                             int status1 = 0;
                             int status2 = 0;
                             if (user1 != null && user1.status != null) {
@@ -413,7 +413,7 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
             switch (holder.getItemViewType()) {
                 case 0:
                     TextCheckCell checkCell = (TextCheckCell) holder.itemView;
-                    chat = MessagesController.getInstance().getChat(chat_id);
+                    chat = MessagesController.getInstance(currentAccount).getChat(chat_id);
                     checkCell.setTextAndCheck(LocaleController.getString("SetAdminsAll", R.string.SetAdminsAll), chat != null && !chat.admins_enabled, false);
                     break;
                 case 1:
@@ -437,11 +437,11 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
                 case 2:
                     UserCell userCell = (UserCell) holder.itemView;
                     TLRPC.ChatParticipant part = participants.get(position - usersStartRow);
-                    TLRPC.User user = MessagesController.getInstance().getUser(part.user_id);
+                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(part.user_id);
                     userCell.setData(user, null, null, 0);
-                    chat = MessagesController.getInstance().getChat(chat_id);
+                    chat = MessagesController.getInstance(currentAccount).getChat(chat_id);
                     userCell.setChecked(!(part instanceof TLRPC.TL_chatParticipant) || chat != null && !chat.admins_enabled, false);
-                    userCell.setCheckDisabled(chat == null || !chat.admins_enabled || part.user_id == UserConfig.getClientUserId());
+                    userCell.setCheckDisabled(chat == null || !chat.admins_enabled || part.user_id == UserConfig.getInstance(currentAccount).getClientUserId());
                     break;
             }
         }
@@ -527,8 +527,8 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
 
                             for (int a = 0; a < contactsCopy.size(); a++) {
                                 TLRPC.ChatParticipant participant = contactsCopy.get(a);
-                                TLRPC.User user = MessagesController.getInstance().getUser(participant.user_id);
-                                if (user.id == UserConfig.getClientUserId()) {
+                                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(participant.user_id);
+                                if (user.id == UserConfig.getInstance(currentAccount).getClientUserId()) {
                                     continue;
                                 }
 
@@ -598,7 +598,7 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             TLRPC.ChatParticipant participant = getItem(position);
-            TLRPC.User user = MessagesController.getInstance().getUser(participant.user_id);
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(participant.user_id);
             String un = user.username;
 
             CharSequence username = null;
@@ -614,9 +614,9 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
             }
             UserCell userCell = (UserCell) holder.itemView;
             userCell.setData(user, name, username, 0);
-            chat = MessagesController.getInstance().getChat(chat_id);
+            chat = MessagesController.getInstance(currentAccount).getChat(chat_id);
             userCell.setChecked(!(participant instanceof TLRPC.TL_chatParticipant) || chat != null && !chat.admins_enabled, false);
-            userCell.setCheckDisabled(chat == null || !chat.admins_enabled || participant.user_id == UserConfig.getClientUserId());
+            userCell.setCheckDisabled(chat == null || !chat.admins_enabled || participant.user_id == UserConfig.getInstance(currentAccount).getClientUserId());
         }
 
         @Override
@@ -627,14 +627,16 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate сellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
             @Override
-            public void didSetColor(int color) {
-                int count = listView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    View child = listView.getChildAt(a);
-                    if (child instanceof UserCell) {
-                        ((UserCell) child).update(0);
+            public void didSetColor() {
+                if (listView != null) {
+                    int count = listView.getChildCount();
+                    for (int a = 0; a < count; a++) {
+                        View child = listView.getChildAt(a);
+                        if (child instanceof UserCell) {
+                            ((UserCell) child).update(0);
+                        }
                     }
                 }
             }
@@ -672,16 +674,16 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, null, null, Theme.key_checkboxSquareBackground),
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, null, null, Theme.key_checkboxSquareCheck),
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusColor"}, null, null, сellDelegate, Theme.key_windowBackgroundWhiteGrayText),
-                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusOnlineColor"}, null, null, сellDelegate, Theme.key_windowBackgroundWhiteBlueText),
+                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText),
+                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusOnlineColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlueText),
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundGreen),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundCyan),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundPink),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
         };
     }
 }

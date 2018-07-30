@@ -16,6 +16,7 @@
 package org.telegram.messenger.exoplayer2.extractor;
 
 import org.telegram.messenger.exoplayer2.util.Util;
+import java.util.Arrays;
 
 /**
  * Defines chunks of samples within a media stream.
@@ -91,8 +92,30 @@ public final class ChunkIndex implements SeekMap {
   }
 
   @Override
-  public long getPosition(long timeUs) {
-    return offsets[getChunkIndex(timeUs)];
+  public SeekPoints getSeekPoints(long timeUs) {
+    int chunkIndex = getChunkIndex(timeUs);
+    SeekPoint seekPoint = new SeekPoint(timesUs[chunkIndex], offsets[chunkIndex]);
+    if (seekPoint.timeUs >= timeUs || chunkIndex == length - 1) {
+      return new SeekPoints(seekPoint);
+    } else {
+      SeekPoint nextSeekPoint = new SeekPoint(timesUs[chunkIndex + 1], offsets[chunkIndex + 1]);
+      return new SeekPoints(seekPoint, nextSeekPoint);
+    }
   }
 
+  @Override
+  public String toString() {
+    return "ChunkIndex("
+        + "length="
+        + length
+        + ", sizes="
+        + Arrays.toString(sizes)
+        + ", offsets="
+        + Arrays.toString(offsets)
+        + ", timeUs="
+        + Arrays.toString(timesUs)
+        + ", durationsUs="
+        + Arrays.toString(durationsUs)
+        + ")";
+  }
 }

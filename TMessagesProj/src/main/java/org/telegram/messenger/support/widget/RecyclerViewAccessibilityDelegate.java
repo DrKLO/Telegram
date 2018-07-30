@@ -29,10 +29,12 @@ import android.view.accessibility.AccessibilityEvent;
  */
 public class RecyclerViewAccessibilityDelegate extends AccessibilityDelegateCompat {
     final RecyclerView mRecyclerView;
+    final AccessibilityDelegateCompat mItemDelegate;
 
 
     public RecyclerViewAccessibilityDelegate(RecyclerView recyclerView) {
         mRecyclerView = recyclerView;
+        mItemDelegate = new ItemDelegate(this);
     }
 
     boolean shouldIgnore() {
@@ -81,13 +83,33 @@ public class RecyclerViewAccessibilityDelegate extends AccessibilityDelegateComp
         return mItemDelegate;
     }
 
-    final AccessibilityDelegateCompat mItemDelegate = new AccessibilityDelegateCompat() {
+    /**
+     * The default implementation of accessibility delegate for the individual items of the
+     * RecyclerView.
+     * <p>
+     * If you are overriding {@code RecyclerViewAccessibilityDelegate#getItemDelegate()} but still
+     * want to keep some default behavior, you can create an instance of this class and delegate to
+     * the parent as necessary.
+     */
+    public static class ItemDelegate extends AccessibilityDelegateCompat {
+        final RecyclerViewAccessibilityDelegate mRecyclerViewDelegate;
+
+        /**
+         * Creates an item delegate for the given {@code RecyclerViewAccessibilityDelegate}.
+         *
+         * @param recyclerViewDelegate The parent RecyclerView's accessibility delegate.
+         */
+        public ItemDelegate(RecyclerViewAccessibilityDelegate recyclerViewDelegate) {
+            mRecyclerViewDelegate = recyclerViewDelegate;
+        }
+
         @Override
         public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfoCompat info) {
             super.onInitializeAccessibilityNodeInfo(host, info);
-            if (!shouldIgnore() && mRecyclerView.getLayoutManager() != null) {
-                mRecyclerView.getLayoutManager().
-                        onInitializeAccessibilityNodeInfoForItem(host, info);
+            if (!mRecyclerViewDelegate.shouldIgnore()
+                    && mRecyclerViewDelegate.mRecyclerView.getLayoutManager() != null) {
+                mRecyclerViewDelegate.mRecyclerView.getLayoutManager()
+                        .onInitializeAccessibilityNodeInfoForItem(host, info);
             }
         }
 
@@ -96,11 +118,13 @@ public class RecyclerViewAccessibilityDelegate extends AccessibilityDelegateComp
             if (super.performAccessibilityAction(host, action, args)) {
                 return true;
             }
-            if (!shouldIgnore() && mRecyclerView.getLayoutManager() != null) {
-                return mRecyclerView.getLayoutManager().
-                        performAccessibilityActionForItem(host, action, args);
+            if (!mRecyclerViewDelegate.shouldIgnore()
+                    && mRecyclerViewDelegate.mRecyclerView.getLayoutManager() != null) {
+                return mRecyclerViewDelegate.mRecyclerView.getLayoutManager()
+                        .performAccessibilityActionForItem(host, action, args);
             }
             return false;
         }
-    };
+    }
 }
+

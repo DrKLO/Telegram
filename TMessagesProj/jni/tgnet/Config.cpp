@@ -1,20 +1,23 @@
 /*
- * This is the source code of tgnet library v. 1.0
+ * This is the source code of tgnet library v. 1.1
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2015.
+ * Copyright Nikolai Kudashov, 2015-2018.
  */
 
 #include <sys/stat.h>
 #include <unistd.h>
+#include <errno.h>
+#include <cstring>
 #include "Config.h"
 #include "ConnectionsManager.h"
 #include "FileLog.h"
 #include "BuffersStorage.h"
 
-Config::Config(std::string fileName) {
-    configPath = ConnectionsManager::getInstance().currentConfigPath + fileName;
+Config::Config(int32_t instance, std::string fileName) {
+    instanceNum = instance;
+    configPath = ConnectionsManager::getInstance(instanceNum).currentConfigPath + fileName;
     backupPath = configPath + ".bak";
     FILE *backup = fopen(backupPath.c_str(), "rb");
     if (backup != nullptr) {
@@ -37,7 +40,7 @@ NativeByteBuffer *Config::readConfig() {
             file = fopen(configPath.c_str(), "rb");
         }
         uint32_t size = 0;
-        int bytesRead = fread(&size, sizeof(uint32_t), 1, file);
+        size_t bytesRead = fread(&size, sizeof(uint32_t), 1, file);
         DEBUG_D("Config(%p, %s) load, size = %u, fileSize = %u", this, configPath.c_str(), size, (uint32_t) fileSize);
         if (bytesRead > 0 && size > 0 && (int32_t) size < fileSize) {
             buffer = BuffersStorage::getInstance().getFreeBuffer(size);
@@ -56,12 +59,15 @@ void Config::writeConfig(NativeByteBuffer *buffer) {
     FILE *file = fopen(configPath.c_str(), "rb");
     FILE *backup = fopen(backupPath.c_str(), "rb");
     bool error = false;
+    bool hasBackupFile = false;
     if (file != nullptr) {
         if (backup == nullptr) {
             fclose(file);
             if (rename(configPath.c_str(), backupPath.c_str()) != 0) {
                 DEBUG_E("Config(%p) unable to rename file %s to backup file %s", this, configPath.c_str(), backupPath.c_str());
                 error = true;
+            } else {
+                hasBackupFile = true;
             }
         } else {
             fclose(file);
@@ -115,8 +121,8 @@ void Config::writeConfig(NativeByteBuffer *buffer) {
             DEBUG_E("Config(%p, %s) remove config failed", this, configPath.c_str());
         }
     } else {
-        if (remove(backupPath.c_str())) {
-            DEBUG_E("Config(%p, %s) remove backup failed failed", this, configPath.c_str());
+        if (hasBackupFile && remove(backupPath.c_str())) {
+            DEBUG_E("Config(%p, %s) remove backup failed, %s", this, backupPath.c_str(), strerror(errno));
         }
     }
     if (!error) {

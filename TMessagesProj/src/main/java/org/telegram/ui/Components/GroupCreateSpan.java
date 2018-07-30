@@ -47,7 +47,7 @@ public class GroupCreateSpan extends View {
     private float progress;
     private boolean deleting;
     private long lastUpdateTime;
-    private int[] colors = new int[6];
+    private int[] colors = new int[8];
 
     public GroupCreateSpan(Context context, TLRPC.User user) {
         this(context, user, null);
@@ -121,6 +121,8 @@ public class GroupCreateSpan extends View {
         colors[3] = Color.green(color);
         colors[4] = Color.blue(back);
         colors[5] = Color.blue(color);
+        colors[6] = Color.alpha(back);
+        colors[7] = Color.alpha(color);
         textPaint.setColor(text);
         deleteDrawable.setColorFilter(new PorterDuffColorFilter(text, PorterDuff.Mode.MULTIPLY));
         backPaint.setColor(back);
@@ -189,12 +191,14 @@ public class GroupCreateSpan extends View {
         }
         canvas.save();
         rect.set(0, 0, getMeasuredWidth(), AndroidUtilities.dp(32));
-        backPaint.setColor(Color.argb(255, colors[0] + (int) ((colors[1] - colors[0]) * progress), colors[2] + (int) ((colors[3] - colors[2]) * progress), colors[4] + (int) ((colors[5] - colors[4]) * progress)));
+        backPaint.setColor(Color.argb(colors[6] + (int) ((colors[7] - colors[6]) * progress), colors[0] + (int) ((colors[1] - colors[0]) * progress), colors[2] + (int) ((colors[3] - colors[2]) * progress), colors[4] + (int) ((colors[5] - colors[4]) * progress)));
         canvas.drawRoundRect(rect, AndroidUtilities.dp(16), AndroidUtilities.dp(16), backPaint);
         imageReceiver.draw(canvas);
         if (progress != 0) {
-            backPaint.setColor(avatarDrawable.getColor());
-            backPaint.setAlpha((int) (255 * progress));
+            int color = avatarDrawable.getColor();
+            float alpha = Color.alpha(color) / 255.0f;
+            backPaint.setColor(color);
+            backPaint.setAlpha((int) (255 * progress * alpha));
             canvas.drawCircle(AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16), backPaint);
             canvas.save();
             canvas.rotate(45 * (1.0f - progress), AndroidUtilities.dp(16), AndroidUtilities.dp(16));

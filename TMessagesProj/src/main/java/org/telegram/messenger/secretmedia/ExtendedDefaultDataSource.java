@@ -11,6 +11,7 @@ package org.telegram.messenger.secretmedia;
 import android.content.Context;
 import android.net.Uri;
 
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.exoplayer2.upstream.AssetDataSource;
 import org.telegram.messenger.exoplayer2.upstream.ContentDataSource;
 import org.telegram.messenger.exoplayer2.upstream.DataSource;
@@ -35,6 +36,7 @@ public final class ExtendedDefaultDataSource implements DataSource {
     private final DataSource contentDataSource;
 
     private DataSource dataSource;
+    private TransferListener<? super DataSource> listener;
 
     /**
      * Constructs a new instance, optionally configured to follow cross-protocol redirects.
@@ -88,6 +90,7 @@ public final class ExtendedDefaultDataSource implements DataSource {
         this.encryptedFileDataSource = new EncryptedFileDataSource(listener);
         this.assetDataSource = new AssetDataSource(context, listener);
         this.contentDataSource = new ContentDataSource(context, listener);
+        this.listener = listener;
     }
 
     @Override
@@ -105,6 +108,8 @@ public final class ExtendedDefaultDataSource implements DataSource {
                     dataSource = fileDataSource;
                 }
             }
+        } else if ("tg".equals(scheme)) {
+            dataSource = FileLoader.getStreamLoadOperation(listener);
         } else if (SCHEME_ASSET.equals(scheme)) {
             dataSource = assetDataSource;
         } else if (SCHEME_CONTENT.equals(scheme)) {

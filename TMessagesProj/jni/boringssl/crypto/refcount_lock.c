@@ -31,7 +31,7 @@ void CRYPTO_refcount_inc(CRYPTO_refcount_t *count) {
   if (*count < CRYPTO_REFCOUNT_MAX) {
     (*count)++;
   }
-  CRYPTO_STATIC_MUTEX_unlock(&g_refcount_lock);
+  CRYPTO_STATIC_MUTEX_unlock_write(&g_refcount_lock);
 }
 
 int CRYPTO_refcount_dec_and_test_zero(CRYPTO_refcount_t *count) {
@@ -45,9 +45,9 @@ int CRYPTO_refcount_dec_and_test_zero(CRYPTO_refcount_t *count) {
     (*count)--;
   }
   ret = (*count == 0);
-  CRYPTO_STATIC_MUTEX_unlock(&g_refcount_lock);
+  CRYPTO_STATIC_MUTEX_unlock_write(&g_refcount_lock);
 
   return ret;
 }
 
-#endif  /* OPENSSL_C11_ATOMIC */
+#endif  // OPENSSL_C11_ATOMIC

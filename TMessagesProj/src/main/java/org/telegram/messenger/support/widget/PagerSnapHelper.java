@@ -29,9 +29,10 @@ import android.view.View;
  * <p>
  *
  * PagerSnapHelper can help achieve a similar behavior to {@link android.support.v4.view.ViewPager}.
- * Set both {@link RecyclerView} and {@link org.telegram.messenger.support.widget.RecyclerView.Adapter} to have
- * MATCH_PARENT height and width and then attach PagerSnapHelper to the {@link RecyclerView} using
- * {@link #attachToRecyclerView(RecyclerView)}.
+ * Set both {@link RecyclerView} and the items of the
+ * {@link android.support.v7.widget.RecyclerView.Adapter} to have
+ * {@link android.view.ViewGroup.LayoutParams#MATCH_PARENT} height and width and then attach
+ * PagerSnapHelper to the {@link RecyclerView} using {@link #attachToRecyclerView(RecyclerView)}.
  */
 public class PagerSnapHelper extends SnapHelper {
     private static final int MAX_SCROLL_ON_FLING_DURATION = 100; // ms

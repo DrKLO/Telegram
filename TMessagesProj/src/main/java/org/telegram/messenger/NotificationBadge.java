@@ -20,12 +20,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
 
-import java.io.BufferedReader;
 import java.io.Closeable;
-import java.io.InputStreamReader;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -163,7 +159,11 @@ public class NotificationBadge {
 
         @Override
         public List<String> getSupportLaunchers() {
-            return new ArrayList<>(0);
+            return Arrays.asList(
+                    "fr.neamar.kiss",
+                    "com.quaap.launchtime",
+                    "com.quaap.launchtime_official"
+            );
         }
     }
 
@@ -260,46 +260,15 @@ public class NotificationBadge {
         private static final String INTENT_EXTRA_BADGE_COUNT = "number";
         private static final String INTENT_EXTRA_BADGE_UPGRADENUMBER = "upgradeNumber";
         private static final String INTENT_EXTRA_BADGEUPGRADE_COUNT = "app_badge_count";
-        private static int ROMVERSION = -1;
+        private int mCurrentTotalCount = -1;
 
-        @TargetApi(Build.VERSION_CODES.HONEYCOMB)
         @Override
         public void executeBadge(int badgeCount) {
-            if (badgeCount == 0) {
-                badgeCount = -1;
+            if (mCurrentTotalCount == badgeCount) {
+                return;
             }
-            final Intent intent = new Intent(INTENT_ACTION);
-            intent.putExtra(INTENT_EXTRA_PACKAGENAME, componentName.getPackageName());
-            intent.putExtra(INTENT_EXTRA_BADGE_COUNT, badgeCount);
-            intent.putExtra(INTENT_EXTRA_BADGE_UPGRADENUMBER, badgeCount);
-            if (canResolveBroadcast(intent)) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ApplicationLoader.applicationContext.sendBroadcast(intent);
-                    }
-                });
-            } else {
-                int version = getSupportVersion();
-                if (version == 6) {
-                    try {
-                        final Bundle extras = new Bundle();
-                        extras.putInt(INTENT_EXTRA_BADGEUPGRADE_COUNT, badgeCount);
-                        AndroidUtilities.runOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    ApplicationLoader.applicationContext.getContentResolver().call(Uri.parse(PROVIDER_CONTENT_URI), "setAppBadgeCount", null, extras);
-                                } catch (Exception e) {
-                                    FileLog.e(e);
-                                }
-                            }
-                        });
-                    } catch (Throwable ignore) {
-
-                    }
-                }
-            }
+            mCurrentTotalCount = badgeCount;
+            executeBadgeByContentProvider(badgeCount);
         }
 
         @Override
@@ -307,101 +276,15 @@ public class NotificationBadge {
             return Collections.singletonList("com.oppo.launcher");
         }
 
-        private int getSupportVersion() {
-            int i = ROMVERSION;
-            if (i >= 0) {
-                return ROMVERSION;
-            }
+        @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+        private void executeBadgeByContentProvider(int badgeCount) {
             try {
-                i = ((Integer) executeClassLoad(getClass("com.color.os.ColorBuild"), "getColorOSVERSION", null, null)).intValue();
-            } catch (Exception e) {
-                i = 0;
+                Bundle extras = new Bundle();
+                extras.putInt(INTENT_EXTRA_BADGEUPGRADE_COUNT, badgeCount);
+                ApplicationLoader.applicationContext.getContentResolver().call(Uri.parse(PROVIDER_CONTENT_URI), "setAppBadgeCount", null, extras);
+            } catch (Throwable ignored) {
+
             }
-            if (i == 0) {
-                try {
-                    String str = getSystemProperty("ro.build.version.opporom");
-                    if (str.startsWith("V1.4")) {
-                        return 3;
-                    }
-                    if (str.startsWith("V2.0")) {
-                        return 4;
-                    }
-                    if (str.startsWith("V2.1")) {
-                        return 5;
-                    }
-                } catch (Exception ignored) {
-
-                }
-            }
-            ROMVERSION = i;
-            return ROMVERSION;
-        }
-
-
-        private Object executeClassLoad(Class cls, String str, Class[] clsArr, Object[] objArr) {
-            Object obj = null;
-            if (!(cls == null || checkObjExists(str))) {
-                Method method = getMethod(cls, str, clsArr);
-                if (method != null) {
-                    method.setAccessible(true);
-                    try {
-                        obj = method.invoke(null, objArr);
-                    } catch (Throwable ignore) {
-
-                    }
-                }
-            }
-            return obj;
-        }
-
-        @SuppressWarnings("unchecked")
-        private Method getMethod(Class cls, String str, Class[] clsArr) {
-            Method method = null;
-            if (cls == null || checkObjExists(str)) {
-                return method;
-            }
-            try {
-                cls.getMethods();
-                cls.getDeclaredMethods();
-                return cls.getDeclaredMethod(str, clsArr);
-            } catch (Exception e) {
-                try {
-                    return cls.getMethod(str, clsArr);
-                } catch (Exception e2) {
-                    return cls.getSuperclass() != null ? getMethod(cls.getSuperclass(), str, clsArr) : method;
-                }
-            }
-        }
-
-        private Class getClass(String str) {
-            Class cls = null;
-            try {
-                cls = Class.forName(str);
-            } catch (ClassNotFoundException ignored) {
-            }
-            return cls;
-        }
-
-
-        private boolean checkObjExists(Object obj) {
-            return obj == null || obj.toString().equals("") || obj.toString().trim().equals("null");
-        }
-
-
-        private String getSystemProperty(String propName) {
-            String line;
-            BufferedReader input = null;
-            try {
-                Process p = Runtime.getRuntime().exec("getprop " + propName);
-                input = new BufferedReader(new InputStreamReader(p.getInputStream()), 1024);
-                line = input.readLine();
-                input.close();
-            } catch (Throwable ex) {
-                return null;
-            } finally {
-                closeQuietly(input);
-            }
-            return line;
         }
     }
 
@@ -683,22 +566,44 @@ public class NotificationBadge {
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_HOME);
         ResolveInfo resolveInfo = context.getPackageManager().resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY);
-
-        if (resolveInfo == null || resolveInfo.activityInfo.name.toLowerCase().contains("resolver")) {
-            return false;
+        if (resolveInfo != null) {
+            String currentHomePackage = resolveInfo.activityInfo.packageName;
+            for (Class<? extends Badger> b : BADGERS) {
+                Badger shortcutBadger = null;
+                try {
+                    shortcutBadger = b.newInstance();
+                } catch (Exception ignored) {
+                }
+                if (shortcutBadger != null && shortcutBadger.getSupportLaunchers().contains(currentHomePackage)) {
+                    badger = shortcutBadger;
+                    break;
+                }
+            }
+            if (badger != null) {
+                return true;
+            }
         }
 
-        String currentHomePackage = resolveInfo.activityInfo.packageName;
+        List<ResolveInfo> resolveInfos = context.getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+        if (resolveInfos != null) {
+            for (int a = 0; a < resolveInfos.size(); a++) {
+                resolveInfo = resolveInfos.get(a);
+                String currentHomePackage = resolveInfo.activityInfo.packageName;
 
-        for (Class<? extends Badger> b : BADGERS) {
-            Badger shortcutBadger = null;
-            try {
-                shortcutBadger = b.newInstance();
-            } catch (Exception ignored) {
-            }
-            if (shortcutBadger != null && shortcutBadger.getSupportLaunchers().contains(currentHomePackage)) {
-                badger = shortcutBadger;
-                break;
+                for (Class<? extends Badger> b : BADGERS) {
+                    Badger shortcutBadger = null;
+                    try {
+                        shortcutBadger = b.newInstance();
+                    } catch (Exception ignored) {
+                    }
+                    if (shortcutBadger != null && shortcutBadger.getSupportLaunchers().contains(currentHomePackage)) {
+                        badger = shortcutBadger;
+                        break;
+                    }
+                }
+                if (badger != null) {
+                    break;
+                }
             }
         }
 

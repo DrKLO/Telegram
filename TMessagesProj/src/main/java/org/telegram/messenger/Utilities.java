@@ -54,10 +54,18 @@ public class Utilities {
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
     public native static void aesCtrDecryption(ByteBuffer buffer, byte[] key, byte[] iv, int offset, int length);
     public native static void aesCtrDecryptionByteArray(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n);
+    private native static void aesCbcEncryptionByteArray(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n, int encrypt);
+    public native static void aesCbcEncryption(ByteBuffer buffer, byte[] key, byte[] iv, int offset, int length, int encrypt);
     public native static String readlink(String path);
+    public native static long getDirSize(String path, int docType);
+    public native static void clearDir(String path, int docType, long time);
 
     public static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, boolean changeIv, int offset, int length) {
         aesIgeEncryption(buffer, key, changeIv ? iv : iv.clone(), encrypt, offset, length);
+    }
+
+    public static void aesCbcEncryptionByteArraySafe(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n, int encrypt) {
+        aesCbcEncryptionByteArray(buffer, key, iv.clone(), offset, length, n, encrypt);
     }
 
     public static Integer parseInt(String value) {
@@ -247,6 +255,42 @@ public class Utilities {
         return new byte[32];
     }
 
+    public static byte[] computeSHA512(byte[] convertme) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
+            md.update(convertme, 0, convertme.length);
+            return md.digest();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return new byte[64];
+    }
+
+    public static byte[] computeSHA512(byte[] convertme, byte[] convertme2) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
+            md.update(convertme, 0, convertme.length);
+            md.update(convertme2, 0, convertme2.length);
+            return md.digest();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return new byte[64];
+    }
+
+    public static byte[] computeSHA512(byte[] convertme, byte[] convertme2, byte[] convertme3) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
+            md.update(convertme, 0, convertme.length);
+            md.update(convertme2, 0, convertme2.length);
+            md.update(convertme3, 0, convertme3.length);
+            return md.digest();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return new byte[64];
+    }
+
     public static byte[] computeSHA256(byte[] b1, int o1, int l1, ByteBuffer b2, int o2, int l2) {
         int oldp = b2.position();
         int oldl = b2.limit();
@@ -277,7 +321,7 @@ public class Utilities {
         }
         try {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-            byte[] array = md.digest(md5.getBytes());
+            byte[] array = md.digest(AndroidUtilities.getStringBytes(md5));
             StringBuilder sb = new StringBuilder();
             for (int a = 0; a < array.length; a++) {
                 sb.append(Integer.toHexString((array[a] & 0xFF) | 0x100).substring(1, 3));

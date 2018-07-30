@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.telegram.messenger.exoplayer2.drm;
 
 import android.media.MediaDrm;
@@ -22,14 +21,13 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Pair;
 import org.telegram.messenger.exoplayer2.C;
-import org.telegram.messenger.exoplayer2.drm.DefaultDrmSessionManager.EventListener;
 import org.telegram.messenger.exoplayer2.drm.DefaultDrmSessionManager.Mode;
 import org.telegram.messenger.exoplayer2.drm.DrmSession.DrmSessionException;
 import org.telegram.messenger.exoplayer2.upstream.HttpDataSource;
 import org.telegram.messenger.exoplayer2.upstream.HttpDataSource.Factory;
 import org.telegram.messenger.exoplayer2.util.Assertions;
-import java.io.IOException;
 import java.util.HashMap;
+import java.util.UUID;
 
 /**
  * Helper class to download, renew and release offline licenses.
@@ -91,13 +89,16 @@ public final class OfflineLicenseHelper<T extends ExoMediaCrypto> {
    * @throws UnsupportedDrmException If the Widevine DRM scheme is unsupported or cannot be
    *     instantiated.
    * @see DefaultDrmSessionManager#DefaultDrmSessionManager(java.util.UUID, ExoMediaDrm,
-   *     MediaDrmCallback, HashMap, Handler, EventListener)
+   *     MediaDrmCallback, HashMap, Handler, DefaultDrmSessionEventListener)
    */
   public static OfflineLicenseHelper<FrameworkMediaCrypto> newWidevineInstance(
-      String defaultLicenseUrl, boolean forceDefaultLicenseUrl, Factory httpDataSourceFactory,
+      String defaultLicenseUrl,
+      boolean forceDefaultLicenseUrl,
+      Factory httpDataSourceFactory,
       HashMap<String, String> optionalKeyRequestParameters)
       throws UnsupportedDrmException {
-    return new OfflineLicenseHelper<>(FrameworkMediaDrm.newInstance(C.WIDEVINE_UUID),
+    return new OfflineLicenseHelper<>(C.WIDEVINE_UUID,
+        FrameworkMediaDrm.newInstance(C.WIDEVINE_UUID),
         new HttpMediaDrmCallback(defaultLicenseUrl, forceDefaultLicenseUrl, httpDataSourceFactory),
         optionalKeyRequestParameters);
   }
@@ -105,41 +106,47 @@ public final class OfflineLicenseHelper<T extends ExoMediaCrypto> {
   /**
    * Constructs an instance. Call {@link #release()} when the instance is no longer required.
    *
+   * @param uuid The UUID of the drm scheme.
    * @param mediaDrm An underlying {@link ExoMediaDrm} for use by the manager.
    * @param callback Performs key and provisioning requests.
    * @param optionalKeyRequestParameters An optional map of parameters to pass as the last argument
    *     to {@link MediaDrm#getKeyRequest(byte[], byte[], String, int, HashMap)}. May be null.
    * @see DefaultDrmSessionManager#DefaultDrmSessionManager(java.util.UUID, ExoMediaDrm,
-   *     MediaDrmCallback, HashMap, Handler, EventListener)
+   *     MediaDrmCallback, HashMap, Handler, DefaultDrmSessionEventListener)
    */
-  public OfflineLicenseHelper(ExoMediaDrm<T> mediaDrm, MediaDrmCallback callback,
+  public OfflineLicenseHelper(
+      UUID uuid,
+      ExoMediaDrm<T> mediaDrm,
+      MediaDrmCallback callback,
       HashMap<String, String> optionalKeyRequestParameters) {
     handlerThread = new HandlerThread("OfflineLicenseHelper");
     handlerThread.start();
     conditionVariable = new ConditionVariable();
-    EventListener eventListener = new EventListener() {
-      @Override
-      public void onDrmKeysLoaded() {
-        conditionVariable.open();
-      }
+    DefaultDrmSessionEventListener eventListener =
+        new DefaultDrmSessionEventListener() {
+          @Override
+          public void onDrmKeysLoaded() {
+            conditionVariable.open();
+          }
 
-      @Override
-      public void onDrmSessionManagerError(Exception e) {
-        conditionVariable.open();
-      }
+          @Override
+          public void onDrmSessionManagerError(Exception e) {
+            conditionVariable.open();
+          }
 
-      @Override
-      public void onDrmKeysRestored() {
-        conditionVariable.open();
-      }
+          @Override
+          public void onDrmKeysRestored() {
+            conditionVariable.open();
+          }
 
-      @Override
-      public void onDrmKeysRemoved() {
-        conditionVariable.open();
-      }
-    };
-    drmSessionManager = new DefaultDrmSessionManager<>(C.WIDEVINE_UUID, mediaDrm, callback,
-        optionalKeyRequestParameters, new Handler(handlerThread.getLooper()), eventListener);
+          @Override
+          public void onDrmKeysRemoved() {
+            conditionVariable.open();
+          }
+        };
+    drmSessionManager =
+        new DefaultDrmSessionManager<>(uuid, mediaDrm, callback, optionalKeyRequestParameters);
+    drmSessionManager.addListener(new Handler(handlerThread.getLooper()), eventListener);
   }
 
   /**
@@ -175,12 +182,9 @@ public final class OfflineLicenseHelper<T extends ExoMediaCrypto> {
    *
    * @param drmInitData The {@link DrmInitData} for the content whose license is to be downloaded.
    * @return The key set id for the downloaded license.
-   * @throws IOException If an error occurs reading data from the stream.
-   * @throws InterruptedException If the thread has been interrupted.
    * @throws DrmSessionException Thrown when a DRM session error occurs.
    */
-  public synchronized byte[] downloadLicense(DrmInitData drmInitData) throws IOException,
-      InterruptedException, DrmSessionException {
+  public synchronized byte[] downloadLicense(DrmInitData drmInitData) throws DrmSessionException {
     Assertions.checkArgument(drmInitData != null);
     return blockingKeyRequest(DefaultDrmSessionManager.MODE_DOWNLOAD, null, drmInitData);
   }

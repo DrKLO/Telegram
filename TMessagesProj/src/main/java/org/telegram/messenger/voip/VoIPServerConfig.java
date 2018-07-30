@@ -2,6 +2,7 @@ package org.telegram.messenger.voip;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 
 import java.util.ArrayList;
@@ -29,7 +30,9 @@ public class VoIPServerConfig{
 			}
 			nativeSetConfig(keys, values);
 		}catch(JSONException x){
-			FileLog.e("Error parsing VoIP config", x);
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.e("Error parsing VoIP config", x);
+			}
 		}
 	}
 

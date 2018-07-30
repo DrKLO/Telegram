@@ -24,8 +24,17 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
  */
 public final class PrivateCommand extends SpliceCommand {
 
+  /**
+   * The {@code pts_adjustment} as defined in SCTE35, Section 9.2.
+   */
   public final long ptsAdjustment;
+  /**
+   * The identifier as defined in SCTE35, Section 9.3.6.
+   */
   public final long identifier;
+  /**
+   * The private bytes as defined in SCTE35, Section 9.3.6.
+   */
   public final byte[] commandBytes;
 
   private PrivateCommand(long identifier, byte[] commandBytes, long ptsAdjustment) {

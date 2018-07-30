@@ -19,6 +19,7 @@ import android.util.AttributeSet;
 import android.view.View;
 
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.SecureDocument;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 
@@ -45,6 +46,10 @@ public class BackupImageView extends View {
 
     private void init() {
         imageReceiver = new ImageReceiver(this);
+    }
+
+    public void setImage(SecureDocument path, String filter) {
+        setImage(path, null, filter, null, null, null, null, null, 0);
     }
 
     public void setImage(TLObject path, String filter, String ext, Drawable thumb) {

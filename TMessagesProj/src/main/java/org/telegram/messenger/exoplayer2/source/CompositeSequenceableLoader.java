@@ -20,9 +20,9 @@ import org.telegram.messenger.exoplayer2.C;
 /**
  * A {@link SequenceableLoader} that encapsulates multiple other {@link SequenceableLoader}s.
  */
-public final class CompositeSequenceableLoader implements SequenceableLoader {
+public class CompositeSequenceableLoader implements SequenceableLoader {
 
-  private final SequenceableLoader[] loaders;
+  protected final SequenceableLoader[] loaders;
 
   public CompositeSequenceableLoader(SequenceableLoader[] loaders) {
     this.loaders = loaders;
@@ -53,7 +53,14 @@ public final class CompositeSequenceableLoader implements SequenceableLoader {
   }
 
   @Override
-  public final boolean continueLoading(long positionUs) {
+  public final void reevaluateBuffer(long positionUs) {
+    for (SequenceableLoader loader : loaders) {
+      loader.reevaluateBuffer(positionUs);
+    }
+  }
+
+  @Override
+  public boolean continueLoading(long positionUs) {
     boolean madeProgress = false;
     boolean madeProgressThisIteration;
     do {
@@ -63,7 +70,11 @@ public final class CompositeSequenceableLoader implements SequenceableLoader {
         break;
       }
       for (SequenceableLoader loader : loaders) {
-        if (loader.getNextLoadPositionUs() == nextLoadPositionUs) {
+        long loaderNextLoadPositionUs = loader.getNextLoadPositionUs();
+        boolean isLoaderBehind =
+            loaderNextLoadPositionUs != C.TIME_END_OF_SOURCE
+                && loaderNextLoadPositionUs <= positionUs;
+        if (loaderNextLoadPositionUs == nextLoadPositionUs || isLoaderBehind) {
           madeProgressThisIteration |= loader.continueLoading(positionUs);
         }
       }

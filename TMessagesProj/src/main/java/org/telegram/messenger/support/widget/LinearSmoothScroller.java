@@ -245,9 +245,9 @@ public class LinearSmoothScroller extends RecyclerView.SmoothScroller {
         // To avoid UI hiccups, trigger a smooth scroll to a distance little further than the
         // interim target. Since we track the distance travelled in onSeekTargetStep callback, it
         // won't actually scroll more than what we need.
-        action.update((int) (mInterimTargetDx * TARGET_SEEK_EXTRA_SCROLL_RATIO)
-                , (int) (mInterimTargetDy * TARGET_SEEK_EXTRA_SCROLL_RATIO)
-                , (int) (time * TARGET_SEEK_EXTRA_SCROLL_RATIO), mLinearInterpolator);
+        action.update((int) (mInterimTargetDx * TARGET_SEEK_EXTRA_SCROLL_RATIO),
+                (int) (mInterimTargetDy * TARGET_SEEK_EXTRA_SCROLL_RATIO),
+                (int) (time * TARGET_SEEK_EXTRA_SCROLL_RATIO), mLinearInterpolator);
     }
 
     private int clampApplyScroll(int tmpDt, int dt) {
@@ -354,8 +354,8 @@ public class LinearSmoothScroller extends RecyclerView.SmoothScroller {
             return ((ScrollVectorProvider) layoutManager)
                     .computeScrollVectorForPosition(targetPosition);
         }
-        Log.w(TAG, "You should override computeScrollVectorForPosition when the LayoutManager" +
-                " does not implement " + ScrollVectorProvider.class.getCanonicalName());
+        Log.w(TAG, "You should override computeScrollVectorForPosition when the LayoutManager"
+                + " does not implement " + ScrollVectorProvider.class.getCanonicalName());
         return null;
     }
 }

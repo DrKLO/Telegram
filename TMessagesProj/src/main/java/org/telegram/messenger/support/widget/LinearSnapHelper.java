@@ -10,7 +10,7 @@
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific languag`e governing permissions and
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
@@ -139,8 +139,8 @@ public class LinearSnapHelper extends SnapHelper {
 
     private int distanceToCenter(@NonNull RecyclerView.LayoutManager layoutManager,
             @NonNull View targetView, OrientationHelper helper) {
-        final int childCenter = helper.getDecoratedStart(targetView) +
-                (helper.getDecoratedMeasurement(targetView) / 2);
+        final int childCenter = helper.getDecoratedStart(targetView)
+                + (helper.getDecoratedMeasurement(targetView) / 2);
         final int containerCenter;
         if (layoutManager.getClipToPadding()) {
             containerCenter = helper.getStartAfterPadding() + helper.getTotalSpace() / 2;
@@ -170,11 +170,7 @@ public class LinearSnapHelper extends SnapHelper {
         }
         int distance =
                 Math.abs(distances[0]) > Math.abs(distances[1]) ? distances[0] : distances[1];
-        if (distance > 0) {
-            return (int) Math.floor(distance / distancePerChild);
-        } else {
-            return (int) Math.ceil(distance / distancePerChild);
-        }
+        return (int) Math.round(distance / distancePerChild);
     }
 
     /**
@@ -205,8 +201,8 @@ public class LinearSnapHelper extends SnapHelper {
 
         for (int i = 0; i < childCount; i++) {
             final View child = layoutManager.getChildAt(i);
-            int childCenter = helper.getDecoratedStart(child) +
-                    (helper.getDecoratedMeasurement(child) / 2);
+            int childCenter = helper.getDecoratedStart(child)
+                    + (helper.getDecoratedMeasurement(child) / 2);
             int absDistance = Math.abs(childCenter - center);
 
             /** if child center is closer than previous closest, set it as closest  **/

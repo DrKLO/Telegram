@@ -17,18 +17,16 @@
 #include <string.h>
 #include <assert.h>
 
-#include <openssl/dh.h>
-#include <openssl/dsa.h>
 #include <openssl/ec_key.h>
 #include <openssl/err.h>
 #include <openssl/mem.h>
 #include <openssl/rsa.h>
 #include <openssl/thread.h>
 
+#include "../internal.h"
+
 
 struct engine_st {
-  DH_METHOD *dh_method;
-  DSA_METHOD *dsa_method;
   RSA_METHOD *rsa_method;
   ECDSA_METHOD *ecdsa_method;
 };
@@ -39,20 +37,20 @@ ENGINE *ENGINE_new(void) {
     return NULL;
   }
 
-  memset(engine, 0, sizeof(ENGINE));
+  OPENSSL_memset(engine, 0, sizeof(ENGINE));
   return engine;
 }
 
 void ENGINE_free(ENGINE *engine) {
-  /* Methods are currently required to be static so are not unref'ed. */
+  // Methods are currently required to be static so are not unref'ed.
   OPENSSL_free(engine);
 }
 
-/* set_method takes a pointer to a method and its given size and sets
- * |*out_member| to point to it. This function might want to be extended in the
- * future to support making a copy of the method so that a stable ABI for
- * ENGINEs can be supported. But, for the moment, all *_METHODS must be
- * static. */
+// set_method takes a pointer to a method and its given size and sets
+// |*out_member| to point to it. This function might want to be extended in the
+// future to support making a copy of the method so that a stable ABI for
+// ENGINEs can be supported. But, for the moment, all *_METHODS must be
+// static.
 static int set_method(void **out_member, const void *method, size_t method_size,
                       size_t compiled_size) {
   const struct openssl_method_common_st *common = method;
@@ -62,26 +60,6 @@ static int set_method(void **out_member, const void *method, size_t method_size,
 
   *out_member = (void*) method;
   return 1;
-}
-
-int ENGINE_set_DH_method(ENGINE *engine, const DH_METHOD *method,
-                         size_t method_size) {
-  return set_method((void **)&engine->dh_method, method, method_size,
-                    sizeof(DH_METHOD));
-}
-
-DH_METHOD *ENGINE_get_DH_method(const ENGINE *engine) {
-  return engine->dh_method;
-}
-
-int ENGINE_set_DSA_method(ENGINE *engine, const DSA_METHOD *method,
-                         size_t method_size) {
-  return set_method((void **)&engine->dsa_method, method, method_size,
-                    sizeof(DSA_METHOD));
-}
-
-DSA_METHOD *ENGINE_get_DSA_method(const ENGINE *engine) {
-  return engine->dsa_method;
 }
 
 int ENGINE_set_RSA_method(ENGINE *engine, const RSA_METHOD *method,
@@ -117,4 +95,4 @@ void METHOD_unref(void *method_in) {
   assert(method->is_static);
 }
 
-OPENSSL_DECLARE_ERROR_REASON(ENGINE, OPERATION_NOT_SUPPORTED);
+OPENSSL_DECLARE_ERROR_REASON(ENGINE, OPERATION_NOT_SUPPORTED)

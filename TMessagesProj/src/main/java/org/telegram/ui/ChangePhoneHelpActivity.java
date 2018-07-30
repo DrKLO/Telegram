@@ -47,7 +47,7 @@ public class ChangePhoneHelpActivity extends BaseFragment {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
 
-        TLRPC.User user = UserConfig.getCurrentUser();
+        TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
         String value;
         if (user != null && user.phone != null && user.phone.length() != 0) {
             value = PhoneFormat.getInstance().format("+" + user.phone);
@@ -113,7 +113,7 @@ public class ChangePhoneHelpActivity extends BaseFragment {
         textView2 = new TextView(context);
         textView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         textView2.setGravity(Gravity.CENTER_HORIZONTAL);
-        textView2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+        textView2.setTextColor(Theme.getColor(Theme.key_changephoneinfo_changeText));
         textView2.setText(LocaleController.getString("PhoneNumberChange", R.string.PhoneNumberChange));
         textView2.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textView2.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10));
@@ -153,7 +153,7 @@ public class ChangePhoneHelpActivity extends BaseFragment {
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
 
                 new ThemeDescription(textView1, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(textView2, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueText4),
+                new ThemeDescription(textView2, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_changephoneinfo_changeText),
                 new ThemeDescription(imageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_changephoneinfo_image),
         };
     }

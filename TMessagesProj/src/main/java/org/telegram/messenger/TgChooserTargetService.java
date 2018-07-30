@@ -9,7 +9,6 @@
 package org.telegram.messenger;
 
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.content.ComponentName;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -36,7 +35,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CountDownLatch;
 
 @TargetApi(Build.VERSION_CODES.M)
 public class TgChooserTargetService extends ChooserTargetService {
@@ -46,19 +45,21 @@ public class TgChooserTargetService extends ChooserTargetService {
 
     @Override
     public List<ChooserTarget> onGetChooserTargets(ComponentName targetActivityName, IntentFilter matchedFilter) {
+        final int currentAccount = UserConfig.selectedAccount;
+
         final List<ChooserTarget> targets = new ArrayList<>();
-        if (!UserConfig.isClientActivated()) {
+        if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
             return targets;
         }
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         if (!preferences.getBoolean("direct_share", true)) {
             return targets;
         }
 
         ImageLoader imageLoader = ImageLoader.getInstance();
-        final Semaphore semaphore = new Semaphore(0);
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
         final ComponentName componentName = new ComponentName(getPackageName(), LaunchActivity.class.getCanonicalName());
-        MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
+        MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(new Runnable() {
             @Override
             public void run() {
                 ArrayList<Integer> dialogs = new ArrayList<>();
@@ -66,9 +67,9 @@ public class TgChooserTargetService extends ChooserTargetService {
                 ArrayList<TLRPC.User> users = new ArrayList<>();
                 try {
                     ArrayList<Integer> usersToLoad = new ArrayList<>();
-                    usersToLoad.add(UserConfig.getClientUserId());
+                    usersToLoad.add(UserConfig.getInstance(currentAccount).getClientUserId());
                     ArrayList<Integer> chatsToLoad = new ArrayList<>();
-                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT did FROM dialogs ORDER BY date DESC LIMIT %d,%d", 0, 30));
+                    SQLiteCursor cursor = MessagesStorage.getInstance(currentAccount).getDatabase().queryFinalized(String.format(Locale.US, "SELECT did FROM dialogs ORDER BY date DESC LIMIT %d,%d", 0, 30));
                     while (cursor.next()) {
                         long id = cursor.longValue(0);
 
@@ -98,10 +99,10 @@ public class TgChooserTargetService extends ChooserTargetService {
                     }
                     cursor.dispose();
                     if (!chatsToLoad.isEmpty()) {
-                        MessagesStorage.getInstance().getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
+                        MessagesStorage.getInstance(currentAccount).getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
                     }
                     if (!usersToLoad.isEmpty()) {
-                        MessagesStorage.getInstance().getUsersInternal(TextUtils.join(",", usersToLoad), users);
+                        MessagesStorage.getInstance(currentAccount).getUsersInternal(TextUtils.join(",", usersToLoad), users);
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -147,11 +148,11 @@ public class TgChooserTargetService extends ChooserTargetService {
                         targets.add(new ChooserTarget(name, icon, 1.0f, componentName, extras));
                     }
                 }
-                semaphore.release();
+                countDownLatch.countDown();
             }
         });
         try {
-            semaphore.acquire();
+            countDownLatch.await();
         } catch (Exception e) {
             FileLog.e(e);
         }

@@ -55,30 +55,29 @@
  * copied and put under another distribution licence
  * [including the GNU Public Licence.] */
 
-#include <openssl/x509.h>
-
 #include <openssl/asn1.h>
+#include <openssl/ec_key.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
+#include <openssl/rsa.h>
+#include <openssl/dsa.h>
 
-#include "../evp/internal.h"
 
-
-int i2d_PrivateKey(const EVP_PKEY *a, unsigned char **pp)
-	{
-	if (a->ameth && a->ameth->old_priv_encode)
-		{
-		return a->ameth->old_priv_encode(a, pp);
-		}
-	if (a->ameth && a->ameth->priv_encode) {
-		PKCS8_PRIV_KEY_INFO *p8 = EVP_PKEY2PKCS8((EVP_PKEY*)a);
-		int ret = i2d_PKCS8_PRIV_KEY_INFO(p8,pp);
-		PKCS8_PRIV_KEY_INFO_free(p8);
-		return ret;
-	}
-	/* Although this file is in crypto/x509 for layering reasons, it emits
-	 * an error code from ASN1 for OpenSSL compatibility. */
-	OPENSSL_PUT_ERROR(ASN1, ASN1_R_UNSUPPORTED_PUBLIC_KEY_TYPE);
-	return -1;
-	}
-
+int i2d_PrivateKey(const EVP_PKEY *a, uint8_t **pp)
+{
+    switch (EVP_PKEY_id(a)) {
+    case EVP_PKEY_RSA:
+        return i2d_RSAPrivateKey(a->pkey.rsa, pp);
+    case EVP_PKEY_EC:
+        return i2d_ECPrivateKey(a->pkey.ec, pp);
+    case EVP_PKEY_DSA:
+        return i2d_DSAPrivateKey(a->pkey.dsa, pp);
+    default:
+        /*
+         * Although this file is in crypto/x509 for layering reasons, it emits
+         * an error code from ASN1 for OpenSSL compatibility.
+         */
+        OPENSSL_PUT_ERROR(ASN1, ASN1_R_UNSUPPORTED_PUBLIC_KEY_TYPE);
+        return -1;
+    }
+}

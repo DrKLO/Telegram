@@ -23,17 +23,8 @@ public class CallReceiver extends BroadcastReceiver {
             String phoneState = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
             if (TelephonyManager.EXTRA_STATE_RINGING.equals(phoneState)) {
                 String phoneNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER);
-                NotificationCenter.getInstance().postNotificationName(NotificationCenter.didReceiveCall, PhoneFormat.stripExceptNumbers(phoneNumber));
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didReceiveCall, PhoneFormat.stripExceptNumbers(phoneNumber));
             }
         }
-        /*TelephonyManager telephony = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-        telephony.listen(new PhoneStateListener() {
-            @Override
-            public void onCallStateChanged(int state, String incomingNumber) {
-                if (state == 1 && incomingNumber != null && incomingNumber.length() > 0) {
-                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.didReceiveCall, PhoneFormat.stripExceptNumbers(incomingNumber));
-                }
-            }
-        }, PhoneStateListener.LISTEN_CALL_STATE);*/
     }
 }

@@ -16,11 +16,14 @@
 package org.telegram.messenger.exoplayer2.extractor.mkv;
 
 import android.support.annotation.IntDef;
+import android.support.annotation.Nullable;
 import android.util.Log;
+import android.util.Pair;
 import android.util.SparseArray;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.ParserException;
+import org.telegram.messenger.exoplayer2.audio.Ac3Util;
 import org.telegram.messenger.exoplayer2.drm.DrmInitData;
 import org.telegram.messenger.exoplayer2.drm.DrmInitData.SchemeData;
 import org.telegram.messenger.exoplayer2.extractor.ChunkIndex;
@@ -32,6 +35,7 @@ import org.telegram.messenger.exoplayer2.extractor.MpegAudioHeader;
 import org.telegram.messenger.exoplayer2.extractor.PositionHolder;
 import org.telegram.messenger.exoplayer2.extractor.SeekMap;
 import org.telegram.messenger.exoplayer2.extractor.TrackOutput;
+import org.telegram.messenger.exoplayer2.util.Assertions;
 import org.telegram.messenger.exoplayer2.util.LongArray;
 import org.telegram.messenger.exoplayer2.util.MimeTypes;
 import org.telegram.messenger.exoplayer2.util.NalUnitUtil;
@@ -53,7 +57,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 /**
- * Extracts data from a Matroska or WebM file.
+ * Extracts data from the Matroska and WebM container formats.
  */
 public final class MatroskaExtractor implements Extractor {
 
@@ -216,6 +220,7 @@ public final class MatroskaExtractor implements Extractor {
   private static final int LACING_EBML = 3;
 
   private static final int FOURCC_COMPRESSION_VC1 = 0x31435657;
+  private static final int FOURCC_COMPRESSION_DIVX = 0x58564944;
 
   /**
    * A template for the prefix that must be added to each subrip sample. The 12 byte end timecode
@@ -242,7 +247,7 @@ public final class MatroskaExtractor implements Extractor {
    * The value by which to divide a time in microseconds to convert it to the unit of the last value
    * in a subrip timecode (milliseconds).
    */
-  private static long SUBRIP_TIMECODE_LAST_VALUE_SCALING_FACTOR = 1000;
+  private static final long SUBRIP_TIMECODE_LAST_VALUE_SCALING_FACTOR = 1000;
   /**
    * The format of a subrip timecode.
    */
@@ -270,7 +275,7 @@ public final class MatroskaExtractor implements Extractor {
    * The value by which to divide a time in microseconds to convert it to the unit of the last value
    * in an SSA timecode (1/100ths of a second).
    */
-  private static long SSA_TIMECODE_LAST_VALUE_SCALING_FACTOR = 10000;
+  private static final long SSA_TIMECODE_LAST_VALUE_SCALING_FACTOR = 10000;
   /**
    * A special end timecode indicating that an SSA subtitle should be displayed until the next
    * subtitle, or until the end of the media in the case of the last subtitle.
@@ -413,6 +418,9 @@ public final class MatroskaExtractor implements Extractor {
     reader.reset();
     varintReader.reset();
     resetSample();
+    for (int i = 0; i < tracks.size(); i++) {
+      tracks.valueAt(i).reset();
+    }
   }
 
   @Override
@@ -431,101 +439,13 @@ public final class MatroskaExtractor implements Extractor {
         return Extractor.RESULT_SEEK;
       }
     }
-    return continueReading ? Extractor.RESULT_CONTINUE : Extractor.RESULT_END_OF_INPUT;
-  }
-
-  /* package */ int getElementType(int id) {
-    switch (id) {
-      case ID_EBML:
-      case ID_SEGMENT:
-      case ID_SEEK_HEAD:
-      case ID_SEEK:
-      case ID_INFO:
-      case ID_CLUSTER:
-      case ID_TRACKS:
-      case ID_TRACK_ENTRY:
-      case ID_AUDIO:
-      case ID_VIDEO:
-      case ID_CONTENT_ENCODINGS:
-      case ID_CONTENT_ENCODING:
-      case ID_CONTENT_COMPRESSION:
-      case ID_CONTENT_ENCRYPTION:
-      case ID_CONTENT_ENCRYPTION_AES_SETTINGS:
-      case ID_CUES:
-      case ID_CUE_POINT:
-      case ID_CUE_TRACK_POSITIONS:
-      case ID_BLOCK_GROUP:
-      case ID_PROJECTION:
-      case ID_COLOUR:
-      case ID_MASTERING_METADATA:
-        return EbmlReader.TYPE_MASTER;
-      case ID_EBML_READ_VERSION:
-      case ID_DOC_TYPE_READ_VERSION:
-      case ID_SEEK_POSITION:
-      case ID_TIMECODE_SCALE:
-      case ID_TIME_CODE:
-      case ID_BLOCK_DURATION:
-      case ID_PIXEL_WIDTH:
-      case ID_PIXEL_HEIGHT:
-      case ID_DISPLAY_WIDTH:
-      case ID_DISPLAY_HEIGHT:
-      case ID_DISPLAY_UNIT:
-      case ID_TRACK_NUMBER:
-      case ID_TRACK_TYPE:
-      case ID_FLAG_DEFAULT:
-      case ID_FLAG_FORCED:
-      case ID_DEFAULT_DURATION:
-      case ID_CODEC_DELAY:
-      case ID_SEEK_PRE_ROLL:
-      case ID_CHANNELS:
-      case ID_AUDIO_BIT_DEPTH:
-      case ID_CONTENT_ENCODING_ORDER:
-      case ID_CONTENT_ENCODING_SCOPE:
-      case ID_CONTENT_COMPRESSION_ALGORITHM:
-      case ID_CONTENT_ENCRYPTION_ALGORITHM:
-      case ID_CONTENT_ENCRYPTION_AES_SETTINGS_CIPHER_MODE:
-      case ID_CUE_TIME:
-      case ID_CUE_CLUSTER_POSITION:
-      case ID_REFERENCE_BLOCK:
-      case ID_STEREO_MODE:
-      case ID_COLOUR_RANGE:
-      case ID_COLOUR_TRANSFER:
-      case ID_COLOUR_PRIMARIES:
-      case ID_MAX_CLL:
-      case ID_MAX_FALL:
-        return EbmlReader.TYPE_UNSIGNED_INT;
-      case ID_DOC_TYPE:
-      case ID_CODEC_ID:
-      case ID_LANGUAGE:
-        return EbmlReader.TYPE_STRING;
-      case ID_SEEK_ID:
-      case ID_CONTENT_COMPRESSION_SETTINGS:
-      case ID_CONTENT_ENCRYPTION_KEY_ID:
-      case ID_SIMPLE_BLOCK:
-      case ID_BLOCK:
-      case ID_CODEC_PRIVATE:
-      case ID_PROJECTION_PRIVATE:
-        return EbmlReader.TYPE_BINARY;
-      case ID_DURATION:
-      case ID_SAMPLING_FREQUENCY:
-      case ID_PRIMARY_R_CHROMATICITY_X:
-      case ID_PRIMARY_R_CHROMATICITY_Y:
-      case ID_PRIMARY_G_CHROMATICITY_X:
-      case ID_PRIMARY_G_CHROMATICITY_Y:
-      case ID_PRIMARY_B_CHROMATICITY_X:
-      case ID_PRIMARY_B_CHROMATICITY_Y:
-      case ID_WHITE_POINT_CHROMATICITY_X:
-      case ID_WHITE_POINT_CHROMATICITY_Y:
-      case ID_LUMNINANCE_MAX:
-      case ID_LUMNINANCE_MIN:
-        return EbmlReader.TYPE_FLOAT;
-      default:
-        return EbmlReader.TYPE_UNKNOWN;
+    if (!continueReading) {
+      for (int i = 0; i < tracks.size(); i++) {
+        tracks.valueAt(i).outputPendingSampleMetadata();
+      }
+      return Extractor.RESULT_END_OF_INPUT;
     }
-  }
-
-  /* package */ boolean isLevel1Element(int id) {
-    return id == ID_SEGMENT_INFO || id == ID_CLUSTER || id == ID_CUES || id == ID_TRACKS;
+    return Extractor.RESULT_CONTINUE;
   }
 
   /* package */ void startMasterElement(int id, long contentPosition, long contentSize)
@@ -628,7 +548,7 @@ public final class MatroskaExtractor implements Extractor {
           if (currentTrack.cryptoData == null) {
             throw new ParserException("Encrypted Track found but ContentEncKeyID was not found");
           }
-          currentTrack.drmInitData = new DrmInitData(new SchemeData(C.UUID_NIL, null,
+          currentTrack.drmInitData = new DrmInitData(new SchemeData(C.UUID_NIL,
               MimeTypes.VIDEO_WEBM, currentTrack.cryptoData.encryptionKey));
         }
         break;
@@ -1077,14 +997,26 @@ public final class MatroskaExtractor implements Extractor {
   }
 
   private void commitSampleToOutput(Track track, long timeUs) {
-    if (CODEC_ID_SUBRIP.equals(track.codecId)) {
-      commitSubtitleSample(track, SUBRIP_TIMECODE_FORMAT, SUBRIP_PREFIX_END_TIMECODE_OFFSET,
-          SUBRIP_TIMECODE_LAST_VALUE_SCALING_FACTOR, SUBRIP_TIMECODE_EMPTY);
-    } else if (CODEC_ID_ASS.equals(track.codecId)) {
-      commitSubtitleSample(track, SSA_TIMECODE_FORMAT, SSA_PREFIX_END_TIMECODE_OFFSET,
-          SSA_TIMECODE_LAST_VALUE_SCALING_FACTOR, SSA_TIMECODE_EMPTY);
+    if (track.trueHdSampleRechunker != null) {
+      track.trueHdSampleRechunker.sampleMetadata(track, timeUs);
+    } else {
+      if (CODEC_ID_SUBRIP.equals(track.codecId)) {
+        commitSubtitleSample(
+            track,
+            SUBRIP_TIMECODE_FORMAT,
+            SUBRIP_PREFIX_END_TIMECODE_OFFSET,
+            SUBRIP_TIMECODE_LAST_VALUE_SCALING_FACTOR,
+            SUBRIP_TIMECODE_EMPTY);
+      } else if (CODEC_ID_ASS.equals(track.codecId)) {
+        commitSubtitleSample(
+            track,
+            SSA_TIMECODE_FORMAT,
+            SSA_PREFIX_END_TIMECODE_OFFSET,
+            SSA_TIMECODE_LAST_VALUE_SCALING_FACTOR,
+            SSA_TIMECODE_EMPTY);
+      }
+      track.output.sampleMetadata(timeUs, blockFlags, sampleBytesWritten, 0, track.cryptoData);
     }
-    track.output.sampleMetadata(timeUs, blockFlags, sampleBytesWritten, 0, track.cryptoData);
     sampleRead = true;
     resetSample();
   }
@@ -1251,6 +1183,10 @@ public final class MatroskaExtractor implements Extractor {
         }
       }
     } else {
+      if (track.trueHdSampleRechunker != null) {
+        Assertions.checkState(sampleStrippedBytes.limit() == 0);
+        track.trueHdSampleRechunker.startSample(input, blockFlags, size);
+      }
       while (sampleBytesRead < size) {
         readToOutput(input, output, size - sampleBytesRead);
       }
@@ -1471,12 +1407,98 @@ public final class MatroskaExtractor implements Extractor {
 
     @Override
     public int getElementType(int id) {
-      return MatroskaExtractor.this.getElementType(id);
+      switch (id) {
+        case ID_EBML:
+        case ID_SEGMENT:
+        case ID_SEEK_HEAD:
+        case ID_SEEK:
+        case ID_INFO:
+        case ID_CLUSTER:
+        case ID_TRACKS:
+        case ID_TRACK_ENTRY:
+        case ID_AUDIO:
+        case ID_VIDEO:
+        case ID_CONTENT_ENCODINGS:
+        case ID_CONTENT_ENCODING:
+        case ID_CONTENT_COMPRESSION:
+        case ID_CONTENT_ENCRYPTION:
+        case ID_CONTENT_ENCRYPTION_AES_SETTINGS:
+        case ID_CUES:
+        case ID_CUE_POINT:
+        case ID_CUE_TRACK_POSITIONS:
+        case ID_BLOCK_GROUP:
+        case ID_PROJECTION:
+        case ID_COLOUR:
+        case ID_MASTERING_METADATA:
+          return TYPE_MASTER;
+        case ID_EBML_READ_VERSION:
+        case ID_DOC_TYPE_READ_VERSION:
+        case ID_SEEK_POSITION:
+        case ID_TIMECODE_SCALE:
+        case ID_TIME_CODE:
+        case ID_BLOCK_DURATION:
+        case ID_PIXEL_WIDTH:
+        case ID_PIXEL_HEIGHT:
+        case ID_DISPLAY_WIDTH:
+        case ID_DISPLAY_HEIGHT:
+        case ID_DISPLAY_UNIT:
+        case ID_TRACK_NUMBER:
+        case ID_TRACK_TYPE:
+        case ID_FLAG_DEFAULT:
+        case ID_FLAG_FORCED:
+        case ID_DEFAULT_DURATION:
+        case ID_CODEC_DELAY:
+        case ID_SEEK_PRE_ROLL:
+        case ID_CHANNELS:
+        case ID_AUDIO_BIT_DEPTH:
+        case ID_CONTENT_ENCODING_ORDER:
+        case ID_CONTENT_ENCODING_SCOPE:
+        case ID_CONTENT_COMPRESSION_ALGORITHM:
+        case ID_CONTENT_ENCRYPTION_ALGORITHM:
+        case ID_CONTENT_ENCRYPTION_AES_SETTINGS_CIPHER_MODE:
+        case ID_CUE_TIME:
+        case ID_CUE_CLUSTER_POSITION:
+        case ID_REFERENCE_BLOCK:
+        case ID_STEREO_MODE:
+        case ID_COLOUR_RANGE:
+        case ID_COLOUR_TRANSFER:
+        case ID_COLOUR_PRIMARIES:
+        case ID_MAX_CLL:
+        case ID_MAX_FALL:
+          return TYPE_UNSIGNED_INT;
+        case ID_DOC_TYPE:
+        case ID_CODEC_ID:
+        case ID_LANGUAGE:
+          return TYPE_STRING;
+        case ID_SEEK_ID:
+        case ID_CONTENT_COMPRESSION_SETTINGS:
+        case ID_CONTENT_ENCRYPTION_KEY_ID:
+        case ID_SIMPLE_BLOCK:
+        case ID_BLOCK:
+        case ID_CODEC_PRIVATE:
+        case ID_PROJECTION_PRIVATE:
+          return TYPE_BINARY;
+        case ID_DURATION:
+        case ID_SAMPLING_FREQUENCY:
+        case ID_PRIMARY_R_CHROMATICITY_X:
+        case ID_PRIMARY_R_CHROMATICITY_Y:
+        case ID_PRIMARY_G_CHROMATICITY_X:
+        case ID_PRIMARY_G_CHROMATICITY_Y:
+        case ID_PRIMARY_B_CHROMATICITY_X:
+        case ID_PRIMARY_B_CHROMATICITY_Y:
+        case ID_WHITE_POINT_CHROMATICITY_X:
+        case ID_WHITE_POINT_CHROMATICITY_Y:
+        case ID_LUMNINANCE_MAX:
+        case ID_LUMNINANCE_MIN:
+          return TYPE_FLOAT;
+        default:
+          return TYPE_UNKNOWN;
+      }
     }
 
     @Override
     public boolean isLevel1Element(int id) {
-      return MatroskaExtractor.this.isLevel1Element(id);
+      return id == ID_SEGMENT_INFO || id == ID_CLUSTER || id == ID_CUES || id == ID_TRACKS;
     }
 
     @Override
@@ -1510,7 +1532,70 @@ public final class MatroskaExtractor implements Extractor {
         throws IOException, InterruptedException {
       MatroskaExtractor.this.binaryElement(id, contentsSize, input);
     }
+  }
 
+  /**
+   * Rechunks TrueHD sample data into groups of {@link Ac3Util#TRUEHD_RECHUNK_SAMPLE_COUNT} samples.
+   */
+  private static final class TrueHdSampleRechunker {
+
+    private final byte[] syncframePrefix;
+
+    private boolean foundSyncframe;
+    private int sampleCount;
+    private int chunkSize;
+    private long timeUs;
+    private @C.BufferFlags int blockFlags;
+
+    public TrueHdSampleRechunker() {
+      syncframePrefix = new byte[Ac3Util.TRUEHD_SYNCFRAME_PREFIX_LENGTH];
+    }
+
+    public void reset() {
+      foundSyncframe = false;
+    }
+
+    public void startSample(ExtractorInput input, @C.BufferFlags int blockFlags, int size)
+        throws IOException, InterruptedException {
+      if (!foundSyncframe) {
+        input.peekFully(syncframePrefix, 0, Ac3Util.TRUEHD_SYNCFRAME_PREFIX_LENGTH);
+        input.resetPeekPosition();
+        if ((Ac3Util.parseTrueHdSyncframeAudioSampleCount(syncframePrefix) == C.INDEX_UNSET)) {
+          return;
+        }
+        foundSyncframe = true;
+        sampleCount = 0;
+      }
+      if (sampleCount == 0) {
+        // This is the first sample in the chunk, so reset the block flags and chunk size.
+        this.blockFlags = blockFlags;
+        chunkSize = 0;
+      }
+      chunkSize += size;
+    }
+
+    public void sampleMetadata(Track track, long timeUs) {
+      if (!foundSyncframe) {
+        return;
+      }
+      if (sampleCount++ == 0) {
+        // This is the first sample in the chunk, so update the timestamp.
+        this.timeUs = timeUs;
+      }
+      if (sampleCount < Ac3Util.TRUEHD_RECHUNK_SAMPLE_COUNT) {
+        // We haven't read enough samples to output a chunk.
+        return;
+      }
+      track.output.sampleMetadata(this.timeUs, blockFlags, chunkSize, 0, track.cryptoData);
+      sampleCount = 0;
+    }
+
+    public void outputPendingSampleMetadata(Track track) {
+      if (foundSyncframe && sampleCount > 0) {
+        track.output.sampleMetadata(this.timeUs, blockFlags, chunkSize, 0, track.cryptoData);
+        sampleCount = 0;
+      }
+    }
   }
 
   private static final class Track {
@@ -1573,6 +1658,7 @@ public final class MatroskaExtractor implements Extractor {
     public int sampleRate = 8000;
     public long codecDelayNs = 0;
     public long seekPreRollNs = 0;
+    @Nullable public TrueHdSampleRechunker trueHdSampleRechunker;
 
     // Text elements.
     public boolean flagForced;
@@ -1583,9 +1669,7 @@ public final class MatroskaExtractor implements Extractor {
     public TrackOutput output;
     public int nalUnitLengthFieldLength;
 
-    /**
-     * Initializes the track with an output.
-     */
+    /** Initializes the track with an output. */
     public void initializeOutput(ExtractorOutput output, int trackId) throws ParserException {
       String mimeType;
       int maxInputSize = Format.NO_VALUE;
@@ -1621,13 +1705,9 @@ public final class MatroskaExtractor implements Extractor {
           nalUnitLengthFieldLength = hevcConfig.nalUnitLengthFieldLength;
           break;
         case CODEC_ID_FOURCC:
-          initializationData = parseFourCcVc1Private(new ParsableByteArray(codecPrivate));
-          if (initializationData != null) {
-            mimeType = MimeTypes.VIDEO_VC1;
-          } else {
-            Log.w(TAG, "Unsupported FourCC. Setting mimeType to " + MimeTypes.VIDEO_UNKNOWN);
-            mimeType = MimeTypes.VIDEO_UNKNOWN;
-          }
+          Pair<String, List<byte[]>> pair = parseFourCcPrivate(new ParsableByteArray(codecPrivate));
+          mimeType = pair.first;
+          initializationData = pair.second;
           break;
         case CODEC_ID_THEORA:
           // TODO: This can be set to the real mimeType if/when we work out what initializationData
@@ -1669,6 +1749,7 @@ public final class MatroskaExtractor implements Extractor {
           break;
         case CODEC_ID_TRUEHD:
           mimeType = MimeTypes.AUDIO_TRUEHD;
+          trueHdSampleRechunker = new TrueHdSampleRechunker();
           break;
         case CODEC_ID_DTS:
         case CODEC_ID_DTS_EXPRESS:
@@ -1776,8 +1857,16 @@ public final class MatroskaExtractor implements Extractor {
           || MimeTypes.APPLICATION_PGS.equals(mimeType)
           || MimeTypes.APPLICATION_DVBSUBS.equals(mimeType)) {
         type = C.TRACK_TYPE_TEXT;
-        format = Format.createImageSampleFormat(Integer.toString(trackId), mimeType, null,
-            Format.NO_VALUE, initializationData, language, drmInitData);
+        format =
+            Format.createImageSampleFormat(
+                Integer.toString(trackId),
+                mimeType,
+                null,
+                Format.NO_VALUE,
+                selectionFlags,
+                initializationData,
+                language,
+                drmInitData);
       } else {
         throw new ParserException("Unexpected MIME type.");
       }
@@ -1786,9 +1875,21 @@ public final class MatroskaExtractor implements Extractor {
       this.output.format(format);
     }
 
-    /**
-     * Returns the HDR Static Info as defined in CTA-861.3.
-     */
+    /** Forces any pending sample metadata to be flushed to the output. */
+    public void outputPendingSampleMetadata() {
+      if (trueHdSampleRechunker != null) {
+        trueHdSampleRechunker.outputPendingSampleMetadata(this);
+      }
+    }
+
+    /** Resets any state stored in the track in response to a seek. */
+    public void reset() {
+      if (trueHdSampleRechunker != null) {
+        trueHdSampleRechunker.reset();
+      }
+    }
+
+    /** Returns the HDR Static Info as defined in CTA-861.3. */
     private byte[] getHdrStaticInfo() {
       // Are all fields present.
       if (primaryRChromaticityX == Format.NO_VALUE || primaryRChromaticityY == Format.NO_VALUE
@@ -1820,39 +1921,44 @@ public final class MatroskaExtractor implements Extractor {
 
     /**
      * Builds initialization data for a {@link Format} from FourCC codec private data.
-     * <p>
-     * VC1 is the only supported compression type.
      *
-     * @return The initialization data for the {@link Format}, or null if the compression type is
-     *     not VC1.
+     * <p>VC1 and H263 are the only supported compression types.
+     *
+     * @return The codec mime type and initialization data. If the compression type is not supported
+     *     then the mime type is set to {@link MimeTypes#VIDEO_UNKNOWN} and the initialization data
+     *     is {@code null}.
      * @throws ParserException If the initialization data could not be built.
      */
-    private static List<byte[]> parseFourCcVc1Private(ParsableByteArray buffer)
+    private static Pair<String, List<byte[]>> parseFourCcPrivate(ParsableByteArray buffer)
         throws ParserException {
       try {
         buffer.skipBytes(16); // size(4), width(4), height(4), planes(2), bitcount(2).
         long compression = buffer.readLittleEndianUnsignedInt();
-        if (compression != FOURCC_COMPRESSION_VC1) {
-          return null;
-        }
-
-        // Search for the initialization data from the end of the BITMAPINFOHEADER. The last 20
-        // bytes of which are: sizeImage(4), xPel/m (4), yPel/m (4), clrUsed(4), clrImportant(4).
-        int startOffset = buffer.getPosition() + 20;
-        byte[] bufferData = buffer.data;
-        for (int offset = startOffset; offset < bufferData.length - 4; offset++) {
-          if (bufferData[offset] == 0x00 && bufferData[offset + 1] == 0x00
-              && bufferData[offset + 2] == 0x01 && bufferData[offset + 3] == 0x0F) {
-            // We've found the initialization data.
-            byte[] initializationData = Arrays.copyOfRange(bufferData, offset, bufferData.length);
-            return Collections.singletonList(initializationData);
+        if (compression == FOURCC_COMPRESSION_DIVX) {
+          return new Pair<>(MimeTypes.VIDEO_H263, null);
+        } else if (compression == FOURCC_COMPRESSION_VC1) {
+          // Search for the initialization data from the end of the BITMAPINFOHEADER. The last 20
+          // bytes of which are: sizeImage(4), xPel/m (4), yPel/m (4), clrUsed(4), clrImportant(4).
+          int startOffset = buffer.getPosition() + 20;
+          byte[] bufferData = buffer.data;
+          for (int offset = startOffset; offset < bufferData.length - 4; offset++) {
+            if (bufferData[offset] == 0x00
+                && bufferData[offset + 1] == 0x00
+                && bufferData[offset + 2] == 0x01
+                && bufferData[offset + 3] == 0x0F) {
+              // We've found the initialization data.
+              byte[] initializationData = Arrays.copyOfRange(bufferData, offset, bufferData.length);
+              return new Pair<>(MimeTypes.VIDEO_VC1, Collections.singletonList(initializationData));
+            }
           }
+          throw new ParserException("Failed to find FourCC VC1 initialization data");
         }
-
-        throw new ParserException("Failed to find FourCC VC1 initialization data");
       } catch (ArrayIndexOutOfBoundsException e) {
-        throw new ParserException("Error parsing FourCC VC1 codec private");
+        throw new ParserException("Error parsing FourCC private data");
       }
+
+      Log.w(TAG, "Unknown FourCC. Setting mimeType to " + MimeTypes.VIDEO_UNKNOWN);
+      return new Pair<>(MimeTypes.VIDEO_UNKNOWN, null);
     }
 
     /**

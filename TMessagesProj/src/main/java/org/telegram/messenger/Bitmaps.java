@@ -154,6 +154,9 @@ public class Bitmaps {
     }
 
     public static Bitmap createBitmap(Bitmap source, int x, int y, int width, int height, Matrix m, boolean filter) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            return Bitmap.createBitmap(source, x, y, width, height, m, filter);
+        }
         checkXYSign(x, y);
         checkWidthHeight(width, height);
         if (x + width > source.getWidth()) {
@@ -231,6 +234,9 @@ public class Bitmaps {
     }
 
     public static Bitmap createScaledBitmap(Bitmap src, int dstWidth, int dstHeight, boolean filter) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            return Bitmap.createScaledBitmap(src, dstWidth, dstHeight, filter);
+        }
         Matrix m;
         synchronized (Bitmap.class) {
             m = sScaleMatrix;

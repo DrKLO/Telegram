@@ -18,21 +18,27 @@ package org.telegram.messenger.exoplayer2.util;
 import android.Manifest.permission;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Parcel;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.ExoPlayerLibraryInfo;
+import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.ParserException;
+import org.telegram.messenger.exoplayer2.SeekParameters;
 import org.telegram.messenger.exoplayer2.upstream.DataSource;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -49,7 +55,9 @@ import java.util.Formatter;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.MissingResourceException;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -124,6 +132,22 @@ public final class Util {
   }
 
   /**
+   * Calls {@link Context#startForegroundService(Intent)} if {@link #SDK_INT} is 26 or higher, or
+   * {@link Context#startService(Intent)} otherwise.
+   *
+   * @param context The context to call.
+   * @param intent The intent to pass to the called method.
+   * @return The result of the called method.
+   */
+  public static ComponentName startForegroundService(Context context, Intent intent) {
+    if (Util.SDK_INT >= 26) {
+      return context.startForegroundService(intent);
+    } else {
+      return context.startService(intent);
+    }
+  }
+
+  /**
    * Checks whether it's necessary to request the {@link permission#READ_EXTERNAL_STORAGE}
    * permission read the specified {@link Uri}s, requesting the permission if necessary.
    *
@@ -156,7 +180,7 @@ public final class Util {
    */
   public static boolean isLocalFileUri(Uri uri) {
     String scheme = uri.getScheme();
-    return TextUtils.isEmpty(scheme) || scheme.equals("file");
+    return TextUtils.isEmpty(scheme) || "file".equals(scheme);
   }
 
   /**
@@ -167,7 +191,7 @@ public final class Util {
    * @param o2 The second object.
    * @return {@code o1 == null ? o2 == null : o1.equals(o2)}.
    */
-  public static boolean areEqual(Object o1, Object o2) {
+  public static boolean areEqual(@Nullable Object o1, @Nullable Object o2) {
     return o1 == null ? o2 == null : o1.equals(o2);
   }
 
@@ -188,6 +212,31 @@ public final class Util {
       }
     }
     return false;
+  }
+
+  /**
+   * Removes an indexed range from a List.
+   *
+   * @param list The List to remove the range from.
+   * @param fromIndex The first index to be removed (inclusive).
+   * @param toIndex The last index to be removed (exclusive).
+   */
+  public static <T> void removeRange(List<T> list, int fromIndex, int toIndex) {
+    list.subList(fromIndex, toIndex).clear();
+  }
+
+  /**
+   * Copies and optionally truncates an array. Prevents null array elements created by {@link
+   * Arrays#copyOf(Object[], int)} by ensuring the new length does not exceed the current length.
+   *
+   * @param input The input array.
+   * @param length The output array length. Must be less or equal to the length of the input array.
+   * @return The copied array.
+   */
+  @SuppressWarnings("nullness:assignment.type.incompatible")
+  public static <T> T[] nullSafeArrayCopy(T[] input, int length) {
+    Assertions.checkArgument(length <= input.length);
+    return Arrays.copyOf(input, length);
   }
 
   /**
@@ -237,13 +286,50 @@ public final class Util {
   }
 
   /**
-   * Returns a normalized RFC 5646 language code.
+   * Reads an integer from a {@link Parcel} and interprets it as a boolean, with 0 mapping to false
+   * and all other values mapping to true.
    *
-   * @param language A possibly non-normalized RFC 5646 language code.
-   * @return The normalized code, or null if the input was null.
+   * @param parcel The {@link Parcel} to read from.
+   * @return The read value.
+   */
+  public static boolean readBoolean(Parcel parcel) {
+    return parcel.readInt() != 0;
+  }
+
+  /**
+   * Writes a boolean to a {@link Parcel}. The boolean is written as an integer with value 1 (true)
+   * or 0 (false).
+   *
+   * @param parcel The {@link Parcel} to write to.
+   * @param value The value to write.
+   */
+  public static void writeBoolean(Parcel parcel, boolean value) {
+    parcel.writeInt(value ? 1 : 0);
+  }
+
+  /**
+   * Returns a normalized RFC 639-2/T code for {@code language}.
+   *
+   * @param language A case-insensitive ISO 639 alpha-2 or alpha-3 language code.
+   * @return The all-lowercase normalized code, or null if the input was null, or
+   *     {@code language.toLowerCase()} if the language could not be normalized.
    */
   public static String normalizeLanguageCode(String language) {
-    return language == null ? null : new Locale(language).getLanguage();
+    try {
+      return language == null ? null : new Locale(language).getISO3Language();
+    } catch (MissingResourceException e) {
+      return toLowerInvariant(language);
+    }
+  }
+
+  /**
+   * Returns a new {@link String} constructed by decoding UTF-8 encoded bytes.
+   *
+   * @param bytes The UTF-8 encoded bytes to decode.
+   * @return The string.
+   */
+  public static String fromUtf8Bytes(byte[] bytes) {
+    return new String(bytes, Charset.forName(C.UTF8_NAME));
   }
 
   /**
@@ -274,6 +360,25 @@ public final class Util {
    */
   public static String toLowerInvariant(String text) {
     return text == null ? null : text.toLowerCase(Locale.US);
+  }
+
+  /**
+   * Converts text to upper case using {@link Locale#US}.
+   *
+   * @param text The text to convert.
+   * @return The upper case text, or null if {@code text} is null.
+   */
+  public static String toUpperInvariant(String text) {
+    return text == null ? null : text.toUpperCase(Locale.US);
+  }
+
+  /**
+   * Formats a string using {@link Locale#US}.
+   *
+   * @see String#format(String, Object...)
+   */
+  public static String formatInvariant(String format, Object... args) {
+    return String.format(Locale.US, format, args);
   }
 
   /**
@@ -332,6 +437,40 @@ public final class Util {
    */
   public static float constrainValue(float value, float min, float max) {
     return Math.max(min, Math.min(value, max));
+  }
+
+  /**
+   * Returns the sum of two arguments, or a third argument if the result overflows.
+   *
+   * @param x The first value.
+   * @param y The second value.
+   * @param overflowResult The return value if {@code x + y} overflows.
+   * @return {@code x + y}, or {@code overflowResult} if the result overflows.
+   */
+  public static long addWithOverflowDefault(long x, long y, long overflowResult) {
+    long result = x + y;
+    // See Hacker's Delight 2-13 (H. Warren Jr).
+    if (((x ^ result) & (y ^ result)) < 0) {
+      return overflowResult;
+    }
+    return result;
+  }
+
+  /**
+   * Returns the difference between two arguments, or a third argument if the result overflows.
+   *
+   * @param x The first value.
+   * @param y The second value.
+   * @param overflowResult The return value if {@code x - y} overflows.
+   * @return {@code x - y}, or {@code overflowResult} if the result overflows.
+   */
+  public static long subtractWithOverflowDefault(long x, long y, long overflowResult) {
+    long result = x - y;
+    // See Hacker's Delight 2-13 (H. Warren Jr).
+    if (((x ^ y) & (x ^ result)) < 0) {
+      return overflowResult;
+    }
+    return result;
   }
 
   /**
@@ -399,39 +538,6 @@ public final class Util {
   }
 
   /**
-   * Returns the index of the smallest element in {@code array} that is greater than (or optionally
-   * equal to) a specified {@code value}.
-   * <p>
-   * The search is performed using a binary search algorithm, so the array must be sorted. If
-   * the array contains multiple elements equal to {@code value} and {@code inclusive} is true, the
-   * index of the last one will be returned.
-   *
-   * @param array The array to search.
-   * @param value The value being searched for.
-   * @param inclusive If the value is present in the array, whether to return the corresponding
-   *     index. If false then the returned index corresponds to the smallest element strictly
-   *     greater than the value.
-   * @param stayInBounds If true, then {@code (a.length - 1)} will be returned in the case that the
-   *     value is greater than the largest element in the array. If false then {@code a.length} will
-   *     be returned.
-   * @return The index of the smallest element in {@code array} that is greater than (or optionally
-   *     equal to) {@code value}.
-   */
-  public static int binarySearchCeil(long[] array, long value, boolean inclusive,
-      boolean stayInBounds) {
-    int index = Arrays.binarySearch(array, value);
-    if (index < 0) {
-      index = ~index;
-    } else {
-      while ((++index) < array.length && array[index] == value) {}
-      if (inclusive) {
-        index--;
-      }
-    }
-    return stayInBounds ? Math.min(array.length - 1, index) : index;
-  }
-
-  /**
    * Returns the index of the largest element in {@code list} that is less than (or optionally equal
    * to) a specified {@code value}.
    * <p>
@@ -462,6 +568,39 @@ public final class Util {
       }
     }
     return stayInBounds ? Math.max(0, index) : index;
+  }
+
+  /**
+   * Returns the index of the smallest element in {@code array} that is greater than (or optionally
+   * equal to) a specified {@code value}.
+   *
+   * <p>The search is performed using a binary search algorithm, so the array must be sorted. If the
+   * array contains multiple elements equal to {@code value} and {@code inclusive} is true, the
+   * index of the last one will be returned.
+   *
+   * @param array The array to search.
+   * @param value The value being searched for.
+   * @param inclusive If the value is present in the array, whether to return the corresponding
+   *     index. If false then the returned index corresponds to the smallest element strictly
+   *     greater than the value.
+   * @param stayInBounds If true, then {@code (a.length - 1)} will be returned in the case that the
+   *     value is greater than the largest element in the array. If false then {@code a.length} will
+   *     be returned.
+   * @return The index of the smallest element in {@code array} that is greater than (or optionally
+   *     equal to) {@code value}.
+   */
+  public static int binarySearchCeil(
+      long[] array, long value, boolean inclusive, boolean stayInBounds) {
+    int index = Arrays.binarySearch(array, value);
+    if (index < 0) {
+      index = ~index;
+    } else {
+      while ((++index) < array.length && array[index] == value) {}
+      if (inclusive) {
+        index--;
+      }
+    }
+    return stayInBounds ? Math.min(array.length - 1, index) : index;
   }
 
   /**
@@ -497,6 +636,18 @@ public final class Util {
       }
     }
     return stayInBounds ? Math.min(list.size() - 1, index) : index;
+  }
+
+  /**
+   * Compares two long values and returns the same value as {@code Long.compare(long, long)}.
+   *
+   * @param left The left operand.
+   * @param right The right operand.
+   * @return 0, if left == right, a negative value if left &lt; right, or a positive value if left
+   *     &gt; right.
+   */
+  public static int compareLong(long left, long right) {
+    return left < right ? -1 : left == right ? 0 : 1;
   }
 
   /**
@@ -553,7 +704,7 @@ public final class Util {
     } else {
       timezoneShift = ((Integer.parseInt(matcher.group(12)) * 60
           + Integer.parseInt(matcher.group(13))));
-      if (matcher.group(11).equals("-")) {
+      if ("-".equals(matcher.group(11))) {
         timezoneShift *= -1;
       }
     }
@@ -662,6 +813,71 @@ public final class Util {
   }
 
   /**
+   * Returns the duration of media that will elapse in {@code playoutDuration}.
+   *
+   * @param playoutDuration The duration to scale.
+   * @param speed The playback speed.
+   * @return The scaled duration, in the same units as {@code playoutDuration}.
+   */
+  public static long getMediaDurationForPlayoutDuration(long playoutDuration, float speed) {
+    if (speed == 1f) {
+      return playoutDuration;
+    }
+    return Math.round((double) playoutDuration * speed);
+  }
+
+  /**
+   * Returns the playout duration of {@code mediaDuration} of media.
+   *
+   * @param mediaDuration The duration to scale.
+   * @return The scaled duration, in the same units as {@code mediaDuration}.
+   */
+  public static long getPlayoutDurationForMediaDuration(long mediaDuration, float speed) {
+    if (speed == 1f) {
+      return mediaDuration;
+    }
+    return Math.round((double) mediaDuration / speed);
+  }
+
+  /**
+   * Resolves a seek given the requested seek position, a {@link SeekParameters} and two candidate
+   * sync points.
+   *
+   * @param positionUs The requested seek position, in microseocnds.
+   * @param seekParameters The {@link SeekParameters}.
+   * @param firstSyncUs The first candidate seek point, in micrseconds.
+   * @param secondSyncUs The second candidate seek point, in microseconds. May equal {@code
+   *     firstSyncUs} if there's only one candidate.
+   * @return The resolved seek position, in microseconds.
+   */
+  public static long resolveSeekPositionUs(
+      long positionUs, SeekParameters seekParameters, long firstSyncUs, long secondSyncUs) {
+    if (SeekParameters.EXACT.equals(seekParameters)) {
+      return positionUs;
+    }
+    long minPositionUs =
+        subtractWithOverflowDefault(positionUs, seekParameters.toleranceBeforeUs, Long.MIN_VALUE);
+    long maxPositionUs =
+        addWithOverflowDefault(positionUs, seekParameters.toleranceAfterUs, Long.MAX_VALUE);
+    boolean firstSyncPositionValid = minPositionUs <= firstSyncUs && firstSyncUs <= maxPositionUs;
+    boolean secondSyncPositionValid =
+        minPositionUs <= secondSyncUs && secondSyncUs <= maxPositionUs;
+    if (firstSyncPositionValid && secondSyncPositionValid) {
+      if (Math.abs(firstSyncUs - positionUs) <= Math.abs(secondSyncUs - positionUs)) {
+        return firstSyncUs;
+      } else {
+        return secondSyncUs;
+      }
+    } else if (firstSyncPositionValid) {
+      return firstSyncUs;
+    } else if (secondSyncPositionValid) {
+      return secondSyncUs;
+    } else {
+      return minPositionUs;
+    }
+  }
+
+  /**
    * Converts a list of integers to a primitive array.
    *
    * @param list A list of integers.
@@ -750,6 +966,32 @@ public final class Util {
   }
 
   /**
+   * Returns a copy of {@code codecs} without the codecs whose track type doesn't match
+   * {@code trackType}.
+   *
+   * @param codecs A codec sequence string, as defined in RFC 6381.
+   * @param trackType One of {@link C}{@code .TRACK_TYPE_*}.
+   * @return A copy of {@code codecs} without the codecs whose track type doesn't match
+   *     {@code trackType}.
+   */
+  public static String getCodecsOfType(String codecs, int trackType) {
+    if (TextUtils.isEmpty(codecs)) {
+      return null;
+    }
+    String[] codecArray = codecs.trim().split("(\\s*,\\s*)");
+    StringBuilder builder = new StringBuilder();
+    for (String codec : codecArray) {
+      if (trackType == MimeTypes.getTrackTypeOfCodec(codec)) {
+        if (builder.length() > 0) {
+          builder.append(",");
+        }
+        builder.append(codec);
+      }
+    }
+    return builder.length() > 0 ? builder.toString() : null;
+  }
+
+  /**
    * Converts a sample bit depth to a corresponding PCM encoding constant.
    *
    * @param bitDepth The bit depth. Supported values are 8, 16, 24 and 32.
@@ -775,6 +1017,30 @@ public final class Util {
   }
 
   /**
+   * Returns whether {@code encoding} is one of the PCM encodings.
+   *
+   * @param encoding The encoding of the audio data.
+   * @return Whether the encoding is one of the PCM encodings.
+   */
+  public static boolean isEncodingPcm(@C.Encoding int encoding) {
+    return encoding == C.ENCODING_PCM_8BIT
+        || encoding == C.ENCODING_PCM_16BIT
+        || encoding == C.ENCODING_PCM_24BIT
+        || encoding == C.ENCODING_PCM_32BIT
+        || encoding == C.ENCODING_PCM_FLOAT;
+  }
+
+  /**
+   * Returns whether {@code encoding} is high resolution (&gt; 16-bit) integer PCM.
+   *
+   * @param encoding The encoding of the audio data.
+   * @return Whether the encoding is high resolution integer PCM.
+   */
+  public static boolean isEncodingHighResolutionIntegerPcm(@C.PcmEncoding int encoding) {
+    return encoding == C.ENCODING_PCM_24BIT || encoding == C.ENCODING_PCM_32BIT;
+  }
+
+  /**
    * Returns the frame size for audio with {@code channelCount} channels in the specified encoding.
    *
    * @param pcmEncoding The encoding of the audio data.
@@ -790,7 +1056,10 @@ public final class Util {
       case C.ENCODING_PCM_24BIT:
         return channelCount * 3;
       case C.ENCODING_PCM_32BIT:
+      case C.ENCODING_PCM_FLOAT:
         return channelCount * 4;
+      case C.ENCODING_INVALID:
+      case Format.NO_VALUE:
       default:
         throw new IllegalArgumentException();
     }
@@ -876,6 +1145,44 @@ public final class Util {
   }
 
   /**
+   * Derives a DRM {@link UUID} from {@code drmScheme}.
+   *
+   * @param drmScheme A UUID string, or {@code "widevine"}, {@code "playready"} or {@code
+   *     "clearkey"}.
+   * @return The derived {@link UUID}, or {@code null} if one could not be derived.
+   */
+  public static UUID getDrmUuid(String drmScheme) {
+    switch (Util.toLowerInvariant(drmScheme)) {
+      case "widevine":
+        return C.WIDEVINE_UUID;
+      case "playready":
+        return C.PLAYREADY_UUID;
+      case "clearkey":
+        return C.CLEARKEY_UUID;
+      default:
+        try {
+          return UUID.fromString(drmScheme);
+        } catch (RuntimeException e) {
+          return null;
+        }
+    }
+  }
+
+  /**
+   * Makes a best guess to infer the type from a {@link Uri}.
+   *
+   * @param uri The {@link Uri}.
+   * @param overrideExtension If not null, used to infer the type.
+   * @return The content type.
+   */
+  @C.ContentType
+  public static int inferContentType(Uri uri, String overrideExtension) {
+    return TextUtils.isEmpty(overrideExtension)
+        ? inferContentType(uri)
+        : inferContentType("." + overrideExtension);
+  }
+
+  /**
    * Makes a best guess to infer the type from a {@link Uri}.
    *
    * @param uri The {@link Uri}.
@@ -900,8 +1207,7 @@ public final class Util {
       return C.TYPE_DASH;
     } else if (fileName.endsWith(".m3u8")) {
       return C.TYPE_HLS;
-    } else if (fileName.endsWith(".ism") || fileName.endsWith(".isml")
-        || fileName.endsWith(".ism/manifest") || fileName.endsWith(".isml/manifest")) {
+    } else if (fileName.matches(".*\\.ism(l)?(/manifest(\\(.+\\))?)?")) {
       return C.TYPE_SS;
     } else {
       return C.TYPE_OTHER;
@@ -1077,10 +1383,15 @@ public final class Util {
 
   /** Creates an empty directory in the directory returned by {@link Context#getCacheDir()}. */
   public static File createTempDirectory(Context context, String prefix) throws IOException {
-    File tempFile = File.createTempFile(prefix, null, context.getCacheDir());
+    File tempFile = createTempFile(context, prefix);
     tempFile.delete(); // Delete the temp file.
     tempFile.mkdir(); // Create a directory with the same name.
     return tempFile;
+  }
+
+  /** Creates a new empty file in the directory returned by {@link Context#getCacheDir()}. */
+  public static File createTempFile(Context context, String prefix) throws IOException {
+    return File.createTempFile(prefix, null, context.getCacheDir());
   }
 
   /**
@@ -1126,7 +1437,11 @@ public final class Util {
       if ("Sony".equals(Util.MANUFACTURER) && Util.MODEL.startsWith("BRAVIA")
           && context.getPackageManager().hasSystemFeature("com.sony.dtv.hardware.panel.qfhd")) {
         return new Point(3840, 2160);
-      } else if ("NVIDIA".equals(Util.MANUFACTURER) && Util.MODEL.contains("SHIELD")) {
+      } else if (("NVIDIA".equals(Util.MANUFACTURER) && Util.MODEL.contains("SHIELD"))
+          || ("philips".equals(Util.toLowerInvariant(Util.MANUFACTURER))
+              && (Util.MODEL.startsWith("QM1")
+                  || Util.MODEL.equals("QV151E")
+                  || Util.MODEL.equals("TPM171E")))) {
         // Attempt to read sys.display-size.
         String sysDisplaySize = null;
         try {

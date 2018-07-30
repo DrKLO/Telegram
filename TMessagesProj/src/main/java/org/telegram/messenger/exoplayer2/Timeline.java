@@ -15,7 +15,9 @@
  */
 package org.telegram.messenger.exoplayer2;
 
+import android.support.annotation.Nullable;
 import android.util.Pair;
+import org.telegram.messenger.exoplayer2.source.ads.AdPlaybackState;
 import org.telegram.messenger.exoplayer2.util.Assertions;
 
 /**
@@ -117,10 +119,8 @@ public abstract class Timeline {
    */
   public static final class Window {
 
-    /**
-     * An identifier for the window. Not necessarily unique.
-     */
-    public Object id;
+    /** A tag for the window. Not necessarily unique. */
+    public @Nullable Object tag;
 
     /**
      * The start time of the presentation to which this window belongs in milliseconds since the
@@ -173,13 +173,19 @@ public abstract class Timeline {
      */
     public long positionInFirstPeriodUs;
 
-    /**
-     * Sets the data held by this window.
-     */
-    public Window set(Object id, long presentationStartTimeMs, long windowStartTimeMs,
-        boolean isSeekable, boolean isDynamic, long defaultPositionUs, long durationUs,
-        int firstPeriodIndex, int lastPeriodIndex, long positionInFirstPeriodUs) {
-      this.id = id;
+    /** Sets the data held by this window. */
+    public Window set(
+        @Nullable Object tag,
+        long presentationStartTimeMs,
+        long windowStartTimeMs,
+        boolean isSeekable,
+        boolean isDynamic,
+        long defaultPositionUs,
+        long durationUs,
+        int firstPeriodIndex,
+        int lastPeriodIndex,
+        long positionInFirstPeriodUs) {
+      this.tag = tag;
       this.presentationStartTimeMs = presentationStartTimeMs;
       this.windowStartTimeMs = windowStartTimeMs;
       this.isSeekable = isSeekable;
@@ -278,12 +284,7 @@ public abstract class Timeline {
     public long durationUs;
 
     private long positionInWindowUs;
-    private long[] adGroupTimesUs;
-    private int[] adCounts;
-    private int[] adsLoadedCounts;
-    private int[] adsPlayedCounts;
-    private long[][] adDurationsUs;
-    private long adResumePositionUs;
+    private AdPlaybackState adPlaybackState;
 
     /**
      * Sets the data held by this period.
@@ -300,8 +301,7 @@ public abstract class Timeline {
      */
     public Period set(Object id, Object uid, int windowIndex, long durationUs,
         long positionInWindowUs) {
-      return set(id, uid, windowIndex, durationUs, positionInWindowUs, null, null, null, null,
-          null, C.TIME_UNSET);
+      return set(id, uid, windowIndex, durationUs, positionInWindowUs, AdPlaybackState.NONE);
     }
 
     /**
@@ -315,33 +315,23 @@ public abstract class Timeline {
      * @param positionInWindowUs The position of the start of this period relative to the start of
      *     the window to which it belongs, in milliseconds. May be negative if the start of the
      *     period is not within the window.
-     * @param adGroupTimesUs The times of ad groups relative to the start of the period, in
-     *     microseconds. A final element with the value {@link C#TIME_END_OF_SOURCE} indicates that
-     *     the period has a postroll ad.
-     * @param adCounts The number of ads in each ad group. An element may be {@link C#LENGTH_UNSET}
-     *     if the number of ads is not yet known.
-     * @param adsLoadedCounts The number of ads loaded so far in each ad group.
-     * @param adsPlayedCounts The number of ads played so far in each ad group.
-     * @param adDurationsUs The duration of each ad in each ad group, in microseconds. An element
-     *     may be {@link C#TIME_UNSET} if the duration is not yet known.
-     * @param adResumePositionUs The position offset in the first unplayed ad at which to begin
-     *     playback, in microseconds.
+     * @param adPlaybackState The state of the period's ads, or {@link AdPlaybackState#NONE} if
+     *     there are no ads.
      * @return This period, for convenience.
      */
-    public Period set(Object id, Object uid, int windowIndex, long durationUs,
-        long positionInWindowUs, long[] adGroupTimesUs, int[] adCounts, int[] adsLoadedCounts,
-        int[] adsPlayedCounts, long[][] adDurationsUs, long adResumePositionUs) {
+    public Period set(
+        Object id,
+        Object uid,
+        int windowIndex,
+        long durationUs,
+        long positionInWindowUs,
+        AdPlaybackState adPlaybackState) {
       this.id = id;
       this.uid = uid;
       this.windowIndex = windowIndex;
       this.durationUs = durationUs;
       this.positionInWindowUs = positionInWindowUs;
-      this.adGroupTimesUs = adGroupTimesUs;
-      this.adCounts = adCounts;
-      this.adsLoadedCounts = adsLoadedCounts;
-      this.adsPlayedCounts = adsPlayedCounts;
-      this.adDurationsUs = adDurationsUs;
-      this.adResumePositionUs = adResumePositionUs;
+      this.adPlaybackState = adPlaybackState;
       return this;
     }
 
@@ -381,7 +371,7 @@ public abstract class Timeline {
      * Returns the number of ad groups in the period.
      */
     public int getAdGroupCount() {
-      return adGroupTimesUs == null ? 0 : adGroupTimesUs.length;
+      return adPlaybackState.adGroupCount;
     }
 
     /**
@@ -392,17 +382,33 @@ public abstract class Timeline {
      * @return The time of the ad group at the index, in microseconds.
      */
     public long getAdGroupTimeUs(int adGroupIndex) {
-      return adGroupTimesUs[adGroupIndex];
+      return adPlaybackState.adGroupTimesUs[adGroupIndex];
     }
 
     /**
-     * Returns the number of ads that have been played in the specified ad group in the period.
+     * Returns the index of the first ad in the specified ad group that should be played, or the
+     * number of ads in the ad group if no ads should be played.
      *
      * @param adGroupIndex The ad group index.
-     * @return The number of ads that have been played.
+     * @return The index of the first ad that should be played, or the number of ads in the ad group
+     *     if no ads should be played.
      */
-    public int getPlayedAdCount(int adGroupIndex) {
-      return adsPlayedCounts[adGroupIndex];
+    public int getFirstAdIndexToPlay(int adGroupIndex) {
+      return adPlaybackState.adGroups[adGroupIndex].getFirstAdIndexToPlay();
+    }
+
+    /**
+     * Returns the index of the next ad in the specified ad group that should be played after
+     * playing {@code adIndexInAdGroup}, or the number of ads in the ad group if no later ads should
+     * be played.
+     *
+     * @param adGroupIndex The ad group index.
+     * @param lastPlayedAdIndex The last played ad index in the ad group.
+     * @return The index of the next ad that should be played, or the number of ads in the ad group
+     *     if the ad group does not have any ads remaining to play.
+     */
+    public int getNextAdIndexToPlay(int adGroupIndex, int lastPlayedAdIndex) {
+      return adPlaybackState.adGroups[adGroupIndex].getNextAdIndexToPlay(lastPlayedAdIndex);
     }
 
     /**
@@ -412,51 +418,30 @@ public abstract class Timeline {
      * @return Whether the ad group at index {@code adGroupIndex} has been played.
      */
     public boolean hasPlayedAdGroup(int adGroupIndex) {
-      return adCounts[adGroupIndex] != C.INDEX_UNSET
-          && adsPlayedCounts[adGroupIndex] == adCounts[adGroupIndex];
+      return !adPlaybackState.adGroups[adGroupIndex].hasUnplayedAds();
     }
 
     /**
      * Returns the index of the ad group at or before {@code positionUs}, if that ad group is
-     * unplayed. Returns {@link C#INDEX_UNSET} if the ad group before {@code positionUs} has been
-     * played, or if there is no such ad group.
+     * unplayed. Returns {@link C#INDEX_UNSET} if the ad group at or before {@code positionUs} has
+     * no ads remaining to be played, or if there is no such ad group.
      *
      * @param positionUs The position at or before which to find an ad group, in microseconds.
      * @return The index of the ad group, or {@link C#INDEX_UNSET}.
      */
     public int getAdGroupIndexForPositionUs(long positionUs) {
-      if (adGroupTimesUs == null) {
-        return C.INDEX_UNSET;
-      }
-      // Use a linear search as the array elements may not be increasing due to TIME_END_OF_SOURCE.
-      // In practice we expect there to be few ad groups so the search shouldn't be expensive.
-      int index = adGroupTimesUs.length - 1;
-      while (index >= 0 && (adGroupTimesUs[index] == C.TIME_END_OF_SOURCE
-          || adGroupTimesUs[index] > positionUs)) {
-        index--;
-      }
-      return index >= 0 && !hasPlayedAdGroup(index) ? index : C.INDEX_UNSET;
+      return adPlaybackState.getAdGroupIndexForPositionUs(positionUs);
     }
 
     /**
-     * Returns the index of the next unplayed ad group after {@code positionUs}. Returns
-     * {@link C#INDEX_UNSET} if there is no such ad group.
+     * Returns the index of the next ad group after {@code positionUs} that has ads remaining to be
+     * played. Returns {@link C#INDEX_UNSET} if there is no such ad group.
      *
      * @param positionUs The position after which to find an ad group, in microseconds.
      * @return The index of the ad group, or {@link C#INDEX_UNSET}.
      */
     public int getAdGroupIndexAfterPositionUs(long positionUs) {
-      if (adGroupTimesUs == null) {
-        return C.INDEX_UNSET;
-      }
-      // Use a linear search as the array elements may not be increasing due to TIME_END_OF_SOURCE.
-      // In practice we expect there to be few ad groups so the search shouldn't be expensive.
-      int index = 0;
-      while (index < adGroupTimesUs.length && adGroupTimesUs[index] != C.TIME_END_OF_SOURCE
-          && (positionUs >= adGroupTimesUs[index] || hasPlayedAdGroup(index))) {
-        index++;
-      }
-      return index < adGroupTimesUs.length ? index : C.INDEX_UNSET;
+      return adPlaybackState.getAdGroupIndexAfterPositionUs(positionUs);
     }
 
     /**
@@ -467,7 +452,7 @@ public abstract class Timeline {
      * @return The number of ads in the ad group, or {@link C#LENGTH_UNSET} if not yet known.
      */
     public int getAdCountInAdGroup(int adGroupIndex) {
-      return adCounts[adGroupIndex];
+      return adPlaybackState.adGroups[adGroupIndex].count;
     }
 
     /**
@@ -478,7 +463,9 @@ public abstract class Timeline {
      * @return Whether the URL for the specified ad is known.
      */
     public boolean isAdAvailable(int adGroupIndex, int adIndexInAdGroup) {
-      return adIndexInAdGroup < adsLoadedCounts[adGroupIndex];
+      AdPlaybackState.AdGroup adGroup = adPlaybackState.adGroups[adGroupIndex];
+      return adGroup.count != C.LENGTH_UNSET
+          && adGroup.states[adIndexInAdGroup] != AdPlaybackState.AD_STATE_UNAVAILABLE;
     }
 
     /**
@@ -490,10 +477,8 @@ public abstract class Timeline {
      * @return The duration of the ad, or {@link C#TIME_UNSET} if not yet known.
      */
     public long getAdDurationUs(int adGroupIndex, int adIndexInAdGroup) {
-      if (adIndexInAdGroup >= adDurationsUs[adGroupIndex].length) {
-        return C.TIME_UNSET;
-      }
-      return adDurationsUs[adGroupIndex][adIndexInAdGroup];
+      AdPlaybackState.AdGroup adGroup = adPlaybackState.adGroups[adGroupIndex];
+      return adGroup.count != C.LENGTH_UNSET ? adGroup.durationsUs[adIndexInAdGroup] : C.TIME_UNSET;
     }
 
     /**
@@ -501,43 +486,41 @@ public abstract class Timeline {
      * microseconds.
      */
     public long getAdResumePositionUs() {
-      return adResumePositionUs;
+      return adPlaybackState.adResumePositionUs;
     }
 
   }
 
-  /**
-   * An empty timeline.
-   */
-  public static final Timeline EMPTY = new Timeline() {
+  /** An empty timeline. */
+  public static final Timeline EMPTY =
+      new Timeline() {
 
-    @Override
-    public int getWindowCount() {
-      return 0;
-    }
+        @Override
+        public int getWindowCount() {
+          return 0;
+        }
 
-    @Override
-    public Window getWindow(int windowIndex, Window window, boolean setIds,
-        long defaultPositionProjectionUs) {
-      throw new IndexOutOfBoundsException();
-    }
+        @Override
+        public Window getWindow(
+            int windowIndex, Window window, boolean setTag, long defaultPositionProjectionUs) {
+          throw new IndexOutOfBoundsException();
+        }
 
-    @Override
-    public int getPeriodCount() {
-      return 0;
-    }
+        @Override
+        public int getPeriodCount() {
+          return 0;
+        }
 
-    @Override
-    public Period getPeriod(int periodIndex, Period period, boolean setIds) {
-      throw new IndexOutOfBoundsException();
-    }
+        @Override
+        public Period getPeriod(int periodIndex, Period period, boolean setIds) {
+          throw new IndexOutOfBoundsException();
+        }
 
-    @Override
-    public int getIndexOfPeriod(Object uid) {
-      return C.INDEX_UNSET;
-    }
-
-  };
+        @Override
+        public int getIndexOfPeriod(Object uid) {
+          return C.INDEX_UNSET;
+        }
+      };
 
   /**
    * Returns whether the timeline is empty.
@@ -553,20 +536,24 @@ public abstract class Timeline {
 
   /**
    * Returns the index of the window after the window at index {@code windowIndex} depending on the
-   * {@code repeatMode}.
+   * {@code repeatMode} and whether shuffling is enabled.
    *
    * @param windowIndex Index of a window in the timeline.
    * @param repeatMode A repeat mode.
+   * @param shuffleModeEnabled Whether shuffling is enabled.
    * @return The index of the next window, or {@link C#INDEX_UNSET} if this is the last window.
    */
-  public int getNextWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode) {
+  public int getNextWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode,
+      boolean shuffleModeEnabled) {
     switch (repeatMode) {
       case Player.REPEAT_MODE_OFF:
-        return windowIndex == getWindowCount() - 1 ? C.INDEX_UNSET : windowIndex + 1;
+        return windowIndex == getLastWindowIndex(shuffleModeEnabled) ? C.INDEX_UNSET
+            : windowIndex + 1;
       case Player.REPEAT_MODE_ONE:
         return windowIndex;
       case Player.REPEAT_MODE_ALL:
-        return windowIndex == getWindowCount() - 1 ? 0 : windowIndex + 1;
+        return windowIndex == getLastWindowIndex(shuffleModeEnabled)
+            ? getFirstWindowIndex(shuffleModeEnabled) : windowIndex + 1;
       default:
         throw new IllegalStateException();
     }
@@ -574,28 +561,56 @@ public abstract class Timeline {
 
   /**
    * Returns the index of the window before the window at index {@code windowIndex} depending on the
-   * {@code repeatMode}.
+   * {@code repeatMode} and whether shuffling is enabled.
    *
    * @param windowIndex Index of a window in the timeline.
    * @param repeatMode A repeat mode.
+   * @param shuffleModeEnabled Whether shuffling is enabled.
    * @return The index of the previous window, or {@link C#INDEX_UNSET} if this is the first window.
    */
-  public int getPreviousWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode) {
+  public int getPreviousWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode,
+      boolean shuffleModeEnabled) {
     switch (repeatMode) {
       case Player.REPEAT_MODE_OFF:
-        return windowIndex == 0 ? C.INDEX_UNSET : windowIndex - 1;
+        return windowIndex == getFirstWindowIndex(shuffleModeEnabled) ? C.INDEX_UNSET
+            : windowIndex - 1;
       case Player.REPEAT_MODE_ONE:
         return windowIndex;
       case Player.REPEAT_MODE_ALL:
-        return windowIndex == 0 ? getWindowCount() - 1 : windowIndex - 1;
+        return windowIndex == getFirstWindowIndex(shuffleModeEnabled)
+            ? getLastWindowIndex(shuffleModeEnabled) : windowIndex - 1;
       default:
         throw new IllegalStateException();
     }
   }
 
   /**
+   * Returns the index of the last window in the playback order depending on whether shuffling is
+   * enabled.
+   *
+   * @param shuffleModeEnabled Whether shuffling is enabled.
+   * @return The index of the last window in the playback order, or {@link C#INDEX_UNSET} if the
+   *     timeline is empty.
+   */
+  public int getLastWindowIndex(boolean shuffleModeEnabled) {
+    return isEmpty() ? C.INDEX_UNSET : getWindowCount() - 1;
+  }
+
+  /**
+   * Returns the index of the first window in the playback order depending on whether shuffling is
+   * enabled.
+   *
+   * @param shuffleModeEnabled Whether shuffling is enabled.
+   * @return The index of the first window in the playback order, or {@link C#INDEX_UNSET} if the
+   *     timeline is empty.
+   */
+  public int getFirstWindowIndex(boolean shuffleModeEnabled) {
+    return isEmpty() ? C.INDEX_UNSET : 0;
+  }
+
+  /**
    * Populates a {@link Window} with data for the window at the specified index. Does not populate
-   * {@link Window#id}.
+   * {@link Window#tag}.
    *
    * @param windowIndex The index of the window.
    * @param window The {@link Window} to populate. Must not be null.
@@ -610,12 +625,12 @@ public abstract class Timeline {
    *
    * @param windowIndex The index of the window.
    * @param window The {@link Window} to populate. Must not be null.
-   * @param setIds Whether {@link Window#id} should be populated. If false, the field will be set to
-   *     null. The caller should pass false for efficiency reasons unless the field is required.
+   * @param setTag Whether {@link Window#tag} should be populated. If false, the field will be set
+   *     to null. The caller should pass false for efficiency reasons unless the field is required.
    * @return The populated {@link Window}, for convenience.
    */
-  public Window getWindow(int windowIndex, Window window, boolean setIds) {
-    return getWindow(windowIndex, window, setIds, 0);
+  public final Window getWindow(int windowIndex, Window window, boolean setTag) {
+    return getWindow(windowIndex, window, setTag, 0);
   }
 
   /**
@@ -623,14 +638,14 @@ public abstract class Timeline {
    *
    * @param windowIndex The index of the window.
    * @param window The {@link Window} to populate. Must not be null.
-   * @param setIds Whether {@link Window#id} should be populated. If false, the field will be set to
-   *     null. The caller should pass false for efficiency reasons unless the field is required.
+   * @param setTag Whether {@link Window#tag} should be populated. If false, the field will be set
+   *     to null. The caller should pass false for efficiency reasons unless the field is required.
    * @param defaultPositionProjectionUs A duration into the future that the populated window's
    *     default start position should be projected.
    * @return The populated {@link Window}, for convenience.
    */
-  public abstract Window getWindow(int windowIndex, Window window, boolean setIds,
-      long defaultPositionProjectionUs);
+  public abstract Window getWindow(
+      int windowIndex, Window window, boolean setTag, long defaultPositionProjectionUs);
 
   /**
    * Returns the number of periods in the timeline.
@@ -639,19 +654,20 @@ public abstract class Timeline {
 
   /**
    * Returns the index of the period after the period at index {@code periodIndex} depending on the
-   * {@code repeatMode}.
+   * {@code repeatMode} and whether shuffling is enabled.
    *
    * @param periodIndex Index of a period in the timeline.
    * @param period A {@link Period} to be used internally. Must not be null.
    * @param window A {@link Window} to be used internally. Must not be null.
    * @param repeatMode A repeat mode.
+   * @param shuffleModeEnabled Whether shuffling is enabled.
    * @return The index of the next period, or {@link C#INDEX_UNSET} if this is the last period.
    */
   public final int getNextPeriodIndex(int periodIndex, Period period, Window window,
-      @Player.RepeatMode int repeatMode) {
+      @Player.RepeatMode int repeatMode, boolean shuffleModeEnabled) {
     int windowIndex = getPeriod(periodIndex, period).windowIndex;
     if (getWindow(windowIndex, window).lastPeriodIndex == periodIndex) {
-      int nextWindowIndex = getNextWindowIndex(windowIndex, repeatMode);
+      int nextWindowIndex = getNextWindowIndex(windowIndex, repeatMode, shuffleModeEnabled);
       if (nextWindowIndex == C.INDEX_UNSET) {
         return C.INDEX_UNSET;
       }
@@ -662,29 +678,19 @@ public abstract class Timeline {
 
   /**
    * Returns whether the given period is the last period of the timeline depending on the
-   * {@code repeatMode}.
+   * {@code repeatMode} and whether shuffling is enabled.
    *
    * @param periodIndex A period index.
    * @param period A {@link Period} to be used internally. Must not be null.
    * @param window A {@link Window} to be used internally. Must not be null.
    * @param repeatMode A repeat mode.
+   * @param shuffleModeEnabled Whether shuffling is enabled.
    * @return Whether the period of the given index is the last period of the timeline.
    */
   public final boolean isLastPeriod(int periodIndex, Period period, Window window,
-      @Player.RepeatMode int repeatMode) {
-    return getNextPeriodIndex(periodIndex, period, window, repeatMode) == C.INDEX_UNSET;
-  }
-
-  /**
-   * Populates a {@link Period} with data for the period at the specified index. Does not populate
-   * {@link Period#id} and {@link Period#uid}.
-   *
-   * @param periodIndex The index of the period.
-   * @param period The {@link Period} to populate. Must not be null.
-   * @return The populated {@link Period}, for convenience.
-   */
-  public final Period getPeriod(int periodIndex, Period period) {
-    return getPeriod(periodIndex, period, false);
+      @Player.RepeatMode int repeatMode, boolean shuffleModeEnabled) {
+    return getNextPeriodIndex(periodIndex, period, window, repeatMode, shuffleModeEnabled)
+        == C.INDEX_UNSET;
   }
 
   /**
@@ -729,6 +735,18 @@ public abstract class Timeline {
       periodDurationUs = getPeriod(++periodIndex, period).getDurationUs();
     }
     return Pair.create(periodIndex, periodPositionUs);
+  }
+
+  /**
+   * Populates a {@link Period} with data for the period at the specified index. Does not populate
+   * {@link Period#id} and {@link Period#uid}.
+   *
+   * @param periodIndex The index of the period.
+   * @param period The {@link Period} to populate. Must not be null.
+   * @return The populated {@link Period}, for convenience.
+   */
+  public final Period getPeriod(int periodIndex, Period period) {
+    return getPeriod(periodIndex, period, false);
   }
 
   /**

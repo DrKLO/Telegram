@@ -14,6 +14,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.view.TextureView;
 
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.exoplayer2.Player;
 import org.telegram.messenger.exoplayer2.source.LoopingMediaSource;
 import org.telegram.messenger.secretmedia.ExtendedDefaultDataSourceFactory;
@@ -45,7 +46,7 @@ import org.telegram.messenger.exoplayer2.upstream.DefaultBandwidthMeter;
 import org.telegram.messenger.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 
 @SuppressLint("NewApi")
-public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.VideoListener {
+public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.VideoListener, NotificationCenter.NotificationCenterDelegate {
 
     public interface RendererBuilder {
         void buildRenderers(VideoPlayer player);
@@ -67,6 +68,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     private Handler mainHandler;
     private DataSource.Factory mediaDataSourceFactory;
     private TextureView textureView;
+    private boolean isStreaming;
     private boolean autoplay;
     private boolean mixedAudio;
 
@@ -93,11 +95,22 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
 
         lastReportedPlaybackState = ExoPlayer.STATE_IDLE;
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.playerDidStartPlaying);
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.playerDidStartPlaying) {
+            VideoPlayer p = (VideoPlayer) args[0];
+            if (p != this && isPlaying()) {
+                pause();
+            }
+        }
     }
 
     private void ensurePleyaerCreated() {
         if (player == null) {
-            player = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, trackSelector, new DefaultLoadControl(), null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
+            player = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, trackSelector, new DefaultLoadControl(), null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
             player.addListener(this);
             player.setVideoListener(this);
             player.setVideoTextureView(textureView);
@@ -105,12 +118,8 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         }
         if (mixedAudio) {
             if (audioPlayer == null) {
-                audioPlayer = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, trackSelector, new DefaultLoadControl(), null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
+                audioPlayer = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, trackSelector, new DefaultLoadControl(), null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
                 audioPlayer.addListener(new Player.EventListener() {
-                    @Override
-                    public void onTimelineChanged(Timeline timeline, Object manifest) {
-
-                    }
 
                     @Override
                     public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
@@ -119,6 +128,26 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
 
                     @Override
                     public void onLoadingChanged(boolean isLoading) {
+
+                    }
+
+                    @Override
+                    public void onTimelineChanged(Timeline timeline, Object manifest, int reason) {
+
+                    }
+
+                    @Override
+                    public void onShuffleModeEnabledChanged(boolean shuffleModeEnabled) {
+
+                    }
+
+                    @Override
+                    public void onPositionDiscontinuity(int reason) {
+
+                    }
+
+                    @Override
+                    public void onSeekProcessed() {
 
                     }
 
@@ -137,11 +166,6 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
 
                     @Override
                     public void onPlayerError(ExoPlaybackException error) {
-
-                    }
-
-                    @Override
-                    public void onPositionDiscontinuity() {
 
                     }
 
@@ -200,6 +224,8 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     public void preparePlayer(Uri uri, String type) {
         videoPlayerReady = false;
         mixedAudio = false;
+        String scheme = uri.getScheme();
+        isStreaming = scheme != null && !scheme.startsWith("file");
         ensurePleyaerCreated();
         MediaSource mediaSource;
         switch (type) {
@@ -232,6 +258,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
             audioPlayer.release();
             audioPlayer = null;
         }
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.playerDidStartPlaying);
     }
 
     public void setTextureView(TextureView texture) {
@@ -273,6 +300,12 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         }
         if (audioPlayer != null) {
             audioPlayer.setPlayWhenReady(false);
+        }
+    }
+
+    public void setPlaybackSpeed(float speed) {
+        if (player != null) {
+            player.setPlaybackParameters(new PlaybackParameters(speed, speed > 1.0f ? 0.98f : 1.0f));
         }
     }
 
@@ -344,11 +377,15 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     public int getBufferedPercentage() {
-        return player != null ? player.getBufferedPercentage() : 0;
+        return isStreaming ? (player != null ? player.getBufferedPercentage() : 0) : 100;
     }
 
     public long getBufferedPosition() {
-        return player != null ? player.getBufferedPosition() : 0;
+        return player != null ? (isStreaming ? player.getBufferedPosition() : player.getDuration()) : 0;
+    }
+
+    public boolean isStreaming() {
+        return isStreaming;
     }
 
     public boolean isPlaying() {
@@ -382,6 +419,9 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         maybeReportPlayerState();
+        if (playWhenReady && playbackState == Player.STATE_READY) {
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.playerDidStartPlaying, this);
+        }
         if (!videoPlayerReady && playbackState == Player.STATE_READY) {
             videoPlayerReady = true;
             checkPlayersReady();
@@ -389,18 +429,28 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     @Override
-    public void onTimelineChanged(Timeline timeline, Object manifest) {
+    public void onTimelineChanged(Timeline timeline, Object manifest, int reason) {
+
+    }
+
+    @Override
+    public void onShuffleModeEnabledChanged(boolean shuffleModeEnabled) {
+
+    }
+
+    @Override
+    public void onPositionDiscontinuity(int reason) {
+
+    }
+
+    @Override
+    public void onSeekProcessed() {
 
     }
 
     @Override
     public void onPlayerError(ExoPlaybackException error) {
         delegate.onError(error);
-    }
-
-    @Override
-    public void onPositionDiscontinuity() {
-
     }
 
     @Override

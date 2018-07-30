@@ -21,9 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Represents an HLS master playlist.
- */
+/** Represents an HLS master playlist. */
 public final class HlsMasterPlaylist extends HlsPlaylist {
 
   /**
@@ -109,18 +107,16 @@ public final class HlsMasterPlaylist extends HlsPlaylist {
         ? Collections.unmodifiableList(muxedCaptionFormats) : null;
   }
 
-  /**
-   * Returns a copy of this playlist which includes only the renditions identified by the given
-   * urls.
-   *
-   * @param renditionUrls List of rendition urls.
-   * @return A copy of this playlist which includes only the renditions identified by the given
-   *     urls.
-   */
-  public HlsMasterPlaylist copy(List<String> renditionUrls) {
-    return new HlsMasterPlaylist(baseUri, tags, copyRenditionsList(variants, renditionUrls),
-        copyRenditionsList(audios, renditionUrls), copyRenditionsList(subtitles, renditionUrls),
-        muxedAudioFormat, muxedCaptionFormats);
+  @Override
+  public HlsMasterPlaylist copy(List<RenditionKey> renditionKeys) {
+    return new HlsMasterPlaylist(
+        baseUri,
+        tags,
+        copyRenditionsList(variants, RenditionKey.TYPE_VARIANT, renditionKeys),
+        copyRenditionsList(audios, RenditionKey.TYPE_AUDIO, renditionKeys),
+        copyRenditionsList(subtitles, RenditionKey.TYPE_SUBTITLE, renditionKeys),
+        muxedAudioFormat,
+        muxedCaptionFormats);
   }
 
   /**
@@ -136,12 +132,17 @@ public final class HlsMasterPlaylist extends HlsPlaylist {
         emptyList, null, null);
   }
 
-  private static List<HlsUrl> copyRenditionsList(List<HlsUrl> renditions, List<String> urls) {
-    List<HlsUrl> copiedRenditions = new ArrayList<>(urls.size());
+  private static List<HlsUrl> copyRenditionsList(
+      List<HlsUrl> renditions, int renditionType, List<RenditionKey> renditionKeys) {
+    List<HlsUrl> copiedRenditions = new ArrayList<>(renditionKeys.size());
     for (int i = 0; i < renditions.size(); i++) {
       HlsUrl rendition = renditions.get(i);
-      if (urls.contains(rendition.url)) {
-        copiedRenditions.add(rendition);
+      for (int j = 0; j < renditionKeys.size(); j++) {
+        RenditionKey renditionKey = renditionKeys.get(j);
+        if (renditionKey.type == renditionType && renditionKey.trackIndex == i) {
+          copiedRenditions.add(rendition);
+          break;
+        }
       }
     }
     return copiedRenditions;

@@ -51,6 +51,8 @@ public class ManageChatUserCell extends FrameLayout {
     private int statusColor;
     private int statusOnlineColor;
 
+    private int currentAccount = UserConfig.selectedAccount;
+
     private ManageChatUserCellDelegate delegate;
 
     public interface ManageChatUserCellDelegate {
@@ -194,12 +196,12 @@ public class ManageChatUserCell extends FrameLayout {
                     statusTextView.setText(LocaleController.getString("BotStatusCantRead", R.string.BotStatusCantRead));
                 }
             } else {
-                if (currentUser.id == UserConfig.getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance().getCurrentTime() || MessagesController.getInstance().onlinePrivacy.containsKey(currentUser.id)) {
+                if (currentUser.id == UserConfig.getInstance(currentAccount).getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(currentUser.id)) {
                     statusTextView.setTextColor(statusOnlineColor);
                     statusTextView.setText(LocaleController.getString("Online", R.string.Online));
                 } else {
                     statusTextView.setTextColor(statusColor);
-                    statusTextView.setText(LocaleController.formatUserStatus(currentUser));
+                    statusTextView.setText(LocaleController.formatUserStatus(currentAccount, currentUser));
                 }
             }
         }

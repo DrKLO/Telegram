@@ -56,9 +56,13 @@ public final class WebvttParserUtil {
     String[] parts = timestamp.split("\\.", 2);
     String[] subparts = parts[0].split(":");
     for (String subpart : subparts) {
-      value = value * 60 + Long.parseLong(subpart);
+      value = (value * 60) + Long.parseLong(subpart);
     }
-    return (value * 1000 + Long.parseLong(parts[1])) * 1000;
+    value *= 1000;
+    if (parts.length == 2) {
+      value += Long.parseLong(parts[1]);
+    }
+    return value * 1000;
   }
 
   /**
@@ -74,7 +78,7 @@ public final class WebvttParserUtil {
     }
     return Float.parseFloat(s.substring(0, s.length() - 1)) / 100;
   }
-  
+
   /**
    * Reads lines up to and including the next WebVTT cue header.
    *

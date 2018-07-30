@@ -16,6 +16,8 @@
 package org.telegram.messenger.exoplayer2.extractor.mp3;
 
 import org.telegram.messenger.exoplayer2.C;
+import org.telegram.messenger.exoplayer2.extractor.MpegAudioHeader;
+import org.telegram.messenger.exoplayer2.extractor.SeekPoint;
 import org.telegram.messenger.exoplayer2.util.Util;
 
 /**
@@ -26,27 +28,55 @@ import org.telegram.messenger.exoplayer2.util.Util;
   private static final int BITS_PER_BYTE = 8;
 
   private final long firstFramePosition;
+  private final int frameSize;
+  private final long dataSize;
   private final int bitrate;
   private final long durationUs;
 
-  public ConstantBitrateSeeker(long firstFramePosition, int bitrate, long inputLength) {
+  /**
+   * @param inputLength The length of the stream in bytes, or {@link C#LENGTH_UNSET} if unknown.
+   * @param firstFramePosition The position of the first frame in the stream.
+   * @param mpegAudioHeader The MPEG audio header associated with the first frame.
+   */
+  public ConstantBitrateSeeker(long inputLength, long firstFramePosition,
+      MpegAudioHeader mpegAudioHeader) {
     this.firstFramePosition = firstFramePosition;
-    this.bitrate = bitrate;
-    durationUs = inputLength == C.LENGTH_UNSET ? C.TIME_UNSET : getTimeUs(inputLength);
+    this.frameSize = mpegAudioHeader.frameSize;
+    this.bitrate = mpegAudioHeader.bitrate;
+    if (inputLength == C.LENGTH_UNSET) {
+      dataSize = C.LENGTH_UNSET;
+      durationUs = C.TIME_UNSET;
+    } else {
+      dataSize = inputLength - firstFramePosition;
+      durationUs = getTimeUs(inputLength);
+    }
   }
 
   @Override
   public boolean isSeekable() {
-    return durationUs != C.TIME_UNSET;
+    return dataSize != C.LENGTH_UNSET;
   }
 
   @Override
-  public long getPosition(long timeUs) {
-    if (durationUs == C.TIME_UNSET) {
-      return 0;
+  public SeekPoints getSeekPoints(long timeUs) {
+    if (dataSize == C.LENGTH_UNSET) {
+      return new SeekPoints(new SeekPoint(0, firstFramePosition));
     }
-    timeUs = Util.constrainValue(timeUs, 0, durationUs);
-    return firstFramePosition + (timeUs * bitrate) / (C.MICROS_PER_SECOND * BITS_PER_BYTE);
+    long positionOffset = (timeUs * bitrate) / (C.MICROS_PER_SECOND * BITS_PER_BYTE);
+    // Constrain to nearest preceding frame offset.
+    positionOffset = (positionOffset / frameSize) * frameSize;
+    positionOffset = Util.constrainValue(positionOffset, 0, dataSize - frameSize);
+    long seekPosition = firstFramePosition + positionOffset;
+    long seekTimeUs = getTimeUs(seekPosition);
+    SeekPoint seekPoint = new SeekPoint(seekTimeUs, seekPosition);
+    if (seekTimeUs >= timeUs || positionOffset == dataSize - frameSize) {
+      return new SeekPoints(seekPoint);
+    } else {
+      long secondSeekPosition = seekPosition + frameSize;
+      long secondSeekTimeUs = getTimeUs(secondSeekPosition);
+      SeekPoint secondSeekPoint = new SeekPoint(secondSeekTimeUs, secondSeekPosition);
+      return new SeekPoints(seekPoint, secondSeekPoint);
+    }
   }
 
   @Override

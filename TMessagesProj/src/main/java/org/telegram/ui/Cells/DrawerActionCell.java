@@ -37,8 +37,8 @@ public class DrawerActionCell extends FrameLayout {
         textView.setMaxLines(1);
         textView.setSingleLine(true);
         textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        textView.setCompoundDrawablePadding(AndroidUtilities.dp(34));
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 14, 0, 16, 0));
+        textView.setCompoundDrawablePadding(AndroidUtilities.dp(29));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 19, 0, 16, 0));
     }
 
     @Override
@@ -55,7 +55,7 @@ public class DrawerActionCell extends FrameLayout {
     public void setTextAndIcon(String text, int resId) {
         try {
             textView.setText(text);
-            Drawable drawable = getResources().getDrawable(resId);
+            Drawable drawable = getResources().getDrawable(resId).mutate();
             if (drawable != null) {
                 drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuItemIcon), PorterDuff.Mode.MULTIPLY));
             }

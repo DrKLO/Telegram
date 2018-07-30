@@ -20,6 +20,7 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -34,6 +35,8 @@ public class ShareDialogCell extends FrameLayout {
     private TextView nameTextView;
     private CheckBox checkBox;
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
+
+    private int currentAccount = UserConfig.selectedAccount;
 
     public ShareDialogCell(Context context) {
         super(context);
@@ -67,7 +70,7 @@ public class ShareDialogCell extends FrameLayout {
     public void setDialog(int uid, boolean checked, CharSequence name) {
         TLRPC.FileLocation photo = null;
         if (uid > 0) {
-            TLRPC.User user = MessagesController.getInstance().getUser(uid);
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(uid);
             avatarDrawable.setInfo(user);
             if (UserObject.isUserSelf(user)) {
                 nameTextView.setText(LocaleController.getString("SavedMessages", R.string.SavedMessages));
@@ -85,7 +88,7 @@ public class ShareDialogCell extends FrameLayout {
                 }
             }
         } else {
-            TLRPC.Chat chat = MessagesController.getInstance().getChat(-uid);
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-uid);
             if (name != null) {
                 nameTextView.setText(name);
             } else if (chat != null) {

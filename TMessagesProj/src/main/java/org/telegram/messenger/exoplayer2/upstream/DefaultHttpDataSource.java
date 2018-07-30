@@ -526,7 +526,7 @@ public class DefaultHttpDataSource implements HttpDataSource {
     while (bytesSkipped != bytesToSkip) {
       int readLength = (int) Math.min(bytesToSkip - bytesSkipped, skipBuffer.length);
       int read = inputStream.read(skipBuffer, 0, readLength);
-      if (Thread.interrupted()) {
+      if (Thread.currentThread().isInterrupted()) {
         throw new InterruptedIOException();
       }
       if (read == -1) {
@@ -613,9 +613,9 @@ public class DefaultHttpDataSource implements HttpDataSource {
         return;
       }
       String className = inputStream.getClass().getName();
-      if (className.equals("com.android.okhttp.internal.http.HttpTransport$ChunkedInputStream")
-          || className.equals(
-          "com.android.okhttp.internal.http.HttpTransport$FixedLengthInputStream")) {
+      if ("com.android.okhttp.internal.http.HttpTransport$ChunkedInputStream".equals(className)
+          || "com.android.okhttp.internal.http.HttpTransport$FixedLengthInputStream"
+              .equals(className)) {
         Class<?> superclass = inputStream.getClass().getSuperclass();
         Method unexpectedEndOfInput = superclass.getDeclaredMethod("unexpectedEndOfInput");
         unexpectedEndOfInput.setAccessible(true);

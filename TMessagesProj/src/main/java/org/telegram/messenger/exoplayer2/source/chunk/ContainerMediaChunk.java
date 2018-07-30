@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.source.chunk;
 
+import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.extractor.DefaultExtractorInput;
 import org.telegram.messenger.exoplayer2.extractor.Extractor;
@@ -46,6 +47,8 @@ public class ContainerMediaChunk extends BaseMediaChunk {
    * @param trackSelectionData See {@link #trackSelectionData}.
    * @param startTimeUs The start time of the media contained by the chunk, in microseconds.
    * @param endTimeUs The end time of the media contained by the chunk, in microseconds.
+   * @param seekTimeUs The media time from which output will begin, or {@link C#TIME_UNSET} if the
+   *     whole chunk should be output.
    * @param chunkIndex The index of the chunk.
    * @param chunkCount The number of chunks in the underlying media that are spanned by this
    *     instance. Normally equal to one, but may be larger if multiple chunks as defined by the
@@ -53,18 +56,36 @@ public class ContainerMediaChunk extends BaseMediaChunk {
    * @param sampleOffsetUs An offset to add to the sample timestamps parsed by the extractor.
    * @param extractorWrapper A wrapped extractor to use for parsing the data.
    */
-  public ContainerMediaChunk(DataSource dataSource, DataSpec dataSpec, Format trackFormat,
-      int trackSelectionReason, Object trackSelectionData, long startTimeUs, long endTimeUs,
-      int chunkIndex, int chunkCount, long sampleOffsetUs, ChunkExtractorWrapper extractorWrapper) {
-    super(dataSource, dataSpec, trackFormat, trackSelectionReason, trackSelectionData, startTimeUs,
-        endTimeUs, chunkIndex);
+  public ContainerMediaChunk(
+      DataSource dataSource,
+      DataSpec dataSpec,
+      Format trackFormat,
+      int trackSelectionReason,
+      Object trackSelectionData,
+      long startTimeUs,
+      long endTimeUs,
+      long seekTimeUs,
+      long chunkIndex,
+      int chunkCount,
+      long sampleOffsetUs,
+      ChunkExtractorWrapper extractorWrapper) {
+    super(
+        dataSource,
+        dataSpec,
+        trackFormat,
+        trackSelectionReason,
+        trackSelectionData,
+        startTimeUs,
+        endTimeUs,
+        seekTimeUs,
+        chunkIndex);
     this.chunkCount = chunkCount;
     this.sampleOffsetUs = sampleOffsetUs;
     this.extractorWrapper = extractorWrapper;
   }
 
   @Override
-  public int getNextChunkIndex() {
+  public long getNextChunkIndex() {
     return chunkIndex + chunkCount;
   }
 
@@ -102,7 +123,8 @@ public class ContainerMediaChunk extends BaseMediaChunk {
         // Configure the output and set it as the target for the extractor wrapper.
         BaseMediaChunkOutput output = getOutput();
         output.setSampleOffsetUs(sampleOffsetUs);
-        extractorWrapper.init(output);
+        extractorWrapper.init(
+            output, seekTimeUs == C.TIME_UNSET ? 0 : (seekTimeUs - sampleOffsetUs));
       }
       // Load and decode the sample data.
       try {

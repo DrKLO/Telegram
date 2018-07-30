@@ -16,7 +16,6 @@
 package org.telegram.messenger.exoplayer2.trackselection;
 
 import org.telegram.messenger.exoplayer2.RendererConfiguration;
-import org.telegram.messenger.exoplayer2.source.TrackGroupArray;
 import org.telegram.messenger.exoplayer2.util.Util;
 
 /**
@@ -24,10 +23,13 @@ import org.telegram.messenger.exoplayer2.util.Util;
  */
 public final class TrackSelectorResult {
 
+  /** The number of selections in the result. Greater than or equal to zero. */
+  public final int length;
   /**
-   * The track groups that were provided to the {@link TrackSelector}.
+   * A {@link RendererConfiguration} for each renderer. A null entry indicates the corresponding
+   * renderer should be disabled.
    */
-  public final TrackGroupArray groups;
+  public final RendererConfiguration[] rendererConfigurations;
   /**
    * A {@link TrackSelectionArray} containing the track selection for each renderer.
    */
@@ -37,25 +39,25 @@ public final class TrackSelectorResult {
    * should the selections be activated.
    */
   public final Object info;
-  /**
-   * A {@link RendererConfiguration} for each renderer, to be used with the selections.
-   */
-  public final RendererConfiguration[] rendererConfigurations;
 
   /**
-   * @param groups The track groups provided to the {@link TrackSelector}.
+   * @param rendererConfigurations A {@link RendererConfiguration} for each renderer. A null entry
+   *     indicates the corresponding renderer should be disabled.
    * @param selections A {@link TrackSelectionArray} containing the selection for each renderer.
-   * @param info An opaque object that will be returned to
-   *     {@link TrackSelector#onSelectionActivated(Object)} should the selection be activated.
-   * @param rendererConfigurations A {@link RendererConfiguration} for each renderer, to be used
-   *     with the selections.
+   * @param info An opaque object that will be returned to {@link
+   *     TrackSelector#onSelectionActivated(Object)} should the selection be activated.
    */
-  public TrackSelectorResult(TrackGroupArray groups, TrackSelectionArray selections, Object info,
-      RendererConfiguration[] rendererConfigurations) {
-    this.groups = groups;
-    this.selections = selections;
-    this.info = info;
+  public TrackSelectorResult(
+      RendererConfiguration[] rendererConfigurations, TrackSelection[] selections, Object info) {
     this.rendererConfigurations = rendererConfigurations;
+    this.selections = new TrackSelectionArray(selections);
+    this.info = info;
+    length = rendererConfigurations.length;
+  }
+
+  /** Returns whether the renderer at the specified index is enabled. */
+  public boolean isRendererEnabled(int index) {
+    return rendererConfigurations[index] != null;
   }
 
   /**
@@ -66,7 +68,7 @@ public final class TrackSelectorResult {
    * @return Whether this result is equivalent to {@code other} for all renderers.
    */
   public boolean isEquivalent(TrackSelectorResult other) {
-    if (other == null) {
+    if (other == null || other.selections.length != selections.length) {
       return false;
     }
     for (int i = 0; i < selections.length; i++) {
@@ -79,8 +81,8 @@ public final class TrackSelectorResult {
 
   /**
    * Returns whether this result is equivalent to {@code other} for the renderer at the given index.
-   * The results are equivalent if they have equal track selections and configurations for the
-   * renderer.
+   * The results are equivalent if they have equal renderersEnabled array, track selections, and
+   * configurations for the renderer.
    *
    * @param other The other {@link TrackSelectorResult}. May be null, in which case {@code false}
    *     will be returned.
@@ -92,8 +94,8 @@ public final class TrackSelectorResult {
     if (other == null) {
       return false;
     }
-    return Util.areEqual(selections.get(index), other.selections.get(index))
-        && Util.areEqual(rendererConfigurations[index], other.rendererConfigurations[index]);
+    return Util.areEqual(rendererConfigurations[index], other.rendererConfigurations[index])
+        && Util.areEqual(selections.get(index), other.selections.get(index));
   }
 
 }

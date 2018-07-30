@@ -21,13 +21,14 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
@@ -38,7 +39,7 @@ import org.telegram.ui.Components.LineProgressView;
 import java.io.File;
 import java.util.Date;
 
-public class SharedDocumentCell extends FrameLayout implements MediaController.FileDownloadProgressListener {
+public class SharedDocumentCell extends FrameLayout implements DownloadController.FileDownloadProgressListener {
 
     private ImageView placeholderImageView;
     private BackupImageView thumbImageView;
@@ -51,6 +52,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
 
     private boolean needDivider;
 
+    private int currentAccount = UserConfig.selectedAccount;
     private int TAG;
 
     private MessageObject message;
@@ -67,7 +69,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
     public SharedDocumentCell(Context context) {
         super(context);
 
-        TAG = MediaController.getInstance().generateObserverTag();
+        TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
 
         placeholderImageView = new ImageView(context);
         addView(placeholderImageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
@@ -189,7 +191,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        MediaController.getInstance().removeLoadingFileObserver(this);
+        DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
     }
 
     @Override
@@ -282,10 +284,10 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
                 dateTextView.setPadding(0, 0, 0, 0);
                 loading = false;
                 loaded = true;
-                MediaController.getInstance().removeLoadingFileObserver(this);
+                DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
             } else {
-                MediaController.getInstance().addLoadingFileObserver(fileName, this);
-                loading = FileLoader.getInstance().isLoadingFile(fileName);
+                DownloadController.getInstance(currentAccount).addLoadingFileObserver(fileName, this);
+                loading = FileLoader.getInstance(currentAccount).isLoadingFile(fileName);
                 statusImageView.setVisibility(VISIBLE);
                 statusImageView.setImageResource(loading ? R.drawable.media_doc_pause : R.drawable.media_doc_load);
                 dateTextView.setPadding(LocaleController.isRTL ? 0 : AndroidUtilities.dp(14), 0, LocaleController.isRTL ? AndroidUtilities.dp(14) : 0, 0);
@@ -307,7 +309,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
             progressView.setProgress(0, false);
             statusImageView.setVisibility(INVISIBLE);
             dateTextView.setPadding(0, 0, 0, 0);
-            MediaController.getInstance().removeLoadingFileObserver(this);
+            DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
         }
     }
 

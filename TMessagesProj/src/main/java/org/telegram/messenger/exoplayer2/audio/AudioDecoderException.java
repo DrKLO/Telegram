@@ -15,27 +15,21 @@
  */
 package org.telegram.messenger.exoplayer2.audio;
 
-/**
- * Thrown when an audio decoder error occurs.
- */
-public abstract class AudioDecoderException extends Exception {
+/** Thrown when an audio decoder error occurs. */
+public class AudioDecoderException extends Exception {
 
-  /**
-   * @param detailMessage The detail message for this exception.
-   */
-  public AudioDecoderException(String detailMessage) {
-    super(detailMessage);
+  /** @param message The detail message for this exception. */
+  public AudioDecoderException(String message) {
+    super(message);
   }
 
   /**
-   * @param detailMessage The detail message for this exception.
-   * @param cause the cause (which is saved for later retrieval by the
-   *     {@link #getCause()} method).  (A <tt>null</tt> value is
-   *     permitted, and indicates that the cause is nonexistent or
-   *     unknown.)
+   * @param message The detail message for this exception.
+   * @param cause the cause (which is saved for later retrieval by the {@link #getCause()} method).
+   *     A <tt>null</tt> value is permitted, and indicates that the cause is nonexistent or unknown.
    */
-  public AudioDecoderException(String detailMessage, Throwable cause) {
-    super(detailMessage, cause);
+  public AudioDecoderException(String message, Throwable cause) {
+    super(message, cause);
   }
 
 }

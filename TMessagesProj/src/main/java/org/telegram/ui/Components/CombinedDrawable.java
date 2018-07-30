@@ -23,6 +23,8 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
     private int iconHeight;
     private int backWidth;
     private int backHeight;
+    private int offsetX;
+    private int offsetY;
     private boolean fullSize;
 
     public CombinedDrawable(Drawable backgroundDrawable, Drawable iconDrawable, int leftOffset, int topOffset) {
@@ -30,7 +32,9 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
         icon = iconDrawable;
         left = leftOffset;
         top = topOffset;
-        iconDrawable.setCallback(this);
+        if (iconDrawable != null) {
+            iconDrawable.setCallback(this);
+        }
     }
 
     public void setIconSize(int width, int height) {
@@ -41,12 +45,19 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
     public CombinedDrawable(Drawable backgroundDrawable, Drawable iconDrawable) {
         background = backgroundDrawable;
         icon = iconDrawable;
-        iconDrawable.setCallback(this);
+        if (iconDrawable != null) {
+            iconDrawable.setCallback(this);
+        }
     }
 
     public void setCustomSize(int width, int height) {
         backWidth = width;
         backHeight = height;
+    }
+
+    public void setIconOffset(int x, int y) {
+        offsetX = x;
+        offsetY = y;
     }
 
     public Drawable getIcon() {
@@ -101,22 +112,24 @@ public class CombinedDrawable extends Drawable implements Drawable.Callback {
     public void draw(Canvas canvas) {
         background.setBounds(getBounds());
         background.draw(canvas);
-        int x;
-        int y;
-        if (fullSize) {
-            icon.setBounds(getBounds());
-        } else {
-            if (iconWidth != 0) {
-                x = getBounds().centerX() - iconWidth / 2 + left;
-                y = getBounds().centerY() - iconHeight / 2 + top;
-                icon.setBounds(x, y, x + iconWidth, y + iconHeight);
+        if (icon != null) {
+            int x;
+            int y;
+            if (fullSize) {
+                icon.setBounds(getBounds());
             } else {
-                x = getBounds().centerX() - icon.getIntrinsicWidth() / 2 + left;
-                y = getBounds().centerY() - icon.getIntrinsicHeight() / 2 + top;
-                icon.setBounds(x, y, x + icon.getIntrinsicWidth(), y + icon.getIntrinsicHeight());
+                if (iconWidth != 0) {
+                    x = getBounds().centerX() - iconWidth / 2 + left + offsetX;
+                    y = getBounds().centerY() - iconHeight / 2 + top + offsetY;
+                    icon.setBounds(x, y, x + iconWidth, y + iconHeight);
+                } else {
+                    x = getBounds().centerX() - icon.getIntrinsicWidth() / 2 + left;
+                    y = getBounds().centerY() - icon.getIntrinsicHeight() / 2 + top;
+                    icon.setBounds(x, y, x + icon.getIntrinsicWidth(), y + icon.getIntrinsicHeight());
+                }
             }
+            icon.draw(canvas);
         }
-        icon.draw(canvas);
     }
 
     @Override

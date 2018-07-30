@@ -8,9 +8,10 @@
 
 package org.telegram.ui.Adapters;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -19,10 +20,11 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -32,6 +34,9 @@ import org.telegram.ui.Cells.DialogMeUrlCell;
 import org.telegram.ui.Cells.DialogsEmptyCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.LoadingCell;
+import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -46,6 +51,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     private boolean isOnlySelect;
     private ArrayList<Long> selectedDialogs;
     private boolean hasHints;
+    private int currentAccount = UserConfig.selectedAccount;
+    private boolean showContacts;
 
     public DialogsAdapter(Context context, int type, boolean onlySelect) {
         mContext = context;
@@ -90,39 +97,57 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
     private ArrayList<TLRPC.TL_dialog> getDialogsArray() {
         if (dialogsType == 0) {
-            return MessagesController.getInstance().dialogs;
+            return MessagesController.getInstance(currentAccount).dialogs;
         } else if (dialogsType == 1) {
-            return MessagesController.getInstance().dialogsServerOnly;
+            return MessagesController.getInstance(currentAccount).dialogsServerOnly;
         } else if (dialogsType == 2) {
-            return MessagesController.getInstance().dialogsGroupsOnly;
+            return MessagesController.getInstance(currentAccount).dialogsGroupsOnly;
         } else if (dialogsType == 3) {
-            return MessagesController.getInstance().dialogsForward;
+            return MessagesController.getInstance(currentAccount).dialogsForward;
         }
         return null;
     }
 
     @Override
     public int getItemCount() {
-        int count = getDialogsArray().size();
-        if (count == 0 && MessagesController.getInstance().loadingDialogs) {
+        showContacts = false;
+        ArrayList<TLRPC.TL_dialog> array = getDialogsArray();
+        int dialogsCount = array.size();
+        if (dialogsCount == 0 && MessagesController.getInstance(currentAccount).loadingDialogs) {
             return 0;
         }
-        if (!MessagesController.getInstance().dialogsEndReached || count == 0) {
+        int count = dialogsCount;
+        if (!MessagesController.getInstance(currentAccount).dialogsEndReached || dialogsCount == 0) {
             count++;
         }
         if (hasHints) {
-            count += 2 + MessagesController.getInstance().hintDialogs.size();
+            count += 2 + MessagesController.getInstance(currentAccount).hintDialogs.size();
+        } else if (dialogsType == 0 && dialogsCount == 0) {
+            if (ContactsController.getInstance(currentAccount).contacts.isEmpty() && ContactsController.getInstance(currentAccount).isLoadingContacts()) {
+                return 0;
+            }
+            if (!ContactsController.getInstance(currentAccount).contacts.isEmpty()) {
+                count += ContactsController.getInstance(currentAccount).contacts.size() + 2;
+                showContacts = true;
+            }
         }
         currentCount = count;
         return count;
     }
 
     public TLObject getItem(int i) {
+        if (showContacts) {
+            i -= 3;
+            if (i < 0 || i >= ContactsController.getInstance(currentAccount).contacts.size()) {
+                return null;
+            }
+            return MessagesController.getInstance(currentAccount).getUser(ContactsController.getInstance(currentAccount).contacts.get(i).user_id);
+        }
         ArrayList<TLRPC.TL_dialog> arrayList = getDialogsArray();
         if (hasHints) {
-            int count = MessagesController.getInstance().hintDialogs.size();
+            int count = MessagesController.getInstance(currentAccount).hintDialogs.size();
             if (i < 2 + count) {
-                return MessagesController.getInstance().hintDialogs.get(i - 1);
+                return MessagesController.getInstance(currentAccount).hintDialogs.get(i - 1);
             } else {
                 i -= count + 2;
             }
@@ -135,7 +160,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public void notifyDataSetChanged() {
-        hasHints = dialogsType == 0 && !isOnlySelect && !MessagesController.getInstance().hintDialogs.isEmpty();
+        hasHints = dialogsType == 0 && !isOnlySelect && !MessagesController.getInstance(currentAccount).hintDialogs.isEmpty();
         super.notifyDataSetChanged();
     }
 
@@ -149,7 +174,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     @Override
     public boolean isEnabled(RecyclerView.ViewHolder holder) {
         int viewType = holder.getItemViewType();
-        return viewType != 1 && viewType != 5 && viewType != 3;
+        return viewType != 1 && viewType != 5 && viewType != 3 && viewType != 8 && viewType != 7;
     }
 
     @Override
@@ -162,7 +187,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             case 1:
                 view = new LoadingCell(mContext);
                 break;
-            case 2:
+            case 2: {
                 HeaderCell headerCell = new HeaderCell(mContext);
                 headerCell.setText(LocaleController.getString("RecentlyViewed", R.string.RecentlyViewed));
 
@@ -176,8 +201,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 textView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        MessagesController.getInstance().hintDialogs.clear();
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        MessagesController.getInstance(currentAccount).hintDialogs.clear();
+                        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                         preferences.edit().remove("installReferer").commit();
                         notifyDataSetChanged();
                     }
@@ -185,6 +210,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
                 view = headerCell;
                 break;
+            }
             case 3:
                 FrameLayout frameLayout = new FrameLayout(mContext) {
                     @Override
@@ -202,8 +228,23 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 view = new DialogMeUrlCell(mContext);
                 break;
             case 5:
-            default:
                 view = new DialogsEmptyCell(mContext);
+                break;
+            case 6:
+                view = new UserCell(mContext, 8, 0, false);
+                break;
+            case 7:
+                HeaderCell headerCell = new HeaderCell(mContext);
+                headerCell.setText(LocaleController.getString("YourContacts", R.string.YourContacts));
+                view = headerCell;
+                break;
+            case 8:
+            default:
+                view = new ShadowSectionCell(mContext);
+                Drawable drawable = Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
+                CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)), drawable);
+                combinedDrawable.setFullsize(true);
+                view.setBackgroundDrawable(combinedDrawable);
                 break;
         }
         view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, viewType == 5 ? RecyclerView.LayoutParams.MATCH_PARENT : RecyclerView.LayoutParams.WRAP_CONTENT));
@@ -217,7 +258,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 DialogCell cell = (DialogCell) holder.itemView;
                 TLRPC.TL_dialog dialog = (TLRPC.TL_dialog) getItem(i);
                 if (hasHints) {
-                    i -= 2 + MessagesController.getInstance().hintDialogs.size();
+                    i -= 2 + MessagesController.getInstance(currentAccount).hintDialogs.size();
                 }
                 cell.useSeparator = (i != getItemCount() - 1);
                 if (dialogsType == 0) {
@@ -231,9 +272,20 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 cell.setDialog(dialog, i, dialogsType);
                 break;
             }
+            case 5: {
+                DialogsEmptyCell cell = (DialogsEmptyCell) holder.itemView;
+                cell.setType(showContacts ? 1 : 0);
+                break;
+            }
             case 4: {
                 DialogMeUrlCell cell = (DialogMeUrlCell) holder.itemView;
                 cell.setRecentMeUrl((TLRPC.RecentMeUrl) getItem(i));
+                break;
+            }
+            case 6: {
+                UserCell cell = (UserCell) holder.itemView;
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(ContactsController.getInstance(currentAccount).contacts.get(i - 3).user_id);
+                cell.setData(user, null, null, 0);
                 break;
             }
         }
@@ -241,8 +293,18 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public int getItemViewType(int i) {
-        if (hasHints) {
-            int count = MessagesController.getInstance().hintDialogs.size();
+        if (showContacts) {
+            if (i == 0) {
+                return 5;
+            } else if (i == 1) {
+                return 8;
+            } else if (i == 2) {
+                return 7;
+            } else {
+                return 6;
+            }
+        } else if (hasHints) {
+            int count = MessagesController.getInstance(currentAccount).hintDialogs.size();
             if (i < 2 + count) {
                 if (i == 0) {
                     return 2;
@@ -255,7 +317,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             }
         }
         if (i == getDialogsArray().size()) {
-            if (!MessagesController.getInstance().dialogsEndReached) {
+            if (!MessagesController.getInstance(currentAccount).dialogsEndReached) {
                 return 1;
             } else {
                 return 5;

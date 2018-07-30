@@ -15,50 +15,26 @@
  */
 package org.telegram.messenger.exoplayer2.video;
 
-import static android.opengl.EGL14.EGL_ALPHA_SIZE;
-import static android.opengl.EGL14.EGL_BLUE_SIZE;
-import static android.opengl.EGL14.EGL_CONFIG_CAVEAT;
-import static android.opengl.EGL14.EGL_CONTEXT_CLIENT_VERSION;
-import static android.opengl.EGL14.EGL_DEFAULT_DISPLAY;
-import static android.opengl.EGL14.EGL_DEPTH_SIZE;
-import static android.opengl.EGL14.EGL_GREEN_SIZE;
-import static android.opengl.EGL14.EGL_HEIGHT;
-import static android.opengl.EGL14.EGL_NONE;
-import static android.opengl.EGL14.EGL_OPENGL_ES2_BIT;
-import static android.opengl.EGL14.EGL_RED_SIZE;
-import static android.opengl.EGL14.EGL_RENDERABLE_TYPE;
-import static android.opengl.EGL14.EGL_SURFACE_TYPE;
-import static android.opengl.EGL14.EGL_TRUE;
-import static android.opengl.EGL14.EGL_WIDTH;
-import static android.opengl.EGL14.EGL_WINDOW_BIT;
-import static android.opengl.EGL14.eglChooseConfig;
-import static android.opengl.EGL14.eglCreateContext;
-import static android.opengl.EGL14.eglCreatePbufferSurface;
-import static android.opengl.EGL14.eglDestroyContext;
-import static android.opengl.EGL14.eglDestroySurface;
-import static android.opengl.EGL14.eglGetDisplay;
-import static android.opengl.EGL14.eglInitialize;
-import static android.opengl.EGL14.eglMakeCurrent;
-import static android.opengl.GLES20.glDeleteTextures;
-import static android.opengl.GLES20.glGenTextures;
+import static org.telegram.messenger.exoplayer2.util.EGLSurfaceTexture.SECURE_MODE_NONE;
+import static org.telegram.messenger.exoplayer2.util.EGLSurfaceTexture.SECURE_MODE_PROTECTED_PBUFFER;
+import static org.telegram.messenger.exoplayer2.util.EGLSurfaceTexture.SECURE_MODE_SURFACELESS_CONTEXT;
 
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
-import android.graphics.SurfaceTexture.OnFrameAvailableListener;
 import android.opengl.EGL14;
-import android.opengl.EGLConfig;
-import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
-import android.opengl.EGLSurface;
 import android.os.Handler;
 import android.os.Handler.Callback;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.Surface;
 import org.telegram.messenger.exoplayer2.util.Assertions;
+import org.telegram.messenger.exoplayer2.util.EGLSurfaceTexture;
+import org.telegram.messenger.exoplayer2.util.EGLSurfaceTexture.SecureMode;
 import org.telegram.messenger.exoplayer2.util.Util;
 import javax.microedition.khronos.egl.EGL10;
 
@@ -70,15 +46,16 @@ public final class DummySurface extends Surface {
 
   private static final String TAG = "DummySurface";
 
-  private static final int EGL_PROTECTED_CONTENT_EXT = 0x32C0;
-
-  private static boolean secureSupported;
-  private static boolean secureSupportedInitialized;
+  private static final String EXTENSION_PROTECTED_CONTENT = "EGL_EXT_protected_content";
+  private static final String EXTENSION_SURFACELESS_CONTEXT = "EGL_KHR_surfaceless_context";
 
   /**
    * Whether the surface is secure.
    */
   public final boolean secure;
+
+  private static @SecureMode int secureMode;
+  private static boolean secureModeInitialized;
 
   private final DummySurfaceThread thread;
   private boolean threadReleased;
@@ -90,11 +67,11 @@ public final class DummySurface extends Surface {
    * @return Whether the device supports secure dummy surfaces.
    */
   public static synchronized boolean isSecureSupported(Context context) {
-    if (!secureSupportedInitialized) {
-      secureSupported = Util.SDK_INT >= 24 && enableSecureDummySurfaceV24(context);
-      secureSupportedInitialized = true;
+    if (!secureModeInitialized) {
+      secureMode = Util.SDK_INT < 24 ? SECURE_MODE_NONE : getSecureModeV24(context);
+      secureModeInitialized = true;
     }
-    return secureSupported;
+    return secureMode != SECURE_MODE_NONE;
   }
 
   /**
@@ -113,7 +90,7 @@ public final class DummySurface extends Surface {
     assertApiLevel17OrHigher();
     Assertions.checkState(!secure || isSecureSupported(context));
     DummySurfaceThread thread = new DummySurfaceThread();
-    return thread.init(secure);
+    return thread.init(secure ? secureMode : SECURE_MODE_NONE);
   }
 
   private DummySurface(DummySurfaceThread thread, SurfaceTexture surfaceTexture, boolean secure) {
@@ -143,60 +120,58 @@ public final class DummySurface extends Surface {
     }
   }
 
-  /**
-   * Returns whether use of secure dummy surfaces should be enabled.
-   *
-   * @param context Any {@link Context}.
-   */
   @TargetApi(24)
-  private static boolean enableSecureDummySurfaceV24(Context context) {
-    EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    String eglExtensions = EGL14.eglQueryString(display, EGL10.EGL_EXTENSIONS);
-    if (eglExtensions == null || !eglExtensions.contains("EGL_EXT_protected_content")) {
-      // EGL_EXT_protected_content is required to enable secure dummy surfaces.
-      return false;
-    }
-    if (Util.SDK_INT == 24 && "samsung".equals(Util.MANUFACTURER)) {
-      // Samsung devices running API level 24 are known to be broken [Internal: b/37197802].
-      return false;
+  private static @SecureMode int getSecureModeV24(Context context) {
+    if (Util.SDK_INT < 26 && ("samsung".equals(Util.MANUFACTURER) || "XT1650".equals(Util.MODEL))) {
+      // Samsung devices running Nougat are known to be broken. See
+      // https://github.com/google/ExoPlayer/issues/3373 and [Internal: b/37197802].
+      // Moto Z XT1650 is also affected. See
+      // https://github.com/google/ExoPlayer/issues/3215.
+      return SECURE_MODE_NONE;
     }
     if (Util.SDK_INT < 26 && !context.getPackageManager().hasSystemFeature(
         PackageManager.FEATURE_VR_MODE_HIGH_PERFORMANCE)) {
       // Pre API level 26 devices were not well tested unless they supported VR mode.
-      return false;
+      return SECURE_MODE_NONE;
     }
-    return true;
+    EGLDisplay display = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
+    String eglExtensions = EGL14.eglQueryString(display, EGL10.EGL_EXTENSIONS);
+    if (eglExtensions == null) {
+      return SECURE_MODE_NONE;
+    }
+    if (!eglExtensions.contains(EXTENSION_PROTECTED_CONTENT)) {
+      return SECURE_MODE_NONE;
+    }
+    // If we can't use surfaceless contexts, we use a protected 1 * 1 pixel buffer surface. This may
+    // require support for EXT_protected_surface, but in practice it works on some devices that
+    // don't have that extension. See also https://github.com/google/ExoPlayer/issues/3558.
+    return eglExtensions.contains(EXTENSION_SURFACELESS_CONTEXT)
+        ? SECURE_MODE_SURFACELESS_CONTEXT
+        : SECURE_MODE_PROTECTED_PBUFFER;
   }
 
-  private static class DummySurfaceThread extends HandlerThread implements OnFrameAvailableListener,
-      Callback {
+  private static class DummySurfaceThread extends HandlerThread implements Callback {
 
     private static final int MSG_INIT = 1;
-    private static final int MSG_UPDATE_TEXTURE = 2;
-    private static final int MSG_RELEASE = 3;
+    private static final int MSG_RELEASE = 2;
 
-    private final int[] textureIdHolder;
-    private EGLDisplay display;
-    private EGLContext context;
-    private EGLSurface pbuffer;
+    private EGLSurfaceTexture eglSurfaceTexure;
     private Handler handler;
-    private SurfaceTexture surfaceTexture;
-
-    private Error initError;
-    private RuntimeException initException;
-    private DummySurface surface;
+    private @Nullable Error initError;
+    private @Nullable RuntimeException initException;
+    private @Nullable DummySurface surface;
 
     public DummySurfaceThread() {
       super("dummySurface");
-      textureIdHolder = new int[1];
     }
 
-    public DummySurface init(boolean secure) {
+    public DummySurface init(@SecureMode int secureMode) {
       start();
-      handler = new Handler(getLooper(), this);
+      handler = new Handler(getLooper(), /* callback= */ this);
+      eglSurfaceTexure = new EGLSurfaceTexture(handler);
       boolean wasInterrupted = false;
       synchronized (this) {
-        handler.obtainMessage(MSG_INIT, secure ? 1 : 0, 0).sendToTarget();
+        handler.obtainMessage(MSG_INIT, secureMode, 0).sendToTarget();
         while (surface == null && initException == null && initError == null) {
           try {
             wait();
@@ -214,17 +189,13 @@ public final class DummySurface extends Surface {
       } else if (initError != null) {
         throw initError;
       } else {
-        return surface;
+        return Assertions.checkNotNull(surface);
       }
     }
 
     public void release() {
+      Assertions.checkNotNull(handler);
       handler.sendEmptyMessage(MSG_RELEASE);
-    }
-
-    @Override
-    public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-      handler.sendEmptyMessage(MSG_UPDATE_TEXTURE);
     }
 
     @Override
@@ -232,7 +203,7 @@ public final class DummySurface extends Surface {
       switch (msg.what) {
         case MSG_INIT:
           try {
-            initInternal(msg.arg1 != 0);
+            initInternal(/* secureMode= */ msg.arg1);
           } catch (RuntimeException e) {
             Log.e(TAG, "Failed to initialize dummy surface", e);
             initException = e;
@@ -244,9 +215,6 @@ public final class DummySurface extends Surface {
               notify();
             }
           }
-          return true;
-        case MSG_UPDATE_TEXTURE:
-          surfaceTexture.updateTexImage();
           return true;
         case MSG_RELEASE:
           try {
@@ -262,92 +230,17 @@ public final class DummySurface extends Surface {
       }
     }
 
-    private void initInternal(boolean secure) {
-      display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-      Assertions.checkState(display != null, "eglGetDisplay failed");
-
-      int[] version = new int[2];
-      boolean eglInitialized = eglInitialize(display, version, 0, version, 1);
-      Assertions.checkState(eglInitialized, "eglInitialize failed");
-
-      int[] eglAttributes = new int[] {
-          EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-          EGL_RED_SIZE, 8,
-          EGL_GREEN_SIZE, 8,
-          EGL_BLUE_SIZE, 8,
-          EGL_ALPHA_SIZE, 8,
-          EGL_DEPTH_SIZE, 0,
-          EGL_CONFIG_CAVEAT, EGL_NONE,
-          EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-          EGL_NONE
-      };
-      EGLConfig[] configs = new EGLConfig[1];
-      int[] numConfigs = new int[1];
-      boolean eglChooseConfigSuccess = eglChooseConfig(display, eglAttributes, 0, configs, 0, 1,
-          numConfigs, 0);
-      Assertions.checkState(eglChooseConfigSuccess && numConfigs[0] > 0 && configs[0] != null,
-          "eglChooseConfig failed");
-
-      EGLConfig config = configs[0];
-      int[] glAttributes;
-      if (secure) {
-        glAttributes = new int[] {
-            EGL_CONTEXT_CLIENT_VERSION, 2,
-            EGL_PROTECTED_CONTENT_EXT, EGL_TRUE,
-            EGL_NONE};
-      } else {
-        glAttributes = new int[] {
-            EGL_CONTEXT_CLIENT_VERSION, 2,
-            EGL_NONE};
-      }
-      context = eglCreateContext(display, config, android.opengl.EGL14.EGL_NO_CONTEXT, glAttributes,
-          0);
-      Assertions.checkState(context != null, "eglCreateContext failed");
-
-      int[] pbufferAttributes;
-      if (secure) {
-        pbufferAttributes = new int[] {
-            EGL_WIDTH, 1,
-            EGL_HEIGHT, 1,
-            EGL_PROTECTED_CONTENT_EXT, EGL_TRUE,
-            EGL_NONE};
-      } else {
-        pbufferAttributes = new int[] {
-            EGL_WIDTH, 1,
-            EGL_HEIGHT, 1,
-            EGL_NONE};
-      }
-      pbuffer = eglCreatePbufferSurface(display, config, pbufferAttributes, 0);
-      Assertions.checkState(pbuffer != null, "eglCreatePbufferSurface failed");
-
-      boolean eglMadeCurrent = eglMakeCurrent(display, pbuffer, pbuffer, context);
-      Assertions.checkState(eglMadeCurrent, "eglMakeCurrent failed");
-
-      glGenTextures(1, textureIdHolder, 0);
-      surfaceTexture = new SurfaceTexture(textureIdHolder[0]);
-      surfaceTexture.setOnFrameAvailableListener(this);
-      surface = new DummySurface(this, surfaceTexture, secure);
+    private void initInternal(@SecureMode int secureMode) {
+      Assertions.checkNotNull(eglSurfaceTexure);
+      eglSurfaceTexure.init(secureMode);
+      this.surface =
+          new DummySurface(
+              this, eglSurfaceTexure.getSurfaceTexture(), secureMode != SECURE_MODE_NONE);
     }
 
     private void releaseInternal() {
-      try {
-        if (surfaceTexture != null) {
-          surfaceTexture.release();
-          glDeleteTextures(1, textureIdHolder, 0);
-        }
-      } finally {
-        if (pbuffer != null) {
-          eglDestroySurface(display, pbuffer);
-        }
-        if (context != null) {
-          eglDestroyContext(display, context);
-        }
-        pbuffer = null;
-        context = null;
-        display = null;
-        surface = null;
-        surfaceTexture = null;
-      }
+      Assertions.checkNotNull(eglSurfaceTexure);
+      eglSurfaceTexure.release();
     }
 
   }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="org.telegram.messenger"
     android:installLocation="auto">
 
@@ -11,7 +12,9 @@
         android:theme="@style/Theme.TMessages.Start"
         android:name=".ApplicationLoader"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
-        android:largeHeap="true">
+        android:largeHeap="true"
+        android:supportsRtl="false"
+        tools:replace="android:supportsRtl">
 
     </application>
 

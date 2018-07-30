@@ -8,7 +8,6 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -16,15 +15,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
@@ -43,6 +44,7 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.voip.VoIPHelper;
@@ -53,6 +55,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
     private ListAdapter listAdapter;
     private RecyclerListView listView;
+    private AlertDialog progressDialog;
 
     private int privacySectionRow;
     private int blockedRow;
@@ -65,13 +68,22 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int passwordRow;
     private int passcodeRow;
     private int sessionsDetailRow;
-    private int deleteAccountSectionRow;
+    private int advancedSectionRow;
+    private int clearDraftsRow;
     private int deleteAccountRow;
     private int deleteAccountDetailRow;
-    private int paymentsSectionRow;
+    private int botsSectionRow;
+    private int passportRow;
     private int paymentsClearRow;
-    private int paymentsDetailRow;
+    private int webSessionsRow;
+    private int botsDetailRow;
+    private int contactsSectionRow;
+    private int contactsDeleteRow;
+    private int contactsSuggestRow;
+    private int contactsSyncRow;
+    private int contactsDetailRow;
     private int secretSectionRow;
+    private int secretMapRow;
     private int secretWebpageRow;
     private int secretDetailRow;
     private int callsSectionRow;
@@ -79,48 +91,26 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int callsDetailRow;
     private int rowCount;
 
+    private boolean currentSync;
+    private boolean newSync;
+    private boolean currentSuggest;
+    private boolean newSuggest;
+
     private boolean clear[] = new boolean[2];
 
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
 
-        ContactsController.getInstance().loadPrivacySettings();
+        ContactsController.getInstance(currentAccount).loadPrivacySettings();
+        currentSync = newSync = UserConfig.getInstance(currentAccount).syncContacts;
+        currentSuggest = newSuggest = UserConfig.getInstance(currentAccount).suggestContacts;
 
-        rowCount = 0;
-        privacySectionRow = rowCount++;
-        blockedRow = rowCount++;
-        lastSeenRow = rowCount++;
-        callsRow = rowCount++;
-        groupsRow = rowCount++;
-        groupsDetailRow = rowCount++;
-        securitySectionRow = rowCount++;
-        passcodeRow = rowCount++;
-        passwordRow = rowCount++;
-        sessionsRow = rowCount++;
-        sessionsDetailRow = rowCount++;
-        deleteAccountSectionRow = rowCount++;
-        deleteAccountRow = rowCount++;
-        deleteAccountDetailRow = rowCount++;
-        paymentsSectionRow = rowCount++;
-        paymentsClearRow = rowCount++;
-        paymentsDetailRow = rowCount++;
-        callsSectionRow = rowCount++;
-        callsP2PRow = rowCount++;
-        callsDetailRow = rowCount++;
+        updateRows();
+        loadPasswordSettings();
 
-        if (MessagesController.getInstance().secretWebpagePreview != 1) {
-            secretSectionRow = rowCount++;
-            secretWebpageRow = rowCount++;
-            secretDetailRow = rowCount++;
-        } else {
-            secretSectionRow = -1;
-            secretWebpageRow = -1;
-            secretDetailRow = -1;
-        }
-
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.privacyRulesUpdated);
-        VoIPHelper.upgradeP2pSetting();
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.privacyRulesUpdated);
+        VoIPHelper.upgradeP2pSetting(currentAccount);
 
         return true;
     }
@@ -128,7 +118,32 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.privacyRulesUpdated);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.privacyRulesUpdated);
+        if (currentSync != newSync) {
+            UserConfig.getInstance(currentAccount).syncContacts = newSync;
+            UserConfig.getInstance(currentAccount).saveConfig(false);
+            if (newSync) {
+                ContactsController.getInstance(currentAccount).forceImportContacts();
+                if (getParentActivity() != null) {
+                    Toast.makeText(getParentActivity(), LocaleController.getString("SyncContactsAdded", R.string.SyncContactsAdded), Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+        if (newSuggest != currentSuggest) {
+            if (!newSuggest) {
+                DataQuery.getInstance(currentAccount).clearTopPeers();
+            }
+            UserConfig.getInstance(currentAccount).suggestContacts = newSuggest;
+            UserConfig.getInstance(currentAccount).saveConfig(false);
+            TLRPC.TL_contacts_toggleTopPeers req = new TLRPC.TL_contacts_toggleTopPeers();
+            req.enabled = newSuggest;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
+                @Override
+                public void run(TLObject response, TLRPC.TL_error error) {
+
+                }
+            });
+        }
     }
 
     @Override
@@ -152,8 +167,15 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         listView = new RecyclerListView(context);
-        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
+            @Override
+            public boolean supportsPredictiveItemAnimations() {
+                return false;
+            }
+        });
         listView.setVerticalScrollBarEnabled(false);
+        listView.setItemAnimator(null);
+        listView.setLayoutAnimation(null);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
@@ -165,7 +187,32 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 if (position == blockedRow) {
                     presentFragment(new BlockedUsersActivity());
                 } else if (position == sessionsRow) {
-                    presentFragment(new SessionsActivity());
+                    presentFragment(new SessionsActivity(0));
+                } else if (position == webSessionsRow) {
+                    presentFragment(new SessionsActivity(1));
+                } else if (position == clearDraftsRow) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder.setMessage(LocaleController.getString("AreYouSureClearDrafts", R.string.AreYouSureClearDrafts));
+                    builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            TLRPC.TL_messages_clearAllDrafts req = new TLRPC.TL_messages_clearAllDrafts();
+                            ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
+                                @Override
+                                public void run(TLObject response, TLRPC.TL_error error) {
+                                    AndroidUtilities.runOnUIThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            DataQuery.getInstance(currentAccount).clearAllDrafts();
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    showDialog(builder.create());
                 } else if (position == deleteAccountRow) {
                     if (getParentActivity() == null) {
                         return;
@@ -199,7 +246,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                             final TLRPC.TL_account_setAccountTTL req = new TLRPC.TL_account_setAccountTTL();
                             req.ttl = new TLRPC.TL_accountDaysTTL();
                             req.ttl.days = value;
-                            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                            ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
                                 @Override
                                 public void run(final TLObject response, final TLRPC.TL_error error) {
                                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -211,7 +258,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                                                 FileLog.e(e);
                                             }
                                             if (response instanceof TLRPC.TL_boolTrue) {
-                                                ContactsController.getInstance().setDeleteAccountTTL(req.ttl.days);
+                                                ContactsController.getInstance(currentAccount).setDeleteAccountTTL(req.ttl.days);
                                                 listAdapter.notifyDataSetChanged();
                                             }
                                         }
@@ -231,38 +278,114 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 } else if (position == passwordRow) {
                     presentFragment(new TwoStepVerificationActivity(0));
                 } else if (position == passcodeRow) {
-                    if (UserConfig.passcodeHash.length() > 0) {
+                    if (SharedConfig.passcodeHash.length() > 0) {
                         presentFragment(new PasscodeActivity(2));
                     } else {
                         presentFragment(new PasscodeActivity(0));
                     }
                 } else if (position == secretWebpageRow) {
-                    if (MessagesController.getInstance().secretWebpagePreview == 1) {
-                        MessagesController.getInstance().secretWebpagePreview = 0;
+                    if (MessagesController.getInstance(currentAccount).secretWebpagePreview == 1) {
+                        MessagesController.getInstance(currentAccount).secretWebpagePreview = 0;
                     } else {
-                        MessagesController.getInstance().secretWebpagePreview = 1;
+                        MessagesController.getInstance(currentAccount).secretWebpagePreview = 1;
                     }
-                    ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit().putInt("secretWebpage2", MessagesController.getInstance().secretWebpagePreview).commit();
+                    MessagesController.getGlobalMainSettings().edit().putInt("secretWebpage2", MessagesController.getInstance(currentAccount).secretWebpagePreview).commit();
                     if (view instanceof TextCheckCell) {
-                        ((TextCheckCell) view).setChecked(MessagesController.getInstance().secretWebpagePreview == 1);
+                        ((TextCheckCell) view).setChecked(MessagesController.getInstance(currentAccount).secretWebpagePreview == 1);
+                    }
+                } else if (position == contactsDeleteRow) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setTitle(LocaleController.getString("Contacts", R.string.Contacts));
+                    builder.setMessage(LocaleController.getString("SyncContactsDeleteInfo", R.string.SyncContactsDeleteInfo));
+                    builder.setPositiveButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), 1);
+                            builder.setMessage(LocaleController.getString("Loading", R.string.Loading));
+                            progressDialog = builder.show();
+                            progressDialog.setCanceledOnTouchOutside(false);
+                            progressDialog.setCancelable(false);
+                            
+                            if (currentSync != newSync) {
+                                currentSync = UserConfig.getInstance(currentAccount).syncContacts = newSync;
+                                UserConfig.getInstance(currentAccount).saveConfig(false);
+                            }
+                            ContactsController.getInstance(currentAccount).deleteAllContacts(new Runnable() {
+                                @Override
+                                public void run() {
+                                    progressDialog.dismiss();
+                                }
+                            });
+                        }
+                    });
+                    showDialog(builder.create());
+                } else if (position == contactsSuggestRow) {
+                    final TextCheckCell cell = (TextCheckCell) view;
+                    if (newSuggest) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setMessage(LocaleController.getString("SuggestContactsAlert", R.string.SuggestContactsAlert));
+                        builder.setPositiveButton(LocaleController.getString("MuteDisable", R.string.MuteDisable), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                TLRPC.TL_payments_clearSavedInfo req = new TLRPC.TL_payments_clearSavedInfo();
+                                req.credentials = clear[1];
+                                req.info = clear[0];
+                                UserConfig.getInstance(currentAccount).tmpPassword = null;
+                                UserConfig.getInstance(currentAccount).saveConfig(false);
+                                ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
+                                    @Override
+                                    public void run(TLObject response, TLRPC.TL_error error) {
+                                        AndroidUtilities.runOnUIThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                newSuggest = !newSuggest;
+                                                cell.setChecked(newSuggest);
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
+                    } else {
+                        newSuggest = !newSuggest;
+                        cell.setChecked(newSuggest);
+                    }
+                } else if (position == contactsSyncRow) {
+                    newSync = !newSync;
+                    if (view instanceof TextCheckCell) {
+                        ((TextCheckCell) view).setChecked(newSync);
                     }
                 } else if (position == callsP2PRow) {
                     new AlertDialog.Builder(getParentActivity())
                             .setTitle(LocaleController.getString("PrivacyCallsP2PTitle", R.string.PrivacyCallsP2PTitle))
-							.setItems(new String[]{
-							        LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody),
+                            .setItems(new String[]{
+                                    LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody),
                                     LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts),
                                     LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody)
-                            }, new DialogInterface.OnClickListener(){
+                            }, new DialogInterface.OnClickListener() {
                                 @Override
-                                public void onClick(DialogInterface dialog, int which){
-                                    SharedPreferences prefs=getParentActivity().getSharedPreferences("mainconfig", Context.MODE_PRIVATE);
-                                    prefs.edit().putInt("calls_p2p_new", which).apply();
+                                public void onClick(DialogInterface dialog, int which) {
+                                    SharedPreferences prefs = MessagesController.getMainSettings(currentAccount);
+                                    prefs.edit().putInt("calls_p2p_new", which).commit();
                                     listAdapter.notifyDataSetChanged();
                                 }
                             })
                             .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
                             .show();
+                } else if (position == secretMapRow) {
+                    AlertsCreator.showSecretLocationAlert(getParentActivity(), currentAccount, new Runnable() {
+                        @Override
+                        public void run() {
+                            listAdapter.notifyDataSetChanged();
+                        }
+                    }, false);
                 } else if (position == paymentsClearRow) {
                     BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
                     builder.setApplyTopPadding(false);
@@ -277,7 +400,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                             name = LocaleController.getString("PrivacyClearPayment", R.string.PrivacyClearPayment);
                         }
                         clear[a] = true;
-                        CheckBoxCell checkBoxCell = new CheckBoxCell(getParentActivity(), true);
+                        CheckBoxCell checkBoxCell = new CheckBoxCell(getParentActivity(), 1);
                         checkBoxCell.setTag(a);
                         checkBoxCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                         linearLayout.addView(checkBoxCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
@@ -307,22 +430,34 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                             } catch (Exception e) {
                                 FileLog.e(e);
                             }
-                            TLRPC.TL_payments_clearSavedInfo req = new TLRPC.TL_payments_clearSavedInfo();
-                            req.credentials = clear[1];
-                            req.info = clear[0];
-                            UserConfig.tmpPassword = null;
-                            UserConfig.saveConfig(false);
-                            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                            builder.setMessage(LocaleController.getString("PrivacyPaymentsClearAlert", R.string.PrivacyPaymentsClearAlert));
+                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                 @Override
-                                public void run(TLObject response, TLRPC.TL_error error) {
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    TLRPC.TL_payments_clearSavedInfo req = new TLRPC.TL_payments_clearSavedInfo();
+                                    req.credentials = clear[1];
+                                    req.info = clear[0];
+                                    UserConfig.getInstance(currentAccount).tmpPassword = null;
+                                    UserConfig.getInstance(currentAccount).saveConfig(false);
+                                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
+                                        @Override
+                                        public void run(TLObject response, TLRPC.TL_error error) {
 
+                                        }
+                                    });
                                 }
                             });
+                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                            showDialog(builder.create());
                         }
                     });
                     linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
                     builder.setCustomView(linearLayout);
                     showDialog(builder.create());
+                } else if (position == passportRow) {
+                    presentFragment(new PassportActivity(PassportActivity.TYPE_PASSWORD, 0, "", "", null, null, null, null));
                 }
             }
         });
@@ -331,7 +466,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.privacyRulesUpdated) {
             if (listAdapter != null) {
                 listAdapter.notifyDataSetChanged();
@@ -339,8 +474,76 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         }
     }
 
+    private void updateRows() {
+        rowCount = 0;
+        privacySectionRow = rowCount++;
+        blockedRow = rowCount++;
+        lastSeenRow = rowCount++;
+        callsRow = rowCount++;
+        groupsRow = rowCount++;
+        groupsDetailRow = rowCount++;
+        securitySectionRow = rowCount++;
+        passcodeRow = rowCount++;
+        passwordRow = rowCount++;
+        sessionsRow = rowCount++;
+        sessionsDetailRow = rowCount++;
+        advancedSectionRow = rowCount++;
+        clearDraftsRow = rowCount++;
+        deleteAccountRow = rowCount++;
+        deleteAccountDetailRow = rowCount++;
+        botsSectionRow = rowCount++;
+        if (UserConfig.getInstance(currentAccount).hasSecureData) {
+            passportRow = rowCount++;
+        } else {
+            passportRow = -1;
+        }
+        paymentsClearRow = rowCount++;
+        webSessionsRow = rowCount++;
+        botsDetailRow = rowCount++;
+        contactsSectionRow = rowCount++;
+        contactsDeleteRow = rowCount++;
+        contactsSyncRow = rowCount++;
+        contactsSuggestRow = rowCount++;
+        contactsDetailRow = rowCount++;
+        callsSectionRow = rowCount++;
+        callsP2PRow = rowCount++;
+        callsDetailRow = rowCount++;
+        secretSectionRow = rowCount++;
+        secretMapRow = rowCount++;
+        secretWebpageRow = rowCount++;
+        secretDetailRow = rowCount++;
+        if (listAdapter != null) {
+            listAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private void loadPasswordSettings() {
+        if (UserConfig.getInstance(currentAccount).hasSecureData) {
+            return;
+        }
+        TLRPC.TL_account_getPassword req = new TLRPC.TL_account_getPassword();
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
+            @Override
+            public void run(final TLObject response, final TLRPC.TL_error error) {
+                if (response != null) {
+                    TLRPC.account_Password password = (TLRPC.account_Password) response;
+                    if (password.has_secure_values) {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                UserConfig.getInstance(currentAccount).hasSecureData = true;
+                                UserConfig.getInstance(currentAccount).saveConfig(false);
+                                updateRows();
+                            }
+                        });
+                    }
+                }
+            }
+        }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+    }
+
     private String formatRulesString(int rulesType) {
-        ArrayList<TLRPC.PrivacyRule> privacyRules = ContactsController.getInstance().getPrivacyRules(rulesType);
+        ArrayList<TLRPC.PrivacyRule> privacyRules = ContactsController.getInstance(currentAccount).getPrivacyRules(rulesType);
         if (privacyRules.size() == 0) {
             return LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody);
         }
@@ -408,12 +611,12 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            return position == passcodeRow || position == passwordRow || position == blockedRow || position == sessionsRow || position == secretWebpageRow ||
-                    position == groupsRow && !ContactsController.getInstance().getLoadingGroupInfo() ||
-                    position == lastSeenRow && !ContactsController.getInstance().getLoadingLastSeenInfo() ||
-                    position == callsRow && !ContactsController.getInstance().getLoadingCallsInfo() ||
-                    position == deleteAccountRow && !ContactsController.getInstance().getLoadingDeleteInfo() ||
-                    position == paymentsClearRow || position == callsP2PRow;
+            return position == passcodeRow || position == passwordRow || position == blockedRow || position == sessionsRow || position == secretWebpageRow || position == webSessionsRow || position == clearDraftsRow ||
+                    position == groupsRow && !ContactsController.getInstance(currentAccount).getLoadingGroupInfo() ||
+                    position == lastSeenRow && !ContactsController.getInstance(currentAccount).getLoadingLastSeenInfo() ||
+                    position == callsRow && !ContactsController.getInstance(currentAccount).getLoadingCallsInfo() ||
+                    position == deleteAccountRow && !ContactsController.getInstance(currentAccount).getLoadingDeleteInfo() ||
+                    position == paymentsClearRow || position == callsP2PRow || position == secretMapRow || position == contactsSyncRow || position == passportRow || position == contactsDeleteRow || position == contactsSuggestRow;
         }
 
         @Override
@@ -454,21 +657,25 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         textCell.setText(LocaleController.getString("BlockedUsers", R.string.BlockedUsers), true);
                     } else if (position == sessionsRow) {
                         textCell.setText(LocaleController.getString("SessionsTitle", R.string.SessionsTitle), false);
+                    } else if (position == webSessionsRow) {
+                        textCell.setText(LocaleController.getString("WebSessionsTitle", R.string.WebSessionsTitle), false);
                     } else if (position == passwordRow) {
                         textCell.setText(LocaleController.getString("TwoStepVerification", R.string.TwoStepVerification), true);
                     } else if (position == passcodeRow) {
                         textCell.setText(LocaleController.getString("Passcode", R.string.Passcode), true);
                     } else if (position == lastSeenRow) {
                         String value;
-                        if (ContactsController.getInstance().getLoadingLastSeenInfo()) {
+                        if (ContactsController.getInstance(currentAccount).getLoadingLastSeenInfo()) {
                             value = LocaleController.getString("Loading", R.string.Loading);
                         } else {
                             value = formatRulesString(0);
                         }
                         textCell.setTextAndValue(LocaleController.getString("PrivacyLastSeen", R.string.PrivacyLastSeen), value, true);
+                    } else if (position == passportRow) {
+                        textCell.setText(LocaleController.getString("TelegramPassport", R.string.TelegramPassport), true);
                     } else if (position == callsRow) {
                         String value;
-                        if (ContactsController.getInstance().getLoadingCallsInfo()) {
+                        if (ContactsController.getInstance(currentAccount).getLoadingCallsInfo()) {
                             value = LocaleController.getString("Loading", R.string.Loading);
                         } else {
                             value = formatRulesString(2);
@@ -476,7 +683,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         textCell.setTextAndValue(LocaleController.getString("Calls", R.string.Calls), value, true);
                     } else if (position == groupsRow) {
                         String value;
-                        if (ContactsController.getInstance().getLoadingGroupInfo()) {
+                        if (ContactsController.getInstance(currentAccount).getLoadingGroupInfo()) {
                             value = LocaleController.getString("Loading", R.string.Loading);
                         } else {
                             value = formatRulesString(1);
@@ -484,10 +691,10 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         textCell.setTextAndValue(LocaleController.getString("GroupsAndChannels", R.string.GroupsAndChannels), value, false);
                     } else if (position == deleteAccountRow) {
                         String value;
-                        if (ContactsController.getInstance().getLoadingDeleteInfo()) {
+                        if (ContactsController.getInstance(currentAccount).getLoadingDeleteInfo()) {
                             value = LocaleController.getString("Loading", R.string.Loading);
                         } else {
-                            int ttl = ContactsController.getInstance().getDeleteAccountTTL();
+                            int ttl = ContactsController.getInstance(currentAccount).getDeleteAccountTTL();
                             if (ttl <= 182) {
                                 value = LocaleController.formatPluralString("Months", ttl / 30);
                             } else if (ttl == 365) {
@@ -496,25 +703,44 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                                 value = LocaleController.formatPluralString("Days", ttl);
                             }
                         }
-                        textCell.setTextAndValue(LocaleController.getString("DeleteAccountIfAwayFor", R.string.DeleteAccountIfAwayFor), value, false);
+                        textCell.setTextAndValue(LocaleController.getString("DeleteAccountIfAwayFor2", R.string.DeleteAccountIfAwayFor2), value, false);
+                    } else if (position == clearDraftsRow) {
+                        textCell.setText(LocaleController.getString("PrivacyDeleteCloudDrafts", R.string.PrivacyDeleteCloudDrafts), true);
                     } else if (position == paymentsClearRow) {
-                        textCell.setText(LocaleController.getString("PrivacyPaymentsClear", R.string.PrivacyPaymentsClear), false);
+                        textCell.setText(LocaleController.getString("PrivacyPaymentsClear", R.string.PrivacyPaymentsClear), true);
                     } else if (position == callsP2PRow) {
-                        SharedPreferences prefs=getParentActivity().getSharedPreferences("mainconfig", Context.MODE_PRIVATE);
+                        SharedPreferences prefs = MessagesController.getMainSettings(currentAccount);
                         String value;
-                        switch(prefs.getInt("calls_p2p_new", MessagesController.getInstance().defaultP2pContacts ? 1 : 0)){
+                        switch (prefs.getInt("calls_p2p_new", MessagesController.getInstance(currentAccount).defaultP2pContacts ? 1 : 0)) {
                             case 1:
-                                value=LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts);
+                                value = LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts);
                                 break;
                             case 2:
-                                value=LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody);
+                                value = LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody);
                                 break;
                             case 0:
                             default:
-                                value=LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody);
+                                value = LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody);
                                 break;
                         }
                         textCell.setTextAndValue(LocaleController.getString("PrivacyCallsP2PTitle", R.string.PrivacyCallsP2PTitle), value, false);
+                    } else if (position == secretMapRow) {
+                        String value;
+                        switch (SharedConfig.mapPreviewType) {
+                            case 0:
+                                value = LocaleController.getString("MapPreviewProviderTelegram", R.string.MapPreviewProviderTelegram);
+                                break;
+                            case 1:
+                                value = LocaleController.getString("MapPreviewProviderGoogle", R.string.MapPreviewProviderGoogle);
+                                break;
+                            case 2:
+                            default:
+                                value = LocaleController.getString("MapPreviewProviderNobody", R.string.MapPreviewProviderNobody);
+                                break;
+                        }
+                        textCell.setTextAndValue(LocaleController.getString("MapPreviewProvider", R.string.MapPreviewProvider), value, true);
+                    } else if (position == contactsDeleteRow) {
+                        textCell.setText(LocaleController.getString("SyncContactsDelete", R.string.SyncContactsDelete), true);
                     }
                     break;
                 case 1:
@@ -529,14 +755,22 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         privacyCell.setText(LocaleController.getString("SessionsInfo", R.string.SessionsInfo));
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     } else if (position == secretDetailRow) {
-                        privacyCell.setText("");
-                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, callsSectionRow == -1 ? R.drawable.greydivider_bottom : R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                    } else if (position == paymentsDetailRow) {
-                        privacyCell.setText(LocaleController.getString("PrivacyPaymentsClearInfo", R.string.PrivacyPaymentsClearInfo));
-                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, secretSectionRow == -1 && callsSectionRow == -1 ? R.drawable.greydivider_bottom : R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                        privacyCell.setText(LocaleController.getString("SecretWebPageInfo", R.string.SecretWebPageInfo));
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    } else if (position == botsDetailRow) {
+                        privacyCell.setText(LocaleController.getString("PrivacyBotsInfo", R.string.PrivacyBotsInfo));
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     } else if (position == callsDetailRow) {
                         privacyCell.setText(LocaleController.getString("PrivacyCallsP2PHelp", R.string.PrivacyCallsP2PHelp));
-                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    } else if (position == contactsDetailRow) {
+                        /*if (newSync) {
+                            privacyCell.setText(LocaleController.getString("SyncContactsInfoOn", R.string.SyncContactsInfoOn));
+                        } else {
+                            privacyCell.setText(LocaleController.getString("SyncContactsInfoOff", R.string.SyncContactsInfoOff));
+                        }*/
+                        privacyCell.setText(LocaleController.getString("SuggestContactsInfo", R.string.SuggestContactsInfo));
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     }
                     break;
                 case 2:
@@ -545,20 +779,26 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         headerCell.setText(LocaleController.getString("PrivacyTitle", R.string.PrivacyTitle));
                     } else if (position == securitySectionRow) {
                         headerCell.setText(LocaleController.getString("SecurityTitle", R.string.SecurityTitle));
-                    } else if (position == deleteAccountSectionRow) {
-                        headerCell.setText(LocaleController.getString("DeleteAccountTitle", R.string.DeleteAccountTitle));
+                    } else if (position == advancedSectionRow) {
+                        headerCell.setText(LocaleController.getString("PrivacyAdvanced", R.string.PrivacyAdvanced));
                     } else if (position == secretSectionRow) {
                         headerCell.setText(LocaleController.getString("SecretChat", R.string.SecretChat));
-                    } else if (position == paymentsSectionRow) {
-                        headerCell.setText(LocaleController.getString("PrivacyPayments", R.string.PrivacyPayments));
+                    } else if (position == botsSectionRow) {
+                        headerCell.setText(LocaleController.getString("PrivacyBots", R.string.PrivacyBots));
                     } else if (position == callsSectionRow) {
                         headerCell.setText(LocaleController.getString("Calls", R.string.Calls));
+                    } else if (position == contactsSectionRow) {
+                        headerCell.setText(LocaleController.getString("Contacts", R.string.Contacts));
                     }
                     break;
                 case 3:
                     TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
                     if (position == secretWebpageRow) {
-                        textCheckCell.setTextAndCheck(LocaleController.getString("SecretWebPage", R.string.SecretWebPage), MessagesController.getInstance().secretWebpagePreview == 1, true);
+                        textCheckCell.setTextAndCheck(LocaleController.getString("SecretWebPage", R.string.SecretWebPage), MessagesController.getInstance(currentAccount).secretWebpagePreview == 1, false);
+                    } else if (position == contactsSyncRow) {
+                        textCheckCell.setTextAndCheck(LocaleController.getString("SyncContacts", R.string.SyncContacts), newSync, true);
+                    } else if (position == contactsSuggestRow) {
+                        textCheckCell.setTextAndCheck(LocaleController.getString("SuggestContacts", R.string.SuggestContacts), newSuggest, false);
                     }
                     break;
             }
@@ -566,13 +806,13 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
         @Override
         public int getItemViewType(int position) {
-            if (position == lastSeenRow || position == blockedRow || position == deleteAccountRow || position == sessionsRow || position == passwordRow || position == passcodeRow || position == groupsRow || position == paymentsClearRow || position == callsP2PRow) {
+            if (position == passportRow || position == lastSeenRow || position == blockedRow || position == deleteAccountRow || position == sessionsRow || position == webSessionsRow || position == passwordRow || position == passcodeRow || position == groupsRow || position == paymentsClearRow || position == callsP2PRow || position == secretMapRow || position == contactsDeleteRow || position == clearDraftsRow) {
                 return 0;
-            } else if (position == deleteAccountDetailRow || position == groupsDetailRow || position == sessionsDetailRow || position == secretDetailRow || position == paymentsDetailRow || position==callsDetailRow) {
+            } else if (position == deleteAccountDetailRow || position == groupsDetailRow || position == sessionsDetailRow || position == secretDetailRow || position == botsDetailRow || position == callsDetailRow || position == contactsDetailRow) {
                 return 1;
-            } else if (position == securitySectionRow || position == deleteAccountSectionRow || position == privacySectionRow || position == secretSectionRow || position == paymentsSectionRow || position==callsSectionRow) {
+            } else if (position == securitySectionRow || position == advancedSectionRow || position == privacySectionRow || position == secretSectionRow || position == botsSectionRow || position == callsSectionRow || position == contactsSectionRow) {
                 return 2;
-            } else if (position == secretWebpageRow) {
+            } else if (position == secretWebpageRow || position == contactsSyncRow || position == contactsSuggestRow) {
                 return 3;
             }
             return 0;

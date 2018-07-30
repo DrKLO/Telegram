@@ -79,7 +79,8 @@ import org.telegram.messenger.exoplayer2.video.AvcConfig;
   @Override
   protected void parsePayload(ParsableByteArray data, long timeUs) throws ParserException {
     int packetType = data.readUnsignedByte();
-    int compositionTimeMs = data.readUnsignedInt24();
+    int compositionTimeMs = data.readInt24();
+
     timeUs += compositionTimeMs * 1000L;
     // Parse avc sequence header in case this was not done before.
     if (packetType == AVC_PACKET_TYPE_SEQUENCE_HEADER && !hasOutputFormat) {

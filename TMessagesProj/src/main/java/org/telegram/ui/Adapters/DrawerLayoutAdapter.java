@@ -21,26 +21,70 @@ import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DrawerActionCell;
 import org.telegram.ui.Cells.DividerCell;
+import org.telegram.ui.Cells.DrawerAddCell;
+import org.telegram.ui.Cells.DrawerUserCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.DrawerProfileCell;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
     private Context mContext;
     private ArrayList<Item> items = new ArrayList<>(11);
+    private ArrayList<Integer> accountNumbers = new ArrayList<>();
+    private boolean accountsShowed;
+    private DrawerProfileCell profileCell;
 
     public DrawerLayoutAdapter(Context context) {
         mContext = context;
+        accountsShowed = UserConfig.getActivatedAccountsCount() > 1 && MessagesController.getGlobalMainSettings().getBoolean("accountsShowed", true);
         Theme.createDialogsResources(context);
         resetItems();
     }
 
+    private int getAccountRowsCount() {
+        int count = accountNumbers.size() + 1;
+        if (accountNumbers.size() < UserConfig.MAX_ACCOUNT_COUNT) {
+            count++;
+        }
+        return count;
+    }
+
     @Override
     public int getItemCount() {
-        return items.size();
+        int count = items.size() + 2;
+        if (accountsShowed) {
+            count += getAccountRowsCount();
+        }
+        return count;
+    }
+
+    public void setAccountsShowed(boolean value, boolean animated) {
+        if (accountsShowed == value) {
+            return;
+        }
+        accountsShowed = value;
+        if (profileCell != null) {
+            profileCell.setAccountsShowed(accountsShowed);
+        }
+        MessagesController.getGlobalMainSettings().edit().putBoolean("accountsShowed", accountsShowed).commit();
+        if (animated) {
+            if (accountsShowed) {
+                notifyItemRangeInserted(2, getAccountRowsCount());
+            } else {
+                notifyItemRangeRemoved(2, getAccountRowsCount());
+            }
+        } else {
+            notifyDataSetChanged();
+        }
+    }
+
+    public boolean isAccountsShowed() {
+        return accountsShowed;
     }
 
     @Override
@@ -51,7 +95,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public boolean isEnabled(RecyclerView.ViewHolder holder) {
-        return holder.getItemViewType() == 3;
+        int itemType = holder.getItemViewType();
+        return itemType == 3 || itemType == 4 || itemType == 5;
     }
 
     @Override
@@ -59,7 +104,15 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         View view;
         switch (viewType) {
             case 0:
-                view = new DrawerProfileCell(mContext);
+                profileCell = new DrawerProfileCell(mContext);
+                profileCell.setOnArrowClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        DrawerProfileCell drawerProfileCell = (DrawerProfileCell) v;
+                        setAccountsShowed(drawerProfileCell.isAccountsShowed(), true);
+                    }
+                });
+                view = profileCell;
                 break;
             case 1:
             default:
@@ -71,6 +124,12 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             case 3:
                 view = new DrawerActionCell(mContext);
                 break;
+            case 4:
+                view = new DrawerUserCell(mContext);
+                break;
+            case 5:
+                view = new DrawerAddCell(mContext);
+                break;
         }
         view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         return new RecyclerListView.Holder(view);
@@ -79,13 +138,26 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         switch (holder.getItemViewType()) {
-            case 0:
-                ((DrawerProfileCell) holder.itemView).setUser(MessagesController.getInstance().getUser(UserConfig.getClientUserId()));
+            case 0: {
+                ((DrawerProfileCell) holder.itemView).setUser(MessagesController.getInstance(UserConfig.selectedAccount).getUser(UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId()), accountsShowed);
                 holder.itemView.setBackgroundColor(Theme.getColor(Theme.key_avatar_backgroundActionBarBlue));
                 break;
-            case 3:
-                items.get(position).bind((DrawerActionCell) holder.itemView);
+            }
+            case 3: {
+                position -= 2;
+                if (accountsShowed) {
+                    position -= getAccountRowsCount();
+                }
+                DrawerActionCell drawerActionCell = (DrawerActionCell) holder.itemView;
+                items.get(position).bind(drawerActionCell);
+                drawerActionCell.setPadding(0, 0, 0, 0);
                 break;
+            }
+            case 4: {
+                DrawerUserCell drawerUserCell = (DrawerUserCell) holder.itemView;
+                drawerUserCell.setAccount(accountNumbers.get(position - 2));
+                break;
+            }
         }
     }
 
@@ -95,19 +167,57 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             return 0;
         } else if (i == 1) {
             return 1;
-        } else if (i == 5) {
+        }
+        i -= 2;
+        if (accountsShowed) {
+            if (i < accountNumbers.size()) {
+                return 4;
+            } else {
+                if (accountNumbers.size() < UserConfig.MAX_ACCOUNT_COUNT) {
+                    if (i == accountNumbers.size()){
+                        return 5;
+                    } else if (i == accountNumbers.size() + 1) {
+                        return 2;
+                    }
+                } else {
+                    if (i == accountNumbers.size()) {
+                        return 2;
+                    }
+                }
+            }
+            i -= getAccountRowsCount();
+        }
+        if (i == 3) {
             return 2;
         }
         return 3;
     }
 
     private void resetItems() {
+        accountNumbers.clear();
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (UserConfig.getInstance(a).isClientActivated()) {
+                accountNumbers.add(a);
+            }
+        }
+        Collections.sort(accountNumbers, new Comparator<Integer>() {
+            @Override
+            public int compare(Integer o1, Integer o2) {
+                long l1 = UserConfig.getInstance(o1).loginTime;
+                long l2 = UserConfig.getInstance(o2).loginTime;
+                if (l1 > l2) {
+                    return 1;
+                } else if (l1 < l2) {
+                    return -1;
+                }
+                return 0;
+            }
+        });
+
         items.clear();
-        if (!UserConfig.isClientActivated()) {
+        if (!UserConfig.getInstance(UserConfig.selectedAccount).isClientActivated()) {
             return;
         }
-        items.add(null); // profile
-        items.add(null); // padding
         items.add(new Item(2, LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup));
         items.add(new Item(3, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret));
         items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast));
@@ -121,6 +231,10 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public int getId(int position) {
+        position -= 2;
+        if (accountsShowed) {
+            position -= getAccountRowsCount();
+        }
         if (position < 0 || position >= items.size()) {
             return -1;
         }

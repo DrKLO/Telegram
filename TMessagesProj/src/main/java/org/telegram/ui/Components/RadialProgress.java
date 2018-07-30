@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Components;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
@@ -33,16 +34,23 @@ public class RadialProgress {
     private View parent;
     private float animatedAlphaValue = 1.0f;
 
-    private boolean drawCheckDrawable;
     private boolean previousCheckDrawable;
 
+    private boolean currentMiniWithRound;
+    private boolean previousMiniWithRound;
     private boolean currentWithRound;
     private boolean previousWithRound;
+    private Drawable currentMiniDrawable;
+    private Drawable previousMiniDrawable;
     private Drawable currentDrawable;
     private Drawable previousDrawable;
     private boolean hideCurrentDrawable;
     private int progressColor = 0xffffffff;
     private Paint progressPaint;
+    private Paint miniProgressPaint;
+    private Paint miniProgressBackgroundPaint;
+
+    private boolean drawMiniProgress;
 
     private CheckDrawable checkDrawable;
     private Drawable checkBackgroundDrawable;
@@ -51,6 +59,10 @@ public class RadialProgress {
 
     private static DecelerateInterpolator decelerateInterpolator;
     private boolean alphaForPrevious = true;
+    private boolean alphaForMiniPrevious = true;
+
+    private Bitmap miniDrawBitmap;
+    private Canvas miniDrawCanvas;
 
     private float overrideAlpha = 1.0f;
 
@@ -129,10 +141,18 @@ public class RadialProgress {
         progressPaint.setStyle(Paint.Style.STROKE);
         progressPaint.setStrokeCap(Paint.Cap.ROUND);
         progressPaint.setStrokeWidth(AndroidUtilities.dp(3));
+
+        miniProgressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        miniProgressPaint.setStyle(Paint.Style.STROKE);
+        miniProgressPaint.setStrokeCap(Paint.Cap.ROUND);
+        miniProgressPaint.setStrokeWidth(AndroidUtilities.dp(2));
+
+        miniProgressBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
         parent = parentView;
     }
 
-    public void setStrikeWidth(int width) {
+    public void setStrokeWidth(int width) {
         progressPaint.setStrokeWidth(width);
     }
 
@@ -146,6 +166,10 @@ public class RadialProgress {
 
     public void setAlphaForPrevious(boolean value) {
         alphaForPrevious = value;
+    }
+
+    public void setAlphaForMiniPrevious(boolean value) {
+        alphaForMiniPrevious = value;
     }
 
     private void updateAnimation(boolean progress) {
@@ -174,22 +198,46 @@ public class RadialProgress {
                 }
                 invalidateParent();
             }
-            if (animatedProgressValue >= 1 && previousDrawable != null) {
-                animatedAlphaValue -= dt / 200.0f;
-                if (animatedAlphaValue <= 0) {
-                    animatedAlphaValue = 0.0f;
-                    previousDrawable = null;
+            if (drawMiniProgress) {
+                if (animatedProgressValue >= 1 && previousMiniDrawable != null) {
+                    animatedAlphaValue -= dt / 200.0f;
+                    if (animatedAlphaValue <= 0) {
+                        animatedAlphaValue = 0.0f;
+                        previousMiniDrawable = null;
+                        drawMiniProgress = currentMiniDrawable != null;
+                    }
+                    invalidateParent();
                 }
-                invalidateParent();
+            } else {
+                if (animatedProgressValue >= 1 && previousDrawable != null) {
+                    animatedAlphaValue -= dt / 200.0f;
+                    if (animatedAlphaValue <= 0) {
+                        animatedAlphaValue = 0.0f;
+                        previousDrawable = null;
+                    }
+                    invalidateParent();
+                }
             }
         } else {
-            if (previousDrawable != null) {
-                animatedAlphaValue -= dt / 200.0f;
-                if (animatedAlphaValue <= 0) {
-                    animatedAlphaValue = 0.0f;
-                    previousDrawable = null;
+            if (drawMiniProgress) {
+                if (previousMiniDrawable != null) {
+                    animatedAlphaValue -= dt / 200.0f;
+                    if (animatedAlphaValue <= 0) {
+                        animatedAlphaValue = 0.0f;
+                        previousMiniDrawable = null;
+                        drawMiniProgress = currentMiniDrawable != null;
+                    }
+                    invalidateParent();
                 }
-                invalidateParent();
+            } else {
+                if (previousDrawable != null) {
+                    animatedAlphaValue -= dt / 200.0f;
+                    if (animatedAlphaValue <= 0) {
+                        animatedAlphaValue = 0.0f;
+                        previousDrawable = null;
+                    }
+                    invalidateParent();
+                }
             }
         }
     }
@@ -202,14 +250,26 @@ public class RadialProgress {
         progressColor = color;
     }
 
+    public void setMiniProgressBackgroundColor(int color) {
+        miniProgressBackgroundPaint.setColor(color);
+    }
+
     public void setHideCurrentDrawable(boolean value) {
         hideCurrentDrawable = value;
     }
 
     public void setProgress(float value, boolean animated) {
-        if (value != 1 && animatedAlphaValue != 0 && previousDrawable != null) {
-            animatedAlphaValue = 0.0f;
-            previousDrawable = null;
+        if (drawMiniProgress) {
+            if (value != 1 && animatedAlphaValue != 0 && previousMiniDrawable != null) {
+                animatedAlphaValue = 0.0f;
+                previousMiniDrawable = null;
+                drawMiniProgress = currentMiniDrawable != null;
+            }
+        } else {
+            if (value != 1 && animatedAlphaValue != 0 && previousDrawable != null) {
+                animatedAlphaValue = 0.0f;
+                previousDrawable = null;
+            }
         }
         if (!animated) {
             animatedProgressValue = value;
@@ -244,6 +304,10 @@ public class RadialProgress {
         }
     }
 
+    public boolean isDrawCheckDrawable() {
+        return currentDrawable == checkBackgroundDrawable;
+    }
+
     public void setBackground(Drawable drawable, boolean withRound, boolean animated) {
         lastUpdateTime = System.currentTimeMillis();
         if (animated && currentDrawable != drawable) {
@@ -264,9 +328,47 @@ public class RadialProgress {
         }
     }
 
+    public void setMiniBackground(Drawable drawable, boolean withRound, boolean animated) {
+        lastUpdateTime = System.currentTimeMillis();
+        if (animated && currentMiniDrawable != drawable) {
+            previousMiniDrawable = currentMiniDrawable;
+            previousMiniWithRound = currentMiniWithRound;
+            animatedAlphaValue = 1.0f;
+            setProgress(1, animated);
+        } else {
+            previousMiniDrawable = null;
+            previousMiniWithRound = false;
+        }
+        currentMiniWithRound = withRound;
+        currentMiniDrawable = drawable;
+        drawMiniProgress = previousMiniDrawable != null || currentMiniDrawable != null;
+        if (drawMiniProgress && miniDrawBitmap == null) {
+            try {
+                miniDrawBitmap = Bitmap.createBitmap(AndroidUtilities.dp(48), AndroidUtilities.dp(48), Bitmap.Config.ARGB_8888);
+                miniDrawCanvas = new Canvas(miniDrawBitmap);
+            } catch (Throwable ignore) {
+
+            }
+        }
+        if (!animated) {
+            parent.invalidate();
+        } else {
+            invalidateParent();
+        }
+    }
+
     public boolean swapBackground(Drawable drawable) {
         if (currentDrawable != drawable) {
             currentDrawable = drawable;
+            return true;
+        }
+        return false;
+    }
+
+    public boolean swapMiniBackground(Drawable drawable) {
+        if (currentMiniDrawable != drawable) {
+            currentMiniDrawable = drawable;
+            drawMiniProgress = previousMiniDrawable != null || currentMiniDrawable != null;
             return true;
         }
         return false;
@@ -281,38 +383,127 @@ public class RadialProgress {
     }
 
     public void draw(Canvas canvas) {
-        if (previousDrawable != null) {
-            if (alphaForPrevious) {
-                previousDrawable.setAlpha((int) (255 * animatedAlphaValue * overrideAlpha));
-            } else {
-                previousDrawable.setAlpha((int) (255 * overrideAlpha));
+        if (drawMiniProgress && currentDrawable != null) {
+            if (miniDrawCanvas != null) {
+                miniDrawBitmap.eraseColor(0);
             }
-            previousDrawable.setBounds((int) progressRect.left, (int) progressRect.top, (int) progressRect.right, (int) progressRect.bottom);
-            previousDrawable.draw(canvas);
-        }
 
-        if (!hideCurrentDrawable && currentDrawable != null) {
-            if (previousDrawable != null) {
-                currentDrawable.setAlpha((int) (255 * (1.0f - animatedAlphaValue) * overrideAlpha));
+            currentDrawable.setAlpha((int) (255 * overrideAlpha));
+            if (miniDrawCanvas != null) {
+                currentDrawable.setBounds(0, 0, (int) progressRect.width(), (int) progressRect.height());
+                currentDrawable.draw(miniDrawCanvas);
             } else {
-                currentDrawable.setAlpha((int) (255 * overrideAlpha));
+                currentDrawable.setBounds((int) progressRect.left, (int) progressRect.top, (int) progressRect.right, (int) progressRect.bottom);
+                currentDrawable.draw(canvas);
             }
-            currentDrawable.setBounds((int) progressRect.left, (int) progressRect.top, (int) progressRect.right, (int) progressRect.bottom);
-            currentDrawable.draw(canvas);
-        }
 
-        if (currentWithRound || previousWithRound) {
-            progressPaint.setColor(progressColor);
-            if (previousWithRound) {
-                progressPaint.setAlpha((int) (255 * animatedAlphaValue * overrideAlpha));
+            int offset;
+            int size;
+            float cx;
+            float cy;
+            if (Math.abs(progressRect.width() - AndroidUtilities.dp(44)) < AndroidUtilities.density) {
+                offset = 0;
+                size = 20;
+                cx = progressRect.centerX() + AndroidUtilities.dp(16 + offset);
+                cy = progressRect.centerY() + AndroidUtilities.dp(16 + offset);
             } else {
-                progressPaint.setAlpha((int) (255 * overrideAlpha));
+                offset = 2;
+                size = 22;
+                cx = progressRect.centerX() + AndroidUtilities.dp(18);
+                cy = progressRect.centerY() + AndroidUtilities.dp(18);
             }
-            cicleRect.set(progressRect.left + diff, progressRect.top + diff, progressRect.right - diff, progressRect.bottom - diff);
-            canvas.drawArc(cicleRect, -90 + radOffset, Math.max(4, 360 * animatedProgressValue), false, progressPaint);
-            updateAnimation(true);
+            int halfSize = size / 2;
+
+            float alpha = 1.0f;
+            if (previousMiniDrawable != null && alphaForMiniPrevious) {
+                alpha = animatedAlphaValue * overrideAlpha;
+            }
+
+            if (miniDrawCanvas != null) {
+                miniDrawCanvas.drawCircle(AndroidUtilities.dp(18 + size + offset), AndroidUtilities.dp(18 + size + offset), AndroidUtilities.dp(halfSize + 1) * alpha, Theme.checkboxSquare_eraserPaint);
+            } else {
+                miniProgressBackgroundPaint.setColor(progressColor);
+                if (previousMiniDrawable != null && currentMiniDrawable == null) {
+                    miniProgressBackgroundPaint.setAlpha((int) (255 * animatedAlphaValue * overrideAlpha));
+                } else if (previousMiniDrawable != null && currentMiniDrawable == null) {
+                    miniProgressBackgroundPaint.setAlpha((int) (255 * overrideAlpha));
+                } else {
+                    miniProgressBackgroundPaint.setAlpha(255);
+                }
+                canvas.drawCircle(cx, cy, AndroidUtilities.dp(12), miniProgressBackgroundPaint);
+            }
+
+            if (miniDrawCanvas != null) {
+                canvas.drawBitmap(miniDrawBitmap, (int) progressRect.left, (int) progressRect.top, null);
+            }
+
+            if (previousMiniDrawable != null) {
+                if (alphaForMiniPrevious) {
+                    previousMiniDrawable.setAlpha((int) (255 * animatedAlphaValue * overrideAlpha));
+                } else {
+                    previousMiniDrawable.setAlpha((int) (255 * overrideAlpha));
+                }
+                previousMiniDrawable.setBounds((int) (cx - AndroidUtilities.dp(halfSize) * alpha), (int) (cy - AndroidUtilities.dp(halfSize) * alpha), (int) (cx + AndroidUtilities.dp(halfSize) * alpha), (int) (cy + AndroidUtilities.dp(halfSize) * alpha));
+                previousMiniDrawable.draw(canvas);
+            }
+
+            if (!hideCurrentDrawable && currentMiniDrawable != null) {
+                if (previousMiniDrawable != null) {
+                    currentMiniDrawable.setAlpha((int) (255 * (1.0f - animatedAlphaValue) * overrideAlpha));
+                } else {
+                    currentMiniDrawable.setAlpha((int) (255 * overrideAlpha));
+                }
+                currentMiniDrawable.setBounds((int) (cx - AndroidUtilities.dp(halfSize)), (int) (cy - AndroidUtilities.dp(halfSize)), (int) (cx + AndroidUtilities.dp(halfSize)), (int) (cy + AndroidUtilities.dp(halfSize)));
+                currentMiniDrawable.draw(canvas);
+            }
+
+            if (currentMiniWithRound || previousMiniWithRound) {
+                miniProgressPaint.setColor(progressColor);
+                if (previousMiniWithRound) {
+                    miniProgressPaint.setAlpha((int) (255 * animatedAlphaValue * overrideAlpha));
+                } else {
+                    miniProgressPaint.setAlpha((int) (255 * overrideAlpha));
+                }
+                cicleRect.set(cx - AndroidUtilities.dp(halfSize - 2) * alpha, cy - AndroidUtilities.dp(halfSize - 2) * alpha, cx + AndroidUtilities.dp(halfSize - 2) * alpha, cy + AndroidUtilities.dp(halfSize - 2) * alpha);
+                canvas.drawArc(cicleRect, -90 + radOffset, Math.max(4, 360 * animatedProgressValue), false, miniProgressPaint);
+                updateAnimation(true);
+            } else {
+                updateAnimation(false);
+            }
         } else {
-            updateAnimation(false);
+            if (previousDrawable != null) {
+                if (alphaForPrevious) {
+                    previousDrawable.setAlpha((int) (255 * animatedAlphaValue * overrideAlpha));
+                } else {
+                    previousDrawable.setAlpha((int) (255 * overrideAlpha));
+                }
+                previousDrawable.setBounds((int) progressRect.left, (int) progressRect.top, (int) progressRect.right, (int) progressRect.bottom);
+                previousDrawable.draw(canvas);
+            }
+
+            if (!hideCurrentDrawable && currentDrawable != null) {
+                if (previousDrawable != null) {
+                    currentDrawable.setAlpha((int) (255 * (1.0f - animatedAlphaValue) * overrideAlpha));
+                } else {
+                    currentDrawable.setAlpha((int) (255 * overrideAlpha));
+                }
+                currentDrawable.setBounds((int) progressRect.left, (int) progressRect.top, (int) progressRect.right, (int) progressRect.bottom);
+                currentDrawable.draw(canvas);
+            }
+
+            if (currentWithRound || previousWithRound) {
+                progressPaint.setColor(progressColor);
+                if (previousWithRound) {
+                    progressPaint.setAlpha((int) (255 * animatedAlphaValue * overrideAlpha));
+                } else {
+                    progressPaint.setAlpha((int) (255 * overrideAlpha));
+                }
+                cicleRect.set(progressRect.left + diff, progressRect.top + diff, progressRect.right - diff, progressRect.bottom - diff);
+                canvas.drawArc(cicleRect, -90 + radOffset, Math.max(4, 360 * animatedProgressValue), false, progressPaint);
+                updateAnimation(true);
+            } else {
+                updateAnimation(false);
+            }
         }
     }
 }

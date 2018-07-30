@@ -16,6 +16,7 @@
 package org.telegram.messenger.exoplayer2.metadata.id3;
 
 import android.os.Parcel;
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.util.Util;
 import java.util.Arrays;
@@ -80,7 +81,7 @@ public final class ChapterFrame extends Id3Frame {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(@Nullable Object obj) {
     if (this == obj) {
       return true;
     }

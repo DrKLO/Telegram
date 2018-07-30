@@ -15,23 +15,29 @@
  */
 package org.telegram.messenger.exoplayer2;
 
-import org.telegram.messenger.exoplayer2.ExoPlayer.ExoPlayerComponent;
+import android.support.annotation.IntDef;
 import org.telegram.messenger.exoplayer2.source.SampleStream;
 import org.telegram.messenger.exoplayer2.util.MediaClock;
 import java.io.IOException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 /**
  * Renders media read from a {@link SampleStream}.
- * <p>
- * Internally, a renderer's lifecycle is managed by the owning {@link ExoPlayer}. The renderer is
- * transitioned through various states as the overall playback state changes. The valid state
- * transitions are shown below, annotated with the methods that are called during each transition.
- * <p align="center">
- *   <img src="doc-files/renderer-states.svg" alt="Renderer state transitions">
- * </p>
+ *
+ * <p>Internally, a renderer's lifecycle is managed by the owning {@link ExoPlayer}. The renderer is
+ * transitioned through various states as the overall playback state and enabled tracks change. The
+ * valid state transitions are shown below, annotated with the methods that are called during each
+ * transition.
+ *
+ * <p align="center"><img src="doc-files/renderer-states.svg" alt="Renderer state transitions">
  */
-public interface Renderer extends ExoPlayerComponent {
+public interface Renderer extends PlayerMessage.Target {
 
+  /** The renderer states. */
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({STATE_DISABLED, STATE_ENABLED, STATE_STARTED})
+  @interface State {}
   /**
    * The renderer is disabled.
    */
@@ -82,8 +88,10 @@ public interface Renderer extends ExoPlayerComponent {
   /**
    * Returns the current state of the renderer.
    *
-   * @return The current state (one of the {@code STATE_*} constants).
+   * @return The current state. One of {@link #STATE_DISABLED}, {@link #STATE_ENABLED} and {@link
+   *     #STATE_STARTED}.
    */
+  @State
   int getState();
 
   /**
@@ -226,7 +234,7 @@ public interface Renderer extends ExoPlayerComponent {
 
   /**
    * Whether the renderer is ready for the {@link ExoPlayer} instance to transition to
-   * {@link ExoPlayer#STATE_ENDED}. The player will make this transition as soon as {@code true} is
+   * {@link Player#STATE_ENDED}. The player will make this transition as soon as {@code true} is
    * returned by all of its {@link Renderer}s.
    * <p>
    * This method may be called when the renderer is in the following states:

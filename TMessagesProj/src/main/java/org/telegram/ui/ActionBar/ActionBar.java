@@ -14,10 +14,14 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -26,7 +30,11 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.LocaleController;
+import org.telegram.ui.Components.FireworksEffect;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.SnowflakesEffect;
 
 import java.util.ArrayList;
 
@@ -55,11 +63,20 @@ public class ActionBar extends FrameLayout {
     private int extraHeight;
     private AnimatorSet actionModeAnimation;
 
+    private boolean supportsHolidayImage;
+    private SnowflakesEffect snowflakesEffect;
+    private FireworksEffect fireworksEffect;
+    private Paint.FontMetricsInt fontMetricsInt;
+    private boolean manualStart;
+    private Rect rect;
+
     private int titleRightMargin;
 
     private boolean allowOverlayTitle;
     private CharSequence lastTitle;
     private CharSequence lastSubtitle;
+    private Runnable lastRunnable;
+    private boolean titleOverlayShown;
     private Runnable titleActionRunnable;
     private boolean castShadows = true;
 
@@ -123,6 +140,69 @@ public class ActionBar extends FrameLayout {
             backDrawable.setRotatedColor(itemsActionModeColor);
             backDrawable.setColor(itemsColor);
         }
+    }
+
+    public void setSupportsHolidayImage(boolean value) {
+        supportsHolidayImage = value;
+        if (supportsHolidayImage) {
+            fontMetricsInt = new Paint.FontMetricsInt();
+            rect = new Rect();
+        }
+        invalidate();
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (supportsHolidayImage && !titleOverlayShown && !LocaleController.isRTL && ev.getAction() == MotionEvent.ACTION_DOWN) {
+            Drawable drawable = Theme.getCurrentHolidayDrawable();
+            if (drawable != null && drawable.getBounds().contains((int) ev.getX(), (int) ev.getY())) {
+                manualStart = true;
+                if (snowflakesEffect == null) {
+                    fireworksEffect = null;
+                    snowflakesEffect = new SnowflakesEffect();
+                    titleTextView.invalidate();
+                    invalidate();
+                } else if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                    snowflakesEffect = null;
+                    fireworksEffect = new FireworksEffect();
+                    titleTextView.invalidate();
+                    invalidate();
+                }
+            }
+        }
+        return super.onInterceptTouchEvent(ev);
+    }
+
+    @Override
+    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        boolean result = super.drawChild(canvas, child, drawingTime);
+        if (supportsHolidayImage && !titleOverlayShown && !LocaleController.isRTL && child == titleTextView) {
+            Drawable drawable = Theme.getCurrentHolidayDrawable();
+            if (drawable != null) {
+                TextPaint textPaint = titleTextView.getTextPaint();
+                textPaint.getFontMetricsInt(fontMetricsInt);
+                textPaint.getTextBounds((String) titleTextView.getText(), 0, 1, rect);
+                int x = titleTextView.getTextStartX() + Theme.getCurrentHolidayDrawableXOffset() + (rect.width() - (drawable.getIntrinsicWidth() + Theme.getCurrentHolidayDrawableXOffset())) / 2;
+                int y = titleTextView.getTextStartY() + Theme.getCurrentHolidayDrawableYOffset() + (int) Math.ceil((titleTextView.getTextHeight() - rect.height()) / 2.0f);
+                drawable.setBounds(x, y - drawable.getIntrinsicHeight(), x + drawable.getIntrinsicWidth(), y);
+                drawable.draw(canvas);
+                if (Theme.canStartHolidayAnimation()) {
+                    if (snowflakesEffect == null) {
+                        snowflakesEffect = new SnowflakesEffect();
+                    }
+                } else if (!manualStart) {
+                    if (snowflakesEffect != null) {
+                        snowflakesEffect = null;
+                    }
+                }
+                if (snowflakesEffect != null) {
+                    snowflakesEffect.onDraw(this, canvas);
+                } else if (fireworksEffect != null) {
+                    fireworksEffect.onDraw(this, canvas);
+                }
+            }
+        }
+        return result;
     }
 
     public void setBackButtonImage(int resource) {
@@ -259,6 +339,10 @@ public class ActionBar extends FrameLayout {
     }
 
     public ActionBarMenu createActionMode() {
+        return createActionMode(true);
+    }
+
+    public ActionBarMenu createActionMode(boolean needTop) {
         if (actionMode != null) {
             return actionMode;
         }
@@ -267,18 +351,19 @@ public class ActionBar extends FrameLayout {
         actionMode.setBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefault));
         addView(actionMode, indexOfChild(backButtonImageView));
         actionMode.setPadding(0, occupyStatusBar ? AndroidUtilities.statusBarHeight : 0, 0, 0);
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)actionMode.getLayoutParams();
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) actionMode.getLayoutParams();
         layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.bottomMargin = extraHeight;
         layoutParams.gravity = Gravity.RIGHT;
         actionMode.setLayoutParams(layoutParams);
         actionMode.setVisibility(INVISIBLE);
 
-        if (occupyStatusBar && actionModeTop == null) {
+        if (occupyStatusBar && needTop && actionModeTop == null) {
             actionModeTop = new View(getContext());
             actionModeTop.setBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultTop));
             addView(actionModeTop);
-            layoutParams = (FrameLayout.LayoutParams)actionModeTop.getLayoutParams();
+            layoutParams = (FrameLayout.LayoutParams) actionModeTop.getLayoutParams();
             layoutParams.height = AndroidUtilities.statusBarHeight;
             layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
@@ -321,7 +406,7 @@ public class ActionBar extends FrameLayout {
                     if (titleTextView != null) {
                         titleTextView.setVisibility(INVISIBLE);
                     }
-                    if (subtitleTextView != null) {
+                    if (subtitleTextView != null && !TextUtils.isEmpty(subtitleTextView.getText())) {
                         subtitleTextView.setVisibility(INVISIBLE);
                     }
                     if (menu != null) {
@@ -386,7 +471,7 @@ public class ActionBar extends FrameLayout {
         if (titleTextView != null) {
             titleTextView.setVisibility(VISIBLE);
         }
-        if (subtitleTextView != null) {
+        if (subtitleTextView != null && !TextUtils.isEmpty(subtitleTextView.getText())) {
             subtitleTextView.setVisibility(VISIBLE);
         }
         if (menu != null) {
@@ -441,7 +526,7 @@ public class ActionBar extends FrameLayout {
         if (titleTextView != null) {
             titleTextView.setVisibility(visible ? INVISIBLE : VISIBLE);
         }
-        if (subtitleTextView != null) {
+        if (subtitleTextView != null && !TextUtils.isEmpty(subtitleTextView.getText())) {
             subtitleTextView.setVisibility(visible ? INVISIBLE : VISIBLE);
         }
         Drawable drawable = backButtonImageView.getDrawable();
@@ -456,6 +541,11 @@ public class ActionBar extends FrameLayout {
 
     public void setExtraHeight(int value) {
         extraHeight = value;
+        if (actionMode != null) {
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) actionMode.getLayoutParams();
+            layoutParams.bottomMargin = extraHeight;
+            actionMode.setLayoutParams(layoutParams);
+        }
     }
 
     public void closeSearchField() {
@@ -474,6 +564,20 @@ public class ActionBar extends FrameLayout {
             return;
         }
         menu.openSearchField(!isSearchFieldVisible, text);
+    }
+
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        if (backButtonImageView != null) {
+            backButtonImageView.setEnabled(enabled);
+        }
+        if (menu != null) {
+            menu.setEnabled(enabled);
+        }
+        if (actionMode != null) {
+            actionMode.setEnabled(enabled);
+        }
     }
 
     @Override
@@ -624,6 +728,10 @@ public class ActionBar extends FrameLayout {
         allowOverlayTitle = value;
     }
 
+    public void setTitleActionRunnable(Runnable action) {
+        lastRunnable = titleActionRunnable = action;
+    }
+
     public void setTitleOverlayText(String title, String subtitle, Runnable action) {
         if (!allowOverlayTitle || parentFragment.parentLayout == null) {
             return;
@@ -633,6 +741,11 @@ public class ActionBar extends FrameLayout {
             createTitleTextView();
         }
         if (titleTextView != null) {
+            titleOverlayShown = title != null;
+            if (supportsHolidayImage) {
+                titleTextView.invalidate();
+                invalidate();
+            }
             titleTextView.setVisibility(textToSet != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
             titleTextView.setText(textToSet);
         }
@@ -644,7 +757,7 @@ public class ActionBar extends FrameLayout {
             subtitleTextView.setVisibility(!TextUtils.isEmpty(textToSet) && !isSearchFieldVisible ? VISIBLE : GONE);
             subtitleTextView.setText(textToSet);
         }
-        titleActionRunnable = action;
+        titleActionRunnable = action != null ? action : lastRunnable;
     }
 
     public boolean isSearchFieldVisible() {

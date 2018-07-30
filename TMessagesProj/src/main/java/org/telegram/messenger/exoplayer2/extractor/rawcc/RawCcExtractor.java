@@ -29,7 +29,7 @@ import org.telegram.messenger.exoplayer2.util.Util;
 import java.io.IOException;
 
 /**
- * Extracts CEA data from a RawCC file.
+ * Extracts data from the RawCC container format.
  */
 public final class RawCcExtractor implements Extractor {
 

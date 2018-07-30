@@ -61,15 +61,15 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.AvatarUpdater;
+import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CountDownLatch;
 
-public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdater.AvatarUpdaterDelegate, NotificationCenter.NotificationCenterDelegate {
+public class ChannelEditInfoActivity extends BaseFragment implements ImageUpdater.ImageUpdaterDelegate, NotificationCenter.NotificationCenterDelegate {
 
     private View doneButton;
     private EditTextBoldCursor nameTextView;
@@ -83,7 +83,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
     private LinearLayout linearLayout;
     private BackupImageView avatarImage;
     private AvatarDrawable avatarDrawable;
-    private AvatarUpdater avatarUpdater;
+    private ImageUpdater imageUpdater;
     private AlertDialog progressDialog;
     private LinearLayout linearLayout2;
     private LinearLayout linearLayout3;
@@ -146,37 +146,37 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
     public ChannelEditInfoActivity(Bundle args) {
         super(args);
         avatarDrawable = new AvatarDrawable();
-        avatarUpdater = new AvatarUpdater();
+        imageUpdater = new ImageUpdater();
         chatId = args.getInt("chat_id", 0);
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public boolean onFragmentCreate() {
-        currentChat = MessagesController.getInstance().getChat(chatId);
+        currentChat = MessagesController.getInstance(currentAccount).getChat(chatId);
         if (currentChat == null) {
-            final Semaphore semaphore = new Semaphore(0);
-            MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
+            final CountDownLatch countDownLatch = new CountDownLatch(1);
+            MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    currentChat = MessagesStorage.getInstance().getChat(chatId);
-                    semaphore.release();
+                    currentChat = MessagesStorage.getInstance(currentAccount).getChat(chatId);
+                    countDownLatch.countDown();
                 }
             });
             try {
-                semaphore.acquire();
+                countDownLatch.await();
             } catch (Exception e) {
                 FileLog.e(e);
             }
             if (currentChat != null) {
-                MessagesController.getInstance().putChat(currentChat, true);
+                MessagesController.getInstance(currentAccount).putChat(currentChat, true);
             } else {
                 return false;
             }
             if (info == null) {
-                MessagesStorage.getInstance().loadChatInfo(chatId, semaphore, false, false);
+                MessagesStorage.getInstance(currentAccount).loadChatInfo(chatId, countDownLatch, false, false);
                 try {
-                    semaphore.acquire();
+                    countDownLatch.await();
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -190,7 +190,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
             TLRPC.TL_channels_checkUsername req = new TLRPC.TL_channels_checkUsername();
             req.username = "1";
             req.channel = new TLRPC.TL_inputChannelEmpty();
-            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -205,20 +205,20 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                 }
             });
         }
-        avatarUpdater.parentFragment = this;
-        avatarUpdater.delegate = this;
+        imageUpdater.parentFragment = this;
+        imageUpdater.delegate = this;
         signMessages = currentChat.signatures;
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatInfoDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoaded);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        if (avatarUpdater != null) {
-            avatarUpdater.clear();
+        if (imageUpdater != null) {
+            imageUpdater.clear();
         }
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatInfoDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoaded);
         AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
     }
 
@@ -271,7 +271,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                     }
                     donePressed = true;
 
-                    if (avatarUpdater.uploadingAvatar != null) {
+                    if (imageUpdater.uploadingImage != null) {
                         createAfterUpload = true;
                         progressDialog = new AlertDialog(getParentActivity(), 1);
                         progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
@@ -297,27 +297,27 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                         String oldUserName = currentChat.username != null ? currentChat.username : "";
                         String newUserName = isPrivate ? "" : usernameTextView.getText().toString();
                         if (!oldUserName.equals(newUserName)) {
-                            MessagesController.getInstance().updateChannelUserName(chatId, newUserName);
+                            MessagesController.getInstance(currentAccount).updateChannelUserName(chatId, newUserName);
                         }
                     }
                     if (!currentChat.title.equals(nameTextView.getText().toString())) {
-                        MessagesController.getInstance().changeChatTitle(chatId, nameTextView.getText().toString());
+                        MessagesController.getInstance(currentAccount).changeChatTitle(chatId, nameTextView.getText().toString());
                     }
                     if (info != null && !info.about.equals(descriptionTextView.getText().toString())) {
-                        MessagesController.getInstance().updateChannelAbout(chatId, descriptionTextView.getText().toString(), info);
+                        MessagesController.getInstance(currentAccount).updateChannelAbout(chatId, descriptionTextView.getText().toString(), info);
                     }
                     if (headerCell2 != null && headerCell2.getVisibility() == View.VISIBLE && info != null && currentChat.creator && info.hidden_prehistory != historyHidden) {
                         info.hidden_prehistory = historyHidden;
-                        MessagesController.getInstance().toogleChannelInvitesHistory(chatId, historyHidden);
+                        MessagesController.getInstance(currentAccount).toogleChannelInvitesHistory(chatId, historyHidden);
                     }
                     if (signMessages != currentChat.signatures) {
                         currentChat.signatures = true;
-                        MessagesController.getInstance().toogleChannelSignatures(chatId, signMessages);
+                        MessagesController.getInstance(currentAccount).toogleChannelSignatures(chatId, signMessages);
                     }
                     if (uploadedAvatar != null) {
-                        MessagesController.getInstance().changeChatAvatar(chatId, uploadedAvatar);
+                        MessagesController.getInstance(currentAccount).changeChatAvatar(chatId, uploadedAvatar);
                     } else if (avatar == null && currentChat.photo instanceof TLRPC.TL_chatPhoto) {
-                        MessagesController.getInstance().changeChatAvatar(chatId, null);
+                        MessagesController.getInstance(currentAccount).changeChatAvatar(chatId, null);
                     }
                     finishFragment();
                 }
@@ -371,9 +371,9 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         if (i == 0) {
-                            avatarUpdater.openCamera();
+                            imageUpdater.openCamera();
                         } else if (i == 1) {
-                            avatarUpdater.openGallery();
+                            imageUpdater.openGallery();
                         } else if (i == 2) {
                             avatar = null;
                             uploadedAvatar = null;
@@ -549,7 +549,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
             linkContainer.addView(publicContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 17, 7, 17, 0));
 
             editText = new EditText(context);
-            editText.setText(MessagesController.getInstance().linkPrefix + "/");
+            editText.setText(MessagesController.getInstance(currentAccount).linkPrefix + "/");
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
             editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -771,13 +771,12 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
                             if (AndroidUtilities.isTablet()) {
-                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, -(long) chatId);
+                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats, -(long) chatId);
                             } else {
-                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
                             }
-                            MessagesController.getInstance().deleteUserFromChat(chatId, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), info, true);
+                            MessagesController.getInstance(currentAccount).deleteUserFromChat(chatId, MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId()), info, true);
                             finishFragment();
                         }
                     });
@@ -830,7 +829,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.chatInfoDidLoaded) {
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
             if (chatFull.id == chatId) {
@@ -850,7 +849,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
     }
 
     @Override
-    public void didUploadedPhoto(final TLRPC.InputFile file, final TLRPC.PhotoSize small, final TLRPC.PhotoSize big) {
+    public void didUploadedPhoto(final TLRPC.InputFile file, final TLRPC.PhotoSize small, final TLRPC.PhotoSize big, final TLRPC.TL_secureFile secureFile) {
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
@@ -875,13 +874,13 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
 
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
-        avatarUpdater.onActivityResult(requestCode, resultCode, data);
+        imageUpdater.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
     public void saveSelfArgs(Bundle args) {
-        if (avatarUpdater != null && avatarUpdater.currentPicturePath != null) {
-            args.putString("path", avatarUpdater.currentPicturePath);
+        if (imageUpdater != null && imageUpdater.currentPicturePath != null) {
+            args.putString("path", imageUpdater.currentPicturePath);
         }
         if (nameTextView != null) {
             String text = nameTextView.getText().toString();
@@ -893,8 +892,8 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
 
     @Override
     public void restoreSelfArgs(Bundle args) {
-        if (avatarUpdater != null) {
-            avatarUpdater.currentPicturePath = args.getString("path");
+        if (imageUpdater != null) {
+            imageUpdater.currentPicturePath = args.getString("path");
         }
     }
 
@@ -919,7 +918,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
         loadingAdminedChannels = true;
         updatePrivatePublic();
         TLRPC.TL_channels_getAdminedPublicChannels req = new TLRPC.TL_channels_getAdminedPublicChannels();
-        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -945,9 +944,9 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                                         if (channel.megagroup) {
-                                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlert", R.string.RevokeLinkAlert, MessagesController.getInstance().linkPrefix + "/" + channel.username, channel.title)));
+                                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlert", R.string.RevokeLinkAlert, MessagesController.getInstance(currentAccount).linkPrefix + "/" + channel.username, channel.title)));
                                         } else {
-                                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlertChannel", R.string.RevokeLinkAlertChannel, MessagesController.getInstance().linkPrefix + "/" + channel.username, channel.title)));
+                                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlertChannel", R.string.RevokeLinkAlertChannel, MessagesController.getInstance(currentAccount).linkPrefix + "/" + channel.username, channel.title)));
                                         }
                                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                                         builder.setPositiveButton(LocaleController.getString("RevokeButton", R.string.RevokeButton), new DialogInterface.OnClickListener() {
@@ -956,7 +955,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                                                 TLRPC.TL_channels_updateUsername req = new TLRPC.TL_channels_updateUsername();
                                                 req.channel = MessagesController.getInputChannel(channel);
                                                 req.username = "";
-                                                ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                                                ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
                                                     @Override
                                                     public void run(TLObject response, TLRPC.TL_error error) {
                                                         if (response instanceof TLRPC.TL_boolTrue) {
@@ -1061,7 +1060,7 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
             checkRunnable = null;
             lastCheckName = null;
             if (checkReqId != 0) {
-                ConnectionsManager.getInstance().cancelRequest(checkReqId, true);
+                ConnectionsManager.getInstance(currentAccount).cancelRequest(checkReqId, true);
             }
         }
         lastNameAvailable = false;
@@ -1122,8 +1121,8 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
             public void run() {
                 TLRPC.TL_channels_checkUsername req = new TLRPC.TL_channels_checkUsername();
                 req.username = name;
-                req.channel = MessagesController.getInputChannel(chatId);
-                checkReqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                req.channel = MessagesController.getInstance(currentAccount).getInputChannel(chatId);
+                checkReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
                     @Override
                     public void run(final TLObject response, final TLRPC.TL_error error) {
                         AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1164,8 +1163,8 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
         }
         loadingInvite = true;
         TLRPC.TL_channels_exportInvite req = new TLRPC.TL_channels_exportInvite();
-        req.channel = MessagesController.getInputChannel(chatId);
-        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        req.channel = MessagesController.getInstance(currentAccount).getInputChannel(chatId);
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1173,6 +1172,9 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                     public void run() {
                         if (error == null) {
                             invite = (TLRPC.ExportedChatInvite) response;
+                            if (info != null) {
+                                info.exported_invite = invite;
+                            }
                         }
                         loadingInvite = false;
                         if (privateContainer != null) {
@@ -1186,18 +1188,14 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate сellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
             @Override
-            public void didSetColor(int color) {
+            public void didSetColor() {
                 if (avatarImage != null) {
                     avatarDrawable.setInfo(5, nameTextView.length() > 0 ? nameTextView.getText().toString() : null, null, false);
                     avatarImage.invalidate();
                 }
-            }
-        };
-        ThemeDescription.ThemeDescriptionDelegate сellDelegate2 = new ThemeDescription.ThemeDescriptionDelegate() {
-            @Override
-            public void didSetColor(int color) {
+
                 if (adminnedChannelsLayout != null) {
                     int count = adminnedChannelsLayout.getChildCount();
                     for (int a = 0; a < count; a++) {
@@ -1231,8 +1229,8 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                 new ThemeDescription(container3, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
                 new ThemeDescription(container4, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
 
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, сellDelegate, Theme.key_avatar_text),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
 
                 new ThemeDescription(lineView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_divider),
                 new ThemeDescription(lineView2, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_divider),
@@ -1311,14 +1309,14 @@ public class ChannelEditInfoActivity extends BaseFragment implements AvatarUpdat
                 new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText),
                 new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_LINKCOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteLinkText),
                 new ThemeDescription(adminnedChannelsLayout, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{AdminedChannelCell.class}, new String[]{"deleteButton"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText),
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, сellDelegate2, Theme.key_avatar_text),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate2, Theme.key_avatar_backgroundRed),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate2, Theme.key_avatar_backgroundOrange),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate2, Theme.key_avatar_backgroundViolet),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate2, Theme.key_avatar_backgroundGreen),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate2, Theme.key_avatar_backgroundCyan),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate2, Theme.key_avatar_backgroundBlue),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate2, Theme.key_avatar_backgroundPink),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
         };
     }
 }

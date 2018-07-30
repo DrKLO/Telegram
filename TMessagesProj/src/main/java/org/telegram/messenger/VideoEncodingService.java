@@ -19,11 +19,11 @@ public class VideoEncodingService extends Service implements NotificationCenter.
     private NotificationCompat.Builder builder;
     private String path;
     private int currentProgress;
+    private int currentAccount;
 
     public VideoEncodingService() {
         super();
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileUploadProgressChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.stopEncodingService);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.stopEncodingService);
     }
 
     public IBinder onBind(Intent arg2) {
@@ -32,19 +32,21 @@ public class VideoEncodingService extends Service implements NotificationCenter.
 
     public void onDestroy() {
         stopForeground(true);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileUploadProgressChanged);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.stopEncodingService);
-        FileLog.e("destroy video service");
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.stopEncodingService);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileUploadProgressChanged);
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("destroy video service");
+        }
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.FileUploadProgressChanged) {
-            String fileName = (String)args[0];
-            if (path != null && path.equals(fileName)) {
+            String fileName = (String) args[0];
+            if (account == currentAccount && path != null && path.equals(fileName)) {
                 Float progress = (Float) args[1];
                 Boolean enc = (Boolean) args[2];
-                currentProgress = (int)(progress * 100);
+                currentProgress = (int) (progress * 100);
                 builder.setProgress(100, currentProgress, currentProgress == 0);
                 try {
                     NotificationManagerCompat.from(ApplicationLoader.applicationContext).notify(4, builder.build());
@@ -53,8 +55,9 @@ public class VideoEncodingService extends Service implements NotificationCenter.
                 }
             }
         } else if (id == NotificationCenter.stopEncodingService) {
-            String filepath = (String)args[0];
-            if (filepath == null || filepath.equals(path)) {
+            String filepath = (String) args[0];
+            account = (Integer) args[1];
+            if (account == currentAccount && (filepath == null || filepath.equals(path))) {
                 stopSelf();
             }
         }
@@ -62,16 +65,25 @@ public class VideoEncodingService extends Service implements NotificationCenter.
 
     public int onStartCommand(Intent intent, int flags, int startId) {
         path = intent.getStringExtra("path");
+        int oldAccount = currentAccount;
+        currentAccount = intent.getIntExtra("currentAccount", UserConfig.selectedAccount);
+        if (oldAccount != currentAccount) {
+            NotificationCenter.getInstance(oldAccount).removeObserver(this, NotificationCenter.FileUploadProgressChanged);
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileUploadProgressChanged);
+        }
         boolean isGif = intent.getBooleanExtra("gif", false);
         if (path == null) {
             stopSelf();
             return Service.START_NOT_STICKY;
         }
-        FileLog.e("start video service");
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("start video service");
+        }
         if (builder == null) {
             builder = new NotificationCompat.Builder(ApplicationLoader.applicationContext);
             builder.setSmallIcon(android.R.drawable.stat_sys_upload);
             builder.setWhen(System.currentTimeMillis());
+            builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
             builder.setContentTitle(LocaleController.getString("AppName", R.string.AppName));
             if (isGif) {
                 builder.setTicker(LocaleController.getString("SendingGif", R.string.SendingGif));

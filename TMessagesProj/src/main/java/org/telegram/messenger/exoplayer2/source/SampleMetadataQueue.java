@@ -51,8 +51,8 @@ import org.telegram.messenger.exoplayer2.util.Util;
   private Format[] formats;
 
   private int length;
-  private int absoluteStartIndex;
-  private int relativeStartIndex;
+  private int absoluteFirstIndex;
+  private int relativeFirstIndex;
   private int readPosition;
 
   private long largestDiscardedTimestampUs;
@@ -87,8 +87,8 @@ import org.telegram.messenger.exoplayer2.util.Util;
    */
   public void reset(boolean resetUpstreamFormat) {
     length = 0;
-    absoluteStartIndex = 0;
-    relativeStartIndex = 0;
+    absoluteFirstIndex = 0;
+    relativeFirstIndex = 0;
     readPosition = 0;
     upstreamKeyframeRequired = true;
     largestDiscardedTimestampUs = Long.MIN_VALUE;
@@ -103,7 +103,7 @@ import org.telegram.messenger.exoplayer2.util.Util;
    * Returns the current absolute write index.
    */
   public int getWriteIndex() {
-    return absoluteStartIndex + length;
+    return absoluteFirstIndex + length;
   }
 
   /**
@@ -133,10 +133,17 @@ import org.telegram.messenger.exoplayer2.util.Util;
   // Called by the consuming thread.
 
   /**
+   * Returns the current absolute start index.
+   */
+  public int getFirstIndex() {
+    return absoluteFirstIndex;
+  }
+
+  /**
    * Returns the current absolute read index.
    */
   public int getReadIndex() {
-    return absoluteStartIndex + readPosition;
+    return absoluteFirstIndex + readPosition;
   }
 
   /**
@@ -177,6 +184,11 @@ import org.telegram.messenger.exoplayer2.util.Util;
    */
   public synchronized long getLargestQueuedTimestampUs() {
     return largestQueuedTimestampUs;
+  }
+
+  /** Returns the timestamp of the first sample, or {@link Long#MIN_VALUE} if the queue is empty. */
+  public synchronized long getFirstTimestampUs() {
+    return length == 0 ? Long.MIN_VALUE : timesUs[relativeFirstIndex];
   }
 
   /**
@@ -253,32 +265,51 @@ import org.telegram.messenger.exoplayer2.util.Util;
    * @param allowTimeBeyondBuffer Whether the operation can succeed if {@code timeUs} is beyond the
    *     end of the queue, by advancing the read position to the last sample (or keyframe) in the
    *     queue.
-   * @return Whether the operation was a success. A successful advance is one in which the read
-   *     position was unchanged or advanced, and is now at a sample meeting the specified criteria.
+   * @return The number of samples that were skipped if the operation was successful, which may be
+   *     equal to 0, or {@link SampleQueue#ADVANCE_FAILED} if the operation was not successful. A
+   *     successful advance is one in which the read position was unchanged or advanced, and is now
+   *     at a sample meeting the specified criteria.
    */
-  public synchronized boolean advanceTo(long timeUs, boolean toKeyframe,
+  public synchronized int advanceTo(long timeUs, boolean toKeyframe,
       boolean allowTimeBeyondBuffer) {
     int relativeReadIndex = getRelativeIndex(readPosition);
     if (!hasNextSample() || timeUs < timesUs[relativeReadIndex]
         || (timeUs > largestQueuedTimestampUs && !allowTimeBeyondBuffer)) {
-      return false;
+      return SampleQueue.ADVANCE_FAILED;
     }
     int offset = findSampleBefore(relativeReadIndex, length - readPosition, timeUs, toKeyframe);
     if (offset == -1) {
-      return false;
+      return SampleQueue.ADVANCE_FAILED;
     }
     readPosition += offset;
-    return true;
+    return offset;
   }
 
   /**
    * Advances the read position to the end of the queue.
+   *
+   * @return The number of samples that were skipped.
    */
-  public synchronized void advanceToEnd() {
-    if (!hasNextSample()) {
-      return;
-    }
+  public synchronized int advanceToEnd() {
+    int skipCount = length - readPosition;
     readPosition = length;
+    return skipCount;
+  }
+
+  /**
+   * Attempts to set the read position to the specified sample index.
+   *
+   * @param sampleIndex The sample index.
+   * @return Whether the read position was set successfully. False is returned if the specified
+   *     index is smaller than the index of the first sample in the queue, or larger than the index
+   *     of the next sample that will be written.
+   */
+  public synchronized boolean setReadPosition(int sampleIndex) {
+    if (absoluteFirstIndex <= sampleIndex && sampleIndex <= absoluteFirstIndex + length) {
+      readPosition = sampleIndex - absoluteFirstIndex;
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -294,11 +325,11 @@ import org.telegram.messenger.exoplayer2.util.Util;
    *     {@link C#POSITION_UNSET} if no discarding of data is necessary.
    */
   public synchronized long discardTo(long timeUs, boolean toKeyframe, boolean stopAtReadPosition) {
-    if (length == 0 || timeUs < timesUs[relativeStartIndex]) {
+    if (length == 0 || timeUs < timesUs[relativeFirstIndex]) {
       return C.POSITION_UNSET;
     }
     int searchLength = stopAtReadPosition && readPosition != length ? readPosition + 1 : length;
-    int discardCount = findSampleBefore(relativeStartIndex, searchLength, timeUs, toKeyframe);
+    int discardCount = findSampleBefore(relativeFirstIndex, searchLength, timeUs, toKeyframe);
     if (discardCount == -1) {
       return C.POSITION_UNSET;
     }
@@ -379,15 +410,15 @@ import org.telegram.messenger.exoplayer2.util.Util;
       int[] newSizes = new int[newCapacity];
       CryptoData[] newCryptoDatas = new CryptoData[newCapacity];
       Format[] newFormats = new Format[newCapacity];
-      int beforeWrap = capacity - relativeStartIndex;
-      System.arraycopy(offsets, relativeStartIndex, newOffsets, 0, beforeWrap);
-      System.arraycopy(timesUs, relativeStartIndex, newTimesUs, 0, beforeWrap);
-      System.arraycopy(flags, relativeStartIndex, newFlags, 0, beforeWrap);
-      System.arraycopy(sizes, relativeStartIndex, newSizes, 0, beforeWrap);
-      System.arraycopy(cryptoDatas, relativeStartIndex, newCryptoDatas, 0, beforeWrap);
-      System.arraycopy(formats, relativeStartIndex, newFormats, 0, beforeWrap);
-      System.arraycopy(sourceIds, relativeStartIndex, newSourceIds, 0, beforeWrap);
-      int afterWrap = relativeStartIndex;
+      int beforeWrap = capacity - relativeFirstIndex;
+      System.arraycopy(offsets, relativeFirstIndex, newOffsets, 0, beforeWrap);
+      System.arraycopy(timesUs, relativeFirstIndex, newTimesUs, 0, beforeWrap);
+      System.arraycopy(flags, relativeFirstIndex, newFlags, 0, beforeWrap);
+      System.arraycopy(sizes, relativeFirstIndex, newSizes, 0, beforeWrap);
+      System.arraycopy(cryptoDatas, relativeFirstIndex, newCryptoDatas, 0, beforeWrap);
+      System.arraycopy(formats, relativeFirstIndex, newFormats, 0, beforeWrap);
+      System.arraycopy(sourceIds, relativeFirstIndex, newSourceIds, 0, beforeWrap);
+      int afterWrap = relativeFirstIndex;
       System.arraycopy(offsets, 0, newOffsets, beforeWrap, afterWrap);
       System.arraycopy(timesUs, 0, newTimesUs, beforeWrap, afterWrap);
       System.arraycopy(flags, 0, newFlags, beforeWrap, afterWrap);
@@ -402,7 +433,7 @@ import org.telegram.messenger.exoplayer2.util.Util;
       cryptoDatas = newCryptoDatas;
       formats = newFormats;
       sourceIds = newSourceIds;
-      relativeStartIndex = 0;
+      relativeFirstIndex = 0;
       length = capacity;
       capacity = newCapacity;
     }
@@ -437,7 +468,7 @@ import org.telegram.messenger.exoplayer2.util.Util;
         relativeSampleIndex = capacity - 1;
       }
     }
-    discardUpstreamSamples(absoluteStartIndex + retainCount);
+    discardUpstreamSamples(absoluteFirstIndex + retainCount);
     return true;
   }
 
@@ -451,7 +482,7 @@ import org.telegram.messenger.exoplayer2.util.Util;
    * @param length The length of the range being searched.
    * @param timeUs The specified time.
    * @param keyframe Whether only keyframes should be considered.
-   * @return The offset from {@code relativeStartIndex} to the found sample, or -1 if no matching
+   * @return The offset from {@code relativeFirstIndex} to the found sample, or -1 if no matching
    *     sample was found.
    */
   private int findSampleBefore(int relativeStartIndex, int length, long timeUs, boolean keyframe) {
@@ -477,27 +508,26 @@ import org.telegram.messenger.exoplayer2.util.Util;
    * Discards the specified number of samples.
    *
    * @param discardCount The number of samples to discard.
-   * @return The corresponding offset up to which data should be discarded, or
-   *     {@link C#POSITION_UNSET} if no discarding of data is necessary.
+   * @return The corresponding offset up to which data should be discarded.
    */
   private long discardSamples(int discardCount) {
     largestDiscardedTimestampUs = Math.max(largestDiscardedTimestampUs,
         getLargestTimestamp(discardCount));
     length -= discardCount;
-    absoluteStartIndex += discardCount;
-    relativeStartIndex += discardCount;
-    if (relativeStartIndex >= capacity) {
-      relativeStartIndex -= capacity;
+    absoluteFirstIndex += discardCount;
+    relativeFirstIndex += discardCount;
+    if (relativeFirstIndex >= capacity) {
+      relativeFirstIndex -= capacity;
     }
     readPosition -= discardCount;
     if (readPosition < 0) {
       readPosition = 0;
     }
     if (length == 0) {
-      int relativeLastDiscardIndex = (relativeStartIndex == 0 ? capacity : relativeStartIndex) - 1;
+      int relativeLastDiscardIndex = (relativeFirstIndex == 0 ? capacity : relativeFirstIndex) - 1;
       return offsets[relativeLastDiscardIndex] + sizes[relativeLastDiscardIndex];
     } else {
-      return offsets[relativeStartIndex];
+      return offsets[relativeFirstIndex];
     }
   }
 
@@ -534,7 +564,7 @@ import org.telegram.messenger.exoplayer2.util.Util;
     * @param offset The offset, which must be in the range [0, length].
     */
   private int getRelativeIndex(int offset) {
-    int relativeIndex = relativeStartIndex + offset;
+    int relativeIndex = relativeFirstIndex + offset;
     return relativeIndex < capacity ? relativeIndex : relativeIndex - capacity;
   }
 

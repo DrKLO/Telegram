@@ -58,6 +58,8 @@ public class ContactsSyncAdapterService extends Service {
 
     private static void performSync(Context context, Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult)
             throws OperationCanceledException {
-        FileLog.d("performSync: " + account.toString());
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("performSync: " + account.toString());
+        }
     }
 }

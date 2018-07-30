@@ -15,14 +15,11 @@
  */
 package org.telegram.messenger.exoplayer2.source.dash.manifest;
 
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
-/**
- * Uniquely identifies a {@link Representation} in a {@link DashManifest}.
- */
-public final class RepresentationKey implements Parcelable, Comparable<RepresentationKey> {
+/** Uniquely identifies a {@link Representation} in a {@link DashManifest}. */
+public final class RepresentationKey implements Comparable<RepresentationKey> {
 
   public final int periodIndex;
   public final int adaptationSetIndex;
@@ -39,32 +36,28 @@ public final class RepresentationKey implements Parcelable, Comparable<Represent
     return periodIndex + "." + adaptationSetIndex + "." + representationIndex;
   }
 
-  // Parcelable implementation.
-
   @Override
-  public int describeContents() {
-    return 0;
+  public boolean equals(@Nullable Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    RepresentationKey that = (RepresentationKey) o;
+    return periodIndex == that.periodIndex
+        && adaptationSetIndex == that.adaptationSetIndex
+        && representationIndex == that.representationIndex;
   }
 
   @Override
-  public void writeToParcel(Parcel dest, int flags) {
-    dest.writeInt(periodIndex);
-    dest.writeInt(adaptationSetIndex);
-    dest.writeInt(representationIndex);
+  public int hashCode() {
+    int result = periodIndex;
+    result = 31 * result + adaptationSetIndex;
+    result = 31 * result + representationIndex;
+    return result;
   }
-
-  public static final Creator<RepresentationKey> CREATOR =
-      new Creator<RepresentationKey>() {
-        @Override
-        public RepresentationKey createFromParcel(Parcel in) {
-          return new RepresentationKey(in.readInt(), in.readInt(), in.readInt());
-        }
-
-        @Override
-        public RepresentationKey[] newArray(int size) {
-          return new RepresentationKey[size];
-        }
-      };
 
   // Comparable implementation.
 

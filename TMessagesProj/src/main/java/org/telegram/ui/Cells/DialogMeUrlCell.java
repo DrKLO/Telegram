@@ -22,6 +22,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -56,6 +57,8 @@ public class DialogMeUrlCell extends BaseCell {
     private int avatarTop = AndroidUtilities.dp(10);
 
     private boolean isSelected;
+
+    private int currentAccount = UserConfig.selectedAccount;
 
     public DialogMeUrlCell(Context context) {
         super(context);
@@ -108,7 +111,7 @@ public class DialogMeUrlCell extends BaseCell {
         TLObject image;
 
         if (recentMeUrl instanceof TLRPC.TL_recentMeUrlChat) {
-            TLRPC.Chat chat = MessagesController.getInstance().getChat(recentMeUrl.chat_id);
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(recentMeUrl.chat_id);
             if (chat.id < 0 || ChatObject.isChannel(chat) && !chat.megagroup) {
                 drawNameBroadcast = true;
                 nameLockTop = AndroidUtilities.dp(16.5f);
@@ -133,7 +136,7 @@ public class DialogMeUrlCell extends BaseCell {
             }
             avatarDrawable.setInfo(chat);
         } else if (recentMeUrl instanceof TLRPC.TL_recentMeUrlUser) {
-            TLRPC.User user = MessagesController.getInstance().getUser(recentMeUrl.user_id);
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(recentMeUrl.user_id);
             if (!LocaleController.isRTL) {
                 nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
             } else {
@@ -221,7 +224,7 @@ public class DialogMeUrlCell extends BaseCell {
         } else {
             image = null;
         }
-        messageString = MessagesController.getInstance().linkPrefix + "/" + recentMeUrl.url;
+        messageString = MessagesController.getInstance(currentAccount).linkPrefix + "/" + recentMeUrl.url;
         avatarImage.setImage(image, "50_50", avatarDrawable, null, 0);
 
         if (TextUtils.isEmpty(nameString)) {

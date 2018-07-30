@@ -33,6 +33,11 @@ public abstract class Id3Frame implements Metadata.Entry {
   }
 
   @Override
+  public String toString() {
+    return id;
+  }
+
+  @Override
   public int describeContents() {
     return 0;
   }

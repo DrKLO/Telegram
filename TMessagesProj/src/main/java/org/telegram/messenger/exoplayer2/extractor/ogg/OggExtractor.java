@@ -27,7 +27,7 @@ import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 import java.io.IOException;
 
 /**
- * Ogg {@link Extractor}.
+ * Extracts data from the Ogg container format.
  */
 public class OggExtractor implements Extractor {
 

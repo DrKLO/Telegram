@@ -11,6 +11,7 @@ package org.telegram.ui;
 import android.content.Context;
 import android.database.Cursor;
 import android.provider.MediaStore;
+import android.util.LongSparseArray;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,7 +43,6 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class AudioSelectActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -55,7 +55,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
     private boolean loadingAudio;
 
     private ArrayList<MediaController.AudioEntry> audioEntries = new ArrayList<>();
-    private HashMap<Long, MediaController.AudioEntry> selectedAudios = new HashMap<>();
+    private LongSparseArray<MediaController.AudioEntry> selectedAudios = new LongSparseArray<>();
 
     private AudioSelectActivityDelegate delegate;
 
@@ -68,8 +68,8 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingDidReset);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidReset);
         loadAudio();
         return true;
     }
@@ -77,8 +77,8 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingDidReset);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidReset);
         if (playingAudio != null && MediaController.getInstance().isPlayingMessage(playingAudio)) {
             MediaController.getInstance().cleanupPlayer(true, true);
         }
@@ -118,7 +118,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
             public void onItemClick(View view, int position) {
                 AudioCell audioCell = (AudioCell) view;
                 MediaController.AudioEntry audioEntry = audioCell.getAudioEntry();
-                if (selectedAudios.containsKey(audioEntry.id)) {
+                if (selectedAudios.indexOfKey(audioEntry.id) >= 0) {
                     selectedAudios.remove(audioEntry.id);
                     audioCell.setChecked(false);
                 } else {
@@ -142,8 +142,8 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
             public void onClick(View view) {
                 if (delegate != null) {
                     ArrayList<MessageObject> audios = new ArrayList<>();
-                    for (HashMap.Entry<Long, MediaController.AudioEntry> entry : selectedAudios.entrySet()) {
-                        audios.add(entry.getValue().messageObject);
+                    for (int a = 0; a < selectedAudios.size(); a++) {
+                        audios.add(selectedAudios.valueAt(a).messageObject);
                     }
                     delegate.didSelectAudio(audios);
                 }
@@ -165,7 +165,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.closeChats) {
             removeSelfFromStack();
         } else if (id == NotificationCenter.messagePlayingDidReset) {
@@ -220,9 +220,9 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
                         message.out = true;
                         message.id = id;
                         message.to_id = new TLRPC.TL_peerUser();
-                        message.to_id.user_id = message.from_id = UserConfig.getClientUserId();
+                        message.to_id.user_id = message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
                         message.date = (int) (System.currentTimeMillis() / 1000);
-                        message.message = "-1";
+                        message.message = "";
                         message.attachPath = audioEntry.path;
                         message.media = new TLRPC.TL_messageMediaDocument();
                         message.media.flags |= 3;
@@ -251,7 +251,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
                         fileName.file_name = file.getName();
                         message.media.document.attributes.add(fileName);
 
-                        audioEntry.messageObject = new MessageObject(message, null, false);
+                        audioEntry.messageObject = new MessageObject(currentAccount, message, false);
 
                         newAudioEntries.add(audioEntry);
                         id--;
@@ -317,7 +317,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             MediaController.AudioEntry audioEntry = audioEntries.get(position);
-            ((AudioCell) holder.itemView).setAudio(audioEntries.get(position), position != audioEntries.size() - 1, selectedAudios.containsKey(audioEntry.id));
+            ((AudioCell) holder.itemView).setAudio(audioEntries.get(position), position != audioEntries.size() - 1, selectedAudios.indexOfKey(audioEntry.id) >= 0);
         }
 
         @Override

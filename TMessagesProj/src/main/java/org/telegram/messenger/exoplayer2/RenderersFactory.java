@@ -16,9 +16,12 @@
 package org.telegram.messenger.exoplayer2;
 
 import android.os.Handler;
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.audio.AudioRendererEventListener;
-import org.telegram.messenger.exoplayer2.metadata.MetadataRenderer;
-import org.telegram.messenger.exoplayer2.text.TextRenderer;
+import org.telegram.messenger.exoplayer2.drm.DrmSessionManager;
+import org.telegram.messenger.exoplayer2.drm.FrameworkMediaCrypto;
+import org.telegram.messenger.exoplayer2.metadata.MetadataOutput;
+import org.telegram.messenger.exoplayer2.text.TextOutput;
 import org.telegram.messenger.exoplayer2.video.VideoRendererEventListener;
 
 /**
@@ -31,14 +34,17 @@ public interface RenderersFactory {
    *
    * @param eventHandler A handler to use when invoking event listeners and outputs.
    * @param videoRendererEventListener An event listener for video renderers.
-   * @param videoRendererEventListener An event listener for audio renderers.
+   * @param audioRendererEventListener An event listener for audio renderers.
    * @param textRendererOutput An output for text renderers.
    * @param metadataRendererOutput An output for metadata renderers.
+   * @param drmSessionManager A drm session manager used by renderers.
    * @return The {@link Renderer instances}.
    */
-  Renderer[] createRenderers(Handler eventHandler,
+  Renderer[] createRenderers(
+      Handler eventHandler,
       VideoRendererEventListener videoRendererEventListener,
       AudioRendererEventListener audioRendererEventListener,
-      TextRenderer.Output textRendererOutput, MetadataRenderer.Output metadataRendererOutput);
-
+      TextOutput textRendererOutput,
+      MetadataOutput metadataRendererOutput,
+      @Nullable DrmSessionManager<FrameworkMediaCrypto> drmSessionManager);
 }

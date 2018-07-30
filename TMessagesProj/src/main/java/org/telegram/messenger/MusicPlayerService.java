@@ -62,8 +62,10 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
     @Override
     public void onCreate() {
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             mediaSession = new MediaSession(this, "telegramAudioPlayer");
@@ -185,6 +187,9 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                     .setStyle(new Notification.MediaStyle()
                             .setMediaSession(mediaSession.getSessionToken())
                             .setShowActionsInCompactView(0, 1, 2));
+            if (Build.VERSION.SDK_INT >= 26) {
+                bldr.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
+            }
             if (albumArt != null) {
                 bldr.setLargeIcon(albumArt);
             } else {
@@ -215,6 +220,8 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
 
             mediaSession.setMetadata(meta.build());
 
+            bldr.setVisibility(Notification.VISIBILITY_PUBLIC);
+
             notification = bldr.build();
 
             if (isPlaying) {
@@ -235,6 +242,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             notification = new NotificationCompat.Builder(getApplicationContext())
                     .setSmallIcon(R.drawable.player)
                     .setContentIntent(contentIntent)
+                    .setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL)
                     .setContentTitle(songName).build();
 
             notification.contentView = simpleContentView;
@@ -352,12 +360,14 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             mediaSession.release();
         }
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+            NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        }
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.messagePlayingPlayStateChanged) {
             MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
             if (messageObject != null) {

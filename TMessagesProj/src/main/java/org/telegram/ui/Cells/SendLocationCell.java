@@ -22,6 +22,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -30,6 +31,7 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 
 public class SendLocationCell extends FrameLayout {
 
+    private int currentAccount = UserConfig.selectedAccount;
     private SimpleTextView accurateTextView;
     private SimpleTextView titleTextView;
     private ImageView imageView;
@@ -50,11 +52,12 @@ public class SendLocationCell extends FrameLayout {
 
         imageView = new ImageView(context);
 
+        imageView.setTag(live ? Theme.key_location_sendLiveLocationBackground + Theme.key_location_sendLiveLocationIcon : Theme.key_location_sendLocationBackground + Theme.key_location_sendLocationIcon);
         Drawable circle = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(40), Theme.getColor(live ? Theme.key_location_sendLiveLocationBackground : Theme.key_location_sendLocationBackground), Theme.getColor(live ? Theme.key_location_sendLiveLocationBackground : Theme.key_location_sendLocationBackground));
         if (live) {
             rect = new RectF();
             Drawable drawable = getResources().getDrawable(R.drawable.livelocationpin);
-            drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_location_sendLocationIcon), PorterDuff.Mode.MULTIPLY));
+            drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_location_sendLiveLocationIcon), PorterDuff.Mode.MULTIPLY));
             CombinedDrawable combinedDrawable = new CombinedDrawable(circle, drawable);
             combinedDrawable.setCustomSize(AndroidUtilities.dp(40), AndroidUtilities.dp(40));
             imageView.setBackgroundDrawable(combinedDrawable);
@@ -72,11 +75,8 @@ public class SendLocationCell extends FrameLayout {
 
         titleTextView = new SimpleTextView(context);
         titleTextView.setTextSize(16);
-        if (live) {
-            titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText2));
-        } else {
-            titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText7));
-        }
+        titleTextView.setTag(live ? Theme.key_windowBackgroundWhiteRedText2 : Theme.key_windowBackgroundWhiteBlueText7);
+        titleTextView.setTextColor(Theme.getColor(live ? Theme.key_windowBackgroundWhiteRedText2 : Theme.key_windowBackgroundWhiteBlueText7));
         titleTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 16 : 73, 12, LocaleController.isRTL ? 73 : 16, 0));
@@ -93,7 +93,7 @@ public class SendLocationCell extends FrameLayout {
     }
 
     public void setHasLocation(boolean value) {
-        LocationController.SharingLocationInfo info = LocationController.getInstance().getSharingLocationInfo(dialogId);
+        LocationController.SharingLocationInfo info = LocationController.getInstance(currentAccount).getSharingLocationInfo(dialogId);
         if (info == null) {
             titleTextView.setAlpha(value ? 1.0f : 0.5f);
             accurateTextView.setAlpha(value ? 1.0f : 0.5f);
@@ -131,7 +131,7 @@ public class SendLocationCell extends FrameLayout {
     }
 
     private void checkText() {
-        LocationController.SharingLocationInfo info = LocationController.getInstance().getSharingLocationInfo(dialogId);
+        LocationController.SharingLocationInfo info = LocationController.getInstance(currentAccount).getSharingLocationInfo(dialogId);
         if (info != null) {
             setText(LocaleController.getString("StopLiveLocation", R.string.StopLiveLocation), LocaleController.formatLocationUpdateDate(info.messageObject.messageOwner.edit_date != 0 ? info.messageObject.messageOwner.edit_date : info.messageObject.messageOwner.date));
         } else {
@@ -141,11 +141,11 @@ public class SendLocationCell extends FrameLayout {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        LocationController.SharingLocationInfo currentInfo = LocationController.getInstance().getSharingLocationInfo(dialogId);
+        LocationController.SharingLocationInfo currentInfo = LocationController.getInstance(currentAccount).getSharingLocationInfo(dialogId);
         if (currentInfo == null) {
             return;
         }
-        int currentTime = ConnectionsManager.getInstance().getCurrentTime();
+        int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
         if (currentInfo.stopTime < currentTime) {
             return;
         }

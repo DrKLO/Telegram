@@ -17,47 +17,88 @@ package org.telegram.messenger.exoplayer2.source.dash.manifest;
 
 import android.net.Uri;
 import org.telegram.messenger.exoplayer2.C;
+import org.telegram.messenger.exoplayer2.offline.FilterableManifest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Represents a DASH media presentation description (mpd).
+ * Represents a DASH media presentation description (mpd), as defined by ISO/IEC 23009-1:2014
+ * Section 5.3.1.2.
  */
-public class DashManifest {
+public class DashManifest implements FilterableManifest<DashManifest, RepresentationKey> {
 
-  public final long availabilityStartTime;
+  /**
+   * The {@code availabilityStartTime} value in milliseconds since epoch, or {@link C#TIME_UNSET} if
+   * not present.
+   */
+  public final long availabilityStartTimeMs;
 
-  public final long duration;
+  /**
+   * The duration of the presentation in milliseconds, or {@link C#TIME_UNSET} if not applicable.
+   */
+  public final long durationMs;
 
-  public final long minBufferTime;
+  /**
+   * The {@code minBufferTime} value in milliseconds, or {@link C#TIME_UNSET} if not present.
+   */
+  public final long minBufferTimeMs;
 
+  /**
+   * Whether the manifest has value "dynamic" for the {@code type} attribute.
+   */
   public final boolean dynamic;
 
-  public final long minUpdatePeriod;
+  /**
+   * The {@code minimumUpdatePeriod} value in milliseconds, or {@link C#TIME_UNSET} if not
+   * applicable.
+   */
+  public final long minUpdatePeriodMs;
 
-  public final long timeShiftBufferDepth;
+  /**
+   * The {@code timeShiftBufferDepth} value in milliseconds, or {@link C#TIME_UNSET} if not
+   * present.
+   */
+  public final long timeShiftBufferDepthMs;
 
-  public final long suggestedPresentationDelay;
+  /**
+   * The {@code suggestedPresentationDelay} value in milliseconds, or {@link C#TIME_UNSET} if not
+   * present.
+   */
+  public final long suggestedPresentationDelayMs;
 
+  /**
+   * The {@code publishTime} value in milliseconds since epoch, or {@link C#TIME_UNSET} if
+   * not present.
+   */
+  public final long publishTimeMs;
+
+  /**
+   * The {@link UtcTimingElement}, or null if not present. Defined in DVB A168:7/2016, Section
+   * 4.7.2.
+   */
   public final UtcTimingElement utcTiming;
 
+  /**
+   * The location of this manifest.
+   */
   public final Uri location;
 
   private final List<Period> periods;
 
-  public DashManifest(long availabilityStartTime, long duration, long minBufferTime,
-      boolean dynamic, long minUpdatePeriod, long timeShiftBufferDepth,
-      long suggestedPresentationDelay, UtcTimingElement utcTiming, Uri location,
-      List<Period> periods) {
-    this.availabilityStartTime = availabilityStartTime;
-    this.duration = duration;
-    this.minBufferTime = minBufferTime;
+  public DashManifest(long availabilityStartTimeMs, long durationMs, long minBufferTimeMs,
+      boolean dynamic, long minUpdatePeriodMs, long timeShiftBufferDepthMs,
+      long suggestedPresentationDelayMs, long publishTimeMs, UtcTimingElement utcTiming,
+      Uri location, List<Period> periods) {
+    this.availabilityStartTimeMs = availabilityStartTimeMs;
+    this.durationMs = durationMs;
+    this.minBufferTimeMs = minBufferTimeMs;
     this.dynamic = dynamic;
-    this.minUpdatePeriod = minUpdatePeriod;
-    this.timeShiftBufferDepth = timeShiftBufferDepth;
-    this.suggestedPresentationDelay = suggestedPresentationDelay;
+    this.minUpdatePeriodMs = minUpdatePeriodMs;
+    this.timeShiftBufferDepthMs = timeShiftBufferDepthMs;
+    this.suggestedPresentationDelayMs = suggestedPresentationDelayMs;
+    this.publishTimeMs = publishTimeMs;
     this.utcTiming = utcTiming;
     this.location = location;
     this.periods = periods == null ? Collections.<Period>emptyList() : periods;
@@ -73,7 +114,7 @@ public class DashManifest {
 
   public final long getPeriodDurationMs(int index) {
     return index == periods.size() - 1
-        ? (duration == C.TIME_UNSET ? C.TIME_UNSET : (duration - periods.get(index).startMs))
+        ? (durationMs == C.TIME_UNSET ? C.TIME_UNSET : (durationMs - periods.get(index).startMs))
         : (periods.get(index + 1).startMs - periods.get(index).startMs);
   }
 
@@ -81,16 +122,9 @@ public class DashManifest {
     return C.msToUs(getPeriodDurationMs(index));
   }
 
-  /**
-   * Creates a copy of this manifest which includes only the representations identified by the given
-   * keys.
-   *
-   * @param representationKeys List of keys for the representations to be included in the copy.
-   * @return A copy of this manifest with the selected representations.
-   * @throws IndexOutOfBoundsException If a key has an invalid index.
-   */
-  public final DashManifest copy(List<RepresentationKey> representationKeys) {
-    LinkedList<RepresentationKey> keys = new LinkedList<>(representationKeys);
+  @Override
+  public final DashManifest copy(List<RepresentationKey> streamKeys) {
+    LinkedList<RepresentationKey> keys = new LinkedList<>(streamKeys);
     Collections.sort(keys);
     keys.add(new RepresentationKey(-1, -1, -1)); // Add a stopper key to the end
 
@@ -107,13 +141,15 @@ public class DashManifest {
         Period period = getPeriod(periodIndex);
         ArrayList<AdaptationSet> copyAdaptationSets =
             copyAdaptationSets(period.adaptationSets, keys);
-        copyPeriods.add(new Period(period.id, period.startMs - shiftMs, copyAdaptationSets));
+        Period copiedPeriod = new Period(period.id, period.startMs - shiftMs, copyAdaptationSets,
+            period.eventStreams);
+        copyPeriods.add(copiedPeriod);
       }
     }
-    long newDuration = duration != C.TIME_UNSET ? duration - shiftMs : C.TIME_UNSET;
-    return new DashManifest(availabilityStartTime, newDuration, minBufferTime, dynamic,
-        minUpdatePeriod, timeShiftBufferDepth, suggestedPresentationDelay, utcTiming, location,
-        copyPeriods);
+    long newDuration = durationMs != C.TIME_UNSET ? durationMs - shiftMs : C.TIME_UNSET;
+    return new DashManifest(availabilityStartTimeMs, newDuration, minBufferTimeMs, dynamic,
+        minUpdatePeriodMs, timeShiftBufferDepthMs, suggestedPresentationDelayMs, publishTimeMs,
+        utcTiming, location, copyPeriods);
   }
 
   private static ArrayList<AdaptationSet> copyAdaptationSets(

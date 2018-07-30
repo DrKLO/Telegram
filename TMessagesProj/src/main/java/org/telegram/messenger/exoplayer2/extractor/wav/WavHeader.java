@@ -16,9 +16,12 @@
 package org.telegram.messenger.exoplayer2.extractor.wav;
 
 import org.telegram.messenger.exoplayer2.C;
+import org.telegram.messenger.exoplayer2.extractor.SeekMap;
+import org.telegram.messenger.exoplayer2.extractor.SeekPoint;
+import org.telegram.messenger.exoplayer2.util.Util;
 
 /** Header for a WAV file. */
-/*package*/ final class WavHeader {
+/* package */ final class WavHeader implements SeekMap {
 
   /** Number of audio chanels. */
   private final int numChannels;
@@ -49,10 +52,66 @@ import org.telegram.messenger.exoplayer2.C;
     this.encoding = encoding;
   }
 
-  /** Returns the duration in microseconds of this WAV. */
+  // Setting bounds.
+
+  /**
+   * Sets the data start position and size in bytes of sample data in this WAV.
+   *
+   * @param dataStartPosition The data start position in bytes.
+   * @param dataSize The data size in bytes.
+   */
+  public void setDataBounds(long dataStartPosition, long dataSize) {
+    this.dataStartPosition = dataStartPosition;
+    this.dataSize = dataSize;
+  }
+
+  /** Returns whether the data start position and size have been set. */
+  public boolean hasDataBounds() {
+    return dataStartPosition != 0 && dataSize != 0;
+  }
+
+  // SeekMap implementation.
+
+  @Override
+  public boolean isSeekable() {
+    return true;
+  }
+
+  @Override
   public long getDurationUs() {
     long numFrames = dataSize / blockAlignment;
     return (numFrames * C.MICROS_PER_SECOND) / sampleRateHz;
+  }
+
+  @Override
+  public SeekPoints getSeekPoints(long timeUs) {
+    long positionOffset = (timeUs * averageBytesPerSecond) / C.MICROS_PER_SECOND;
+    // Constrain to nearest preceding frame offset.
+    positionOffset = (positionOffset / blockAlignment) * blockAlignment;
+    positionOffset = Util.constrainValue(positionOffset, 0, dataSize - blockAlignment);
+    long seekPosition = dataStartPosition + positionOffset;
+    long seekTimeUs = getTimeUs(seekPosition);
+    SeekPoint seekPoint = new SeekPoint(seekTimeUs, seekPosition);
+    if (seekTimeUs >= timeUs || positionOffset == dataSize - blockAlignment) {
+      return new SeekPoints(seekPoint);
+    } else {
+      long secondSeekPosition = seekPosition + blockAlignment;
+      long secondSeekTimeUs = getTimeUs(secondSeekPosition);
+      SeekPoint secondSeekPoint = new SeekPoint(secondSeekTimeUs, secondSeekPosition);
+      return new SeekPoints(seekPoint, secondSeekPoint);
+    }
+  }
+
+  // Misc getters.
+
+  /**
+   * Returns the time in microseconds for the given position in bytes.
+   *
+   * @param position The position in bytes.
+   */
+  public long getTimeUs(long position) {
+    long positionOffset = Math.max(0, position - dataStartPosition);
+    return (positionOffset * C.MICROS_PER_SECOND) / averageBytesPerSecond;
   }
 
   /** Returns the bytes per frame of this WAV. */
@@ -75,33 +134,8 @@ import org.telegram.messenger.exoplayer2.C;
     return numChannels;
   }
 
-  /** Returns the position in bytes in this WAV for the given time in microseconds. */
-  public long getPosition(long timeUs) {
-    long unroundedPosition = (timeUs * averageBytesPerSecond) / C.MICROS_PER_SECOND;
-    // Round down to nearest frame.
-    long position = (unroundedPosition / blockAlignment) * blockAlignment;
-    return Math.min(position, dataSize - blockAlignment) + dataStartPosition;
-  }
-
-  /** Returns the time in microseconds for the given position in bytes in this WAV. */
-  public long getTimeUs(long position) {
-    return position * C.MICROS_PER_SECOND / averageBytesPerSecond;
-  }
-
-  /** Returns true if the data start position and size have been set. */
-  public boolean hasDataBounds() {
-    return dataStartPosition != 0 && dataSize != 0;
-  }
-
-  /** Sets the start position and size in bytes of sample data in this WAV. */
-  public void setDataBounds(long dataStartPosition, long dataSize) {
-    this.dataStartPosition = dataStartPosition;
-    this.dataSize = dataSize;
-  }
-
   /** Returns the PCM encoding. **/
-  @C.PcmEncoding
-  public int getEncoding() {
+  public @C.PcmEncoding int getEncoding() {
     return encoding;
   }
 

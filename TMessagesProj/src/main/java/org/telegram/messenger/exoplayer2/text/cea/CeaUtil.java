@@ -19,18 +19,19 @@ import android.util.Log;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.extractor.TrackOutput;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
+import org.telegram.messenger.exoplayer2.util.Util;
 
-/**
- * Utility methods for handling CEA-608/708 messages.
- */
+/** Utility methods for handling CEA-608/708 messages. Defined in A/53 Part 4:2009. */
 public final class CeaUtil {
 
   private static final String TAG = "CeaUtil";
 
   private static final int PAYLOAD_TYPE_CC = 4;
   private static final int COUNTRY_CODE = 0xB5;
-  private static final int PROVIDER_CODE = 0x31;
-  private static final int USER_ID = 0x47413934; // "GA94"
+  private static final int PROVIDER_CODE_ATSC = 0x31;
+  private static final int PROVIDER_CODE_DIRECTV = 0x2F;
+  private static final int USER_ID_GA94 = Util.getIntegerCodeForString("GA94");
+  private static final int USER_ID_DTG1 = Util.getIntegerCodeForString("DTG1");
   private static final int USER_DATA_TYPE_CODE = 0x3;
 
   /**
@@ -46,33 +47,49 @@ public final class CeaUtil {
     while (seiBuffer.bytesLeft() > 1 /* last byte will be rbsp_trailing_bits */) {
       int payloadType = readNon255TerminatedValue(seiBuffer);
       int payloadSize = readNon255TerminatedValue(seiBuffer);
+      int nextPayloadPosition = seiBuffer.getPosition() + payloadSize;
       // Process the payload.
       if (payloadSize == -1 || payloadSize > seiBuffer.bytesLeft()) {
         // This might occur if we're trying to read an encrypted SEI NAL unit.
         Log.w(TAG, "Skipping remainder of malformed SEI NAL unit.");
-        seiBuffer.setPosition(seiBuffer.limit());
-      } else if (isSeiMessageCea608(payloadType, payloadSize, seiBuffer)) {
-        // Ignore country_code (1) + provider_code (2) + user_identifier (4)
-        // + user_data_type_code (1).
-        seiBuffer.skipBytes(8);
-        // Ignore first three bits: reserved (1) + process_cc_data_flag (1) + zero_bit (1).
-        int ccCount = seiBuffer.readUnsignedByte() & 0x1F;
-        // Ignore em_data (1)
-        seiBuffer.skipBytes(1);
-        // Each data packet consists of 24 bits: marker bits (5) + cc_valid (1) + cc_type (2)
-        // + cc_data_1 (8) + cc_data_2 (8).
-        int sampleLength = ccCount * 3;
-        int sampleStartPosition = seiBuffer.getPosition();
-        for (TrackOutput output : outputs) {
-          seiBuffer.setPosition(sampleStartPosition);
-          output.sampleData(seiBuffer, sampleLength);
-          output.sampleMetadata(presentationTimeUs, C.BUFFER_FLAG_KEY_FRAME, sampleLength, 0, null);
+        nextPayloadPosition = seiBuffer.limit();
+      } else if (payloadType == PAYLOAD_TYPE_CC && payloadSize >= 8) {
+        int countryCode = seiBuffer.readUnsignedByte();
+        int providerCode = seiBuffer.readUnsignedShort();
+        int userIdentifier = 0;
+        if (providerCode == PROVIDER_CODE_ATSC) {
+          userIdentifier = seiBuffer.readInt();
         }
-        // Ignore trailing information in SEI, if any.
-        seiBuffer.skipBytes(payloadSize - (10 + ccCount * 3));
-      } else {
-        seiBuffer.skipBytes(payloadSize);
+        int userDataTypeCode = seiBuffer.readUnsignedByte();
+        if (providerCode == PROVIDER_CODE_DIRECTV) {
+          seiBuffer.skipBytes(1); // user_data_length.
+        }
+        boolean messageIsSupportedCeaCaption =
+            countryCode == COUNTRY_CODE
+                && (providerCode == PROVIDER_CODE_ATSC || providerCode == PROVIDER_CODE_DIRECTV)
+                && userDataTypeCode == USER_DATA_TYPE_CODE;
+        if (providerCode == PROVIDER_CODE_ATSC) {
+          messageIsSupportedCeaCaption &=
+              userIdentifier == USER_ID_GA94 || userIdentifier == USER_ID_DTG1;
+        }
+        if (messageIsSupportedCeaCaption) {
+          // Ignore first three bits: reserved (1) + process_cc_data_flag (1) + zero_bit (1).
+          int ccCount = seiBuffer.readUnsignedByte() & 0x1F;
+          // Ignore em_data (1)
+          seiBuffer.skipBytes(1);
+          // Each data packet consists of 24 bits: marker bits (5) + cc_valid (1) + cc_type (2)
+          // + cc_data_1 (8) + cc_data_2 (8).
+          int sampleLength = ccCount * 3;
+          int sampleStartPosition = seiBuffer.getPosition();
+          for (TrackOutput output : outputs) {
+            seiBuffer.setPosition(sampleStartPosition);
+            output.sampleData(seiBuffer, sampleLength);
+            output.sampleMetadata(
+                presentationTimeUs, C.BUFFER_FLAG_KEY_FRAME, sampleLength, 0, null);
+          }
+        }
       }
+      seiBuffer.setPosition(nextPayloadPosition);
     }
   }
 
@@ -82,7 +99,7 @@ public final class CeaUtil {
    * number of 0xFF bytes and T is the value of the terminating byte.
    *
    * @param buffer The buffer from which to read the value.
-   * @returns The read value, or -1 if the end of the buffer is reached before a value is read.
+   * @return The read value, or -1 if the end of the buffer is reached before a value is read.
    */
   private static int readNon255TerminatedValue(ParsableByteArray buffer) {
     int b;
@@ -95,31 +112,6 @@ public final class CeaUtil {
       value += b;
     } while (b == 0xFF);
     return value;
-  }
-
-  /**
-   * Inspects an sei message to determine whether it contains CEA-608.
-   * <p>
-   * The position of {@code payload} is left unchanged.
-   *
-   * @param payloadType The payload type of the message.
-   * @param payloadLength The length of the payload.
-   * @param payload A {@link ParsableByteArray} containing the payload.
-   * @return Whether the sei message contains CEA-608.
-   */
-  private static boolean isSeiMessageCea608(int payloadType, int payloadLength,
-      ParsableByteArray payload) {
-    if (payloadType != PAYLOAD_TYPE_CC || payloadLength < 8) {
-      return false;
-    }
-    int startPosition = payload.getPosition();
-    int countryCode = payload.readUnsignedByte();
-    int providerCode = payload.readUnsignedShort();
-    int userIdentifier = payload.readInt();
-    int userDataTypeCode = payload.readUnsignedByte();
-    payload.setPosition(startPosition);
-    return countryCode == COUNTRY_CODE && providerCode == PROVIDER_CODE
-        && userIdentifier == USER_ID && userDataTypeCode == USER_DATA_TYPE_CODE;
   }
 
   private CeaUtil() {}

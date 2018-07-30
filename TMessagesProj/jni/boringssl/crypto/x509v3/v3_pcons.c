@@ -1,5 +1,6 @@
 /* v3_pcons.c */
-/* Written by Dr Stephen N Henson (steve@openssl.org) for the OpenSSL
+/*
+ * Written by Dr Stephen N Henson (steve@openssl.org) for the OpenSSL
  * project.
  */
 /* ====================================================================
@@ -10,7 +11,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -54,7 +55,6 @@
  * (eay@cryptsoft.com).  This product includes software written by Tim
  * Hudson (tjh@cryptsoft.com). */
 
-
 #include <stdio.h>
 #include <string.h>
 
@@ -65,78 +65,75 @@
 #include <openssl/obj.h>
 #include <openssl/x509v3.h>
 
-
-static STACK_OF(CONF_VALUE) *
-i2v_POLICY_CONSTRAINTS(const X509V3_EXT_METHOD *method, void *bcons,
-		       STACK_OF(CONF_VALUE) *extlist);
+static STACK_OF(CONF_VALUE) *i2v_POLICY_CONSTRAINTS(const X509V3_EXT_METHOD
+                                                    *method, void *bcons, STACK_OF(CONF_VALUE)
+                                                    *extlist);
 static void *v2i_POLICY_CONSTRAINTS(const X509V3_EXT_METHOD *method,
-				    X509V3_CTX *ctx,
-				    STACK_OF(CONF_VALUE) *values);
+                                    X509V3_CTX *ctx,
+                                    STACK_OF(CONF_VALUE) *values);
 
 const X509V3_EXT_METHOD v3_policy_constraints = {
-NID_policy_constraints, 0,
-ASN1_ITEM_ref(POLICY_CONSTRAINTS),
-0,0,0,0,
-0,0,
-i2v_POLICY_CONSTRAINTS,
-v2i_POLICY_CONSTRAINTS,
-NULL,NULL,
-NULL
+    NID_policy_constraints, 0,
+    ASN1_ITEM_ref(POLICY_CONSTRAINTS),
+    0, 0, 0, 0,
+    0, 0,
+    i2v_POLICY_CONSTRAINTS,
+    v2i_POLICY_CONSTRAINTS,
+    NULL, NULL,
+    NULL
 };
 
 ASN1_SEQUENCE(POLICY_CONSTRAINTS) = {
-	ASN1_IMP_OPT(POLICY_CONSTRAINTS, requireExplicitPolicy, ASN1_INTEGER,0),
-	ASN1_IMP_OPT(POLICY_CONSTRAINTS, inhibitPolicyMapping, ASN1_INTEGER,1)
+        ASN1_IMP_OPT(POLICY_CONSTRAINTS, requireExplicitPolicy, ASN1_INTEGER,0),
+        ASN1_IMP_OPT(POLICY_CONSTRAINTS, inhibitPolicyMapping, ASN1_INTEGER,1)
 } ASN1_SEQUENCE_END(POLICY_CONSTRAINTS)
 
 IMPLEMENT_ASN1_ALLOC_FUNCTIONS(POLICY_CONSTRAINTS)
 
-
-static STACK_OF(CONF_VALUE) *
-i2v_POLICY_CONSTRAINTS(const X509V3_EXT_METHOD *method, void *a,
-		       STACK_OF(CONF_VALUE) *extlist)
+static STACK_OF(CONF_VALUE) *i2v_POLICY_CONSTRAINTS(const X509V3_EXT_METHOD
+                                                    *method, void *a, STACK_OF(CONF_VALUE)
+                                                    *extlist)
 {
-	POLICY_CONSTRAINTS *pcons = a;
-	X509V3_add_value_int("Require Explicit Policy",
-			pcons->requireExplicitPolicy, &extlist);
-	X509V3_add_value_int("Inhibit Policy Mapping",
-			pcons->inhibitPolicyMapping, &extlist);
-	return extlist;
+    POLICY_CONSTRAINTS *pcons = a;
+    X509V3_add_value_int("Require Explicit Policy",
+                         pcons->requireExplicitPolicy, &extlist);
+    X509V3_add_value_int("Inhibit Policy Mapping",
+                         pcons->inhibitPolicyMapping, &extlist);
+    return extlist;
 }
 
 static void *v2i_POLICY_CONSTRAINTS(const X509V3_EXT_METHOD *method,
-				    X509V3_CTX *ctx,
-				    STACK_OF(CONF_VALUE) *values)
+                                    X509V3_CTX *ctx,
+                                    STACK_OF(CONF_VALUE) *values)
 {
-	POLICY_CONSTRAINTS *pcons=NULL;
-	CONF_VALUE *val;
-	size_t i;
-	if(!(pcons = POLICY_CONSTRAINTS_new())) {
-		OPENSSL_PUT_ERROR(X509V3, ERR_R_MALLOC_FAILURE);
-		return NULL;
-	}
-	for(i = 0; i < sk_CONF_VALUE_num(values); i++) {
-		val = sk_CONF_VALUE_value(values, i);
-		if(!strcmp(val->name, "requireExplicitPolicy")) {
-			if(!X509V3_get_value_int(val,
-				&pcons->requireExplicitPolicy)) goto err;
-		} else if(!strcmp(val->name, "inhibitPolicyMapping")) {
-			if(!X509V3_get_value_int(val,
-				&pcons->inhibitPolicyMapping)) goto err;
-		} else {
-			OPENSSL_PUT_ERROR(X509V3, X509V3_R_INVALID_NAME);
-			X509V3_conf_err(val);
-			goto err;
-		}
-	}
-	if (!pcons->inhibitPolicyMapping && !pcons->requireExplicitPolicy) {
-		OPENSSL_PUT_ERROR(X509V3, X509V3_R_ILLEGAL_EMPTY_EXTENSION);
-		goto err;
-	}
+    POLICY_CONSTRAINTS *pcons = NULL;
+    CONF_VALUE *val;
+    size_t i;
+    if (!(pcons = POLICY_CONSTRAINTS_new())) {
+        OPENSSL_PUT_ERROR(X509V3, ERR_R_MALLOC_FAILURE);
+        return NULL;
+    }
+    for (i = 0; i < sk_CONF_VALUE_num(values); i++) {
+        val = sk_CONF_VALUE_value(values, i);
+        if (!strcmp(val->name, "requireExplicitPolicy")) {
+            if (!X509V3_get_value_int(val, &pcons->requireExplicitPolicy))
+                goto err;
+        } else if (!strcmp(val->name, "inhibitPolicyMapping")) {
+            if (!X509V3_get_value_int(val, &pcons->inhibitPolicyMapping))
+                goto err;
+        } else {
+            OPENSSL_PUT_ERROR(X509V3, X509V3_R_INVALID_NAME);
+            X509V3_conf_err(val);
+            goto err;
+        }
+    }
+    if (!pcons->inhibitPolicyMapping && !pcons->requireExplicitPolicy) {
+        OPENSSL_PUT_ERROR(X509V3, X509V3_R_ILLEGAL_EMPTY_EXTENSION);
+        goto err;
+    }
 
-	return pcons;
-	err:
-	POLICY_CONSTRAINTS_free(pcons);
-	return NULL;
+    return pcons;
+ err:
+    POLICY_CONSTRAINTS_free(pcons);
+    return NULL;
 }
-

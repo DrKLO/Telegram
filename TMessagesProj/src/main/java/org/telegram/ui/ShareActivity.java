@@ -25,6 +25,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
@@ -65,12 +66,14 @@ public class ShareActivity extends Activity {
         }
         SerializedData serializedData = new SerializedData(Utilities.hexToBytes(message));
         TLRPC.Message mess = TLRPC.Message.TLdeserialize(serializedData, serializedData.readInt32(false), false);
+        mess.readAttachPath(serializedData, 0);
+        serializedData.cleanup();
         if (mess == null) {
             finish();
             return;
         }
         String link = sharedPreferences.getString(hash + "_link", null);
-        MessageObject messageObject = new MessageObject(mess, null, false);
+        MessageObject messageObject = new MessageObject(UserConfig.selectedAccount, mess, false);
         messageObject.messageOwner.with_my_score = true;
 
         try {

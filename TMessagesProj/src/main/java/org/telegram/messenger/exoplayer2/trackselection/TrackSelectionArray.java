@@ -15,16 +15,13 @@
  */
 package org.telegram.messenger.exoplayer2.trackselection;
 
+import android.support.annotation.Nullable;
 import java.util.Arrays;
 
-/**
- * The result of a {@link TrackSelector} operation.
- */
+/** An array of {@link TrackSelection}s. */
 public final class TrackSelectionArray {
 
-  /**
-   * The number of selections in the result. Greater than or equal to zero.
-   */
+  /** The length of this array. */
   public final int length;
 
   private final TrackSelection[] trackSelections;
@@ -68,7 +65,7 @@ public final class TrackSelectionArray {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(@Nullable Object obj) {
     if (this == obj) {
       return true;
     }

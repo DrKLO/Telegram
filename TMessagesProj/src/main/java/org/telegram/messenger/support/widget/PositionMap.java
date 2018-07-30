@@ -33,7 +33,7 @@ class PositionMap<E> implements Cloneable {
     /**
      * Creates a new SparseArray containing no mappings.
      */
-    public PositionMap() {
+    PositionMap() {
         this(10);
     }
 
@@ -44,7 +44,7 @@ class PositionMap<E> implements Cloneable {
      * sparse array will be initialized with a light-weight representation
      * not requiring any additional array allocations.
      */
-    public PositionMap(int initialCapacity) {
+    PositionMap(int initialCapacity) {
         if (initialCapacity == 0) {
             mKeys = ContainerHelpers.EMPTY_INTS;
             mValues = ContainerHelpers.EMPTY_OBJECTS;
@@ -305,9 +305,11 @@ class PositionMap<E> implements Cloneable {
             gc();
         }
 
-        for (int i = 0; i < mSize; i++)
-            if (mValues[i] == value)
+        for (int i = 0; i < mSize; i++) {
+            if (mValues[i] == value) {
                 return i;
+            }
+        }
 
         return -1;
     }
@@ -376,7 +378,7 @@ class PositionMap<E> implements Cloneable {
 
         StringBuilder buffer = new StringBuilder(mSize * 28);
         buffer.append('{');
-        for (int i=0; i<mSize; i++) {
+        for (int i = 0; i < mSize; i++) {
             if (i > 0) {
                 buffer.append(", ");
             }
@@ -395,9 +397,11 @@ class PositionMap<E> implements Cloneable {
     }
 
     static int idealByteArraySize(int need) {
-        for (int i = 4; i < 32; i++)
-            if (need <= (1 << i) - 12)
+        for (int i = 4; i < 32; i++) {
+            if (need <= (1 << i) - 12) {
                 return (1 << i) - 12;
+            }
+        }
 
         return need;
     }

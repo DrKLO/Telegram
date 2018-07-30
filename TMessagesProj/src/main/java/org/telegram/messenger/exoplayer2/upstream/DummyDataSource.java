@@ -25,7 +25,7 @@ public final class DummyDataSource implements DataSource {
 
   public static final DummyDataSource INSTANCE = new DummyDataSource();
 
-  /** A factory that that produces {@link DummyDataSource}. */
+  /** A factory that produces {@link DummyDataSource}. */
   public static final Factory FACTORY = new Factory() {
     @Override
     public DataSource createDataSource() {

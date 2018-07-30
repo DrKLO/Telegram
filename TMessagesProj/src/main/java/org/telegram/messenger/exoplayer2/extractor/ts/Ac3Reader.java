@@ -19,6 +19,7 @@ import android.support.annotation.IntDef;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.audio.Ac3Util;
+import org.telegram.messenger.exoplayer2.audio.Ac3Util.SyncFrameInfo;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
 import org.telegram.messenger.exoplayer2.extractor.TrackOutput;
 import org.telegram.messenger.exoplayer2.extractor.ts.TsPayloadReader.TrackIdGenerator;
@@ -39,7 +40,7 @@ public final class Ac3Reader implements ElementaryStreamReader {
   private static final int STATE_READING_HEADER = 1;
   private static final int STATE_READING_SAMPLE = 2;
 
-  private static final int HEADER_SIZE = 8;
+  private static final int HEADER_SIZE = 128;
 
   private final ParsableBitArray headerScratchBits;
   private final ParsableByteArray headerScratchBytes;
@@ -187,7 +188,7 @@ public final class Ac3Reader implements ElementaryStreamReader {
   @SuppressWarnings("ReferenceEquality")
   private void parseHeader() {
     headerScratchBits.setPosition(0);
-    Ac3Util.Ac3SyncFrameInfo frameInfo = Ac3Util.parseAc3SyncframeInfo(headerScratchBits);
+    SyncFrameInfo frameInfo = Ac3Util.parseAc3SyncframeInfo(headerScratchBits);
     if (format == null || frameInfo.channelCount != format.channelCount
         || frameInfo.sampleRate != format.sampleRate
         || frameInfo.mimeType != format.sampleMimeType) {

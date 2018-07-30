@@ -27,18 +27,28 @@ import java.util.ArrayList;
 public class TextInfoPrivacyCell extends FrameLayout {
 
     private TextView textView;
+    private String linkTextColorKey = Theme.key_windowBackgroundWhiteLinkText;
 
     public TextInfoPrivacyCell(Context context) {
         super(context);
 
         textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
-        textView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(17));
         textView.setMovementMethod(LinkMovementMethod.getInstance());
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 0, 17, 0));
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
+        textView.setLinkTextColor(Theme.getColor(linkTextColorKey));
+    }
+
+    public void setLinkTextColorKey(String key) {
+        linkTextColorKey = key;
     }
 
     @Override

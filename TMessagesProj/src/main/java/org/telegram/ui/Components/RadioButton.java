@@ -21,7 +21,6 @@ import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
-import org.telegram.ui.ActionBar.Theme;
 
 public class RadioButton extends View {
 
@@ -144,6 +143,7 @@ public class RadioButton extends View {
         if (bitmap == null || bitmap.getWidth() != getMeasuredWidth()) {
             if (bitmap != null) {
                 bitmap.recycle();
+                bitmap = null;
             }
             try {
                 bitmap = Bitmap.createBitmap(getMeasuredWidth(), getMeasuredHeight(), Bitmap.Config.ARGB_8888);

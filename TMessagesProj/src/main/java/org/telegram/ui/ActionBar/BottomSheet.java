@@ -48,12 +48,14 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
 
 public class BottomSheet extends Dialog {
 
+    protected int currentAccount = UserConfig.selectedAccount;
     protected ViewGroup containerView;
     protected ContainerView container;
     private WindowInsets lastInsets;
@@ -99,9 +101,18 @@ public class BottomSheet extends Dialog {
 
     private ArrayList<BottomSheetCell> itemViews = new ArrayList<>();
 
+    private Runnable dismissRunnable = new Runnable() {
+        @Override
+        public void run() {
+            dismiss();
+        }
+    };
+
     private BottomSheetDelegateInterface delegate;
 
     protected AnimatorSet currentSheetAnimation;
+
+    protected View nestedScrollChild;
 
     protected class ContainerView extends FrameLayout implements NestedScrollingParent {
 
@@ -121,7 +132,8 @@ public class BottomSheet extends Dialog {
 
         @Override
         public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
-            return !dismissed && allowNestedScroll && nestedScrollAxes == ViewCompat.SCROLL_AXIS_VERTICAL && !canDismissWithSwipe();
+            return !(nestedScrollChild != null && child != nestedScrollChild) &&
+                    !dismissed && allowNestedScroll && nestedScrollAxes == ViewCompat.SCROLL_AXIS_VERTICAL && !canDismissWithSwipe();
         }
 
         @Override
@@ -171,7 +183,6 @@ public class BottomSheet extends Dialog {
                 consumed[1] = dy;
                 if (currentTranslation < 0) {
                     currentTranslation = 0;
-                    consumed[1] += currentTranslation;
                 }
                 containerView.setTranslationY(currentTranslation);
             }
@@ -225,15 +236,14 @@ public class BottomSheet extends Dialog {
             }
         }
 
-        @Override
-        public boolean onTouchEvent(MotionEvent ev) {
+        boolean processTouchEvent(MotionEvent ev, boolean intercept) {
             if (dismissed) {
                 return false;
             }
             if (onContainerTouchEvent(ev)) {
                 return true;
             }
-            if (canDismissWithTouchOutside() && ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && (!startedTracking && !maybeStartTracking || ev.getPointerCount() == 1)) {
+            if (canDismissWithTouchOutside() && ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && (!startedTracking && !maybeStartTracking && ev.getPointerCount() == 1)) {
                 startedTrackingX = (int) ev.getX();
                 startedTrackingY = (int) ev.getY();
                 if (startedTrackingY < containerView.getTop() || startedTrackingX < containerView.getLeft() || startedTrackingX > containerView.getRight()) {
@@ -286,7 +296,12 @@ public class BottomSheet extends Dialog {
                 }
                 startedTrackingPointerId = -1;
             }
-            return startedTracking || !canDismissWithSwipe();
+            return !intercept && maybeStartTracking || startedTracking || !canDismissWithSwipe();
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent ev) {
+            return processTouchEvent(ev, false);
         }
 
         @Override
@@ -408,7 +423,7 @@ public class BottomSheet extends Dialog {
         @Override
         public boolean onInterceptTouchEvent(MotionEvent event) {
             if (canDismissWithSwipe()) {
-                return onTouchEvent(event);
+                return processTouchEvent(event, true);
             }
             return super.onInterceptTouchEvent(event);
         }
@@ -1016,6 +1031,10 @@ public class BottomSheet extends Dialog {
         public Builder setApplyBottomPadding(boolean value) {
             bottomSheet.applyBottomPadding = value;
             return this;
+        }
+
+        public Runnable getDismissRunnable() {
+            return bottomSheet.dismissRunnable;
         }
 
         public BottomSheet setUseFullWidth(boolean value) {

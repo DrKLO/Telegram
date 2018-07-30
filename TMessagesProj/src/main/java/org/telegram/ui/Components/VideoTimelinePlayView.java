@@ -41,6 +41,7 @@ public class VideoTimelinePlayView extends View {
     private boolean pressedRight;
     private boolean pressedPlay;
     private float playProgress = 0.5f;
+    private float bufferedProgress = 0.5f;
     private float pressDx;
     private MediaMetadataRetriever mediaMetadataRetriever;
     private VideoTimelineViewDelegate delegate;
@@ -338,7 +339,8 @@ public class VideoTimelinePlayView extends View {
                 FileLog.e(e);
             }
         }
-        for (Bitmap bitmap : frames) {
+        for (int a = 0; a < frames.size(); a++) {
+            Bitmap bitmap = frames.get(a);
             if (bitmap != null) {
                 bitmap.recycle();
             }
@@ -360,7 +362,8 @@ public class VideoTimelinePlayView extends View {
     }
 
     public void clearFrames() {
-        for (Bitmap bitmap : frames) {
+        for (int a = 0; a < frames.size(); a++) {
+            Bitmap bitmap = frames.get(a);
             if (bitmap != null) {
                 bitmap.recycle();
             }

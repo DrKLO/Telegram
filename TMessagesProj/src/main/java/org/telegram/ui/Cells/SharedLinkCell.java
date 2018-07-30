@@ -18,7 +18,9 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -44,6 +46,60 @@ public class SharedLinkCell extends FrameLayout {
     public interface SharedLinkCellDelegate {
         void needOpenWebView(TLRPC.WebPage webPage);
         boolean canPerformActions();
+        void onLinkLongPress(final String urlFinal);
+    }
+
+    private boolean checkingForLongPress = false;
+    private CheckForLongPress pendingCheckForLongPress = null;
+    private int pressCount = 0;
+    private CheckForTap pendingCheckForTap = null;
+
+    private final class CheckForTap implements Runnable {
+        public void run() {
+            if (pendingCheckForLongPress == null) {
+                pendingCheckForLongPress = new CheckForLongPress();
+            }
+            pendingCheckForLongPress.currentPressCount = ++pressCount;
+            postDelayed(pendingCheckForLongPress, ViewConfiguration.getLongPressTimeout() - ViewConfiguration.getTapTimeout());
+        }
+    }
+
+    class CheckForLongPress implements Runnable {
+        public int currentPressCount;
+
+        public void run() {
+            if (checkingForLongPress && getParent() != null && currentPressCount == pressCount) {
+                checkingForLongPress = false;
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                if (pressedLink >= 0) {
+                    delegate.onLinkLongPress(links.get(pressedLink));
+                }
+                MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
+                onTouchEvent(event);
+                event.recycle();
+            }
+        }
+    }
+
+    protected void startCheckLongPress() {
+        if (checkingForLongPress) {
+            return;
+        }
+        checkingForLongPress = true;
+        if (pendingCheckForTap == null) {
+            pendingCheckForTap = new CheckForTap();
+        }
+        postDelayed(pendingCheckForTap, ViewConfiguration.getTapTimeout());
+    }
+
+    protected void cancelCheckLongPress() {
+        checkingForLongPress = false;
+        if (pendingCheckForLongPress != null) {
+            removeCallbacks(pendingCheckForLongPress);
+        }
+        if (pendingCheckForTap != null) {
+            removeCallbacks(pendingCheckForTap);
+        }
     }
 
     private boolean linkPreviewPressed;
@@ -351,6 +407,7 @@ public class SharedLinkCell extends FrameLayout {
                                 resetPressedLink();
                                 pressedLink = a;
                                 linkPreviewPressed = true;
+                                startCheckLongPress();
                                 try {
                                     urlPath.setCurrentLayout(layout, 0, 0);
                                     layout.getSelectionPath(0, layout.getText().length(), urlPath);
@@ -399,6 +456,7 @@ public class SharedLinkCell extends FrameLayout {
     protected void resetPressedLink() {
         pressedLink = -1;
         linkPreviewPressed = false;
+        cancelCheckLongPress();
         invalidate();
     }
 

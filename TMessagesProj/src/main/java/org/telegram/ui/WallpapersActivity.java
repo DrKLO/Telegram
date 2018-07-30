@@ -8,7 +8,6 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -18,6 +17,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -27,6 +27,7 @@ import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.ApplicationLoader;
@@ -53,7 +54,6 @@ import org.telegram.ui.Components.WallpaperUpdater;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class WallpapersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -62,7 +62,6 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
     private FrameLayout progressView;
     private View progressViewBackground;
     private View doneButton;
-    private RadialProgressView progressBar;
     private RecyclerListView listView;
     private WallpaperUpdater updater;
     private File wallpaperFile;
@@ -72,7 +71,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
     private boolean overrideThemeWallpaper;
     private int selectedColor;
     private ArrayList<TLRPC.WallPaper> wallPapers = new ArrayList<>();
-    private HashMap<Integer, TLRPC.WallPaper> wallpappersByIds = new HashMap<>();
+    private SparseArray<TLRPC.WallPaper> wallpappersByIds = new SparseArray<>();
 
     private String loadingFile = null;
     private File loadingFileObject = null;
@@ -84,15 +83,15 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
 
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidFailedLoad);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.wallpapersDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileDidFailedLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileDidLoaded);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.wallpapersDidLoaded);
 
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         selectedBackground = preferences.getInt("selectedBackground", 1000001);
         overrideThemeWallpaper = preferences.getBoolean("overrideThemeWallpaper", false);
         selectedColor = preferences.getInt("selectedColor", 0);
-        MessagesStorage.getInstance().getWallpapers();
+        MessagesStorage.getInstance(currentAccount).getWallpapers();
         return true;
     }
 
@@ -100,9 +99,9 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         updater.cleanup();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileDidFailedLoad);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.wallpapersDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileDidFailedLoad);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileDidLoaded);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.wallpapersDidLoaded);
     }
 
     @Override
@@ -146,7 +145,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                         }
                         TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(wallPaper.sizes, Math.min(width, height));
                         String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
-                        File f = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                        File f = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
                         File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper.jpg");
                         try {
                             done = AndroidUtilities.copyFile(f, toFile);
@@ -170,7 +169,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                     }
 
                     if (done) {
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putInt("selectedBackground", selectedBackground);
                         editor.putInt("selectedColor", selectedColor);
@@ -207,7 +206,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
         progressViewBackground.setBackgroundResource(R.drawable.system_loader);
         progressView.addView(progressViewBackground, LayoutHelper.createFrame(36, 36, Gravity.CENTER));
 
-        progressBar = new RadialProgressView(context);
+        RadialProgressView progressBar = new RadialProgressView(context);
         progressBar.setSize(AndroidUtilities.dp(28));
         progressBar.setProgressColor(0xffffffff);
         progressView.addView(progressBar, LayoutHelper.createFrame(32, 32, Gravity.CENTER));
@@ -292,7 +291,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                     return;
                 }
                 String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
-                File f = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                File f = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
                 if (!f.exists()) {
                     int result[] = AndroidUtilities.calcDrawableColor(backgroundImage.getDrawable());
                     progressViewBackground.getBackground().setColorFilter(new PorterDuffColorFilter(result[0], PorterDuff.Mode.MULTIPLY));
@@ -302,11 +301,11 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                     progressView.setVisibility(View.VISIBLE);
                     loadingSize = size;
                     selectedColor = 0;
-                    FileLoader.getInstance().loadFile(size, null, 1);
+                    FileLoader.getInstance(currentAccount).loadFile(size, null, 1);
                     backgroundImage.setBackgroundColor(0);
                 } else {
                     if (loadingFile != null) {
-                        FileLoader.getInstance().cancelLoadFile(loadingSize);
+                        FileLoader.getInstance(currentAccount).cancelLoadFile(loadingSize);
                     }
                     loadingFileObject = null;
                     loadingFile = null;
@@ -323,7 +322,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                 }
             } else {
                 if (loadingFile != null) {
-                    FileLoader.getInstance().cancelLoadFile(loadingSize);
+                    FileLoader.getInstance(currentAccount).cancelLoadFile(loadingSize);
                 }
                 if (selectedBackground == 1000001) {
                     backgroundImage.setImageResource(R.drawable.background_hd);
@@ -365,7 +364,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
 
     @SuppressWarnings("unchecked")
     @Override
-    public void didReceivedNotification(int id, final Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.FileDidFailedLoad) {
             String location = (String) args[0];
             if (loadingFile != null && loadingFile.equals(location)) {
@@ -404,7 +403,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
 
     private void loadWallpapers() {
         TLRPC.TL_account_getWallPapers req = new TLRPC.TL_account_getWallPapers();
-        int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(final TLObject response, TLRPC.TL_error error) {
                 if (error != null) {
@@ -426,12 +425,12 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                         if (backgroundImage != null) {
                             processSelectedBackground();
                         }
-                        MessagesStorage.getInstance().putWallpapers(wallPapers);
+                        MessagesStorage.getInstance(currentAccount).putWallpapers(wallPapers);
                     }
                 });
             }
         });
-        ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
+        ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
     }
 
     @Override

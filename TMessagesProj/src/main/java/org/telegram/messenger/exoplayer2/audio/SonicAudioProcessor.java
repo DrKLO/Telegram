@@ -15,16 +15,18 @@
  */
 package org.telegram.messenger.exoplayer2.audio;
 
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.C.Encoding;
 import org.telegram.messenger.exoplayer2.Format;
+import org.telegram.messenger.exoplayer2.util.Assertions;
 import org.telegram.messenger.exoplayer2.util.Util;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 
 /**
- * An {@link AudioProcessor} that uses the Sonic library to modify the speed/pitch of audio.
+ * An {@link AudioProcessor} that uses the Sonic library to modify audio speed/pitch/sample rate.
  */
 public final class SonicAudioProcessor implements AudioProcessor {
 
@@ -44,19 +46,30 @@ public final class SonicAudioProcessor implements AudioProcessor {
    * The minimum allowed pitch in {@link #setPitch(float)}.
    */
   public static final float MINIMUM_PITCH = 0.1f;
+  /**
+   * Indicates that the output sample rate should be the same as the input.
+   */
+  public static final int SAMPLE_RATE_NO_CHANGE = -1;
 
   /**
    * The threshold below which the difference between two pitch/speed factors is negligible.
    */
   private static final float CLOSE_THRESHOLD = 0.01f;
 
+  /**
+   * The minimum number of output bytes at which the speedup is calculated using the input/output
+   * byte counts, rather than using the current playback parameters speed.
+   */
+  private static final int MIN_BYTES_FOR_SPEEDUP_CALCULATION = 1024;
+
   private int channelCount;
   private int sampleRateHz;
-
-  private Sonic sonic;
   private float speed;
   private float pitch;
+  private int outputSampleRateHz;
+  private int pendingOutputSampleRateHz;
 
+  private @Nullable Sonic sonic;
   private ByteBuffer buffer;
   private ShortBuffer shortBuffer;
   private ByteBuffer outputBuffer;
@@ -72,45 +85,76 @@ public final class SonicAudioProcessor implements AudioProcessor {
     pitch = 1f;
     channelCount = Format.NO_VALUE;
     sampleRateHz = Format.NO_VALUE;
+    outputSampleRateHz = Format.NO_VALUE;
     buffer = EMPTY_BUFFER;
     shortBuffer = buffer.asShortBuffer();
     outputBuffer = EMPTY_BUFFER;
+    pendingOutputSampleRateHz = SAMPLE_RATE_NO_CHANGE;
   }
 
   /**
-   * Sets the playback speed. The new speed will take effect after a call to {@link #flush()}.
+   * Sets the playback speed. Calling this method will discard any data buffered within the
+   * processor, and may update the value returned by {@link #isActive()}.
    *
    * @param speed The requested new playback speed.
    * @return The actual new playback speed.
    */
   public float setSpeed(float speed) {
-    this.speed = Util.constrainValue(speed, MINIMUM_SPEED, MAXIMUM_SPEED);
-    return this.speed;
+    speed = Util.constrainValue(speed, MINIMUM_SPEED, MAXIMUM_SPEED);
+    if (this.speed != speed) {
+      this.speed = speed;
+      sonic = null;
+    }
+    flush();
+    return speed;
   }
 
   /**
-   * Sets the playback pitch. The new pitch will take effect after a call to {@link #flush()}.
+   * Sets the playback pitch. Calling this method will discard any data buffered within the
+   * processor, and may update the value returned by {@link #isActive()}.
    *
    * @param pitch The requested new pitch.
    * @return The actual new pitch.
    */
   public float setPitch(float pitch) {
-    this.pitch = Util.constrainValue(pitch, MINIMUM_PITCH, MAXIMUM_PITCH);
+    pitch = Util.constrainValue(pitch, MINIMUM_PITCH, MAXIMUM_PITCH);
+    if (this.pitch != pitch) {
+      this.pitch = pitch;
+      sonic = null;
+    }
+    flush();
     return pitch;
   }
 
   /**
-   * Returns the number of bytes of input queued since the last call to {@link #flush()}.
+   * Sets the sample rate for output audio, in hertz. Pass {@link #SAMPLE_RATE_NO_CHANGE} to output
+   * audio at the same sample rate as the input. After calling this method, call
+   * {@link #configure(int, int, int)} to start using the new sample rate.
+   *
+   * @param sampleRateHz The sample rate for output audio, in hertz.
+   * @see #configure(int, int, int)
    */
-  public long getInputByteCount() {
-    return inputBytes;
+  public void setOutputSampleRateHz(int sampleRateHz) {
+    pendingOutputSampleRateHz = sampleRateHz;
   }
 
   /**
-   * Returns the number of bytes of output dequeued since the last call to {@link #flush()}.
+   * Returns the specified duration scaled to take into account the speedup factor of this instance,
+   * in the same units as {@code duration}.
+   *
+   * @param duration The duration to scale taking into account speedup.
+   * @return The specified duration scaled to take into account speedup, in the same units as
+   *     {@code duration}.
    */
-  public long getOutputByteCount() {
-    return outputBytes;
+  public long scaleDurationForSpeedup(long duration) {
+    if (outputBytes >= MIN_BYTES_FOR_SPEEDUP_CALCULATION) {
+      return outputSampleRateHz == sampleRateHz
+          ? Util.scaleLargeTimestamp(duration, inputBytes, outputBytes)
+          : Util.scaleLargeTimestamp(duration, inputBytes * outputSampleRateHz,
+              outputBytes * sampleRateHz);
+    } else {
+      return (long) ((double) speed * duration);
+    }
   }
 
   @Override
@@ -119,17 +163,25 @@ public final class SonicAudioProcessor implements AudioProcessor {
     if (encoding != C.ENCODING_PCM_16BIT) {
       throw new UnhandledFormatException(sampleRateHz, channelCount, encoding);
     }
-    if (this.sampleRateHz == sampleRateHz && this.channelCount == channelCount) {
+    int outputSampleRateHz = pendingOutputSampleRateHz == SAMPLE_RATE_NO_CHANGE
+        ? sampleRateHz : pendingOutputSampleRateHz;
+    if (this.sampleRateHz == sampleRateHz && this.channelCount == channelCount
+        && this.outputSampleRateHz == outputSampleRateHz) {
       return false;
     }
     this.sampleRateHz = sampleRateHz;
     this.channelCount = channelCount;
+    this.outputSampleRateHz = outputSampleRateHz;
+    sonic = null;
     return true;
   }
 
   @Override
   public boolean isActive() {
-    return Math.abs(speed - 1f) >= CLOSE_THRESHOLD || Math.abs(pitch - 1f) >= CLOSE_THRESHOLD;
+    return sampleRateHz != Format.NO_VALUE
+        && (Math.abs(speed - 1f) >= CLOSE_THRESHOLD
+            || Math.abs(pitch - 1f) >= CLOSE_THRESHOLD
+            || outputSampleRateHz != sampleRateHz);
   }
 
   @Override
@@ -143,7 +195,13 @@ public final class SonicAudioProcessor implements AudioProcessor {
   }
 
   @Override
+  public int getOutputSampleRateHz() {
+    return outputSampleRateHz;
+  }
+
+  @Override
   public void queueInput(ByteBuffer inputBuffer) {
+    Assertions.checkState(sonic != null);
     if (inputBuffer.hasRemaining()) {
       ShortBuffer shortBuffer = inputBuffer.asShortBuffer();
       int inputSize = inputBuffer.remaining();
@@ -151,7 +209,7 @@ public final class SonicAudioProcessor implements AudioProcessor {
       sonic.queueInput(shortBuffer);
       inputBuffer.position(inputBuffer.position() + inputSize);
     }
-    int outputSize = sonic.getSamplesAvailable() * channelCount * 2;
+    int outputSize = sonic.getFramesAvailable() * channelCount * 2;
     if (outputSize > 0) {
       if (buffer.capacity() < outputSize) {
         buffer = ByteBuffer.allocateDirect(outputSize).order(ByteOrder.nativeOrder());
@@ -169,6 +227,7 @@ public final class SonicAudioProcessor implements AudioProcessor {
 
   @Override
   public void queueEndOfStream() {
+    Assertions.checkState(sonic != null);
     sonic.queueEndOfStream();
     inputEnded = true;
   }
@@ -182,14 +241,18 @@ public final class SonicAudioProcessor implements AudioProcessor {
 
   @Override
   public boolean isEnded() {
-    return inputEnded && (sonic == null || sonic.getSamplesAvailable() == 0);
+    return inputEnded && (sonic == null || sonic.getFramesAvailable() == 0);
   }
 
   @Override
   public void flush() {
-    sonic = new Sonic(sampleRateHz, channelCount);
-    sonic.setSpeed(speed);
-    sonic.setPitch(pitch);
+    if (isActive()) {
+      if (sonic == null) {
+        sonic = new Sonic(sampleRateHz, channelCount, speed, pitch, outputSampleRateHz);
+      } else {
+        sonic.flush();
+      }
+    }
     outputBuffer = EMPTY_BUFFER;
     inputBytes = 0;
     outputBytes = 0;
@@ -198,12 +261,16 @@ public final class SonicAudioProcessor implements AudioProcessor {
 
   @Override
   public void reset() {
-    sonic = null;
+    speed = 1f;
+    pitch = 1f;
+    channelCount = Format.NO_VALUE;
+    sampleRateHz = Format.NO_VALUE;
+    outputSampleRateHz = Format.NO_VALUE;
     buffer = EMPTY_BUFFER;
     shortBuffer = buffer.asShortBuffer();
     outputBuffer = EMPTY_BUFFER;
-    channelCount = Format.NO_VALUE;
-    sampleRateHz = Format.NO_VALUE;
+    pendingOutputSampleRateHz = SAMPLE_RATE_NO_CHANGE;
+    sonic = null;
     inputBytes = 0;
     outputBytes = 0;
     inputEnded = false;

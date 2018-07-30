@@ -1,9 +1,9 @@
 /*
- * This is the source code of tgnet library v. 1.0
+ * This is the source code of tgnet library v. 1.1
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2016.
+ * Copyright Nikolai Kudashov, 2015-2018.
  */
 
 #include "FileLoadOperation.h"
@@ -60,14 +60,14 @@ FileLoadOperation::FileLoadOperation(int32_t dc_id, int64_t id, int64_t volume_i
 FileLoadOperation::~FileLoadOperation() {
 #ifdef ANDROID
     if (ptr1 != nullptr) {
-        jniEnv->DeleteGlobalRef(ptr1);
+        jniEnv[0]->DeleteGlobalRef(ptr1);
         ptr1 = nullptr;
     }
 #endif
 }
 
 void FileLoadOperation::start() {
-    ConnectionsManager::getInstance().scheduleTask([&] {
+    ConnectionsManager::getInstance(0).scheduleTask([&] {
         if (state != FileLoadStateIdle) {
             return;
         }
@@ -180,7 +180,7 @@ boolean isForceRequest() {
 */
 
 void FileLoadOperation::cancel() {
-    ConnectionsManager::getInstance().scheduleTask([&] {
+    ConnectionsManager::getInstance(0).scheduleTask([&] {
         if (state == FileLoadStateFinished || state == FileLoadStateFailed) {
             return;
         }
@@ -195,7 +195,7 @@ void FileLoadOperation::setDelegate(onFinishedFunc onFinished, onFailedFunc onFa
 }
 
 void FileLoadOperation::cleanup() {
-    ConnectionsManager::getInstance().scheduleTask([&] {
+    ConnectionsManager::getInstance(0).scheduleTask([&] {
         if (tempFile != nullptr) {
             fclose(tempFile);
             tempFile = nullptr;
@@ -206,7 +206,7 @@ void FileLoadOperation::cleanup() {
         }
         for (size_t a = 0; a < requestInfos.size(); a++) {
             if (requestInfos[a] != nullptr && requestInfos[a]->requestToken != 0) {
-                ConnectionsManager::getInstance().cancelRequestInternal(requestInfos[a]->requestToken, true, false);
+                ConnectionsManager::getInstance(0).cancelRequestInternal(requestInfos[a]->requestToken, 0, true, false);
             }
         }
         requestInfos.clear();
@@ -374,7 +374,7 @@ void FileLoadOperation::startDownloadRequest() {
         request->limit = currentDownloadChunkSize;
         nextDownloadOffset += currentDownloadChunkSize;
 
-        requestInfo->requestToken = ConnectionsManager::getInstance().sendRequest(request, [&, requestInfo](TLObject *response, TL_error *error, int32_t connectionType) {
+        requestInfo->requestToken = ConnectionsManager::getInstance(0).sendRequest(request, [&, requestInfo](TLObject *response, TL_error *error, int32_t connectionType) {
             requestInfo->requestToken = 0;
             if (response != nullptr) {
                 TL_upload_file *res = (TL_upload_file *) response;

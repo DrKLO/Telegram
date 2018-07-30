@@ -23,6 +23,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -41,6 +42,7 @@ public class HintDialogCell extends FrameLayout {
     private StaticLayout countLayout;
 
     private long dialog_id;
+    private int currentAccount = UserConfig.selectedAccount;
 
     public HintDialogCell(Context context) {
         super(context);
@@ -68,7 +70,7 @@ public class HintDialogCell extends FrameLayout {
         if (mask != 0 && (mask & MessagesController.UPDATE_MASK_READ_DIALOG_MESSAGE) == 0 && (mask & MessagesController.UPDATE_MASK_NEW_MESSAGE) == 0) {
             return;
         }
-        TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
+        TLRPC.TL_dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
         if (dialog != null && dialog.unread_count != 0) {
             if (lastUnreadCount != dialog.unread_count) {
                 lastUnreadCount = dialog.unread_count;
@@ -92,10 +94,10 @@ public class HintDialogCell extends FrameLayout {
         int uid = (int) dialog_id;
         TLRPC.FileLocation photo = null;
         if (uid > 0) {
-            TLRPC.User user = MessagesController.getInstance().getUser(uid);
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(uid);
             avatarDrawable.setInfo(user);
         } else {
-            TLRPC.Chat chat = MessagesController.getInstance().getChat(-uid);
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-uid);
             avatarDrawable.setInfo(chat);
         }
     }
@@ -104,7 +106,7 @@ public class HintDialogCell extends FrameLayout {
         dialog_id = uid;
         TLRPC.FileLocation photo = null;
         if (uid > 0) {
-            TLRPC.User user = MessagesController.getInstance().getUser(uid);
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(uid);
             if (name != null) {
                 nameTextView.setText(name);
             } else if (user != null) {
@@ -117,7 +119,7 @@ public class HintDialogCell extends FrameLayout {
                 photo = user.photo.photo_small;
             }
         } else {
-            TLRPC.Chat chat = MessagesController.getInstance().getChat(-uid);
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-uid);
             if (name != null) {
                 nameTextView.setText(name);
             } else if (chat != null) {
@@ -146,7 +148,7 @@ public class HintDialogCell extends FrameLayout {
             int left = AndroidUtilities.dp(54);
             int x = left - AndroidUtilities.dp(5.5f);
             rect.set(x, top, x + countWidth + AndroidUtilities.dp(11), top + AndroidUtilities.dp(23));
-            canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, MessagesController.getInstance().isDialogMuted(dialog_id) ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint);
+            canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, MessagesController.getInstance(currentAccount).isDialogMuted(dialog_id) ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint);
             canvas.save();
             canvas.translate(left, top + AndroidUtilities.dp(4));
             countLayout.draw(canvas);

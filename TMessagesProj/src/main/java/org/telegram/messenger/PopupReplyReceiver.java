@@ -16,7 +16,10 @@ public class PopupReplyReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        if (intent == null) {
+            return;
+        }
         ApplicationLoader.postInitApplication();
-        NotificationsController.getInstance().forceShowPopupForReply();
+        NotificationsController.getInstance(intent.getIntExtra("currentAccount", UserConfig.selectedAccount)).forceShowPopupForReply();
     }
 }

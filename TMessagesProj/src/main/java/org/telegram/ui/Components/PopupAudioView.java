@@ -18,6 +18,7 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesController;
@@ -29,10 +30,11 @@ import org.telegram.ui.Cells.BaseCell;
 
 import java.io.File;
 
-public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate, MediaController.FileDownloadProgressListener {
+public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate, DownloadController.FileDownloadProgressListener {
 
     private boolean wasLayout = false;
     protected MessageObject currentMessageObject;
+    private int currentAccount;
 
     private TextPaint timePaint;
 
@@ -58,7 +60,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
         timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
         timePaint.setTextSize(AndroidUtilities.dp(16));
 
-        TAG = MediaController.getInstance().generateObserverTag();
+        TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
 
         seekBar = new SeekBar(getContext());
         seekBar.setDelegate(this);
@@ -67,7 +69,8 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
 
     public void setMessageObject(MessageObject messageObject) {
         if (currentMessageObject != messageObject) {
-            seekBar.setColors(Theme.getColor(Theme.key_chat_inAudioSeekbar), Theme.getColor(Theme.key_chat_inAudioSeekbarFill), Theme.getColor(Theme.key_chat_inAudioSeekbarSelected));
+            currentAccount = messageObject.currentAccount;
+            seekBar.setColors(Theme.getColor(Theme.key_chat_inAudioSeekbar), Theme.getColor(Theme.key_chat_inAudioSeekbar), Theme.getColor(Theme.key_chat_inAudioSeekbarFill), Theme.getColor(Theme.key_chat_inAudioSeekbarFill), Theme.getColor(Theme.key_chat_inAudioSeekbarSelected));
             progressView.setProgressColors(0xffd9e2eb, 0xff86c5f8); //TODO
 
             currentMessageObject = messageObject;
@@ -157,7 +160,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        MediaController.getInstance().removeLoadingFileObserver(this);
+        DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
     }
 
     @Override
@@ -207,7 +210,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
             boolean result = MediaController.getInstance().playMessage(currentMessageObject);
             if (!currentMessageObject.isOut() && currentMessageObject.isContentUnread()) {
                 if (currentMessageObject.messageOwner.to_id.channel_id == 0) {
-                    MessagesController.getInstance().markMessageContentAsRead(currentMessageObject);
+                    MessagesController.getInstance(currentAccount).markMessageContentAsRead(currentMessageObject);
                     currentMessageObject.setContentIsRead();
                 }
             }
@@ -222,11 +225,11 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
                 invalidate();
             }
         } else if (buttonState == 2) {
-            FileLoader.getInstance().loadFile(currentMessageObject.getDocument(), true, 0);
+            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), true, 0);
             buttonState = 4;
             invalidate();
         } else if (buttonState == 3) {
-            FileLoader.getInstance().cancelLoadFile(currentMessageObject.getDocument());
+            FileLoader.getInstance(currentAccount).cancelLoadFile(currentMessageObject.getDocument());
             buttonState = 2;
             invalidate();
         }
@@ -263,7 +266,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
 
     public void downloadAudioIfNeed() {
         if (buttonState == 2) {
-            FileLoader.getInstance().loadFile(currentMessageObject.getDocument(), true, 0);
+            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), true, 0);
             buttonState = 3;
             invalidate();
         }
@@ -273,7 +276,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
         String fileName = currentMessageObject.getFileName();
         File cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
         if (cacheFile.exists()) {
-            MediaController.getInstance().removeLoadingFileObserver(this);
+            DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
             boolean playing = MediaController.getInstance().isPlayingMessage(currentMessageObject);
             if (!playing || playing && MediaController.getInstance().isMessagePaused()) {
                 buttonState = 0;
@@ -282,8 +285,8 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
             }
             progressView.setProgress(0);
         } else {
-            MediaController.getInstance().addLoadingFileObserver(fileName, this);
-            if (!FileLoader.getInstance().isLoadingFile(fileName)) {
+            DownloadController.getInstance(currentAccount).addLoadingFileObserver(fileName, this);
+            if (!FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
                 buttonState = 2;
                 progressView.setProgress(0);
             } else {

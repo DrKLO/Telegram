@@ -15,24 +15,22 @@
  */
 package org.telegram.messenger.support.widget;
 
+import static org.telegram.messenger.support.widget.RecyclerView.ItemAnimator.ItemHolderInfo;
+import static org.telegram.messenger.support.widget.RecyclerView.ViewHolder;
+import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_APPEAR;
+import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_APPEAR_AND_DISAPPEAR;
+import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_APPEAR_PRE_AND_POST;
+import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_DISAPPEARED;
+import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_POST;
+import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_PRE;
+import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_PRE_AND_POST;
+
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
 import android.support.v4.util.ArrayMap;
 import android.support.v4.util.LongSparseArray;
 import android.support.v4.util.Pools;
-import android.view.View;
-
-import static org.telegram.messenger.support.widget.RecyclerView.ViewHolder;
-import static org.telegram.messenger.support.widget.RecyclerView.ItemAnimator.ItemHolderInfo;
-
-import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_APPEAR_PRE_AND_POST;
-import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_APPEAR_AND_DISAPPEAR;
-import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_PRE_AND_POST;
-import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_DISAPPEARED;
-import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_APPEAR;
-import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_PRE;
-import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_POST;
 /**
  * This class abstracts all tracking for Views to run animations.
  */
@@ -135,7 +133,7 @@ class ViewInfoStore {
     }
 
     /**
-     * Adds the given ViewHolder to the onAppeared in pre layout list. These are Views added by the
+     * Adds the given ViewHolder to the appeared in pre layout list. These are Views added by the
      * LayoutManager during a pre-layout pass. We distinguish them from other views that were
      * already in the pre-layout so that ItemAnimator can choose to run a different animation for
      * them.
@@ -218,7 +216,7 @@ class ViewInfoStore {
     }
 
     void process(ProcessCallback callback) {
-        for (int index = mLayoutHolderMap.size() - 1; index >= 0; index --) {
+        for (int index = mLayoutHolderMap.size() - 1; index >= 0; index--) {
             final ViewHolder viewHolder = mLayoutHolderMap.keyAt(index);
             final InfoRecord record = mLayoutHolderMap.removeAt(index);
             if ((record.flags & FLAG_APPEAR_AND_DISAPPEAR) == FLAG_APPEAR_AND_DISAPPEAR) {

@@ -9,10 +9,6 @@ import android.os.Bundle;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.ui.Components.voip.VoIPHelper;
 
-/**
- * Created by grishka on 22.11.16.
- */
-
 public class VoIPPermissionActivity extends Activity{
 	@Override
 	protected void onCreate(Bundle savedInstanceState){

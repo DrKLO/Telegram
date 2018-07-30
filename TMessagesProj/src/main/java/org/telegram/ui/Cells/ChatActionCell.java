@@ -26,6 +26,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
@@ -43,7 +44,7 @@ public class ChatActionCell extends BaseCell {
     }
 
     private URLSpan pressedLink;
-
+    private int currentAccount = UserConfig.selectedAccount;
     private ImageReceiver imageReceiver;
     private AvatarDrawable avatarDrawable;
     private StaticLayout textLayout;
@@ -113,7 +114,7 @@ public class ChatActionCell extends BaseCell {
                     id = messageObject.messageOwner.to_id.channel_id;
                 } else {
                     id = messageObject.messageOwner.to_id.user_id;
-                    if (id == UserConfig.getClientUserId()) {
+                    if (id == UserConfig.getInstance(currentAccount).getClientUserId()) {
                         id = messageObject.messageOwner.from_id;
                     }
                 }
@@ -129,7 +130,7 @@ public class ChatActionCell extends BaseCell {
                     imageReceiver.setImageBitmap(avatarDrawable);
                 }
             }
-            imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(currentMessageObject), false);
+            imageReceiver.setVisible(!PhotoViewer.isShowingImage(currentMessageObject), false);
         } else {
             imageReceiver.setImageBitmap((Bitmap) null);
         }
@@ -238,6 +239,8 @@ public class ChatActionCell extends BaseCell {
                                             if (gameButton != null) {
                                                 delegate.didPressedBotButton(messageObject, gameButton);
                                             }*/
+                                        } else if (url.startsWith("http")) {
+                                            Browser.openUrl(getContext(), url);
                                         } else {
                                             delegate.needOpenUserProfile(Integer.parseInt(url));
                                         }

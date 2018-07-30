@@ -43,8 +43,8 @@ public final class EmptySampleStream implements SampleStream {
   }
 
   @Override
-  public void skipData(long positionUs) {
-    // Do nothing.
+  public int skipData(long positionUs) {
+    return 0;
   }
 
 }

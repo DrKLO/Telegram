@@ -15,13 +15,12 @@
  */
 package org.telegram.messenger.exoplayer2.source.hls.playlist;
 
+import org.telegram.messenger.exoplayer2.offline.FilterableManifest;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Represents an HLS playlist.
- */
-public abstract class HlsPlaylist {
+/** Represents an HLS playlist. */
+public abstract class HlsPlaylist implements FilterableManifest<HlsPlaylist, RenditionKey> {
 
   /**
    * The base uri. Used to resolve relative paths.

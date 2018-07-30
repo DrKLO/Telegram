@@ -90,4 +90,4 @@ OPENSSL_EXPORT void BF_cbc_encrypt(const uint8_t *in, uint8_t *out, long length,
 }
 #endif
 
-#endif  /* OPENSSL_HEADER_BLOWFISH_H */
+#endif  // OPENSSL_HEADER_BLOWFISH_H

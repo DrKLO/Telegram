@@ -33,6 +33,7 @@ import com.google.android.gms.vision.face.FaceDetector;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Bitmaps;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -1257,7 +1258,9 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
                             .setLandmarkType(FaceDetector.ALL_LANDMARKS)
                             .setTrackingEnabled(false).build();
                     if (!faceDetector.isOperational()) {
-                        FileLog.e("face detection is not operational");
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.e("face detection is not operational");
+                        }
                         return;
                     }
 

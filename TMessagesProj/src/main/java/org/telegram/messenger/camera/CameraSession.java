@@ -21,6 +21,7 @@ import android.view.Surface;
 import android.view.WindowManager;
 
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ import java.util.ArrayList;
 public class CameraSession {
 
     protected CameraInfo cameraInfo;
-    private String currentFlashMode = Camera.Parameters.FLASH_MODE_OFF;
+    private String currentFlashMode;
     private OrientationEventListener orientationEventListener;
     private int lastOrientation = -1;
     private int lastDisplayOrientation = -1;
@@ -42,6 +43,7 @@ public class CameraSession {
     private int diffOrientation;
     private int jpegOrientation;
     private boolean sameTakePictureOrientation;
+    private boolean flipFront = true;
 
     public static final int ORIENTATION_HYSTERESIS = 5;
 
@@ -98,8 +100,8 @@ public class CameraSession {
             changeOrientation = true;
         } else {
             int dist = Math.abs(orientation - orientationHistory);
-            dist = Math.min( dist, 360 - dist );
-            changeOrientation = ( dist >= 45 + ORIENTATION_HYSTERESIS );
+            dist = Math.min(dist, 360 - dist);
+            changeOrientation = (dist >= 45 + ORIENTATION_HYSTERESIS);
         }
         if (changeOrientation) {
             return ((orientation + 45) / 90 * 90) % 360;
@@ -154,6 +156,14 @@ public class CameraSession {
 
     public int getCurrentOrientation() {
         return currentOrientation;
+    }
+
+    public boolean isFlipFront() {
+        return flipFront;
+    }
+
+    public void setFlipFront(boolean value) {
+        flipFront = value;
     }
 
     public int getWorldAngle() {
@@ -216,16 +226,25 @@ public class CameraSession {
                 diffOrientation = currentOrientation - displayOrientation;
 
                 if (params != null) {
-                    FileLog.e("set preview size = " + previewSize.getWidth() + " " + previewSize.getHeight());
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("set preview size = " + previewSize.getWidth() + " " + previewSize.getHeight());
+                    }
                     params.setPreviewSize(previewSize.getWidth(), previewSize.getHeight());
-                    FileLog.e("set picture size = " + pictureSize.getWidth() + " " + pictureSize.getHeight());
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("set picture size = " + pictureSize.getWidth() + " " + pictureSize.getHeight());
+                    }
                     params.setPictureSize(pictureSize.getWidth(), pictureSize.getHeight());
                     params.setPictureFormat(pictureFormat);
                     params.setRecordingHint(true);
 
-                    String desiredMode = Camera.Parameters.FOCUS_MODE_AUTO;
+                    String desiredMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO;
                     if (params.getSupportedFocusModes().contains(desiredMode)) {
                         params.setFocusMode(desiredMode);
+                    } else {
+                        desiredMode = Camera.Parameters.FOCUS_MODE_AUTO;
+                        if (params.getSupportedFocusModes().contains(desiredMode)) {
+                            params.setFocusMode(desiredMode);
+                        }
                     }
 
                     int outputOrientation = 0;
@@ -246,7 +265,7 @@ public class CameraSession {
                     } catch (Exception e) {
                         //
                     }
-                    params.setFlashMode(currentFlashMode);
+                    params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
                     try {
                         camera.setParameters(params);
                     } catch (Exception e) {
@@ -484,6 +503,15 @@ public class CameraSession {
             FileLog.e(e);
         }
         return 0;
+    }
+
+    public void setPreviewCallback(Camera.PreviewCallback callback){
+        cameraInfo.camera.setPreviewCallback(callback);
+    }
+
+    public void setOneShotPreviewCallback(Camera.PreviewCallback callback){
+        if(cameraInfo!=null && cameraInfo.camera!=null)
+			cameraInfo.camera.setOneShotPreviewCallback(callback);
     }
 
     public void destroy() {

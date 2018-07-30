@@ -15,64 +15,24 @@
  */
 package org.telegram.messenger.exoplayer2.trackselection;
 
-import android.content.Context;
-import android.util.SparseArray;
-import android.util.SparseBooleanArray;
+import android.support.annotation.IntDef;
+import android.util.Pair;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.ExoPlaybackException;
-import org.telegram.messenger.exoplayer2.Player;
 import org.telegram.messenger.exoplayer2.Renderer;
 import org.telegram.messenger.exoplayer2.RendererCapabilities;
 import org.telegram.messenger.exoplayer2.RendererConfiguration;
 import org.telegram.messenger.exoplayer2.source.TrackGroup;
 import org.telegram.messenger.exoplayer2.source.TrackGroupArray;
 import org.telegram.messenger.exoplayer2.util.Util;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Base class for {@link TrackSelector}s that first establish a mapping between {@link TrackGroup}s
  * and {@link Renderer}s, and then from that mapping create a {@link TrackSelection} for each
  * renderer.
- *
- * <h3>Track overrides</h3>
- * Mapping track selectors support overriding of track selections for each renderer. To specify an
- * override for a renderer it's first necessary to obtain the tracks that have been mapped to it:
- * <pre>
- * {@code
- * MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
- * TrackGroupArray rendererTrackGroups = mappedTrackInfo == null ? null
- *     : mappedTrackInfo.getTrackGroups(rendererIndex);}
- * </pre>
- * If {@code rendererTrackGroups} is null then there aren't any currently mapped tracks, and so
- * setting an override isn't possible. Note that a {@link Player.EventListener} registered on the
- * player can be used to determine when the current tracks (and therefore the mapping) changes. If
- * {@code rendererTrackGroups} is non-null then an override can be set. The next step is to query
- * the properties of the available tracks to determine the {@code groupIndex} of the track group you
- * want to select and the {@code trackIndices} within it. You can then create and set the override:
- * <pre>
- * {@code
- * trackSelector.setSelectionOverride(rendererIndex, rendererTrackGroups,
- *     new SelectionOverride(trackSelectionFactory, groupIndex, trackIndices));}
- * </pre>
- * where {@code trackSelectionFactory} is a {@link TrackSelection.Factory} for generating concrete
- * {@link TrackSelection} instances for the override. It's also possible to pass {@code null} as the
- * selection override if you don't want any tracks to be selected.
- * <p>
- * Note that an override applies only when the track groups available to the renderer match the
- * {@link TrackGroupArray} for which the override was specified. Overrides can be cleared using
- * the {@code clearSelectionOverride} methods.
- *
- * <h3>Disabling renderers</h3>
- * Renderers can be disabled using {@link #setRendererDisabled(int, boolean)}. Disabling a renderer
- * differs from setting a {@code null} override because the renderer is disabled unconditionally,
- * whereas a {@code null} override is applied only when the track groups available to the renderer
- * match the {@link TrackGroupArray} for which it was specified.
- *
- * <h3>Tunneling</h3>
- * Tunneled playback can be enabled in cases where the combination of renderers and selected tracks
- * support it. See {@link #setTunnelingAudioSessionId(int)} for more details.
  */
 public abstract class MappingTrackSelector extends TrackSelector {
 
@@ -81,54 +41,87 @@ public abstract class MappingTrackSelector extends TrackSelector {
    */
   public static final class MappedTrackInfo {
 
-    /**
-     * The renderer does not have any associated tracks.
-     */
+    /** Levels of renderer support. Higher numerical values indicate higher levels of support. */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({
+      RENDERER_SUPPORT_NO_TRACKS,
+      RENDERER_SUPPORT_UNSUPPORTED_TRACKS,
+      RENDERER_SUPPORT_EXCEEDS_CAPABILITIES_TRACKS,
+      RENDERER_SUPPORT_PLAYABLE_TRACKS
+    })
+    @interface RendererSupport {}
+    /** The renderer does not have any associated tracks. */
     public static final int RENDERER_SUPPORT_NO_TRACKS = 0;
     /**
-     * The renderer has associated tracks, but all are of unsupported types.
+     * The renderer has tracks mapped to it, but all are unsupported. In other words, {@link
+     * #getTrackSupport(int, int, int)} returns {@link RendererCapabilities#FORMAT_UNSUPPORTED_DRM},
+     * {@link RendererCapabilities#FORMAT_UNSUPPORTED_SUBTYPE} or {@link
+     * RendererCapabilities#FORMAT_UNSUPPORTED_TYPE} for all tracks mapped to the renderer.
      */
     public static final int RENDERER_SUPPORT_UNSUPPORTED_TRACKS = 1;
     /**
-     * The renderer has associated tracks and at least one is of a supported type, but all of the
-     * tracks whose types are supported exceed the renderer's capabilities.
+     * The renderer has tracks mapped to it and at least one is of a supported type, but all such
+     * tracks exceed the renderer's capabilities. In other words, {@link #getTrackSupport(int, int,
+     * int)} returns {@link RendererCapabilities#FORMAT_EXCEEDS_CAPABILITIES} for at least one
+     * track mapped to the renderer, but does not return {@link
+     * RendererCapabilities#FORMAT_HANDLED} for any tracks mapped to the renderer.
      */
     public static final int RENDERER_SUPPORT_EXCEEDS_CAPABILITIES_TRACKS = 2;
     /**
-     * The renderer has associated tracks and can play at least one of them.
+     * The renderer has tracks mapped to it, and at least one such track is playable. In other
+     * words, {@link #getTrackSupport(int, int, int)} returns {@link
+     * RendererCapabilities#FORMAT_HANDLED} for at least one track mapped to the renderer.
      */
     public static final int RENDERER_SUPPORT_PLAYABLE_TRACKS = 3;
 
-    /**
-     * The number of renderers to which tracks are mapped.
-     */
-    public final int length;
+    /** @deprecated Use {@link #getRendererCount()}. */
+    @Deprecated public final int length;
 
+    private final int rendererCount;
     private final int[] rendererTrackTypes;
-    private final TrackGroupArray[] trackGroups;
-    private final int[] mixedMimeTypeAdaptiveSupport;
-    private final int[][][] formatSupport;
-    private final TrackGroupArray unassociatedTrackGroups;
+    private final TrackGroupArray[] rendererTrackGroups;
+    private final int[] rendererMixedMimeTypeAdaptiveSupports;
+    private final int[][][] rendererFormatSupports;
+    private final TrackGroupArray unmappedTrackGroups;
 
     /**
-     * @param rendererTrackTypes The track type supported by each renderer.
-     * @param trackGroups The {@link TrackGroup}s mapped to each renderer.
-     * @param mixedMimeTypeAdaptiveSupport The result of
-     *     {@link RendererCapabilities#supportsMixedMimeTypeAdaptation()} for each renderer.
-     * @param formatSupport The result of {@link RendererCapabilities#supportsFormat} for each
-     *     mapped track, indexed by renderer index, track group index and track index (in that
-     *     order).
-     * @param unassociatedTrackGroups Any {@link TrackGroup}s not mapped to any renderer.
+     * @param rendererTrackTypes The track type handled by each renderer.
+     * @param rendererTrackGroups The {@link TrackGroup}s mapped to each renderer.
+     * @param rendererMixedMimeTypeAdaptiveSupports The result of {@link
+     *     RendererCapabilities#supportsMixedMimeTypeAdaptation()} for each renderer.
+     * @param rendererFormatSupports The result of {@link RendererCapabilities#supportsFormat} for
+     *     each mapped track, indexed by renderer, track group and track (in that order).
+     * @param unmappedTrackGroups {@link TrackGroup}s not mapped to any renderer.
      */
-    /* package */ MappedTrackInfo(int[] rendererTrackTypes,
-        TrackGroupArray[] trackGroups, int[] mixedMimeTypeAdaptiveSupport,
-        int[][][] formatSupport, TrackGroupArray unassociatedTrackGroups) {
+    /* package */ MappedTrackInfo(
+        int[] rendererTrackTypes,
+        TrackGroupArray[] rendererTrackGroups,
+        int[] rendererMixedMimeTypeAdaptiveSupports,
+        int[][][] rendererFormatSupports,
+        TrackGroupArray unmappedTrackGroups) {
       this.rendererTrackTypes = rendererTrackTypes;
-      this.trackGroups = trackGroups;
-      this.formatSupport = formatSupport;
-      this.mixedMimeTypeAdaptiveSupport = mixedMimeTypeAdaptiveSupport;
-      this.unassociatedTrackGroups = unassociatedTrackGroups;
-      this.length = trackGroups.length;
+      this.rendererTrackGroups = rendererTrackGroups;
+      this.rendererFormatSupports = rendererFormatSupports;
+      this.rendererMixedMimeTypeAdaptiveSupports = rendererMixedMimeTypeAdaptiveSupports;
+      this.unmappedTrackGroups = unmappedTrackGroups;
+      this.rendererCount = rendererTrackTypes.length;
+      this.length = rendererCount;
+    }
+
+    /** Returns the number of renderers. */
+    public int getRendererCount() {
+      return rendererCount;
+    }
+
+    /**
+     * Returns the track type that the renderer at a given index handles.
+     *
+     * @see Renderer#getTrackType()
+     * @param rendererIndex The renderer index.
+     * @return One of the {@code TRACK_TYPE_*} constants defined in {@link C}.
+     */
+    public int getRendererType(int rendererIndex) {
+      return rendererTrackTypes[rendererIndex];
     }
 
     /**
@@ -138,20 +131,20 @@ public abstract class MappingTrackSelector extends TrackSelector {
      * @return The corresponding {@link TrackGroup}s.
      */
     public TrackGroupArray getTrackGroups(int rendererIndex) {
-      return trackGroups[rendererIndex];
+      return rendererTrackGroups[rendererIndex];
     }
 
     /**
-     * Returns the extent to which a renderer can play the tracks in the track groups mapped to it.
+     * Returns the extent to which a renderer can play the tracks that are mapped to it.
      *
      * @param rendererIndex The renderer index.
-     * @return One of {@link #RENDERER_SUPPORT_PLAYABLE_TRACKS},
-     *     {@link #RENDERER_SUPPORT_EXCEEDS_CAPABILITIES_TRACKS},
-     *     {@link #RENDERER_SUPPORT_UNSUPPORTED_TRACKS} and {@link #RENDERER_SUPPORT_NO_TRACKS}.
+     * @return One of {@link #RENDERER_SUPPORT_PLAYABLE_TRACKS}, {@link
+     *     #RENDERER_SUPPORT_EXCEEDS_CAPABILITIES_TRACKS}, {@link
+     *     #RENDERER_SUPPORT_UNSUPPORTED_TRACKS} and {@link #RENDERER_SUPPORT_NO_TRACKS}.
      */
-    public int getRendererSupport(int rendererIndex) {
+    public @RendererSupport int getRendererSupport(int rendererIndex) {
       int bestRendererSupport = RENDERER_SUPPORT_NO_TRACKS;
-      int[][] rendererFormatSupport = formatSupport[rendererIndex];
+      int[][] rendererFormatSupport = rendererFormatSupports[rendererIndex];
       for (int i = 0; i < rendererFormatSupport.length; i++) {
         for (int j = 0; j < rendererFormatSupport[i].length; j++) {
           int trackRendererSupport;
@@ -171,24 +164,37 @@ public abstract class MappingTrackSelector extends TrackSelector {
       return bestRendererSupport;
     }
 
+    /** @deprecated Use {@link #getTypeSupport(int)}. */
+    @Deprecated
+    public @RendererSupport int getTrackTypeRendererSupport(int trackType) {
+      return getTypeSupport(trackType);
+    }
+
     /**
-     * Returns the best level of support obtained from {@link #getRendererSupport(int)} for all
-     * renderers of the specified track type. If no renderers exist for the specified type then
-     * {@link #RENDERER_SUPPORT_NO_TRACKS} is returned.
+     * Returns the extent to which tracks of a specified type are supported. This is the best level
+     * of support obtained from {@link #getRendererSupport(int)} for all renderers that handle the
+     * specified type. If no such renderers exist then {@link #RENDERER_SUPPORT_NO_TRACKS} is
+     * returned.
      *
      * @param trackType The track type. One of the {@link C} {@code TRACK_TYPE_*} constants.
-     * @return One of {@link #RENDERER_SUPPORT_PLAYABLE_TRACKS},
-     *     {@link #RENDERER_SUPPORT_EXCEEDS_CAPABILITIES_TRACKS},
-     *     {@link #RENDERER_SUPPORT_UNSUPPORTED_TRACKS} and {@link #RENDERER_SUPPORT_NO_TRACKS}.
+     * @return One of {@link #RENDERER_SUPPORT_PLAYABLE_TRACKS}, {@link
+     *     #RENDERER_SUPPORT_EXCEEDS_CAPABILITIES_TRACKS}, {@link
+     *     #RENDERER_SUPPORT_UNSUPPORTED_TRACKS} and {@link #RENDERER_SUPPORT_NO_TRACKS}.
      */
-    public int getTrackTypeRendererSupport(int trackType) {
+    public @RendererSupport int getTypeSupport(int trackType) {
       int bestRendererSupport = RENDERER_SUPPORT_NO_TRACKS;
-      for (int i = 0; i < length; i++) {
+      for (int i = 0; i < rendererCount; i++) {
         if (rendererTrackTypes[i] == trackType) {
           bestRendererSupport = Math.max(bestRendererSupport, getRendererSupport(i));
         }
       }
       return bestRendererSupport;
+    }
+
+    /** @deprecated Use {@link #getTrackSupport(int, int, int)}. */
+    @Deprecated
+    public int getTrackFormatSupport(int rendererIndex, int groupIndex, int trackIndex) {
+      return getTrackSupport(rendererIndex, groupIndex, trackIndex);
     }
 
     /**
@@ -197,47 +203,46 @@ public abstract class MappingTrackSelector extends TrackSelector {
      * @param rendererIndex The renderer index.
      * @param groupIndex The index of the track group to which the track belongs.
      * @param trackIndex The index of the track within the track group.
-     * @return One of {@link RendererCapabilities#FORMAT_HANDLED},
-     *     {@link RendererCapabilities#FORMAT_EXCEEDS_CAPABILITIES},
-     *     {@link RendererCapabilities#FORMAT_UNSUPPORTED_DRM},
-     *     {@link RendererCapabilities#FORMAT_UNSUPPORTED_SUBTYPE} and
-     *     {@link RendererCapabilities#FORMAT_UNSUPPORTED_TYPE}.
+     * @return One of {@link RendererCapabilities#FORMAT_HANDLED}, {@link
+     *     RendererCapabilities#FORMAT_EXCEEDS_CAPABILITIES}, {@link
+     *     RendererCapabilities#FORMAT_UNSUPPORTED_DRM}, {@link
+     *     RendererCapabilities#FORMAT_UNSUPPORTED_SUBTYPE} and {@link
+     *     RendererCapabilities#FORMAT_UNSUPPORTED_TYPE}.
      */
-    public int getTrackFormatSupport(int rendererIndex, int groupIndex, int trackIndex) {
-      return formatSupport[rendererIndex][groupIndex][trackIndex]
+    public int getTrackSupport(int rendererIndex, int groupIndex, int trackIndex) {
+      return rendererFormatSupports[rendererIndex][groupIndex][trackIndex]
           & RendererCapabilities.FORMAT_SUPPORT_MASK;
     }
 
     /**
      * Returns the extent to which a renderer supports adaptation between supported tracks in a
      * specified {@link TrackGroup}.
-     * <p>
-     * Tracks for which {@link #getTrackFormatSupport(int, int, int)} returns
-     * {@link RendererCapabilities#FORMAT_HANDLED} are always considered.
-     * Tracks for which {@link #getTrackFormatSupport(int, int, int)} returns
-     * {@link RendererCapabilities#FORMAT_UNSUPPORTED_DRM},
-     * {@link RendererCapabilities#FORMAT_UNSUPPORTED_TYPE} or
-     * {@link RendererCapabilities#FORMAT_UNSUPPORTED_SUBTYPE} are never considered.
-     * Tracks for which {@link #getTrackFormatSupport(int, int, int)} returns
-     * {@link RendererCapabilities#FORMAT_EXCEEDS_CAPABILITIES} are considered only if
-     * {@code includeCapabilitiesExceededTracks} is set to {@code true}.
+     *
+     * <p>Tracks for which {@link #getTrackSupport(int, int, int)} returns {@link
+     * RendererCapabilities#FORMAT_HANDLED} are always considered. Tracks for which {@link
+     * #getTrackSupport(int, int, int)} returns {@link
+     * RendererCapabilities#FORMAT_EXCEEDS_CAPABILITIES} are also considered if {@code
+     * includeCapabilitiesExceededTracks} is set to {@code true}. Tracks for which {@link
+     * #getTrackSupport(int, int, int)} returns {@link RendererCapabilities#FORMAT_UNSUPPORTED_DRM},
+     * {@link RendererCapabilities#FORMAT_UNSUPPORTED_TYPE} or {@link
+     * RendererCapabilities#FORMAT_UNSUPPORTED_SUBTYPE} are never considered.
      *
      * @param rendererIndex The renderer index.
      * @param groupIndex The index of the track group.
-     * @param includeCapabilitiesExceededTracks True if formats that exceed the capabilities of the
-     *     renderer should be included when determining support. False otherwise.
-     * @return One of {@link RendererCapabilities#ADAPTIVE_SEAMLESS},
-     *     {@link RendererCapabilities#ADAPTIVE_NOT_SEAMLESS} and
-     *     {@link RendererCapabilities#ADAPTIVE_NOT_SUPPORTED}.
+     * @param includeCapabilitiesExceededTracks Whether tracks that exceed the capabilities of the
+     *     renderer are included when determining support.
+     * @return One of {@link RendererCapabilities#ADAPTIVE_SEAMLESS}, {@link
+     *     RendererCapabilities#ADAPTIVE_NOT_SEAMLESS} and {@link
+     *     RendererCapabilities#ADAPTIVE_NOT_SUPPORTED}.
      */
-    public int getAdaptiveSupport(int rendererIndex, int groupIndex,
-        boolean includeCapabilitiesExceededTracks) {
-      int trackCount = trackGroups[rendererIndex].get(groupIndex).length;
+    public int getAdaptiveSupport(
+        int rendererIndex, int groupIndex, boolean includeCapabilitiesExceededTracks) {
+      int trackCount = rendererTrackGroups[rendererIndex].get(groupIndex).length;
       // Iterate over the tracks in the group, recording the indices of those to consider.
       int[] trackIndices = new int[trackCount];
       int trackIndexCount = 0;
       for (int i = 0; i < trackCount; i++) {
-        int fixedSupport = getTrackFormatSupport(rendererIndex, groupIndex, i);
+        int fixedSupport = getTrackSupport(rendererIndex, groupIndex, i);
         if (fixedSupport == RendererCapabilities.FORMAT_HANDLED
             || (includeCapabilitiesExceededTracks
             && fixedSupport == RendererCapabilities.FORMAT_EXCEEDS_CAPABILITIES)) {
@@ -249,14 +254,14 @@ public abstract class MappingTrackSelector extends TrackSelector {
     }
 
     /**
-     * Returns the extent to which a renderer supports adaptation between specified tracks within
-     * a {@link TrackGroup}.
+     * Returns the extent to which a renderer supports adaptation between specified tracks within a
+     * {@link TrackGroup}.
      *
      * @param rendererIndex The renderer index.
      * @param groupIndex The index of the track group.
-     * @return One of {@link RendererCapabilities#ADAPTIVE_SEAMLESS},
-     *     {@link RendererCapabilities#ADAPTIVE_NOT_SEAMLESS} and
-     *     {@link RendererCapabilities#ADAPTIVE_NOT_SUPPORTED}.
+     * @return One of {@link RendererCapabilities#ADAPTIVE_SEAMLESS}, {@link
+     *     RendererCapabilities#ADAPTIVE_NOT_SEAMLESS} and {@link
+     *     RendererCapabilities#ADAPTIVE_NOT_SUPPORTED}.
      */
     public int getAdaptiveSupport(int rendererIndex, int groupIndex, int[] trackIndices) {
       int handledTrackCount = 0;
@@ -265,87 +270,38 @@ public abstract class MappingTrackSelector extends TrackSelector {
       String firstSampleMimeType = null;
       for (int i = 0; i < trackIndices.length; i++) {
         int trackIndex = trackIndices[i];
-        String sampleMimeType = trackGroups[rendererIndex].get(groupIndex).getFormat(trackIndex)
-            .sampleMimeType;
+        String sampleMimeType =
+            rendererTrackGroups[rendererIndex].get(groupIndex).getFormat(trackIndex).sampleMimeType;
         if (handledTrackCount++ == 0) {
           firstSampleMimeType = sampleMimeType;
         } else {
           multipleMimeTypes |= !Util.areEqual(firstSampleMimeType, sampleMimeType);
         }
-        adaptiveSupport = Math.min(adaptiveSupport, formatSupport[rendererIndex][groupIndex][i]
-            & RendererCapabilities.ADAPTIVE_SUPPORT_MASK);
+        adaptiveSupport =
+            Math.min(
+                adaptiveSupport,
+                rendererFormatSupports[rendererIndex][groupIndex][i]
+                    & RendererCapabilities.ADAPTIVE_SUPPORT_MASK);
       }
       return multipleMimeTypes
-          ? Math.min(adaptiveSupport, mixedMimeTypeAdaptiveSupport[rendererIndex])
+          ? Math.min(adaptiveSupport, rendererMixedMimeTypeAdaptiveSupports[rendererIndex])
           : adaptiveSupport;
     }
 
-    /**
-     * Returns {@link TrackGroup}s not mapped to any renderer.
-     */
+    /** @deprecated Use {@link #getUnmappedTrackGroups()}. */
+    @Deprecated
     public TrackGroupArray getUnassociatedTrackGroups() {
-      return unassociatedTrackGroups;
+      return getUnmappedTrackGroups();
+    }
+
+    /** Returns {@link TrackGroup}s not mapped to any renderer. */
+    public TrackGroupArray getUnmappedTrackGroups() {
+      return unmappedTrackGroups;
     }
 
   }
-
-  /**
-   * A track selection override.
-   */
-  public static final class SelectionOverride {
-
-    public final TrackSelection.Factory factory;
-    public final int groupIndex;
-    public final int[] tracks;
-    public final int length;
-
-    /**
-     * @param factory A factory for creating selections from this override.
-     * @param groupIndex The overriding track group index.
-     * @param tracks The overriding track indices within the track group.
-     */
-    public SelectionOverride(TrackSelection.Factory factory, int groupIndex, int... tracks) {
-      this.factory = factory;
-      this.groupIndex = groupIndex;
-      this.tracks = tracks;
-      this.length = tracks.length;
-    }
-
-    /**
-     * Creates an selection from this override.
-     *
-     * @param groups The track groups whose selection is being overridden.
-     * @return The selection.
-     */
-    public TrackSelection createTrackSelection(TrackGroupArray groups) {
-      return factory.createTrackSelection(groups.get(groupIndex), tracks);
-    }
-
-    /**
-     * Returns whether this override contains the specified track index.
-     */
-    public boolean containsTrack(int track) {
-      for (int overrideTrack : tracks) {
-        if (overrideTrack == track) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-  }
-
-  private final SparseArray<Map<TrackGroupArray, SelectionOverride>> selectionOverrides;
-  private final SparseBooleanArray rendererDisabledFlags;
-  private int tunnelingAudioSessionId;
 
   private MappedTrackInfo currentMappedTrackInfo;
-
-  public MappingTrackSelector() {
-    selectionOverrides = new SparseArray<>();
-    rendererDisabledFlags = new SparseBooleanArray();
-    tunnelingAudioSessionId = C.AUDIO_SESSION_ID_UNSET;
-  }
 
   /**
    * Returns the mapping information for the currently active track selection, or null if no
@@ -355,157 +311,12 @@ public abstract class MappingTrackSelector extends TrackSelector {
     return currentMappedTrackInfo;
   }
 
-  /**
-   * Sets whether the renderer at the specified index is disabled. Disabling a renderer prevents the
-   * selector from selecting any tracks for it.
-   *
-   * @param rendererIndex The renderer index.
-   * @param disabled Whether the renderer is disabled.
-   */
-  public final void setRendererDisabled(int rendererIndex, boolean disabled) {
-    if (rendererDisabledFlags.get(rendererIndex) == disabled) {
-      // The disabled flag is unchanged.
-      return;
-    }
-    rendererDisabledFlags.put(rendererIndex, disabled);
-    invalidate();
-  }
-
-  /**
-   * Returns whether the renderer is disabled.
-   *
-   * @param rendererIndex The renderer index.
-   * @return Whether the renderer is disabled.
-   */
-  public final boolean getRendererDisabled(int rendererIndex) {
-    return rendererDisabledFlags.get(rendererIndex);
-  }
-
-  /**
-   * Overrides the track selection for the renderer at the specified index.
-   * <p>
-   * When the {@link TrackGroupArray} mapped to the renderer matches the one provided, the override
-   * is applied. When the {@link TrackGroupArray} does not match, the override has no effect. The
-   * override replaces any previous override for the specified {@link TrackGroupArray} for the
-   * specified {@link Renderer}.
-   * <p>
-   * Passing a {@code null} override will cause the renderer to be disabled when the
-   * {@link TrackGroupArray} mapped to it matches the one provided. When the {@link TrackGroupArray}
-   * does not match a {@code null} override has no effect. Hence a {@code null} override differs
-   * from disabling the renderer using {@link #setRendererDisabled(int, boolean)} because the
-   * renderer is disabled conditionally on the {@link TrackGroupArray} mapped to it, where-as
-   * {@link #setRendererDisabled(int, boolean)} disables the renderer unconditionally.
-   * <p>
-   * To remove overrides use {@link #clearSelectionOverride(int, TrackGroupArray)},
-   * {@link #clearSelectionOverrides(int)} or {@link #clearSelectionOverrides()}.
-   *
-   * @param rendererIndex The renderer index.
-   * @param groups The {@link TrackGroupArray} for which the override should be applied.
-   * @param override The override.
-   */
-  public final void setSelectionOverride(int rendererIndex, TrackGroupArray groups,
-      SelectionOverride override) {
-    Map<TrackGroupArray, SelectionOverride> overrides = selectionOverrides.get(rendererIndex);
-    if (overrides == null) {
-      overrides = new HashMap<>();
-      selectionOverrides.put(rendererIndex, overrides);
-    }
-    if (overrides.containsKey(groups) && Util.areEqual(overrides.get(groups), override)) {
-      // The override is unchanged.
-      return;
-    }
-    overrides.put(groups, override);
-    invalidate();
-  }
-
-  /**
-   * Returns whether there is an override for the specified renderer and {@link TrackGroupArray}.
-   *
-   * @param rendererIndex The renderer index.
-   * @param groups The {@link TrackGroupArray}.
-   * @return Whether there is an override.
-   */
-  public final boolean hasSelectionOverride(int rendererIndex, TrackGroupArray groups) {
-    Map<TrackGroupArray, SelectionOverride> overrides = selectionOverrides.get(rendererIndex);
-    return overrides != null && overrides.containsKey(groups);
-  }
-
-  /**
-   * Returns the override for the specified renderer and {@link TrackGroupArray}.
-   *
-   * @param rendererIndex The renderer index.
-   * @param groups The {@link TrackGroupArray}.
-   * @return The override, or null if no override exists.
-   */
-  public final SelectionOverride getSelectionOverride(int rendererIndex, TrackGroupArray groups) {
-    Map<TrackGroupArray, SelectionOverride> overrides = selectionOverrides.get(rendererIndex);
-    return overrides != null ? overrides.get(groups) : null;
-  }
-
-  /**
-   * Clears a track selection override for the specified renderer and {@link TrackGroupArray}.
-   *
-   * @param rendererIndex The renderer index.
-   * @param groups The {@link TrackGroupArray} for which the override should be cleared.
-   */
-  public final void clearSelectionOverride(int rendererIndex, TrackGroupArray groups) {
-    Map<TrackGroupArray, SelectionOverride> overrides = selectionOverrides.get(rendererIndex);
-    if (overrides == null || !overrides.containsKey(groups)) {
-      // Nothing to clear.
-      return;
-    }
-    overrides.remove(groups);
-    if (overrides.isEmpty()) {
-      selectionOverrides.remove(rendererIndex);
-    }
-    invalidate();
-  }
-
-  /**
-   * Clears all track selection overrides for the specified renderer.
-   *
-   * @param rendererIndex The renderer index.
-   */
-  public final void clearSelectionOverrides(int rendererIndex) {
-    Map<TrackGroupArray, ?> overrides = selectionOverrides.get(rendererIndex);
-    if (overrides == null || overrides.isEmpty()) {
-      // Nothing to clear.
-      return;
-    }
-    selectionOverrides.remove(rendererIndex);
-    invalidate();
-  }
-
-  /**
-   * Clears all track selection overrides for all renderers.
-   */
-  public final void clearSelectionOverrides() {
-    if (selectionOverrides.size() == 0) {
-      // Nothing to clear.
-      return;
-    }
-    selectionOverrides.clear();
-    invalidate();
-  }
-
-  /**
-   * Enables or disables tunneling. To enable tunneling, pass an audio session id to use when in
-   * tunneling mode. Session ids can be generated using
-   * {@link C#generateAudioSessionIdV21(Context)}. To disable tunneling pass
-   * {@link C#AUDIO_SESSION_ID_UNSET}. Tunneling will only be activated if it's both enabled and
-   * supported by the audio and video renderers for the selected tracks.
-   *
-   * @param tunnelingAudioSessionId The audio session id to use when tunneling, or
-   *     {@link C#AUDIO_SESSION_ID_UNSET} to disable tunneling.
-   */
-  public void setTunnelingAudioSessionId(int tunnelingAudioSessionId) {
-    if (this.tunnelingAudioSessionId != tunnelingAudioSessionId) {
-      this.tunnelingAudioSessionId = tunnelingAudioSessionId;
-      invalidate();
-    }
-  }
-
   // TrackSelector implementation.
+
+  @Override
+  public final void onSelectionActivated(Object info) {
+    currentMappedTrackInfo = (MappedTrackInfo) info;
+  }
 
   @Override
   public final TrackSelectorResult selectTracks(RendererCapabilities[] rendererCapabilities,
@@ -522,7 +333,8 @@ public abstract class MappingTrackSelector extends TrackSelector {
     }
 
     // Determine the extent to which each renderer supports mixed mimeType adaptation.
-    int[] mixedMimeTypeAdaptationSupport = getMixedMimeTypeAdaptationSupport(rendererCapabilities);
+    int[] rendererMixedMimeTypeAdaptationSupports =
+        getMixedMimeTypeAdaptationSupports(rendererCapabilities);
 
     // Associate each track group to a preferred renderer, and evaluate the support that the
     // renderer provides for each track in the group.
@@ -551,67 +363,46 @@ public abstract class MappingTrackSelector extends TrackSelector {
       rendererTrackTypes[i] = rendererCapabilities[i].getTrackType();
     }
 
-    // Create a track group array for track groups not associated with a renderer.
-    int unassociatedTrackGroupCount = rendererTrackGroupCounts[rendererCapabilities.length];
-    TrackGroupArray unassociatedTrackGroupArray = new TrackGroupArray(Arrays.copyOf(
-        rendererTrackGroups[rendererCapabilities.length], unassociatedTrackGroupCount));
-
-    TrackSelection[] trackSelections = selectTracks(rendererCapabilities, rendererTrackGroupArrays,
-        rendererFormatSupports);
-
-    // Apply track disabling and overriding.
-    for (int i = 0; i < rendererCapabilities.length; i++) {
-      if (rendererDisabledFlags.get(i)) {
-        trackSelections[i] = null;
-      } else {
-        TrackGroupArray rendererTrackGroup = rendererTrackGroupArrays[i];
-        if (hasSelectionOverride(i, rendererTrackGroup)) {
-          SelectionOverride override = selectionOverrides.get(i).get(rendererTrackGroup);
-          trackSelections[i] = override == null ? null
-              : override.createTrackSelection(rendererTrackGroup);
-        }
-      }
-    }
+    // Create a track group array for track groups not mapped to a renderer.
+    int unmappedTrackGroupCount = rendererTrackGroupCounts[rendererCapabilities.length];
+    TrackGroupArray unmappedTrackGroupArray =
+        new TrackGroupArray(
+            Arrays.copyOf(
+                rendererTrackGroups[rendererCapabilities.length], unmappedTrackGroupCount));
 
     // Package up the track information and selections.
-    MappedTrackInfo mappedTrackInfo = new MappedTrackInfo(rendererTrackTypes,
-        rendererTrackGroupArrays, mixedMimeTypeAdaptationSupport, rendererFormatSupports,
-        unassociatedTrackGroupArray);
+    MappedTrackInfo mappedTrackInfo =
+        new MappedTrackInfo(
+            rendererTrackTypes,
+            rendererTrackGroupArrays,
+            rendererMixedMimeTypeAdaptationSupports,
+            rendererFormatSupports,
+            unmappedTrackGroupArray);
 
-    // Initialize the renderer configurations to the default configuration for all renderers with
-    // selections, and null otherwise.
-    RendererConfiguration[] rendererConfigurations =
-        new RendererConfiguration[rendererCapabilities.length];
-    for (int i = 0; i < rendererCapabilities.length; i++) {
-      rendererConfigurations[i] = trackSelections[i] != null ? RendererConfiguration.DEFAULT : null;
-    }
-    // Configure audio and video renderers to use tunneling if appropriate.
-    maybeConfigureRenderersForTunneling(rendererCapabilities, rendererTrackGroupArrays,
-        rendererFormatSupports, rendererConfigurations, trackSelections, tunnelingAudioSessionId);
-
-    return new TrackSelectorResult(trackGroups, new TrackSelectionArray(trackSelections),
-        mappedTrackInfo, rendererConfigurations);
-  }
-
-  @Override
-  public final void onSelectionActivated(Object info) {
-    currentMappedTrackInfo = (MappedTrackInfo) info;
+    Pair<RendererConfiguration[], TrackSelection[]> result =
+        selectTracks(
+            mappedTrackInfo, rendererFormatSupports, rendererMixedMimeTypeAdaptationSupports);
+    return new TrackSelectorResult(result.first, result.second, mappedTrackInfo);
   }
 
   /**
-   * Given an array of renderer capabilities and the {@link TrackGroupArray}s mapped to each of
-   * them, provides a {@link TrackSelection} per renderer.
+   * Given mapped track information, returns a track selection and configuration for each renderer.
    *
-   * @param rendererCapabilities The {@link RendererCapabilities} of the renderers for which
-   *     {@link TrackSelection}s are to be generated.
-   * @param rendererTrackGroupArrays The {@link TrackGroupArray}s mapped to each of the renderers.
+   * @param mappedTrackInfo Mapped track information.
    * @param rendererFormatSupports The result of {@link RendererCapabilities#supportsFormat} for
-   *     each mapped track, indexed by renderer index, track group index and track index (in that
-   *     order).
+   *     each mapped track, indexed by renderer, track group and track (in that order).
+   * @param rendererMixedMimeTypeAdaptationSupport The result of {@link
+   *     RendererCapabilities#supportsMixedMimeTypeAdaptation()} for each renderer.
+   * @return A pair consisting of the track selections and configurations for each renderer. A null
+   *     configuration indicates the renderer should be disabled, in which case the track selection
+   *     will also be null. A track selection may also be null for a non-disabled renderer if {@link
+   *     RendererCapabilities#getTrackType()} is {@link C#TRACK_TYPE_NONE}.
    * @throws ExoPlaybackException If an error occurs while selecting the tracks.
    */
-  protected abstract TrackSelection[] selectTracks(RendererCapabilities[] rendererCapabilities,
-      TrackGroupArray[] rendererTrackGroupArrays, int[][][] rendererFormatSupports)
+  protected abstract Pair<RendererConfiguration[], TrackSelection[]> selectTracks(
+      MappedTrackInfo mappedTrackInfo,
+      int[][][] rendererFormatSupports,
+      int[] rendererMixedMimeTypeAdaptationSupport)
       throws ExoPlaybackException;
 
   /**
@@ -680,105 +471,17 @@ public abstract class MappingTrackSelector extends TrackSelector {
    * returning the results in an array.
    *
    * @param rendererCapabilities The {@link RendererCapabilities} of the renderers.
-   * @return An array containing the result of calling
-   *     {@link RendererCapabilities#supportsMixedMimeTypeAdaptation()} for each renderer.
+   * @return An array containing the result of calling {@link
+   *     RendererCapabilities#supportsMixedMimeTypeAdaptation()} for each renderer.
    * @throws ExoPlaybackException If an error occurs determining the adaptation support.
    */
-  private static int[] getMixedMimeTypeAdaptationSupport(
+  private static int[] getMixedMimeTypeAdaptationSupports(
       RendererCapabilities[] rendererCapabilities) throws ExoPlaybackException {
     int[] mixedMimeTypeAdaptationSupport = new int[rendererCapabilities.length];
     for (int i = 0; i < mixedMimeTypeAdaptationSupport.length; i++) {
       mixedMimeTypeAdaptationSupport[i] = rendererCapabilities[i].supportsMixedMimeTypeAdaptation();
     }
     return mixedMimeTypeAdaptationSupport;
-  }
-
-  /**
-   * Determines whether tunneling should be enabled, replacing {@link RendererConfiguration}s in
-   * {@code rendererConfigurations} with configurations that enable tunneling on the appropriate
-   * renderers if so.
-   *
-   * @param rendererCapabilities The {@link RendererCapabilities} of the renderers for which
-   *     {@link TrackSelection}s are to be generated.
-   * @param rendererTrackGroupArrays An array of {@link TrackGroupArray}s where each entry
-   *     corresponds to the renderer of equal index in {@code renderers}.
-   * @param rendererFormatSupports Maps every available track to a specific level of support as
-   *     defined by the renderer {@code FORMAT_*} constants.
-   * @param rendererConfigurations The renderer configurations. Configurations may be replaced with
-   *     ones that enable tunneling as a result of this call.
-   * @param trackSelections The renderer track selections.
-   * @param tunnelingAudioSessionId The audio session id to use when tunneling, or
-   *     {@link C#AUDIO_SESSION_ID_UNSET} if tunneling should not be enabled.
-   */
-  private static void maybeConfigureRenderersForTunneling(
-      RendererCapabilities[] rendererCapabilities, TrackGroupArray[] rendererTrackGroupArrays,
-      int[][][] rendererFormatSupports, RendererConfiguration[] rendererConfigurations,
-      TrackSelection[] trackSelections, int tunnelingAudioSessionId) {
-    if (tunnelingAudioSessionId == C.AUDIO_SESSION_ID_UNSET) {
-      return;
-    }
-    // Check whether we can enable tunneling. To enable tunneling we require exactly one audio and
-    // one video renderer to support tunneling and have a selection.
-    int tunnelingAudioRendererIndex = -1;
-    int tunnelingVideoRendererIndex = -1;
-    boolean enableTunneling = true;
-    for (int i = 0; i < rendererCapabilities.length; i++) {
-      int rendererType = rendererCapabilities[i].getTrackType();
-      TrackSelection trackSelection = trackSelections[i];
-      if ((rendererType == C.TRACK_TYPE_AUDIO || rendererType == C.TRACK_TYPE_VIDEO)
-          && trackSelection != null) {
-        if (rendererSupportsTunneling(rendererFormatSupports[i], rendererTrackGroupArrays[i],
-            trackSelection)) {
-          if (rendererType == C.TRACK_TYPE_AUDIO) {
-            if (tunnelingAudioRendererIndex != -1) {
-              enableTunneling = false;
-              break;
-            } else {
-              tunnelingAudioRendererIndex = i;
-            }
-          } else {
-            if (tunnelingVideoRendererIndex != -1) {
-              enableTunneling = false;
-              break;
-            } else {
-              tunnelingVideoRendererIndex = i;
-            }
-          }
-        }
-      }
-    }
-    enableTunneling &= tunnelingAudioRendererIndex != -1 && tunnelingVideoRendererIndex != -1;
-    if (enableTunneling) {
-      RendererConfiguration tunnelingRendererConfiguration =
-          new RendererConfiguration(tunnelingAudioSessionId);
-      rendererConfigurations[tunnelingAudioRendererIndex] = tunnelingRendererConfiguration;
-      rendererConfigurations[tunnelingVideoRendererIndex] = tunnelingRendererConfiguration;
-    }
-  }
-
-  /**
-   * Returns whether a renderer supports tunneling for a {@link TrackSelection}.
-   *
-   * @param formatSupport The result of {@link RendererCapabilities#supportsFormat} for each
-   *     track, indexed by group index and track index (in that order).
-   * @param trackGroups The {@link TrackGroupArray}s for the renderer.
-   * @param selection The track selection.
-   * @return Whether the renderer supports tunneling for the {@link TrackSelection}.
-   */
-  private static boolean rendererSupportsTunneling(int[][] formatSupport,
-      TrackGroupArray trackGroups, TrackSelection selection) {
-    if (selection == null) {
-      return false;
-    }
-    int trackGroupIndex = trackGroups.indexOf(selection.getTrackGroup());
-    for (int i = 0; i < selection.length(); i++) {
-      int trackFormatSupport = formatSupport[trackGroupIndex][selection.getIndexInTrackGroup(i)];
-      if ((trackFormatSupport & RendererCapabilities.TUNNELING_SUPPORT_MASK)
-          != RendererCapabilities.TUNNELING_SUPPORTED) {
-        return false;
-      }
-    }
-    return true;
   }
 
 }

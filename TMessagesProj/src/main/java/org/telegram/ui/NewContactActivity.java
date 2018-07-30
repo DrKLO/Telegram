@@ -12,7 +12,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -148,7 +147,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                     inputPhoneContact.last_name = lastNameField.getText().toString();
                     inputPhoneContact.phone = "+" + codeField.getText().toString() + phoneField.getText().toString();
                     req.contacts.add(inputPhoneContact);
-                    int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                    int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
                         @Override
                         public void run(TLObject response, final TLRPC.TL_error error) {
                             final TLRPC.TL_contacts_importedContacts res = (TLRPC.TL_contacts_importedContacts) response;
@@ -158,7 +157,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                                     donePressed = false;
                                     if (res != null) {
                                         if (!res.users.isEmpty()) {
-                                            MessagesController.getInstance().putUsers(res.users, false);
+                                            MessagesController.getInstance(currentAccount).putUsers(res.users, false);
                                             MessagesController.openChatOrProfileWith(res.users.get(0), null, NewContactActivity.this, 1, true);
                                         } else {
                                             if (getParentActivity() == null) {
@@ -174,7 +173,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                                                 public void onClick(DialogInterface dialog, int which) {
                                                     try {
                                                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", inputPhoneContact.phone, null));
-                                                        intent.putExtra("sms_body", ContactsController.getInstance().getInviteText(1));
+                                                        intent.putExtra("sms_body", ContactsController.getInstance(currentAccount).getInviteText(1));
                                                         getParentActivity().startActivityForResult(intent, 500);
                                                     } catch (Exception e) {
                                                         FileLog.e(e);
@@ -185,13 +184,13 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                                         }
                                     } else {
                                         showEditDoneProgress(false, true);
-                                        AlertsCreator.processError(error, NewContactActivity.this, req);
+                                        AlertsCreator.processError(currentAccount, error, NewContactActivity.this, req);
                                     }
                                 }
                             });
                         }
                     }, ConnectionsManager.RequestFlagFailOnServerErrors);
-                    ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
+                    ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
                 }
             }
         });
@@ -625,7 +624,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
     @Override
     public void onResume() {
         super.onResume();
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             firstNameField.requestFocus();
@@ -748,9 +747,9 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate сellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
             @Override
-            public void didSetColor(int color) {
+            public void didSetColor() {
                 if (avatarImage != null) {
                     avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString(), false);
                     avatarImage.invalidate();
@@ -795,14 +794,14 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                 new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressInner2),
                 new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressOuter2),
 
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, сellDelegate, Theme.key_avatar_text),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundGreen),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundCyan),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundPink),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
         };
     }
 }

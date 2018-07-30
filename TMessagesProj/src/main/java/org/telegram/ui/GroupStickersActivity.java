@@ -12,7 +12,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
@@ -37,14 +36,13 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.query.StickersQuery;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
@@ -120,10 +118,10 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        StickersQuery.checkStickers(StickersQuery.TYPE_IMAGE);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.stickersDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatInfoDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.groupStickersDidLoaded);
+        DataQuery.getInstance(currentAccount).checkStickers(DataQuery.TYPE_IMAGE);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoaded);
         updateRows();
         return true;
     }
@@ -131,9 +129,9 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.stickersDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatInfoDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.groupStickersDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.stickersDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.groupStickersDidLoaded);
     }
 
     @Override
@@ -186,7 +184,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         nameContainer.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(14), 0);
 
         editText = new EditText(context);
-        editText.setText(MessagesController.getInstance().linkPrefix + "/addstickers/");
+        editText.setText(MessagesController.getInstance(currentAccount).linkPrefix + "/addstickers/");
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -333,7 +331,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                     if (holder != null) {
                         top = holder.itemView.getTop();
                     }
-                    selectedStickerSet = StickersQuery.getStickerSets(StickersQuery.TYPE_IMAGE).get(position - stickersStartRow);
+                    selectedStickerSet = DataQuery.getInstance(currentAccount).getStickerSets(DataQuery.TYPE_IMAGE).get(position - stickersStartRow);
                     ignoreTextChanges = true;
                     usernameTextView.setText(selectedStickerSet.set.short_name);
                     usernameTextView.setSelection(usernameTextView.length());
@@ -364,16 +362,16 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.stickersDidLoaded) {
-            if ((Integer) args[0] == StickersQuery.TYPE_IMAGE) {
+            if ((Integer) args[0] == DataQuery.TYPE_IMAGE) {
                 updateRows();
             }
         } else if (id == NotificationCenter.chatInfoDidLoaded) {
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
             if (chatFull.id == chatId) {
                 if (info == null && chatFull.stickerset != null) {
-                    selectedStickerSet = StickersQuery.getGroupStickerSetById(chatFull.stickerset);
+                    selectedStickerSet = DataQuery.getInstance(currentAccount).getGroupStickerSetById(chatFull.stickerset);
                 }
                 info = chatFull;
                 updateRows();
@@ -389,7 +387,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     public void setInfo(TLRPC.ChatFull chatFull) {
         info = chatFull;
         if (info != null && info.stickerset != null) {
-            selectedStickerSet = StickersQuery.getGroupStickerSetById(info.stickerset);
+            selectedStickerSet = DataQuery.getInstance(currentAccount).getGroupStickerSetById(info.stickerset);
         }
     }
 
@@ -398,7 +396,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
             return;
         }
         if (reqId != 0) {
-            ConnectionsManager.getInstance().cancelRequest(reqId, true);
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
             reqId = 0;
         }
         if (queryRunnable != null) {
@@ -417,7 +415,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         searching = true;
         searchWas = true;
         final String query = usernameTextView.getText().toString();
-        TLRPC.TL_messages_stickerSet existingSet = StickersQuery.getStickerSetByName(query);
+        TLRPC.TL_messages_stickerSet existingSet = DataQuery.getInstance(currentAccount).getStickerSetByName(query);
         if (existingSet != null) {
             selectedStickerSet = existingSet;
         }
@@ -439,7 +437,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                 TLRPC.TL_messages_getStickerSet req = new TLRPC.TL_messages_getStickerSet();
                 req.stickerset = new TLRPC.TL_inputStickerSetShortName();
                 req.stickerset.short_name = query;
-                reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
                     @Override
                     public void run(final TLObject response, final TLRPC.TL_error error) {
                         AndroidUtilities.runOnUIThread(new Runnable() {
@@ -500,16 +498,16 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         }
         showEditDoneProgress(true);
         TLRPC.TL_channels_setStickers req = new TLRPC.TL_channels_setStickers();
-        req.channel = MessagesController.getInputChannel(chatId);
+        req.channel = MessagesController.getInstance(currentAccount).getInputChannel(chatId);
         if (selectedStickerSet == null) {
             req.stickerset = new TLRPC.TL_inputStickerSetEmpty();
         } else {
-            ApplicationLoader.applicationContext.getSharedPreferences("emoji", Activity.MODE_PRIVATE).edit().remove("group_hide_stickers_" + info.id).commit();
+            MessagesController.getEmojiSettings(currentAccount).edit().remove("group_hide_stickers_" + info.id).commit();
             req.stickerset = new TLRPC.TL_inputStickerSetID();
             req.stickerset.id = selectedStickerSet.set.id;
             req.stickerset.access_hash = selectedStickerSet.set.access_hash;
         }
-        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -520,15 +518,15 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                                 info.stickerset = null;
                             } else {
                                 info.stickerset = selectedStickerSet.set;
-                                StickersQuery.putGroupStickerSet(selectedStickerSet);
+                                DataQuery.getInstance(currentAccount).putGroupStickerSet(selectedStickerSet);
                             }
                             if (info.stickerset == null) {
                                 info.flags |= 256;
                             } else {
                                 info.flags = info.flags &~ 256;
                             }
-                            MessagesStorage.getInstance().updateChatInfo(info, false);
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.chatInfoDidLoaded, info, 0, true, null);
+                            MessagesStorage.getInstance(currentAccount).updateChatInfo(info, false);
+                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoaded, info, 0, true, null);
                             finishFragment();
                         } else {
                             Toast.makeText(getParentActivity(), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text, Toast.LENGTH_SHORT).show();
@@ -550,7 +548,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
             selectedStickerRow = -1;
         }
         infoRow = rowCount++;
-        ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = StickersQuery.getStickerSets(StickersQuery.TYPE_IMAGE);
+        ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = DataQuery.getInstance(currentAccount).getStickerSets(DataQuery.TYPE_IMAGE);
         if (!stickerSets.isEmpty()) {
             headerRow = rowCount++;
             stickersStartRow = rowCount;
@@ -577,7 +575,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             usernameTextView.requestFocus();
@@ -655,7 +653,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             switch (holder.getItemViewType()) {
                 case 0: {
-                    ArrayList<TLRPC.TL_messages_stickerSet> arrayList = StickersQuery.getStickerSets(StickersQuery.TYPE_IMAGE);
+                    ArrayList<TLRPC.TL_messages_stickerSet> arrayList = DataQuery.getInstance(currentAccount).getStickerSets(DataQuery.TYPE_IMAGE);
                     int row = position - stickersStartRow;
                     StickerSetCell cell = (StickerSetCell) holder.itemView;
                     TLRPC.TL_messages_stickerSet set = arrayList.get(row);
@@ -682,7 +680,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                                 URLSpanNoUnderline spanNoUnderline = new URLSpanNoUnderline("@stickers") {
                                     @Override
                                     public void onClick(View widget) {
-                                        MessagesController.openByUserName("stickers", GroupStickersActivity.this, 1);
+                                        MessagesController.getInstance(currentAccount).openByUserName("stickers", GroupStickersActivity.this, 1);
                                     }
                                 };
                                 stringBuilder.setSpan(spanNoUnderline, index, index + botName.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
