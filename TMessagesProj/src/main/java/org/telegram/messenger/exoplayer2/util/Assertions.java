@@ -16,6 +16,7 @@
 package org.telegram.messenger.exoplayer2.util;
 
 import android.os.Looper;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import org.telegram.messenger.exoplayer2.ExoPlayerLibraryInfo;
 
@@ -102,7 +103,7 @@ public final class Assertions {
    * @return The non-null reference that was validated.
    * @throws NullPointerException If {@code reference} is null.
    */
-  public static <T> T checkNotNull(T reference) {
+  public static <T> T checkNotNull(@Nullable T reference) {
     if (ExoPlayerLibraryInfo.ASSERTIONS_ENABLED && reference == null) {
       throw new NullPointerException();
     }
@@ -119,7 +120,7 @@ public final class Assertions {
    * @return The non-null reference that was validated.
    * @throws NullPointerException If {@code reference} is null.
    */
-  public static <T> T checkNotNull(T reference, Object errorMessage) {
+  public static <T> T checkNotNull(@Nullable T reference, Object errorMessage) {
     if (ExoPlayerLibraryInfo.ASSERTIONS_ENABLED && reference == null) {
       throw new NullPointerException(String.valueOf(errorMessage));
     }
@@ -133,7 +134,7 @@ public final class Assertions {
    * @return The non-null, non-empty string that was validated.
    * @throws IllegalArgumentException If {@code string} is null or 0-length.
    */
-  public static String checkNotEmpty(String string) {
+  public static String checkNotEmpty(@Nullable String string) {
     if (ExoPlayerLibraryInfo.ASSERTIONS_ENABLED && TextUtils.isEmpty(string)) {
       throw new IllegalArgumentException();
     }
@@ -149,7 +150,7 @@ public final class Assertions {
    * @return The non-null, non-empty string that was validated.
    * @throws IllegalArgumentException If {@code string} is null or 0-length.
    */
-  public static String checkNotEmpty(String string, Object errorMessage) {
+  public static String checkNotEmpty(@Nullable String string, Object errorMessage) {
     if (ExoPlayerLibraryInfo.ASSERTIONS_ENABLED && TextUtils.isEmpty(string)) {
       throw new IllegalArgumentException(String.valueOf(errorMessage));
     }

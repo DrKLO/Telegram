@@ -56,4 +56,9 @@ public abstract class SortedListAdapterCallback<T2> extends SortedList.Callback<
     public void onChanged(int position, int count) {
         mAdapter.notifyItemRangeChanged(position, count);
     }
+
+    @Override
+    public void onChanged(int position, int count, Object payload) {
+        mAdapter.notifyItemRangeChanged(position, count, payload);
+    }
 }

@@ -1,4 +1,4 @@
-include_directories(. .. ../../include)
+include_directories(../../include)
 
 add_library(
   asn1
@@ -7,7 +7,6 @@ add_library(
 
   a_bitstr.c
   a_bool.c
-  a_bytes.c
   a_d2i_fp.c
   a_dup.c
   a_enum.c
@@ -26,20 +25,14 @@ add_library(
   asn1_lib.c
   asn1_par.c
   asn_pack.c
-  bio_asn1.c
-  bio_ndef.c
   f_enum.c
   f_int.c
   f_string.c
-  t_bitst.c
-  t_pkey.c
   tasn_dec.c
   tasn_enc.c
   tasn_fre.c
   tasn_new.c
-  tasn_prn.c
   tasn_typ.c
   tasn_utl.c
-  x_bignum.c
-  x_long.c
+  time_support.c
 )

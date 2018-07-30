@@ -44,6 +44,8 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     private boolean pressed;
     private static Rect rect = new Rect();
     private PhotoAttachPhotoCellDelegate delegate;
+    private boolean isVertical;
+    private boolean needCheckShow;
 
     public interface PhotoAttachPhotoCellDelegate {
         void onCheckClick(PhotoAttachPhotoCell v);
@@ -82,9 +84,17 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         checkBox.setVisibility(VISIBLE);
     }
 
+    public void setIsVertical(boolean value) {
+        isVertical = value;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80 + (isLast ? 0 : 6)), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80), MeasureSpec.EXACTLY));
+        if (isVertical) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80 + (isLast ? 0 : 6)), MeasureSpec.EXACTLY));
+        } else {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80 + (isLast ? 0 : 6)), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80), MeasureSpec.EXACTLY));
+        }
     }
 
     public MediaController.PhotoEntry getPhotoEntry() {
@@ -99,35 +109,43 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         return checkBox;
     }
 
+    public FrameLayout getCheckFrame() {
+        return checkFrame;
+    }
+
     public View getVideoInfoContainer() {
         return videoInfoContainer;
     }
 
-    public void setPhotoEntry(MediaController.PhotoEntry entry, boolean last) {
+    public void setPhotoEntry(MediaController.PhotoEntry entry, boolean needCheckShow, boolean last) {
         pressed = false;
         photoEntry = entry;
         isLast = last;
+        if (photoEntry.isVideo) {
+            imageView.setOrientation(0, true);
+            videoInfoContainer.setVisibility(VISIBLE);
+            int minutes = photoEntry.duration / 60;
+            int seconds = photoEntry.duration - minutes * 60;
+            videoTextView.setText(String.format("%d:%02d", minutes, seconds));
+        } else {
+            videoInfoContainer.setVisibility(INVISIBLE);
+        }
         if (photoEntry.thumbPath != null) {
             imageView.setImage(photoEntry.thumbPath, null, getResources().getDrawable(R.drawable.nophotos));
         } else if (photoEntry.path != null) {
             if (photoEntry.isVideo) {
-                imageView.setOrientation(0, true);
-                videoInfoContainer.setVisibility(VISIBLE);
-                int minutes = photoEntry.duration / 60;
-                int seconds = photoEntry.duration - minutes * 60;
-                videoTextView.setText(String.format("%d:%02d", minutes, seconds));
                 imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, getResources().getDrawable(R.drawable.nophotos));
             } else {
-                videoInfoContainer.setVisibility(INVISIBLE);
                 imageView.setOrientation(photoEntry.orientation, true);
                 imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, getResources().getDrawable(R.drawable.nophotos));
             }
         } else {
             imageView.setImageResource(R.drawable.nophotos);
         }
-        boolean showing = PhotoViewer.getInstance().isShowingImage(photoEntry.path);
+        boolean showing = needCheckShow && PhotoViewer.isShowingImage(photoEntry.path);
         imageView.getImageReceiver().setVisible(!showing, true);
-        checkBox.setVisibility(showing ? View.INVISIBLE : View.VISIBLE);
+        checkBox.setAlpha(showing ? 0.0f : 1.0f);
+        videoInfoContainer.setAlpha(showing ? 0.0f : 1.0f);
         requestLayout();
     }
 
@@ -147,7 +165,18 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         this.delegate = delegate;
     }
 
+    public void callDelegate() {
+        delegate.onCheckClick(this);
+    }
+
+    public void showImage() {
+        imageView.getImageReceiver().setVisible(true, true);
+    }
+
     public void showCheck(boolean show) {
+        if (show && checkBox.getAlpha() == 1 || !show && checkBox.getAlpha() == 0) {
+            return;
+        }
         if (animatorSet != null) {
             animatorSet.cancel();
             animatorSet = null;

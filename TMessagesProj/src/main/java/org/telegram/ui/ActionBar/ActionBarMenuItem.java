@@ -86,7 +86,6 @@ public class ActionBarMenuItem extends FrameLayout {
     private int[] location;
     private View selectedMenuView;
     private Runnable showMenuRunnable;
-    private int menuHeight = AndroidUtilities.dp(16);
     private int subMenuOpenSide;
     private ActionBarMenuItemDelegate delegate;
     private boolean allowCloseAnimation = true;
@@ -98,6 +97,7 @@ public class ActionBarMenuItem extends FrameLayout {
     private boolean ignoreOnTextChange;
     private CloseProgressDrawable2 progressDrawable;
     private int additionalOffset;
+    private boolean longClickEnabled = true;
 
     public ActionBarMenuItem(Context context, ActionBarMenu menu, int backgroundColor, int iconColor) {
         super(context);
@@ -114,10 +114,14 @@ public class ActionBarMenuItem extends FrameLayout {
         }
     }
 
+    public void setLongClickEnabled(boolean value) {
+        longClickEnabled = value;
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-            if (hasSubMenu() && (popupWindow == null || popupWindow != null && !popupWindow.isShowing())) {
+            if (longClickEnabled && hasSubMenu() && (popupWindow == null || popupWindow != null && !popupWindow.isShowing())) {
                 showMenuRunnable = new Runnable() {
                     @Override
                     public void run() {
@@ -246,7 +250,32 @@ public class ActionBarMenuItem extends FrameLayout {
         popupLayout.addView(view, new LinearLayout.LayoutParams(width, height));
     }
 
-    public TextView addSubItem(int id, String text) {
+    public void addSubItem(int id, View view, int width, int height) {
+        createPopupLayout();
+        view.setLayoutParams(new LinearLayout.LayoutParams(width, height));
+        popupLayout.addView(view);
+        view.setTag(id);
+        view.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (popupWindow != null && popupWindow.isShowing()) {
+                    if (processedPopupClick) {
+                        return;
+                    }
+                    processedPopupClick = true;
+                    popupWindow.dismiss(allowCloseAnimation);
+                }
+                if (parentMenu != null) {
+                    parentMenu.onItemClick((Integer) view.getTag());
+                } else if (delegate != null) {
+                    delegate.onItemClick((Integer) view.getTag());
+                }
+            }
+        });
+        view.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+    }
+
+    public TextView addSubItem(int id, CharSequence text) {
         createPopupLayout();
         TextView textView = new TextView(getContext());
         textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
@@ -287,7 +316,6 @@ public class ActionBarMenuItem extends FrameLayout {
                 }
             }
         });
-        menuHeight += layoutParams.height;
         return textView;
     }
 
@@ -730,14 +758,19 @@ public class ActionBarMenuItem extends FrameLayout {
 
     public void hideSubItem(int id) {
         View view = popupLayout.findViewWithTag(id);
-        if (view != null) {
+        if (view != null && view.getVisibility() != GONE) {
             view.setVisibility(GONE);
         }
     }
 
+    public boolean isSubItemVisible(int id) {
+        View view = popupLayout.findViewWithTag(id);
+        return view != null && view.getVisibility() == VISIBLE;
+    }
+
     public void showSubItem(int id) {
         View view = popupLayout.findViewWithTag(id);
-        if (view != null) {
+        if (view != null && view.getVisibility() != VISIBLE) {
             view.setVisibility(VISIBLE);
         }
     }

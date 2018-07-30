@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.extractor;
 
+import org.telegram.messenger.exoplayer2.extractor.amr.AmrExtractor;
 import org.telegram.messenger.exoplayer2.extractor.flv.FlvExtractor;
 import org.telegram.messenger.exoplayer2.extractor.mkv.MatroskaExtractor;
 import org.telegram.messenger.exoplayer2.extractor.mp3.Mp3Extractor;
@@ -35,18 +36,19 @@ import java.lang.reflect.Constructor;
  * An {@link ExtractorsFactory} that provides an array of extractors for the following formats:
  *
  * <ul>
- * <li>MP4, including M4A ({@link Mp4Extractor})</li>
- * <li>fMP4 ({@link FragmentedMp4Extractor})</li>
- * <li>Matroska and WebM ({@link MatroskaExtractor})</li>
- * <li>Ogg Vorbis/FLAC ({@link OggExtractor}</li>
- * <li>MP3 ({@link Mp3Extractor})</li>
- * <li>AAC ({@link AdtsExtractor})</li>
- * <li>MPEG TS ({@link TsExtractor})</li>
- * <li>MPEG PS ({@link PsExtractor})</li>
- * <li>FLV ({@link FlvExtractor})</li>
- * <li>WAV ({@link WavExtractor})</li>
- * <li>AC3 ({@link Ac3Extractor})</li>
- * <li>FLAC (only available if the FLAC extension is built and included)</li>
+ *   <li>MP4, including M4A ({@link Mp4Extractor})
+ *   <li>fMP4 ({@link FragmentedMp4Extractor})
+ *   <li>Matroska and WebM ({@link MatroskaExtractor})
+ *   <li>Ogg Vorbis/FLAC ({@link OggExtractor}
+ *   <li>MP3 ({@link Mp3Extractor})
+ *   <li>AAC ({@link AdtsExtractor})
+ *   <li>MPEG TS ({@link TsExtractor})
+ *   <li>MPEG PS ({@link PsExtractor})
+ *   <li>FLV ({@link FlvExtractor})
+ *   <li>WAV ({@link WavExtractor})
+ *   <li>AC3 ({@link Ac3Extractor})
+ *   <li>AMR ({@link AmrExtractor})
+ *   <li>FLAC (only available if the FLAC extension is built and included)
  * </ul>
  */
 public final class DefaultExtractorsFactory implements ExtractorsFactory {
@@ -55,13 +57,17 @@ public final class DefaultExtractorsFactory implements ExtractorsFactory {
   static {
     Constructor<? extends Extractor> flacExtractorConstructor = null;
     try {
+      // LINT.IfChange
       flacExtractorConstructor =
           Class.forName("org.telegram.messenger.exoplayer2.ext.flac.FlacExtractor")
-              .asSubclass(Extractor.class).getConstructor();
+              .asSubclass(Extractor.class)
+              .getConstructor();
+      // LINT.ThenChange(../../../../../../../../proguard-rules.txt)
     } catch (ClassNotFoundException e) {
-      // Extractor not found.
-    } catch (NoSuchMethodException e) {
-      // Constructor not found.
+      // Expected if the app was built without the FLAC extension.
+    } catch (Exception e) {
+      // The FLAC extension is present, but instantiation failed.
+      throw new RuntimeException("Error instantiating FLAC extension", e);
     }
     FLAC_EXTRACTOR_CONSTRUCTOR = flacExtractorConstructor;
   }
@@ -155,7 +161,7 @@ public final class DefaultExtractorsFactory implements ExtractorsFactory {
 
   @Override
   public synchronized Extractor[] createExtractors() {
-    Extractor[] extractors = new Extractor[FLAC_EXTRACTOR_CONSTRUCTOR == null ? 11 : 12];
+    Extractor[] extractors = new Extractor[FLAC_EXTRACTOR_CONSTRUCTOR == null ? 12 : 13];
     extractors[0] = new MatroskaExtractor(matroskaFlags);
     extractors[1] = new FragmentedMp4Extractor(fragmentedMp4Flags);
     extractors[2] = new Mp4Extractor(mp4Flags);
@@ -167,9 +173,10 @@ public final class DefaultExtractorsFactory implements ExtractorsFactory {
     extractors[8] = new OggExtractor();
     extractors[9] = new PsExtractor();
     extractors[10] = new WavExtractor();
+    extractors[11] = new AmrExtractor();
     if (FLAC_EXTRACTOR_CONSTRUCTOR != null) {
       try {
-        extractors[11] = FLAC_EXTRACTOR_CONSTRUCTOR.newInstance();
+        extractors[12] = FLAC_EXTRACTOR_CONSTRUCTOR.newInstance();
       } catch (Exception e) {
         // Should never happen.
         throw new IllegalStateException("Unexpected error creating FLAC extractor", e);

@@ -21,7 +21,7 @@ import android.os.Build;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
-import android.util.SparseArray;
+import android.util.SparseIntArray;
 import android.util.StateSet;
 import android.view.GestureDetector;
 import android.view.HapticFeedbackConstants;
@@ -47,6 +47,8 @@ public class RecyclerListView extends RecyclerView {
     private OnItemClickListener onItemClickListener;
     private OnItemClickListenerExtended onItemClickListenerExtended;
     private OnItemLongClickListener onItemLongClickListener;
+    private OnItemLongClickListenerExtended onItemLongClickListenerExtended;
+    private boolean longPressCalled;
     private OnScrollListener onScrollListener;
     private OnInterceptTouchListener onInterceptTouchListener;
     private View emptyView;
@@ -99,6 +101,12 @@ public class RecyclerListView extends RecyclerView {
         boolean onItemClick(View view, int position);
     }
 
+    public interface OnItemLongClickListenerExtended {
+        boolean onItemClick(View view, int position, float x, float y);
+        void onMove(float dx, float dy);
+        void onLongClickRelease();
+    }
+
     public interface OnInterceptTouchListener {
         boolean onInterceptTouchEvent(MotionEvent event);
     }
@@ -114,16 +122,16 @@ public class RecyclerListView extends RecyclerView {
 
     public abstract static class SectionsAdapter extends FastScrollAdapter {
 
-        private SparseArray<Integer> sectionPositionCache;
-        private SparseArray<Integer> sectionCache;
-        private SparseArray<Integer> sectionCountCache;
+        private SparseIntArray sectionPositionCache;
+        private SparseIntArray sectionCache;
+        private SparseIntArray sectionCountCache;
         private int sectionCount;
         private int count;
 
         private void cleanupCache() {
-            sectionCache = new SparseArray<>();
-            sectionPositionCache = new SparseArray<>();
-            sectionCountCache = new SparseArray<>();
+            sectionCache = new SparseIntArray();
+            sectionPositionCache = new SparseIntArray();
+            sectionCountCache = new SparseIntArray();
             count = -1;
             sectionCount = -1;
         }
@@ -146,7 +154,7 @@ public class RecyclerListView extends RecyclerView {
         }
 
         @Override
-        public final int getItemCount() {
+        public int getItemCount() {
             if (count >= 0) {
                 return count;
             }
@@ -171,8 +179,8 @@ public class RecyclerListView extends RecyclerView {
         }
 
         private int internalGetCountForSection(int section) {
-            Integer cachedSectionCount = sectionCountCache.get(section);
-            if (cachedSectionCount != null) {
+            int cachedSectionCount = sectionCountCache.get(section, Integer.MAX_VALUE);
+            if (cachedSectionCount != Integer.MAX_VALUE) {
                 return cachedSectionCount;
             }
             int sectionCount = getCountForSection(section);
@@ -189,8 +197,8 @@ public class RecyclerListView extends RecyclerView {
         }
 
         public final int getSectionForPosition(int position) {
-            Integer cachedSection = sectionCache.get(position);
-            if (cachedSection != null) {
+            int cachedSection = sectionCache.get(position, Integer.MAX_VALUE);
+            if (cachedSection != Integer.MAX_VALUE) {
                 return cachedSection;
             }
             int sectionStart = 0;
@@ -207,8 +215,8 @@ public class RecyclerListView extends RecyclerView {
         }
 
         public int getPositionInSectionForPosition(int position) {
-            Integer cachedPosition = sectionPositionCache.get(position);
-            if (cachedPosition != null) {
+            int cachedPosition = sectionPositionCache.get(position, Integer.MAX_VALUE);
+            if (cachedPosition != Integer.MAX_VALUE) {
                 return cachedPosition;
             }
             int sectionStart = 0;
@@ -518,12 +526,18 @@ public class RecyclerListView extends RecyclerView {
 
                 @Override
                 public void onLongPress(MotionEvent event) {
-                    if (currentChildView != null) {
-                        View child = currentChildView;
-                        if (onItemLongClickListener != null) {
-                            if (currentChildPosition != -1 && onItemLongClickListener.onItemClick(currentChildView, currentChildPosition)) {
-                                child.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-                            }
+                    if (currentChildView == null || currentChildPosition == -1 || onItemLongClickListener == null && onItemLongClickListenerExtended == null) {
+                        return;
+                    }
+                    View child = currentChildView;
+                    if (onItemLongClickListener != null) {
+                        if (onItemLongClickListener.onItemClick(currentChildView, currentChildPosition)) {
+                            child.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                        }
+                    } else if (onItemLongClickListenerExtended != null) {
+                        if (onItemLongClickListenerExtended.onItemClick(currentChildView, currentChildPosition, event.getX(), event.getY())) {
+                            child.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                            longPressCalled = true;
                         }
                     }
                 }
@@ -538,6 +552,7 @@ public class RecyclerListView extends RecyclerView {
             if ((action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) && currentChildView == null && isScrollIdle) {
                 float ex = event.getX();
                 float ey = event.getY();
+                longPressCalled = false;
                 if (allowSelectChildAtPosition(ex, ey)) {
                     currentChildView = view.findChildViewUnder(ex, ey);
                 }
@@ -594,7 +609,7 @@ public class RecyclerListView extends RecyclerView {
                         if (selectorDrawable != null) {
                             final Drawable d = selectorDrawable.getCurrent();
                             if (d != null && d instanceof TransitionDrawable) {
-                                if (onItemLongClickListener != null) {
+                                if (onItemLongClickListener != null || onItemClickListenerExtended != null) {
                                     ((TransitionDrawable) d).startTransition(ViewConfiguration.getLongPressTimeout());
                                 } else {
                                     ((TransitionDrawable) d).resetTransition();
@@ -620,6 +635,11 @@ public class RecyclerListView extends RecyclerView {
                     currentChildView = null;
                     interceptedByChild = false;
                     removeSelection(pressedChild, event);
+
+                    if ((action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP || action == MotionEvent.ACTION_CANCEL) && onItemLongClickListenerExtended != null && longPressCalled) {
+                        onItemLongClickListenerExtended.onLongClickRelease();
+                        longPressCalled = false;
+                    }
                 }
             }
             return false;
@@ -634,6 +654,10 @@ public class RecyclerListView extends RecyclerView {
         public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
             cancelClickRunnables(true);
         }
+    }
+
+    protected View getPressedChildView() {
+        return currentChildView;
     }
 
     protected void onChildPressed(View child, boolean pressed) {
@@ -784,18 +808,19 @@ public class RecyclerListView extends RecyclerView {
                         LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
                         if (linearLayoutManager.getOrientation() == LinearLayoutManager.VERTICAL) {
                             int firstVisibleItem = linearLayoutManager.findFirstVisibleItemPosition();
+                            int lastVisibleItem = linearLayoutManager.findLastVisibleItemPosition();
+                            int visibleItemCount = Math.abs(lastVisibleItem - firstVisibleItem) + 1;
                             if (firstVisibleItem == NO_POSITION) {
                                 return;
                             }
                             if (scrollingByUser && fastScroll != null) {
                                 Adapter adapter = getAdapter();
                                 if (adapter instanceof FastScrollAdapter) {
-                                    fastScroll.setProgress(firstVisibleItem / (float) adapter.getItemCount());
+                                    fastScroll.setProgress(Math.min(1.0f, firstVisibleItem / (float) (adapter.getItemCount() - visibleItemCount + 1)));
                                 }
                             }
                             if (sectionsAdapter != null) {
                                 if (sectionsType == 1) {
-                                    int visibleItemCount = Math.abs(linearLayoutManager.findLastVisibleItemPosition() - firstVisibleItem) + 1;
                                     headersCache.addAll(headers);
                                     headers.clear();
                                     if (sectionsAdapter.getItemCount() == 0) {
@@ -947,6 +972,10 @@ public class RecyclerListView extends RecyclerView {
 
     public void setOnItemLongClickListener(OnItemLongClickListener listener) {
         onItemLongClickListener = listener;
+    }
+
+    public void setOnItemLongClickListener(OnItemLongClickListenerExtended listener) {
+        onItemLongClickListenerExtended = listener;
     }
 
     public void setEmptyView(View view) {
@@ -1185,6 +1214,19 @@ public class RecyclerListView extends RecyclerView {
         } catch (NullPointerException ignore) {
 
         }
+    }
+
+    @Override
+    public boolean dispatchNestedPreScroll(int dx, int dy, int[] consumed, int[] offsetInWindow, int type) {
+        if (longPressCalled) {
+            if (onItemLongClickListenerExtended != null) {
+                onItemLongClickListenerExtended.onMove(dx, dy);
+            }
+            consumed[0] = dx;
+            consumed[1] = dy;
+            return true;
+        }
+        return super.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow, type);
     }
 
     @Override

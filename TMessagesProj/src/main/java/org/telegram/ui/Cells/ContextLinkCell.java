@@ -21,6 +21,7 @@ import android.view.View;
 import android.view.animation.AccelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -29,8 +30,10 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.WebFile;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.LetterDrawable;
 import org.telegram.ui.Components.RadialProgress;
@@ -41,7 +44,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Locale;
 
-public class ContextLinkCell extends View implements MediaController.FileDownloadProgressListener {
+public class ContextLinkCell extends View implements DownloadController.FileDownloadProgressListener {
 
     private final static int DOCUMENT_ATTACH_TYPE_NONE = 0;
     private final static int DOCUMENT_ATTACH_TYPE_DOCUMENT = 1;
@@ -60,6 +63,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
     private ImageReceiver linkImageView;
     private boolean drawLinkImageView;
     private LetterDrawable letterDrawable;
+    private int currentAccount = UserConfig.selectedAccount;
 
     private boolean needDivider;
     private boolean buttonPressed;
@@ -88,7 +92,6 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
     private long lastUpdateTime;
     private boolean scaled;
     private float scale;
-    private long time = 0;
     private static AccelerateInterpolator interpolator = new AccelerateInterpolator(0.5f);
 
     private ContextLinkCellDelegate delegate;
@@ -99,7 +102,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
         linkImageView = new ImageReceiver(this);
         letterDrawable = new LetterDrawable();
         radialProgress = new RadialProgress(this);
-        TAG = MediaController.getInstance().generateObserverTag();
+        TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
     }
 
     @SuppressLint("DrawAllocation")
@@ -122,7 +125,9 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
 
         TLRPC.PhotoSize currentPhotoObjectThumb = null;
         ArrayList<TLRPC.PhotoSize> photoThumbs = null;
-        String url = null;
+        WebFile webFile = null;
+        TLRPC.TL_webDocument webDocument = null;
+        String urlLocation = null;
 
         if (documentAttach != null) {
             photoThumbs = new ArrayList<>();
@@ -185,30 +190,38 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
             }
         }
         if (inlineResult != null) {
-            if (inlineResult.content_url != null) {
+            if (inlineResult.content instanceof TLRPC.TL_webDocument) {
                 if (inlineResult.type != null) {
                     if (inlineResult.type.startsWith("gif")) {
                         if (documentAttachType != DOCUMENT_ATTACH_TYPE_GIF) {
-                            url = inlineResult.content_url;
+                            webDocument = (TLRPC.TL_webDocument) inlineResult.content;
                             documentAttachType = DOCUMENT_ATTACH_TYPE_GIF;
                         }
                     } else if (inlineResult.type.equals("photo")) {
-                        url = inlineResult.thumb_url;
-                        if (url == null) {
-                            url = inlineResult.content_url;
+                        if (inlineResult.thumb instanceof TLRPC.TL_webDocument) {
+                            webDocument = (TLRPC.TL_webDocument) inlineResult.thumb;
+                        } else {
+                            webDocument = (TLRPC.TL_webDocument) inlineResult.content;
                         }
                     }
                 }
             }
-            if (url == null && inlineResult.thumb_url != null) {
-                url = inlineResult.thumb_url;
+            if (webDocument == null && (inlineResult.thumb instanceof TLRPC.TL_webDocument)) {
+                webDocument = (TLRPC.TL_webDocument) inlineResult.thumb;
             }
-        }
-        if (url == null && currentPhotoObject == null && currentPhotoObjectThumb == null) {
-            if (inlineResult.send_message instanceof TLRPC.TL_botInlineMessageMediaVenue || inlineResult.send_message instanceof TLRPC.TL_botInlineMessageMediaGeo) {
-                double lat = inlineResult.send_message.geo.lat;
-                double lon = inlineResult.send_message.geo._long;
-                url = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=15&size=72x72&maptype=roadmap&scale=%d&markers=color:red|size:small|%f,%f&sensor=false", lat, lon, Math.min(2, (int) Math.ceil(AndroidUtilities.density)), lat, lon);
+            if (webDocument == null && currentPhotoObject == null && currentPhotoObjectThumb == null) {
+                if (inlineResult.send_message instanceof TLRPC.TL_botInlineMessageMediaVenue || inlineResult.send_message instanceof TLRPC.TL_botInlineMessageMediaGeo) {
+                    double lat = inlineResult.send_message.geo.lat;
+                    double lon = inlineResult.send_message.geo._long;
+                    if (MessagesController.getInstance(currentAccount).mapProvider == 2) {
+                        webFile = WebFile.createWithGeoPoint(inlineResult.send_message.geo, 72, 72, 15, Math.min(2, (int) Math.ceil(AndroidUtilities.density)));
+                    } else {
+                        urlLocation = AndroidUtilities.formapMapUrl(currentAccount, lat, lon, 72, 72, true, 15);
+                    }
+                }
+            }
+            if (webDocument != null) {
+                webFile = WebFile.createWithWebDocument(webDocument);
             }
         }
 
@@ -234,14 +247,15 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
                 w = currentPhotoObject.w;
                 h = currentPhotoObject.h;
             } else if (inlineResult != null) {
-                w = inlineResult.w;
-                h = inlineResult.h;
+                int result[] = MessageObject.getInlineResultWidthAndHeight(inlineResult);
+                w = result[0];
+                h = result[1];
             }
         }
         if (w == 0 || h == 0) {
             w = h = AndroidUtilities.dp(80);
         }
-        if (documentAttach != null || currentPhotoObject != null || url != null) {
+        if (documentAttach != null || currentPhotoObject != null || webFile != null || urlLocation != null) {
             String currentPhotoFilter;
             String currentPhotoFilterThumb = "52_52_b";
 
@@ -262,13 +276,13 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
                 if (documentAttach != null) {
                     linkImageView.setImage(documentAttach, null, currentPhotoObject != null ? currentPhotoObject.location : null, currentPhotoFilter, documentAttach.size, ext, 0);
                 } else {
-                    linkImageView.setImage(null, url, null, null, currentPhotoObject != null ? currentPhotoObject.location : null, currentPhotoFilter, -1, ext, 1);
+                    linkImageView.setImage(webFile, urlLocation, null, null, currentPhotoObject != null ? currentPhotoObject.location : null, currentPhotoFilter, -1, ext, 1);
                 }
             } else {
                 if (currentPhotoObject != null) {
                     linkImageView.setImage(currentPhotoObject.location, currentPhotoFilter, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, currentPhotoFilterThumb, currentPhotoObject.size, ext, 0);
                 } else {
-                    linkImageView.setImage(null, url, currentPhotoFilter, null, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, currentPhotoFilterThumb, -1, ext, 1);
+                    linkImageView.setImage(webFile, urlLocation, currentPhotoFilter, null, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, currentPhotoFilterThumb, -1, ext, 1);
                 }
             }
             drawLinkImageView = true;
@@ -336,9 +350,9 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
             message.out = true;
             message.id = -Utilities.random.nextInt();
             message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = message.from_id = UserConfig.getClientUserId();
+            message.to_id.user_id = message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
             message.date = (int) (System.currentTimeMillis() / 1000);
-            message.message = "-1";
+            message.message = "";
             message.media = new TLRPC.TL_messageMediaDocument();
             message.media.flags |= 3;
             message.media.document = new TLRPC.TL_document();
@@ -348,7 +362,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
                 message.media.document = documentAttach;
                 message.attachPath = "";
             } else {
-                String ext = ImageLoader.getHttpUrlExtension(inlineResult.content_url, documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC ? "mp3" : "ogg");
+                String ext = ImageLoader.getHttpUrlExtension(inlineResult.content.url, documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC ? "mp3" : "ogg");
                 message.media.document.id = 0;
                 message.media.document.access_hash = 0;
                 message.media.document.date = message.date;
@@ -359,7 +373,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
                 message.media.document.dc_id = 0;
 
                 TLRPC.TL_documentAttributeAudio attributeAudio = new TLRPC.TL_documentAttributeAudio();
-                attributeAudio.duration = inlineResult.duration;
+                attributeAudio.duration = MessageObject.getInlineResultDuration(inlineResult);
                 attributeAudio.title = inlineResult.title != null ? inlineResult.title : "";
                 attributeAudio.performer = inlineResult.description != null ? inlineResult.description : "";
                 attributeAudio.flags |= 3;
@@ -369,13 +383,13 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
                 message.media.document.attributes.add(attributeAudio);
 
                 TLRPC.TL_documentAttributeFilename fileName = new TLRPC.TL_documentAttributeFilename();
-                fileName.file_name = Utilities.MD5(inlineResult.content_url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.content_url, documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC ? "mp3" : "ogg");
+                fileName.file_name = Utilities.MD5(inlineResult.content.url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.content.url, documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC ? "mp3" : "ogg");
                 message.media.document.attributes.add(fileName);
 
-                message.attachPath = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.MD5(inlineResult.content_url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.content_url, documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC ? "mp3" : "ogg")).getAbsolutePath();
+                message.attachPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.MD5(inlineResult.content.url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.content.url, documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC ? "mp3" : "ogg")).getAbsolutePath();
             }
 
-            currentMessageObject = new MessageObject(message, null, false);
+            currentMessageObject = new MessageObject(currentAccount, message, false);
         }
     }
 
@@ -433,7 +447,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
         if (drawLinkImageView) {
             linkImageView.onDetachedFromWindow();
         }
-        MediaController.getInstance().removeLoadingFileObserver(this);
+        DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
     }
 
     @Override
@@ -487,7 +501,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
                 radialProgress.swapBackground(getDrawableForCurrentState());
             }
         } else {
-            if (inlineResult != null && inlineResult.content_url != null && inlineResult.content_url.length() > 0) {
+            if (inlineResult != null && inlineResult.content != null && !TextUtils.isEmpty(inlineResult.content.url)) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
                     if (letterDrawable.getBounds().contains(x, y)) {
                         buttonPressed = true;
@@ -535,18 +549,18 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
             } else if (buttonState == 2) {
                 radialProgress.setProgress(0, false);
                 if (documentAttach != null) {
-                    FileLoader.getInstance().loadFile(documentAttach, true, 0);
-                } else {
-                    ImageLoader.getInstance().loadHttpFile(inlineResult.content_url, documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC ? "mp3" : "ogg");
+                    FileLoader.getInstance(currentAccount).loadFile(documentAttach, true, 0);
+                } else if (inlineResult.content instanceof TLRPC.TL_webDocument) {
+                    FileLoader.getInstance(currentAccount).loadFile(WebFile.createWithWebDocument(inlineResult.content), true, 1);
                 }
                 buttonState = 4;
                 radialProgress.setBackground(getDrawableForCurrentState(), true, false);
                 invalidate();
             } else if (buttonState == 4) {
                 if (documentAttach != null) {
-                    FileLoader.getInstance().cancelLoadFile(documentAttach);
-                } else {
-                    ImageLoader.getInstance().cancelLoadHttpFile(inlineResult.content_url);
+                    FileLoader.getInstance(currentAccount).cancelLoadFile(documentAttach);
+                } else if (inlineResult.content instanceof TLRPC.TL_webDocument) {
+                    FileLoader.getInstance(currentAccount).cancelLoadFile(WebFile.createWithWebDocument(inlineResult.content));
                 }
                 buttonState = 2;
                 radialProgress.setBackground(getDrawableForCurrentState(), false, false);
@@ -624,7 +638,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
         }
         if (drawLinkImageView) {
             if (inlineResult != null) {
-                linkImageView.setVisible(!PhotoViewer.getInstance().isShowingImage(inlineResult), false);
+                linkImageView.setVisible(!PhotoViewer.isShowingImage(inlineResult), false);
             }
             canvas.save();
             if (scaled && scale != 0.8f || !scaled && scale != 1.0f) {
@@ -683,9 +697,9 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
             if (documentAttach != null) {
                 fileName = FileLoader.getAttachFileName(documentAttach);
                 cacheFile = FileLoader.getPathToAttach(documentAttach);
-            } else {
-                fileName = inlineResult.content_url;
-                cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.MD5(inlineResult.content_url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.content_url, documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC ? "mp3" : "ogg"));
+            } else if (inlineResult.content instanceof TLRPC.TL_webDocument) {
+                fileName = Utilities.MD5(inlineResult.content.url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.content.url, documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC ? "mp3" : "ogg");
+                cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
             }
         } else if (mediaWebpage) {
             if (inlineResult != null) {
@@ -696,31 +710,29 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
                     currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(inlineResult.photo.sizes, AndroidUtilities.getPhotoSize(), true);
                     fileName = FileLoader.getAttachFileName(currentPhotoObject);
                     cacheFile = FileLoader.getPathToAttach(currentPhotoObject);
-                } else if (inlineResult.content_url != null) {
-                    fileName = Utilities.MD5(inlineResult.content_url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.content_url, "jpg");
-                    cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
-                } else if (inlineResult.thumb_url != null) {
-                    fileName = Utilities.MD5(inlineResult.thumb_url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.thumb_url, "jpg");
-                    cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                } else if (inlineResult.content instanceof TLRPC.TL_webDocument) {
+                    fileName = Utilities.MD5(inlineResult.content.url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.content.url, "jpg");
+                    cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                } else if (inlineResult.thumb instanceof TLRPC.TL_webDocument) {
+                    fileName = Utilities.MD5(inlineResult.thumb.url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.thumb.url, "jpg");
+                    cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
                 }
             } else if (documentAttach != null) {
                 fileName = FileLoader.getAttachFileName(documentAttach);
                 cacheFile = FileLoader.getPathToAttach(documentAttach);
             }
         }
+
         if (TextUtils.isEmpty(fileName)) {
             radialProgress.setBackground(null, false, false);
             return;
         }
-        if (cacheFile.exists() && cacheFile.length() == 0) {
-            cacheFile.delete();
-        }
         if (!cacheFile.exists()) {
-            MediaController.getInstance().addLoadingFileObserver(fileName, this);
+            DownloadController.getInstance(currentAccount).addLoadingFileObserver(fileName, this);
             if (documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC || documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO) {
                 boolean isLoading;
                 if (documentAttach != null) {
-                    isLoading = FileLoader.getInstance().isLoadingFile(fileName);
+                    isLoading = FileLoader.getInstance(currentAccount).isLoadingFile(fileName);
                 } else {
                     isLoading = ImageLoader.getInstance().isLoadingHttpFile(fileName);
                 }
@@ -747,7 +759,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
             }
             invalidate();
         } else {
-            MediaController.getInstance().removeLoadingFileObserver(this);
+            DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
             if (documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC || documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO) {
                 boolean playing = MediaController.getInstance().isPlayingMessage(currentMessageObject);
                 if (!playing || playing && MediaController.getInstance().isMessagePaused()) {

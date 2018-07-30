@@ -20,24 +20,54 @@
 #include <openssl/err.h>
 #include <openssl/hmac.h>
 
+#include "../internal.h"
 
-int HKDF(uint8_t *out_key, size_t out_len,
-         const EVP_MD *digest,
-         const uint8_t *secret, size_t secret_len,
-         const uint8_t *salt, size_t salt_len,
-         const uint8_t *info, size_t info_len) {
-  /* https://tools.ietf.org/html/rfc5869#section-2.2 */
+
+int HKDF(uint8_t *out_key, size_t out_len, const EVP_MD *digest,
+         const uint8_t *secret, size_t secret_len, const uint8_t *salt,
+         size_t salt_len, const uint8_t *info, size_t info_len) {
+  // https://tools.ietf.org/html/rfc5869#section-2
+  uint8_t prk[EVP_MAX_MD_SIZE];
+  size_t prk_len;
+
+  if (!HKDF_extract(prk, &prk_len, digest, secret, secret_len, salt,
+                    salt_len) ||
+      !HKDF_expand(out_key, out_len, digest, prk, prk_len, info, info_len)) {
+    return 0;
+  }
+
+  return 1;
+}
+
+int HKDF_extract(uint8_t *out_key, size_t *out_len, const EVP_MD *digest,
+                 const uint8_t *secret, size_t secret_len, const uint8_t *salt,
+                 size_t salt_len) {
+  // https://tools.ietf.org/html/rfc5869#section-2.2
+
+  // If salt is not given, HashLength zeros are used. However, HMAC does that
+  // internally already so we can ignore it.
+  unsigned len;
+  if (HMAC(digest, salt, salt_len, secret, secret_len, out_key, &len) == NULL) {
+    OPENSSL_PUT_ERROR(HKDF, ERR_R_HMAC_LIB);
+    return 0;
+  }
+  *out_len = len;
+  assert(*out_len == EVP_MD_size(digest));
+  return 1;
+}
+
+int HKDF_expand(uint8_t *out_key, size_t out_len, const EVP_MD *digest,
+                const uint8_t *prk, size_t prk_len, const uint8_t *info,
+                size_t info_len) {
+  // https://tools.ietf.org/html/rfc5869#section-2.3
   const size_t digest_len = EVP_MD_size(digest);
-  uint8_t prk[EVP_MAX_MD_SIZE], previous[EVP_MAX_MD_SIZE];
+  uint8_t previous[EVP_MAX_MD_SIZE];
   size_t n, done = 0;
-  unsigned i, prk_len;
+  unsigned i;
   int ret = 0;
   HMAC_CTX hmac;
 
-  /* If salt is not given, HashLength zeros are used. However, HMAC does that
-   * internally already so we can ignore it.*/
-
-  /* Expand key material to desired length. */
+  // Expand key material to desired length.
   n = (out_len + digest_len - 1) / digest_len;
   if (out_len + digest_len < out_len || n > 255) {
     OPENSSL_PUT_ERROR(HKDF, HKDF_R_OUTPUT_TOO_LARGE);
@@ -45,13 +75,6 @@ int HKDF(uint8_t *out_key, size_t out_len,
   }
 
   HMAC_CTX_init(&hmac);
-
-  /* Extract input keying material into pseudorandom key |prk|. */
-  if (HMAC(digest, salt, salt_len, secret, secret_len, prk, &prk_len) == NULL) {
-    goto out;
-  }
-  assert(prk_len == digest_len);
-
   if (!HMAC_Init_ex(&hmac, prk, prk_len, digest, NULL)) {
     goto out;
   }
@@ -74,7 +97,7 @@ int HKDF(uint8_t *out_key, size_t out_len,
     if (done + todo > out_len) {
       todo = out_len - done;
     }
-    memcpy(out_key + done, previous, todo);
+    OPENSSL_memcpy(out_key + done, previous, todo);
     done += todo;
   }
 

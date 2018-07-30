@@ -16,6 +16,7 @@
 package org.telegram.messenger.exoplayer2.extractor.ts;
 
 import android.util.SparseArray;
+import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
 import org.telegram.messenger.exoplayer2.extractor.TrackOutput;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
@@ -196,7 +197,8 @@ public interface TsPayloadReader {
    *
    * @param data The TS packet. The position will be set to the start of the payload.
    * @param payloadUnitStartIndicator Whether payloadUnitStartIndicator was set on the TS packet.
+   * @throws ParserException If the payload could not be parsed.
    */
-  void consume(ParsableByteArray data, boolean payloadUnitStartIndicator);
+  void consume(ParsableByteArray data, boolean payloadUnitStartIndicator) throws ParserException;
 
 }

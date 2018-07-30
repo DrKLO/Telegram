@@ -29,6 +29,7 @@ public class SeekBarView extends FrameLayout {
     private boolean pressed;
     private SeekBarViewDelegate delegate;
     private boolean reportChanges;
+    private float bufferedProgress;
 
     public interface SeekBarViewDelegate {
         void onSeekBarDrag(float progress);
@@ -49,6 +50,14 @@ public class SeekBarView extends FrameLayout {
 
     public void setColors(int inner, int outer) {
         innerPaint1.setColor(inner);
+        outerPaint1.setColor(outer);
+    }
+
+    public void setInnerColor(int inner) {
+        innerPaint1.setColor(inner);
+    }
+
+    public void setOuterColor(int outer) {
         outerPaint1.setColor(outer);
     }
 
@@ -74,9 +83,17 @@ public class SeekBarView extends FrameLayout {
         if (ev.getAction() == MotionEvent.ACTION_DOWN) {
             getParent().requestDisallowInterceptTouchEvent(true);
             int additionWidth = (getMeasuredHeight() - thumbWidth) / 2;
-            if (thumbX - additionWidth <= ev.getX() && ev.getX() <= thumbX + thumbWidth + additionWidth && ev.getY() >= 0 && ev.getY() <= getMeasuredHeight()) {
-                pressed = true;
+            if (ev.getY() >= 0 && ev.getY() <= getMeasuredHeight()) {
+                if (!(thumbX - additionWidth <= ev.getX() && ev.getX() <= thumbX + thumbWidth + additionWidth)) {
+                    thumbX = (int) ev.getX() - thumbWidth / 2;
+                    if (thumbX < 0) {
+                        thumbX = 0;
+                    } else if (thumbX > getMeasuredWidth() - thumbWidth) {
+                        thumbX = getMeasuredWidth() - thumbWidth;
+                    }
+                }
                 thumbDX = (int) (ev.getX() - thumbX);
+                pressed = true;
                 invalidate();
                 return true;
             }
@@ -125,6 +142,10 @@ public class SeekBarView extends FrameLayout {
         }
     }
 
+    public void setBufferedProgress(float progress) {
+        bufferedProgress = progress;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -142,6 +163,9 @@ public class SeekBarView extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         int y = (getMeasuredHeight() - thumbHeight) / 2;
         canvas.drawRect(thumbWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), getMeasuredWidth() - thumbWidth / 2, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), innerPaint1);
+        if (bufferedProgress > 0) {
+            canvas.drawRect(thumbWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), thumbWidth / 2 + bufferedProgress * (getMeasuredWidth() - thumbWidth), getMeasuredHeight() / 2 + AndroidUtilities.dp(1), innerPaint1);
+        }
         canvas.drawRect(thumbWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), thumbWidth / 2 + thumbX, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), outerPaint1);
         canvas.drawCircle(thumbX + thumbWidth / 2, y + thumbHeight / 2, AndroidUtilities.dp(pressed ? 8 : 6), outerPaint1);
     }

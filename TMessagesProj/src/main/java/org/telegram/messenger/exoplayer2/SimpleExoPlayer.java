@@ -27,19 +27,27 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
+import org.telegram.messenger.exoplayer2.analytics.AnalyticsCollector;
+import org.telegram.messenger.exoplayer2.analytics.AnalyticsListener;
 import org.telegram.messenger.exoplayer2.audio.AudioAttributes;
 import org.telegram.messenger.exoplayer2.audio.AudioRendererEventListener;
 import org.telegram.messenger.exoplayer2.decoder.DecoderCounters;
+import org.telegram.messenger.exoplayer2.drm.DefaultDrmSessionManager;
+import org.telegram.messenger.exoplayer2.drm.DrmSessionManager;
+import org.telegram.messenger.exoplayer2.drm.FrameworkMediaCrypto;
 import org.telegram.messenger.exoplayer2.metadata.Metadata;
-import org.telegram.messenger.exoplayer2.metadata.MetadataRenderer;
+import org.telegram.messenger.exoplayer2.metadata.MetadataOutput;
 import org.telegram.messenger.exoplayer2.source.MediaSource;
 import org.telegram.messenger.exoplayer2.source.TrackGroupArray;
 import org.telegram.messenger.exoplayer2.text.Cue;
-import org.telegram.messenger.exoplayer2.text.TextRenderer;
+import org.telegram.messenger.exoplayer2.text.TextOutput;
 import org.telegram.messenger.exoplayer2.trackselection.TrackSelectionArray;
 import org.telegram.messenger.exoplayer2.trackselection.TrackSelector;
+import org.telegram.messenger.exoplayer2.util.Clock;
 import org.telegram.messenger.exoplayer2.util.Util;
 import org.telegram.messenger.exoplayer2.video.VideoRendererEventListener;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -48,58 +56,31 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * be obtained from {@link ExoPlayerFactory}.
  */
 @TargetApi(16)
-public class SimpleExoPlayer implements ExoPlayer {
+public class SimpleExoPlayer implements ExoPlayer, Player.VideoComponent, Player.TextComponent {
 
-  /**
-   * A listener for video rendering information from a {@link SimpleExoPlayer}.
-   */
-  public interface VideoListener {
-
-    /**
-     * Called each time there's a change in the size of the video being rendered.
-     *
-     * @param width The video width in pixels.
-     * @param height The video height in pixels.
-     * @param unappliedRotationDegrees For videos that require a rotation, this is the clockwise
-     *     rotation in degrees that the application should apply for the video for it to be rendered
-     *     in the correct orientation. This value will always be zero on API levels 21 and above,
-     *     since the renderer will apply all necessary rotations internally. On earlier API levels
-     *     this is not possible. Applications that use {@link android.view.TextureView} can apply
-     *     the rotation by calling {@link android.view.TextureView#setTransform}. Applications that
-     *     do not expect to encounter rotated videos can safely ignore this parameter.
-     * @param pixelWidthHeightRatio The width to height ratio of each pixel. For the normal case
-     *     of square pixels this will be equal to 1.0. Different values are indicative of anamorphic
-     *     content.
-     */
-    void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees,
-        float pixelWidthHeightRatio);
-
-    /**
-     * Called when a frame is rendered for the first time since setting the surface, and when a
-     * frame is rendered for the first time since a video track was selected.
-     */
-    void onRenderedFirstFrame();
-
-    boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture);
-    void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture);
-  }
+  /** @deprecated Use {@link org.telegram.messenger.exoplayer2.video.VideoListener}. */
+  @Deprecated
+  public interface VideoListener extends org.telegram.messenger.exoplayer2.video.VideoListener {}
 
   private static final String TAG = "SimpleExoPlayer";
 
   protected final Renderer[] renderers;
 
   private final ExoPlayer player;
+  private final Handler eventHandler;
   private final ComponentListener componentListener;
-  private final CopyOnWriteArraySet<VideoListener> videoListeners;
-  private final CopyOnWriteArraySet<TextRenderer.Output> textOutputs;
-  private final CopyOnWriteArraySet<MetadataRenderer.Output> metadataOutputs;
-  private final int videoRendererCount;
-  private final int audioRendererCount;
-
-  private boolean needSetSurface = true;
+  private final CopyOnWriteArraySet<org.telegram.messenger.exoplayer2.video.VideoListener>
+      videoListeners;
+  private final CopyOnWriteArraySet<TextOutput> textOutputs;
+  private final CopyOnWriteArraySet<MetadataOutput> metadataOutputs;
+  private final CopyOnWriteArraySet<VideoRendererEventListener> videoDebugListeners;
+  private final CopyOnWriteArraySet<AudioRendererEventListener> audioDebugListeners;
+  private final AnalyticsCollector analyticsCollector;
 
   private Format videoFormat;
   private Format audioFormat;
+
+  private boolean needSetSurface = true;
 
   private Surface surface;
   private boolean ownsSurface;
@@ -107,123 +88,168 @@ public class SimpleExoPlayer implements ExoPlayer {
   private int videoScalingMode;
   private SurfaceHolder surfaceHolder;
   private TextureView textureView;
-  private AudioRendererEventListener audioDebugListener;
-  private VideoRendererEventListener videoDebugListener;
   private DecoderCounters videoDecoderCounters;
   private DecoderCounters audioDecoderCounters;
   private int audioSessionId;
   private AudioAttributes audioAttributes;
   private float audioVolume;
+  private MediaSource mediaSource;
+  private List<Cue> currentCues;
 
-  protected SimpleExoPlayer(RenderersFactory renderersFactory, TrackSelector trackSelector,
-      LoadControl loadControl) {
+  /**
+   * @param renderersFactory A factory for creating {@link Renderer}s to be used by the instance.
+   * @param trackSelector The {@link TrackSelector} that will be used by the instance.
+   * @param loadControl The {@link LoadControl} that will be used by the instance.
+   * @param drmSessionManager An optional {@link DrmSessionManager}. May be null if the instance
+   *     will not be used for DRM protected playbacks.
+   */
+  protected SimpleExoPlayer(
+      RenderersFactory renderersFactory,
+      TrackSelector trackSelector,
+      LoadControl loadControl,
+      @Nullable DrmSessionManager<FrameworkMediaCrypto> drmSessionManager) {
+    this(
+        renderersFactory,
+        trackSelector,
+        loadControl,
+        drmSessionManager,
+        new AnalyticsCollector.Factory());
+  }
+
+  /**
+   * @param renderersFactory A factory for creating {@link Renderer}s to be used by the instance.
+   * @param trackSelector The {@link TrackSelector} that will be used by the instance.
+   * @param loadControl The {@link LoadControl} that will be used by the instance.
+   * @param drmSessionManager An optional {@link DrmSessionManager}. May be null if the instance
+   *     will not be used for DRM protected playbacks.
+   * @param analyticsCollectorFactory A factory for creating the {@link AnalyticsCollector} that
+   *     will collect and forward all player events.
+   */
+  protected SimpleExoPlayer(
+      RenderersFactory renderersFactory,
+      TrackSelector trackSelector,
+      LoadControl loadControl,
+      @Nullable DrmSessionManager<FrameworkMediaCrypto> drmSessionManager,
+      AnalyticsCollector.Factory analyticsCollectorFactory) {
+    this(
+        renderersFactory,
+        trackSelector,
+        loadControl,
+        drmSessionManager,
+        analyticsCollectorFactory,
+        Clock.DEFAULT);
+  }
+
+  /**
+   * @param renderersFactory A factory for creating {@link Renderer}s to be used by the instance.
+   * @param trackSelector The {@link TrackSelector} that will be used by the instance.
+   * @param loadControl The {@link LoadControl} that will be used by the instance.
+   * @param drmSessionManager An optional {@link DrmSessionManager}. May be null if the instance
+   *     will not be used for DRM protected playbacks.
+   * @param analyticsCollectorFactory A factory for creating the {@link AnalyticsCollector} that
+   *     will collect and forward all player events.
+   * @param clock The {@link Clock} that will be used by the instance. Should always be {@link
+   *     Clock#DEFAULT}, unless the player is being used from a test.
+   */
+  protected SimpleExoPlayer(
+      RenderersFactory renderersFactory,
+      TrackSelector trackSelector,
+      LoadControl loadControl,
+      @Nullable DrmSessionManager<FrameworkMediaCrypto> drmSessionManager,
+      AnalyticsCollector.Factory analyticsCollectorFactory,
+      Clock clock) {
     componentListener = new ComponentListener();
     videoListeners = new CopyOnWriteArraySet<>();
     textOutputs = new CopyOnWriteArraySet<>();
     metadataOutputs = new CopyOnWriteArraySet<>();
+    videoDebugListeners = new CopyOnWriteArraySet<>();
+    audioDebugListeners = new CopyOnWriteArraySet<>();
     Looper eventLooper = Looper.myLooper() != null ? Looper.myLooper() : Looper.getMainLooper();
-    Handler eventHandler = new Handler(eventLooper);
-    renderers = renderersFactory.createRenderers(eventHandler, componentListener, componentListener,
-        componentListener, componentListener);
-
-    // Obtain counts of video and audio renderers.
-    int videoRendererCount = 0;
-    int audioRendererCount = 0;
-    for (Renderer renderer : renderers) {
-      switch (renderer.getTrackType()) {
-        case C.TRACK_TYPE_VIDEO:
-          videoRendererCount++;
-          break;
-        case C.TRACK_TYPE_AUDIO:
-          audioRendererCount++;
-          break;
-      }
-    }
-    this.videoRendererCount = videoRendererCount;
-    this.audioRendererCount = audioRendererCount;
+    eventHandler = new Handler(eventLooper);
+    renderers =
+        renderersFactory.createRenderers(
+            eventHandler,
+            componentListener,
+            componentListener,
+            componentListener,
+            componentListener,
+            drmSessionManager);
 
     // Set initial values.
     audioVolume = 1;
     audioSessionId = C.AUDIO_SESSION_ID_UNSET;
     audioAttributes = AudioAttributes.DEFAULT;
     videoScalingMode = C.VIDEO_SCALING_MODE_DEFAULT;
+    currentCues = Collections.emptyList();
 
     // Build the player and associated objects.
-    player = new ExoPlayerImpl(renderers, trackSelector, loadControl);
+    player = createExoPlayerImpl(renderers, trackSelector, loadControl, clock);
+    analyticsCollector = analyticsCollectorFactory.createAnalyticsCollector(player, clock);
+    addListener(analyticsCollector);
+    videoDebugListeners.add(analyticsCollector);
+    audioDebugListeners.add(analyticsCollector);
+    addMetadataOutput(analyticsCollector);
+    if (drmSessionManager instanceof DefaultDrmSessionManager) {
+      ((DefaultDrmSessionManager) drmSessionManager).addListener(eventHandler, analyticsCollector);
+    }
+  }
+
+  @Override
+  public VideoComponent getVideoComponent() {
+    return this;
+  }
+
+  @Override
+  public TextComponent getTextComponent() {
+    return this;
   }
 
   /**
    * Sets the video scaling mode.
-   * <p>
-   * Note that the scaling mode only applies if a {@link MediaCodec}-based video {@link Renderer} is
-   * enabled and if the output surface is owned by a {@link android.view.SurfaceView}.
+   *
+   * <p>Note that the scaling mode only applies if a {@link MediaCodec}-based video {@link Renderer}
+   * is enabled and if the output surface is owned by a {@link android.view.SurfaceView}.
    *
    * @param videoScalingMode The video scaling mode.
    */
+  @Override
   public void setVideoScalingMode(@C.VideoScalingMode int videoScalingMode) {
     this.videoScalingMode = videoScalingMode;
-    ExoPlayerMessage[] messages = new ExoPlayerMessage[videoRendererCount];
-    int count = 0;
     for (Renderer renderer : renderers) {
       if (renderer.getTrackType() == C.TRACK_TYPE_VIDEO) {
-        messages[count++] = new ExoPlayerMessage(renderer, C.MSG_SET_SCALING_MODE,
-            videoScalingMode);
+        player
+            .createMessage(renderer)
+            .setType(C.MSG_SET_SCALING_MODE)
+            .setPayload(videoScalingMode)
+            .send();
       }
     }
-    player.sendMessages(messages);
   }
 
-  /**
-   * Returns the video scaling mode.
-   */
+  @Override
   public @C.VideoScalingMode int getVideoScalingMode() {
     return videoScalingMode;
   }
 
-  /**
-   * Clears any {@link Surface}, {@link SurfaceHolder}, {@link SurfaceView} or {@link TextureView}
-   * currently set on the player.
-   */
+  @Override
   public void clearVideoSurface() {
     setVideoSurface(null);
   }
 
-  /**
-   * Sets the {@link Surface} onto which video will be rendered. The caller is responsible for
-   * tracking the lifecycle of the surface, and must clear the surface by calling
-   * {@code setVideoSurface(null)} if the surface is destroyed.
-   * <p>
-   * If the surface is held by a {@link SurfaceView}, {@link TextureView} or {@link SurfaceHolder}
-   * then it's recommended to use {@link #setVideoSurfaceView(SurfaceView)},
-   * {@link #setVideoTextureView(TextureView)} or {@link #setVideoSurfaceHolder(SurfaceHolder)}
-   * rather than this method, since passing the holder allows the player to track the lifecycle of
-   * the surface automatically.
-   *
-   * @param surface The {@link Surface}.
-   */
+  @Override
   public void setVideoSurface(Surface surface) {
     removeSurfaceCallbacks();
     setVideoSurfaceInternal(surface, false);
   }
 
-  /**
-   * Clears the {@link Surface} onto which video is being rendered if it matches the one passed.
-   * Else does nothing.
-   *
-   * @param surface The surface to clear.
-   */
+  @Override
   public void clearVideoSurface(Surface surface) {
     if (surface != null && surface == this.surface) {
       setVideoSurface(null);
     }
   }
 
-  /**
-   * Sets the {@link SurfaceHolder} that holds the {@link Surface} onto which video will be
-   * rendered. The player will track the lifecycle of the surface automatically.
-   *
-   * @param surfaceHolder The surface holder.
-   */
+  @Override
   public void setVideoSurfaceHolder(SurfaceHolder surfaceHolder) {
     removeSurfaceCallbacks();
     this.surfaceHolder = surfaceHolder;
@@ -236,44 +262,24 @@ public class SimpleExoPlayer implements ExoPlayer {
     }
   }
 
-  /**
-   * Clears the {@link SurfaceHolder} that holds the {@link Surface} onto which video is being
-   * rendered if it matches the one passed. Else does nothing.
-   *
-   * @param surfaceHolder The surface holder to clear.
-   */
+  @Override
   public void clearVideoSurfaceHolder(SurfaceHolder surfaceHolder) {
     if (surfaceHolder != null && surfaceHolder == this.surfaceHolder) {
       setVideoSurfaceHolder(null);
     }
   }
 
-  /**
-   * Sets the {@link SurfaceView} onto which video will be rendered. The player will track the
-   * lifecycle of the surface automatically.
-   *
-   * @param surfaceView The surface view.
-   */
+  @Override
   public void setVideoSurfaceView(SurfaceView surfaceView) {
     setVideoSurfaceHolder(surfaceView == null ? null : surfaceView.getHolder());
   }
 
-  /**
-   * Clears the {@link SurfaceView} onto which video is being rendered if it matches the one passed.
-   * Else does nothing.
-   *
-   * @param surfaceView The texture view to clear.
-   */
+  @Override
   public void clearVideoSurfaceView(SurfaceView surfaceView) {
     clearVideoSurfaceHolder(surfaceView == null ? null : surfaceView.getHolder());
   }
 
-  /**
-   * Sets the {@link TextureView} onto which video will be rendered. The player will track the
-   * lifecycle of the surface automatically.
-   *
-   * @param textureView The texture view.
-   */
+  @Override
   public void setVideoTextureView(TextureView textureView) {
     if (this.textureView == textureView) {
       return;
@@ -294,12 +300,7 @@ public class SimpleExoPlayer implements ExoPlayer {
     }
   }
 
-  /**
-   * Clears the {@link TextureView} onto which video is being rendered if it matches the one passed.
-   * Else does nothing.
-   *
-   * @param textureView The texture view to clear.
-   */
+  @Override
   public void clearVideoTextureView(TextureView textureView) {
     if (textureView != null && textureView == this.textureView) {
       setVideoTextureView(null);
@@ -337,6 +338,29 @@ public class SimpleExoPlayer implements ExoPlayer {
     return Util.getStreamTypeForAudioUsage(audioAttributes.usage);
   }
 
+  /** Returns the {@link AnalyticsCollector} used for collecting analytics events. */
+  public AnalyticsCollector getAnalyticsCollector() {
+    return analyticsCollector;
+  }
+
+  /**
+   * Adds an {@link AnalyticsListener} to receive analytics events.
+   *
+   * @param listener The listener to be added.
+   */
+  public void addAnalyticsListener(AnalyticsListener listener) {
+    analyticsCollector.addListener(listener);
+  }
+
+  /**
+   * Removes an {@link AnalyticsListener}.
+   *
+   * @param listener The listener to be removed.
+   */
+  public void removeAnalyticsListener(AnalyticsListener listener) {
+    analyticsCollector.removeListener(listener);
+  }
+
   /**
    * Sets the attributes for audio playback, used by the underlying audio track. If not set, the
    * default audio attributes will be used. They are suitable for general media playback.
@@ -355,15 +379,15 @@ public class SimpleExoPlayer implements ExoPlayer {
    */
   public void setAudioAttributes(AudioAttributes audioAttributes) {
     this.audioAttributes = audioAttributes;
-    ExoPlayerMessage[] messages = new ExoPlayerMessage[audioRendererCount];
-    int count = 0;
     for (Renderer renderer : renderers) {
       if (renderer.getTrackType() == C.TRACK_TYPE_AUDIO) {
-        messages[count++] = new ExoPlayerMessage(renderer, C.MSG_SET_AUDIO_ATTRIBUTES,
-            audioAttributes);
+        player
+            .createMessage(renderer)
+            .setType(C.MSG_SET_AUDIO_ATTRIBUTES)
+            .setPayload(audioAttributes)
+            .send();
       }
     }
-    player.sendMessages(messages);
   }
 
   /**
@@ -380,14 +404,11 @@ public class SimpleExoPlayer implements ExoPlayer {
    */
   public void setVolume(float audioVolume) {
     this.audioVolume = audioVolume;
-    ExoPlayerMessage[] messages = new ExoPlayerMessage[audioRendererCount];
-    int count = 0;
     for (Renderer renderer : renderers) {
       if (renderer.getTrackType() == C.TRACK_TYPE_AUDIO) {
-        messages[count++] = new ExoPlayerMessage(renderer, C.MSG_SET_VOLUME, audioVolume);
+        player.createMessage(renderer).setType(C.MSG_SET_VOLUME).setPayload(audioVolume).send();
       }
     }
-    player.sendMessages(messages);
   }
 
   /**
@@ -451,21 +472,13 @@ public class SimpleExoPlayer implements ExoPlayer {
     return audioDecoderCounters;
   }
 
-  /**
-   * Adds a listener to receive video events.
-   *
-   * @param listener The listener to register.
-   */
-  public void addVideoListener(VideoListener listener) {
+  @Override
+  public void addVideoListener(org.telegram.messenger.exoplayer2.video.VideoListener listener) {
     videoListeners.add(listener);
   }
 
-  /**
-   * Removes a listener of video events.
-   *
-   * @param listener The listener to unregister.
-   */
-  public void removeVideoListener(VideoListener listener) {
+  @Override
+  public void removeVideoListener(org.telegram.messenger.exoplayer2.video.VideoListener listener) {
     videoListeners.remove(listener);
   }
 
@@ -473,7 +486,7 @@ public class SimpleExoPlayer implements ExoPlayer {
    * Sets a listener to receive video events, removing all existing listeners.
    *
    * @param listener The listener.
-   * @deprecated Use {@link #addVideoListener(VideoListener)}.
+   * @deprecated Use {@link #addVideoListener(org.telegram.messenger.exoplayer2.video.VideoListener)}.
    */
   @Deprecated
   public void setVideoListener(VideoListener listener) {
@@ -484,31 +497,27 @@ public class SimpleExoPlayer implements ExoPlayer {
   }
 
   /**
-   * Equivalent to {@link #removeVideoListener(VideoListener)}.
+   * Equivalent to {@link #removeVideoListener(org.telegram.messenger.exoplayer2.video.VideoListener)}.
    *
    * @param listener The listener to clear.
-   * @deprecated Use {@link #removeVideoListener(VideoListener)}.
+   * @deprecated Use {@link
+   *     #removeVideoListener(org.telegram.messenger.exoplayer2.video.VideoListener)}.
    */
   @Deprecated
   public void clearVideoListener(VideoListener listener) {
     removeVideoListener(listener);
   }
 
-  /**
-   * Registers an output to receive text events.
-   *
-   * @param listener The output to register.
-   */
-  public void addTextOutput(TextRenderer.Output listener) {
+  @Override
+  public void addTextOutput(TextOutput listener) {
+    if (!currentCues.isEmpty()) {
+      listener.onCues(currentCues);
+    }
     textOutputs.add(listener);
   }
 
-  /**
-   * Removes a text output.
-   *
-   * @param listener The output to remove.
-   */
-  public void removeTextOutput(TextRenderer.Output listener) {
+  @Override
+  public void removeTextOutput(TextOutput listener) {
     textOutputs.remove(listener);
   }
 
@@ -516,10 +525,10 @@ public class SimpleExoPlayer implements ExoPlayer {
    * Sets an output to receive text events, removing all existing outputs.
    *
    * @param output The output.
-   * @deprecated Use {@link #addTextOutput(TextRenderer.Output)}.
+   * @deprecated Use {@link #addTextOutput(TextOutput)}.
    */
   @Deprecated
-  public void setTextOutput(TextRenderer.Output output) {
+  public void setTextOutput(TextOutput output) {
     textOutputs.clear();
     if (output != null) {
       addTextOutput(output);
@@ -527,31 +536,31 @@ public class SimpleExoPlayer implements ExoPlayer {
   }
 
   /**
-   * Equivalent to {@link #removeTextOutput(TextRenderer.Output)}.
+   * Equivalent to {@link #removeTextOutput(TextOutput)}.
    *
    * @param output The output to clear.
-   * @deprecated Use {@link #removeTextOutput(TextRenderer.Output)}.
+   * @deprecated Use {@link #removeTextOutput(TextOutput)}.
    */
   @Deprecated
-  public void clearTextOutput(TextRenderer.Output output) {
+  public void clearTextOutput(TextOutput output) {
     removeTextOutput(output);
   }
 
   /**
-   * Registers an output to receive metadata events.
+   * Adds a {@link MetadataOutput} to receive metadata.
    *
    * @param listener The output to register.
    */
-  public void addMetadataOutput(MetadataRenderer.Output listener) {
+  public void addMetadataOutput(MetadataOutput listener) {
     metadataOutputs.add(listener);
   }
 
   /**
-   * Removes a metadata output.
+   * Removes a {@link MetadataOutput}.
    *
    * @param listener The output to remove.
    */
-  public void removeMetadataOutput(MetadataRenderer.Output listener) {
+  public void removeMetadataOutput(MetadataOutput listener) {
     metadataOutputs.remove(listener);
   }
 
@@ -559,43 +568,85 @@ public class SimpleExoPlayer implements ExoPlayer {
    * Sets an output to receive metadata events, removing all existing outputs.
    *
    * @param output The output.
-   * @deprecated Use {@link #addMetadataOutput(MetadataRenderer.Output)}.
+   * @deprecated Use {@link #addMetadataOutput(MetadataOutput)}.
    */
   @Deprecated
-  public void setMetadataOutput(MetadataRenderer.Output output) {
-    metadataOutputs.clear();
+  public void setMetadataOutput(MetadataOutput output) {
+    metadataOutputs.retainAll(Collections.singleton(analyticsCollector));
     if (output != null) {
       addMetadataOutput(output);
     }
   }
 
   /**
-   * Equivalent to {@link #removeMetadataOutput(MetadataRenderer.Output)}.
+   * Equivalent to {@link #removeMetadataOutput(MetadataOutput)}.
    *
    * @param output The output to clear.
-   * @deprecated Use {@link #removeMetadataOutput(MetadataRenderer.Output)}.
+   * @deprecated Use {@link #removeMetadataOutput(MetadataOutput)}.
    */
   @Deprecated
-  public void clearMetadataOutput(MetadataRenderer.Output output) {
+  public void clearMetadataOutput(MetadataOutput output) {
     removeMetadataOutput(output);
   }
 
   /**
-   * Sets a listener to receive debug events from the video renderer.
-   *
-   * @param listener The listener.
+   * @deprecated Use {@link #addAnalyticsListener(AnalyticsListener)} to get more detailed debug
+   *     information.
    */
+  @Deprecated
   public void setVideoDebugListener(VideoRendererEventListener listener) {
-    videoDebugListener = listener;
+    videoDebugListeners.retainAll(Collections.singleton(analyticsCollector));
+    if (listener != null) {
+      addVideoDebugListener(listener);
+    }
   }
 
   /**
-   * Sets a listener to receive debug events from the audio renderer.
-   *
-   * @param listener The listener.
+   * @deprecated Use {@link #addAnalyticsListener(AnalyticsListener)} to get more detailed debug
+   *     information.
    */
+  @Deprecated
+  public void addVideoDebugListener(VideoRendererEventListener listener) {
+    videoDebugListeners.add(listener);
+  }
+
+  /**
+   * @deprecated Use {@link #addAnalyticsListener(AnalyticsListener)} and {@link
+   *     #removeAnalyticsListener(AnalyticsListener)} to get more detailed debug information.
+   */
+  @Deprecated
+  public void removeVideoDebugListener(VideoRendererEventListener listener) {
+    videoDebugListeners.remove(listener);
+  }
+
+  /**
+   * @deprecated Use {@link #addAnalyticsListener(AnalyticsListener)} to get more detailed debug
+   *     information.
+   */
+  @Deprecated
   public void setAudioDebugListener(AudioRendererEventListener listener) {
-    audioDebugListener = listener;
+    audioDebugListeners.retainAll(Collections.singleton(analyticsCollector));
+    if (listener != null) {
+      addAudioDebugListener(listener);
+    }
+  }
+
+  /**
+   * @deprecated Use {@link #addAnalyticsListener(AnalyticsListener)} to get more detailed debug
+   *     information.
+   */
+  @Deprecated
+  public void addAudioDebugListener(AudioRendererEventListener listener) {
+    audioDebugListeners.add(listener);
+  }
+
+  /**
+   * @deprecated Use {@link #addAnalyticsListener(AnalyticsListener)} and {@link
+   *     #removeAnalyticsListener(AnalyticsListener)} to get more detailed debug information.
+   */
+  @Deprecated
+  public void removeAudioDebugListener(AudioRendererEventListener listener) {
+    audioDebugListeners.remove(listener);
   }
 
   // ExoPlayer implementation
@@ -621,12 +672,25 @@ public class SimpleExoPlayer implements ExoPlayer {
   }
 
   @Override
+  public ExoPlaybackException getPlaybackError() {
+    return player.getPlaybackError();
+  }
+
+  @Override
   public void prepare(MediaSource mediaSource) {
-    player.prepare(mediaSource);
+    prepare(mediaSource, /* resetPosition= */ true, /* resetState= */ true);
   }
 
   @Override
   public void prepare(MediaSource mediaSource, boolean resetPosition, boolean resetState) {
+    if (this.mediaSource != mediaSource) {
+      if (this.mediaSource != null) {
+        this.mediaSource.removeEventListener(analyticsCollector);
+        analyticsCollector.resetForNewMediaSource();
+      }
+      mediaSource.addEventListener(eventHandler, analyticsCollector);
+      this.mediaSource = mediaSource;
+    }
     player.prepare(mediaSource, resetPosition, resetState);
   }
 
@@ -651,32 +715,46 @@ public class SimpleExoPlayer implements ExoPlayer {
   }
 
   @Override
+  public void setShuffleModeEnabled(boolean shuffleModeEnabled) {
+    player.setShuffleModeEnabled(shuffleModeEnabled);
+  }
+
+  @Override
+  public boolean getShuffleModeEnabled() {
+    return player.getShuffleModeEnabled();
+  }
+
+  @Override
   public boolean isLoading() {
     return player.isLoading();
   }
 
   @Override
   public void seekToDefaultPosition() {
+    analyticsCollector.notifySeekStarted();
     player.seekToDefaultPosition();
   }
 
   @Override
   public void seekToDefaultPosition(int windowIndex) {
+    analyticsCollector.notifySeekStarted();
     player.seekToDefaultPosition(windowIndex);
   }
 
   @Override
   public void seekTo(long positionMs) {
+    analyticsCollector.notifySeekStarted();
     player.seekTo(positionMs);
   }
 
   @Override
   public void seekTo(int windowIndex, long positionMs) {
+    analyticsCollector.notifySeekStarted();
     player.seekTo(windowIndex, positionMs);
   }
 
   @Override
-  public void setPlaybackParameters(PlaybackParameters playbackParameters) {
+  public void setPlaybackParameters(@Nullable PlaybackParameters playbackParameters) {
     player.setPlaybackParameters(playbackParameters);
   }
 
@@ -686,8 +764,29 @@ public class SimpleExoPlayer implements ExoPlayer {
   }
 
   @Override
+  public void setSeekParameters(@Nullable SeekParameters seekParameters) {
+    player.setSeekParameters(seekParameters);
+  }
+
+  @Override
+  public @Nullable Object getCurrentTag() {
+    return player.getCurrentTag();
+  }
+
+  @Override
   public void stop() {
-    player.stop();
+    stop(/* reset= */ false);
+  }
+
+  @Override
+  public void stop(boolean reset) {
+    player.stop(reset);
+    if (mediaSource != null) {
+      mediaSource.removeEventListener(analyticsCollector);
+      mediaSource = null;
+      analyticsCollector.resetForNewMediaSource();
+    }
+    currentCues = Collections.emptyList();
   }
 
   @Override
@@ -700,11 +799,20 @@ public class SimpleExoPlayer implements ExoPlayer {
       }
       surface = null;
     }
+    if (mediaSource != null) {
+      mediaSource.removeEventListener(analyticsCollector);
+    }
+    currentCues = Collections.emptyList();
   }
 
   @Override
   public void sendMessages(ExoPlayerMessage... messages) {
     player.sendMessages(messages);
+  }
+
+  @Override
+  public PlayerMessage createMessage(PlayerMessage.Target target) {
+    return player.createMessage(target);
   }
 
   @Override
@@ -750,6 +858,16 @@ public class SimpleExoPlayer implements ExoPlayer {
   @Override
   public int getCurrentWindowIndex() {
     return player.getCurrentWindowIndex();
+  }
+
+  @Override
+  public int getNextWindowIndex() {
+    return player.getNextWindowIndex();
+  }
+
+  @Override
+  public int getPreviousWindowIndex() {
+    return player.getPreviousWindowIndex();
   }
 
   @Override
@@ -804,6 +922,20 @@ public class SimpleExoPlayer implements ExoPlayer {
 
   // Internal methods.
 
+  /**
+   * Creates the {@link ExoPlayer} implementation used by this instance.
+   *
+   * @param renderers The {@link Renderer}s that will be used by the instance.
+   * @param trackSelector The {@link TrackSelector} that will be used by the instance.
+   * @param loadControl The {@link LoadControl} that will be used by the instance.
+   * @param clock The {@link Clock} that will be used by this instance.
+   * @return A new {@link ExoPlayer} instance.
+   */
+  protected ExoPlayer createExoPlayerImpl(
+      Renderer[] renderers, TrackSelector trackSelector, LoadControl loadControl, Clock clock) {
+    return new ExoPlayerImpl(renderers, trackSelector, loadControl, clock);
+  }
+
   private void removeSurfaceCallbacks() {
     if (textureView != null) {
       if (textureView.getSurfaceTextureListener() != componentListener) {
@@ -822,37 +954,41 @@ public class SimpleExoPlayer implements ExoPlayer {
   private void setVideoSurfaceInternal(Surface surface, boolean ownsSurface) {
     // Note: We don't turn this method into a no-op if the surface is being replaced with itself
     // so as to ensure onRenderedFirstFrame callbacks are still called in this case.
-    ExoPlayerMessage[] messages = new ExoPlayerMessage[videoRendererCount];
-    int count = 0;
+    List<PlayerMessage> messages = new ArrayList<>();
     for (Renderer renderer : renderers) {
       if (renderer.getTrackType() == C.TRACK_TYPE_VIDEO) {
-        messages[count++] = new ExoPlayerMessage(renderer, C.MSG_SET_SURFACE, surface);
+        messages.add(
+            player.createMessage(renderer).setType(C.MSG_SET_SURFACE).setPayload(surface).send());
       }
     }
     if (this.surface != null && this.surface != surface) {
       // We're replacing a surface. Block to ensure that it's not accessed after the method returns.
-      player.blockingSendMessages(messages);
+      try {
+        for (PlayerMessage message : messages) {
+          message.blockUntilDelivered();
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
       // If we created the previous surface, we are responsible for releasing it.
       if (this.ownsSurface) {
         this.surface.release();
       }
-    } else {
-      player.sendMessages(messages);
     }
     this.surface = surface;
     this.ownsSurface = ownsSurface;
   }
 
   private final class ComponentListener implements VideoRendererEventListener,
-      AudioRendererEventListener, TextRenderer.Output, MetadataRenderer.Output,
-      SurfaceHolder.Callback, TextureView.SurfaceTextureListener {
+      AudioRendererEventListener, TextOutput, MetadataOutput, SurfaceHolder.Callback,
+      TextureView.SurfaceTextureListener {
 
     // VideoRendererEventListener implementation
 
     @Override
     public void onVideoEnabled(DecoderCounters counters) {
       videoDecoderCounters = counters;
-      if (videoDebugListener != null) {
+      for (VideoRendererEventListener videoDebugListener : videoDebugListeners) {
         videoDebugListener.onVideoEnabled(counters);
       }
     }
@@ -860,7 +996,7 @@ public class SimpleExoPlayer implements ExoPlayer {
     @Override
     public void onVideoDecoderInitialized(String decoderName, long initializedTimestampMs,
         long initializationDurationMs) {
-      if (videoDebugListener != null) {
+      for (VideoRendererEventListener videoDebugListener : videoDebugListeners) {
         videoDebugListener.onVideoDecoderInitialized(decoderName, initializedTimestampMs,
             initializationDurationMs);
       }
@@ -869,14 +1005,14 @@ public class SimpleExoPlayer implements ExoPlayer {
     @Override
     public void onVideoInputFormatChanged(Format format) {
       videoFormat = format;
-      if (videoDebugListener != null) {
+      for (VideoRendererEventListener videoDebugListener : videoDebugListeners) {
         videoDebugListener.onVideoInputFormatChanged(format);
       }
     }
 
     @Override
     public void onDroppedFrames(int count, long elapsed) {
-      if (videoDebugListener != null) {
+      for (VideoRendererEventListener videoDebugListener : videoDebugListeners) {
         videoDebugListener.onDroppedFrames(count, elapsed);
       }
     }
@@ -884,11 +1020,11 @@ public class SimpleExoPlayer implements ExoPlayer {
     @Override
     public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees,
         float pixelWidthHeightRatio) {
-      for (VideoListener videoListener : videoListeners) {
+      for (org.telegram.messenger.exoplayer2.video.VideoListener videoListener : videoListeners) {
         videoListener.onVideoSizeChanged(width, height, unappliedRotationDegrees,
             pixelWidthHeightRatio);
       }
-      if (videoDebugListener != null) {
+      for (VideoRendererEventListener videoDebugListener : videoDebugListeners) {
         videoDebugListener.onVideoSizeChanged(width, height, unappliedRotationDegrees,
             pixelWidthHeightRatio);
       }
@@ -897,18 +1033,18 @@ public class SimpleExoPlayer implements ExoPlayer {
     @Override
     public void onRenderedFirstFrame(Surface surface) {
       if (SimpleExoPlayer.this.surface == surface) {
-        for (VideoListener videoListener : videoListeners) {
+        for (org.telegram.messenger.exoplayer2.video.VideoListener videoListener : videoListeners) {
           videoListener.onRenderedFirstFrame();
         }
       }
-      if (videoDebugListener != null) {
+      for (VideoRendererEventListener videoDebugListener : videoDebugListeners) {
         videoDebugListener.onRenderedFirstFrame(surface);
       }
     }
 
     @Override
     public void onVideoDisabled(DecoderCounters counters) {
-      if (videoDebugListener != null) {
+      for (VideoRendererEventListener videoDebugListener : videoDebugListeners) {
         videoDebugListener.onVideoDisabled(counters);
       }
       videoFormat = null;
@@ -920,7 +1056,7 @@ public class SimpleExoPlayer implements ExoPlayer {
     @Override
     public void onAudioEnabled(DecoderCounters counters) {
       audioDecoderCounters = counters;
-      if (audioDebugListener != null) {
+      for (AudioRendererEventListener audioDebugListener : audioDebugListeners) {
         audioDebugListener.onAudioEnabled(counters);
       }
     }
@@ -928,7 +1064,7 @@ public class SimpleExoPlayer implements ExoPlayer {
     @Override
     public void onAudioSessionId(int sessionId) {
       audioSessionId = sessionId;
-      if (audioDebugListener != null) {
+      for (AudioRendererEventListener audioDebugListener : audioDebugListeners) {
         audioDebugListener.onAudioSessionId(sessionId);
       }
     }
@@ -936,7 +1072,7 @@ public class SimpleExoPlayer implements ExoPlayer {
     @Override
     public void onAudioDecoderInitialized(String decoderName, long initializedTimestampMs,
         long initializationDurationMs) {
-      if (audioDebugListener != null) {
+      for (AudioRendererEventListener audioDebugListener : audioDebugListeners) {
         audioDebugListener.onAudioDecoderInitialized(decoderName, initializedTimestampMs,
             initializationDurationMs);
       }
@@ -945,22 +1081,22 @@ public class SimpleExoPlayer implements ExoPlayer {
     @Override
     public void onAudioInputFormatChanged(Format format) {
       audioFormat = format;
-      if (audioDebugListener != null) {
+      for (AudioRendererEventListener audioDebugListener : audioDebugListeners) {
         audioDebugListener.onAudioInputFormatChanged(format);
       }
     }
 
     @Override
-    public void onAudioTrackUnderrun(int bufferSize, long bufferSizeMs,
+    public void onAudioSinkUnderrun(int bufferSize, long bufferSizeMs,
         long elapsedSinceLastFeedMs) {
-      if (audioDebugListener != null) {
-        audioDebugListener.onAudioTrackUnderrun(bufferSize, bufferSizeMs, elapsedSinceLastFeedMs);
+      for (AudioRendererEventListener audioDebugListener : audioDebugListeners) {
+        audioDebugListener.onAudioSinkUnderrun(bufferSize, bufferSizeMs, elapsedSinceLastFeedMs);
       }
     }
 
     @Override
     public void onAudioDisabled(DecoderCounters counters) {
-      if (audioDebugListener != null) {
+      for (AudioRendererEventListener audioDebugListener : audioDebugListeners) {
         audioDebugListener.onAudioDisabled(counters);
       }
       audioFormat = null;
@@ -968,20 +1104,21 @@ public class SimpleExoPlayer implements ExoPlayer {
       audioSessionId = C.AUDIO_SESSION_ID_UNSET;
     }
 
-    // TextRenderer.Output implementation
+    // TextOutput implementation
 
     @Override
     public void onCues(List<Cue> cues) {
-      for (TextRenderer.Output textOutput : textOutputs) {
+      currentCues = cues;
+      for (TextOutput textOutput : textOutputs) {
         textOutput.onCues(cues);
       }
     }
 
-    // MetadataRenderer.Output implementation
+    // MetadataOutput implementation
 
     @Override
     public void onMetadata(Metadata metadata) {
-      for (MetadataRenderer.Output metadataOutput : metadataOutputs) {
+      for (MetadataOutput metadataOutput : metadataOutputs) {
         metadataOutput.onMetadata(metadata);
       }
     }
@@ -1020,22 +1157,22 @@ public class SimpleExoPlayer implements ExoPlayer {
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-      for (VideoListener videoListener : videoListeners) {
+      for (org.telegram.messenger.exoplayer2.video.VideoListener videoListener : videoListeners) {
         if (videoListener.onSurfaceDestroyed(surfaceTexture)) {
           return false;
         }
       }
       setVideoSurfaceInternal(null, true);
       needSetSurface = true;
-
       return true;
     }
 
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-      for (VideoListener videoListener : videoListeners) {
+      for (org.telegram.messenger.exoplayer2.video.VideoListener videoListener : videoListeners) {
         videoListener.onSurfaceTextureUpdated(surfaceTexture);
       }
+      // Do nothing.
     }
 
   }

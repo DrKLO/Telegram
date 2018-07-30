@@ -17,14 +17,13 @@
 
 package org.telegram.messenger.support.widget;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
-import android.support.v4.view.ViewCompat;
+import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
 
@@ -43,6 +42,7 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
     public static final int HORIZONTAL = LinearLayout.HORIZONTAL;
     public static final int VERTICAL = LinearLayout.VERTICAL;
 
+    private static final String TAG = "DividerItem";
     private static final int[] ATTRS = new int[]{ android.R.attr.listDivider };
 
     private Drawable mDivider;
@@ -64,6 +64,10 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
     public DividerItemDecoration(Context context, int orientation) {
         final TypedArray a = context.obtainStyledAttributes(ATTRS);
         mDivider = a.getDrawable(0);
+        if (mDivider == null) {
+            Log.w(TAG, "@android:attr/listDivider was not set in the theme used for this "
+                    + "DividerItemDecoration. Please set that attribute all call setDrawable()");
+        }
         a.recycle();
         setOrientation(orientation);
     }
@@ -96,7 +100,7 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
 
     @Override
     public void onDraw(Canvas c, RecyclerView parent, RecyclerView.State state) {
-        if (parent.getLayoutManager() == null) {
+        if (parent.getLayoutManager() == null || mDivider == null) {
             return;
         }
         if (mOrientation == VERTICAL) {
@@ -106,11 +110,11 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
         }
     }
 
-    @SuppressLint("NewApi")
     private void drawVertical(Canvas canvas, RecyclerView parent) {
         canvas.save();
         final int left;
         final int right;
+        //noinspection AndroidLintNewApi - NewApi lint fails to handle overrides.
         if (parent.getClipToPadding()) {
             left = parent.getPaddingLeft();
             right = parent.getWidth() - parent.getPaddingRight();
@@ -125,7 +129,7 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
         for (int i = 0; i < childCount; i++) {
             final View child = parent.getChildAt(i);
             parent.getDecoratedBoundsWithMargins(child, mBounds);
-            final int bottom = mBounds.bottom + Math.round(ViewCompat.getTranslationY(child));
+            final int bottom = mBounds.bottom + Math.round(child.getTranslationY());
             final int top = bottom - mDivider.getIntrinsicHeight();
             mDivider.setBounds(left, top, right, bottom);
             mDivider.draw(canvas);
@@ -133,11 +137,11 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
         canvas.restore();
     }
 
-    @SuppressLint("NewApi")
     private void drawHorizontal(Canvas canvas, RecyclerView parent) {
         canvas.save();
         final int top;
         final int bottom;
+        //noinspection AndroidLintNewApi - NewApi lint fails to handle overrides.
         if (parent.getClipToPadding()) {
             top = parent.getPaddingTop();
             bottom = parent.getHeight() - parent.getPaddingBottom();
@@ -152,7 +156,7 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
         for (int i = 0; i < childCount; i++) {
             final View child = parent.getChildAt(i);
             parent.getLayoutManager().getDecoratedBoundsWithMargins(child, mBounds);
-            final int right = mBounds.right + Math.round(ViewCompat.getTranslationX(child));
+            final int right = mBounds.right + Math.round(child.getTranslationX());
             final int left = right - mDivider.getIntrinsicWidth();
             mDivider.setBounds(left, top, right, bottom);
             mDivider.draw(canvas);
@@ -163,6 +167,10 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
     @Override
     public void getItemOffsets(Rect outRect, View view, RecyclerView parent,
             RecyclerView.State state) {
+        if (mDivider == null) {
+            outRect.set(0, 0, 0, 0);
+            return;
+        }
         if (mOrientation == VERTICAL) {
             outRect.set(0, 0, 0, mDivider.getIntrinsicHeight());
         } else {

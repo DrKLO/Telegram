@@ -21,6 +21,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 
 import java.util.ArrayList;
@@ -76,7 +77,9 @@ public class CallSwipeView extends View {
 			@Override
 			public void onAnimationEnd(Animator animation) {
 				if (System.currentTimeMillis() - startTime < animation.getDuration() / 4) {
-					FileLog.w("Not repeating animation because previous loop was too fast");
+					if (BuildVars.LOGS_ENABLED) {
+						FileLog.w("Not repeating animation because previous loop was too fast");
+					}
 					return;
 				}
 				if (!canceled && animatingArrows)

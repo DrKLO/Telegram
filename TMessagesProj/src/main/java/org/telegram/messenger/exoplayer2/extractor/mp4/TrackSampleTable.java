@@ -48,9 +48,19 @@ import org.telegram.messenger.exoplayer2.util.Util;
    * Sample flags.
    */
   public final int[] flags;
+  /**
+   * The duration of the track sample table in microseconds, or {@link C#TIME_UNSET} if the sample
+   * table is empty.
+   */
+  public final long durationUs;
 
-  public TrackSampleTable(long[] offsets, int[] sizes, int maximumSize, long[] timestampsUs,
-      int[] flags) {
+  public TrackSampleTable(
+      long[] offsets,
+      int[] sizes,
+      int maximumSize,
+      long[] timestampsUs,
+      int[] flags,
+      long durationUs) {
     Assertions.checkArgument(sizes.length == timestampsUs.length);
     Assertions.checkArgument(offsets.length == timestampsUs.length);
     Assertions.checkArgument(flags.length == timestampsUs.length);
@@ -60,6 +70,7 @@ import org.telegram.messenger.exoplayer2.util.Util;
     this.maximumSize = maximumSize;
     this.timestampsUs = timestampsUs;
     this.flags = flags;
+    this.durationUs = durationUs;
     sampleCount = offsets.length;
   }
 

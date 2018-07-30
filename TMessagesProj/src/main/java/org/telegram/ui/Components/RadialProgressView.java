@@ -12,6 +12,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
+import android.support.annotation.Keep;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
@@ -27,6 +29,7 @@ public class RadialProgressView extends View {
     private boolean risingCircleLength;
     private float currentProgressTime;
     private RectF cicleRect = new RectF();
+    private boolean useSelfAlpha;
 
     private int progressColor;
 
@@ -50,6 +53,24 @@ public class RadialProgressView extends View {
         progressPaint.setStrokeCap(Paint.Cap.ROUND);
         progressPaint.setStrokeWidth(AndroidUtilities.dp(3));
         progressPaint.setColor(progressColor);
+    }
+
+    public void setUseSelfAlpha(boolean value) {
+        useSelfAlpha = value;
+    }
+
+    @Keep
+    @Override
+    public void setAlpha(float alpha) {
+        super.setAlpha(alpha);
+        if (useSelfAlpha) {
+            Drawable background = getBackground();
+            int a = (int) (alpha * 255);
+            if (background != null) {
+                background.setAlpha(a);
+            }
+            progressPaint.setAlpha(a);
+        }
     }
 
     private void updateAnimation() {

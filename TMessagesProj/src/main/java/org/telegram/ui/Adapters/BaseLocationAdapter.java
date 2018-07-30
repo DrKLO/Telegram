@@ -9,28 +9,19 @@
 package org.telegram.ui.Adapters;
 
 import android.location.Location;
-import android.os.AsyncTask;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.RecyclerListView;
 
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -44,18 +35,23 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
     protected ArrayList<TLRPC.TL_messageMediaVenue> places = new ArrayList<>();
     protected ArrayList<String> iconUrls = new ArrayList<>();
     private Location lastSearchLocation;
+    private String lastSearchQuery;
     private BaseLocationAdapterDelegate delegate;
     private Timer searchTimer;
-    private AsyncTask<Void, Void, JSONObject> currentTask;
+    private int currentRequestNum;
+    private int currentAccount = UserConfig.selectedAccount;
+    private long dialogId;
+    private boolean searchingUser;
 
     public void destroy() {
-        if (currentTask != null) {
-            currentTask.cancel(true);
-            currentTask = null;
+        if (currentRequestNum != 0) {
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(currentRequestNum, true);
+            currentRequestNum = 0;
         }
     }
 
-    public void setDelegate(BaseLocationAdapterDelegate delegate) {
+    public void setDelegate(long did, BaseLocationAdapterDelegate delegate) {
+        dialogId = did;
         this.delegate = delegate;
     }
 
@@ -85,7 +81,7 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
                         @Override
                         public void run() {
                             lastSearchLocation = null;
-                            searchGooglePlacesWithQuery(query, coordinate);
+                            searchPlacesWithQuery(query, coordinate, true);
                         }
                     });
                 }
@@ -93,246 +89,115 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
         }
     }
 
-    public void searchGooglePlacesWithQuery(final String query, final Location coordinate) {
-        if (lastSearchLocation != null && coordinate.distanceTo(lastSearchLocation) < 200) {
+    private void searchBotUser() {
+        if (searchingUser) {
+            return;
+        }
+        searchingUser = true;
+        TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
+        req.username = MessagesController.getInstance(currentAccount).venueSearchBot;
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
+            @Override
+            public void run(final TLObject response, TLRPC.TL_error error) {
+                if (response != null) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            TLRPC.TL_contacts_resolvedPeer res = (TLRPC.TL_contacts_resolvedPeer) response;
+                            MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                            MessagesController.getInstance(currentAccount).putChats(res.chats, false);
+                            MessagesStorage.getInstance(currentAccount).putUsersAndChats(res.users, res.chats, true, true);
+                            Location coord = lastSearchLocation;
+                            lastSearchLocation = null;
+                            searchPlacesWithQuery(lastSearchQuery, coord, false);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    public void searchPlacesWithQuery(final String query, final Location coordinate, boolean searchUser) {
+        if (coordinate == null || lastSearchLocation != null && coordinate.distanceTo(lastSearchLocation) < 200) {
             return;
         }
         lastSearchLocation = coordinate;
+        lastSearchQuery = query;
         if (searching) {
             searching = false;
-            if (currentTask != null) {
-                currentTask.cancel(true);
-                currentTask = null;
+            if (currentRequestNum != 0) {
+                ConnectionsManager.getInstance(currentAccount).cancelRequest(currentRequestNum, true);
+                currentRequestNum = 0;
             }
         }
-        try {
-            searching = true;
-            final String url = String.format(Locale.US, "https://api.foursquare.com/v2/venues/search/?v=%s&locale=en&limit=25&client_id=%s&client_secret=%s&ll=%s%s", BuildVars.FOURSQUARE_API_VERSION, BuildVars.FOURSQUARE_API_ID, BuildVars.FOURSQUARE_API_KEY, String.format(Locale.US, "%f,%f", coordinate.getLatitude(), coordinate.getLongitude()), query != null && query.length() > 0 ? "&query=" + URLEncoder.encode(query, "UTF-8") : "");
-            /*
-            GOOGLE MAPS
-            JSONArray result = response.getJSONArray("results");
+        searching = true;
 
-            for (int a = 0; a < result.length(); a++) {
-                try {
-                    JSONObject object = result.getJSONObject(a);
-                    JSONObject location = object.getJSONObject("geometry").getJSONObject("location");
-                    TLRPC.TL_messageMediaVenue venue = new TLRPC.TL_messageMediaVenue();
-                    venue.geo = new TLRPC.TL_geoPoint();
-                    venue.geo.lat = location.getDouble("lat");
-                    venue.geo._long = location.getDouble("lng");
-                    if (object.has("vicinity")) {
-                        venue.address = object.getString("vicinity").trim();
-                    } else {
-                        venue.address = String.format(Locale.US, "%f,%f", venue.geo.lat, venue.geo._long);
-                    }
-                    if (object.has("name")) {
-                        venue.title = object.getString("name").trim();
-                    }
-                    venue.venue_id = object.getString("place_id");
-                    venue.provider = "google";
-                    places.add(venue);
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
+        TLObject object = MessagesController.getInstance(currentAccount).getUserOrChat(MessagesController.getInstance(currentAccount).venueSearchBot);
+        if (!(object instanceof TLRPC.User)) {
+            if (searchUser) {
+                searchBotUser();
             }
-             */
-            currentTask = new AsyncTask<Void, Void, JSONObject>() {
-
-                private boolean canRetry = true;
-
-                private String downloadUrlContent(String url) {
-                    boolean canRetry = true;
-                    InputStream httpConnectionStream = null;
-                    boolean done = false;
-                    StringBuilder result = null;
-                    URLConnection httpConnection = null;
-                    try {
-                        URL downloadUrl = new URL(url);
-                        httpConnection = downloadUrl.openConnection();
-                        httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20150101 Firefox/47.0 (Chrome)");
-                        httpConnection.addRequestProperty("Accept-Language", "en-us,en;q=0.5");
-                        httpConnection.addRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-                        httpConnection.addRequestProperty("Accept-Charset", "ISO-8859-1,utf-8;q=0.7,*;q=0.7");
-                        httpConnection.setConnectTimeout(5000);
-                        httpConnection.setReadTimeout(5000);
-                        if (httpConnection instanceof HttpURLConnection) {
-                            HttpURLConnection httpURLConnection = (HttpURLConnection) httpConnection;
-                            httpURLConnection.setInstanceFollowRedirects(true);
-                            int status = httpURLConnection.getResponseCode();
-                            if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER) {
-                                String newUrl = httpURLConnection.getHeaderField("Location");
-                                String cookies = httpURLConnection.getHeaderField("Set-Cookie");
-                                downloadUrl = new URL(newUrl);
-                                httpConnection = downloadUrl.openConnection();
-                                httpConnection.setRequestProperty("Cookie", cookies);
-                                httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20150101 Firefox/47.0 (Chrome)");
-                                httpConnection.addRequestProperty("Accept-Language", "en-us,en;q=0.5");
-                                httpConnection.addRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-                                httpConnection.addRequestProperty("Accept-Charset", "ISO-8859-1,utf-8;q=0.7,*;q=0.7");
-                            }
-                        }
-                        httpConnection.connect();
-                        httpConnectionStream = httpConnection.getInputStream();
-                    } catch (Throwable e) {
-                        if (e instanceof SocketTimeoutException) {
-                            if (ConnectionsManager.isNetworkOnline()) {
-                                canRetry = false;
-                            }
-                        } else if (e instanceof UnknownHostException) {
-                            canRetry = false;
-                        } else if (e instanceof SocketException) {
-                            if (e.getMessage() != null && e.getMessage().contains("ECONNRESET")) {
-                                canRetry = false;
-                            }
-                        } else if (e instanceof FileNotFoundException) {
-                            canRetry = false;
-                        }
-                        FileLog.e(e);
-                    }
-
-                    if (canRetry) {
-                        try {
-                            if (httpConnection != null && httpConnection instanceof HttpURLConnection) {
-                                int code = ((HttpURLConnection) httpConnection).getResponseCode();
-                                if (code != HttpURLConnection.HTTP_OK && code != HttpURLConnection.HTTP_ACCEPTED && code != HttpURLConnection.HTTP_NOT_MODIFIED) {
-                                    //canRetry = false;
-                                }
-                            }
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-
-                        if (httpConnectionStream != null) {
-                            try {
-                                byte[] data = new byte[1024 * 32];
-                                while (true) {
-                                    if (isCancelled()) {
-                                        break;
-                                    }
-                                    try {
-                                        int read = httpConnectionStream.read(data);
-                                        if (read > 0) {
-                                            if (result == null) {
-                                                result = new StringBuilder();
-                                            }
-                                            result.append(new String(data, 0, read, "UTF-8"));
-                                        } else if (read == -1) {
-                                            done = true;
-                                            break;
-                                        } else {
-                                            break;
-                                        }
-                                    } catch (Exception e) {
-                                        FileLog.e(e);
-                                        break;
-                                    }
-                                }
-                            } catch (Throwable e) {
-                                FileLog.e(e);
-                            }
-                        }
-
-                        try {
-                            if (httpConnectionStream != null) {
-                                httpConnectionStream.close();
-                            }
-                        } catch (Throwable e) {
-                            FileLog.e(e);
-                        }
-                    }
-                    return done ? result.toString() : null;
-                }
-
-                protected JSONObject doInBackground(Void... voids) {
-                    String code = downloadUrlContent(url);
-                    if (isCancelled()) {
-                        return null;
-                    }
-                    try {
-                        return new JSONObject(code);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                    return null;
-                }
-
-                @Override
-                protected void onPostExecute(JSONObject response) {
-                    if (response != null) {
-                        try {
-                            places.clear();
-                            iconUrls.clear();
-
-                            JSONArray result = response.getJSONObject("response").getJSONArray("venues");
-
-                            for (int a = 0; a < result.length(); a++) {
-                                try {
-                                    JSONObject object = result.getJSONObject(a);
-                                    String iconUrl = null;
-                                    if (object.has("categories")) {
-                                        JSONArray categories = object.getJSONArray("categories");
-                                        if (categories.length() > 0) {
-                                            JSONObject category = categories.getJSONObject(0);
-                                            if (category.has("icon")) {
-                                                JSONObject icon = category.getJSONObject("icon");
-                                                iconUrl = String.format(Locale.US, "%s64%s", icon.getString("prefix"), icon.getString("suffix"));
-                                            }
-                                        }
-                                    }
-                                    iconUrls.add(iconUrl);
-
-                                    JSONObject location = object.getJSONObject("location");
-                                    TLRPC.TL_messageMediaVenue venue = new TLRPC.TL_messageMediaVenue();
-                                    venue.geo = new TLRPC.TL_geoPoint();
-                                    venue.geo.lat = location.getDouble("lat");
-                                    venue.geo._long = location.getDouble("lng");
-                                    if (location.has("address")) {
-                                        venue.address = location.getString("address");
-                                    } else if (location.has("city")) {
-                                        venue.address = location.getString("city");
-                                    } else if (location.has("state")) {
-                                        venue.address = location.getString("state");
-                                    } else if (location.has("country")) {
-                                        venue.address = location.getString("country");
-                                    } else {
-                                        venue.address = String.format(Locale.US, "%f,%f", venue.geo.lat, venue.geo._long);
-                                    }
-                                    if (object.has("name")) {
-                                        venue.title = object.getString("name");
-                                    }
-                                    venue.venue_type = "";
-                                    venue.venue_id = object.getString("id");
-                                    venue.provider = "foursquare";
-                                    places.add(venue);
-                                } catch (Exception e) {
-                                    FileLog.e(e);
-                                }
-                            }
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        searching = false;
-                        notifyDataSetChanged();
-                        if (delegate != null) {
-                            delegate.didLoadedSearchResult(places);
-                        }
-                    } else {
-                        searching = false;
-                        notifyDataSetChanged();
-                        if (delegate != null) {
-                            delegate.didLoadedSearchResult(places);
-                        }
-                    }
-                }
-            };
-            currentTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
-        } catch (Exception e) {
-            FileLog.e(e);
-            searching = false;
-            if (delegate != null) {
-                delegate.didLoadedSearchResult(places);
-            }
+            return;
         }
+        TLRPC.User user = (TLRPC.User) object;
+
+        TLRPC.TL_messages_getInlineBotResults req = new TLRPC.TL_messages_getInlineBotResults();
+        req.query = query == null ? "" : query;
+        req.bot = MessagesController.getInstance(currentAccount).getInputUser(user);
+        req.offset = "";
+
+        req.geo_point = new TLRPC.TL_inputGeoPoint();
+        req.geo_point.lat = AndroidUtilities.fixLocationCoord(coordinate.getLatitude());
+        req.geo_point._long = AndroidUtilities.fixLocationCoord(coordinate.getLongitude());
+        req.flags |= 1;
+
+        int lower_id = (int) dialogId;
+        int high_id = (int) (dialogId >> 32);
+        if (lower_id != 0) {
+            req.peer = MessagesController.getInstance(currentAccount).getInputPeer(lower_id);
+        } else {
+            req.peer = new TLRPC.TL_inputPeerEmpty();
+        }
+
+        currentRequestNum = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
+            @Override
+            public void run(final TLObject response, final TLRPC.TL_error error) {
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        currentRequestNum = 0;
+                        searching = false;
+                        places.clear();
+                        iconUrls.clear();
+
+                        if (error != null) {
+                            if (delegate != null) {
+                                delegate.didLoadedSearchResult(places);
+                            }
+                        } else {
+                            TLRPC.messages_BotResults res = (TLRPC.messages_BotResults) response;
+                            for (int a = 0, size = res.results.size(); a < size; a++) {
+                                TLRPC.BotInlineResult result = res.results.get(a);
+                                if (!"venue".equals(result.type) || !(result.send_message instanceof TLRPC.TL_botInlineMessageMediaVenue)) {
+                                    continue;
+                                }
+                                TLRPC.TL_botInlineMessageMediaVenue mediaVenue = (TLRPC.TL_botInlineMessageMediaVenue) result.send_message;
+                                iconUrls.add("https://ss3.4sqi.net/img/categories_v2/" + mediaVenue.venue_type + "_64.png");
+                                TLRPC.TL_messageMediaVenue venue = new TLRPC.TL_messageMediaVenue();
+                                venue.geo = mediaVenue.geo;
+                                venue.address = mediaVenue.address;
+                                venue.title = mediaVenue.title;
+                                venue.venue_type = mediaVenue.venue_type;
+                                venue.venue_id = mediaVenue.venue_id;
+                                venue.provider = mediaVenue.provider;
+                                places.add(venue);
+                            }
+                        }
+                        notifyDataSetChanged();
+                    }
+                });
+            }
+        });
         notifyDataSetChanged();
     }
 }

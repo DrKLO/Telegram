@@ -548,6 +548,10 @@ public final class CustomTabsIntent {
         return intent;
     }
 
+    public void setUseNewTask() {
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    }
+
     /**
      * Whether a browser receiving the given intent should always use browser UI and avoid using any
      * custom tabs UI.

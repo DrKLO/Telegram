@@ -16,6 +16,7 @@
 package org.telegram.messenger.exoplayer2.audio;
 
 import android.annotation.TargetApi;
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 
 /**
@@ -119,7 +120,7 @@ public final class AudioAttributes {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(@Nullable Object obj) {
     if (this == obj) {
       return true;
     }

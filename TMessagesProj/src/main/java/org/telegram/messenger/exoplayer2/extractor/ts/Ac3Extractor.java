@@ -29,8 +29,7 @@ import org.telegram.messenger.exoplayer2.util.Util;
 import java.io.IOException;
 
 /**
- * Facilitates the extraction of AC-3 samples from elementary audio files formatted as AC-3
- * bitstreams.
+ * Extracts data from (E-)AC-3 bitstreams.
  */
 public final class Ac3Extractor implements Extractor {
 
@@ -70,6 +69,8 @@ public final class Ac3Extractor implements Extractor {
     reader = new Ac3Reader();
     sampleData = new ParsableByteArray(MAX_SYNC_FRAME_SIZE);
   }
+
+  // Extractor implementation.
 
   @Override
   public boolean sniff(ExtractorInput input) throws IOException, InterruptedException {

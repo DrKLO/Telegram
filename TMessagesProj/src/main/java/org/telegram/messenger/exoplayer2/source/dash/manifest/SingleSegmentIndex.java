@@ -32,27 +32,27 @@ import org.telegram.messenger.exoplayer2.source.dash.DashSegmentIndex;
   }
 
   @Override
-  public int getSegmentNum(long timeUs, long periodDurationUs) {
+  public long getSegmentNum(long timeUs, long periodDurationUs) {
     return 0;
   }
 
   @Override
-  public long getTimeUs(int segmentNum) {
+  public long getTimeUs(long segmentNum) {
     return 0;
   }
 
   @Override
-  public long getDurationUs(int segmentNum, long periodDurationUs) {
+  public long getDurationUs(long segmentNum, long periodDurationUs) {
     return periodDurationUs;
   }
 
   @Override
-  public RangedUri getSegmentUrl(int segmentNum) {
+  public RangedUri getSegmentUrl(long segmentNum) {
     return uri;
   }
 
   @Override
-  public int getFirstSegmentNum() {
+  public long getFirstSegmentNum() {
     return 0;
   }
 

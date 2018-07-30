@@ -38,6 +38,8 @@ import com.coremedia.iso.boxes.TrackHeaderBox;
 import com.googlecode.mp4parser.DataSource;
 import com.googlecode.mp4parser.util.Matrix;
 
+import org.telegram.messenger.FileLog;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -60,8 +62,9 @@ public class MP4Builder {
     private boolean writeNewMdat = true;
     private HashMap<Track, long[]> track2SampleSizes = new HashMap<>();
     private ByteBuffer sizeBuffer = null;
+    private boolean splitMdat;
 
-    public MP4Builder createMovie(Mp4Movie mp4Movie) throws Exception {
+    public MP4Builder createMovie(Mp4Movie mp4Movie, boolean split) throws Exception {
         currentMp4Movie = mp4Movie;
 
         fos = new FileOutputStream(mp4Movie.getCacheFile());
@@ -71,6 +74,7 @@ public class MP4Builder {
         fileTypeBox.getBox(fc);
         dataOffset += fileTypeBox.getSize();
         writedSinceLastMdat += dataOffset;
+        splitMdat = split;
 
         mdat = new InterleaveChunkMdat();
 
@@ -87,6 +91,7 @@ public class MP4Builder {
         mdat.setDataOffset(0);
         mdat.setContentSize(0);
         fos.flush();
+        fos.getFD().sync();
     }
 
     public boolean writeSampleData(int trackIndex, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo, boolean writeLength) throws Exception {
@@ -104,10 +109,12 @@ public class MP4Builder {
 
         boolean flush = false;
         if (writedSinceLastMdat >= 32 * 1024) {
-            flushCurrentMdat();
-            writeNewMdat = true;
+            if (splitMdat) {
+                flushCurrentMdat();
+                writeNewMdat = true;
+            }
             flush = true;
-            writedSinceLastMdat -= 32 * 1024;
+            writedSinceLastMdat = 0;
         }
 
         currentMp4Movie.addSample(trackIndex, dataOffset, bufferInfo);
@@ -126,6 +133,7 @@ public class MP4Builder {
 
         if (flush) {
             fos.flush();
+            fos.getFD().sync();
         }
         return flush;
     }
@@ -151,6 +159,7 @@ public class MP4Builder {
         Box moov = createMovieBox(currentMp4Movie);
         moov.getBox(fc);
         fos.flush();
+        fos.getFD().sync();
 
         fc.close();
         fos.close();

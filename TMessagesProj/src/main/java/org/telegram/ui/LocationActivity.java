@@ -36,6 +36,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
+import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -60,6 +61,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MessagesStorage;
@@ -102,7 +104,6 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -142,7 +143,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private Runnable updateRunnable;
 
     private ArrayList<LiveLocation> markers = new ArrayList<>();
-    private HashMap<Integer, LiveLocation> markersMap = new HashMap<>();
+    private SparseArray<LiveLocation> markersMap = new SparseArray<>();
 
     private AnimatorSet animatorSet;
 
@@ -187,12 +188,12 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
         swipeBackEnabled = false;
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.locationPermissionGranted);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.locationPermissionGranted);
         if (messageObject != null && messageObject.isLiveLocation()) {
-            NotificationCenter.getInstance().addObserver(this, NotificationCenter.didReceivedNewMessages);
-            NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagesDeleted);
-            NotificationCenter.getInstance().addObserver(this, NotificationCenter.replaceMessagesObjects);
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didReceivedNewMessages);
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagesDeleted);
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.replaceMessagesObjects);
         }
         return true;
     }
@@ -200,11 +201,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.locationPermissionGranted);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didReceivedNewMessages);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagesDeleted);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.replaceMessagesObjects);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.locationPermissionGranted);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didReceivedNewMessages);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagesDeleted);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.replaceMessagesObjects);
         try {
             if (mapView != null) {
                 mapView.onDestroy();
@@ -286,6 +287,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     mapViewClip.setVisibility(View.GONE);
                     searchListView.setVisibility(View.VISIBLE);
                     searchListView.setEmptyView(emptyView);
+                    emptyView.showTextView();
                 }
 
                 @Override
@@ -310,6 +312,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     if (text.length() != 0) {
                         searchWas = true;
                     }
+                    emptyView.showProgress();
                     searchAdapter.searchDelayed(text, userLocation);
                 }
             });
@@ -411,7 +414,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                             AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    adapter.searchGooglePlacesWithQuery(null, myLocation);
+                                    adapter.searchPlacesWithQuery(null, myLocation, true);
                                 }
                             });
                         }
@@ -430,14 +433,14 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     if (delegate != null && userLocation != null) {
                         TLRPC.TL_messageMediaGeo location = new TLRPC.TL_messageMediaGeo();
                         location.geo = new TLRPC.TL_geoPoint();
-                        location.geo.lat = userLocation.getLatitude();
-                        location.geo._long = userLocation.getLongitude();
+                        location.geo.lat = AndroidUtilities.fixLocationCoord(userLocation.getLatitude());
+                        location.geo._long = AndroidUtilities.fixLocationCoord(userLocation.getLongitude());
                         delegate.didSelectLocation(location, liveLocationType);
                     }
                     finishFragment();
                 } else if (position == 2 && liveLocationType == 1 || position == 1 && liveLocationType == 2 || position == 3 && liveLocationType == 3) {
-                    if (LocationController.getInstance().isSharingLocation(dialogId)) {
-                        LocationController.getInstance().removeSharingLocation(dialogId);
+                    if (LocationController.getInstance(currentAccount).isSharingLocation(dialogId)) {
+                        LocationController.getInstance(currentAccount).removeSharingLocation(dialogId);
                         finishFragment();
                     } else {
                         if (delegate == null || getParentActivity() == null) {
@@ -446,15 +449,15 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                         if (myLocation != null) {
                             TLRPC.User user = null;
                             if ((int) dialogId > 0) {
-                                user = MessagesController.getInstance().getUser((int) dialogId);
+                                user = MessagesController.getInstance(currentAccount).getUser((int) dialogId);
                             }
                             showDialog(AlertsCreator.createLocationUpdateDialog(getParentActivity(), user, new MessagesStorage.IntCallback() {
                                 @Override
                                 public void run(int param) {
                                     TLRPC.TL_messageMediaGeoLive location = new TLRPC.TL_messageMediaGeoLive();
                                     location.geo = new TLRPC.TL_geoPoint();
-                                    location.geo.lat = myLocation.getLatitude();
-                                    location.geo._long = myLocation.getLongitude();
+                                    location.geo.lat = AndroidUtilities.fixLocationCoord(myLocation.getLatitude());
+                                    location.geo._long = AndroidUtilities.fixLocationCoord(myLocation.getLongitude());
                                     location.period = param;
                                     delegate.didSelectLocation(location, liveLocationType);
                                     finishFragment();
@@ -475,12 +478,13 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
             }
         });
-        adapter.setDelegate(new BaseLocationAdapter.BaseLocationAdapterDelegate() {
+        adapter.setDelegate(dialogId, new BaseLocationAdapter.BaseLocationAdapterDelegate() {
             @Override
             public void didLoadedSearchResult(ArrayList<TLRPC.TL_messageMediaVenue> places) {
                 if (!wasResults && !places.isEmpty()) {
                     wasResults = true;
                 }
+                emptyView.showTextView();
             }
         });
         adapter.setOverScrollHeight(overScrollHeight);
@@ -545,12 +549,12 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                         if (mapView != null && getParentActivity() != null) {
                             try {
                                 map.onCreate(null);
-                                MapsInitializer.initialize(getParentActivity());
+                                MapsInitializer.initialize(ApplicationLoader.applicationContext);
                                 mapView.getMapAsync(new OnMapReadyCallback() {
                                     @Override
                                     public void onMapReady(GoogleMap map) {
                                         googleMap = map;
-                                        googleMap.setPadding(0, 0, AndroidUtilities.dp(70), AndroidUtilities.dp(10));
+                                        googleMap.setPadding(AndroidUtilities.dp(70), 0, AndroidUtilities.dp(70), AndroidUtilities.dp(10));
                                         onMapInit();
                                     }
                                 });
@@ -779,16 +783,16 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             liveLocation = new LiveLocation();
             liveLocation.object = message;
             if (liveLocation.object.from_id != 0) {
-                liveLocation.user = MessagesController.getInstance().getUser(liveLocation.object.from_id);
+                liveLocation.user = MessagesController.getInstance(currentAccount).getUser(liveLocation.object.from_id);
                 liveLocation.id = liveLocation.object.from_id;
             } else {
                 int did = (int) MessageObject.getDialogId(message);
                 if (did > 0) {
-                    liveLocation.user = MessagesController.getInstance().getUser(did);
+                    liveLocation.user = MessagesController.getInstance(currentAccount).getUser(did);
                     liveLocation.id = did;
                 } else {
-                    liveLocation.chat = MessagesController.getInstance().getChat(-did);
-                    liveLocation.id = -did;
+                    liveLocation.chat = MessagesController.getInstance(currentAccount).getChat(-did);
+                    liveLocation.id = did;
                 }
             }
 
@@ -801,8 +805,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     liveLocation.marker = googleMap.addMarker(options);
                     markers.add(liveLocation);
                     markersMap.put(liveLocation.id, liveLocation);
-                    LocationController.SharingLocationInfo myInfo = LocationController.getInstance().getSharingLocationInfo(dialogId);
-                    if (liveLocation.id == UserConfig.getClientUserId() && myInfo != null && liveLocation.object.id == myInfo.mid && myLocation != null) {
+                    LocationController.SharingLocationInfo myInfo = LocationController.getInstance(currentAccount).getSharingLocationInfo(dialogId);
+                    if (liveLocation.id == UserConfig.getInstance(currentAccount).getClientUserId() && myInfo != null && liveLocation.object.id == myInfo.mid && myLocation != null) {
                         liveLocation.marker.setPosition(new LatLng(myLocation.getLatitude(), myLocation.getLongitude()));
                     }
                 }
@@ -858,7 +862,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             @Override
             public void onMyLocationChange(Location location) {
                 positionMarker(location);
-                LocationController.getInstance().setGoogleMapLocation(location, isFirstLocation);
+                LocationController.getInstance(currentAccount).setGoogleMapLocation(location, isFirstLocation);
                 isFirstLocation = false;
             }
         });
@@ -866,6 +870,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
         if (checkGpsEnabled && getParentActivity() != null) {
             checkGpsEnabled = false;
+            if (!getParentActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS)) {
+                return;
+            }
             try {
                 LocationManager lm = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
                 if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
@@ -983,7 +990,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 if (layoutParams != null && layoutParams.height != overScrollHeight + AndroidUtilities.dp(10)) {
                     layoutParams.height = overScrollHeight + AndroidUtilities.dp(10);
                     if (googleMap != null) {
-                        googleMap.setPadding(0, 0, AndroidUtilities.dp(70), AndroidUtilities.dp(10));
+                        googleMap.setPadding(AndroidUtilities.dp(70), 0, AndroidUtilities.dp(70), AndroidUtilities.dp(10));
                     }
                     mapView.setLayoutParams(layoutParams);
                 }
@@ -1018,7 +1025,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             if (layoutParams != null) {
                 layoutParams.height = overScrollHeight + AndroidUtilities.dp(10);
                 if (googleMap != null) {
-                    googleMap.setPadding(0, 0, AndroidUtilities.dp(70), AndroidUtilities.dp(10));
+                    googleMap.setPadding(AndroidUtilities.dp(70), 0, AndroidUtilities.dp(70), AndroidUtilities.dp(10));
                 }
                 mapView.setLayoutParams(layoutParams);
             }
@@ -1058,8 +1065,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             return;
         }
         myLocation = new Location(location);
-        LiveLocation liveLocation = markersMap.get(UserConfig.getClientUserId());
-        LocationController.SharingLocationInfo myInfo = LocationController.getInstance().getSharingLocationInfo(dialogId);
+        LiveLocation liveLocation = markersMap.get(UserConfig.getInstance(currentAccount).getClientUserId());
+        LocationController.SharingLocationInfo myInfo = LocationController.getInstance(currentAccount).getSharingLocationInfo(dialogId);
         if (liveLocation != null && myInfo != null && liveLocation.object.id == myInfo.mid) {
             liveLocation.marker.setPosition(new LatLng(location.getLatitude(), location.getLongitude()));
         }
@@ -1067,7 +1074,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
             if (adapter != null) {
                 if (adapter.isPulledUp()) {
-                    adapter.searchGooglePlacesWithQuery(null, myLocation);
+                    adapter.searchPlacesWithQuery(null, myLocation, true);
                 }
                 adapter.setGpsLocation(myLocation);
             }
@@ -1101,7 +1108,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         if (firstFocus) {
             builder = new LatLngBounds.Builder();
         }
-        int date = ConnectionsManager.getInstance().getCurrentTime();
+        int date = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
         for (int a = 0; a < messages.size(); a++) {
             TLRPC.Message message = messages.get(a);
             if (message.date + message.media.period > date) {
@@ -1133,17 +1140,24 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     }
 
     private boolean getRecentLocations() {
-        ArrayList<TLRPC.Message> messages = LocationController.getInstance().locationsCache.get(messageObject.getDialogId());
+        ArrayList<TLRPC.Message> messages = LocationController.getInstance(currentAccount).locationsCache.get(messageObject.getDialogId());
         if (messages != null && messages.isEmpty()) {
             fetchRecentLocations(messages);
         } else {
             messages = null;
         }
+        int lower_id = (int) dialogId;
+        if (lower_id < 0) {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
+            if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                return false;
+            }
+        }
         TLRPC.TL_messages_getRecentLocations req = new TLRPC.TL_messages_getRecentLocations();
         final long dialog_id = messageObject.getDialogId();
-        req.peer = MessagesController.getInputPeer((int) dialog_id);
+        req.peer = MessagesController.getInstance(currentAccount).getInputPeer((int) dialog_id);
         req.limit = 100;
-        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(final TLObject response, TLRPC.TL_error error) {
                 if (response != null) {
@@ -1160,11 +1174,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                                     a--;
                                 }
                             }
-                            MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
-                            MessagesController.getInstance().putUsers(res.users, false);
-                            MessagesController.getInstance().putChats(res.chats, false);
-                            LocationController.getInstance().locationsCache.put(dialog_id, res.messages);
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.liveLocationsCacheChanged, dialog_id);
+                            MessagesStorage.getInstance(currentAccount).putUsersAndChats(res.users, res.chats, true, true);
+                            MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                            MessagesController.getInstance(currentAccount).putChats(res.chats, false);
+                            LocationController.getInstance(currentAccount).locationsCache.put(dialog_id, res.messages);
+                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.liveLocationsCacheChanged, dialog_id);
                             fetchRecentLocations(res.messages);
                         }
                     });
@@ -1176,7 +1190,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
     @SuppressWarnings("unchecked")
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.closeChats) {
             removeSelfFromStack();
         } else if (id == NotificationCenter.locationPermissionGranted) {
@@ -1220,7 +1234,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
                 LiveLocation liveLocation = markersMap.get(getMessageId(messageObject.messageOwner));
                 if (liveLocation != null) {
-                    LocationController.SharingLocationInfo myInfo = LocationController.getInstance().getSharingLocationInfo(did);
+                    LocationController.SharingLocationInfo myInfo = LocationController.getInstance(currentAccount).getSharingLocationInfo(did);
                     if (myInfo == null || myInfo.mid != messageObject.getId()) {
                         liveLocation.marker.setPosition(new LatLng(messageObject.messageOwner.media.geo.lat, messageObject.messageOwner.media.geo._long));
                     }
@@ -1249,6 +1263,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onResume() {
         super.onResume();
+        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
         AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
         if (mapView != null && mapsInitialized) {
             try {
@@ -1297,9 +1312,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate сellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
             @Override
-            public void didSetColor(int color) {
+            public void didSetColor() {
 
             }
         };
@@ -1333,27 +1348,29 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
                 new ThemeDescription(markerXImageView, 0, null, null, null, null, Theme.key_location_markerX),
 
-                new ThemeDescription(listView, 0, new Class[]{GraySectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+                new ThemeDescription(listView, 0, new Class[]{GraySectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_graySectionText),
                 new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{GraySectionCell.class}, null, null, null, Theme.key_graySection),
 
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, сellDelegate, Theme.key_avatar_text),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundGreen),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundCyan),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundPink),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
 
                 new ThemeDescription(null, 0, null, null, null, null, Theme.key_location_liveLocationProgress),
                 new ThemeDescription(null, 0, null, null, null, null, Theme.key_location_placeLocationBackground),
                 new ThemeDescription(null, 0, null, null, null, null, Theme.key_dialog_liveLocationProgress),
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{SendLocationCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_location_sendLocationIcon),
-                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, new Class[]{SendLocationCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_location_sendLocationBackground),
-                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, new Class[]{SendLocationCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_location_sendLiveLocationBackground),
-                new ThemeDescription(listView, 0, new Class[]{SendLocationCell.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText7),
+                new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_CHECKTAG, new Class[]{SendLocationCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_location_sendLocationIcon),
+                new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_CHECKTAG, new Class[]{SendLocationCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_location_sendLiveLocationIcon),
+                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_CHECKTAG, new Class[]{SendLocationCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_location_sendLocationBackground),
+                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_CHECKTAG, new Class[]{SendLocationCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_location_sendLiveLocationBackground),
                 new ThemeDescription(listView, 0, new Class[]{SendLocationCell.class}, new String[]{"accurateTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3),
+                new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{SendLocationCell.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_windowBackgroundWhiteRedText2),
+                new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{SendLocationCell.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText7),
 
                 new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{LocationCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3),
                 new ThemeDescription(listView, 0, new Class[]{LocationCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),

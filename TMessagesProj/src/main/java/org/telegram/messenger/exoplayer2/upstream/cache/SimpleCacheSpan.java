@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.upstream.cache;
 
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.util.Assertions;
 import org.telegram.messenger.exoplayer2.util.Util;
@@ -35,19 +36,50 @@ import java.util.regex.Pattern;
   private static final Pattern CACHE_FILE_PATTERN_V3 = Pattern.compile(
       "^(\\d+)\\.(\\d+)\\.(\\d+)\\.v3\\.exo$", Pattern.DOTALL);
 
-  public static File getCacheFile(File cacheDir, int id, long position,
-      long lastAccessTimestamp) {
+  /**
+   * Returns a new {@link File} instance from {@code cacheDir}, {@code id}, {@code position}, {@code
+   * lastAccessTimestamp}.
+   *
+   * @param cacheDir The parent abstract pathname.
+   * @param id The cache file id.
+   * @param position The position of the stored data in the original stream.
+   * @param lastAccessTimestamp The last access timestamp.
+   * @return The cache file.
+   */
+  public static File getCacheFile(File cacheDir, int id, long position, long lastAccessTimestamp) {
     return new File(cacheDir, id + "." + position + "." + lastAccessTimestamp + SUFFIX);
   }
 
+  /**
+   * Creates a lookup span.
+   *
+   * @param key The cache key.
+   * @param position The position of the {@link CacheSpan} in the original stream.
+   * @return The span.
+   */
   public static SimpleCacheSpan createLookup(String key, long position) {
     return new SimpleCacheSpan(key, position, C.LENGTH_UNSET, C.TIME_UNSET, null);
   }
 
+  /**
+   * Creates an open hole span.
+   *
+   * @param key The cache key.
+   * @param position The position of the {@link CacheSpan} in the original stream.
+   * @return The span.
+   */
   public static SimpleCacheSpan createOpenHole(String key, long position) {
     return new SimpleCacheSpan(key, position, C.LENGTH_UNSET, C.TIME_UNSET, null);
   }
 
+  /**
+   * Creates a closed hole span.
+   *
+   * @param key The cache key.
+   * @param position The position of the {@link CacheSpan} in the original stream.
+   * @param length The length of the {@link CacheSpan}.
+   * @return The span.
+   */
   public static SimpleCacheSpan createClosedHole(String key, long position, long length) {
     return new SimpleCacheSpan(key, position, length, C.TIME_UNSET, null);
   }
@@ -60,6 +92,7 @@ import java.util.regex.Pattern;
    * @return The span, or null if the file name is not correctly formatted, or if the id is not
    *     present in the content index.
    */
+  @Nullable
   public static SimpleCacheSpan createCacheEntry(File file, CachedContentIndex index) {
     String name = file.getName();
     if (!name.endsWith(SUFFIX)) {
@@ -81,6 +114,15 @@ import java.util.regex.Pattern;
         Long.parseLong(matcher.group(3)), file);
   }
 
+  /**
+   * Upgrades the cache file if it is created by an earlier version of {@link SimpleCache}.
+   *
+   * @param file The cache file.
+   * @param index Cached content index.
+   * @return Upgraded cache file or {@code null} if the file name is not correctly formatted or the
+   *     file can not be renamed.
+   */
+  @Nullable
   private static File upgradeFile(File file, CachedContentIndex index) {
     String key;
     String filename = file.getName();
@@ -106,8 +148,17 @@ import java.util.regex.Pattern;
     return newCacheFile;
   }
 
-  private SimpleCacheSpan(String key, long position, long length, long lastAccessTimestamp,
-      File file) {
+  /**
+   * @param key The cache key.
+   * @param position The position of the {@link CacheSpan} in the original stream.
+   * @param length The length of the {@link CacheSpan}, or {@link C#LENGTH_UNSET} if this is an
+   *     open-ended hole.
+   * @param lastAccessTimestamp The last access timestamp, or {@link C#TIME_UNSET} if {@link
+   *     #isCached} is false.
+   * @param file The file corresponding to this {@link CacheSpan}, or null if it's a hole.
+   */
+  private SimpleCacheSpan(
+      String key, long position, long length, long lastAccessTimestamp, @Nullable File file) {
     super(key, position, length, lastAccessTimestamp, file);
   }
 

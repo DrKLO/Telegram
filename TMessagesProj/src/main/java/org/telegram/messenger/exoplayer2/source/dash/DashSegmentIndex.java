@@ -32,11 +32,11 @@ public interface DashSegmentIndex {
    * Otherwise, returns the segment number of the segment containing the given media time.
    *
    * @param timeUs The time in microseconds.
-   * @param periodDurationUs The duration of the enclosing period in microseconds, or
-   *     {@link C#TIME_UNSET} if the period's duration is not yet known.
+   * @param periodDurationUs The duration of the enclosing period in microseconds, or {@link
+   *     C#TIME_UNSET} if the period's duration is not yet known.
    * @return The segment number of the corresponding segment.
    */
-  int getSegmentNum(long timeUs, long periodDurationUs);
+  long getSegmentNum(long timeUs, long periodDurationUs);
 
   /**
    * Returns the start time of a segment.
@@ -44,17 +44,17 @@ public interface DashSegmentIndex {
    * @param segmentNum The segment number.
    * @return The corresponding start time in microseconds.
    */
-  long getTimeUs(int segmentNum);
+  long getTimeUs(long segmentNum);
 
   /**
    * Returns the duration of a segment.
    *
    * @param segmentNum The segment number.
-   * @param periodDurationUs The duration of the enclosing period in microseconds, or
-   *     {@link C#TIME_UNSET} if the period's duration is not yet known.
+   * @param periodDurationUs The duration of the enclosing period in microseconds, or {@link
+   *     C#TIME_UNSET} if the period's duration is not yet known.
    * @return The duration of the segment, in microseconds.
    */
-  long getDurationUs(int segmentNum, long periodDurationUs);
+  long getDurationUs(long segmentNum, long periodDurationUs);
 
   /**
    * Returns a {@link RangedUri} defining the location of a segment.
@@ -62,14 +62,14 @@ public interface DashSegmentIndex {
    * @param segmentNum The segment number.
    * @return The {@link RangedUri} defining the location of the data.
    */
-  RangedUri getSegmentUrl(int segmentNum);
+  RangedUri getSegmentUrl(long segmentNum);
 
   /**
    * Returns the segment number of the first segment.
    *
    * @return The segment number of the first segment.
    */
-  int getFirstSegmentNum();
+  long getFirstSegmentNum();
 
   /**
    * Returns the number of segments in the index, or {@link #INDEX_UNBOUNDED}.

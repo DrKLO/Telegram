@@ -17,6 +17,7 @@ package org.telegram.messenger.exoplayer2.metadata.emsg;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.metadata.Metadata;
 import org.telegram.messenger.exoplayer2.util.Util;
 import java.util.Arrays;
@@ -42,6 +43,13 @@ public final class EventMessage implements Metadata.Entry {
   public final long durationMs;
 
   /**
+   * The presentation time value of this event message in microseconds.
+   * <p>
+   * Except in special cases, application code should <em>not</em> use this field.
+   */
+  public final long presentationTimeUs;
+
+  /**
    * The instance identifier.
    */
   public final long id;
@@ -55,25 +63,27 @@ public final class EventMessage implements Metadata.Entry {
   private int hashCode;
 
   /**
-   *
    * @param schemeIdUri The message scheme.
    * @param value The value for the event.
    * @param durationMs The duration of the event in milliseconds.
    * @param id The instance identifier.
    * @param messageData The body of the message.
+   * @param presentationTimeUs The presentation time value of this event message in microseconds.
    */
   public EventMessage(String schemeIdUri, String value, long durationMs, long id,
-      byte[] messageData) {
+      byte[] messageData, long presentationTimeUs) {
     this.schemeIdUri = schemeIdUri;
     this.value = value;
     this.durationMs = durationMs;
     this.id = id;
     this.messageData = messageData;
+    this.presentationTimeUs = presentationTimeUs;
   }
 
   /* package */ EventMessage(Parcel in) {
     schemeIdUri = in.readString();
     value = in.readString();
+    presentationTimeUs = in.readLong();
     durationMs = in.readLong();
     id = in.readLong();
     messageData = in.createByteArray();
@@ -85,6 +95,7 @@ public final class EventMessage implements Metadata.Entry {
       int result = 17;
       result = 31 * result + (schemeIdUri != null ? schemeIdUri.hashCode() : 0);
       result = 31 * result + (value != null ? value.hashCode() : 0);
+      result = 31 * result + (int) (presentationTimeUs ^ (presentationTimeUs >>> 32));
       result = 31 * result + (int) (durationMs ^ (durationMs >>> 32));
       result = 31 * result + (int) (id ^ (id >>> 32));
       result = 31 * result + Arrays.hashCode(messageData);
@@ -94,7 +105,7 @@ public final class EventMessage implements Metadata.Entry {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(@Nullable Object obj) {
     if (this == obj) {
       return true;
     }
@@ -102,9 +113,14 @@ public final class EventMessage implements Metadata.Entry {
       return false;
     }
     EventMessage other = (EventMessage) obj;
-    return durationMs == other.durationMs && id == other.id
-        && Util.areEqual(schemeIdUri, other.schemeIdUri) && Util.areEqual(value, other.value)
-        && Arrays.equals(messageData, other.messageData);
+    return presentationTimeUs == other.presentationTimeUs && durationMs == other.durationMs
+        && id == other.id && Util.areEqual(schemeIdUri, other.schemeIdUri)
+        && Util.areEqual(value, other.value) && Arrays.equals(messageData, other.messageData);
+  }
+
+  @Override
+  public String toString() {
+    return "EMSG: scheme=" + schemeIdUri + ", id=" + id + ", value=" + value;
   }
 
   // Parcelable implementation.
@@ -118,6 +134,7 @@ public final class EventMessage implements Metadata.Entry {
   public void writeToParcel(Parcel dest, int flags) {
     dest.writeString(schemeIdUri);
     dest.writeString(value);
+    dest.writeLong(presentationTimeUs);
     dest.writeLong(durationMs);
     dest.writeLong(id);
     dest.writeByteArray(messageData);

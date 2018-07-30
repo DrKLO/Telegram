@@ -15,10 +15,10 @@ import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.query.StickersQuery;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
@@ -70,21 +70,21 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
         super.onFragmentCreate();
         getStickers();
         updateRows();
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.needReloadArchivedStickers);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.needReloadArchivedStickers);
         return true;
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.needReloadArchivedStickers);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.needReloadArchivedStickers);
     }
 
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        if (currentType == StickersQuery.TYPE_IMAGE) {
+        if (currentType == DataQuery.TYPE_IMAGE) {
             actionBar.setTitle(LocaleController.getString("ArchivedStickers", R.string.ArchivedStickers));
         } else {
             actionBar.setTitle(LocaleController.getString("ArchivedMasks", R.string.ArchivedMasks));
@@ -105,7 +105,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
         frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         emptyView = new EmptyTextProgressView(context);
-        if (currentType == StickersQuery.TYPE_IMAGE) {
+        if (currentType == DataQuery.TYPE_IMAGE) {
             emptyView.setText(LocaleController.getString("ArchivedStickersEmpty", R.string.ArchivedStickersEmpty));
         } else {
             emptyView.setText(LocaleController.getString("ArchivedMasksEmpty", R.string.ArchivedMasksEmpty));
@@ -206,8 +206,8 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
         TLRPC.TL_messages_getArchivedStickers req = new TLRPC.TL_messages_getArchivedStickers();
         req.offset_id = sets.isEmpty() ? 0 : sets.get(sets.size() - 1).set.id;
         req.limit = 15;
-        req.masks = currentType == StickersQuery.TYPE_MASK;
-        int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        req.masks = currentType == DataQuery.TYPE_MASK;
+        int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -228,7 +228,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
                 });
             }
         });
-        ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
+        ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
     }
 
     @Override
@@ -240,7 +240,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.needReloadArchivedStickers) {
             firstLoaded = false;
             endReached = false;
@@ -273,7 +273,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
                 cell.setTag(position);
                 TLRPC.StickerSetCovered stickerSet = sets.get(position);
                 cell.setStickersSet(stickerSet, position != sets.size() - 1);
-                cell.setChecked(StickersQuery.isStickerPackInstalled(stickerSet.set.id));
+                cell.setChecked(DataQuery.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id));
             }
         }
 
@@ -298,7 +298,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
                                 return;
                             }
                             TLRPC.StickerSetCovered stickerSet = sets.get(num);
-                            StickersQuery.removeStickersSet(getParentActivity(), stickerSet.set, !isChecked ? 1 : 2, ArchivedStickersActivity.this, false);
+                            DataQuery.getInstance(currentAccount).removeStickersSet(getParentActivity(), stickerSet.set, !isChecked ? 1 : 2, ArchivedStickersActivity.this, false);
                         }
                     });
                     break;

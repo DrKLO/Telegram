@@ -34,7 +34,7 @@ public class RecordStatusDrawable extends StatusDrawable {
         if (dt > 50) {
             dt = 50;
         }
-        progress += dt / 300.0f;
+        progress += dt / 800.0f;
         while (progress > 1.0f) {
             progress -= 1.0f;
         }

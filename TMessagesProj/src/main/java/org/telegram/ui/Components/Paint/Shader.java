@@ -2,8 +2,8 @@ package org.telegram.ui.Components.Paint;
 
 import android.graphics.Color;
 import android.opengl.GLES20;
-import android.util.Log;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 
 import java.util.HashMap;
@@ -22,14 +22,18 @@ public class Shader {
 
         CompilationResult vResult = compileShader(GLES20.GL_VERTEX_SHADER, vertexShader);
         if (vResult.status == GLES20.GL_FALSE) {
-            FileLog.e("Vertex shader compilation failed");
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e("Vertex shader compilation failed");
+            }
             destroyShader(vResult.shader, 0, program);
             return;
         }
 
         CompilationResult fResult = compileShader(GLES20.GL_FRAGMENT_SHADER, fragmentShader);
         if (fResult.status == GLES20.GL_FALSE) {
-            FileLog.e("Fragment shader compilation failed");
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e("Fragment shader compilation failed");
+            }
             destroyShader(vResult.shader, fResult.shader, program);
             return;
         }
@@ -88,7 +92,9 @@ public class Shader {
         int[] compileStatus = new int[1];
         GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
         if (compileStatus[0] == GLES20.GL_FALSE) {
-            FileLog.e(GLES20.glGetShaderInfoLog(shader));
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e(GLES20.glGetShaderInfoLog(shader));
+            }
         }
 
         return new CompilationResult(shader, compileStatus[0]);
@@ -100,7 +106,9 @@ public class Shader {
         int[] linkStatus = new int[1];
         GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linkStatus, 0);
         if (linkStatus[0] == GLES20.GL_FALSE) {
-            FileLog.e(GLES20.glGetProgramInfoLog(program));
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e(GLES20.glGetProgramInfoLog(program));
+            }
         }
 
         return linkStatus[0];

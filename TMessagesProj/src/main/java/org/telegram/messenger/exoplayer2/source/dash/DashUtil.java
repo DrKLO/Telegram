@@ -16,6 +16,7 @@
 package org.telegram.messenger.exoplayer2.source.dash;
 
 import android.net.Uri;
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.drm.DrmInitData;
@@ -25,16 +26,15 @@ import org.telegram.messenger.exoplayer2.extractor.mkv.MatroskaExtractor;
 import org.telegram.messenger.exoplayer2.extractor.mp4.FragmentedMp4Extractor;
 import org.telegram.messenger.exoplayer2.source.chunk.ChunkExtractorWrapper;
 import org.telegram.messenger.exoplayer2.source.chunk.InitializationChunk;
-import org.telegram.messenger.exoplayer2.source.dash.manifest.AdaptationSet;
 import org.telegram.messenger.exoplayer2.source.dash.manifest.DashManifest;
 import org.telegram.messenger.exoplayer2.source.dash.manifest.DashManifestParser;
 import org.telegram.messenger.exoplayer2.source.dash.manifest.Period;
 import org.telegram.messenger.exoplayer2.source.dash.manifest.RangedUri;
 import org.telegram.messenger.exoplayer2.source.dash.manifest.Representation;
 import org.telegram.messenger.exoplayer2.upstream.DataSource;
-import org.telegram.messenger.exoplayer2.upstream.DataSourceInputStream;
 import org.telegram.messenger.exoplayer2.upstream.DataSpec;
 import org.telegram.messenger.exoplayer2.upstream.HttpDataSource;
+import org.telegram.messenger.exoplayer2.upstream.ParsingLoadable;
 import org.telegram.messenger.exoplayer2.util.MimeTypes;
 import java.io.IOException;
 import java.util.List;
@@ -48,66 +48,16 @@ public final class DashUtil {
    * Loads a DASH manifest.
    *
    * @param dataSource The {@link HttpDataSource} from which the manifest should be read.
-   * @param manifestUri The URI of the manifest to be read.
+   * @param uri The {@link Uri} of the manifest to be read.
    * @return An instance of {@link DashManifest}.
    * @throws IOException Thrown when there is an error while loading.
    */
-  public static DashManifest loadManifest(DataSource dataSource, String manifestUri)
+  public static DashManifest loadManifest(DataSource dataSource, Uri uri)
       throws IOException {
-    DataSourceInputStream inputStream = new DataSourceInputStream(dataSource,
-        new DataSpec(Uri.parse(manifestUri), DataSpec.FLAG_ALLOW_CACHING_UNKNOWN_LENGTH));
-    try {
-      inputStream.open();
-      DashManifestParser parser = new DashManifestParser();
-      return parser.parse(dataSource.getUri(), inputStream);
-    } finally {
-      inputStream.close();
-    }
+    return ParsingLoadable.load(dataSource, new DashManifestParser(), uri);
   }
 
   /**
-   * Loads {@link DrmInitData} for a given manifest.
-   *
-   * @param dataSource The {@link HttpDataSource} from which data should be loaded.
-   * @param dashManifest The {@link DashManifest} of the DASH content.
-   * @return The loaded {@link DrmInitData}.
-   */
-  public static DrmInitData loadDrmInitData(DataSource dataSource, DashManifest dashManifest)
-      throws IOException, InterruptedException {
-    // Prefer drmInitData obtained from the manifest over drmInitData obtained from the stream,
-    // as per DASH IF Interoperability Recommendations V3.0, 7.5.3.
-    if (dashManifest.getPeriodCount() < 1) {
-      return null;
-    }
-    Period period = dashManifest.getPeriod(0);
-    int adaptationSetIndex = period.getAdaptationSetIndex(C.TRACK_TYPE_VIDEO);
-    if (adaptationSetIndex == C.INDEX_UNSET) {
-      adaptationSetIndex = period.getAdaptationSetIndex(C.TRACK_TYPE_AUDIO);
-      if (adaptationSetIndex == C.INDEX_UNSET) {
-        return null;
-      }
-    }
-    AdaptationSet adaptationSet = period.adaptationSets.get(adaptationSetIndex);
-    if (adaptationSet.representations.isEmpty()) {
-      return null;
-    }
-    Representation representation = adaptationSet.representations.get(0);
-    DrmInitData drmInitData = representation.format.drmInitData;
-    if (drmInitData == null) {
-      Format sampleFormat = DashUtil.loadSampleFormat(dataSource, representation);
-      if (sampleFormat != null) {
-        drmInitData = sampleFormat.drmInitData;
-      }
-      if (drmInitData == null) {
-        return null;
-      }
-    }
-    return drmInitData;
-  }
-
-  /**
-   * Loads initialization data for the {@code representation} and returns the sample {@link
-   * Format}.
    * Loads {@link DrmInitData} for a given period in a DASH manifest.
    *
    * @param dataSource The {@link HttpDataSource} from which data should be loaded.
@@ -116,38 +66,40 @@ public final class DashUtil {
    * @throws IOException Thrown when there is an error while loading.
    * @throws InterruptedException Thrown if the thread was interrupted.
    */
-  public static DrmInitData loadDrmInitData(DataSource dataSource, Period period)
+  public static @Nullable DrmInitData loadDrmInitData(DataSource dataSource, Period period)
       throws IOException, InterruptedException {
-    Representation representation = getFirstRepresentation(period, C.TRACK_TYPE_VIDEO);
+    int primaryTrackType = C.TRACK_TYPE_VIDEO;
+    Representation representation = getFirstRepresentation(period, primaryTrackType);
     if (representation == null) {
-      representation = getFirstRepresentation(period, C.TRACK_TYPE_AUDIO);
+      primaryTrackType = C.TRACK_TYPE_AUDIO;
+      representation = getFirstRepresentation(period, primaryTrackType);
       if (representation == null) {
         return null;
       }
     }
-    DrmInitData drmInitData = representation.format.drmInitData;
-    if (drmInitData != null) {
-      // Prefer drmInitData obtained from the manifest over drmInitData obtained from the stream,
-      // as per DASH IF Interoperability Recommendations V3.0, 7.5.3.
-      return drmInitData;
-    }
-    Format sampleFormat = DashUtil.loadSampleFormat(dataSource, representation);
-    return sampleFormat == null ? null : sampleFormat.drmInitData;
+    Format manifestFormat = representation.format;
+    Format sampleFormat = DashUtil.loadSampleFormat(dataSource, primaryTrackType, representation);
+    return sampleFormat == null
+        ? manifestFormat.drmInitData
+        : sampleFormat.copyWithManifestFormatInfo(manifestFormat).drmInitData;
   }
 
   /**
    * Loads initialization data for the {@code representation} and returns the sample {@link Format}.
    *
    * @param dataSource The source from which the data should be loaded.
+   * @param trackType The type of the representation. Typically one of the {@link
+   *     org.telegram.messenger.exoplayer2.C} {@code TRACK_TYPE_*} constants.
    * @param representation The representation which initialization chunk belongs to.
    * @return the sample {@link Format} of the given representation.
    * @throws IOException Thrown when there is an error while loading.
    * @throws InterruptedException Thrown if the thread was interrupted.
    */
-  public static Format loadSampleFormat(DataSource dataSource, Representation representation)
+  public static @Nullable Format loadSampleFormat(
+      DataSource dataSource, int trackType, Representation representation)
       throws IOException, InterruptedException {
-    ChunkExtractorWrapper extractorWrapper = loadInitializationData(dataSource, representation,
-        false);
+    ChunkExtractorWrapper extractorWrapper = loadInitializationData(dataSource, trackType,
+        representation, false);
     return extractorWrapper == null ? null : extractorWrapper.getSampleFormats()[0];
   }
 
@@ -156,23 +108,29 @@ public final class DashUtil {
    * ChunkIndex}.
    *
    * @param dataSource The source from which the data should be loaded.
+   * @param trackType The type of the representation. Typically one of the {@link
+   *     org.telegram.messenger.exoplayer2.C} {@code TRACK_TYPE_*} constants.
    * @param representation The representation which initialization chunk belongs to.
-   * @return {@link ChunkIndex} of the given representation.
+   * @return The {@link ChunkIndex} of the given representation, or null if no initialization or
+   *     index data exists.
    * @throws IOException Thrown when there is an error while loading.
    * @throws InterruptedException Thrown if the thread was interrupted.
    */
-  public static ChunkIndex loadChunkIndex(DataSource dataSource, Representation representation)
+  public static @Nullable ChunkIndex loadChunkIndex(
+      DataSource dataSource, int trackType, Representation representation)
       throws IOException, InterruptedException {
-    ChunkExtractorWrapper extractorWrapper = loadInitializationData(dataSource, representation,
-        true);
+    ChunkExtractorWrapper extractorWrapper = loadInitializationData(dataSource, trackType,
+        representation, true);
     return extractorWrapper == null ? null : (ChunkIndex) extractorWrapper.getSeekMap();
   }
 
   /**
-   * Loads initialization data for the {@code representation} and optionally index data then
-   * returns a {@link ChunkExtractorWrapper} which contains the output.
+   * Loads initialization data for the {@code representation} and optionally index data then returns
+   * a {@link ChunkExtractorWrapper} which contains the output.
    *
    * @param dataSource The source from which the data should be loaded.
+   * @param trackType The type of the representation. Typically one of the {@link
+   *     org.telegram.messenger.exoplayer2.C} {@code TRACK_TYPE_*} constants.
    * @param representation The representation which initialization chunk belongs to.
    * @param loadIndex Whether to load index data too.
    * @return A {@link ChunkExtractorWrapper} for the {@code representation}, or null if no
@@ -180,14 +138,14 @@ public final class DashUtil {
    * @throws IOException Thrown when there is an error while loading.
    * @throws InterruptedException Thrown if the thread was interrupted.
    */
-  private static ChunkExtractorWrapper loadInitializationData(DataSource dataSource,
-      Representation representation, boolean loadIndex)
+  private static @Nullable ChunkExtractorWrapper loadInitializationData(
+      DataSource dataSource, int trackType, Representation representation, boolean loadIndex)
       throws IOException, InterruptedException {
     RangedUri initializationUri = representation.getInitializationUri();
     if (initializationUri == null) {
       return null;
     }
-    ChunkExtractorWrapper extractorWrapper = newWrappedExtractor(representation.format);
+    ChunkExtractorWrapper extractorWrapper = newWrappedExtractor(trackType, representation.format);
     RangedUri requestUri;
     if (loadIndex) {
       RangedUri indexUri = representation.getIndexUri();
@@ -219,15 +177,17 @@ public final class DashUtil {
     initializationChunk.load();
   }
 
-  private static ChunkExtractorWrapper newWrappedExtractor(Format format) {
+  private static ChunkExtractorWrapper newWrappedExtractor(int trackType, Format format) {
     String mimeType = format.containerMimeType;
-    boolean isWebm = mimeType.startsWith(MimeTypes.VIDEO_WEBM)
-        || mimeType.startsWith(MimeTypes.AUDIO_WEBM);
+    boolean isWebm =
+        mimeType != null
+            && (mimeType.startsWith(MimeTypes.VIDEO_WEBM)
+                || mimeType.startsWith(MimeTypes.AUDIO_WEBM));
     Extractor extractor = isWebm ? new MatroskaExtractor() : new FragmentedMp4Extractor();
-    return new ChunkExtractorWrapper(extractor, format);
+    return new ChunkExtractorWrapper(extractor, trackType, format);
   }
 
-  private static Representation getFirstRepresentation(Period period, int type) {
+  private static @Nullable Representation getFirstRepresentation(Period period, int type) {
     int index = period.getAdaptationSetIndex(type);
     if (index == C.INDEX_UNSET) {
       return null;

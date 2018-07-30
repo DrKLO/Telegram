@@ -29,31 +29,6 @@ import java.io.IOException;
 /* package */ interface EbmlReader {
 
   /**
-   * Type for unknown elements.
-   */
-  int TYPE_UNKNOWN = 0;
-  /**
-   * Type for elements that contain child elements.
-   */
-  int TYPE_MASTER = 1;
-  /**
-   * Type for integer value elements of up to 8 bytes.
-   */
-  int TYPE_UNSIGNED_INT = 2;
-  /**
-   * Type for string elements.
-   */
-  int TYPE_STRING = 3;
-  /**
-   * Type for binary elements.
-   */
-  int TYPE_BINARY = 4;
-  /**
-   * Type for IEEE floating point value elements of either 4 or 8 bytes.
-   */
-  int TYPE_FLOAT = 5;
-
-  /**
    * Initializes the extractor with an {@link EbmlReaderOutput}.
    *
    * @param output An {@link EbmlReaderOutput} to receive events.

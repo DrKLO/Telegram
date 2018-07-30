@@ -59,13 +59,15 @@
 #include <limits.h>
 #include <string.h>
 
+#include "../internal.h"
 
-/* hexdump_ctx contains the state of a hexdump. */
+
+// hexdump_ctx contains the state of a hexdump.
 struct hexdump_ctx {
   BIO *bio;
-  char right_chars[18]; /* the contents of the right-hand side, ASCII dump. */
-  unsigned used;        /* number of bytes in the current line. */
-  size_t n;             /* number of bytes total. */
+  char right_chars[18];  // the contents of the right-hand side, ASCII dump.
+  unsigned used;         // number of bytes in the current line.
+  size_t n;              // number of bytes total.
   unsigned indent;
 };
 
@@ -82,22 +84,20 @@ static char to_char(uint8_t b) {
   return b;
 }
 
-/* hexdump_write adds |len| bytes of |data| to the current hex dump described by
- * |ctx|. */
+// hexdump_write adds |len| bytes of |data| to the current hex dump described by
+// |ctx|.
 static int hexdump_write(struct hexdump_ctx *ctx, const uint8_t *data,
                          size_t len) {
-  size_t i;
   char buf[10];
   unsigned l;
 
-  /* Output lines look like:
-   * 00000010  2e 2f 30 31 32 33 34 35  36 37 38 ... 3c 3d // |./0123456789:;<=|
-   * ^ offset                          ^ extra space           ^ ASCII of line
-   */
+  // Output lines look like:
+  // 00000010  2e 2f 30 31 32 33 34 35  36 37 38 ... 3c 3d // |./0123456789:;<=|
+  // ^ offset                          ^ extra space           ^ ASCII of line
 
-  for (i = 0; i < len; i++) {
+  for (size_t i = 0; i < len; i++) {
     if (ctx->used == 0) {
-      /* The beginning of a line. */
+      // The beginning of a line.
       BIO_indent(ctx->bio, ctx->indent, UINT_MAX);
 
       hexbyte(&buf[0], ctx->n >> 24);
@@ -114,12 +114,12 @@ static int hexdump_write(struct hexdump_ctx *ctx, const uint8_t *data,
     buf[2] = ' ';
     l = 3;
     if (ctx->used == 7) {
-      /* There's an additional space after the 8th byte. */
+      // There's an additional space after the 8th byte.
       buf[3] = ' ';
       l = 4;
     } else if (ctx->used == 15) {
-      /* At the end of the line there's an extra space and the bar for the
-       * right column. */
+      // At the end of the line there's an extra space and the bar for the
+      // right column.
       buf[3] = ' ';
       buf[4] = '|';
       l = 5;
@@ -144,9 +144,9 @@ static int hexdump_write(struct hexdump_ctx *ctx, const uint8_t *data,
   return 1;
 }
 
-/* finish flushes any buffered data in |ctx|. */
+// finish flushes any buffered data in |ctx|.
 static int finish(struct hexdump_ctx *ctx) {
-  /* See the comments in |hexdump| for the details of this format. */
+  // See the comments in |hexdump| for the details of this format.
   const unsigned n_bytes = ctx->used;
   unsigned l;
   char buf[5];
@@ -155,7 +155,7 @@ static int finish(struct hexdump_ctx *ctx) {
     return 1;
   }
 
-  memset(buf, ' ', 4);
+  OPENSSL_memset(buf, ' ', 4);
   buf[4] = '|';
 
   for (; ctx->used < 16; ctx->used++) {
@@ -180,7 +180,7 @@ static int finish(struct hexdump_ctx *ctx) {
 
 int BIO_hexdump(BIO *bio, const uint8_t *data, size_t len, unsigned indent) {
   struct hexdump_ctx ctx;
-  memset(&ctx, 0, sizeof(ctx));
+  OPENSSL_memset(&ctx, 0, sizeof(ctx));
   ctx.bio = bio;
   ctx.indent = indent;
 

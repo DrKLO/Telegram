@@ -40,6 +40,14 @@ public class TypefaceSpan extends MetricAffectingSpan {
         return typeface;
     }
 
+    public void setColor(int value) {
+        color = value;
+    }
+
+    public boolean isMono() {
+        return typeface == Typeface.MONOSPACE;
+    }
+
     public boolean isBold() {
         return typeface == AndroidUtilities.getTypeface("fonts/rmedium.ttf");
     }

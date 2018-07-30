@@ -27,6 +27,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
+import android.support.annotation.Keep;
 import android.util.SparseArray;
 import android.view.GestureDetector;
 import android.view.Gravity;
@@ -47,6 +48,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.ExoPlayer;
@@ -203,7 +205,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                     progress = 1;
                 }
             } else {
-                long msTime = System.currentTimeMillis() + ConnectionsManager.getInstance().getTimeDifference() * 1000;
+                long msTime = System.currentTimeMillis() + ConnectionsManager.getInstance(currentAccount).getTimeDifference() * 1000;
                 progress = Math.max(0, destroyTime - msTime) / (destroyTtl * 1000.0f);
             }
 
@@ -269,6 +271,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             super(color);
         }
 
+        @Keep
         @Override
         public void setAlpha(int alpha) {
             if (parentActivity instanceof LaunchActivity) {
@@ -292,6 +295,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         }
     }
 
+    private int currentAccount;
     private Activity parentActivity;
     private WindowManager.LayoutParams windowLayoutParams;
     private FrameLayout windowView;
@@ -322,6 +326,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     private Object lastInsets;
 
     private MessageObject currentMessageObject;
+    private ImageReceiver.BitmapHolder currentThumb;
 
     private int coords[] = new int[2];
 
@@ -394,9 +399,13 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         return localInstance;
     }
 
+    public static boolean hasInstance() {
+        return Instance != null;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.messagesDeleted) {
             if (currentMessageObject == null) {
                 return;
@@ -574,6 +583,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     }
 
     public void setParentActivity(Activity activity) {
+        currentAccount = UserConfig.selectedAccount;
+        centerImage.setCurrentAccount(currentAccount);
         if (parentActivity == activity) {
             return;
         }
@@ -707,7 +718,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     }
 
     public void openMedia(MessageObject messageObject, PhotoViewer.PhotoViewerProvider provider) {
-        if (parentActivity == null || messageObject == null || !messageObject.isSecretPhoto() || provider == null) {
+        if (parentActivity == null || messageObject == null || !messageObject.needDrawBluredPreview() || provider == null) {
             return;
         }
         final PhotoViewer.PlaceProviderObject object = provider.getPlaceForPhoto(messageObject, null, 0);
@@ -787,43 +798,53 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         animateToScale = 1.0f;
         zoomAnimation = true;
 
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagesDeleted);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateMessageMedia);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.didCreatedNewDeleteTask);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagesDeleted);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateMessageMedia);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didCreatedNewDeleteTask);
         currentChannelId = messageObject.messageOwner.to_id != null ? messageObject.messageOwner.to_id.channel_id : 0;
         toggleActionBar(true, false);
 
         currentMessageObject = messageObject;
         TLRPC.Document document = messageObject.getDocument();
-        Bitmap thumb = object.imageReceiver.getThumbBitmap();
+        if (currentThumb != null) {
+            currentThumb.release();
+            currentThumb = null;
+        }
+        currentThumb = object.imageReceiver.getThumbBitmapSafe();
         if (document != null) {
-            actionBar.setTitle(LocaleController.getString("DisappearingVideo", R.string.DisappearingVideo));
-            File f = new File(messageObject.messageOwner.attachPath);
-            if (f.exists()) {
-                preparePlayer(f);
-            } else {
-                File file = FileLoader.getPathToMessage(messageObject.messageOwner);
-                File encryptedFile = new File(file.getAbsolutePath() + ".enc");
-                if (encryptedFile.exists()) {
-                    file = encryptedFile;
-                }
-                preparePlayer(file);
-            }
-            isVideo = true;
-            centerImage.setImage(null, null, thumb != null ? new BitmapDrawable(thumb) : null, -1, null, 2);
-            long destroyTime = (long) messageObject.messageOwner.destroyTime * 1000;
-            long currentTime = System.currentTimeMillis() + ConnectionsManager.getInstance().getTimeDifference() * 1000;
-            long timeToDestroy = destroyTime - currentTime;
-            long duration = messageObject.getDuration() * 1000;
-            if (duration > timeToDestroy) {
-                secretDeleteTimer.setDestroyTime(-1, -1, true);
-            } else {
+            if (MessageObject.isGifDocument(document)) {
+                actionBar.setTitle(LocaleController.getString("DisappearingGif", R.string.DisappearingGif));
+                centerImage.setImage(document, null, currentThumb != null ? new BitmapDrawable(currentThumb.bitmap) : null, -1, null, 1);
                 secretDeleteTimer.setDestroyTime((long) messageObject.messageOwner.destroyTime * 1000, messageObject.messageOwner.ttl, false);
+            } else {
+                actionBar.setTitle(LocaleController.getString("DisappearingVideo", R.string.DisappearingVideo));
+                File f = new File(messageObject.messageOwner.attachPath);
+                if (f.exists()) {
+                    preparePlayer(f);
+                } else {
+                    File file = FileLoader.getPathToMessage(messageObject.messageOwner);
+                    File encryptedFile = new File(file.getAbsolutePath() + ".enc");
+                    if (encryptedFile.exists()) {
+                        file = encryptedFile;
+                    }
+                    preparePlayer(file);
+                }
+                isVideo = true;
+                centerImage.setImage(null, null, currentThumb != null ? new BitmapDrawable(currentThumb.bitmap) : null, -1, null, 2);
+                long destroyTime = (long) messageObject.messageOwner.destroyTime * 1000;
+                long currentTime = System.currentTimeMillis() + ConnectionsManager.getInstance(currentAccount).getTimeDifference() * 1000;
+                long timeToDestroy = destroyTime - currentTime;
+                long duration = messageObject.getDuration() * 1000;
+                if (duration > timeToDestroy) {
+                    secretDeleteTimer.setDestroyTime(-1, -1, true);
+                } else {
+                    secretDeleteTimer.setDestroyTime((long) messageObject.messageOwner.destroyTime * 1000, messageObject.messageOwner.ttl, false);
+                }
             }
         } else {
             actionBar.setTitle(LocaleController.getString("DisappearingPhoto", R.string.DisappearingPhoto));
             TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
-            centerImage.setImage(sizeFull.location, null, thumb != null ? new BitmapDrawable(thumb) : null, -1, null, 2);
+            centerImage.setImage(sizeFull.location, null, currentThumb != null ? new BitmapDrawable(currentThumb.bitmap) : null, -1, null, 2);
             secretDeleteTimer.setDestroyTime((long) messageObject.messageOwner.destroyTime * 1000, messageObject.messageOwner.ttl, false);
         }
         try {
@@ -932,11 +953,15 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     }
 
     public void destroyPhotoViewer() {
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagesDeleted);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateMessageMedia);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didCreatedNewDeleteTask);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagesDeleted);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateMessageMedia);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didCreatedNewDeleteTask);
         isVisible = false;
         currentProvider = null;
+        if (currentThumb != null) {
+            currentThumb.release();
+            currentThumb = null;
+        }
         releasePlayer();
         if (parentActivity != null && windowView != null) {
             try {
@@ -1104,10 +1129,12 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         canvas.restore();
     }
 
+    @Keep
     public float getVideoCrossfadeAlpha() {
         return videoCrossfadeAlpha;
     }
 
+    @Keep
     public void setVideoCrossfadeAlpha(float value) {
         videoCrossfadeAlpha = value;
         containerView.invalidate();
@@ -1143,9 +1170,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             return;
         }
 
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagesDeleted);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateMessageMedia);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didCreatedNewDeleteTask);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagesDeleted);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateMessageMedia);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didCreatedNewDeleteTask);
 
         isActionBarVisible = false;
 
@@ -1312,6 +1339,10 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
+                if (currentThumb != null) {
+                    currentThumb.release();
+                    currentThumb = null;
+                }
                 centerImage.setImageBitmap((Bitmap) null);
                 try {
                     if (windowView.getParent() != null) {
@@ -1566,11 +1597,13 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         imageMoveAnimation.start();
     }
 
+    @Keep
     public void setAnimationValue(float value) {
         animationValue = value;
         containerView.invalidate();
     }
 
+    @Keep
     public float getAnimationValue() {
         return animationValue;
     }

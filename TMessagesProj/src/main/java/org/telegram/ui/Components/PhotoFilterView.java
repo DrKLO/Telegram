@@ -32,6 +32,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
@@ -48,7 +49,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CountDownLatch;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -842,7 +843,9 @@ public class PhotoFilterView extends FrameLayout {
             int[] compileStatus = new int[1];
             GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
             if (compileStatus[0] == 0) {
-                FileLog.e(GLES20.glGetShaderInfoLog(shader));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e(GLES20.glGetShaderInfoLog(shader));
+                }
                 GLES20.glDeleteShader(shader);
                 shader = 0;
             }
@@ -854,14 +857,18 @@ public class PhotoFilterView extends FrameLayout {
 
             eglDisplay = egl10.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
             if (eglDisplay == EGL10.EGL_NO_DISPLAY) {
-                FileLog.e("eglGetDisplay failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglGetDisplay failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
 
             int[] version = new int[2];
             if (!egl10.eglInitialize(eglDisplay, version)) {
-                FileLog.e("eglInitialize failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglInitialize failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
@@ -879,13 +886,17 @@ public class PhotoFilterView extends FrameLayout {
                     EGL10.EGL_NONE
             };
             if (!egl10.eglChooseConfig(eglDisplay, configSpec, configs, 1, configsCount)) {
-                FileLog.e("eglChooseConfig failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglChooseConfig failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             } else if (configsCount[0] > 0) {
                 eglConfig = configs[0];
             } else {
-                FileLog.e("eglConfig not initialized");
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglConfig not initialized");
+                }
                 finish();
                 return false;
             }
@@ -893,7 +904,9 @@ public class PhotoFilterView extends FrameLayout {
             int[] attrib_list = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE };
             eglContext = egl10.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
             if (eglContext == null) {
-                FileLog.e("eglCreateContext failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglCreateContext failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
@@ -906,12 +919,16 @@ public class PhotoFilterView extends FrameLayout {
             }
 
             if (eglSurface == null || eglSurface == EGL10.EGL_NO_SURFACE) {
-                FileLog.e("createWindowSurface failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("createWindowSurface failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
             if (!egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-                FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
@@ -1456,7 +1473,9 @@ public class PhotoFilterView extends FrameLayout {
 
                 if (!eglContext.equals(egl10.eglGetCurrentContext()) || !eglSurface.equals(egl10.eglGetCurrentSurface(EGL10.EGL_DRAW))) {
                     if (!egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-                        FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                        }
                         return;
                     }
                 }
@@ -1497,7 +1516,7 @@ public class PhotoFilterView extends FrameLayout {
             if (!initied) {
                 return null;
             }
-            final Semaphore semaphore = new Semaphore(0);
+            final CountDownLatch countDownLatch = new CountDownLatch(1);
             final Bitmap object[] = new Bitmap[1];
             try {
                 postRunnable(new Runnable() {
@@ -1507,12 +1526,12 @@ public class PhotoFilterView extends FrameLayout {
                         GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[blured ? 0 : 1], 0);
                         GLES20.glClear(0);
                         object[0] = getRenderBufferBitmap();
-                        semaphore.release();
+                        countDownLatch.countDown();
                         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
                         GLES20.glClear(0);
                     }
                 });
-                semaphore.acquire();
+                countDownLatch.await();
             } catch (Exception e) {
                 FileLog.e(e);
             }

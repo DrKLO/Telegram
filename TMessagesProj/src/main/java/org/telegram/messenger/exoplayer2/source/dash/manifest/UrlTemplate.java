@@ -71,8 +71,8 @@ public final class UrlTemplate {
 
   /**
    * Constructs a Uri from the template, substituting in the provided arguments.
-   * <p>
-   * Arguments whose corresponding identifiers are not present in the template will be ignored.
+   *
+   * <p>Arguments whose corresponding identifiers are not present in the template will be ignored.
    *
    * @param representationId The representation identifier.
    * @param segmentNumber The segment number.
@@ -80,7 +80,7 @@ public final class UrlTemplate {
    * @param time The time as specified by the segment timeline.
    * @return The built Uri.
    */
-  public String buildUri(String representationId, int segmentNumber, int bandwidth, long time) {
+  public String buildUri(String representationId, long segmentNumber, int bandwidth, long time) {
     StringBuilder builder = new StringBuilder();
     for (int i = 0; i < identifierCount; i++) {
       builder.append(urlPieces[i]);

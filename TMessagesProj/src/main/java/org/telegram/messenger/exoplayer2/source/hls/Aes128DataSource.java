@@ -78,16 +78,19 @@ import javax.crypto.spec.SecretKeySpec;
       throw new RuntimeException(e);
     }
 
-    cipherInputStream = new CipherInputStream(
-        new DataSourceInputStream(upstream, dataSpec), cipher);
+    DataSourceInputStream inputStream = new DataSourceInputStream(upstream, dataSpec);
+    cipherInputStream = new CipherInputStream(inputStream, cipher);
+    inputStream.open();
 
     return C.LENGTH_UNSET;
   }
 
   @Override
   public void close() throws IOException {
-    cipherInputStream = null;
-    upstream.close();
+    if (cipherInputStream != null) {
+      cipherInputStream = null;
+      upstream.close();
+    }
   }
 
   @Override

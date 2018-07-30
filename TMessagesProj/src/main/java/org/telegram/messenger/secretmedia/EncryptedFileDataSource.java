@@ -24,9 +24,6 @@ import java.io.RandomAccessFile;
 
 public final class EncryptedFileDataSource implements DataSource {
 
-    /**
-     * Thrown when IOException is encountered during local file read operation.
-     */
     public static class EncryptedFileDataSourceException extends IOException {
 
         public EncryptedFileDataSourceException(IOException cause) {

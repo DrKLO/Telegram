@@ -8,6 +8,7 @@
 
 package org.telegram.messenger;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.os.Build;
@@ -23,7 +24,7 @@ import java.util.zip.ZipFile;
 
 public class NativeLoader {
 
-    private final static int LIB_VERSION = 27;
+    private final static int LIB_VERSION = 28;
     private final static String LIB_NAME = "tmessages." + LIB_VERSION;
     private final static String LIB_SO_NAME = "lib" + LIB_NAME + ".so";
     private final static String LOCALE_LIB_SO_NAME = "lib" + LIB_NAME + "loc.so";
@@ -49,6 +50,7 @@ public class NativeLoader {
         return null;
     }
 
+    @SuppressLint({"UnsafeDynamicallyLoadedCode", "SetWorldReadable"})
     private static boolean loadFromZip(Context context, File destDir, File destLocalFile, String folder) {
         try {
             for (File file : destDir.listFiles()) {
@@ -83,7 +85,6 @@ public class NativeLoader {
 
             try {
                 System.load(destLocalFile.getAbsolutePath());
-                init(Constants.FILES_PATH, BuildVars.DEBUG_VERSION);
                 nativeLoaded = true;
             } catch (Error e) {
                 FileLog.e(e);
@@ -110,6 +111,7 @@ public class NativeLoader {
         return false;
     }
 
+    @SuppressLint("UnsafeDynamicallyLoadedCode")
     public static synchronized void initNativeLibs(Context context) {
         if (nativeLoaded) {
             return;
@@ -118,9 +120,25 @@ public class NativeLoader {
         Constants.loadFromContext(context);
 
         try {
+            try {
+                System.loadLibrary(LIB_NAME);
+                nativeLoaded = true;
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("loaded normal lib");
+                }
+                return;
+            } catch (Error e) {
+                FileLog.e(e);
+            }
+
             String folder;
             try {
-                if (Build.CPU_ABI.equalsIgnoreCase("armeabi-v7a")) {
+                String str = Build.CPU_ABI;
+                if (Build.CPU_ABI.equalsIgnoreCase("x86_64")) {
+                    folder = "x86_64";
+                } else if (Build.CPU_ABI.equalsIgnoreCase("arm64-v8a")) {
+                    folder = "arm64-v8a";
+                } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi-v7a")) {
                     folder = "armeabi-v7a";
                 } else if (Build.CPU_ABI.equalsIgnoreCase("armeabi")) {
                     folder = "armeabi";
@@ -130,7 +148,9 @@ public class NativeLoader {
                     folder = "mips";
                 } else {
                     folder = "armeabi";
-                    FileLog.e("Unsupported arch: " + Build.CPU_ABI);
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.e("Unsupported arch: " + Build.CPU_ABI);
+                    }
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -142,22 +162,19 @@ public class NativeLoader {
                 folder = "x86";
             }
 
-
-            File destFile = getNativeLibraryDir(context);
+            /*File destFile = getNativeLibraryDir(context);
             if (destFile != null) {
                 destFile = new File(destFile, LIB_SO_NAME);
                 if (destFile.exists()) {
-                    FileLog.d("load normal lib");
                     try {
                         System.loadLibrary(LIB_NAME);
-                        init(Constants.FILES_PATH, BuildVars.DEBUG_VERSION);
                         nativeLoaded = true;
                         return;
                     } catch (Error e) {
                         FileLog.e(e);
                     }
                 }
-            }
+            }*/
 
             File destDir = new File(context.getFilesDir(), "lib");
             destDir.mkdirs();
@@ -165,9 +182,10 @@ public class NativeLoader {
             File destLocalFile = new File(destDir, LOCALE_LIB_SO_NAME);
             if (destLocalFile.exists()) {
                 try {
-                    FileLog.d("Load local lib");
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("Load local lib");
+                    }
                     System.load(destLocalFile.getAbsolutePath());
-                    init(Constants.FILES_PATH, BuildVars.DEBUG_VERSION);
                     nativeLoaded = true;
                     return;
                 } catch (Error e) {
@@ -176,7 +194,9 @@ public class NativeLoader {
                 destLocalFile.delete();
             }
 
-            FileLog.e("Library not found, arch = " + folder);
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e("Library not found, arch = " + folder);
+            }
 
             if (loadFromZip(context, destDir, destLocalFile, folder)) {
                 return;
@@ -187,7 +207,6 @@ public class NativeLoader {
 
         try {
             System.loadLibrary(LIB_NAME);
-            init(Constants.FILES_PATH, BuildVars.DEBUG_VERSION);
             nativeLoaded = true;
         } catch (Error e) {
             FileLog.e(e);

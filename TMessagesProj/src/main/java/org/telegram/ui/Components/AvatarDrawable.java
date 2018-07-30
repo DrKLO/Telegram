@@ -172,7 +172,7 @@ public class AvatarDrawable extends Drawable {
                     }
                     lastch = lastName.codePointAt(a);
                 }
-                if (Build.VERSION.SDK_INT >= 17) {
+                if (Build.VERSION.SDK_INT > 17) {
                     stringBuilder.append("\u200C");
                 }
                 stringBuilder.appendCodePoint(lastch);
@@ -180,7 +180,7 @@ public class AvatarDrawable extends Drawable {
                 for (int a = firstName.length() - 1; a >= 0; a--) {
                     if (firstName.charAt(a) == ' ') {
                         if (a != firstName.length() - 1 && firstName.charAt(a + 1) != ' ') {
-                            if (Build.VERSION.SDK_INT >= 17) {
+                            if (Build.VERSION.SDK_INT > 17) {
                                 stringBuilder.append("\u200C");
                             }
                             stringBuilder.appendCodePoint(firstName.codePointAt(a + 1));

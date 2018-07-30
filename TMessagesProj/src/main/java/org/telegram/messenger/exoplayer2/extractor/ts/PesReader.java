@@ -17,6 +17,7 @@ package org.telegram.messenger.exoplayer2.extractor.ts;
 
 import android.util.Log;
 import org.telegram.messenger.exoplayer2.C;
+import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
 import org.telegram.messenger.exoplayer2.util.ParsableBitArray;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
@@ -77,7 +78,8 @@ public final class PesReader implements TsPayloadReader {
   }
 
   @Override
-  public final void consume(ParsableByteArray data, boolean payloadUnitStartIndicator) {
+  public final void consume(ParsableByteArray data, boolean payloadUnitStartIndicator)
+      throws ParserException {
     if (payloadUnitStartIndicator) {
       switch (state) {
         case STATE_FINDING_HEADER:

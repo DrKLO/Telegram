@@ -15,9 +15,11 @@
  */
 package org.telegram.messenger.exoplayer2.audio;
 
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.C.Encoding;
 import org.telegram.messenger.exoplayer2.Format;
+import org.telegram.messenger.exoplayer2.util.Assertions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -30,17 +32,15 @@ import java.util.Arrays;
 
   private int channelCount;
   private int sampleRateHz;
-  private int[] pendingOutputChannels;
+  private @Nullable int[] pendingOutputChannels;
 
   private boolean active;
-  private int[] outputChannels;
+  private @Nullable int[] outputChannels;
   private ByteBuffer buffer;
   private ByteBuffer outputBuffer;
   private boolean inputEnded;
 
-  /**
-   * Creates a new processor that applies a channel mapping.
-   */
+  /** Creates a new processor that applies a channel mapping. */
   public ChannelMappingAudioProcessor() {
     buffer = EMPTY_BUFFER;
     outputBuffer = EMPTY_BUFFER;
@@ -52,9 +52,11 @@ import java.util.Arrays;
    * Resets the channel mapping. After calling this method, call {@link #configure(int, int, int)}
    * to start using the new channel map.
    *
-   * @see AudioTrack#configure(String, int, int, int, int, int[])
+   * @param outputChannels The mapping from input to output channel indices, or {@code null} to
+   *     leave the input unchanged.
+   * @see AudioSink#configure(int, int, int, int, int[], int, int)
    */
-  public void setChannelMap(int[] outputChannels) {
+  public void setChannelMap(@Nullable int[] outputChannels) {
     pendingOutputChannels = outputChannels;
   }
 
@@ -104,7 +106,13 @@ import java.util.Arrays;
   }
 
   @Override
+  public int getOutputSampleRateHz() {
+    return sampleRateHz;
+  }
+
+  @Override
   public void queueInput(ByteBuffer inputBuffer) {
+    Assertions.checkState(outputChannels != null);
     int position = inputBuffer.position();
     int limit = inputBuffer.limit();
     int frameCount = (limit - position) / (2 * channelCount);
@@ -156,6 +164,7 @@ import java.util.Arrays;
     channelCount = Format.NO_VALUE;
     sampleRateHz = Format.NO_VALUE;
     outputChannels = null;
+    pendingOutputChannels = null;
     active = false;
   }
 

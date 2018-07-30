@@ -24,27 +24,28 @@ extern "C" {
 
 typedef uint8_t poly1305_state[512];
 
-/* poly1305_init sets up |state| so that it can be used to calculate an
- * authentication tag with the one-time key |key|. Note that |key| is a
- * one-time key and therefore there is no `reset' method because that would
- * enable several messages to be authenticated with the same key. */
+// CRYPTO_poly1305_init sets up |state| so that it can be used to calculate an
+// authentication tag with the one-time key |key|. Note that |key| is a
+// one-time key and therefore there is no `reset' method because that would
+// enable several messages to be authenticated with the same key.
 OPENSSL_EXPORT void CRYPTO_poly1305_init(poly1305_state* state,
                                          const uint8_t key[32]);
 
-/* poly1305_update processes |in_len| bytes from |in|. It can be called zero or
- * more times after poly1305_init. */
+// CRYPTO_poly1305_update processes |in_len| bytes from |in|. It can be called
+// zero or more times after poly1305_init.
 OPENSSL_EXPORT void CRYPTO_poly1305_update(poly1305_state* state,
                                            const uint8_t* in,
                                            size_t in_len);
 
-/* poly1305_finish completes the poly1305 calculation and writes a 16 byte
- * authentication tag to |mac|. The |mac| address must be 16-byte aligned. */
+// CRYPTO_poly1305_finish completes the poly1305 calculation and writes a 16
+// byte authentication tag to |mac|. The |mac| address must be 16-byte
+// aligned.
 OPENSSL_EXPORT void CRYPTO_poly1305_finish(poly1305_state* state,
                                            uint8_t mac[16]);
 
 
 #if defined(__cplusplus)
-}  /* extern C */
+}  // extern C
 #endif
 
-#endif  /* OPENSSL_HEADER_POLY1305_H */
+#endif  // OPENSSL_HEADER_POLY1305_H

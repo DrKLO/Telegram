@@ -16,6 +16,7 @@
 package org.telegram.messenger.exoplayer2.upstream;
 
 import android.net.Uri;
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 import java.io.IOException;
 
@@ -79,7 +80,7 @@ public interface DataSource {
    *
    * @return The {@link Uri} from which data is being read, or null if the source is not open.
    */
-  Uri getUri();
+  @Nullable Uri getUri();
 
   /**
    * Closes the source.

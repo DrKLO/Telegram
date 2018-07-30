@@ -27,28 +27,17 @@ public interface BandwidthMeter {
 
     /**
      * Called periodically to indicate that bytes have been transferred.
-     * <p>
-     * Note: The estimated bitrate is typically derived from more information than just
-     * {@code bytes} and {@code elapsedMs}.
+     *
+     * <p>Note: The estimated bitrate is typically derived from more information than just {@code
+     * bytes} and {@code elapsedMs}.
      *
      * @param elapsedMs The time taken to transfer the bytes, in milliseconds.
      * @param bytes The number of bytes transferred.
-     * @param bitrate The estimated bitrate in bits/sec, or {@link #NO_ESTIMATE} if an estimate is
-     *     not available.
+     * @param bitrate The estimated bitrate in bits/sec.
      */
     void onBandwidthSample(int elapsedMs, long bytes, long bitrate);
-
   }
 
-  /**
-   * Indicates no bandwidth estimate is available.
-   */
-  long NO_ESTIMATE = -1;
-
-  /**
-   * Returns the estimated bandwidth in bits/sec, or {@link #NO_ESTIMATE} if an estimate is not
-   * available.
-   */
+  /** Returns the estimated bandwidth in bits/sec. */
   long getBitrateEstimate();
-
 }

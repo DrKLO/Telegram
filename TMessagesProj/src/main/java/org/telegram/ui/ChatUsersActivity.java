@@ -77,11 +77,11 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     public ChatUsersActivity(Bundle args) {
         super(args);
         chatId = arguments.getInt("chat_id");
-        currentChat = MessagesController.getInstance().getChat(chatId);
+        currentChat = MessagesController.getInstance(currentAccount).getChat(chatId);
     }
 
     private void updateRows() {
-        currentChat = MessagesController.getInstance().getChat(chatId);
+        currentChat = MessagesController.getInstance(currentAccount).getChat(chatId);
         if (currentChat == null) {
             return;
         }
@@ -106,7 +106,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatInfoDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoaded);
         fetchUsers();
         return true;
     }
@@ -126,7 +126,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatInfoDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoaded);
     }
 
     @Override
@@ -268,7 +268,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         if (participant == null) {
             return false;
         }
-        int currentUserId = UserConfig.getClientUserId();
+        int currentUserId = UserConfig.getInstance(currentAccount).getClientUserId();
         if (participant.user_id == currentUserId) {
             return false;
         }
@@ -295,7 +295,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             @Override
             public void onClick(DialogInterface dialogInterface, final int i) {
                 if (actions.get(i) == 0) {
-                    MessagesController.getInstance().deleteUserFromChat(chatId, MessagesController.getInstance().getUser(participant.user_id), info);
+                    MessagesController.getInstance(currentAccount).deleteUserFromChat(chatId, MessagesController.getInstance(currentAccount).getUser(participant.user_id), info);
                 }
             }
         });
@@ -304,7 +304,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.chatInfoDidLoaded) {
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
             boolean byChannelUsers = (Boolean) args[2];
@@ -404,7 +404,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
                             for (int a = 0; a < contactsCopy.size(); a++) {
                                 TLRPC.ChatParticipant participant = contactsCopy.get(a);
-                                TLRPC.User user = MessagesController.getInstance().getUser(participant.user_id);
+                                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(participant.user_id);
 
                                 String name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
                                 String tName = LocaleController.getInstance().getTranslitString(name);
@@ -489,7 +489,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             if (object instanceof TLRPC.User) {
                 user = (TLRPC.User) object;
             } else {
-                user = MessagesController.getInstance().getUser(((TLRPC.ChatParticipant) object).user_id);
+                user = MessagesController.getInstance(currentAccount).getUser(((TLRPC.ChatParticipant) object).user_id);
             }
 
             String un = user.username;
@@ -573,7 +573,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     ManageChatUserCell userCell = (ManageChatUserCell) holder.itemView;
                     userCell.setTag(position);
                     TLRPC.ChatParticipant participant = getItem(position);
-                    TLRPC.User user = MessagesController.getInstance().getUser(participant.user_id);
+                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(participant.user_id);
                     if (user != null) {
                         userCell.setData(user, null, null);
                     }
@@ -614,14 +614,16 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate сellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
             @Override
-            public void didSetColor(int color) {
-                int count = listView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    View child = listView.getChildAt(a);
-                    if (child instanceof ManageChatUserCell) {
-                        ((ManageChatUserCell) child).update(0);
+            public void didSetColor() {
+                if (listView != null) {
+                    int count = listView.getChildCount();
+                    for (int a = 0; a < count; a++) {
+                        View child = listView.getChildAt(a);
+                        if (child instanceof ManageChatUserCell) {
+                            ((ManageChatUserCell) child).update(0);
+                        }
                     }
                 }
             }
@@ -645,16 +647,16 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4),
 
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"statusColor"}, null, null, сellDelegate, Theme.key_windowBackgroundWhiteGrayText),
-                new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"statusOnlineColor"}, null, null, сellDelegate, Theme.key_windowBackgroundWhiteBlueText),
+                new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText),
+                new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"statusOnlineColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlueText),
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundGreen),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundCyan),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundPink),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
         };
     }
 }

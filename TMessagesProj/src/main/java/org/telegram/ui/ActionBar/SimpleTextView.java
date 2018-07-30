@@ -255,6 +255,30 @@ public class SimpleTextView extends View implements Drawable.Callback {
         return text;
     }
 
+    public int getTextStartX() {
+        if (layout == null) {
+            return 0;
+        }
+        int textOffsetX = 0;
+        if (leftDrawable != null) {
+            if ((gravity & Gravity.HORIZONTAL_GRAVITY_MASK) == Gravity.LEFT) {
+                textOffsetX += drawablePadding + leftDrawable.getIntrinsicWidth();
+            }
+        }
+        return (int) getX() + offsetX + textOffsetX;
+    }
+
+    public TextPaint getTextPaint() {
+        return textPaint;
+    }
+
+    public int getTextStartY() {
+        if (layout == null) {
+            return 0;
+        }
+        return (int) getY();
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         int textOffsetX = 0;

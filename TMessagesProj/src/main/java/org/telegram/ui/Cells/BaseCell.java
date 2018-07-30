@@ -52,15 +52,15 @@ public abstract class BaseCell extends ViewGroup {
         setWillNotDraw(false);
     }
 
-    protected void setDrawableBounds(Drawable drawable, int x, int y) {
+    public static void setDrawableBounds(Drawable drawable, int x, int y) {
         setDrawableBounds(drawable, x, y, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
     }
 
-    protected void setDrawableBounds(Drawable drawable, float x, float y) {
+    public static void setDrawableBounds(Drawable drawable, float x, float y) {
         setDrawableBounds(drawable, (int) x, (int) y, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
     }
 
-    protected void setDrawableBounds(Drawable drawable, int x, int y, int w, int h) {
+    public static void setDrawableBounds(Drawable drawable, int x, int y, int w, int h) {
         if (drawable != null) {
             drawable.setBounds(x, y, x + w, y + h);
         }

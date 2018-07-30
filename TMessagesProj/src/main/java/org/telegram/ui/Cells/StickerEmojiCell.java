@@ -18,8 +18,9 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.Emoji;
-import org.telegram.messenger.query.StickersQuery;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -37,6 +38,7 @@ public class StickerEmojiCell extends FrameLayout {
     private long time;
     private boolean recent;
     private static AccelerateInterpolator interpolator = new AccelerateInterpolator(0.5f);
+    private int currentAccount = UserConfig.selectedAccount;
 
     public StickerEmojiCell(Context context) {
         super(context);
@@ -82,7 +84,7 @@ public class StickerEmojiCell extends FrameLayout {
                     }
                 }
                 if (!set) {
-                    emojiTextView.setText(Emoji.replaceEmoji(StickersQuery.getEmojiForSticker(sticker.id), emojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false));
+                    emojiTextView.setText(Emoji.replaceEmoji(DataQuery.getInstance(currentAccount).getEmojiForSticker(sticker.id), emojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false));
                 }
                 emojiTextView.setVisibility(VISIBLE);
             } else {

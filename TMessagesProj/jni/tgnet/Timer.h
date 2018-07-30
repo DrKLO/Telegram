@@ -1,9 +1,9 @@
 /*
- * This is the source code of tgnet library v. 1.0
+ * This is the source code of tgnet library v. 1.1
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2015.
+ * Copyright Nikolai Kudashov, 2015-2018.
  */
 
 #ifndef TIMER_H
@@ -18,7 +18,7 @@ class EventObject;
 class Timer {
 
 public:
-    Timer(std::function<void()> function);
+    Timer(int32_t instance, std::function<void()> function);
     ~Timer();
 
     void start();
@@ -30,6 +30,7 @@ private:
 
     bool started = false;
     bool repeatable = false;
+    int32_t instanceNum;
     uint32_t timeout = 0;
     std::function<void()> callback;
     EventObject *eventObject;

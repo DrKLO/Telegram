@@ -76,7 +76,7 @@ public class ChannelPermissionsActivity extends BaseFragment implements Notifica
         addUsersRow = rowCount++;
         changeInfoRow = rowCount++;
         rightsShadowRow = rowCount++;
-        TLRPC.Chat chat = MessagesController.getInstance().getChat(chatId);
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
         if (chat != null && TextUtils.isEmpty(chat.username)) {
             forwardRow = rowCount++;
             forwardShadowRow = rowCount++;
@@ -96,14 +96,14 @@ public class ChannelPermissionsActivity extends BaseFragment implements Notifica
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatInfoDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoaded);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatInfoDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoaded);
     }
 
     @Override
@@ -120,7 +120,7 @@ public class ChannelPermissionsActivity extends BaseFragment implements Notifica
                 } else if (id == done_button) {
                     if (headerCell2 != null && headerCell2.getVisibility() == View.VISIBLE && info != null && info.hidden_prehistory != historyHidden) {
                         info.hidden_prehistory = historyHidden;
-                        MessagesController.getInstance().toogleChannelInvitesHistory(chatId, historyHidden);
+                        MessagesController.getInstance(currentAccount).toogleChannelInvitesHistory(chatId, historyHidden);
                     }
                     finishFragment();
                 }
@@ -220,7 +220,7 @@ public class ChannelPermissionsActivity extends BaseFragment implements Notifica
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.chatInfoDidLoaded) {
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
             if (chatFull.id == chatId) {
@@ -355,10 +355,11 @@ public class ChannelPermissionsActivity extends BaseFragment implements Notifica
 
                 new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchThumb),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchThumbChecked),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2Thumb),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2Track),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2ThumbChecked),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2TrackChecked),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2Check),
 
                 new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
 

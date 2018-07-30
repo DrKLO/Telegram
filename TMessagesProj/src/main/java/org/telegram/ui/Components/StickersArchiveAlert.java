@@ -17,9 +17,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.query.StickersQuery;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
@@ -46,10 +46,10 @@ public class StickersArchiveAlert extends AlertDialog.Builder {
 
         TLRPC.StickerSetCovered set = sets.get(0);
         if (set.set.masks) {
-            currentType = StickersQuery.TYPE_MASK;
+            currentType = DataQuery.TYPE_MASK;
             setTitle(LocaleController.getString("ArchivedMasksAlertTitle", R.string.ArchivedMasksAlertTitle));
         } else {
-            currentType = StickersQuery.TYPE_IMAGE;
+            currentType = DataQuery.TYPE_IMAGE;
             setTitle(LocaleController.getString("ArchivedStickersAlertTitle", R.string.ArchivedStickersAlertTitle));
         }
         stickerSets = new ArrayList<>(sets);

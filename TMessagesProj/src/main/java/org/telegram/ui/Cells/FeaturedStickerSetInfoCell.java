@@ -12,20 +12,26 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.query.StickersQuery;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.ColorSpanUnderline;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class FeaturedStickerSetInfoCell extends FrameLayout {
@@ -45,6 +51,8 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
     private int angle;
     private boolean isInstalled;
     private boolean hasOnClick;
+
+    private int currentAccount = UserConfig.selectedAccount;
 
     Drawable drawable = new Drawable() {
 
@@ -68,7 +76,7 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
 
         @Override
         public int getOpacity() {
-            return 0;
+            return PixelFormat.TRANSPARENT;
         }
 
         @Override
@@ -164,8 +172,22 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
     }
 
     public void setStickerSet(TLRPC.StickerSetCovered stickerSet, boolean unread) {
+        setStickerSet(stickerSet, unread, 0, 0);
+    }
+
+    public void setStickerSet(TLRPC.StickerSetCovered stickerSet, boolean unread, int index, int searchLength) {
         lastUpdateTime = System.currentTimeMillis();
-        nameTextView.setText(stickerSet.set.title);
+        if (searchLength != 0) {
+            SpannableStringBuilder builder = new SpannableStringBuilder(stickerSet.set.title);
+            try {
+                builder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), index, index + searchLength, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } catch (Exception ignore) {
+
+            }
+            nameTextView.setText(builder);
+        } else {
+            nameTextView.setText(stickerSet.set.title);
+        }
         infoTextView.setText(LocaleController.formatPluralString("Stickers", stickerSet.set.count));
         if (unread) {
             nameTextView.setCompoundDrawablesWithIntrinsicBounds(null, null, drawable, null);
@@ -174,7 +196,7 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         }
         if (hasOnClick) {
             addButton.setVisibility(VISIBLE);
-            if (isInstalled = StickersQuery.isStickerPackInstalled(stickerSet.set.id)) {
+            if (isInstalled = DataQuery.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id)) {
                 addButton.setBackgroundDrawable(delDrawable);
                 addButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove).toUpperCase());
             } else {
@@ -187,6 +209,19 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         }
 
         set = stickerSet;
+    }
+
+    public void setUrl(CharSequence text, int searchLength) {
+        if (text != null) {
+            SpannableStringBuilder builder = new SpannableStringBuilder(text);
+            try {
+                builder.setSpan(new ColorSpanUnderline(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), 0, searchLength, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                builder.setSpan(new ColorSpanUnderline(Theme.getColor(Theme.key_chat_emojiPanelTrendingDescription)), searchLength, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } catch (Exception ignore) {
+
+            }
+            infoTextView.setText(builder);
+        }
     }
 
     public boolean isInstalled() {

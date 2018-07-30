@@ -40,17 +40,19 @@ public class ThemeCell extends FrameLayout {
     private boolean needDivider;
     private Paint paint;
     private Theme.ThemeInfo currentThemeInfo;
+    private boolean isNightTheme;
     private static byte[] bytes = new byte[1024];
 
-    public ThemeCell(Context context) {
+    public ThemeCell(Context context, boolean nightTheme) {
         super(context);
 
         setWillNotDraw(false);
 
+        isNightTheme = nightTheme;
+
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);
@@ -63,15 +65,27 @@ public class ThemeCell extends FrameLayout {
         checkImage = new ImageView(context);
         checkImage.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addedIcon), PorterDuff.Mode.MULTIPLY));
         checkImage.setImageResource(R.drawable.sticker_added);
-        addView(checkImage, LayoutHelper.createFrame(19, 14, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 17 + 38, 0, 17 + 38, 0));
 
-        optionsButton = new ImageView(context);
-        optionsButton.setFocusable(false);
-        optionsButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector)));
-        optionsButton.setImageResource(R.drawable.ic_ab_other);
-        optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
-        optionsButton.setScaleType(ImageView.ScaleType.CENTER);
-        addView(optionsButton, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP));
+        if (!isNightTheme) {
+            addView(checkImage, LayoutHelper.createFrame(19, 14, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 17 + 38, 0, 17 + 38, 0));
+
+            optionsButton = new ImageView(context);
+            optionsButton.setFocusable(false);
+            optionsButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector)));
+            optionsButton.setImageResource(R.drawable.ic_ab_other);
+            optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
+            optionsButton.setScaleType(ImageView.ScaleType.CENTER);
+            addView(optionsButton, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP));
+        } else {
+            addView(checkImage, LayoutHelper.createFrame(19, 14, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 17, 0, 17, 0));
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        checkImage.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addedIcon), PorterDuff.Mode.MULTIPLY));
+        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
     }
 
     @Override
@@ -103,7 +117,7 @@ public class ThemeCell extends FrameLayout {
         }
         textView.setText(text);
         needDivider = divider;
-        checkImage.setVisibility(themeInfo == Theme.getCurrentTheme() ? VISIBLE : INVISIBLE);
+        updateCurrentThemeCheck();
 
         boolean finished = false;
         if (themeInfo.pathToFile != null || themeInfo.assetName != null) {
@@ -177,6 +191,19 @@ public class ThemeCell extends FrameLayout {
         }
         if (!finished) {
             paint.setColor(Theme.getDefaultColor(Theme.key_actionBarDefault));
+        }
+    }
+
+    public void updateCurrentThemeCheck() {
+        Theme.ThemeInfo currentTheme;
+        if (isNightTheme) {
+            currentTheme = Theme.getCurrentNightTheme();
+        } else {
+            currentTheme = Theme.getCurrentTheme();
+        }
+        int newVisibility = currentThemeInfo == currentTheme ? VISIBLE : INVISIBLE;
+        if (checkImage.getVisibility() != newVisibility) {
+            checkImage.setVisibility(newVisibility);
         }
     }
 

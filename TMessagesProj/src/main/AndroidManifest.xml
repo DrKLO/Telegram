@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools"
     package="org.telegram.messenger"
     android:installLocation="auto">
 
@@ -25,7 +26,6 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
@@ -45,6 +45,7 @@
     <uses-permission android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT"/>
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS"/>
 
     <uses-permission android:name="com.sec.android.provider.badge.permission.READ"/>
     <uses-permission android:name="com.sec.android.provider.badge.permission.WRITE"/>
@@ -60,6 +61,10 @@
     <uses-permission android:name="android.permission.READ_APP_BADGE"/>
     <uses-permission android:name="com.oppo.launcher.permission.READ_SETTINGS"/>
     <uses-permission android:name="com.oppo.launcher.permission.WRITE_SETTINGS"/>
+    <uses-permission android:name="me.everything.badger.permission.BADGE_COUNT_READ"/>
+    <uses-permission android:name="me.everything.badger.permission.BADGE_COUNT_WRITE"/>
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="replace" />
 
     <application
         android:name=".ApplicationLoader"
@@ -69,7 +74,9 @@
         android:roundIcon="@drawable/ic_launcher"
         android:largeHeap="true"
         android:theme="@style/Theme.TMessages.Start"
-        android:manageSpaceActivity="org.telegram.ui.ManageSpaceActivity">
+        android:manageSpaceActivity="org.telegram.ui.ExternalActionActivity"
+        android:supportsRtl="false"
+        tools:replace="android:supportsRtl">
 
         <activity
             android:name="org.telegram.ui.LaunchActivity"
@@ -154,11 +161,14 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="org.telegram.ui.ManageSpaceActivity"
+            android:name="org.telegram.ui.ExternalActionActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:hardwareAccelerated="@bool/useHardwareAcceleration"
-            android:launchMode="singleTask"
             android:windowSoftInputMode="adjustPan">
+            <intent-filter android:icon="@drawable/ic_launcher">
+                <action android:name="org.telegram.passport.AUTHORIZE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
         </activity>
         <activity
             android:name="org.telegram.ui.IntroActivity"
@@ -184,7 +194,15 @@
             android:name="org.telegram.ui.VoIPActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:excludeFromRecents="true"
+            android:windowSoftInputMode="adjustNothing"
 			android:taskAffinity="${applicationId}.voip">
+        </activity>
+        <activity
+            android:name="org.telegram.ui.VoIPGroupActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:excludeFromRecents="true"
+			android:windowSoftInputMode="adjustNothing"
+            android:taskAffinity="${applicationId}.voip">
         </activity>
         <activity android:name="org.telegram.ui.VoIPPermissionActivity"
                   android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
@@ -222,6 +240,7 @@
         <receiver android:name=".SmsListener">
             <intent-filter>
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+                <action android:name="android.provider.Telephony.NEW_OUTGOING_SMS" />
             </intent-filter>
         </receiver>
 
@@ -252,6 +271,9 @@
             </intent-filter>
         </service>
 
+        <service android:name=".KeepAliveJob"
+                 android:exported="false"
+                 android:permission="android.permission.BIND_JOB_SERVICE"/>
         <service android:name=".BringAppForegroundService" android:enabled="true"/>
         <service android:name=".NotificationsService" android:enabled="true"/>
         <service android:name=".NotificationRepeat" android:exported="false"/>
@@ -275,8 +297,13 @@
                 <data android:scheme="wear" android:host="*" />
             </intent-filter>
         </service>
+        <service android:name=".voip.TelegramConnectionService" android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.ConnectionService" />
+            </intent-filter>
+        </service>
 
-        <receiver android:name=".MusicPlayerReceiver" >
+		<receiver android:name=".MusicPlayerReceiver" >
             <intent-filter>
                 <action android:name="org.telegram.android.musicplayer.close" />
                 <action android:name="org.telegram.android.musicplayer.pause" />
@@ -312,6 +339,8 @@
 
         <receiver android:name=".PopupReplyReceiver" android:enabled="true"/>
 
+        <receiver android:name=".NotificationCallbackReceiver" android:enabled="true" android:exported="false"/>
+
         <receiver android:name=".ShareBroadcastReceiver" android:enabled="true"/>
 
         <receiver android:name=".CustomTabsCopyReceiver" android:enabled="true"/>
@@ -337,7 +366,7 @@
         <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_W" android:value="632dp" />
         <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_H" android:value="598dp" />
 
-        <meta-data android:name="com.google.android.gms.wallet.api.enabled" android:value="true" />
+        <!--<meta-data android:name="com.google.android.gms.wallet.api.enabled" android:value="true" />-->
 
         <meta-data android:name="com.google.android.gms.car.notification.SmallIcon" android:resource="@drawable/ic_player" />
         <meta-data android:name="com.google.android.gms.car.application" android:resource="@xml/automotive_app_desc" />

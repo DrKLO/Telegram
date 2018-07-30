@@ -12,6 +12,7 @@ import android.content.Context;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
+import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -40,11 +41,11 @@ import java.util.TimerTask;
 public class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
     private Context mContext;
-    private HashMap<Integer, TLRPC.User> ignoreUsers;
+    private SparseArray<TLRPC.User> ignoreUsers;
     private ArrayList<TLRPC.User> searchResult = new ArrayList<>();
     private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
     private SearchAdapterHelper searchAdapterHelper;
-    private HashMap<Integer, ?> checkedMap;
+    private SparseArray<?> checkedMap;
     private Timer searchTimer;
     private boolean allowUsernameSearch;
     private boolean useUserCell;
@@ -53,7 +54,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     private boolean allowBots;
     private int channelId;
 
-    public SearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats, boolean bots, int searchChannelId) {
+    public SearchAdapter(Context context, SparseArray<TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats, boolean bots, int searchChannelId) {
         mContext = context;
         ignoreUsers = arg1;
         onlyMutual = mutual;
@@ -61,7 +62,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
         allowChats = chats;
         allowBots = bots;
         channelId = searchChannelId;
-        searchAdapterHelper = new SearchAdapterHelper();
+        searchAdapterHelper = new SearchAdapterHelper(true);
         searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
             @Override
             public void onDataSetChanged() {
@@ -75,7 +76,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
         });
     }
 
-    public void setCheckedMap(HashMap<Integer, ?> map) {
+    public void setCheckedMap(SparseArray<?> map) {
         checkedMap = map;
     }
 
@@ -122,8 +123,8 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                 if (allowUsernameSearch) {
                     searchAdapterHelper.queryServerSearch(query, true, allowChats, allowBots, true, channelId, false);
                 }
-                final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>();
-                contactsCopy.addAll(ContactsController.getInstance().contacts);
+                final int currentAccount = UserConfig.selectedAccount;
+                final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>(ContactsController.getInstance(currentAccount).contacts);
                 Utilities.searchQueue.postRunnable(new Runnable() {
                     @Override
                     public void run() {
@@ -147,8 +148,8 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
                         for (int a = 0; a < contactsCopy.size(); a++) {
                             TLRPC.TL_contact contact = contactsCopy.get(a);
-                            TLRPC.User user = MessagesController.getInstance().getUser(contact.user_id);
-                            if (user.id == UserConfig.getClientUserId() || onlyMutual && !user.mutual_contact) {
+                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(contact.user_id);
+                            if (user.id == UserConfig.getInstance(currentAccount).getClientUserId() || onlyMutual && !user.mutual_contact) {
                                 continue;
                             }
 
@@ -287,8 +288,20 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                         foundUserName = foundUserName.substring(1);
                     }
                     try {
-                        username = new SpannableStringBuilder(un);
-                        ((SpannableStringBuilder) username).setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), 0, foundUserName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        int index;
+                        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
+                        spannableStringBuilder.append("@");
+                        spannableStringBuilder.append(un);
+                        if ((index = un.toLowerCase().indexOf(foundUserName)) != -1) {
+                            int len = foundUserName.length();
+                            if (index == 0) {
+                                len++;
+                            } else {
+                                index++;
+                            }
+                            spannableStringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), index, index + len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
+                        username = spannableStringBuilder;
                     } catch (Exception e) {
                         username = un;
                         FileLog.e(e);
@@ -299,7 +312,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                     UserCell userCell = (UserCell) holder.itemView;
                     userCell.setData(object, name, username, 0);
                     if (checkedMap != null) {
-                        userCell.setChecked(checkedMap.containsKey(id), false);
+                        userCell.setChecked(checkedMap.indexOfKey(id) >= 0, false);
                     }
                 } else {
                     ProfileSearchCell profileSearchCell = (ProfileSearchCell) holder.itemView;

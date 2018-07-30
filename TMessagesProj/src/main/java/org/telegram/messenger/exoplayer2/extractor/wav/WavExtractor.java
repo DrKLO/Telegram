@@ -23,13 +23,14 @@ import org.telegram.messenger.exoplayer2.extractor.ExtractorInput;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorsFactory;
 import org.telegram.messenger.exoplayer2.extractor.PositionHolder;
-import org.telegram.messenger.exoplayer2.extractor.SeekMap;
 import org.telegram.messenger.exoplayer2.extractor.TrackOutput;
 import org.telegram.messenger.exoplayer2.util.MimeTypes;
 import java.io.IOException;
 
-/** {@link Extractor} to extract samples from a WAV byte stream. */
-public final class WavExtractor implements Extractor, SeekMap {
+/**
+ * Extracts data from WAV byte streams.
+ */
+public final class WavExtractor implements Extractor {
 
   /**
    * Factory for {@link WavExtractor} instances.
@@ -93,7 +94,7 @@ public final class WavExtractor implements Extractor, SeekMap {
 
     if (!wavHeader.hasDataBounds()) {
       WavHeaderReader.skipToData(input, wavHeader);
-      extractorOutput.seekMap(this);
+      extractorOutput.seekMap(wavHeader);
     }
 
     int bytesAppended = trackOutput.sampleData(input, MAX_INPUT_SIZE - pendingBytes, true);
@@ -113,20 +114,4 @@ public final class WavExtractor implements Extractor, SeekMap {
     return bytesAppended == RESULT_END_OF_INPUT ? RESULT_END_OF_INPUT : RESULT_CONTINUE;
   }
 
-  // SeekMap implementation.
-
-  @Override
-  public long getDurationUs() {
-    return wavHeader.getDurationUs();
-  }
-
-  @Override
-  public boolean isSeekable() {
-    return true;
-  }
-
-  @Override
-  public long getPosition(long timeUs) {
-    return wavHeader.getPosition(timeUs);
-  }
 }

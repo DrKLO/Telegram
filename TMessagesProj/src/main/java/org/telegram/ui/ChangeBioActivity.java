@@ -8,7 +8,6 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -30,7 +29,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -151,7 +149,7 @@ public class ChangeBioActivity extends BaseFragment {
 
             @Override
             public void afterTextChanged(Editable s) {
-                checkTextView.setText("" + (70 - firstNameField.length()));
+                checkTextView.setText(String.format("%d", (70 - firstNameField.length())));
             }
         });
 
@@ -159,7 +157,7 @@ public class ChangeBioActivity extends BaseFragment {
 
         checkTextView = new TextView(context);
         checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        checkTextView.setText("70");
+        checkTextView.setText(String.format("%d", 70));
         checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
         fieldContainer.addView(checkTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT, 0, 4, 4, 0));
 
@@ -170,7 +168,7 @@ public class ChangeBioActivity extends BaseFragment {
         helpTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("UserBioInfo", R.string.UserBioInfo)));
         linearLayout.addView(helpTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 24, 10, 24, 0));
 
-        TLRPC.TL_userFull userFull = MessagesController.getInstance().getUserFull(UserConfig.getClientUserId());
+        TLRPC.TL_userFull userFull = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
         if (userFull != null && userFull.about != null) {
             firstNameField.setText(userFull.about);
             firstNameField.setSelection(firstNameField.length());
@@ -182,7 +180,7 @@ public class ChangeBioActivity extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             firstNameField.requestFocus();
@@ -191,7 +189,7 @@ public class ChangeBioActivity extends BaseFragment {
     }
 
     private void saveName() {
-        final TLRPC.TL_userFull userFull = MessagesController.getInstance().getUserFull(UserConfig.getClientUserId());
+        final TLRPC.TL_userFull userFull = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
         if (getParentActivity() == null || userFull == null) {
             return;
         }
@@ -214,7 +212,7 @@ public class ChangeBioActivity extends BaseFragment {
         req.about = newName;
         req.flags |= 4;
 
-        final int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(TLObject response, final TLRPC.TL_error error) {
                 if (error == null) {
@@ -228,7 +226,7 @@ public class ChangeBioActivity extends BaseFragment {
                                 FileLog.e(e);
                             }
                             userFull.about = newName;
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.userInfoDidLoaded, user.id, userFull);
+                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.userInfoDidLoaded, user.id, userFull);
                             finishFragment();
                         }
                     });
@@ -241,18 +239,18 @@ public class ChangeBioActivity extends BaseFragment {
                             } catch (Exception e) {
                                 FileLog.e(e);
                             }
-                            AlertsCreator.processError(error, ChangeBioActivity.this, req);
+                            AlertsCreator.processError(currentAccount, error, ChangeBioActivity.this, req);
                         }
                     });
                 }
             }
         }, ConnectionsManager.RequestFlagFailOnServerErrors);
-        ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
+        ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
 
         progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                ConnectionsManager.getInstance().cancelRequest(reqId, true);
+                ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
                 try {
                     dialog.dismiss();
                 } catch (Exception e) {

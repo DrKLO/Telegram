@@ -16,6 +16,7 @@
 package org.telegram.messenger.exoplayer2.trackselection;
 
 import android.os.SystemClock;
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.source.TrackGroup;
@@ -79,6 +80,16 @@ public abstract class BaseTrackSelection implements TrackSelection {
   }
 
   @Override
+  public void enable() {
+    // Do nothing.
+  }
+
+  @Override
+  public void disable() {
+    // Do nothing.
+  }
+
+  @Override
   public final TrackGroup getTrackGroup() {
     return group;
   }
@@ -129,6 +140,11 @@ public abstract class BaseTrackSelection implements TrackSelection {
   }
 
   @Override
+  public void onPlaybackSpeed(float playbackSpeed) {
+    // Do nothing.
+  }
+
+  @Override
   public int evaluateQueueSize(long playbackPositionUs, List<? extends MediaChunk> queue) {
     return queue.size();
   }
@@ -168,7 +184,7 @@ public abstract class BaseTrackSelection implements TrackSelection {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(@Nullable Object obj) {
     if (this == obj) {
       return true;
     }

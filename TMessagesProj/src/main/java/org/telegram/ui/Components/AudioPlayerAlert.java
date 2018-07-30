@@ -24,6 +24,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.Keep;
 import android.support.v4.content.FileProvider;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -42,6 +43,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -52,6 +54,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -78,7 +81,7 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, MediaController.FileDownloadProgressListener {
+public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, DownloadController.FileDownloadProgressListener {
 
     private ActionBar actionBar;
     private View shadow;
@@ -130,7 +133,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private int thumbMaxX;
     private int thumbMaxY;
 
-    private ArrayList<MessageObject> playlist = new ArrayList<>();
+    private ArrayList<MessageObject> playlist;
 
     private int scrollOffsetY = Integer.MAX_VALUE;
     private int topBeforeSwitch;
@@ -148,16 +151,23 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     public AudioPlayerAlert(final Context context) {
         super(context, true);
 
+        MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+        if (messageObject != null) {
+            currentAccount = messageObject.currentAccount;
+        } else {
+            currentAccount = UserConfig.selectedAccount;
+        }
+
         parentActivity = (LaunchActivity) context;
         noCoverDrawable = context.getResources().getDrawable(R.drawable.nocover).mutate();
         noCoverDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_placeholder), PorterDuff.Mode.MULTIPLY));
 
-        TAG = MediaController.getInstance().generateObserverTag();
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingDidReset);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingDidStarted);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.musicDidLoaded);
+        TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidReset);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidStarted);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.musicDidLoaded);
 
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow).mutate();
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_background), PorterDuff.Mode.MULTIPLY));
@@ -260,26 +270,33 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         avatarContainer = new ChatAvatarContainer(context, null, false);
         avatarContainer.setEnabled(false);
         avatarContainer.setTitleColors(Theme.getColor(Theme.key_player_actionBarTitle), Theme.getColor(Theme.key_player_actionBarSubtitle));
-        MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
         if (messageObject != null) {
             long did = messageObject.getDialogId();
             int lower_id = (int) did;
             int high_id = (int) (did >> 32);
             if (lower_id != 0) {
                 if (lower_id > 0) {
-                    TLRPC.User user = MessagesController.getInstance().getUser(lower_id);
-                    avatarContainer.setTitle(ContactsController.formatName(user.first_name, user.last_name));
-                    avatarContainer.setUserAvatar(user);
+                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
+                    if (user != null) {
+                        avatarContainer.setTitle(ContactsController.formatName(user.first_name, user.last_name));
+                        avatarContainer.setUserAvatar(user);
+                    }
                 } else {
-                    TLRPC.Chat chat = MessagesController.getInstance().getChat(-lower_id);
-                    avatarContainer.setTitle(chat.title);
-                    avatarContainer.setChatAvatar(chat);
+                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
+                    if (chat != null) {
+                        avatarContainer.setTitle(chat.title);
+                        avatarContainer.setChatAvatar(chat);
+                    }
                 }
             } else {
-                TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(high_id);
-                TLRPC.User user = MessagesController.getInstance().getUser(encryptedChat.user_id);
-                avatarContainer.setTitle(ContactsController.formatName(user.first_name, user.last_name));
-                avatarContainer.setUserAvatar(user);
+                TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(high_id);
+                if (encryptedChat != null) {
+                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(encryptedChat.user_id);
+                    if (user != null) {
+                        avatarContainer.setTitle(ContactsController.formatName(user.first_name, user.last_name));
+                        avatarContainer.setUserAvatar(user);
+                    }
+                }
             }
         }
         avatarContainer.setSubtitle(LocaleController.getString("AudioTitle", R.string.AudioTitle));
@@ -327,7 +344,6 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             @Override
             public void onTextChanged(EditText editText) {
                 if (editText.length() > 0) {
-                    searchWas = true;
                     listAdapter.search(editText.getText().toString());
                 } else {
                     searchWas = false;
@@ -461,6 +477,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         playerLayout.addView(authorTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 72, 40, 60, 0));
 
         optionsButton = new ActionBarMenuItem(context, null, 0, Theme.getColor(Theme.key_player_actionBarItems));
+        optionsButton.setLongClickEnabled(false);
         optionsButton.setIcon(R.drawable.ic_ab_other);
         optionsButton.setAdditionalOffset(-AndroidUtilities.dp(120));
         playerLayout.addView(optionsButton, LayoutHelper.createFrame(40, 40, Gravity.TOP | Gravity.RIGHT, 0, 19, 10, 0));
@@ -468,6 +485,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         optionsButton.addSubItem(2, LocaleController.getString("ShareFile", R.string.ShareFile));
         //optionsButton.addSubItem(3, LocaleController.getString("Delete", R.string.Delete));
         optionsButton.addSubItem(4, LocaleController.getString("ShowInChat", R.string.ShowInChat));
+        optionsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                optionsButton.toggleSubMenu();
+            }
+        });
         optionsButton.setDelegate(new ActionBarMenuItem.ActionBarMenuItemDelegate() {
             @Override
             public void onItemClick(int id) {
@@ -515,8 +538,15 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         playerLayout.addView(bottomView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 66, Gravity.TOP | Gravity.LEFT, 0, 106, 0, 0));
 
         buttons[0] = shuffleButton = new ActionBarMenuItem(context, null, 0, 0);
+        shuffleButton.setLongClickEnabled(false);
         shuffleButton.setAdditionalOffset(-AndroidUtilities.dp(10));
         bottomView.addView(shuffleButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
+        shuffleButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                shuffleButton.toggleSubMenu();
+            }
+        });
 
         TextView textView = shuffleButton.addSubItem(1, LocaleController.getString("ReverseOrder", R.string.ReverseOrder));
         textView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(16), 0);
@@ -535,6 +565,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             public void onItemClick(int id) {
                 MediaController.getInstance().toggleShuffleMusic(id);
                 updateShuffleButton();
+                listAdapter.notifyDataSetChanged();
             }
         });
 
@@ -587,7 +618,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         repeatButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                MediaController.getInstance().toggleRepeatMode();
+                SharedConfig.toggleRepeatMode();
                 updateRepeatButton();
             }
         });
@@ -627,7 +658,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                             int idx = playlist.indexOf(playingMessageObject);
                             if (idx >= 0) {
                                 ignoreLayout = true;
-                                layoutManager.scrollToPosition(playlist.size() - idx);
+                                if (SharedConfig.playOrderReversed) {
+                                    layoutManager.scrollToPosition(idx);
+                                } else {
+                                    layoutManager.scrollToPosition(playlist.size() - idx);
+                                }
                                 super.onLayout(false, l, t, r, b);
                                 ignoreLayout = false;
                             }
@@ -703,6 +738,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         updateShuffleButton();
     }
 
+    @Keep
     public void setFullAnimationProgress(float value) {
         fullAnimationProgress = value;
         placeholderImageView.setRoundRadius(AndroidUtilities.dp(20 * (1.0f - fullAnimationProgress)));
@@ -721,16 +757,20 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         actionBar.getSubtitleTextView().setAlpha(fullAnimationProgress);
     }
 
+    @Keep
     public float getFullAnimationProgress() {
         return fullAnimationProgress;
     }
 
     private void onSubItemClick(int id) {
         final MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
-        if (messageObject == null) {
+        if (messageObject == null || parentActivity == null) {
             return;
         }
         if (id == 1) {
+            if (UserConfig.selectedAccount != currentAccount) {
+                parentActivity.switchToAccount(currentAccount, true);
+            }
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
             args.putInt("dialogsType", 3);
@@ -740,13 +780,13 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             fragment.setDelegate(new DialogsActivity.DialogsActivityDelegate() {
                 @Override
                 public void didSelectDialogs(DialogsActivity fragment, ArrayList<Long> dids, CharSequence message, boolean param) {
-                    if (dids.size() > 1 || dids.get(0) == UserConfig.getClientUserId() || message != null) {
+                    if (dids.size() > 1 || dids.get(0) == UserConfig.getInstance(currentAccount).getClientUserId() || message != null) {
                         for (int a = 0; a < dids.size(); a++) {
                             long did = dids.get(a);
                             if (message != null) {
-                                SendMessagesHelper.getInstance().sendMessage(message.toString(), did, null, null, true, null, null, null);
+                                SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, true, null, null, null);
                             }
-                            SendMessagesHelper.getInstance().sendMessage(fmessages, did);
+                            SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did);
                         }
                         fragment.finishFragment();
                     } else {
@@ -764,10 +804,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                         } else {
                             args.putInt("enc_id", high_part);
                         }
-                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
                         ChatActivity chatActivity = new ChatActivity(args);
                         if (parentActivity.presentFragment(chatActivity, true, false)) {
-                            chatActivity.showReplyPanel(true, null, fmessages, null, false);
+                            chatActivity.showFieldPanelForForward(true, fmessages);
                         } else {
                             fragment.finishFragment();
                         }
@@ -831,19 +871,19 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 TLRPC.Chat currentChat;
                 TLRPC.User currentUser;
                 if (lower_id > 0) {
-                    currentUser = MessagesController.getInstance().getUser(lower_id);
+                    currentUser = MessagesController.getInstance(currentAccount).getUser(lower_id);
                     currentChat = null;
                 } else {
                     currentUser = null;
-                    currentChat = MessagesController.getInstance().getChat(-lower_id);
+                    currentChat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
                 }
                 if (currentUser != null || !ChatObject.isChannel(currentChat)) {
                     boolean hasOutgoing = false;
-                    int currentDate = ConnectionsManager.getInstance().getCurrentTime();
-                    if (currentUser != null && currentUser.id != UserConfig.getClientUserId() || currentChat != null) {
+                    int currentDate = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+                    if (currentUser != null && currentUser.id != UserConfig.getInstance(currentAccount).getClientUserId() || currentChat != null) {
                         if ((messageObject.messageOwner.action == null || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionEmpty) && messageObject.isOut() && (currentDate - messageObject.messageOwner.date) <= 2 * 24 * 60 * 60) {
                             FrameLayout frameLayout = new FrameLayout(parentActivity);
-                            CheckBoxCell cell = new CheckBoxCell(parentActivity, true);
+                            CheckBoxCell cell = new CheckBoxCell(parentActivity, 1);
                             cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                             if (currentChat != null) {
                                 cell.setText(LocaleController.getString("DeleteForAll", R.string.DeleteForAll), "", false, false);
@@ -876,14 +916,18 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     if ((int) messageObject.getDialogId() == 0 && messageObject.messageOwner.random_id != 0) {
                         random_ids = new ArrayList<>();
                         random_ids.add(messageObject.messageOwner.random_id);
-                        encryptedChat = MessagesController.getInstance().getEncryptedChat((int) (messageObject.getDialogId() >> 32));
+                        encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat((int) (messageObject.getDialogId() >> 32));
                     }
-                    MessagesController.getInstance().deleteMessages(arr, random_ids, encryptedChat, messageObject.messageOwner.to_id.channel_id, deleteForAll[0]);
+                    MessagesController.getInstance(currentAccount).deleteMessages(arr, random_ids, encryptedChat, messageObject.messageOwner.to_id.channel_id, deleteForAll[0]);
                 }
             });
             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
             builder.show();
         } else if (id == 4) {
+            if (UserConfig.selectedAccount != currentAccount) {
+                parentActivity.switchToAccount(currentAccount, true);
+            }
+            
             Bundle args = new Bundle();
             long did = messageObject.getDialogId();
             int lower_part = (int) did;
@@ -895,7 +939,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     if (lower_part > 0) {
                         args.putInt("user_id", lower_part);
                     } else if (lower_part < 0) {
-                        TLRPC.Chat chat = MessagesController.getInstance().getChat(-lower_part);
+                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_part);
                         if (chat != null && chat.migrated_to != null) {
                             args.putInt("migrated_to", lower_part);
                             lower_part = -chat.migrated_to.channel_id;
@@ -907,7 +951,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 args.putInt("enc_id", high_id);
             }
             args.putInt("message_id", messageObject.getId());
-            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
             parentActivity.presentFragment(new ChatActivity(args), false, false);
             dismiss();
         }
@@ -925,7 +969,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.messagePlayingDidStarted || id == NotificationCenter.messagePlayingPlayStateChanged || id == NotificationCenter.messagePlayingDidReset) {
             updateTitle(id == NotificationCenter.messagePlayingDidReset && (Boolean) args[1]);
             if (id == NotificationCenter.messagePlayingDidReset || id == NotificationCenter.messagePlayingPlayStateChanged) {
@@ -1029,12 +1073,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     @Override
     public void dismiss() {
         super.dismiss();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingDidReset);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingDidStarted);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.musicDidLoaded);
-        MediaController.getInstance().removeLoadingFileObserver(this);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidReset);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidStarted);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.musicDidLoaded);
+        DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
     }
 
     @Override
@@ -1072,13 +1116,13 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     }
 
     private void updateShuffleButton() {
-        if (MediaController.getInstance().isShuffleMusic()) {
+        if (SharedConfig.shuffleMusic) {
             Drawable drawable = getContext().getResources().getDrawable(R.drawable.pl_shuffle).mutate();
             drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_buttonActive), PorterDuff.Mode.MULTIPLY));
             shuffleButton.setIcon(drawable);
         } else {
             Drawable drawable = getContext().getResources().getDrawable(R.drawable.music_reverse).mutate();
-            if (MediaController.getInstance().isPlayOrderReversed()) {
+            if (SharedConfig.playOrderReversed) {
                 drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_buttonActive), PorterDuff.Mode.MULTIPLY));
             } else {
                 drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
@@ -1086,12 +1130,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             shuffleButton.setIcon(drawable);
         }
 
-        playOrderButtons[0].setColorFilter(new PorterDuffColorFilter(Theme.getColor(MediaController.getInstance().isPlayOrderReversed() ? Theme.key_player_buttonActive : Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
-        playOrderButtons[1].setColorFilter(new PorterDuffColorFilter(Theme.getColor(MediaController.getInstance().isShuffleMusic() ? Theme.key_player_buttonActive : Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
+        playOrderButtons[0].setColorFilter(new PorterDuffColorFilter(Theme.getColor(SharedConfig.playOrderReversed ? Theme.key_player_buttonActive : Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
+        playOrderButtons[1].setColorFilter(new PorterDuffColorFilter(Theme.getColor(SharedConfig.shuffleMusic ? Theme.key_player_buttonActive : Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
     }
 
     private void updateRepeatButton() {
-        int mode = MediaController.getInstance().getRepeatMode();
+        int mode = SharedConfig.repeatMode;
         if (mode == 0) {
             repeatButton.setImageResource(R.drawable.pl_repeat);
             repeatButton.setTag(Theme.key_player_button);
@@ -1111,6 +1155,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         if (seekBarView != null) {
             if (!seekBarView.isDragging()) {
                 seekBarView.setProgress(messageObject.audioProgress);
+                seekBarView.setBufferedProgress(messageObject.bufferedProgress);
             }
             if (lastTime != messageObject.audioProgressSec) {
                 lastTime = messageObject.audioProgressSec;
@@ -1130,16 +1175,17 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         if (cacheFile == null) {
             cacheFile = FileLoader.getPathToMessage(messageObject.messageOwner);
         }
-        if (!cacheFile.exists()) {
+        boolean canStream = SharedConfig.streamMedia && (int) messageObject.getDialogId() != 0 && messageObject.isMusic();
+        if (!cacheFile.exists() && !canStream) {
             String fileName = messageObject.getFileName();
-            MediaController.getInstance().addLoadingFileObserver(fileName, this);
+            DownloadController.getInstance(currentAccount).addLoadingFileObserver(fileName, this);
             Float progress = ImageLoader.getInstance().getFileProgress(fileName);
             progressView.setProgress(progress != null ? progress : 0, false);
             progressView.setVisibility(View.VISIBLE);
             seekBarView.setVisibility(View.INVISIBLE);
             playButton.setEnabled(false);
         } else {
-            MediaController.getInstance().removeLoadingFileObserver(this);
+            DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
             progressView.setVisibility(View.INVISIBLE);
             seekBarView.setVisibility(View.VISIBLE);
             playButton.setEnabled(true);
@@ -1154,7 +1200,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             if (messageObject == null) {
                 return;
             }
-            if (messageObject.eventId != 0) {
+            if (messageObject.eventId != 0 || messageObject.getId() <= -2000000000) {
                 hasOptions = false;
                 menuItem.setVisibility(View.INVISIBLE);
                 optionsButton.setVisibility(View.INVISIBLE);
@@ -1191,17 +1237,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             }
 
             if (durationTextView != null) {
-                int duration = 0;
-                TLRPC.Document document = messageObject.getDocument();
-                if (document != null) {
-                    for (int a = 0; a < document.attributes.size(); a++) {
-                        TLRPC.DocumentAttribute attribute = document.attributes.get(a);
-                        if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
-                            duration = attribute.duration;
-                            break;
-                        }
-                    }
-                }
+                int duration = messageObject.getDuration();
                 durationTextView.setText(duration != 0 ? String.format("%d:%02d", duration / 60, duration % 60) : "-:--");
             }
         }
@@ -1255,9 +1291,17 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 if (searchWas) {
                     cell.setMessageObject(searchResult.get(position));
                 } else if (searching) {
-                    cell.setMessageObject(playlist.get(playlist.size() - position - 1));
+                    if (SharedConfig.playOrderReversed) {
+                        cell.setMessageObject(playlist.get(position));
+                    } else {
+                        cell.setMessageObject(playlist.get(playlist.size() - position - 1));
+                    }
                 } else if (position > 0) {
-                    cell.setMessageObject(playlist.get(playlist.size() - position));
+                    if (SharedConfig.playOrderReversed) {
+                        cell.setMessageObject(playlist.get(position - 1));
+                    } else {
+                        cell.setMessageObject(playlist.get(playlist.size() - position));
+                    }
                 }
             }
         }
@@ -1305,8 +1349,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    final ArrayList<MessageObject> copy = new ArrayList<>();
-                    copy.addAll(playlist);
+                    final ArrayList<MessageObject> copy = new ArrayList<>(playlist);
                     Utilities.searchQueue.postRunnable(new Runnable() {
                         @Override
                         public void run() {
@@ -1377,6 +1420,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
+                    searchWas = true;
                     searchResult = documents;
                     notifyDataSetChanged();
                     layoutManager.scrollToPosition(0);

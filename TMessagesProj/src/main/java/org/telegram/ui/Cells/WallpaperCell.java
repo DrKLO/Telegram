@@ -60,6 +60,7 @@ public class WallpaperCell extends FrameLayout {
                 selectionView.setVisibility(selectedBackground == -1 ? View.VISIBLE : INVISIBLE);
                 imageView2.setBackgroundColor(selectedBackground == -1 || selectedBackground == 1000001 ? 0x5a475866 : 0x5a000000);
                 imageView2.setScaleType(ImageView.ScaleType.CENTER);
+                imageView2.setImageResource(R.drawable.ic_gallery_background);
             }
         } else {
             imageView.setVisibility(VISIBLE);

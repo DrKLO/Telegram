@@ -26,60 +26,143 @@ import org.telegram.messenger.exoplayer2.Timeline;
 /* package */ abstract class AbstractConcatenatedTimeline extends Timeline {
 
   private final int childCount;
+  private final ShuffleOrder shuffleOrder;
+  private final boolean isAtomic;
 
-  public AbstractConcatenatedTimeline(int childCount) {
-    this.childCount = childCount;
+  /**
+   * Sets up a concatenated timeline with a shuffle order of child timelines.
+   *
+   * @param isAtomic Whether the child timelines shall be treated as atomic, i.e., treated as a
+   *     single item for repeating and shuffling.
+   * @param shuffleOrder A shuffle order of child timelines. The number of child timelines must
+   *     match the number of elements in the shuffle order.
+   */
+  public AbstractConcatenatedTimeline(boolean isAtomic, ShuffleOrder shuffleOrder) {
+    this.isAtomic = isAtomic;
+    this.shuffleOrder = shuffleOrder;
+    this.childCount = shuffleOrder.getLength();
   }
 
   @Override
-  public int getNextWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode) {
+  public int getNextWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode,
+      boolean shuffleModeEnabled) {
+    if (isAtomic) {
+      // Adapt repeat and shuffle mode to atomic concatenation.
+      repeatMode = repeatMode == Player.REPEAT_MODE_ONE ? Player.REPEAT_MODE_ALL : repeatMode;
+      shuffleModeEnabled = false;
+    }
+    // Find next window within current child.
     int childIndex = getChildIndexByWindowIndex(windowIndex);
     int firstWindowIndexInChild = getFirstWindowIndexByChildIndex(childIndex);
     int nextWindowIndexInChild = getTimelineByChildIndex(childIndex).getNextWindowIndex(
         windowIndex - firstWindowIndexInChild,
-        repeatMode == Player.REPEAT_MODE_ALL ? Player.REPEAT_MODE_OFF : repeatMode);
+        repeatMode == Player.REPEAT_MODE_ALL ? Player.REPEAT_MODE_OFF : repeatMode,
+        shuffleModeEnabled);
     if (nextWindowIndexInChild != C.INDEX_UNSET) {
       return firstWindowIndexInChild + nextWindowIndexInChild;
-    } else {
-      int nextChildIndex = childIndex + 1;
-      if (nextChildIndex < childCount) {
-        return getFirstWindowIndexByChildIndex(nextChildIndex);
-      } else if (repeatMode == Player.REPEAT_MODE_ALL) {
-        return 0;
-      } else {
-        return C.INDEX_UNSET;
-      }
     }
+    // If not found, find first window of next non-empty child.
+    int nextChildIndex = getNextChildIndex(childIndex, shuffleModeEnabled);
+    while (nextChildIndex != C.INDEX_UNSET && getTimelineByChildIndex(nextChildIndex).isEmpty()) {
+      nextChildIndex = getNextChildIndex(nextChildIndex, shuffleModeEnabled);
+    }
+    if (nextChildIndex != C.INDEX_UNSET) {
+      return getFirstWindowIndexByChildIndex(nextChildIndex)
+          + getTimelineByChildIndex(nextChildIndex).getFirstWindowIndex(shuffleModeEnabled);
+    }
+    // If not found, this is the last window.
+    if (repeatMode == Player.REPEAT_MODE_ALL) {
+      return getFirstWindowIndex(shuffleModeEnabled);
+    }
+    return C.INDEX_UNSET;
   }
 
   @Override
-  public int getPreviousWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode) {
+  public int getPreviousWindowIndex(int windowIndex, @Player.RepeatMode int repeatMode,
+      boolean shuffleModeEnabled) {
+    if (isAtomic) {
+      // Adapt repeat and shuffle mode to atomic concatenation.
+      repeatMode = repeatMode == Player.REPEAT_MODE_ONE ? Player.REPEAT_MODE_ALL : repeatMode;
+      shuffleModeEnabled = false;
+    }
+    // Find previous window within current child.
     int childIndex = getChildIndexByWindowIndex(windowIndex);
     int firstWindowIndexInChild = getFirstWindowIndexByChildIndex(childIndex);
     int previousWindowIndexInChild = getTimelineByChildIndex(childIndex).getPreviousWindowIndex(
         windowIndex - firstWindowIndexInChild,
-        repeatMode == Player.REPEAT_MODE_ALL ? Player.REPEAT_MODE_OFF : repeatMode);
+        repeatMode == Player.REPEAT_MODE_ALL ? Player.REPEAT_MODE_OFF : repeatMode,
+        shuffleModeEnabled);
     if (previousWindowIndexInChild != C.INDEX_UNSET) {
       return firstWindowIndexInChild + previousWindowIndexInChild;
-    } else {
-      if (firstWindowIndexInChild > 0) {
-        return firstWindowIndexInChild - 1;
-      } else if (repeatMode == Player.REPEAT_MODE_ALL) {
-        return getWindowCount() - 1;
-      } else {
-        return C.INDEX_UNSET;
-      }
     }
+    // If not found, find last window of previous non-empty child.
+    int previousChildIndex = getPreviousChildIndex(childIndex, shuffleModeEnabled);
+    while (previousChildIndex != C.INDEX_UNSET
+        && getTimelineByChildIndex(previousChildIndex).isEmpty()) {
+      previousChildIndex = getPreviousChildIndex(previousChildIndex, shuffleModeEnabled);
+    }
+    if (previousChildIndex != C.INDEX_UNSET) {
+      return getFirstWindowIndexByChildIndex(previousChildIndex)
+          + getTimelineByChildIndex(previousChildIndex).getLastWindowIndex(shuffleModeEnabled);
+    }
+    // If not found, this is the first window.
+    if (repeatMode == Player.REPEAT_MODE_ALL) {
+      return getLastWindowIndex(shuffleModeEnabled);
+    }
+    return C.INDEX_UNSET;
   }
 
   @Override
-  public final Window getWindow(int windowIndex, Window window, boolean setIds,
-      long defaultPositionProjectionUs) {
+  public int getLastWindowIndex(boolean shuffleModeEnabled) {
+    if (childCount == 0) {
+      return C.INDEX_UNSET;
+    }
+    if (isAtomic) {
+      shuffleModeEnabled = false;
+    }
+    // Find last non-empty child.
+    int lastChildIndex = shuffleModeEnabled ? shuffleOrder.getLastIndex() : childCount - 1;
+    while (getTimelineByChildIndex(lastChildIndex).isEmpty()) {
+      lastChildIndex = getPreviousChildIndex(lastChildIndex, shuffleModeEnabled);
+      if (lastChildIndex == C.INDEX_UNSET) {
+        // All children are empty.
+        return C.INDEX_UNSET;
+      }
+    }
+    return getFirstWindowIndexByChildIndex(lastChildIndex)
+        + getTimelineByChildIndex(lastChildIndex).getLastWindowIndex(shuffleModeEnabled);
+  }
+
+  @Override
+  public int getFirstWindowIndex(boolean shuffleModeEnabled) {
+    if (childCount == 0) {
+      return C.INDEX_UNSET;
+    }
+    if (isAtomic) {
+      shuffleModeEnabled = false;
+    }
+    // Find first non-empty child.
+    int firstChildIndex = shuffleModeEnabled ? shuffleOrder.getFirstIndex() : 0;
+    while (getTimelineByChildIndex(firstChildIndex).isEmpty()) {
+      firstChildIndex = getNextChildIndex(firstChildIndex, shuffleModeEnabled);
+      if (firstChildIndex == C.INDEX_UNSET) {
+        // All children are empty.
+        return C.INDEX_UNSET;
+      }
+    }
+    return getFirstWindowIndexByChildIndex(firstChildIndex)
+        + getTimelineByChildIndex(firstChildIndex).getFirstWindowIndex(shuffleModeEnabled);
+  }
+
+  @Override
+  public final Window getWindow(
+      int windowIndex, Window window, boolean setTag, long defaultPositionProjectionUs) {
     int childIndex = getChildIndexByWindowIndex(windowIndex);
     int firstWindowIndexInChild = getFirstWindowIndexByChildIndex(childIndex);
     int firstPeriodIndexInChild = getFirstPeriodIndexByChildIndex(childIndex);
-    getTimelineByChildIndex(childIndex).getWindow(windowIndex - firstWindowIndexInChild, window,
-        setIds, defaultPositionProjectionUs);
+    getTimelineByChildIndex(childIndex)
+        .getWindow(
+            windowIndex - firstWindowIndexInChild, window, setTag, defaultPositionProjectionUs);
     window.firstPeriodIndex += firstPeriodIndexInChild;
     window.lastPeriodIndex += firstPeriodIndexInChild;
     return window;
@@ -166,5 +249,15 @@ import org.telegram.messenger.exoplayer2.Timeline;
    * @param childIndex A valid child index within the bounds of the timeline.
    */
   protected abstract Object getChildUidByChildIndex(int childIndex);
+
+  private int getNextChildIndex(int childIndex, boolean shuffleModeEnabled) {
+    return shuffleModeEnabled ? shuffleOrder.getNextIndex(childIndex)
+        : childIndex < childCount - 1 ? childIndex + 1 : C.INDEX_UNSET;
+  }
+
+  private int getPreviousChildIndex(int childIndex, boolean shuffleModeEnabled) {
+    return shuffleModeEnabled ? shuffleOrder.getPreviousIndex(childIndex)
+        : childIndex > 0 ? childIndex - 1 : C.INDEX_UNSET;
+  }
 
 }

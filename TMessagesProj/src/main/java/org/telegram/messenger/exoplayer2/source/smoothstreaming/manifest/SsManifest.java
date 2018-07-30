@@ -18,19 +18,22 @@ package org.telegram.messenger.exoplayer2.source.smoothstreaming.manifest;
 import android.net.Uri;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
+import org.telegram.messenger.exoplayer2.offline.FilterableManifest;
 import org.telegram.messenger.exoplayer2.util.Assertions;
 import org.telegram.messenger.exoplayer2.util.UriUtil;
 import org.telegram.messenger.exoplayer2.util.Util;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * Represents a SmoothStreaming manifest.
  *
- * @see <a href="http://msdn.microsoft.com/en-us/library/ee673436(v=vs.90).aspx">
- * IIS Smooth Streaming Client Manifest Format</a>
+ * @see <a href="http://msdn.microsoft.com/en-us/library/ee673436(v=vs.90).aspx">IIS Smooth
+ *     Streaming Client Manifest Format</a>
  */
-public class SsManifest {
+public class SsManifest implements FilterableManifest<SsManifest, StreamKey> {
 
   public static final int UNSET_LOOKAHEAD = -1;
 
@@ -96,16 +99,54 @@ public class SsManifest {
   public SsManifest(int majorVersion, int minorVersion, long timescale, long duration,
       long dvrWindowLength, int lookAheadCount, boolean isLive, ProtectionElement protectionElement,
       StreamElement[] streamElements) {
+    this(majorVersion, minorVersion,
+        duration == 0 ? C.TIME_UNSET
+            : Util.scaleLargeTimestamp(duration, C.MICROS_PER_SECOND, timescale),
+        dvrWindowLength == 0 ? C.TIME_UNSET
+            : Util.scaleLargeTimestamp(dvrWindowLength, C.MICROS_PER_SECOND, timescale),
+        lookAheadCount, isLive, protectionElement, streamElements);
+  }
+
+  private SsManifest(int majorVersion, int minorVersion, long durationUs, long dvrWindowLengthUs,
+      int lookAheadCount, boolean isLive, ProtectionElement protectionElement,
+      StreamElement[] streamElements) {
     this.majorVersion = majorVersion;
     this.minorVersion = minorVersion;
+    this.durationUs = durationUs;
+    this.dvrWindowLengthUs = dvrWindowLengthUs;
     this.lookAheadCount = lookAheadCount;
     this.isLive = isLive;
     this.protectionElement = protectionElement;
     this.streamElements = streamElements;
-    dvrWindowLengthUs = dvrWindowLength == 0 ? C.TIME_UNSET
-        : Util.scaleLargeTimestamp(dvrWindowLength, C.MICROS_PER_SECOND, timescale);
-    durationUs = duration == 0 ? C.TIME_UNSET
-        : Util.scaleLargeTimestamp(duration, C.MICROS_PER_SECOND, timescale);
+  }
+
+  @Override
+  public final SsManifest copy(List<StreamKey> streamKeys) {
+    ArrayList<StreamKey> sortedKeys = new ArrayList<>(streamKeys);
+    Collections.sort(sortedKeys);
+
+    StreamElement currentStreamElement = null;
+    List<StreamElement> copiedStreamElements = new ArrayList<>();
+    List<Format> copiedFormats = new ArrayList<>();
+    for (int i = 0; i < sortedKeys.size(); i++) {
+      StreamKey key = sortedKeys.get(i);
+      StreamElement streamElement = streamElements[key.streamElementIndex];
+      if (streamElement != currentStreamElement && currentStreamElement != null) {
+        // We're advancing to a new stream element. Add the current one.
+        copiedStreamElements.add(currentStreamElement.copy(copiedFormats.toArray(new Format[0])));
+        copiedFormats.clear();
+      }
+      currentStreamElement = streamElement;
+      copiedFormats.add(streamElement.formats[key.trackIndex]);
+    }
+    if (currentStreamElement != null) {
+      // Add the last stream element.
+      copiedStreamElements.add(currentStreamElement.copy(copiedFormats.toArray(new Format[0])));
+    }
+
+    StreamElement[] copiedStreamElementsArray = copiedStreamElements.toArray(new StreamElement[0]);
+    return new SsManifest(majorVersion, minorVersion, durationUs, dvrWindowLengthUs, lookAheadCount,
+        isLive, protectionElement, copiedStreamElementsArray);
   }
 
   /**
@@ -156,6 +197,28 @@ public class SsManifest {
         long timescale, String name, int maxWidth, int maxHeight, int displayWidth,
         int displayHeight, String language, Format[] formats, List<Long> chunkStartTimes,
         long lastChunkDuration) {
+      this(
+          baseUri,
+          chunkTemplate,
+          type,
+          subType,
+          timescale,
+          name,
+          maxWidth,
+          maxHeight,
+          displayWidth,
+          displayHeight,
+          language,
+          formats,
+          chunkStartTimes,
+          Util.scaleLargeTimestamps(chunkStartTimes, C.MICROS_PER_SECOND, timescale),
+          Util.scaleLargeTimestamp(lastChunkDuration, C.MICROS_PER_SECOND, timescale));
+    }
+
+    private StreamElement(String baseUri, String chunkTemplate, int type, String subType,
+        long timescale, String name, int maxWidth, int maxHeight, int displayWidth,
+        int displayHeight, String language, Format[] formats, List<Long> chunkStartTimes,
+        long[] chunkStartTimesUs, long lastChunkDurationUs) {
       this.baseUri = baseUri;
       this.chunkTemplate = chunkTemplate;
       this.type = type;
@@ -168,12 +231,23 @@ public class SsManifest {
       this.displayHeight = displayHeight;
       this.language = language;
       this.formats = formats;
-      this.chunkCount = chunkStartTimes.size();
       this.chunkStartTimes = chunkStartTimes;
-      lastChunkDurationUs =
-          Util.scaleLargeTimestamp(lastChunkDuration, C.MICROS_PER_SECOND, timescale);
-      chunkStartTimesUs =
-          Util.scaleLargeTimestamps(chunkStartTimes, C.MICROS_PER_SECOND, timescale);
+      this.chunkStartTimesUs = chunkStartTimesUs;
+      this.lastChunkDurationUs = lastChunkDurationUs;
+      chunkCount = chunkStartTimes.size();
+    }
+
+    /**
+     * Creates a copy of this stream element with the formats replaced with those specified.
+     *
+     * @param formats The formats to be included in the copy.
+     * @return A copy of this stream element with the formats replaced.
+     * @throws IndexOutOfBoundsException If a key has an invalid index.
+     */
+    public StreamElement copy(Format[] formats) {
+      return new StreamElement(baseUri, chunkTemplate, type, subType, timescale, name, maxWidth,
+          maxHeight, displayWidth, displayHeight, language, formats, chunkStartTimes,
+          chunkStartTimesUs, lastChunkDurationUs);
     }
 
     /**

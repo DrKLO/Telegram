@@ -9,17 +9,18 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.support.annotation.Keep;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageReceiver;
 
 public class ClippingImageView extends View {
 
@@ -30,7 +31,7 @@ public class ClippingImageView extends View {
     private int orientation;
     private RectF drawRect;
     private Paint paint;
-    private Bitmap bmp;
+    private ImageReceiver.BitmapHolder bmp;
     private Matrix matrix;
 
     private boolean needRadius;
@@ -60,10 +61,12 @@ public class ClippingImageView extends View {
         animationValues = values;
     }
 
+    @Keep
     public float getAnimationProgress() {
         return animationProgress;
     }
 
+    @Keep
     public void setAnimationProgress(float progress) {
         animationProgress = progress;
 
@@ -107,7 +110,7 @@ public class ClippingImageView extends View {
         if (getVisibility() != VISIBLE) {
             return;
         }
-        if (bmp != null) {
+        if (bmp != null && !bmp.isRecycled()) {
             float scaleY = getScaleY();
             canvas.save();
 
@@ -157,7 +160,7 @@ public class ClippingImageView extends View {
 
                 canvas.clipRect(clipLeft / scaleY, clipTop / scaleY, getWidth() - clipRight / scaleY, getHeight() - clipBottom / scaleY);
                 try {
-                    canvas.drawBitmap(bmp, matrix, paint);
+                    canvas.drawBitmap(bmp.bitmap, matrix, paint);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -202,12 +205,16 @@ public class ClippingImageView extends View {
         orientation = angle;
     }
 
-    public void setImageBitmap(Bitmap bitmap) {
+    public void setImageBitmap(ImageReceiver.BitmapHolder bitmap) {
+        if (bmp != null) {
+            bmp.release();
+            bitmapShader = null;
+        }
         bmp = bitmap;
         if (bitmap != null) {
             bitmapRect.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
             if (needRadius) {
-                bitmapShader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                bitmapShader = new BitmapShader(bitmap.bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
                 roundPaint.setShader(bitmapShader);
             }
         }

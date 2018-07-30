@@ -47,7 +47,7 @@ public class WallpaperUpdater {
     public WallpaperUpdater(Activity activity, WallpaperUpdaterDelegate wallpaperUpdaterDelegate) {
         parentActivity = activity;
         delegate = wallpaperUpdaterDelegate;
-        currentWallpaperPath = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.random.nextInt() + ".jpg");
+        currentWallpaperPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.random.nextInt() + ".jpg");
     }
 
     public void showAlert(final boolean fromTheme) {

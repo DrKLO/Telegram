@@ -27,6 +27,7 @@ import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -80,6 +81,8 @@ public class DocumentSelectActivity extends BaseFragment {
     private ArrayList<View> actionModeViews = new ArrayList<>();
     private boolean scrolling;
     private ArrayList<ListItem> recentItems = new ArrayList<>();
+    private int maxSelectedFiles = -1;
+    private boolean canSelectOnlyImageFiles;
 
     private final static int done = 3;
 
@@ -181,8 +184,7 @@ public class DocumentSelectActivity extends BaseFragment {
                     }
                 } else if (id == done) {
                     if (delegate != null) {
-                        ArrayList<String> files = new ArrayList<>();
-                        files.addAll(selectedFiles.keySet());
+                        ArrayList<String> files = new ArrayList<>(selectedFiles.keySet());
                         delegate.didSelectFiles(DocumentSelectActivity.this, files);
                         for (ListItem item : selectedFiles.values()) {
                             item.date = System.currentTimeMillis();
@@ -246,11 +248,19 @@ public class DocumentSelectActivity extends BaseFragment {
                         showErrorBox(LocaleController.getString("AccessError", R.string.AccessError));
                         return false;
                     }
+                    if (canSelectOnlyImageFiles && item.thumb == null) {
+                        showErrorBox(LocaleController.formatString("PassportUploadNotImage", R.string.PassportUploadNotImage));
+                        return false;
+                    }
                     if (sizeLimit != 0) {
                         if (file.length() > sizeLimit) {
                             showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, AndroidUtilities.formatFileSize(sizeLimit)));
                             return false;
                         }
+                    }
+                    if (maxSelectedFiles >= 0 && selectedFiles.size() >= maxSelectedFiles) {
+                        showErrorBox(LocaleController.formatString("PassportUploadMaxReached", R.string.PassportUploadMaxReached, LocaleController.formatPluralString("Files", maxSelectedFiles)));
+                        return false;
                     }
                     if (file.length() == 0) {
                         return false;
@@ -321,6 +331,10 @@ public class DocumentSelectActivity extends BaseFragment {
                         showErrorBox(LocaleController.getString("AccessError", R.string.AccessError));
                         file = new File("/mnt/sdcard");
                     }
+                    if (canSelectOnlyImageFiles && item.thumb == null) {
+                        showErrorBox(LocaleController.formatString("PassportUploadNotImage", R.string.PassportUploadNotImage));
+                        return;
+                    }
                     if (sizeLimit != 0) {
                         if (file.length() > sizeLimit) {
                             showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, AndroidUtilities.formatFileSize(sizeLimit)));
@@ -334,6 +348,10 @@ public class DocumentSelectActivity extends BaseFragment {
                         if (selectedFiles.containsKey(file.toString())) {
                             selectedFiles.remove(file.toString());
                         } else {
+                            if (maxSelectedFiles >= 0 && selectedFiles.size() >= maxSelectedFiles) {
+                                showErrorBox(LocaleController.formatString("PassportUploadMaxReached", R.string.PassportUploadMaxReached, LocaleController.formatPluralString("Files", maxSelectedFiles)));
+                                return;
+                            }
                             selectedFiles.put(file.toString(), item);
                         }
                         if (selectedFiles.isEmpty()) {
@@ -359,6 +377,14 @@ public class DocumentSelectActivity extends BaseFragment {
         listRoots();
 
         return fragmentView;
+    }
+
+    public void setMaxSelectedFiles(int value) {
+        maxSelectedFiles = value;
+    }
+
+    public void setCanSelectOnlyImageFiles(boolean value) {
+        canSelectOnlyImageFiles = true;
     }
 
     public void loadRecentFiles() {
@@ -593,7 +619,9 @@ public class DocumentSelectActivity extends BaseFragment {
             String line;
             while ((line = bufferedReader.readLine()) != null) {
                 if (line.contains("vfat") || line.contains("/mnt")) {
-                    FileLog.e(line);
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d(line);
+                    }
                     StringTokenizer tokens = new StringTokenizer(line, " ");
                     String unused = tokens.nextToken();
                     String path = tokens.nextToken();
@@ -786,7 +814,7 @@ public class DocumentSelectActivity extends BaseFragment {
 
                 new ThemeDescription(selectedMessagesCountTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_actionBarActionModeDefaultIcon),
 
-                new ThemeDescription(listView, 0, new Class[]{GraySectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+                new ThemeDescription(listView, 0, new Class[]{GraySectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_graySectionText),
                 new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{GraySectionCell.class}, null, null, null, Theme.key_graySection),
 
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{SharedDocumentCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),

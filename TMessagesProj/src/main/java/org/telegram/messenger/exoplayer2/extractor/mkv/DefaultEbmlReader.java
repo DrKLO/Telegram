@@ -15,18 +15,25 @@
  */
 package org.telegram.messenger.exoplayer2.extractor.mkv;
 
+import android.support.annotation.IntDef;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorInput;
 import org.telegram.messenger.exoplayer2.util.Assertions;
 import java.io.EOFException;
 import java.io.IOException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.Stack;
 
 /**
  * Default implementation of {@link EbmlReader}.
  */
 /* package */ final class DefaultEbmlReader implements EbmlReader {
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({ELEMENT_STATE_READ_ID, ELEMENT_STATE_READ_CONTENT_SIZE, ELEMENT_STATE_READ_CONTENT})
+  private @interface ElementState {}
 
   private static final int ELEMENT_STATE_READ_ID = 0;
   private static final int ELEMENT_STATE_READ_CONTENT_SIZE = 1;
@@ -44,7 +51,7 @@ import java.util.Stack;
   private final VarintReader varintReader = new VarintReader();
 
   private EbmlReaderOutput output;
-  private int elementState;
+  private @ElementState int elementState;
   private int elementId;
   private long elementContentSize;
 
@@ -88,23 +95,23 @@ import java.util.Stack;
         elementState = ELEMENT_STATE_READ_CONTENT;
       }
 
-      int type = output.getElementType(elementId);
+      @EbmlReaderOutput.ElementType int type = output.getElementType(elementId);
       switch (type) {
-        case TYPE_MASTER:
+        case EbmlReaderOutput.TYPE_MASTER:
           long elementContentPosition = input.getPosition();
           long elementEndPosition = elementContentPosition + elementContentSize;
           masterElementsStack.add(new MasterElement(elementId, elementEndPosition));
           output.startMasterElement(elementId, elementContentPosition, elementContentSize);
           elementState = ELEMENT_STATE_READ_ID;
           return true;
-        case TYPE_UNSIGNED_INT:
+        case EbmlReaderOutput.TYPE_UNSIGNED_INT:
           if (elementContentSize > MAX_INTEGER_ELEMENT_SIZE_BYTES) {
             throw new ParserException("Invalid integer size: " + elementContentSize);
           }
           output.integerElement(elementId, readInteger(input, (int) elementContentSize));
           elementState = ELEMENT_STATE_READ_ID;
           return true;
-        case TYPE_FLOAT:
+        case EbmlReaderOutput.TYPE_FLOAT:
           if (elementContentSize != VALID_FLOAT32_ELEMENT_SIZE_BYTES
               && elementContentSize != VALID_FLOAT64_ELEMENT_SIZE_BYTES) {
             throw new ParserException("Invalid float size: " + elementContentSize);
@@ -112,18 +119,18 @@ import java.util.Stack;
           output.floatElement(elementId, readFloat(input, (int) elementContentSize));
           elementState = ELEMENT_STATE_READ_ID;
           return true;
-        case TYPE_STRING:
+        case EbmlReaderOutput.TYPE_STRING:
           if (elementContentSize > Integer.MAX_VALUE) {
             throw new ParserException("String element size: " + elementContentSize);
           }
           output.stringElement(elementId, readString(input, (int) elementContentSize));
           elementState = ELEMENT_STATE_READ_ID;
           return true;
-        case TYPE_BINARY:
+        case EbmlReaderOutput.TYPE_BINARY:
           output.binaryElement(elementId, (int) elementContentSize, input);
           elementState = ELEMENT_STATE_READ_ID;
           return true;
-        case TYPE_UNKNOWN:
+        case EbmlReaderOutput.TYPE_UNKNOWN:
           input.skipFully((int) elementContentSize);
           elementState = ELEMENT_STATE_READ_ID;
           break;
@@ -202,10 +209,11 @@ import java.util.Stack;
   }
 
   /**
-   * Reads and returns a string of length {@code byteLength} from the {@link ExtractorInput}.
+   * Reads a string of length {@code byteLength} from the {@link ExtractorInput}. Zero padding is
+   * removed, so the returned string may be shorter than {@code byteLength}.
    *
    * @param input The {@link ExtractorInput} from which to read.
-   * @param byteLength The length of the float being read.
+   * @param byteLength The length of the string being read, including zero padding.
    * @return The read string value.
    * @throws IOException If an error occurs reading from the input.
    * @throws InterruptedException If the thread is interrupted.
@@ -217,7 +225,12 @@ import java.util.Stack;
     }
     byte[] stringBytes = new byte[byteLength];
     input.readFully(stringBytes, 0, byteLength);
-    return new String(stringBytes);
+    // Remove zero padding.
+    int trimmedLength = byteLength;
+    while (trimmedLength > 0 && stringBytes[trimmedLength - 1] == 0) {
+      trimmedLength--;
+    }
+    return new String(stringBytes, 0, trimmedLength);
   }
 
   /**

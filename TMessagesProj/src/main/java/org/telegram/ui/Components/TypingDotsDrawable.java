@@ -10,14 +10,17 @@ package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.PixelFormat;
 import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
 
 public class TypingDotsDrawable extends StatusDrawable {
 
+    private int currentAccount = UserConfig.selectedAccount;
     private boolean isChat = false;
     private float[] scales = new float[3];
     private float[] startTimes = new float[] {0, 150, 300};
@@ -97,7 +100,7 @@ public class TypingDotsDrawable extends StatusDrawable {
 
     private void checkUpdate() {
         if (started) {
-            if (!NotificationCenter.getInstance().isAnimationInProgress()) {
+            if (!NotificationCenter.getInstance(currentAccount).isAnimationInProgress()) {
                 update();
             } else {
                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -122,7 +125,7 @@ public class TypingDotsDrawable extends StatusDrawable {
 
     @Override
     public int getOpacity() {
-        return 0;
+        return PixelFormat.TRANSPARENT;
     }
 
     @Override

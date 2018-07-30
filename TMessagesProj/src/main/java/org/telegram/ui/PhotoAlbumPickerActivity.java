@@ -70,9 +70,11 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     private PickerBottomLayout pickerBottomLayout;
     private boolean sendPressed;
     private boolean singlePhoto;
+    private boolean allowSearchImages = true;
     private boolean allowGifs;
     private boolean allowCaption;
     private ChatActivity chatActivity;
+    private int maxSelectedPhotos = 100;
 
     private PhotoAlbumPickerActivityDelegate delegate;
 
@@ -88,17 +90,17 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     public boolean onFragmentCreate() {
         loading = true;
         MediaController.loadGalleryPhotosAlbums(classGuid);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.albumsDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.recentImagesDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.albumsDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.recentImagesDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.closeChats);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.albumsDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.recentImagesDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.albumsDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.recentImagesDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.closeChats);
         super.onFragmentDestroy();
     }
 
@@ -235,11 +237,11 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
     @SuppressWarnings("unchecked")
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.albumsDidLoaded) {
             int guid = (Integer) args[0];
             if (classGuid == guid) {
-                if (singlePhoto) {
+                if (singlePhoto || !allowSearchImages) {
                     albumsSorted = (ArrayList<MediaController.AlbumEntry>) args[2];
                 } else {
                     albumsSorted = (ArrayList<MediaController.AlbumEntry>) args[1];
@@ -275,6 +277,14 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         }
     }
 
+    public void setMaxSelectedPhotos(int value) {
+        maxSelectedPhotos = value;
+    }
+
+    public void setAllowSearchImages(boolean value) {
+        allowSearchImages = value;
+    }
+
     public void setDelegate(PhotoAlbumPickerActivityDelegate delegate) {
         this.delegate = delegate;
     }
@@ -304,6 +314,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 }
                 info.isVideo = photoEntry.isVideo;
                 info.caption = photoEntry.caption != null ? photoEntry.caption.toString() : null;
+                info.entities = photoEntry.entities;
                 info.masks = !photoEntry.stickers.isEmpty() ? new ArrayList<>(photoEntry.stickers) : null;
                 info.ttl = photoEntry.ttl;
             } else if (object instanceof MediaController.SearchImage) {
@@ -315,6 +326,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 }
 
                 info.caption = searchImage.caption != null ? searchImage.caption.toString() : null;
+                info.entities = searchImage.entities;
                 info.masks = !searchImage.stickers.isEmpty() ? new ArrayList<>(searchImage.stickers) : null;
                 info.ttl = searchImage.ttl;
 
@@ -342,10 +354,10 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         }
 
         if (webChange) {
-            MessagesStorage.getInstance().putWebRecent(recentWebImages);
+            MessagesStorage.getInstance(currentAccount).putWebRecent(recentWebImages);
         }
         if (gifChanged) {
-            MessagesStorage.getInstance().putWebRecent(recentGifImages);
+            MessagesStorage.getInstance(currentAccount).putWebRecent(recentGifImages);
         }
 
         delegate.didSelectPhotos(media);
@@ -429,6 +441,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 }
             });
         }
+        fragment.setMaxSelectedPhotos(maxSelectedPhotos);
         presentFragment(fragment);
     }
 
@@ -447,7 +460,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
         @Override
         public int getItemCount() {
-            if (singlePhoto) {
+            if (singlePhoto || !allowSearchImages) {
                 return albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0;
             }
             return 1 + (albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0);
@@ -491,7 +504,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 photoPickerAlbumsCell.setAlbumsCount(columnsCount);
                 for (int a = 0; a < columnsCount; a++) {
                     int index;
-                    if (singlePhoto) {
+                    if (singlePhoto || !allowSearchImages) {
                         index = position * columnsCount + a;
                     } else {
                         index = (position - 1) * columnsCount + a;
@@ -509,7 +522,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
         @Override
         public int getItemViewType(int i) {
-            if (singlePhoto) {
+            if (singlePhoto || !allowSearchImages) {
                 return 0;
             }
             if (i == 0) {

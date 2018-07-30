@@ -58,6 +58,11 @@ public abstract class SimpleSubtitleDecoder extends
   }
 
   @Override
+  protected final SubtitleDecoderException createUnexpectedDecodeException(Throwable error) {
+    return new SubtitleDecoderException("Unexpected decode error", error);
+  }
+
+  @Override
   protected final void releaseOutputBuffer(SubtitleOutputBuffer buffer) {
     super.releaseOutputBuffer(buffer);
   }

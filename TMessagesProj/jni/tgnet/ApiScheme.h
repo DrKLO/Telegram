@@ -1,9 +1,9 @@
 /*
- * This is the source code of tgnet library v. 1.0
+ * This is the source code of tgnet library v. 1.1
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2016.
+ * Copyright Nikolai Kudashov, 2015-2018.
  */
 
 #ifndef APISCHEME_H
@@ -20,7 +20,7 @@ class NativeByteBuffer;
 class Bool : public TLObject {
 
 public:
-    static Bool *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    static Bool *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
 };
 
 class TL_boolTrue : public Bool {
@@ -42,7 +42,7 @@ public:
 class TL_dcOption : public TLObject {
 
 public:
-    static const uint32_t constructor = 0x5d8c6cc;
+    static const uint32_t constructor = 0x18b7a10d;
 
     int32_t flags;
     bool ipv6;
@@ -53,9 +53,10 @@ public:
     int32_t id;
     std::string ip_address;
     int32_t port;
+    std::unique_ptr<ByteArray> secret;
 
-    static TL_dcOption *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
-    void readParams(NativeByteBuffer *stream, bool &error);
+    static TL_dcOption *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -67,8 +68,8 @@ public:
     int32_t dc_id;
     std::string public_key;
 
-    static TL_cdnPublicKey *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
-    void readParams(NativeByteBuffer *stream, bool &error);
+    static TL_cdnPublicKey *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -79,8 +80,8 @@ public:
 
     std::vector<std::unique_ptr<TL_cdnPublicKey>> public_keys;
 
-    static TL_cdnConfig *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
-    void readParams(NativeByteBuffer *stream, bool &error);
+    static TL_cdnConfig *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -90,27 +91,14 @@ public:
     static const uint32_t constructor = 0x52029342;
 
     bool isNeedLayer();
-    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, bool &error);
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_disabledFeature : public TLObject {
-
-public:
-    static const uint32_t constructor = 0xae636f24;
-
-    std::string feature;
-    std::string description;
-
-    static TL_disabledFeature *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
-    void readParams(NativeByteBuffer *stream, bool &error);
+    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
 class TL_config : public TLObject {
 
 public:
-    static const uint32_t constructor = 0x9c840964;
+    static const uint32_t constructor = 0x3213dbba;
 
     int32_t flags;
     int32_t date;
@@ -118,6 +106,7 @@ public:
     bool test_mode;
     int32_t this_dc;
     std::vector<std::unique_ptr<TL_dcOption>> dc_options;
+    std::string dc_txt_domain_name;
     int32_t chat_size_max;
     int32_t megagroup_size_max;
     int32_t forwarded_count_max;
@@ -127,11 +116,12 @@ public:
     int32_t online_cloud_timeout_ms;
     int32_t notify_cloud_delay_ms;
     int32_t notify_default_delay_ms;
-    int32_t chat_big_size;
     int32_t push_chat_period_ms;
     int32_t push_chat_limit;
     int32_t saved_gifs_limit;
     int32_t edit_time_limit;
+    int32_t revoke_time_limit;
+    int32_t revoke_pm_time_limit;
     int32_t rating_e_decay;
     int32_t stickers_recent_limit;
     int32_t stickers_faved_limit;
@@ -143,12 +133,19 @@ public:
     int32_t call_connect_timeout_ms;
     int32_t call_packet_timeout_ms;
     std::string me_url_prefix;
+    std::string autoupdate_url_prefix;
+    std::string gif_search_username;
+    std::string venue_search_username;
+    std::string img_search_username;
+    std::string static_maps_provider;
+    int32_t caption_length_max;
+    int32_t message_length_max;
+    int32_t webfile_dc_id;
     std::string suggested_lang_code;
     int32_t lang_pack_version;
-    std::vector<std::unique_ptr<TL_disabledFeature>> disabled_features;
 
-    static TL_config *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
-    void readParams(NativeByteBuffer *stream, bool &error);
+    static TL_config *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -158,7 +155,7 @@ public:
     static const uint32_t constructor = 0xc4f9186b;
 
     bool isNeedLayer();
-    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -171,7 +168,7 @@ public:
     std::string token;
 
     bool isNeedLayer();
-    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -180,7 +177,7 @@ class UserStatus : public TLObject {
 public:
     int32_t expires;
 
-    static UserStatus *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    static UserStatus *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
 };
 
 class TL_userStatusOffline : public UserStatus {
@@ -188,7 +185,7 @@ class TL_userStatusOffline : public UserStatus {
 public:
     static const uint32_t constructor = 0x8c703f;
 
-    void readParams(NativeByteBuffer *stream, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -221,7 +218,7 @@ class TL_userStatusOnline : public UserStatus {
 public:
     static const uint32_t constructor = 0xedb93949;
 
-    void readParams(NativeByteBuffer *stream, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -243,7 +240,7 @@ public:
     std::unique_ptr<ByteArray> key;
     std::unique_ptr<ByteArray> iv;
 
-    static FileLocation *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    static FileLocation *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
 };
 
 class TL_fileLocation : public FileLocation {
@@ -251,7 +248,7 @@ class TL_fileLocation : public FileLocation {
 public:
     static const uint32_t constructor = 0x53d69076;
 
-    void readParams(NativeByteBuffer *stream, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -260,7 +257,7 @@ class TL_fileEncryptedLocation : public FileLocation {
 public:
     static const uint32_t constructor = 0x55555554;
 
-    void readParams(NativeByteBuffer *stream, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -269,7 +266,7 @@ class TL_fileLocationUnavailable : public FileLocation {
 public:
     static const uint32_t constructor = 0x7c596b46;
 
-    void readParams(NativeByteBuffer *stream, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -280,7 +277,7 @@ public:
     std::unique_ptr<FileLocation> photo_small;
     std::unique_ptr<FileLocation> photo_big;
 
-    static UserProfilePhoto *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    static UserProfilePhoto *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
 };
 
 class TL_userProfilePhotoEmpty : public UserProfilePhoto {
@@ -296,7 +293,7 @@ class TL_userProfilePhoto : public UserProfilePhoto {
 public:
     static const uint32_t constructor = 0xd559d8c8;
 
-    void readParams(NativeByteBuffer *stream, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -317,7 +314,7 @@ public:
     std::string bot_inline_placeholder;
     std::string lang_code;
 
-    static User *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    static User *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
 };
 
 class TL_userEmpty : public User {
@@ -325,7 +322,7 @@ class TL_userEmpty : public User {
 public:
     static const uint32_t constructor = 0x200250ba;
 
-    void readParams(NativeByteBuffer *stream, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -334,7 +331,7 @@ class TL_user : public User {
 public:
     static const uint32_t constructor = 0x2e13f4c3;
 
-    void readParams(NativeByteBuffer *stream, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -347,8 +344,8 @@ public:
     int32_t tmp_sessions;
     std::unique_ptr<User> user;
 
-    static TL_auth_authorization *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
-    void readParams(NativeByteBuffer *stream, bool &error);
+    static TL_auth_authorization *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
 };
 
 class TL_auth_exportedAuthorization : public TLObject {
@@ -359,8 +356,8 @@ public:
     int32_t id;
     std::unique_ptr<ByteArray> bytes;
 
-    static TL_auth_exportedAuthorization *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
-    void readParams(NativeByteBuffer *stream, bool &error);
+    static TL_auth_exportedAuthorization *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
 };
 
 class TL_auth_exportAuthorization : public TLObject {
@@ -371,7 +368,7 @@ public:
     int32_t dc_id;
 
     bool isNeedLayer();
-    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -384,7 +381,7 @@ public:
     std::unique_ptr<ByteArray> bytes;
 
     bool isNeedLayer();
-    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -396,7 +393,7 @@ public:
     int32_t send_call_timeout;
     bool is_password;
 
-    static auth_SentCode *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    static auth_SentCode *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
 };
 
 class TL_auth_sentAppCode : public auth_SentCode {
@@ -404,7 +401,7 @@ class TL_auth_sentAppCode : public auth_SentCode {
 public:
     static const uint32_t constructor = 0xe325edcf;
 
-    void readParams(NativeByteBuffer *stream, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -413,7 +410,7 @@ class TL_auth_sentCode : public auth_SentCode {
 public:
     static const uint32_t constructor = 0xefed51d9;
 
-    void readParams(NativeByteBuffer *stream, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -428,7 +425,7 @@ public:
     std::string api_hash;
     std::string lang_code;
 
-    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -444,7 +441,7 @@ class storage_FileType : public TLObject {
 
 public:
 
-    static storage_FileType *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    static storage_FileType *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
 };
 
 class TL_storage_fileUnknown : public storage_FileType {
@@ -537,7 +534,7 @@ public:
     int32_t local_id;
     int64_t secret;
 
-    static InputFileLocation *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    static InputFileLocation *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
 };
 
 class TL_inputDocumentFileLocation : public InputFileLocation {
@@ -545,7 +542,7 @@ class TL_inputDocumentFileLocation : public InputFileLocation {
 public:
     static const uint32_t constructor = 0x430f0724;
 
-    void readParams(NativeByteBuffer *stream, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -554,7 +551,7 @@ class TL_inputFileLocation : public InputFileLocation {
 public:
     static const uint32_t constructor = 0x14637196;
 
-    void readParams(NativeByteBuffer *stream, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -563,7 +560,7 @@ class TL_inputEncryptedFileLocation : public InputFileLocation {
 public:
     static const uint32_t constructor = 0xf5235d55;
 
-    void readParams(NativeByteBuffer *stream, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -577,7 +574,7 @@ public:
     std::unique_ptr<ByteArray> bytes;
 
     bool isNeedLayer();
-    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 
@@ -591,8 +588,8 @@ public:
     NativeByteBuffer *bytes = nullptr;
 
     ~TL_upload_file();
-    static TL_upload_file *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
-    void readParams(NativeByteBuffer *stream, bool &error);
+    static TL_upload_file *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
 };
 
 class TL_upload_getFile : public TLObject {
@@ -605,7 +602,7 @@ public:
     int32_t limit;
 
     bool isNeedLayer();
-    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, bool &error);
+    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 

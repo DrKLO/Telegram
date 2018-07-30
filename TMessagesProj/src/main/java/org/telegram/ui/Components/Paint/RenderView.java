@@ -15,12 +15,12 @@ import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.ui.Components.Size;
 
-import java.util.concurrent.Semaphore;
-
+import java.util.concurrent.CountDownLatch;
 
 public class RenderView extends TextureView {
 
@@ -298,14 +298,18 @@ public class RenderView extends TextureView {
 
             eglDisplay = egl10.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
             if (eglDisplay == EGL10.EGL_NO_DISPLAY) {
-                FileLog.e("eglGetDisplay failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglGetDisplay failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
 
             int[] version = new int[2];
             if (!egl10.eglInitialize(eglDisplay, version)) {
-                FileLog.e("eglInitialize failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglInitialize failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
@@ -323,13 +327,17 @@ public class RenderView extends TextureView {
                     EGL10.EGL_NONE
             };
             if (!egl10.eglChooseConfig(eglDisplay, configSpec, configs, 1, configsCount)) {
-                FileLog.e("eglChooseConfig failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglChooseConfig failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             } else if (configsCount[0] > 0) {
                 eglConfig = configs[0];
             } else {
-                FileLog.e("eglConfig not initialized");
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglConfig not initialized");
+                }
                 finish();
                 return false;
             }
@@ -337,7 +345,9 @@ public class RenderView extends TextureView {
             int[] attrib_list = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE};
             eglContext = egl10.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
             if (eglContext == null) {
-                FileLog.e("eglCreateContext failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglCreateContext failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
@@ -350,12 +360,16 @@ public class RenderView extends TextureView {
             }
 
             if (eglSurface == null || eglSurface == EGL10.EGL_NO_SURFACE) {
-                FileLog.e("createWindowSurface failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("createWindowSurface failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
             if (!egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-                FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
@@ -505,7 +519,7 @@ public class RenderView extends TextureView {
             if (!initialized) {
                 return null;
             }
-            final Semaphore semaphore = new Semaphore(0);
+            final CountDownLatch countDownLatch = new CountDownLatch(1);
             final Bitmap object[] = new Bitmap[1];
             try {
                 postRunnable(new Runnable() {
@@ -513,10 +527,10 @@ public class RenderView extends TextureView {
                     public void run() {
                         Painting.PaintingData data = painting.getPaintingData(new RectF(0, 0, painting.getSize().width, painting.getSize().height), false);
                         object[0] = data.bitmap;
-                        semaphore.release();
+                        countDownLatch.countDown();
                     }
                 });
-                semaphore.acquire();
+                countDownLatch.await();
             } catch (Exception e) {
                 FileLog.e(e);
             }

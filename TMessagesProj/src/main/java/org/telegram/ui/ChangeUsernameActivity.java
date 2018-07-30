@@ -8,7 +8,6 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -136,9 +135,9 @@ public class ChangeUsernameActivity extends BaseFragment {
         ActionBarMenu menu = actionBar.createMenu();
         doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-        TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
+        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
         if (user == null) {
-            user = UserConfig.getCurrentUser();
+            user = UserConfig.getInstance(currentAccount).getCurrentUser();
         }
 
         fragmentView = new LinearLayout(context);
@@ -194,7 +193,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             @Override
             public void afterTextChanged(Editable editable) {
                 if (firstNameField.length() > 0) {
-                    String url = "https://" + MessagesController.getInstance().linkPrefix + "/" + firstNameField.getText();
+                    String url = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/" + firstNameField.getText();
                     String text = LocaleController.formatString("UsernameHelpLink", R.string.UsernameHelpLink, url);
                     int index = text.indexOf(url);
                     SpannableStringBuilder textSpan = new SpannableStringBuilder(text);
@@ -240,7 +239,7 @@ public class ChangeUsernameActivity extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             firstNameField.requestFocus();
@@ -262,7 +261,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             checkRunnable = null;
             lastCheckName = null;
             if (checkReqId != 0) {
-                ConnectionsManager.getInstance().cancelRequest(checkReqId, true);
+                ConnectionsManager.getInstance(currentAccount).cancelRequest(checkReqId, true);
             }
         }
         lastNameAvailable = false;
@@ -319,7 +318,7 @@ public class ChangeUsernameActivity extends BaseFragment {
         }
 
         if (!alert) {
-            String currentName = UserConfig.getCurrentUser().username;
+            String currentName = UserConfig.getInstance(currentAccount).getCurrentUser().username;
             if (currentName == null) {
                 currentName = "";
             }
@@ -339,7 +338,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 public void run() {
                     TLRPC.TL_account_checkUsername req = new TLRPC.TL_account_checkUsername();
                     req.username = name;
-                    checkReqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                    checkReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
                         @Override
                         public void run(final TLObject response, final TLRPC.TL_error error) {
                             AndroidUtilities.runOnUIThread(new Runnable() {
@@ -374,7 +373,7 @@ public class ChangeUsernameActivity extends BaseFragment {
         if (!checkUserName(firstNameField.getText().toString(), true)) {
             return;
         }
-        TLRPC.User user = UserConfig.getCurrentUser();
+        TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
         if (getParentActivity() == null || user == null) {
             return;
         }
@@ -396,8 +395,8 @@ public class ChangeUsernameActivity extends BaseFragment {
         final TLRPC.TL_account_updateUsername req = new TLRPC.TL_account_updateUsername();
         req.username = newName;
 
-        NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
-        final int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
+        final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(TLObject response, final TLRPC.TL_error error) {
                 if (error == null) {
@@ -412,9 +411,9 @@ public class ChangeUsernameActivity extends BaseFragment {
                             }
                             ArrayList<TLRPC.User> users = new ArrayList<>();
                             users.add(user);
-                            MessagesController.getInstance().putUsers(users, false);
-                            MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
-                            UserConfig.saveConfig(true);
+                            MessagesController.getInstance(currentAccount).putUsers(users, false);
+                            MessagesStorage.getInstance(currentAccount).putUsersAndChats(users, null, false, true);
+                            UserConfig.getInstance(currentAccount).saveConfig(true);
                             finishFragment();
                         }
                     });
@@ -427,18 +426,18 @@ public class ChangeUsernameActivity extends BaseFragment {
                             } catch (Exception e) {
                                 FileLog.e(e);
                             }
-                            AlertsCreator.processError(error, ChangeUsernameActivity.this, req);
+                            AlertsCreator.processError(currentAccount, error, ChangeUsernameActivity.this, req);
                         }
                     });
                 }
             }
         }, ConnectionsManager.RequestFlagFailOnServerErrors);
-        ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
+        ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
 
         progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                ConnectionsManager.getInstance().cancelRequest(reqId, true);
+                ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
                 try {
                     dialog.dismiss();
                 } catch (Exception e) {

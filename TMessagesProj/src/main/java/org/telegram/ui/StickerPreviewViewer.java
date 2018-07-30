@@ -33,13 +33,14 @@ import android.widget.AdapterView;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
-import org.telegram.messenger.query.StickersQuery;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.Cells.ContextLinkCell;
@@ -65,8 +66,9 @@ public class StickerPreviewViewer {
     }
 
     public interface StickerPreviewViewerDelegate {
-        void sentSticker(TLRPC.Document sticker);
+        void sendSticker(TLRPC.Document sticker);
         void openSet(TLRPC.InputStickerSet set);
+        boolean needSend();
     }
 
     private static TextPaint textPaint;
@@ -77,6 +79,8 @@ public class StickerPreviewViewer {
     private Runnable openStickerPreviewRunnable;
     private Dialog visibleDialog;
     private StickerPreviewViewerDelegate delegate;
+
+    private int currentAccount;
 
     private ColorDrawable backgroundDrawable = new ColorDrawable(0x71000000);
     private Activity parentActivity;
@@ -95,20 +99,22 @@ public class StickerPreviewViewer {
             if (parentActivity == null || currentSet == null) {
                 return;
             }
-            final boolean inFavs = StickersQuery.isStickerInFavorites(currentSticker);
+            final boolean inFavs = DataQuery.getInstance(currentAccount).isStickerInFavorites(currentSticker);
             BottomSheet.Builder builder = new BottomSheet.Builder(parentActivity);
             ArrayList<CharSequence> items = new ArrayList<>();
             final ArrayList<Integer> actions = new ArrayList<>();
             ArrayList<Integer> icons = new ArrayList<>();
             if (delegate != null) {
-                items.add(LocaleController.getString("SendStickerPreview", R.string.SendStickerPreview));
-                icons.add(R.drawable.stickers_send);
-                actions.add(0);
+                if (delegate.needSend()) {
+                    items.add(LocaleController.getString("SendStickerPreview", R.string.SendStickerPreview));
+                    icons.add(R.drawable.stickers_send);
+                    actions.add(0);
+                }
                 items.add(LocaleController.formatString("ViewPackPreview", R.string.ViewPackPreview));
                 icons.add(R.drawable.stickers_pack);
                 actions.add(1);
             }
-            if (!MessageObject.isMaskDocument(currentSticker) && (inFavs || StickersQuery.canAddStickerToFavorites())) {
+            if (!MessageObject.isMaskDocument(currentSticker) && (inFavs || DataQuery.getInstance(currentAccount).canAddStickerToFavorites())) {
                 items.add(inFavs ? LocaleController.getString("DeleteFromFavorites", R.string.DeleteFromFavorites) : LocaleController.getString("AddToFavorites", R.string.AddToFavorites));
                 icons.add(inFavs ? R.drawable.stickers_unfavorite : R.drawable.stickers_favorite);
                 actions.add(2);
@@ -128,14 +134,14 @@ public class StickerPreviewViewer {
                     }
                     if (actions.get(which) == 0) {
                         if (delegate != null) {
-                            delegate.sentSticker(currentSticker);
+                            delegate.sendSticker(currentSticker);
                         }
                     } else if (actions.get(which) == 1) {
                         if (delegate != null) {
                             delegate.openSet(currentSet);
                         }
                     } else if (actions.get(which) == 2) {
-                        StickersQuery.addRecentSticker(StickersQuery.TYPE_FAVE, currentSticker, (int) (System.currentTimeMillis() / 1000), inFavs);
+                        DataQuery.getInstance(currentAccount).addRecentSticker(DataQuery.TYPE_FAVE, currentSticker, (int) (System.currentTimeMillis() / 1000), inFavs);
                     }
                 }
             });
@@ -168,6 +174,10 @@ public class StickerPreviewViewer {
             }
         }
         return localInstance;
+    }
+
+    public static boolean hasInstance() {
+        return Instance != null;
     }
 
     public void reset() {
@@ -378,6 +388,8 @@ public class StickerPreviewViewer {
     }
 
     public void setParentActivity(Activity activity) {
+        currentAccount = UserConfig.selectedAccount;
+        centerImage.setCurrentAccount(currentAccount);
         if (parentActivity == activity) {
             return;
         }
@@ -455,7 +467,7 @@ public class StickerPreviewViewer {
             AndroidUtilities.runOnUIThread(showSheetRunnable, 1300);
         }
         currentSet = newSet;
-        centerImage.setImage(sticker, null, sticker.thumb.location, null, "webp", 1);
+        centerImage.setImage(sticker, null, sticker != null && sticker.thumb != null ? sticker.thumb.location : null, null, "webp", 1);
         stickerEmojiLayout = null;
         for (int a = 0; a < sticker.attributes.size(); a++) {
             TLRPC.DocumentAttribute attribute = sticker.attributes.get(a);

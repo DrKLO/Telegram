@@ -8,15 +8,15 @@
 
 package org.telegram.tgnet;
 
+import android.util.SparseArray;
+
 import org.telegram.messenger.FileLog;
 
-import java.util.HashMap;
-
 public class TLClassStore {
-    private HashMap<Integer, Class> classStore;
+    private SparseArray<Class> classStore;
 
     public TLClassStore() {
-        classStore = new HashMap<>();
+        classStore = new SparseArray<>();
 
         classStore.put(TLRPC.TL_error.constructor, TLRPC.TL_error.class);
         classStore.put(TLRPC.TL_decryptedMessageService.constructor, TLRPC.TL_decryptedMessageService.class);

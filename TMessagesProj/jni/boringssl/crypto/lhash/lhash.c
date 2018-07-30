@@ -62,22 +62,42 @@
 
 #include <openssl/mem.h>
 
-/* kMinNumBuckets is the minimum size of the buckets array in an |_LHASH|. */
+#include "../internal.h"
+
+
+// kMinNumBuckets is the minimum size of the buckets array in an |_LHASH|.
 static const size_t kMinNumBuckets = 16;
 
-/* kMaxAverageChainLength contains the maximum, average chain length. When the
- * average chain length exceeds this value, the hash table will be resized. */
+// kMaxAverageChainLength contains the maximum, average chain length. When the
+// average chain length exceeds this value, the hash table will be resized.
 static const size_t kMaxAverageChainLength = 2;
 static const size_t kMinAverageChainLength = 1;
 
-_LHASH *lh_new(lhash_hash_func hash, lhash_cmp_func comp) {
-  _LHASH *ret;
+struct lhash_st {
+  // num_items contains the total number of items in the hash table.
+  size_t num_items;
+  // buckets is an array of |num_buckets| pointers. Each points to the head of
+  // a chain of LHASH_ITEM objects that have the same hash value, mod
+  // |num_buckets|.
+  LHASH_ITEM **buckets;
+  // num_buckets contains the length of |buckets|. This value is always >=
+  // kMinNumBuckets.
+  size_t num_buckets;
+  // callback_depth contains the current depth of |lh_doall| or |lh_doall_arg|
+  // calls. If non-zero then this suppresses resizing of the |buckets| array,
+  // which would otherwise disrupt the iteration.
+  unsigned callback_depth;
 
-  ret = OPENSSL_malloc(sizeof(_LHASH));
+  lhash_cmp_func comp;
+  lhash_hash_func hash;
+};
+
+_LHASH *lh_new(lhash_hash_func hash, lhash_cmp_func comp) {
+  _LHASH *ret = OPENSSL_malloc(sizeof(_LHASH));
   if (ret == NULL) {
     return NULL;
   }
-  memset(ret, 0, sizeof(_LHASH));
+  OPENSSL_memset(ret, 0, sizeof(_LHASH));
 
   ret->num_buckets = kMinNumBuckets;
   ret->buckets = OPENSSL_malloc(sizeof(LHASH_ITEM *) * ret->num_buckets);
@@ -85,30 +105,21 @@ _LHASH *lh_new(lhash_hash_func hash, lhash_cmp_func comp) {
     OPENSSL_free(ret);
     return NULL;
   }
-  memset(ret->buckets, 0, sizeof(LHASH_ITEM *) * ret->num_buckets);
+  OPENSSL_memset(ret->buckets, 0, sizeof(LHASH_ITEM *) * ret->num_buckets);
 
   ret->comp = comp;
-  if (ret->comp == NULL) {
-    ret->comp = (lhash_cmp_func) strcmp;
-  }
   ret->hash = hash;
-  if (ret->hash == NULL) {
-    ret->hash = (lhash_hash_func) lh_strhash;
-  }
-
   return ret;
 }
 
 void lh_free(_LHASH *lh) {
-  size_t i;
-  LHASH_ITEM *n, *next;
-
   if (lh == NULL) {
     return;
   }
 
-  for (i = 0; i < lh->num_buckets; i++) {
-    for (n = lh->buckets[i]; n != NULL; n = next) {
+  for (size_t i = 0; i < lh->num_buckets; i++) {
+    LHASH_ITEM *next;
+    for (LHASH_ITEM *n = lh->buckets[i]; n != NULL; n = next) {
       next = n->next;
       OPENSSL_free(n);
     }
@@ -120,13 +131,13 @@ void lh_free(_LHASH *lh) {
 
 size_t lh_num_items(const _LHASH *lh) { return lh->num_items; }
 
-/* get_next_ptr_and_hash returns a pointer to the pointer that points to the
- * item equal to |data|. In other words, it searches for an item equal to |data|
- * and, if it's at the start of a chain, then it returns a pointer to an
- * element of |lh->buckets|, otherwise it returns a pointer to the |next|
- * element of the previous item in the chain. If an element equal to |data| is
- * not found, it returns a pointer that points to a NULL pointer. If |out_hash|
- * is not NULL, then it also puts the hash value of |data| in |*out_hash|. */
+// get_next_ptr_and_hash returns a pointer to the pointer that points to the
+// item equal to |data|. In other words, it searches for an item equal to |data|
+// and, if it's at the start of a chain, then it returns a pointer to an
+// element of |lh->buckets|, otherwise it returns a pointer to the |next|
+// element of the previous item in the chain. If an element equal to |data| is
+// not found, it returns a pointer that points to a NULL pointer. If |out_hash|
+// is not NULL, then it also puts the hash value of |data| in |*out_hash|.
 static LHASH_ITEM **get_next_ptr_and_hash(const _LHASH *lh, uint32_t *out_hash,
                                           const void *data) {
   const uint32_t hash = lh->hash(data);
@@ -159,9 +170,9 @@ void *lh_retrieve(const _LHASH *lh, const void *data) {
   return (*next_ptr)->data;
 }
 
-/* lh_rebucket allocates a new array of |new_num_buckets| pointers and
- * redistributes the existing items into it before making it |lh->buckets| and
- * freeing the old array. */
+// lh_rebucket allocates a new array of |new_num_buckets| pointers and
+// redistributes the existing items into it before making it |lh->buckets| and
+// freeing the old array.
 static void lh_rebucket(_LHASH *lh, const size_t new_num_buckets) {
   LHASH_ITEM **new_buckets, *cur, *next;
   size_t i, alloc_size;
@@ -175,7 +186,7 @@ static void lh_rebucket(_LHASH *lh, const size_t new_num_buckets) {
   if (new_buckets == NULL) {
     return;
   }
-  memset(new_buckets, 0, alloc_size);
+  OPENSSL_memset(new_buckets, 0, alloc_size);
 
   for (i = 0; i < lh->num_buckets; i++) {
     for (cur = lh->buckets[i]; cur != NULL; cur = next) {
@@ -192,12 +203,12 @@ static void lh_rebucket(_LHASH *lh, const size_t new_num_buckets) {
   lh->buckets = new_buckets;
 }
 
-/* lh_maybe_resize resizes the |buckets| array if needed. */
+// lh_maybe_resize resizes the |buckets| array if needed.
 static void lh_maybe_resize(_LHASH *lh) {
   size_t avg_chain_length;
 
   if (lh->callback_depth > 0) {
-    /* Don't resize the hash if we are currently iterating over it. */
+    // Don't resize the hash if we are currently iterating over it.
     return;
   }
 
@@ -231,14 +242,14 @@ int lh_insert(_LHASH *lh, void **old_data, void *data) {
 
 
   if (*next_ptr != NULL) {
-    /* An element equal to |data| already exists in the hash table. It will be
-     * replaced. */
+    // An element equal to |data| already exists in the hash table. It will be
+    // replaced.
     *old_data = (*next_ptr)->data;
     (*next_ptr)->data = data;
     return 1;
   }
 
-  /* An element equal to |data| doesn't exist in the hash table yet. */
+  // An element equal to |data| doesn't exist in the hash table yet.
   item = OPENSSL_malloc(sizeof(LHASH_ITEM));
   if (item == NULL) {
     return 0;
@@ -260,7 +271,7 @@ void *lh_delete(_LHASH *lh, const void *data) {
   next_ptr = get_next_ptr_and_hash(lh, NULL, data);
 
   if (*next_ptr == NULL) {
-    /* No such element. */
+    // No such element.
     return NULL;
   }
 
@@ -277,20 +288,18 @@ void *lh_delete(_LHASH *lh, const void *data) {
 
 static void lh_doall_internal(_LHASH *lh, void (*no_arg_func)(void *),
                               void (*arg_func)(void *, void *), void *arg) {
-  size_t i;
-  LHASH_ITEM *cur, *next;
-
   if (lh == NULL) {
     return;
   }
 
   if (lh->callback_depth < UINT_MAX) {
-    /* |callback_depth| is a saturating counter. */
+    // |callback_depth| is a saturating counter.
     lh->callback_depth++;
   }
 
-  for (i = 0; i < lh->num_buckets; i++) {
-    for (cur = lh->buckets[i]; cur != NULL; cur = next) {
+  for (size_t i = 0; i < lh->num_buckets; i++) {
+    LHASH_ITEM *next;
+    for (LHASH_ITEM *cur = lh->buckets[i]; cur != NULL; cur = next) {
       next = cur->next;
       if (arg_func) {
         arg_func(cur->data, arg);
@@ -304,9 +313,9 @@ static void lh_doall_internal(_LHASH *lh, void (*no_arg_func)(void *),
     lh->callback_depth--;
   }
 
-  /* The callback may have added or removed elements and the non-zero value of
-   * |callback_depth| will have suppressed any resizing. Thus any needed
-   * resizing is done here. */
+  // The callback may have added or removed elements and the non-zero value of
+  // |callback_depth| will have suppressed any resizing. Thus any needed
+  // resizing is done here.
   lh_maybe_resize(lh);
 }
 
@@ -319,28 +328,9 @@ void lh_doall_arg(_LHASH *lh, void (*func)(void *, void *), void *arg) {
 }
 
 uint32_t lh_strhash(const char *c) {
-  /* The following hash seems to work very well on normal text strings
-   * no collisions on /usr/dict/words and it distributes on %2^n quite
-   * well, not as good as MD5, but still good. */
-  unsigned long ret = 0;
-  long n;
-  unsigned long v;
-  int r;
-
-  if ((c == NULL) || (*c == '\0')) {
-    return (ret);
+  if (c == NULL) {
+    return 0;
   }
 
-  n = 0x100;
-  while (*c) {
-    v = n | (*c);
-    n += 0x100;
-    r = (int)((v >> 2) ^ v) & 0x0f;
-    ret = (ret << r) | (ret >> (32 - r));
-    ret &= 0xFFFFFFFFL;
-    ret ^= v * v;
-    c++;
-  }
-
-  return ((ret >> 16) ^ ret);
+  return OPENSSL_hash32(c, strlen(c));
 }

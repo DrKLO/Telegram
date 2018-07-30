@@ -15,8 +15,10 @@
  */
 package org.telegram.messenger.exoplayer2.extractor.mp3;
 
+import android.util.Log;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.extractor.MpegAudioHeader;
+import org.telegram.messenger.exoplayer2.extractor.SeekPoint;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
 import org.telegram.messenger.exoplayer2.util.Util;
 
@@ -25,21 +27,23 @@ import org.telegram.messenger.exoplayer2.util.Util;
  */
 /* package */ final class VbriSeeker implements Mp3Extractor.Seeker {
 
+  private static final String TAG = "VbriSeeker";
+
   /**
    * Returns a {@link VbriSeeker} for seeking in the stream, if required information is present.
    * Returns {@code null} if not. On returning, {@code frame}'s position is not specified so the
    * caller should reset it.
    *
+   * @param inputLength The length of the stream in bytes, or {@link C#LENGTH_UNSET} if unknown.
+   * @param position The position of the start of this frame in the stream.
    * @param mpegAudioHeader The MPEG audio header associated with the frame.
    * @param frame The data in this audio frame, with its position set to immediately after the
    *     'VBRI' tag.
-   * @param position The position (byte offset) of the start of this frame in the stream.
-   * @param inputLength The length of the stream in bytes.
    * @return A {@link VbriSeeker} for seeking in the stream, or {@code null} if the required
    *     information is not present.
    */
-  public static VbriSeeker create(MpegAudioHeader mpegAudioHeader, ParsableByteArray frame,
-      long position, long inputLength) {
+  public static VbriSeeker create(long inputLength, long position, MpegAudioHeader mpegAudioHeader,
+      ParsableByteArray frame) {
     frame.skipBytes(10);
     int numFrames = frame.readInt();
     if (numFrames <= 0) {
@@ -53,15 +57,15 @@ import org.telegram.messenger.exoplayer2.util.Util;
     int entrySize = frame.readUnsignedShort();
     frame.skipBytes(2);
 
-    // Skip the frame containing the VBRI header.
-    position += mpegAudioHeader.frameSize;
-
+    long minPosition = position + mpegAudioHeader.frameSize;
     // Read table of contents entries.
-    long[] timesUs = new long[entryCount + 1];
-    long[] positions = new long[entryCount + 1];
-    timesUs[0] = 0L;
-    positions[0] = position;
-    for (int index = 1; index < timesUs.length; index++) {
+    long[] timesUs = new long[entryCount];
+    long[] positions = new long[entryCount];
+    for (int index = 0; index < entryCount; index++) {
+      timesUs[index] = (index * durationUs) / entryCount;
+      // Ensure positions do not fall within the frame containing the VBRI header. This constraint
+      // will normally only apply to the first entry in the table.
+      positions[index] = Math.max(position, minPosition);
       int segmentSize;
       switch (entrySize) {
         case 1:
@@ -80,9 +84,9 @@ import org.telegram.messenger.exoplayer2.util.Util;
           return null;
       }
       position += segmentSize * scale;
-      timesUs[index] = index * durationUs / entryCount;
-      positions[index] =
-          inputLength == C.LENGTH_UNSET ? position : Math.min(inputLength, position);
+    }
+    if (inputLength != C.LENGTH_UNSET && inputLength != position) {
+      Log.w(TAG, "VBRI data size mismatch: " + inputLength + ", " + position);
     }
     return new VbriSeeker(timesUs, positions, durationUs);
   }
@@ -103,8 +107,15 @@ import org.telegram.messenger.exoplayer2.util.Util;
   }
 
   @Override
-  public long getPosition(long timeUs) {
-    return positions[Util.binarySearchFloor(timesUs, timeUs, true, true)];
+  public SeekPoints getSeekPoints(long timeUs) {
+    int tableIndex = Util.binarySearchFloor(timesUs, timeUs, true, true);
+    SeekPoint seekPoint = new SeekPoint(timesUs[tableIndex], positions[tableIndex]);
+    if (seekPoint.timeUs >= timeUs || tableIndex == timesUs.length - 1) {
+      return new SeekPoints(seekPoint);
+    } else {
+      SeekPoint nextSeekPoint = new SeekPoint(timesUs[tableIndex + 1], positions[tableIndex + 1]);
+      return new SeekPoints(seekPoint, nextSeekPoint);
+    }
   }
 
   @Override

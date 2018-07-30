@@ -11,6 +11,7 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.view.MotionEvent;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -21,8 +22,7 @@ public class SeekBar {
         void onSeekBarDrag(float progress);
     }
 
-    private static Paint innerPaint;
-    private static Paint outerPaint;
+    private static Paint paint;
     private static int thumbWidth;
     private int thumbX = 0;
     private int thumbDX = 0;
@@ -30,15 +30,19 @@ public class SeekBar {
     private int width;
     private int height;
     private SeekBarDelegate delegate;
-    private int innerColor;
-    private int outerColor;
-    private int selectedColor;
+    private int backgroundColor;
+    private int cacheColor;
+    private int circleColor;
+    private int progressColor;
+    private int backgroundSelectedColor;
+    private RectF rect = new RectF();
+    private int lineHeight = AndroidUtilities.dp(2);
     private boolean selected;
+    private float bufferedProgress;
 
     public SeekBar(Context context) {
-        if (innerPaint == null) {
-            innerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        if (paint == null) {
+            paint = new Paint(Paint.ANTI_ALIAS_FLAG);
             thumbWidth = AndroidUtilities.dp(24);
         }
     }
@@ -77,10 +81,12 @@ public class SeekBar {
         return false;
     }
 
-    public void setColors(int inner, int outer, int selected) {
-        innerColor = inner;
-        outerColor = outer;
-        selectedColor = selected;
+    public void setColors(int background, int cache, int progress, int circle, int selected) {
+        backgroundColor = background;
+        cacheColor = cache;
+        circleColor = circle;
+        progressColor = progress;
+        backgroundSelectedColor = selected;
     }
 
     public void setProgress(float progress) {
@@ -90,6 +96,10 @@ public class SeekBar {
         } else if (thumbX > width - thumbWidth) {
             thumbX = width - thumbWidth;
         }
+    }
+
+    public void setBufferedProgress(float value) {
+        bufferedProgress = value;
     }
 
     public float getProgress() {
@@ -109,12 +119,23 @@ public class SeekBar {
         height = h;
     }
 
-    public void draw(Canvas canvas) {
-        innerPaint.setColor(selected ? selectedColor : innerColor);
-        outerPaint.setColor(outerColor);
+    public void setLineHeight(int value) {
+        lineHeight = value;
+    }
 
-        canvas.drawRect(thumbWidth / 2, height / 2 - AndroidUtilities.dp(1), width - thumbWidth / 2, height / 2 + AndroidUtilities.dp(1), innerPaint);
-        canvas.drawRect(thumbWidth / 2, height / 2 - AndroidUtilities.dp(1), thumbWidth / 2 + thumbX, height / 2 + AndroidUtilities.dp(1), outerPaint);
-        canvas.drawCircle(thumbX + thumbWidth / 2, height / 2, AndroidUtilities.dp(pressed ? 8 : 6), outerPaint);
+    public void draw(Canvas canvas) {
+        rect.set(thumbWidth / 2, height / 2 - lineHeight / 2, width - thumbWidth / 2, height / 2 + lineHeight / 2);
+        paint.setColor(selected ? backgroundSelectedColor : backgroundColor);
+        canvas.drawRoundRect(rect, thumbWidth / 2, thumbWidth / 2, paint);
+        if (bufferedProgress > 0) {
+            paint.setColor(selected ? backgroundSelectedColor : cacheColor);
+            rect.set(thumbWidth / 2, height / 2 - lineHeight / 2, thumbWidth / 2 + bufferedProgress * (width - thumbWidth), height / 2 + lineHeight / 2);
+            canvas.drawRoundRect(rect, thumbWidth / 2, thumbWidth / 2, paint);
+        }
+        rect.set(thumbWidth / 2, height / 2 - lineHeight / 2, thumbWidth / 2 + thumbX, height / 2 + lineHeight / 2);
+        paint.setColor(progressColor);
+        canvas.drawRoundRect(rect, thumbWidth / 2, thumbWidth / 2, paint);
+        paint.setColor(circleColor);
+        canvas.drawCircle(thumbX + thumbWidth / 2, height / 2, AndroidUtilities.dp(pressed ? 8 : 6), paint);
     }
 }

@@ -50,14 +50,12 @@ public final class CachedRegionTracker implements Cache.Listener {
 
     synchronized (this) {
       NavigableSet<CacheSpan> cacheSpans = cache.addListener(cacheKey, this);
-      if (cacheSpans != null) {
-        // Merge the spans into regions. mergeSpan is more efficient when merging from high to low,
-        // which is why a descending iterator is used here.
-        Iterator<CacheSpan> spanIterator = cacheSpans.descendingIterator();
-        while (spanIterator.hasNext()) {
-          CacheSpan span = spanIterator.next();
-          mergeSpan(span);
-        }
+      // Merge the spans into regions. mergeSpan is more efficient when merging from high to low,
+      // which is why a descending iterator is used here.
+      Iterator<CacheSpan> spanIterator = cacheSpans.descendingIterator();
+      while (spanIterator.hasNext()) {
+        CacheSpan span = spanIterator.next();
+        mergeSpan(span);
       }
     }
   }

@@ -94,11 +94,11 @@ public class ChannelRightsEditActivity extends BaseFragment {
     public ChannelRightsEditActivity(int userId, int channelId, TLRPC.TL_channelAdminRights rightsAdmin, TLRPC.TL_channelBannedRights rightsBanned, int type, boolean edit) {
         super();
         chatId = channelId;
-        currentUser = MessagesController.getInstance().getUser(userId);
+        currentUser = MessagesController.getInstance(currentAccount).getUser(userId);
         currentType = type;
         canEdit = edit;
         boolean initialIsSet;
-        TLRPC.Chat chat = MessagesController.getInstance().getChat(chatId);
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
         if (chat != null) {
             isMegagroup = chat.megagroup;
             myAdminRights = chat.admin_rights;
@@ -221,7 +221,7 @@ public class ChannelRightsEditActivity extends BaseFragment {
                         } else {
                             adminRights.pin_messages = adminRights.ban_users = false;
                         }
-                        MessagesController.setUserAdminRole(chatId, currentUser, adminRights, isMegagroup, getFragmentForAlert(1));
+                        MessagesController.getInstance(currentAccount).setUserAdminRole(chatId, currentUser, adminRights, isMegagroup, getFragmentForAlert(1));
                         if (delegate != null) {
                             delegate.didSetRights(
                                     adminRights.change_info || adminRights.post_messages || adminRights.edit_messages ||
@@ -229,7 +229,7 @@ public class ChannelRightsEditActivity extends BaseFragment {
                                     adminRights.invite_link || adminRights.pin_messages || adminRights.add_admins ? 1 : 0, adminRights, bannedRights);
                         }
                     } else if (currentType == 1) {
-                        MessagesController.setUserBannedRole(chatId, currentUser, bannedRights, isMegagroup, getFragmentForAlert(1));
+                        MessagesController.getInstance(currentAccount).setUserBannedRole(chatId, currentUser, bannedRights, isMegagroup, getFragmentForAlert(1));
                         int rights;
                         if (bannedRights.view_messages) {
                             rights = 0;
@@ -284,7 +284,7 @@ public class ChannelRightsEditActivity extends BaseFragment {
                     presentFragment(new ProfileActivity(args));
                 } else if (position == removeAdminRow) {
                     if (currentType == 0) {
-                        MessagesController.setUserAdminRole(chatId, currentUser, new TLRPC.TL_channelAdminRights(), isMegagroup, getFragmentForAlert(0));
+                        MessagesController.getInstance(currentAccount).setUserAdminRole(chatId, currentUser, new TLRPC.TL_channelAdminRights(), isMegagroup, getFragmentForAlert(0));
                     } else if (currentType == 1) {
                         bannedRights = new TLRPC.TL_channelBannedRights();
                         bannedRights.view_messages = true;
@@ -296,7 +296,7 @@ public class ChannelRightsEditActivity extends BaseFragment {
                         bannedRights.send_inline = true;
                         bannedRights.embed_links = true;
                         bannedRights.until_date = 0;
-                        MessagesController.setUserBannedRole(chatId, currentUser, bannedRights, isMegagroup, getFragmentForAlert(0));
+                        MessagesController.getInstance(currentAccount).setUserBannedRole(chatId, currentUser, bannedRights, isMegagroup, getFragmentForAlert(0));
                     }
                     if (delegate != null) {
                         delegate.didSetRights(0, adminRights, bannedRights);
@@ -694,14 +694,16 @@ public class ChannelRightsEditActivity extends BaseFragment {
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate сellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
             @Override
-            public void didSetColor(int color) {
-                int count = listView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    View child = listView.getChildAt(a);
-                    if (child instanceof UserCell) {
-                        ((UserCell) child).update(0);
+            public void didSetColor() {
+                if (listView != null) {
+                    int count = listView.getChildCount();
+                    for (int a = 0; a < count; a++) {
+                        View child = listView.getChildAt(a);
+                        if (child instanceof UserCell) {
+                            ((UserCell) child).update(0);
+                        }
                     }
                 }
             }
@@ -731,26 +733,27 @@ public class ChannelRightsEditActivity extends BaseFragment {
 
                 new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchThumb),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchThumbChecked),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2Thumb),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2Track),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2ThumbChecked),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2TrackChecked),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2Check),
 
                 new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
 
                 new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader),
 
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusColor"}, null, null, сellDelegate, Theme.key_windowBackgroundWhiteGrayText),
-                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusOnlineColor"}, null, null, сellDelegate, Theme.key_windowBackgroundWhiteBlueText),
+                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText),
+                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusOnlineColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlueText),
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundGreen),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundCyan),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundPink),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
         };
     }
 }

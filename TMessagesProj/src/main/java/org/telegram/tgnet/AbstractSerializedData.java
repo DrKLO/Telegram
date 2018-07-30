@@ -49,4 +49,6 @@ public abstract class AbstractSerializedData {
     public abstract void skip(int count);
 
     public abstract int getPosition();
+
+    public abstract int remaining();
 }

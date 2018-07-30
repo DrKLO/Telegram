@@ -64,7 +64,7 @@ extern "C" {
 #endif
 
 
-/* DES. */
+// DES.
 
 
 typedef struct DES_cblock_st {
@@ -85,30 +85,30 @@ typedef struct DES_ks {
 #define DES_CBC_MODE 0
 #define DES_PCBC_MODE 1
 
-/* DES_set_key performs a key schedule and initialises |schedule| with |key|. */
+// DES_set_key performs a key schedule and initialises |schedule| with |key|.
 OPENSSL_EXPORT void DES_set_key(const DES_cblock *key,
                                 DES_key_schedule *schedule);
 
-/* DES_set_odd_parity sets the parity bits (the least-significant bits in each
- * byte) of |key| given the other bits in each byte. */
+// DES_set_odd_parity sets the parity bits (the least-significant bits in each
+// byte) of |key| given the other bits in each byte.
 OPENSSL_EXPORT void DES_set_odd_parity(DES_cblock *key);
 
-/* DES_ecb_encrypt encrypts (or decrypts, if |is_encrypt| is |DES_DECRYPT|) a
- * single DES block (8 bytes) from in to out, using the key configured in
- * |schedule|. */
+// DES_ecb_encrypt encrypts (or decrypts, if |is_encrypt| is |DES_DECRYPT|) a
+// single DES block (8 bytes) from in to out, using the key configured in
+// |schedule|.
 OPENSSL_EXPORT void DES_ecb_encrypt(const DES_cblock *in, DES_cblock *out,
                                     const DES_key_schedule *schedule,
                                     int is_encrypt);
 
-/* DES_ncbc_encrypt encrypts (or decrypts, if |enc| is |DES_DECRYPT|) |len|
- * bytes from |in| to |out| with DES in CBC mode. */
+// DES_ncbc_encrypt encrypts (or decrypts, if |enc| is |DES_DECRYPT|) |len|
+// bytes from |in| to |out| with DES in CBC mode.
 OPENSSL_EXPORT void DES_ncbc_encrypt(const uint8_t *in, uint8_t *out,
                                      size_t len,
                                      const DES_key_schedule *schedule,
                                      DES_cblock *ivec, int enc);
 
-/* DES_ecb3_encrypt encrypts (or decrypts, if |enc| is |DES_DECRYPT|) a single
- * block (8 bytes) of data from |input| to |output| using 3DES. */
+// DES_ecb3_encrypt encrypts (or decrypts, if |enc| is |DES_DECRYPT|) a single
+// block (8 bytes) of data from |input| to |output| using 3DES.
 OPENSSL_EXPORT void DES_ecb3_encrypt(const DES_cblock *input,
                                      DES_cblock *output,
                                      const DES_key_schedule *ks1,
@@ -116,9 +116,9 @@ OPENSSL_EXPORT void DES_ecb3_encrypt(const DES_cblock *input,
                                      const DES_key_schedule *ks3,
                                      int enc);
 
-/* DES_ede3_cbc_encrypt encrypts (or decrypts, if |enc| is |DES_DECRYPT|) |len|
- * bytes from |in| to |out| with 3DES in CBC mode. 3DES uses three keys, thus
- * the function takes three different |DES_key_schedule|s. */
+// DES_ede3_cbc_encrypt encrypts (or decrypts, if |enc| is |DES_DECRYPT|) |len|
+// bytes from |in| to |out| with 3DES in CBC mode. 3DES uses three keys, thus
+// the function takes three different |DES_key_schedule|s.
 OPENSSL_EXPORT void DES_ede3_cbc_encrypt(const uint8_t *in, uint8_t *out,
                                          size_t len,
                                          const DES_key_schedule *ks1,
@@ -126,10 +126,10 @@ OPENSSL_EXPORT void DES_ede3_cbc_encrypt(const uint8_t *in, uint8_t *out,
                                          const DES_key_schedule *ks3,
                                          DES_cblock *ivec, int enc);
 
-/* DES_ede2_cbc_encrypt encrypts (or decrypts, if |enc| is |DES_DECRYPT|) |len|
- * bytes from |in| to |out| with 3DES in CBC mode. With this keying option, the
- * first and third 3DES keys are identical. Thus, this function takes only two
- * different |DES_key_schedule|s. */
+// DES_ede2_cbc_encrypt encrypts (or decrypts, if |enc| is |DES_DECRYPT|) |len|
+// bytes from |in| to |out| with 3DES in CBC mode. With this keying option, the
+// first and third 3DES keys are identical. Thus, this function takes only two
+// different |DES_key_schedule|s.
 OPENSSL_EXPORT void DES_ede2_cbc_encrypt(const uint8_t *in, uint8_t *out,
                                          size_t len,
                                          const DES_key_schedule *ks1,
@@ -137,9 +137,9 @@ OPENSSL_EXPORT void DES_ede2_cbc_encrypt(const uint8_t *in, uint8_t *out,
                                          DES_cblock *ivec, int enc);
 
 
-/* Deprecated functions. */
+// Deprecated functions.
 
-/* DES_set_key_unchecked calls |DES_set_key|. */
+// DES_set_key_unchecked calls |DES_set_key|.
 OPENSSL_EXPORT void DES_set_key_unchecked(const DES_cblock *key,
                                           DES_key_schedule *schedule);
 
@@ -157,8 +157,21 @@ OPENSSL_EXPORT void DES_ede3_cfb_encrypt(const uint8_t *in, uint8_t *out,
                                          DES_cblock *ivec, int enc);
 
 
+// Private functions.
+//
+// These functions are only exported for use in |decrepit|.
+
+OPENSSL_EXPORT void DES_decrypt3(uint32_t *data, const DES_key_schedule *ks1,
+                                 const DES_key_schedule *ks2,
+                                 const DES_key_schedule *ks3);
+
+OPENSSL_EXPORT void DES_encrypt3(uint32_t *data, const DES_key_schedule *ks1,
+                                 const DES_key_schedule *ks2,
+                                 const DES_key_schedule *ks3);
+
+
 #if defined(__cplusplus)
-}  /* extern C */
+}  // extern C
 #endif
 
-#endif  /* OPENSSL_HEADER_DES_H */
+#endif  // OPENSSL_HEADER_DES_H

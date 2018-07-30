@@ -19,6 +19,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
+import android.support.annotation.Keep;
 import android.text.TextPaint;
 import android.view.View;
 
@@ -32,7 +33,7 @@ public class CheckBox extends View {
     private static Paint eraser2;
     private static Paint checkPaint;
     private static Paint backgroundPaint;
-    private static TextPaint textPaint;
+    private TextPaint textPaint;
 
     private Bitmap drawBitmap;
     private Bitmap checkBitmap;
@@ -66,16 +67,17 @@ public class CheckBox extends View {
             eraser2 = new Paint(Paint.ANTI_ALIAS_FLAG);
             eraser2.setColor(0);
             eraser2.setStyle(Paint.Style.STROKE);
-            eraser2.setStrokeWidth(AndroidUtilities.dp(28));
             eraser2.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
             backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             backgroundPaint.setColor(0xffffffff);
             backgroundPaint.setStyle(Paint.Style.STROKE);
-            backgroundPaint.setStrokeWidth(AndroidUtilities.dp(2));
-            textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            textPaint.setTextSize(AndroidUtilities.dp(18));
-            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         }
+        eraser2.setStrokeWidth(AndroidUtilities.dp(28));
+        backgroundPaint.setStrokeWidth(AndroidUtilities.dp(2));
+
+        textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        textPaint.setTextSize(AndroidUtilities.dp(18));
+        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
         checkDrawable = context.getResources().getDrawable(resId).mutate();
     }
@@ -84,13 +86,18 @@ public class CheckBox extends View {
     public void setVisibility(int visibility) {
         super.setVisibility(visibility);
         if (visibility == VISIBLE && drawBitmap == null) {
-            drawBitmap = Bitmap.createBitmap(AndroidUtilities.dp(size), AndroidUtilities.dp(size), Bitmap.Config.ARGB_4444);
-            bitmapCanvas = new Canvas(drawBitmap);
-            checkBitmap = Bitmap.createBitmap(AndroidUtilities.dp(size), AndroidUtilities.dp(size), Bitmap.Config.ARGB_4444);
-            checkCanvas = new Canvas(checkBitmap);
+            try {
+                drawBitmap = Bitmap.createBitmap(AndroidUtilities.dp(size), AndroidUtilities.dp(size), Bitmap.Config.ARGB_4444);
+                bitmapCanvas = new Canvas(drawBitmap);
+                checkBitmap = Bitmap.createBitmap(AndroidUtilities.dp(size), AndroidUtilities.dp(size), Bitmap.Config.ARGB_4444);
+                checkCanvas = new Canvas(checkBitmap);
+            } catch (Throwable ignore) {
+
+            }
         }
     }
 
+    @Keep
     public void setProgress(float value) {
         if (progress == value) {
             return;
@@ -113,6 +120,9 @@ public class CheckBox extends View {
 
     public void setSize(int size) {
         this.size = size;
+        if (size == 40) {
+            textPaint.setTextSize(AndroidUtilities.dp(24));
+        }
     }
 
     public float getProgress() {
@@ -195,6 +205,7 @@ public class CheckBox extends View {
     public void setChecked(int num, boolean checked, boolean animated) {
         if (num >= 0) {
             checkedText = "" + (num + 1);
+            invalidate();
         }
         if (checked == isChecked) {
             return;
@@ -215,7 +226,7 @@ public class CheckBox extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (getVisibility() != VISIBLE) {
+        if (getVisibility() != VISIBLE || drawBitmap == null || checkBitmap == null) {
             return;
         }
         if (drawBackground || progress != 0) {
@@ -251,7 +262,7 @@ public class CheckBox extends View {
             checkBitmap.eraseColor(0);
             if (checkedText != null) {
                 int w = (int) Math.ceil(textPaint.measureText(checkedText));
-                checkCanvas.drawText(checkedText, (getMeasuredWidth() - w) / 2, AndroidUtilities.dp(21), textPaint);
+                checkCanvas.drawText(checkedText, (getMeasuredWidth() - w) / 2, AndroidUtilities.dp(size == 40 ? 28 : 21), textPaint);
             } else {
                 int w = checkDrawable.getIntrinsicWidth();
                 int h = checkDrawable.getIntrinsicHeight();

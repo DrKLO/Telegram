@@ -73,7 +73,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -90,7 +90,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         void onPlayStateChanged(WebPlayerView playerView, boolean playing);
         void onVideoSizeChanged(float aspectRatio, int rotation);
         ViewGroup getTextureViewContainer();
-        boolean checkInlinePermissons();
+        boolean checkInlinePermissions();
     }
 
     private static int lastContainerId = 4001;
@@ -162,7 +162,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 return;
             }
             controlsView.setProgress((int) (videoPlayer.getCurrentPosition() / 1000));
-            controlsView.setBufferedProgress((int) (videoPlayer.getBufferedPosition() / 1000), videoPlayer.getBufferedPercentage());
+            controlsView.setBufferedProgress((int) (videoPlayer.getBufferedPosition() / 1000));
 
             AndroidUtilities.runOnUIThread(progressRunnable, 1000);
         }
@@ -492,7 +492,20 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             }
             httpConnection.connect();
             if (tryGzip) {
-                httpConnectionStream = new GZIPInputStream(httpConnection.getInputStream());
+                try {
+                    httpConnectionStream = new GZIPInputStream(httpConnection.getInputStream());
+                } catch (Exception e) {
+                    try {
+                        if (httpConnectionStream != null) {
+                            httpConnectionStream.close();
+                        }
+                    } catch (Exception ignore) {
+
+                    }
+                    httpConnection = downloadUrl.openConnection();
+                    httpConnection.connect();
+                    httpConnectionStream = httpConnection.getInputStream();
+                }
             } else {
                 httpConnectionStream = httpConnection.getInputStream();
             }
@@ -570,7 +583,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
 
         private String videoId;
         private boolean canRetry = true;
-        private Semaphore semaphore = new Semaphore(0);
+        private CountDownLatch countDownLatch = new CountDownLatch(1);
         private String[] result = new String[2];
         private String sig;
 
@@ -602,7 +615,8 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             result[1] = "dash";
 
             boolean encrypted = false;
-            String extra[] = new String[] {"", "&el=info", "&el=embedded", "&el=detailpage", "&el=vevo"};
+            String otherUrl = null;
+            String extra[] = new String[] {"", "&el=leanback", "&el=embedded", "&el=detailpage", "&el=vevo"};
             for (int i = 0; i < extra.length; i++) {
                 String videoInfo = downloadUrlContent(this, "https://www.youtube.com/get_video_info?" + params + extra[i]);
                 if (isCancelled()) {
@@ -620,6 +634,35 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                             if (args2.length == 2) {
                                 try {
                                     result[0] = URLDecoder.decode(args2[1], "UTF-8");
+                                } catch (Exception e) {
+                                    FileLog.e(e);
+                                }
+                            }
+                        } else if (args[a].startsWith("url_encoded_fmt_stream_map")) {
+                            String args2[] = args[a].split("=");
+                            if (args2.length == 2) {
+                                try {
+                                    String args3[] = URLDecoder.decode(args2[1], "UTF-8").split("[&,]");
+                                    String currentUrl = null;
+                                    boolean isMp4 = false;
+                                    for (int c = 0; c < args3.length; c++) {
+                                        String args4[] = args3[c].split("=");
+                                        if (args4[0].startsWith("type")) {
+                                            String type = URLDecoder.decode(args4[1], "UTF-8");
+                                            if (type.contains("video/mp4")) {
+                                                isMp4 = true;
+                                            }
+                                        } else if (args4[0].startsWith("url")) {
+                                            currentUrl = URLDecoder.decode(args4[1], "UTF-8");
+                                        } else if (args4[0].startsWith("itag")) {
+                                            currentUrl = null;
+                                            isMp4 = false;
+                                        }
+                                        if (isMp4 && currentUrl != null) {
+                                            otherUrl = currentUrl;
+                                            break;
+                                        }
+                                    }
                                 } catch (Exception e) {
                                     FileLog.e(e);
                                 }
@@ -661,6 +704,10 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 if (exists) {
                     break;
                 }
+            }
+            if (result[0] == null && otherUrl != null) {
+                result[0] = otherUrl;
+                result[1] = "other";
             }
 
             if (result[0] != null && (encrypted || result[0].contains("/s/")) && embedCode != null) {
@@ -750,7 +797,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                                                 @Override
                                                 public void onReceiveValue(String value) {
                                                     result[0] = result[0].replace(sig, "/signature/" + value.substring(1, value.length() - 1));
-                                                    semaphore.release();
+                                                    countDownLatch.countDown();
                                                 }
                                             });
                                         } else {
@@ -765,7 +812,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                                         }
                                     }
                                 });
-                                semaphore.acquire();
+                                countDownLatch.await();
                                 encrypted = false;
                             } catch (Exception e) {
                                 FileLog.e(e);
@@ -779,12 +826,15 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
 
         private void onInterfaceResult(String value) {
             result[0] = result[0].replace(sig, "/signature/" + value);
-            semaphore.release();
+            countDownLatch.countDown();
         }
 
         @Override
         protected void onPostExecute(String[] result) {
-            if (result != null) {
+            if (result[0] != null) {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("start play youtube video " + result[1] + " " + result[0]);
+                }
                 initied = true;
                 playVideoUrl = result[0];
                 playVideoType = result[1];
@@ -1214,7 +1264,6 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         private int duration;
         private int progress;
         private int bufferedPosition;
-        private int bufferedPercentage;
         private boolean isVisible = true;
         private AnimatorSet currentAnimation;
         private int lastProgressX;
@@ -1258,9 +1307,8 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             invalidate();
         }
 
-        public void setBufferedProgress(int position, int percentage) {
+        public void setBufferedProgress(int position) {
             bufferedPosition = position;
-            bufferedPercentage = percentage;
             invalidate();
         }
 
@@ -1470,14 +1518,8 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                     } else {
                         progressX = progressLineX + (int) ((progressLineEndX - progressLineX) * (progress / (float) duration));
                     }
-                    if (bufferedPercentage != 0 && duration != 0) {
-                        int pxPerS = (progressLineEndX - progressLineX) / duration;
-                        int start = progressLineX + pxPerS * bufferedPosition;
-                        int additional = 0;
-                        if (progressX < start) {
-                            additional = start - progressX;
-                        }
-                        canvas.drawRect(start - additional, progressLineY, start + (progressLineEndX - start) * bufferedPercentage / 100.0f, progressLineY + AndroidUtilities.dp(3), inFullscreen ? progressBufferedPaint : progressInnerPaint);
+                    if (bufferedPosition != 0 && duration != 0) {
+                        canvas.drawRect(progressLineX, progressLineY, progressLineX + (progressLineEndX - progressLineX) * (bufferedPosition / (float) duration), progressLineY + AndroidUtilities.dp(3), inFullscreen ? progressBufferedPaint : progressInnerPaint);
                     }
                     canvas.drawRect(progressLineX, progressLineY, progressX, progressLineY + AndroidUtilities.dp(3), progressPaint);
                     if (!isInline) {
@@ -1609,7 +1651,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             inlineButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (textureView == null || !delegate.checkInlinePermissons() || changingTextureView || switchingInlineMode || !firstFrameRendered) {
+                    if (textureView == null || !delegate.checkInlinePermissions() || changingTextureView || switchingInlineMode || !firstFrameRendered) {
                         return;
                     }
                     switchingInlineMode = true;
@@ -1752,6 +1794,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
     @Override
     public void onError(Exception e) {
         FileLog.e(e);
+        onInitFailed();
     }
 
     @Override
@@ -2074,6 +2117,9 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                         try {
                             Uri uri = Uri.parse(originalUrl);
                             String t = uri.getQueryParameter("t");
+                            if (t == null) {
+                                t = uri.getQueryParameter("time_continue");
+                            }
                             if (t != null) {
                                 if (t.contains("m")) {
                                     String args[] = t.split("m");
@@ -2202,7 +2248,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         }
         isLoading = true;
         controlsView.setProgress(0);
-        if (youtubeId != null && !BuildVars.DEBUG_PRIVATE_VERSION) {
+        if (youtubeId != null) {
             currentYoutubeId = youtubeId;
             youtubeId = null;
         }

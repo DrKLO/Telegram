@@ -17,7 +17,6 @@ public class NotificationsService extends Service {
 
     @Override
     public void onCreate() {
-        FileLog.e("service started");
         ApplicationLoader.postInitApplication();
     }
 
@@ -32,9 +31,7 @@ public class NotificationsService extends Service {
     }
 
     public void onDestroy() {
-        FileLog.e("service destroyed");
-
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", MODE_PRIVATE);
+        SharedPreferences preferences = MessagesController.getGlobalNotificationsSettings();
         if (preferences.getBoolean("pushService", true)) {
             Intent intent = new Intent("org.telegram.start");
             sendBroadcast(intent);

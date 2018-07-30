@@ -18,6 +18,7 @@ package org.telegram.messenger.exoplayer2.source.smoothstreaming;
 import android.net.Uri;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
+import org.telegram.messenger.exoplayer2.SeekParameters;
 import org.telegram.messenger.exoplayer2.extractor.mp4.FragmentedMp4Extractor;
 import org.telegram.messenger.exoplayer2.extractor.mp4.Track;
 import org.telegram.messenger.exoplayer2.extractor.mp4.TrackEncryptionBox;
@@ -34,6 +35,7 @@ import org.telegram.messenger.exoplayer2.trackselection.TrackSelection;
 import org.telegram.messenger.exoplayer2.upstream.DataSource;
 import org.telegram.messenger.exoplayer2.upstream.DataSpec;
 import org.telegram.messenger.exoplayer2.upstream.LoaderErrorThrower;
+import org.telegram.messenger.exoplayer2.util.Util;
 import java.io.IOException;
 import java.util.List;
 
@@ -62,7 +64,7 @@ public class DefaultSsChunkSource implements SsChunkSource {
   }
 
   private final LoaderErrorThrower manifestLoaderErrorThrower;
-  private final int elementIndex;
+  private final int streamElementIndex;
   private final TrackSelection trackSelection;
   private final ChunkExtractorWrapper[] extractorWrappers;
   private final DataSource dataSource;
@@ -75,22 +77,25 @@ public class DefaultSsChunkSource implements SsChunkSource {
   /**
    * @param manifestLoaderErrorThrower Throws errors affecting loading of manifests.
    * @param manifest The initial manifest.
-   * @param elementIndex The index of the stream element in the manifest.
+   * @param streamElementIndex The index of the stream element in the manifest.
    * @param trackSelection The track selection.
    * @param dataSource A {@link DataSource} suitable for loading the media data.
    * @param trackEncryptionBoxes Track encryption boxes for the stream.
    */
-  public DefaultSsChunkSource(LoaderErrorThrower manifestLoaderErrorThrower, SsManifest manifest,
-      int elementIndex, TrackSelection trackSelection, DataSource dataSource,
+  public DefaultSsChunkSource(
+      LoaderErrorThrower manifestLoaderErrorThrower,
+      SsManifest manifest,
+      int streamElementIndex,
+      TrackSelection trackSelection,
+      DataSource dataSource,
       TrackEncryptionBox[] trackEncryptionBoxes) {
     this.manifestLoaderErrorThrower = manifestLoaderErrorThrower;
     this.manifest = manifest;
-    this.elementIndex = elementIndex;
+    this.streamElementIndex = streamElementIndex;
     this.trackSelection = trackSelection;
     this.dataSource = dataSource;
 
-    StreamElement streamElement = manifest.streamElements[elementIndex];
-
+    StreamElement streamElement = manifest.streamElements[streamElementIndex];
     extractorWrappers = new ChunkExtractorWrapper[trackSelection.length()];
     for (int i = 0; i < extractorWrappers.length; i++) {
       int manifestTrackIndex = trackSelection.getIndexInTrackGroup(i);
@@ -101,16 +106,28 @@ public class DefaultSsChunkSource implements SsChunkSource {
           trackEncryptionBoxes, nalUnitLengthFieldLength, null, null);
       FragmentedMp4Extractor extractor = new FragmentedMp4Extractor(
           FragmentedMp4Extractor.FLAG_WORKAROUND_EVERY_VIDEO_FRAME_IS_SYNC_FRAME
-          | FragmentedMp4Extractor.FLAG_WORKAROUND_IGNORE_TFDT_BOX, null, track);
-      extractorWrappers[i] = new ChunkExtractorWrapper(extractor, format);
+          | FragmentedMp4Extractor.FLAG_WORKAROUND_IGNORE_TFDT_BOX, null, track, null);
+      extractorWrappers[i] = new ChunkExtractorWrapper(extractor, streamElement.type, format);
     }
   }
 
   @Override
+  public long getAdjustedSeekPositionUs(long positionUs, SeekParameters seekParameters) {
+    StreamElement streamElement = manifest.streamElements[streamElementIndex];
+    int chunkIndex = streamElement.getChunkIndex(positionUs);
+    long firstSyncUs = streamElement.getStartTimeUs(chunkIndex);
+    long secondSyncUs =
+        firstSyncUs < positionUs && chunkIndex < streamElement.chunkCount - 1
+            ? streamElement.getStartTimeUs(chunkIndex + 1)
+            : firstSyncUs;
+    return Util.resolveSeekPositionUs(positionUs, seekParameters, firstSyncUs, secondSyncUs);
+  }
+
+  @Override
   public void updateManifest(SsManifest newManifest) {
-    StreamElement currentElement = manifest.streamElements[elementIndex];
+    StreamElement currentElement = manifest.streamElements[streamElementIndex];
     int currentElementChunkCount = currentElement.chunkCount;
-    StreamElement newElement = newManifest.streamElements[elementIndex];
+    StreamElement newElement = newManifest.streamElements[streamElementIndex];
     if (currentElementChunkCount == 0 || newElement.chunkCount == 0) {
       // There's no overlap between the old and new elements because at least one is empty.
       currentManifestChunkOffset += currentElementChunkCount;
@@ -149,15 +166,13 @@ public class DefaultSsChunkSource implements SsChunkSource {
   }
 
   @Override
-  public final void getNextChunk(MediaChunk previous, long playbackPositionUs, ChunkHolder out) {
+  public final void getNextChunk(MediaChunk previous, long playbackPositionUs, long loadPositionUs,
+      ChunkHolder out) {
     if (fatalError != null) {
       return;
     }
 
-    long bufferedDurationUs = previous != null ? (previous.endTimeUs - playbackPositionUs) : 0;
-    trackSelection.updateSelectedTrack(bufferedDurationUs);
-
-    StreamElement streamElement = manifest.streamElements[elementIndex];
+    StreamElement streamElement = manifest.streamElements[streamElementIndex];
     if (streamElement.chunkCount == 0) {
       // There aren't any chunks for us to load.
       out.endOfStream = !manifest.isLive;
@@ -166,9 +181,9 @@ public class DefaultSsChunkSource implements SsChunkSource {
 
     int chunkIndex;
     if (previous == null) {
-      chunkIndex = streamElement.getChunkIndex(playbackPositionUs);
+      chunkIndex = streamElement.getChunkIndex(loadPositionUs);
     } else {
-      chunkIndex = previous.getNextChunkIndex() - currentManifestChunkOffset;
+      chunkIndex = (int) (previous.getNextChunkIndex() - currentManifestChunkOffset);
       if (chunkIndex < 0) {
         // This is before the first chunk in the current manifest.
         fatalError = new BehindLiveWindowException();
@@ -182,8 +197,13 @@ public class DefaultSsChunkSource implements SsChunkSource {
       return;
     }
 
+    long bufferedDurationUs = loadPositionUs - playbackPositionUs;
+    long timeToLiveEdgeUs = resolveTimeToLiveEdgeUs(playbackPositionUs);
+    trackSelection.updateSelectedTrack(playbackPositionUs, bufferedDurationUs, timeToLiveEdgeUs);
+
     long chunkStartTimeUs = streamElement.getStartTimeUs(chunkIndex);
     long chunkEndTimeUs = chunkStartTimeUs + streamElement.getChunkDurationUs(chunkIndex);
+    long chunkSeekTimeUs = previous == null ? loadPositionUs : C.TIME_UNSET;
     int currentAbsoluteChunkIndex = chunkIndex + currentManifestChunkOffset;
 
     int trackSelectionIndex = trackSelection.getSelectedIndex();
@@ -192,9 +212,19 @@ public class DefaultSsChunkSource implements SsChunkSource {
     int manifestTrackIndex = trackSelection.getIndexInTrackGroup(trackSelectionIndex);
     Uri uri = streamElement.buildRequestUri(manifestTrackIndex, chunkIndex);
 
-    out.chunk = newMediaChunk(trackSelection.getSelectedFormat(), dataSource, uri, null,
-        currentAbsoluteChunkIndex, chunkStartTimeUs, chunkEndTimeUs,
-        trackSelection.getSelectionReason(), trackSelection.getSelectionData(), extractorWrapper);
+    out.chunk =
+        newMediaChunk(
+            trackSelection.getSelectedFormat(),
+            dataSource,
+            uri,
+            null,
+            currentAbsoluteChunkIndex,
+            chunkStartTimeUs,
+            chunkEndTimeUs,
+            chunkSeekTimeUs,
+            trackSelection.getSelectionReason(),
+            trackSelection.getSelectionData(),
+            extractorWrapper);
   }
 
   @Override
@@ -210,16 +240,47 @@ public class DefaultSsChunkSource implements SsChunkSource {
 
   // Private methods.
 
-  private static MediaChunk newMediaChunk(Format format, DataSource dataSource, Uri uri,
-      String cacheKey, int chunkIndex, long chunkStartTimeUs, long chunkEndTimeUs,
-      int trackSelectionReason, Object trackSelectionData, ChunkExtractorWrapper extractorWrapper) {
+  private static MediaChunk newMediaChunk(
+      Format format,
+      DataSource dataSource,
+      Uri uri,
+      String cacheKey,
+      int chunkIndex,
+      long chunkStartTimeUs,
+      long chunkEndTimeUs,
+      long chunkSeekTimeUs,
+      int trackSelectionReason,
+      Object trackSelectionData,
+      ChunkExtractorWrapper extractorWrapper) {
     DataSpec dataSpec = new DataSpec(uri, 0, C.LENGTH_UNSET, cacheKey);
     // In SmoothStreaming each chunk contains sample timestamps relative to the start of the chunk.
     // To convert them the absolute timestamps, we need to set sampleOffsetUs to chunkStartTimeUs.
     long sampleOffsetUs = chunkStartTimeUs;
-    return new ContainerMediaChunk(dataSource, dataSpec, format, trackSelectionReason,
-        trackSelectionData, chunkStartTimeUs, chunkEndTimeUs, chunkIndex, 1, sampleOffsetUs,
+    return new ContainerMediaChunk(
+        dataSource,
+        dataSpec,
+        format,
+        trackSelectionReason,
+        trackSelectionData,
+        chunkStartTimeUs,
+        chunkEndTimeUs,
+        chunkSeekTimeUs,
+        chunkIndex,
+        /* chunkCount= */ 1,
+        sampleOffsetUs,
         extractorWrapper);
+  }
+
+  private long resolveTimeToLiveEdgeUs(long playbackPositionUs) {
+    if (!manifest.isLive) {
+      return C.TIME_UNSET;
+    }
+
+    StreamElement currentElement = manifest.streamElements[streamElementIndex];
+    int lastChunkIndex = currentElement.chunkCount - 1;
+    long lastChunkEndTimeUs = currentElement.getStartTimeUs(lastChunkIndex)
+        + currentElement.getChunkDurationUs(lastChunkIndex);
+    return lastChunkEndTimeUs - playbackPositionUs;
   }
 
 }

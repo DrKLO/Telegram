@@ -18,6 +18,7 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.support.annotation.Keep;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
@@ -277,12 +278,12 @@ public class InviteContactsActivity extends BaseFragment implements Notification
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.contactsImported);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsImported);
         fetchContacts();
-        if (!UserConfig.contactsReimported) {
-            ContactsController.getInstance().forceImportContacts();
-            UserConfig.contactsReimported = true;
-            UserConfig.saveConfig(false);
+        if (!UserConfig.getInstance(currentAccount).contactsReimported) {
+            ContactsController.getInstance(currentAccount).forceImportContacts();
+            UserConfig.getInstance(currentAccount).contactsReimported = true;
+            UserConfig.getInstance(currentAccount).saveConfig(false);
         }
         return super.onFragmentCreate();
     }
@@ -290,7 +291,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsImported);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.contactsImported);
     }
 
     @Override
@@ -492,7 +493,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         });
 
         emptyView = new EmptyTextProgressView(context);
-        if (ContactsController.getInstance().isLoadingContacts()) {
+        if (ContactsController.getInstance(currentAccount).isLoadingContacts()) {
             emptyView.showProgress();
         } else {
             emptyView.showTextView();
@@ -517,7 +518,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
                     try {
                         Intent intent = new Intent(Intent.ACTION_SEND);
                         intent.setType("text/plain");
-                        String text = ContactsController.getInstance().getInviteText(0);
+                        String text = ContactsController.getInstance(currentAccount).getInviteText(0);
                         intent.putExtra(Intent.EXTRA_TEXT, text);
                         getParentActivity().startActivityForResult(Intent.createChooser(intent, text), 500);
                     } catch (Exception e) {
@@ -593,7 +594,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
                         }
                     }
                     Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:" + builder.toString()));
-                    intent.putExtra("sms_body", ContactsController.getInstance().getInviteText(num));
+                    intent.putExtra("sms_body", ContactsController.getInstance(currentAccount).getInviteText(num));
                     getParentActivity().startActivityForResult(intent, 500);
                     MediaController.getInstance().startSmsObserver();
                 } catch (Exception e) {
@@ -612,7 +613,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         counterTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         counterTextView.setTextColor(Theme.getColor(Theme.key_contacts_inviteBackground));
         counterTextView.setGravity(Gravity.CENTER);
-        counterTextView.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(10), 0xffffffff));
+        counterTextView.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(10), Theme.getColor(Theme.key_contacts_inviteText)));
         counterTextView.setMinWidth(AndroidUtilities.dp(20));
         counterTextView.setPadding(AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6), AndroidUtilities.dp(1));
         linearLayout.addView(counterTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 20, Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
@@ -641,12 +642,13 @@ public class InviteContactsActivity extends BaseFragment implements Notification
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.contactsImported) {
             fetchContacts();
         }
     }
 
+    @Keep
     public void setContainerHeight(int value) {
         containerHeight = value;
         if (spansContainer != null) {
@@ -694,7 +696,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
     }
 
     private void fetchContacts() {
-        phoneBookContacts = new ArrayList<>(ContactsController.getInstance().phoneBookContacts);
+        phoneBookContacts = new ArrayList<>(ContactsController.getInstance(currentAccount).phoneBookContacts);
         Collections.sort(phoneBookContacts, new Comparator<ContactsController.Contact>() {
             @Override
             public int compare(ContactsController.Contact o1, ContactsController.Contact o2) {
@@ -903,14 +905,16 @@ public class InviteContactsActivity extends BaseFragment implements Notification
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate сellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
             @Override
-            public void didSetColor(int color) {
-                int count = listView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    View child = listView.getChildAt(a);
-                    if (child instanceof InviteUserCell) {
-                        ((InviteUserCell) child).update(0);
+            public void didSetColor() {
+                if (listView != null) {
+                    int count = listView.getChildCount();
+                    for (int a = 0; a < count; a++) {
+                        View child = listView.getChildAt(a);
+                        if (child instanceof InviteUserCell) {
+                            ((InviteUserCell) child).update(0);
+                        }
                     }
                 }
             }
@@ -952,13 +956,13 @@ public class InviteContactsActivity extends BaseFragment implements Notification
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{InviteUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_groupcreate_onlineText),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{InviteUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_groupcreate_offlineText),
                 new ThemeDescription(listView, 0, new Class[]{InviteUserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundGreen),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundCyan),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundPink),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
 
                 new ThemeDescription(listView, 0, new Class[]{InviteTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{InviteTextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon),
@@ -970,9 +974,10 @@ public class InviteContactsActivity extends BaseFragment implements Notification
 
                 new ThemeDescription(infoTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_contacts_inviteText),
                 new ThemeDescription(infoTextView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_contacts_inviteBackground),
-                new ThemeDescription(counterView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_contacts_inviteBackground),
+                new ThemeDescription(counterView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_contacts_inviteBackground),
                 new ThemeDescription(counterTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_contacts_inviteBackground),
                 new ThemeDescription(textView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_contacts_inviteText),
+                new ThemeDescription(counterTextView, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_contacts_inviteText)
         };
     }
 }

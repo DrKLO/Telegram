@@ -61,12 +61,15 @@
 
 #if !defined(OPENSSL_WINDOWS)
 #if defined(OPENSSL_PNACL)
-/* newlib uses u_short in socket.h without defining it. */
+// newlib uses u_short in socket.h without defining it.
 typedef unsigned short u_short;
 #endif
 #include <sys/types.h>
 #include <sys/socket.h>
 #else
+OPENSSL_MSVC_PRAGMA(warning(push, 3))
+#include <winsock2.h>
+OPENSSL_MSVC_PRAGMA(warning(pop))
 typedef int socklen_t;
 #endif
 
@@ -75,34 +78,34 @@ extern "C" {
 #endif
 
 
-/* BIO_ip_and_port_to_socket_and_addr creates a socket and fills in |*out_addr|
- * and |*out_addr_length| with the correct values for connecting to |hostname|
- * on |port_str|. It returns one on success or zero on error. */
+// BIO_ip_and_port_to_socket_and_addr creates a socket and fills in |*out_addr|
+// and |*out_addr_length| with the correct values for connecting to |hostname|
+// on |port_str|. It returns one on success or zero on error.
 int bio_ip_and_port_to_socket_and_addr(int *out_sock,
                                        struct sockaddr_storage *out_addr,
                                        socklen_t *out_addr_length,
                                        const char *hostname,
                                        const char *port_str);
 
-/* BIO_socket_nbio sets whether |sock| is non-blocking. It returns one on
- * success and zero otherwise. */
+// BIO_socket_nbio sets whether |sock| is non-blocking. It returns one on
+// success and zero otherwise.
 int bio_socket_nbio(int sock, int on);
 
-/* BIO_clear_socket_error clears the last system socket error.
- *
- * TODO(fork): remove all callers of this. */
+// BIO_clear_socket_error clears the last system socket error.
+//
+// TODO(fork): remove all callers of this.
 void bio_clear_socket_error(void);
 
-/* BIO_sock_error returns the last socket error on |sock|. */
+// BIO_sock_error returns the last socket error on |sock|.
 int bio_sock_error(int sock);
 
-/* BIO_fd_should_retry returns non-zero if |return_value| indicates an error
- * and |errno| indicates that it's non-fatal. */
+// BIO_fd_should_retry returns non-zero if |return_value| indicates an error
+// and |errno| indicates that it's non-fatal.
 int bio_fd_should_retry(int return_value);
 
 
 #if defined(__cplusplus)
-}  /* extern C */
+}  // extern C
 #endif
 
-#endif  /* OPENSSL_HEADER_BIO_INTERNAL_H */
+#endif  // OPENSSL_HEADER_BIO_INTERNAL_H

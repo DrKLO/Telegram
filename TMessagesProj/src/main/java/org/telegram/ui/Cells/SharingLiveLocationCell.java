@@ -52,6 +52,8 @@ public class SharingLiveLocationCell extends FrameLayout {
     private LocationActivity.LiveLocation liveLocation;
     private Location location = new Location("network");
 
+    private int currentAccount;
+
     private Runnable invalidateRunnable = new Runnable() {
         @Override
         public void run() {
@@ -119,6 +121,7 @@ public class SharingLiveLocationCell extends FrameLayout {
                 fromId = messageObject.messageOwner.fwd_from.from_id;
             }
         }
+        currentAccount = messageObject.currentAccount;
         String address = null;
         TLRPC.FileLocation photo = null;
         String name;
@@ -140,7 +143,7 @@ public class SharingLiveLocationCell extends FrameLayout {
             name = "";
             avatarDrawable = null;
             if (fromId > 0) {
-                TLRPC.User user = MessagesController.getInstance().getUser(fromId);
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(fromId);
                 if (user != null) {
                     if (user.photo != null) {
                         photo = user.photo.photo_small;
@@ -149,7 +152,7 @@ public class SharingLiveLocationCell extends FrameLayout {
                     name = UserObject.getUserName(user);
                 }
             } else {
-                TLRPC.Chat chat = MessagesController.getInstance().getChat(-fromId);
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-fromId);
                 if (chat != null) {
                     if (chat.photo != null) {
                         photo = chat.photo.photo_small;
@@ -193,7 +196,7 @@ public class SharingLiveLocationCell extends FrameLayout {
         int lower_id = info.id;
         TLRPC.FileLocation photo = null;
         if (lower_id > 0) {
-            TLRPC.User user = MessagesController.getInstance().getUser(lower_id);
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
             avatarDrawable.setInfo(user);
             if (user != null) {
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
@@ -202,7 +205,7 @@ public class SharingLiveLocationCell extends FrameLayout {
                 }
             }
         } else {
-            TLRPC.Chat chat = MessagesController.getInstance().getChat(-lower_id);
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
             if (chat != null) {
                 avatarDrawable.setInfo(chat);
                 nameTextView.setText(chat.title);
@@ -236,7 +239,7 @@ public class SharingLiveLocationCell extends FrameLayout {
         int lower_id = (int) info.did;
         TLRPC.FileLocation photo = null;
         if (lower_id > 0) {
-            TLRPC.User user = MessagesController.getInstance().getUser(lower_id);
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
             if (user != null) {
                 avatarDrawable.setInfo(user);
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
@@ -245,7 +248,7 @@ public class SharingLiveLocationCell extends FrameLayout {
                 }
             }
         } else {
-            TLRPC.Chat chat = MessagesController.getInstance().getChat(-lower_id);
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
             if (chat != null) {
                 avatarDrawable.setInfo(chat);
                 nameTextView.setText(chat.title);
@@ -271,7 +274,7 @@ public class SharingLiveLocationCell extends FrameLayout {
             stopTime = liveLocation.object.date + liveLocation.object.media.period;
             period = liveLocation.object.media.period;
         }
-        int currentTime = ConnectionsManager.getInstance().getCurrentTime();
+        int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
         if (stopTime < currentTime) {
             return;
         }

@@ -10,6 +10,7 @@ import android.media.audiofx.NoiseSuppressor;
 import android.os.Build;
 import android.util.Log;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 
 import java.nio.ByteBuffer;
@@ -45,17 +46,25 @@ public class AudioTrackJNI{
 		if(audioTrack.getState()!=AudioTrack.STATE_INITIALIZED){
 			try{
 				audioTrack.release();
-			}catch(Throwable x){}
+			}catch(Throwable ignore){}
 			size=getBufferSize(bufferSize*6, 44100);
-			FileLog.d("buffer size: "+size);
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.d("buffer size: " + size);
+			}
 			audioTrack=new AudioTrack(AudioManager.STREAM_VOICE_CALL, 44100, channels==1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT, size, AudioTrack.MODE_STREAM);
 			needResampling=true;
 		}
 	}
 
 	public void stop() {
-		if(audioTrack!=null)
-			audioTrack.stop();
+		if (audioTrack != null) {
+			try {
+				audioTrack.stop();
+			} catch (Exception ignore) {
+
+			}
+
+		}
 	}
 
 	public void release() {
@@ -93,7 +102,9 @@ public class AudioTrackJNI{
 				try{
 					audioTrack.play();
 				}catch(Exception x){
-					FileLog.e("error starting AudioTrack", x);
+					if (BuildVars.LOGS_ENABLED) {
+						FileLog.e("error starting AudioTrack", x);
+					}
 					return;
 				}
 				ByteBuffer tmp48=needResampling ? ByteBuffer.allocateDirect(960*2) : null;

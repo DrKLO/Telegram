@@ -63,6 +63,7 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.HashMap;
+import java.util.Locale;
 
 public class EmbedBottomSheet extends BottomSheet {
 
@@ -267,10 +268,17 @@ public class EmbedBottomSheet extends BottomSheet {
         }
 
         fullscreenVideoContainer = new FrameLayout(context);
+        fullscreenVideoContainer.setKeepScreenOn(true);
         fullscreenVideoContainer.setBackgroundColor(0xff000000);
         if (Build.VERSION.SDK_INT >= 21) {
             fullscreenVideoContainer.setFitsSystemWindows(true);
         }
+        fullscreenVideoContainer.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return true;
+            }
+        });
 
         container.addView(fullscreenVideoContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         fullscreenVideoContainer.setVisibility(View.INVISIBLE);
@@ -562,7 +570,11 @@ public class EmbedBottomSheet extends BottomSheet {
                     }
                 } else {
                     if (ApplicationLoader.mainInterfacePaused) {
-                        parentActivity.startService(new Intent(ApplicationLoader.applicationContext, BringAppForegroundService.class));
+                        try {
+                            parentActivity.startService(new Intent(ApplicationLoader.applicationContext, BringAppForegroundService.class));
+                        } catch (Throwable e) {
+                            FileLog.e(e);
+                        }
                     }
 
                     if (animated) {
@@ -666,8 +678,8 @@ public class EmbedBottomSheet extends BottomSheet {
             }
 
             @Override
-            public boolean checkInlinePermissons() {
-                return checkInlinePermissions();
+            public boolean checkInlinePermissions() {
+                return EmbedBottomSheet.this.checkInlinePermissions();
             }
 
             @Override
@@ -901,6 +913,9 @@ public class EmbedBottomSheet extends BottomSheet {
                                 try {
                                     Uri uri = Uri.parse(openUrl);
                                     String t = uri.getQueryParameter("t");
+                                    if (t == null) {
+                                        t = uri.getQueryParameter("time_continue");
+                                    }
                                     if (t != null) {
                                         if (t.contains("m")) {
                                             String arg[] = t.split("m");
@@ -913,7 +928,7 @@ public class EmbedBottomSheet extends BottomSheet {
                                     FileLog.e(e);
                                 }
                             }
-                            webView.loadDataWithBaseURL("https://www.youtube.com", String.format(youtubeFrame, currentYoutubeId, seekToTime), "text/html", "UTF-8", "http://youtube.com");
+                            webView.loadDataWithBaseURL("https://www.youtube.com", String.format(Locale.US, youtubeFrame, currentYoutubeId, seekToTime), "text/html", "UTF-8", "http://youtube.com");
                         } else {
                             webView.loadUrl(embedUrl, args);
                         }
@@ -1056,7 +1071,11 @@ public class EmbedBottomSheet extends BottomSheet {
             return;
         }
         if (ApplicationLoader.mainInterfacePaused) {
-            parentActivity.startService(new Intent(ApplicationLoader.applicationContext, BringAppForegroundService.class));
+            try {
+                parentActivity.startService(new Intent(ApplicationLoader.applicationContext, BringAppForegroundService.class));
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
         }
         if (isYouTube) {
             runJsCode("showControls();");
@@ -1097,6 +1116,11 @@ public class EmbedBottomSheet extends BottomSheet {
         } else {
             controlsView.setTranslationY(0);
         }
+    }
+
+    @Override
+    protected boolean canDismissWithTouchOutside() {
+        return fullscreenVideoContainer.getVisibility() != View.VISIBLE;
     }
 
     @Override

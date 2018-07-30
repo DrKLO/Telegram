@@ -45,14 +45,15 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Intro;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -123,6 +124,8 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         }
     }
 
+    private int currentAccount = UserConfig.selectedAccount;
+
     private ViewPager viewPager;
     private BottomPagesView bottomPages;
     private TextView textView;
@@ -147,7 +150,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         preferences.edit().putLong("intro_crashed_time", System.currentTimeMillis()).commit();
 
         titles = new String[]{
@@ -288,7 +291,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             startMessagingButton.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    ConnectionsManager.getInstance().switchBackend();
+                    ConnectionsManager.getInstance(currentAccount).switchBackend();
                     return true;
                 }
             });
@@ -308,7 +311,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
                 if (startPressed || localeInfo == null) {
                     return;
                 }
-                LocaleController.getInstance().applyLanguage(localeInfo, true, false);
+                LocaleController.getInstance().applyLanguage(localeInfo, true, false, currentAccount);
                 startPressed = true;
                 Intent intent2 = new Intent(IntroActivity.this, LaunchActivity.class);
                 intent2.putExtra("fromIntro", true);
@@ -337,10 +340,10 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             setContentView(scrollView);
         }
 
-        LocaleController.getInstance().loadRemoteLanguages();
+        LocaleController.getInstance().loadRemoteLanguages(currentAccount);
         checkContinueText();
         justCreated = true;
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.suggestedLangpack);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.suggestedLangpack);
 
         AndroidUtilities.handleProxyIntent(this, getIntent());
     }
@@ -360,22 +363,22 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         }
         AndroidUtilities.checkForCrashes(this);
         AndroidUtilities.checkForUpdates(this);
-        ConnectionsManager.getInstance().setAppPaused(false, false);
+        ConnectionsManager.getInstance(currentAccount).setAppPaused(false, false);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         AndroidUtilities.unregisterUpdates();
-        ConnectionsManager.getInstance().setAppPaused(true, false);
+        ConnectionsManager.getInstance(currentAccount).setAppPaused(true, false);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         destroyed = true;
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         preferences.edit().putLong("intro_crashed_time", 0).commit();
     }
 
@@ -410,7 +413,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             localeInfo = englishInfo;
         }
         req.keys.add("ContinueOnThisLanguage");
-        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
                 if (response != null) {
@@ -425,7 +428,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
                             public void run() {
                                 if (!destroyed) {
                                     textView.setText(string.value);
-                                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                                    SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                                     preferences.edit().putString("language_showed2", LocaleController.getSystemLocaleStringIso639().toLowerCase()).commit();
                                 }
                             }
@@ -437,7 +440,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.suggestedLangpack) {
             checkContinueText();
         }
@@ -536,14 +539,18 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
 
             eglDisplay = egl10.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
             if (eglDisplay == EGL10.EGL_NO_DISPLAY) {
-                FileLog.e("eglGetDisplay failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglGetDisplay failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
 
             int[] version = new int[2];
             if (!egl10.eglInitialize(eglDisplay, version)) {
-                FileLog.e("eglInitialize failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglInitialize failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
@@ -563,13 +570,17 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
                     EGL10.EGL_NONE
             };
             if (!egl10.eglChooseConfig(eglDisplay, configSpec, configs, 1, configsCount)) {
-                FileLog.e("eglChooseConfig failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglChooseConfig failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             } else if (configsCount[0] > 0) {
                 eglConfig = configs[0];
             } else {
-                FileLog.e("eglConfig not initialized");
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglConfig not initialized");
+                }
                 finish();
                 return false;
             }
@@ -577,7 +588,9 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             int[] attrib_list = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE };
             eglContext = egl10.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
             if (eglContext == null) {
-                FileLog.e("eglCreateContext failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglCreateContext failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
@@ -590,12 +603,16 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             }
 
             if (eglSurface == null || eglSurface == EGL10.EGL_NO_SURFACE) {
-                FileLog.e("createWindowSurface failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("createWindowSurface failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
             if (!egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-                FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
@@ -663,7 +680,9 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
 
                 if (!eglContext.equals(egl10.eglGetCurrentContext()) || !eglSurface.equals(egl10.eglGetCurrentSurface(EGL10.EGL_DRAW))) {
                     if (!egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-                        FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                        }
                         return;
                     }
                 }

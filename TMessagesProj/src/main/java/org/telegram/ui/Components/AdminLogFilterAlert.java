@@ -15,6 +15,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -36,13 +37,12 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.StickerPreviewViewer;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.regex.Pattern;
 
 public class AdminLogFilterAlert extends BottomSheet {
 
     public interface AdminLogFilterAlertDelegate {
-        void didSelectRights(TLRPC.TL_channelAdminLogEventsFilter filter, HashMap<Integer, TLRPC.User> admins);
+        void didSelectRights(TLRPC.TL_channelAdminLogEventsFilter filter, SparseArray<TLRPC.User> admins);
     }
 
     private Pattern urlPattern;
@@ -60,7 +60,7 @@ public class AdminLogFilterAlert extends BottomSheet {
 
     private TLRPC.TL_channelAdminLogEventsFilter currentFilter;
     private ArrayList<TLRPC.ChannelParticipant> currentAdmins;
-    private HashMap<Integer, TLRPC.User> selectedAdmins;
+    private SparseArray<TLRPC.User> selectedAdmins;
     private boolean isMegagroup;
 
     private int restrictionsRow;
@@ -73,7 +73,7 @@ public class AdminLogFilterAlert extends BottomSheet {
     private int leavingRow;
     private int allAdminsRow;
 
-    public AdminLogFilterAlert(Context context, TLRPC.TL_channelAdminLogEventsFilter filter, HashMap<Integer, TLRPC.User> admins, boolean megagroup) {
+    public AdminLogFilterAlert(Context context, TLRPC.TL_channelAdminLogEventsFilter filter, SparseArray<TLRPC.User> admins, boolean megagroup) {
         super(context, false);
         if (filter != null) {
             currentFilter = new TLRPC.TL_channelAdminLogEventsFilter();
@@ -93,7 +93,7 @@ public class AdminLogFilterAlert extends BottomSheet {
             currentFilter.delete = filter.delete;
         }
         if (admins != null) {
-            selectedAdmins = new HashMap<>(admins);
+            selectedAdmins = admins.clone();
         }
         isMegagroup = megagroup;
 
@@ -241,7 +241,7 @@ public class AdminLogFilterAlert extends BottomSheet {
                         }
                     } else if (position == allAdminsRow) {
                         if (isChecked) {
-                            selectedAdmins = new HashMap<>();
+                            selectedAdmins = new SparseArray<>();
                         } else {
                             selectedAdmins = null;
                         }
@@ -300,13 +300,13 @@ public class AdminLogFilterAlert extends BottomSheet {
                 } else if (view instanceof CheckBoxUserCell) {
                     CheckBoxUserCell checkBoxUserCell = (CheckBoxUserCell) view;
                     if (selectedAdmins == null) {
-                        selectedAdmins = new HashMap<>();
+                        selectedAdmins = new SparseArray<>();
                         RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(allAdminsRow);
                         if (holder != null) {
                             ((CheckBoxCell) holder.itemView).setChecked(false, true);
                         }
                         for (int a = 0; a < currentAdmins.size(); a++) {
-                            TLRPC.User user = MessagesController.getInstance().getUser(currentAdmins.get(a).user_id);
+                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(currentAdmins.get(a).user_id);
                             selectedAdmins.put(user.id, user);
                         }
                     }
@@ -410,7 +410,7 @@ public class AdminLogFilterAlert extends BottomSheet {
             View view = null;
             switch (viewType) {
                 case 0:
-                    view = new CheckBoxCell(context, true);
+                    view = new CheckBoxCell(context, 1);
                     view.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                     break;
                 case 1:
@@ -460,7 +460,7 @@ public class AdminLogFilterAlert extends BottomSheet {
                 case 2: {
                     CheckBoxUserCell userCell = (CheckBoxUserCell) holder.itemView;
                     int userId = currentAdmins.get(position - allAdminsRow - 1).user_id;
-                    userCell.setChecked(selectedAdmins == null || selectedAdmins.containsKey(userId), false);
+                    userCell.setChecked(selectedAdmins == null || selectedAdmins.indexOfKey(userId) >= 0, false);
                     break;
                 }
             }
@@ -501,7 +501,7 @@ public class AdminLogFilterAlert extends BottomSheet {
                 case 2: {
                     CheckBoxUserCell userCell = (CheckBoxUserCell) holder.itemView;
                     int userId = currentAdmins.get(position - allAdminsRow - 1).user_id;
-                    userCell.setUser(MessagesController.getInstance().getUser(userId), selectedAdmins == null || selectedAdmins.containsKey(userId), position != getItemCount() - 1);
+                    userCell.setUser(MessagesController.getInstance(currentAccount).getUser(userId), selectedAdmins == null || selectedAdmins.indexOfKey(userId) >= 0, position != getItemCount() - 1);
                     break;
                 }
             }

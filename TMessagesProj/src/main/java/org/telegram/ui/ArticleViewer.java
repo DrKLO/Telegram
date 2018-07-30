@@ -38,6 +38,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.Keep;
 import android.support.v4.content.FileProvider;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -49,6 +50,8 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.MetricAffectingSpan;
+import android.util.LongSparseArray;
+import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.Gravity;
@@ -79,6 +82,7 @@ import android.widget.Toast;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -156,6 +160,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     private boolean isVisible;
     private boolean collapsed;
     private boolean attachedToWindow;
+    
+    private int currentAccount;
 
     private int animationInProgress;
     private Runnable animationEndRunnable;
@@ -238,6 +244,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             }
         }
         return localInstance;
+    }
+
+    public static boolean hasInstance() {
+        return Instance != null;
     }
 
     private static Paint colorPaint;
@@ -416,15 +426,15 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         @Override
         protected void onDraw(Canvas canvas) {
             colorPaint.setColor(currentColor);
-            canvas.drawCircle(!LocaleController.isRTL ? AndroidUtilities.dp(28) : getMeasuredWidth() - AndroidUtilities.dp(28 + 20), getMeasuredHeight() / 2, AndroidUtilities.dp(10), colorPaint);
+            canvas.drawCircle(!LocaleController.isRTL ? AndroidUtilities.dp(28) : getMeasuredWidth() - AndroidUtilities.dp(28), getMeasuredHeight() / 2, AndroidUtilities.dp(10), colorPaint);
             if (selected) {
                 selectorPaint.setStrokeWidth(AndroidUtilities.dp(2));
                 selectorPaint.setColor(0xff1495e9);
-                canvas.drawCircle(!LocaleController.isRTL ? AndroidUtilities.dp(28) : getMeasuredWidth() - AndroidUtilities.dp(28 + 20), getMeasuredHeight() / 2, AndroidUtilities.dp(10), selectorPaint);
+                canvas.drawCircle(!LocaleController.isRTL ? AndroidUtilities.dp(28) : getMeasuredWidth() - AndroidUtilities.dp(28), getMeasuredHeight() / 2, AndroidUtilities.dp(10), selectorPaint);
             } else if (currentColor == 0xffffffff) {
                 selectorPaint.setStrokeWidth(AndroidUtilities.dp(1));
                 selectorPaint.setColor(0xffbababa);
-                canvas.drawCircle(!LocaleController.isRTL ? AndroidUtilities.dp(28) : getMeasuredWidth() - AndroidUtilities.dp(28 + 20), getMeasuredHeight() / 2, AndroidUtilities.dp(9), selectorPaint);
+                canvas.drawCircle(!LocaleController.isRTL ? AndroidUtilities.dp(28) : getMeasuredWidth() - AndroidUtilities.dp(28), getMeasuredHeight() / 2, AndroidUtilities.dp(9), selectorPaint);
             }
         }
     }
@@ -559,6 +569,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 } else if (insets.getSystemWindowInsetLeft() != 0) {
                     barBackground.measure(View.MeasureSpec.makeMeasureSpec(insets.getSystemWindowInsetLeft(), View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(heightSize, View.MeasureSpec.EXACTLY));
                 } else {
+                    if (insets.getSystemWindowInsetBottom() == 0) {
+                        barBackground.setVisibility(INVISIBLE);
+                    } else {
+                        barBackground.setVisibility(VISIBLE);
+                    }
                     barBackground.measure(View.MeasureSpec.makeMeasureSpec(widthSize, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(insets.getSystemWindowInsetBottom(), View.MeasureSpec.EXACTLY));
                 }
             } else {
@@ -628,6 +643,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             return !collapsed && (handleTouchEvent(event) || super.onTouchEvent(event));
         }
 
+        @Keep
         public void setInnerTranslationX(float value) {
             innerTranslationX = value;
             if (parentActivity instanceof LaunchActivity) {
@@ -663,6 +679,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             return result;
         }
 
+        @Keep
         public float getInnerTranslationX() {
             return innerTranslationX;
         }
@@ -769,6 +786,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             canvas.drawRect(innerTranslationX, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
         }
 
+        @Keep
         @Override
         public void setAlpha(float value) {
             backgroundPaint.setAlpha((int) (255 * value));
@@ -779,6 +797,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             invalidate();
         }
 
+        @Keep
         @Override
         public float getAlpha() {
             return alpha;
@@ -967,19 +986,18 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 anchors.put(block.name.toLowerCase(), blocks.size());
                 continue;
             } else if (block instanceof TLRPC.TL_pageBlockAudio) {
-
                 TLRPC.TL_message message = new TLRPC.TL_message();
                 message.out = true;
                 message.id = block.mid = ((int) currentPage.id) + a;
                 message.to_id = new TLRPC.TL_peerUser();
-                message.to_id.user_id = message.from_id = UserConfig.getClientUserId();
+                message.to_id.user_id = message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
                 message.date = (int) (System.currentTimeMillis() / 1000);
-                message.message = "-1";
+                message.message = "";
                 message.media = new TLRPC.TL_messageMediaDocument();
                 message.media.flags |= 3;
                 message.media.document = getDocumentWithId(block.audio_id);
                 message.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
-                MessageObject messageObject = new MessageObject(message, null, false);
+                MessageObject messageObject = new MessageObject(UserConfig.selectedAccount, message, false);
                 audioMessages.add(messageObject);
                 audioBlocks.put((TLRPC.TL_pageBlockAudio) block, messageObject);
             }
@@ -1120,23 +1138,23 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
     private static TextPaint audioTimePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private static TextPaint errorTextPaint;
-    private static HashMap<Integer, TextPaint> captionTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> titleTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> headerTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> subtitleTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> subheaderTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> authorTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> footerTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> paragraphTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> listTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> preformattedTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> quoteTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> subquoteTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> embedTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> slideshowTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> embedPostTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> embedPostCaptionTextPaints = new HashMap<>();
-    private static HashMap<Integer, TextPaint> videoTextPaints = new HashMap<>();
+    private static SparseArray<TextPaint> captionTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> titleTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> headerTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> subtitleTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> subheaderTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> authorTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> footerTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> paragraphTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> listTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> preformattedTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> quoteTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> subquoteTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> embedTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> slideshowTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> embedPostTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> embedPostCaptionTextPaints = new SparseArray<>();
+    private static SparseArray<TextPaint> videoTextPaints = new SparseArray<>();
 
     private static TextPaint embedPostAuthorPaint;
     private static TextPaint embedPostDatePaint;
@@ -1184,7 +1202,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         } else if (richText instanceof TLRPC.TL_textEmail) {
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(getText(parentRichText, ((TLRPC.TL_textEmail) richText).text, parentBlock));
             MetricAffectingSpan innerSpans[] = spannableStringBuilder.getSpans(0, spannableStringBuilder.length(), MetricAffectingSpan.class);
-            spannableStringBuilder.setSpan(new TextPaintUrlSpan(innerSpans == null || innerSpans.length == 0 ? getTextPaint(parentRichText, richText, parentBlock) : null, getUrl(richText)), 0, spannableStringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            spannableStringBuilder.setSpan(new TextPaintUrlSpan(innerSpans == null || innerSpans.length == 0 ? getTextPaint(parentRichText, richText, parentBlock) : null, "mailto:" + getUrl(richText)), 0, spannableStringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             return spannableStringBuilder;
         } else if (richText instanceof TLRPC.TL_textUrl) {
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(getText(parentRichText, ((TLRPC.TL_textUrl) richText).text, parentBlock));
@@ -1265,7 +1283,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
     private TextPaint getTextPaint(TLRPC.RichText parentRichText, TLRPC.RichText richText, TLRPC.PageBlock parentBlock) {
         int flags = getTextFlags(richText);
-        HashMap<Integer, TextPaint> currentMap = null;
+        SparseArray<TextPaint> currentMap = null;
         int textSize = AndroidUtilities.dp(14);
         int textColor = 0xffff0000;
 
@@ -1516,7 +1534,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
         if (pressedLink != null) {
             canvas.drawPath(urlPath, urlPaint);
-        } else if (drawBlockSelection) {
+        } else if (drawBlockSelection && layout != null) {
             float width;
             float x;
             if (layout.getLineCount() == 1) {
@@ -1607,7 +1625,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                             final TLRPC.TL_messages_getWebPage req = new TLRPC.TL_messages_getWebPage();
                             req.url = pressedLink.getUrl();
                             req.hash = 0;
-                            openUrlReqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                            openUrlReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
                                 @Override
                                 public void run(final TLObject response, TLRPC.TL_error error) {
                                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1685,7 +1703,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
     @SuppressWarnings("unchecked")
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.FileDidFailedLoad) {
             String location = (String) args[0];
             for (int a = 0; a < 3; a++) {
@@ -1718,6 +1736,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         } else if (id == NotificationCenter.emojiDidLoaded) {
             if (captionTextView != null) {
                 captionTextView.invalidate();
+            }
+        } else if (id == NotificationCenter.needSetDayNightTheme) {
+            if (nightModeEnabled && selectedColor != 2 && adapter != null) {
+                updatePaintColors();
+                adapter.notifyDataSetChanged();
             }
         } else if (id == NotificationCenter.messagePlayingDidStarted) {
             MessageObject messageObject = (MessageObject) args[0];
@@ -1760,6 +1783,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                             if (player != null) {
                                 playing.audioProgress = player.audioProgress;
                                 playing.audioProgressSec = player.audioProgressSec;
+                                playing.audioPlayerDuration = player.audioPlayerDuration;
                                 cell.updatePlayingMessageProgress();
                             }
                             break;
@@ -1782,50 +1806,48 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         Typeface typefaceBold = selectedFont == 0 ? AndroidUtilities.getTypeface("fonts/rmedium.ttf") : Typeface.create("serif", Typeface.BOLD);
         Typeface typefaceBoldItalic = selectedFont == 0 ? AndroidUtilities.getTypeface("fonts/rmediumitalic.ttf") : Typeface.create("serif", Typeface.BOLD_ITALIC);
 
-        for (HashMap.Entry<Integer, TextPaint> entry : quoteTextPaints.entrySet()) {
-            updateFontEntry(entry, typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
+        for (int a = 0; a < quoteTextPaints.size(); a++) {
+            updateFontEntry(quoteTextPaints.keyAt(a), quoteTextPaints.valueAt(a), typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : preformattedTextPaints.entrySet()) {
-            updateFontEntry(entry, typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
+        for (int a = 0; a < preformattedTextPaints.size(); a++) {
+            updateFontEntry(preformattedTextPaints.keyAt(a), preformattedTextPaints.valueAt(a), typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : paragraphTextPaints.entrySet()) {
-            updateFontEntry(entry, typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
+        for (int a = 0; a < paragraphTextPaints.size(); a++) {
+            updateFontEntry(paragraphTextPaints.keyAt(a), paragraphTextPaints.valueAt(a), typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : listTextPaints.entrySet()) {
-            updateFontEntry(entry, typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
+        for (int a = 0; a < listTextPaints.size(); a++) {
+            updateFontEntry(listTextPaints.keyAt(a), listTextPaints.valueAt(a), typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : embedPostTextPaints.entrySet()) {
-            updateFontEntry(entry, typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
+        for (int a = 0; a < embedPostTextPaints.size(); a++) {
+            updateFontEntry(embedPostTextPaints.keyAt(a), embedPostTextPaints.valueAt(a), typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : videoTextPaints.entrySet()) {
-            updateFontEntry(entry, typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
+        for (int a = 0; a < videoTextPaints.size(); a++) {
+            updateFontEntry(videoTextPaints.keyAt(a), videoTextPaints.valueAt(a), typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : captionTextPaints.entrySet()) {
-            updateFontEntry(entry, typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
+        for (int a = 0; a < captionTextPaints.size(); a++) {
+            updateFontEntry(captionTextPaints.keyAt(a), captionTextPaints.valueAt(a), typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : authorTextPaints.entrySet()) {
-            updateFontEntry(entry, typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
+        for (int a = 0; a < authorTextPaints.size(); a++) {
+            updateFontEntry(authorTextPaints.keyAt(a), authorTextPaints.valueAt(a), typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : footerTextPaints.entrySet()) {
-            updateFontEntry(entry, typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
+        for (int a = 0; a < footerTextPaints.size(); a++) {
+            updateFontEntry(footerTextPaints.keyAt(a), footerTextPaints.valueAt(a), typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : subquoteTextPaints.entrySet()) {
-            updateFontEntry(entry, typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
+        for (int a = 0; a < subquoteTextPaints.size(); a++) {
+            updateFontEntry(subquoteTextPaints.keyAt(a), subquoteTextPaints.valueAt(a), typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : embedPostCaptionTextPaints.entrySet()) {
-            updateFontEntry(entry, typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
+        for (int a = 0; a < embedPostCaptionTextPaints.size(); a++) {
+            updateFontEntry(embedPostCaptionTextPaints.keyAt(a), embedPostCaptionTextPaints.valueAt(a), typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : embedTextPaints.entrySet()) {
-            updateFontEntry(entry, typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
+        for (int a = 0; a < embedTextPaints.size(); a++) {
+            updateFontEntry(embedTextPaints.keyAt(a), embedTextPaints.valueAt(a), typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : slideshowTextPaints.entrySet()) {
-            updateFontEntry(entry, typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
+        for (int a = 0; a < slideshowTextPaints.size(); a++) {
+            updateFontEntry(slideshowTextPaints.keyAt(a), slideshowTextPaints.valueAt(a), typefaceNormal, typefaceBoldItalic, typefaceBold, typefaceItalic);
         }
     }
 
-    private void updateFontEntry(HashMap.Entry<Integer, TextPaint> entry, Typeface typefaceNormal, Typeface typefaceBoldItalic, Typeface typefaceBold, Typeface typefaceItalic) {
-        Integer flags = entry.getKey();
-        TextPaint paint = entry.getValue();
+    private void updateFontEntry(int flags, TextPaint paint, Typeface typefaceNormal, Typeface typefaceBoldItalic, Typeface typefaceBold, Typeface typefaceItalic) {
         if ((flags & TEXT_FLAG_MEDIUM) != 0 && (flags & TEXT_FLAG_ITALIC) != 0) {
             paint.setTypeface(typefaceBoldItalic);
         } else if ((flags & TEXT_FLAG_MEDIUM) != 0) {
@@ -1840,9 +1862,15 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     private int getSelectedColor() {
         int currentColor = selectedColor;
         if (nightModeEnabled && currentColor != 2) {
-            int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-            if (hour >= 22 && hour <= 24 || hour >= 0 && hour <= 6) {
-                currentColor = 2;
+            if (Theme.selectedAutoNightType != Theme.AUTO_NIGHT_TYPE_NONE) {
+                if (Theme.isCurrentThemeNight()) {
+                    currentColor = 2;
+                }
+            } else {
+                int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+                if (hour >= 22 && hour <= 24 || hour >= 0 && hour <= 6) {
+                    currentColor = 2;
+                }
             }
         }
         return currentColor;
@@ -1923,65 +1951,70 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             }
         }
 
-        for (HashMap.Entry<Integer, TextPaint> entry : titleTextPaints.entrySet()) {
-            entry.getValue().setColor(getTextColor());
+        for (int a = 0; a < titleTextPaints.size(); a++) {
+            titleTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : subtitleTextPaints.entrySet()) {
-            entry.getValue().setColor(getTextColor());
+        for (int a = 0; a < subtitleTextPaints.size(); a++) {
+            subtitleTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : headerTextPaints.entrySet()) {
-            entry.getValue().setColor(getTextColor());
+        for (int a = 0; a < headerTextPaints.size(); a++) {
+            headerTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : subheaderTextPaints.entrySet()) {
-            entry.getValue().setColor(getTextColor());
+        for (int a = 0; a < subheaderTextPaints.size(); a++) {
+            subheaderTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : quoteTextPaints.entrySet()) {
-            entry.getValue().setColor(getTextColor());
+        for (int a = 0; a < quoteTextPaints.size(); a++) {
+            quoteTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : preformattedTextPaints.entrySet()) {
-            entry.getValue().setColor(getTextColor());
+        for (int a = 0; a < preformattedTextPaints.size(); a++) {
+            preformattedTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : paragraphTextPaints.entrySet()) {
-            entry.getValue().setColor(getTextColor());
+        for (int a = 0; a < paragraphTextPaints.size(); a++) {
+            paragraphTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : listTextPaints.entrySet()) {
-            entry.getValue().setColor(getTextColor());
+        for (int a = 0; a < listTextPaints.size(); a++) {
+            listTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : embedPostTextPaints.entrySet()) {
-            entry.getValue().setColor(getTextColor());
+        for (int a = 0; a < embedPostTextPaints.size(); a++) {
+            embedPostTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : videoTextPaints.entrySet()) {
-            entry.getValue().setColor(getTextColor());
+        for (int a = 0; a < videoTextPaints.size(); a++) {
+            videoTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : captionTextPaints.entrySet()) {
-            entry.getValue().setColor(getGrayTextColor());
+        for (int a = 0; a < captionTextPaints.size(); a++) {
+            captionTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : authorTextPaints.entrySet()) {
-            entry.getValue().setColor(getGrayTextColor());
+        for (int a = 0; a < authorTextPaints.size(); a++) {
+            authorTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : footerTextPaints.entrySet()) {
-            entry.getValue().setColor(getGrayTextColor());
+        for (int a = 0; a < footerTextPaints.size(); a++) {
+            footerTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : subquoteTextPaints.entrySet()) {
-            entry.getValue().setColor(getGrayTextColor());
+        for (int a = 0; a < subquoteTextPaints.size(); a++) {
+            subquoteTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : embedPostCaptionTextPaints.entrySet()) {
-            entry.getValue().setColor(getGrayTextColor());
+        for (int a = 0; a < embedPostCaptionTextPaints.size(); a++) {
+            embedPostCaptionTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : embedTextPaints.entrySet()) {
-            entry.getValue().setColor(getGrayTextColor());
+        for (int a = 0; a < embedTextPaints.size(); a++) {
+            embedTextPaints.valueAt(a).setColor(getTextColor());
         }
-        for (HashMap.Entry<Integer, TextPaint> entry : slideshowTextPaints.entrySet()) {
-            entry.getValue().setColor(getGrayTextColor());
+        for (int a = 0; a < slideshowTextPaints.size(); a++) {
+            slideshowTextPaints.valueAt(a).setColor(getTextColor());
         }
     }
 
     public void setParentActivity(Activity activity, BaseFragment fragment) {
         parentFragment = fragment;
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingDidReset);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagePlayingDidStarted);
+        currentAccount = UserConfig.selectedAccount;
+        leftImage.setCurrentAccount(currentAccount);
+        rightImage.setCurrentAccount(currentAccount);
+        centerImage.setCurrentAccount(currentAccount);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidReset);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidStarted);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.needSetDayNightTheme);
         if (parentActivity == activity) {
             updatePaintColors();
             return;
@@ -2107,15 +2140,16 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     if (previewsReqId != 0) {
                         return;
                     }
-                    TLObject object = MessagesController.getInstance().getUserOrChat("previews");
+                    TLObject object = MessagesController.getInstance(currentAccount).getUserOrChat("previews");
                     if (object instanceof TLRPC.TL_user) {
                         openPreviewsChat((TLRPC.User) object, currentPage.id);
                     } else {
+                        final int currentAccount = UserConfig.selectedAccount;
                         final long pageId = currentPage.id;
                         showProgressView(true);
                         TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
                         req.username = "previews";
-                        previewsReqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                        previewsReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
                             @Override
                             public void run(final TLObject response, final TLRPC.TL_error error) {
                                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -2128,8 +2162,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                                         showProgressView(false);
                                         if (response != null) {
                                             TLRPC.TL_contacts_resolvedPeer res = (TLRPC.TL_contacts_resolvedPeer) response;
-                                            MessagesController.getInstance().putUsers(res.users, false);
-                                            MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, false, true);
+                                            MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                                            MessagesStorage.getInstance(currentAccount).putUsersAndChats(res.users, res.chats, false, true);
                                             if (!res.users.isEmpty()) {
                                                 openPreviewsChat(res.users.get(0), pageId);
                                             }
@@ -2142,7 +2176,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 } else if (position >= 0 && position < blocks.size()) {
                     TLRPC.PageBlock pageBlock = blocks.get(position);
                     if (pageBlock instanceof TLRPC.TL_pageBlockChannel) {
-                        MessagesController.openByUserName(pageBlock.channel.username, parentFragment, 2);
+                        MessagesController.getInstance(currentAccount).openByUserName(pageBlock.channel.username, parentFragment, 2);
                         close(false, true);
                     }
                 }
@@ -2241,7 +2275,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     nightModeImageView.setImageResource(R.drawable.moon);
                     nightModeImageView.setColorFilter(new PorterDuffColorFilter(nightModeEnabled && selectedColor != 2 ? 0xff1495e9 : 0xffcccccc, PorterDuff.Mode.MULTIPLY));
                     nightModeImageView.setBackgroundDrawable(Theme.createSelectorDrawable(0x0f000000));
-                    colorCells[a].addView(nightModeImageView, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.RIGHT));
+                    colorCells[a].addView(nightModeImageView, LayoutHelper.createFrame(48, 48, Gravity.TOP | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT)));
                     nightModeImageView.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
@@ -2487,7 +2521,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         radialProgressViews[2].setBackgroundState(0, false);
 
         videoPlayerSeekbar = new SeekBar(activity);
-        videoPlayerSeekbar.setColors(0x66ffffff, 0xffffffff, 0xffffffff);
+        videoPlayerSeekbar.setColors(0x66ffffff, 0x66ffffff, 0xffd5d0d7, 0xffffffff, 0xffffffff);
         videoPlayerSeekbar.setDelegate(new SeekBar.SeekBarDelegate() {
             @Override
             public void onSeekBarDrag(float progress) {
@@ -2592,18 +2626,18 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
         nightModeHintView = new FrameLayout(parentActivity);
         nightModeHintView.setBackgroundColor(0xff333333);
-        containerView.addView(nightModeHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT));
+        containerView.addView(nightModeHintView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT));
 
         ImageView nightModeImageView = new ImageView(parentActivity);
         nightModeImageView.setScaleType(ImageView.ScaleType.CENTER);
         nightModeImageView.setImageResource(R.drawable.moon);
-        nightModeHintView.addView(nightModeImageView, LayoutHelper.createFrame(56, 56, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+        nightModeHintView.addView(nightModeImageView, LayoutHelper.createFrame(56, 56, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
 
         TextView textView = new TextView(parentActivity);
         textView.setText(LocaleController.getString("InstantViewNightMode", R.string.InstantViewNightMode));
         textView.setTextColor(0xffffffff);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        nightModeHintView.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 56, 11, 10, 12));
+        nightModeHintView.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 10 : 56), 11, (LocaleController.isRTL ? 56 : 10), 12));
 
         AnimatorSet animatorSet = new AnimatorSet();
         animatorSet.playTogether(ObjectAnimator.ofFloat(nightModeHintView, "translationY", AndroidUtilities.dp(100), 0));
@@ -2678,7 +2712,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             int count = slideshow.items.size();
             for (int a = 0; a < count; a++) {
                 TLRPC.PageBlock innerBlock = slideshow.items.get(a);
-                if (innerBlock instanceof TLRPC.TL_pageBlockPhoto || innerBlock instanceof TLRPC.TL_pageBlockVideo && isVideoBlock(block)) {
+                if (innerBlock instanceof TLRPC.TL_pageBlockPhoto || innerBlock instanceof TLRPC.TL_pageBlockVideo && isVideoBlock(innerBlock)) {
                     photoBlocks.add(innerBlock);
                 }
             }
@@ -2687,7 +2721,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             int count = collage.items.size();
             for (int a = 0; a < count; a++) {
                 TLRPC.PageBlock innerBlock = collage.items.get(a);
-                if (innerBlock instanceof TLRPC.TL_pageBlockPhoto || innerBlock instanceof TLRPC.TL_pageBlockVideo && isVideoBlock(block)) {
+                if (innerBlock instanceof TLRPC.TL_pageBlockPhoto || innerBlock instanceof TLRPC.TL_pageBlockVideo && isVideoBlock(innerBlock)) {
                     photoBlocks.add(innerBlock);
                 }
             }
@@ -2721,7 +2755,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 req.hash = webpage.hash;
             }
             final TLRPC.WebPage webPageFinal = webpage;
-            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+            final int currentAccount = UserConfig.selectedAccount;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(TLObject response, TLRPC.TL_error error) {
                     if (response instanceof TLRPC.TL_webPage) {
@@ -2745,9 +2780,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                                 }
                             }
                         });
-                        HashMap<Long, TLRPC.WebPage> webpages = new HashMap<>();
+                        LongSparseArray<TLRPC.WebPage> webpages = new LongSparseArray<>(1);
                         webpages.put(webPage.id, webPage);
-                        MessagesStorage.getInstance().putWebPages(webpages);
+                        MessagesStorage.getInstance(currentAccount).putWebPages(webpages);
                     }
                 }
             });
@@ -2864,7 +2899,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        NotificationCenter.getInstance().setAnimationInProgress(false);
+                        NotificationCenter.getInstance(currentAccount).setAnimationInProgress(false);
                         if (animationEndRunnable != null) {
                             animationEndRunnable.run();
                             animationEndRunnable = null;
@@ -2877,8 +2912,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
-                NotificationCenter.getInstance().setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats});
-                NotificationCenter.getInstance().setAnimationInProgress(true);
+                NotificationCenter.getInstance(currentAccount).setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats});
+                NotificationCenter.getInstance(currentAccount).setAnimationInProgress(true);
                 animatorSet.start();
             }
         });
@@ -3126,10 +3161,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         if (parentActivity == null || !isVisible || checkAnimation()) {
             return;
         }
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingDidReset);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagePlayingDidStarted);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidReset);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidStarted);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needSetDayNightTheme);
         if (fullscreenVideoContainer.getVisibility() == View.VISIBLE) {
             if (customView != null) {
                 fullscreenVideoContainer.setVisibility(View.INVISIBLE);
@@ -3150,12 +3186,12 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             }
         }
         if (openUrlReqId != 0) {
-            ConnectionsManager.getInstance().cancelRequest(openUrlReqId, true);
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(openUrlReqId, true);
             openUrlReqId = 0;
             showProgressView(false);
         }
         if (previewsReqId != 0) {
-            ConnectionsManager.getInstance().cancelRequest(previewsReqId, true);
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(previewsReqId, true);
             previewsReqId = 0;
             showProgressView(false);
         }
@@ -3251,7 +3287,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         loadingChannel = true;
         TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
         req.username = channel.username;
-        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        final int currentAccount = UserConfig.selectedAccount;
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -3264,9 +3301,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         if (error == null) {
                             TLRPC.TL_contacts_resolvedPeer res = (TLRPC.TL_contacts_resolvedPeer) response;
                             if (!res.chats.isEmpty()) {
-                                MessagesController.getInstance().putUsers(res.users, false);
-                                MessagesController.getInstance().putChats(res.chats, false);
-                                MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, false, true);
+                                MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                                MessagesController.getInstance(currentAccount).putChats(res.chats, false);
+                                MessagesStorage.getInstance(currentAccount).putUsersAndChats(res.users, res.chats, false, true);
                                 loadedChannel = res.chats.get(0);
                                 if (loadedChannel.left && !loadedChannel.kicked) {
                                     cell.setState(0, false);
@@ -3288,7 +3325,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     private void joinChannel(final BlockChannelCell cell, final TLRPC.Chat channel) {
         final TLRPC.TL_channels_joinChannel req = new TLRPC.TL_channels_joinChannel();
         req.channel = MessagesController.getInputChannel(channel);
-        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        final int currentAccount = UserConfig.selectedAccount;
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(TLObject response, final TLRPC.TL_error error) {
                 if (error != null) {
@@ -3296,7 +3334,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         @Override
                         public void run() {
                             cell.setState(0, false);
-                            AlertsCreator.processError(error, parentFragment, req, true);
+                            AlertsCreator.processError(currentAccount, error, parentFragment, req, true);
                         }
                     });
                     return;
@@ -3312,9 +3350,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         }
                     }
                 }
-                MessagesController.getInstance().processUpdates(updates, false);
+                MessagesController.getInstance(currentAccount).processUpdates(updates, false);
                 if (!hasJoinMessage) {
-                    MessagesController.getInstance().generateJoinMessage(channel.id, true);
+                    MessagesController.getInstance(currentAccount).generateJoinMessage(channel.id, true);
                 }
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
@@ -3325,10 +3363,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        MessagesController.getInstance().loadFullChat(channel.id, 0, true);
+                        MessagesController.getInstance(currentAccount).loadFullChat(channel.id, 0, true);
                     }
                 }, 1000);
-                MessagesStorage.getInstance().updateDialogsWithDeletedMessages(new ArrayList<Integer>(), null, true, channel.id);
+                MessagesStorage.getInstance(currentAccount).updateDialogsWithDeletedMessages(new ArrayList<Integer>(), null, true, channel.id);
             }
         });
     }
@@ -3370,6 +3408,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         } catch (Exception e) {
             FileLog.e(e);
         }
+        if (currentThumb != null) {
+            currentThumb.release();
+            currentThumb = null;
+        }
+        animatingImageView.setImageBitmap(null);
         parentActivity = null;
         parentFragment = null;
         Instance = null;
@@ -3718,7 +3761,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
     }
 
-    private class BlockVideoCell extends FrameLayout implements MediaController.FileDownloadProgressListener {
+    private class BlockVideoCell extends FrameLayout implements DownloadController.FileDownloadProgressListener {
 
         private StaticLayout textLayout;
         private ImageReceiver imageView;
@@ -3754,7 +3797,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             radialProgress = new RadialProgress(this);
             radialProgress.setAlphaForPrevious(true);
             radialProgress.setProgressColor(Theme.ARTICLE_VIEWER_MEDIA_PROGRESS_COLOR);
-            TAG = MediaController.getInstance().generateObserverTag();
+            TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
             channelCell = new BlockChannelCell(context, 1);
             addView(channelCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
@@ -3791,7 +3834,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             float y = event.getY();
             if (channelCell.getVisibility() == VISIBLE && y > channelCell.getTranslationY() && y < channelCell.getTranslationY() + AndroidUtilities.dp(39)) {
                 if (channelBlock != null && event.getAction() == MotionEvent.ACTION_UP) {
-                    MessagesController.openByUserName(channelBlock.channel.username, parentFragment, 2);
+                    MessagesController.getInstance(currentAccount).openByUserName(channelBlock.channel.username, parentFragment, 2);
                     close(false, true);
                 }
                 return true;
@@ -3936,10 +3979,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 return;
             }
             if (!fileExists) {
-                MediaController.getInstance().addLoadingFileObserver(fileName, null, this);
+                DownloadController.getInstance(currentAccount).addLoadingFileObserver(fileName, null, this);
                 float setProgress = 0;
                 boolean progressVisible = false;
-                if (!FileLoader.getInstance().isLoadingFile(fileName)) {
+                if (!FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
                     if (!cancelLoading && isGif) {
                         progressVisible = true;
                         buttonState = 1;
@@ -3956,7 +3999,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 radialProgress.setProgress(setProgress, false);
                 invalidate();
             } else {
-                MediaController.getInstance().removeLoadingFileObserver(this);
+                DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
                 if (!isGif) {
                     buttonState = 3;
                 } else {
@@ -3974,7 +4017,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 if (isGif) {
                     imageView.setImage(currentDocument, null, currentDocument.thumb != null ? currentDocument.thumb.location : null, "80_80_b", currentDocument.size, null, 1);
                 } else {
-                    FileLoader.getInstance().loadFile(currentDocument, true, 1);
+                    FileLoader.getInstance(currentAccount).loadFile(currentDocument, true, 1);
                 }
                 buttonState = 1;
                 radialProgress.setBackground(getDrawableForCurrentState(), true, animated);
@@ -3984,7 +4027,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 if (isGif) {
                     imageView.cancelLoadImage();
                 } else {
-                    FileLoader.getInstance().cancelLoadFile(currentDocument);
+                    FileLoader.getInstance(currentAccount).cancelLoadFile(currentDocument);
                 }
                 buttonState = 0;
                 radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
@@ -4034,7 +4077,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
     }
 
-    private class BlockAudioCell extends View implements MediaController.FileDownloadProgressListener {
+    private class BlockAudioCell extends View implements DownloadController.FileDownloadProgressListener {
 
         private StaticLayout textLayout;
         private RadialProgress radialProgress;
@@ -4070,8 +4113,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             radialProgress = new RadialProgress(this);
             radialProgress.setAlphaForPrevious(true);
             radialProgress.setDiff(AndroidUtilities.dp(0));
-            radialProgress.setStrikeWidth(AndroidUtilities.dp(2));
-            TAG = MediaController.getInstance().generateObserverTag();
+            radialProgress.setStrokeWidth(AndroidUtilities.dp(2));
+            TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
 
             seekBar = new SeekBar(context);
 
@@ -4099,7 +4142,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             isLast = last;
 
             radialProgress.setProgressColor(getTextColor());
-            seekBar.setColors(getTextColor() & 0x3fffffff, getTextColor(), getTextColor());
+            seekBar.setColors(getTextColor() & 0x3fffffff, getTextColor() & 0x3fffffff, getTextColor(), getTextColor(), getTextColor());
 
             updateButtonState(false);
             requestLayout();
@@ -4284,7 +4327,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 return;
             }
             if (fileExists) {
-                MediaController.getInstance().removeLoadingFileObserver(this);
+                DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
                 boolean playing = MediaController.getInstance().isPlayingMessage(currentMessageObject);
                 if (!playing || playing && MediaController.getInstance().isMessagePaused()) {
                     buttonState = 0;
@@ -4293,8 +4336,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 }
                 radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
             } else {
-                MediaController.getInstance().addLoadingFileObserver(fileName, null, this);
-                if (!FileLoader.getInstance().isLoadingFile(fileName)) {
+                DownloadController.getInstance(currentAccount).addLoadingFileObserver(fileName, null, this);
+                if (!FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
                     buttonState = 2;
                     radialProgress.setProgress(0, animated);
                     radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
@@ -4328,12 +4371,12 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 }
             } else if (buttonState == 2) {
                 radialProgress.setProgress(0, false);
-                FileLoader.getInstance().loadFile(currentDocument, true, 1);
+                FileLoader.getInstance(currentAccount).loadFile(currentDocument, true, 1);
                 buttonState = 3;
                 radialProgress.setBackground(getDrawableForCurrentState(), true, false);
                 invalidate();
             } else if (buttonState == 3) {
-                FileLoader.getInstance().cancelLoadFile(currentDocument);
+                FileLoader.getInstance(currentAccount).cancelLoadFile(currentDocument);
                 buttonState = 2;
                 radialProgress.setBackground(getDrawableForCurrentState(), false, false);
                 invalidate();
@@ -4421,10 +4464,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 if (lastCreatedWidth != width) {
                     if (avatarVisible = (currentBlock.author_photo_id != 0)) {
                         TLRPC.Photo photo = getPhotoWithId(currentBlock.author_photo_id);
-                        if (avatarVisible = (photo != null)) {
+                        if (avatarVisible = (photo instanceof TLRPC.TL_photo)) {
                             avatarDrawable.setInfo(0, currentBlock.author, null, false);
                             TLRPC.PhotoSize image = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, AndroidUtilities.dp(40), true);
-                            avatarImageView.setImage(image.location, String.format(Locale.US, "%d_%d", 40, 40), avatarDrawable, 0, null, 1);
+                            avatarImageView.setImage(image != null ? image.location : null, String.format(Locale.US, "%d_%d", 40, 40), avatarDrawable, 0, null, 1);
                         }
                     }
                     nameLayout = createLayoutForText(currentBlock.author, null, width - AndroidUtilities.dp(36 + 14 + (avatarVisible ? 40 + 14 : 0)), currentBlock);
@@ -4682,7 +4725,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 }
 
                 @Override
-                public boolean checkInlinePermissons() {
+                public boolean checkInlinePermissions() {
                     return false;
                 }
 
@@ -5833,7 +5876,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             float y = event.getY();
             if (channelCell.getVisibility() == VISIBLE && y > channelCell.getTranslationY() && y < channelCell.getTranslationY() + AndroidUtilities.dp(39)) {
                 if (channelBlock != null && event.getAction() == MotionEvent.ACTION_UP) {
-                    MessagesController.openByUserName(channelBlock.channel.username, parentFragment, 2);
+                    MessagesController.getInstance(currentAccount).openByUserName(channelBlock.channel.username, parentFragment, 2);
                     close(false, true);
                 }
                 return true;
@@ -6018,7 +6061,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 imageView.setColorFilter(new PorterDuffColorFilter(0xffffffff, PorterDuff.Mode.MULTIPLY));
             }
             lastCreatedWidth = 0;
-            TLRPC.Chat channel = MessagesController.getInstance().getChat(block.channel.id);
+            TLRPC.Chat channel = MessagesController.getInstance(currentAccount).getChat(block.channel.id);
             if (channel == null || channel.min) {
                 loadChannel(this, block.channel);
                 setState(1, false);
@@ -6551,7 +6594,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     private TLRPC.PageBlock currentMedia;
     private String currentFileNames[] = new String[3];
     private PlaceProviderObject currentPlaceObject;
-    private Bitmap currentThumb;
+    private ImageReceiver.BitmapHolder currentThumb;
 
     private boolean wasLayout;
     private boolean dontResetZoomOnFirstLayout;
@@ -6613,6 +6656,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             super(color);
         }
 
+        @Keep
         @Override
         public void setAlpha(int alpha) {
             if (parentActivity instanceof LaunchActivity) {
@@ -6769,7 +6813,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         public int viewX;
         public int viewY;
         public View parentView;
-        public Bitmap thumb;
+        public ImageReceiver.BitmapHolder thumb;
         public int index;
         public int size;
         public int radius;
@@ -6786,11 +6830,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             File f = getMediaFile(currentIndex);
             if (f != null && f.exists()) {
                 Intent intent = new Intent(Intent.ACTION_SEND);
-                if (isMediaVideo(currentIndex)) {
-                    intent.setType("video/mp4");
-                } else {
-                    intent.setType("image/jpeg");
-                }
+                intent.setType(getMediaMime(currentIndex));
                 if (Build.VERSION.SDK_INT >= 24) {
                     try {
                         intent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(parentActivity, BuildConfig.APPLICATION_ID + ".provider", f));
@@ -7106,6 +7146,20 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         return !(imagesArr.isEmpty() || index >= imagesArr.size() || index < 0) && isVideoBlock(imagesArr.get(index));
     }
 
+    private String getMediaMime(int index) {
+        if (index >= imagesArr.size() || index < 0) {
+            return "image/jpeg";
+        }
+        TLRPC.PageBlock block = imagesArr.get(index);
+        if (block instanceof TLRPC.TL_pageBlockVideo) {
+            TLRPC.Document document = getDocumentWithId(block.video_id);
+            if (document != null) {
+                return document.mime_type;
+            }
+        }
+        return "image/jpeg";
+    }
+
     private TLRPC.FileLocation getFileLocation(int index, int size[]) {
         if (index < 0 || index >= imagesArr.size()) {
             return null;
@@ -7141,6 +7195,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         currentFileNames[0] = null;
         currentFileNames[1] = null;
         currentFileNames[2] = null;
+        if (currentThumb != null) {
+            currentThumb.release();
+        }
         currentThumb = object != null ? object.thumb : null;
         menuItem.setVisibility(View.VISIBLE);
         menuItem.hideSubItem(gallery_menu_openin);
@@ -7174,7 +7231,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             return;
         }
         if (!init) {
-            currentThumb = null;
+            if (currentThumb != null) {
+                currentThumb.release();
+                currentThumb = null;
+            }
         }
         currentFileNames[0] = getFileName(index);
         currentFileNames[1] = getFileName(index + 1);
@@ -7362,7 +7422,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 }
             } else {
                 if (isVideo) {
-                    if (!FileLoader.getInstance().isLoadingFile(currentFileNames[a])) {
+                    if (!FileLoader.getInstance(currentAccount).isLoadingFile(currentFileNames[a])) {
                         radialProgressViews[a].setBackgroundState(2, false);
                     } else {
                         radialProgressViews[a].setBackgroundState(1, false);
@@ -7394,7 +7454,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             TLObject media = getMedia(index);
             if (media instanceof TLRPC.Photo) {
                 TLRPC.Photo photo = (TLRPC.Photo) media;
-                Bitmap placeHolder = null;
+                ImageReceiver.BitmapHolder placeHolder = null;
                 if (currentThumb != null && imageReceiver == centerImage) {
                     placeHolder = currentThumb;
                 }
@@ -7402,14 +7462,14 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     size[0] = -1;
                 }
                 TLRPC.PhotoSize thumbLocation = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 80);
-                imageReceiver.setImage(fileLocation, null, null, placeHolder != null ? new BitmapDrawable(null, placeHolder) : null, thumbLocation != null ? thumbLocation.location : null, "b", size[0], null, 1);
+                imageReceiver.setImage(fileLocation, null, null, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, thumbLocation != null ? thumbLocation.location : null, "b", size[0], null, 1);
             } else if (isMediaVideo(index)) {
                 if (!(fileLocation instanceof TLRPC.TL_fileLocationUnavailable)) {
-                    Bitmap placeHolder = null;
+                    ImageReceiver.BitmapHolder placeHolder = null;
                     if (currentThumb != null && imageReceiver == centerImage) {
                         placeHolder = currentThumb;
                     }
-                    imageReceiver.setImage(null, null, null, placeHolder != null ? new BitmapDrawable(null, placeHolder) : null, fileLocation, "b", 0, null, 1);
+                    imageReceiver.setImage(null, null, null, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, fileLocation, "b", 0, null, 1);
                 } else {
                     imageReceiver.setImageBitmap(parentActivity.getResources().getDrawable(R.drawable.photoview_placeholder));
                 }
@@ -7455,10 +7515,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             return false;
         }
 
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidFailedLoad);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileLoadProgressChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileDidFailedLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileLoadProgressChanged);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
 
         if (velocityTracker == null) {
             velocityTracker = VelocityTracker.obtain();
@@ -7599,7 +7659,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        NotificationCenter.getInstance().setAnimationInProgress(false);
+                        NotificationCenter.getInstance(currentAccount).setAnimationInProgress(false);
                         if (photoAnimationEndRunnable != null) {
                             photoAnimationEndRunnable.run();
                             photoAnimationEndRunnable = null;
@@ -7612,8 +7672,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
-                NotificationCenter.getInstance().setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats});
-                NotificationCenter.getInstance().setAnimationInProgress(true);
+                NotificationCenter.getInstance(currentAccount).setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats});
+                NotificationCenter.getInstance(currentAccount).setAnimationInProgress(true);
                 animatorSet.start();
             }
         });
@@ -7636,10 +7696,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
 
         releasePlayer();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileDidFailedLoad);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileLoadProgressChanged);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileDidFailedLoad);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileLoadProgressChanged);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needSetDayNightTheme);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
 
         isActionBarVisible = false;
 
@@ -7678,7 +7739,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 animatingImageView.setNeedRadius(false);
                 layoutParams.width = centerImage.getImageWidth();
                 layoutParams.height = centerImage.getImageHeight();
-                animatingImageView.setImageBitmap(centerImage.getBitmap());
+                animatingImageView.setImageBitmap(centerImage.getBitmapSafe());
             }
             animatingImageView.setLayoutParams(layoutParams);
 
@@ -7841,7 +7902,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         isPhotoVisible = false;
         disableShowCheck = true;
         currentMedia = null;
-        currentThumb = null;
+        if (currentThumb != null) {
+            currentThumb.release();
+            currentThumb = null;
+        }
         if (currentAnimation != null) {
             currentAnimation.setSecondParentView(null);
             currentAnimation = null;
@@ -8143,11 +8207,13 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         imageMoveAnimation.start();
     }
 
+    @Keep
     public void setAnimationValue(float value) {
         animationValue = value;
         photoContainerView.invalidate();
     }
 
+    @Keep
     public float getAnimationValue() {
         return animationValue;
     }
@@ -8385,10 +8451,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
         if (file == null) {
             if (download) {
-                if (!FileLoader.getInstance().isLoadingFile(currentFileNames[0])) {
-                    FileLoader.getInstance().loadFile(document, true, 1);
+                if (!FileLoader.getInstance(currentAccount).isLoadingFile(currentFileNames[0])) {
+                    FileLoader.getInstance(currentAccount).loadFile(document, true, 1);
                 } else {
-                    FileLoader.getInstance().cancelLoadFile(document);
+                    FileLoader.getInstance(currentAccount).cancelLoadFile(document);
                 }
             }
         } else {
@@ -8530,7 +8596,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         object.viewY = coords[1];
         object.parentView = listView;
         object.imageReceiver = imageReceiver;
-        object.thumb = imageReceiver.getBitmap();
+        object.thumb = imageReceiver.getBitmapSafe();
         object.radius = imageReceiver.getRoundRadius();
         object.clipTopAddition = currentHeaderHeight;
         return object;

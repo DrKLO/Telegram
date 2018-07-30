@@ -1,9 +1,9 @@
 /*
- * This is the source code of tgnet library v. 1.0
+ * This is the source code of tgnet library v. 1.1
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2015.
+ * Copyright Nikolai Kudashov, 2015-2018.
  */
 
 #include <algorithm>
@@ -12,6 +12,10 @@
 #include "MTProtoScheme.h"
 #include "ConnectionsManager.h"
 #include "NativeByteBuffer.h"
+
+ConnectionSession::ConnectionSession(int32_t instance) {
+    instanceNum = instance;
+}
 
 void ConnectionSession::recreateSession() {
     processedMessageIds.clear();
@@ -36,7 +40,7 @@ void ConnectionSession::setSessionId(int64_t id) {
     sessionId = id;
 }
 
-int64_t ConnectionSession::getSissionId() {
+int64_t ConnectionSession::getSessionId() {
     return sessionId;
 }
 
@@ -82,7 +86,7 @@ NetworkMessage *ConnectionSession::generateConfirmationRequest() {
         msgAck->serializeToStream(os);
         networkMessage = new NetworkMessage();
         networkMessage->message = std::unique_ptr<TL_message>(new TL_message);
-        networkMessage->message->msg_id = ConnectionsManager::getInstance().generateMessageId();
+        networkMessage->message->msg_id = ConnectionsManager::getInstance(instanceNum).generateMessageId();
         networkMessage->message->seqno = generateMessageSeqNo(false);
         networkMessage->message->bytes = os->capacity();
         networkMessage->message->body = std::unique_ptr<TLObject>(msgAck);

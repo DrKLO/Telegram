@@ -16,6 +16,7 @@
 package org.telegram.messenger.exoplayer2.upstream.cache;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 import java.io.File;
 
@@ -43,7 +44,7 @@ public class CacheSpan implements Comparable<CacheSpan> {
   /**
    * The file corresponding to this {@link CacheSpan}, or null if {@link #isCached} is false.
    */
-  public final File file;
+  public final @Nullable File file;
   /**
    * The last access timestamp, or {@link C#TIME_UNSET} if {@link #isCached} is false.
    */
@@ -68,11 +69,12 @@ public class CacheSpan implements Comparable<CacheSpan> {
    * @param position The position of the {@link CacheSpan} in the original stream.
    * @param length The length of the {@link CacheSpan}, or {@link C#LENGTH_UNSET} if this is an
    *     open-ended hole.
-   * @param lastAccessTimestamp The last access timestamp, or {@link C#TIME_UNSET} if
-   *     {@link #isCached} is false.
+   * @param lastAccessTimestamp The last access timestamp, or {@link C#TIME_UNSET} if {@link
+   *     #isCached} is false.
    * @param file The file corresponding to this {@link CacheSpan}, or null if it's a hole.
    */
-  public CacheSpan(String key, long position, long length, long lastAccessTimestamp, File file) {
+  public CacheSpan(
+      String key, long position, long length, long lastAccessTimestamp, @Nullable File file) {
     this.key = key;
     this.position = position;
     this.length = length;

@@ -17,6 +17,7 @@ package org.telegram.messenger.exoplayer2.extractor.ts;
 
 import android.util.SparseArray;
 import org.telegram.messenger.exoplayer2.C;
+import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.extractor.Extractor;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorInput;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorOutput;
@@ -30,7 +31,7 @@ import org.telegram.messenger.exoplayer2.util.TimestampAdjuster;
 import java.io.IOException;
 
 /**
- * Facilitates the extraction of data from the MPEG-2 TS container format.
+ * Extracts data from the MPEG-2 PS container format.
  */
 public final class PsExtractor implements Extractor {
 
@@ -275,8 +276,9 @@ public final class PsExtractor implements Extractor {
      * Consumes the payload of a PS packet.
      *
      * @param data The PES packet. The position will be set to the start of the payload.
+     * @throws ParserException If the payload could not be parsed.
      */
-    public void consume(ParsableByteArray data) {
+    public void consume(ParsableByteArray data) throws ParserException {
       data.readBytes(pesScratch.data, 0, 3);
       pesScratch.setPosition(0);
       parseHeader();

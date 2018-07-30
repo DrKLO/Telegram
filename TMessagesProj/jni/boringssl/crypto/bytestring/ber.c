@@ -14,21 +14,46 @@
 
 #include <openssl/bytestring.h>
 
+#include <assert.h>
 #include <string.h>
 
 #include "internal.h"
+#include "../internal.h"
 
 
-/* kMaxDepth is a just a sanity limit. The code should be such that the length
- * of the input being processes always decreases. None the less, a very large
- * input could otherwise cause the stack to overflow. */
+// kMaxDepth is a just a sanity limit. The code should be such that the length
+// of the input being processes always decreases. None the less, a very large
+// input could otherwise cause the stack to overflow.
 static const unsigned kMaxDepth = 2048;
 
-/* cbs_find_ber walks an ASN.1 structure in |orig_in| and sets |*ber_found|
- * depending on whether an indefinite length element was found. The value of
- * |in| is not changed. It returns one on success (i.e. |*ber_found| was set)
- * and zero on error. */
-static int cbs_find_ber(CBS *orig_in, char *ber_found, unsigned depth) {
+// is_string_type returns one if |tag| is a string type and zero otherwise. It
+// ignores the constructed bit.
+static int is_string_type(unsigned tag) {
+  switch (tag & ~CBS_ASN1_CONSTRUCTED) {
+    case CBS_ASN1_BITSTRING:
+    case CBS_ASN1_OCTETSTRING:
+    case CBS_ASN1_UTF8STRING:
+    case CBS_ASN1_NUMERICSTRING:
+    case CBS_ASN1_PRINTABLESTRING:
+    case CBS_ASN1_T61STRING:
+    case CBS_ASN1_VIDEOTEXSTRING:
+    case CBS_ASN1_IA5STRING:
+    case CBS_ASN1_GRAPHICSTRING:
+    case CBS_ASN1_VISIBLESTRING:
+    case CBS_ASN1_GENERALSTRING:
+    case CBS_ASN1_UNIVERSALSTRING:
+    case CBS_ASN1_BMPSTRING:
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+// cbs_find_ber walks an ASN.1 structure in |orig_in| and sets |*ber_found|
+// depending on whether an indefinite length element or constructed string was
+// found. The value of |orig_in| is not changed. It returns one on success (i.e.
+// |*ber_found| was set) and zero on error.
+static int cbs_find_ber(const CBS *orig_in, char *ber_found, unsigned depth) {
   CBS in;
 
   if (depth > kMaxDepth) {
@@ -49,10 +74,16 @@ static int cbs_find_ber(CBS *orig_in, char *ber_found, unsigned depth) {
     if (CBS_len(&contents) == header_len &&
         header_len > 0 &&
         CBS_data(&contents)[header_len-1] == 0x80) {
+      // Found an indefinite-length element.
       *ber_found = 1;
       return 1;
     }
     if (tag & CBS_ASN1_CONSTRUCTED) {
+      if (is_string_type(tag)) {
+        // Constructed strings are only legal in BER and require conversion.
+        *ber_found = 1;
+        return 1;
+      }
       if (!CBS_skip(&contents, header_len) ||
           !cbs_find_ber(&contents, ber_found, depth + 1)) {
         return 0;
@@ -63,110 +94,73 @@ static int cbs_find_ber(CBS *orig_in, char *ber_found, unsigned depth) {
   return 1;
 }
 
-/* is_primitive_type returns true if |tag| likely a primitive type. Normally
- * one can just test the "constructed" bit in the tag but, in BER, even
- * primitive tags can have the constructed bit if they have indefinite
- * length. */
-static char is_primitive_type(unsigned tag) {
-  return (tag & 0xc0) == 0 &&
-         (tag & 0x1f) != (CBS_ASN1_SEQUENCE & 0x1f) &&
-         (tag & 0x1f) != (CBS_ASN1_SET & 0x1f);
-}
-
-/* is_eoc returns true if |header_len| and |contents|, as returned by
- * |CBS_get_any_ber_asn1_element|, indicate an "end of contents" (EOC) value. */
+// is_eoc returns true if |header_len| and |contents|, as returned by
+// |CBS_get_any_ber_asn1_element|, indicate an "end of contents" (EOC) value.
 static char is_eoc(size_t header_len, CBS *contents) {
   return header_len == 2 && CBS_len(contents) == 2 &&
-         memcmp(CBS_data(contents), "\x00\x00", 2) == 0;
+         OPENSSL_memcmp(CBS_data(contents), "\x00\x00", 2) == 0;
 }
 
-/* cbs_convert_ber reads BER data from |in| and writes DER data to |out|. If
- * |squash_header| is set then the top-level of elements from |in| will not
- * have their headers written. This is used when concatenating the fragments of
- * an indefinite length, primitive value. If |looking_for_eoc| is set then any
- * EOC elements found will cause the function to return after consuming it.
- * It returns one on success and zero on error. */
-static int cbs_convert_ber(CBS *in, CBB *out, char squash_header,
+// cbs_convert_ber reads BER data from |in| and writes DER data to |out|. If
+// |string_tag| is non-zero, then all elements must match |string_tag| up to the
+// constructed bit and primitive element bodies are written to |out| without
+// element headers. This is used when concatenating the fragments of a
+// constructed string. If |looking_for_eoc| is set then any EOC elements found
+// will cause the function to return after consuming it. It returns one on
+// success and zero on error.
+static int cbs_convert_ber(CBS *in, CBB *out, unsigned string_tag,
                            char looking_for_eoc, unsigned depth) {
+  assert(!(string_tag & CBS_ASN1_CONSTRUCTED));
+
   if (depth > kMaxDepth) {
     return 0;
   }
 
   while (CBS_len(in) > 0) {
     CBS contents;
-    unsigned tag;
+    unsigned tag, child_string_tag = string_tag;
     size_t header_len;
     CBB *out_contents, out_contents_storage;
 
     if (!CBS_get_any_ber_asn1_element(in, &contents, &tag, &header_len)) {
       return 0;
     }
-    out_contents = out;
 
-    if (CBS_len(&contents) == header_len) {
-      if (is_eoc(header_len, &contents)) {
-        return looking_for_eoc;
-      }
-
-      if (header_len > 0 && CBS_data(&contents)[header_len - 1] == 0x80) {
-        /* This is an indefinite length element. If it's a SEQUENCE or SET then
-         * we just need to write the out the contents as normal, but with a
-         * concrete length prefix.
-         *
-         * If it's a something else then the contents will be a series of BER
-         * elements of the same type which need to be concatenated. */
-        const char context_specific = (tag & 0xc0) == 0x80;
-        char squash_child_headers = is_primitive_type(tag);
-
-        /* This is a hack, but it sufficies to handle NSS's output. If we find
-         * an indefinite length, context-specific tag with a definite, primtive
-         * tag inside it, then we assume that the context-specific tag is
-         * implicit and the tags within are fragments of a primitive type that
-         * need to be concatenated. */
-        if (context_specific && (tag & CBS_ASN1_CONSTRUCTED)) {
-          CBS in_copy, inner_contents;
-          unsigned inner_tag;
-          size_t inner_header_len;
-
-          CBS_init(&in_copy, CBS_data(in), CBS_len(in));
-          if (!CBS_get_any_ber_asn1_element(&in_copy, &inner_contents,
-                                            &inner_tag, &inner_header_len)) {
-            return 0;
-          }
-          if (CBS_len(&inner_contents) > inner_header_len &&
-              is_primitive_type(inner_tag)) {
-            squash_child_headers = 1;
-          }
-        }
-
-        if (!squash_header) {
-          unsigned out_tag = tag;
-          if (squash_child_headers) {
-            out_tag &= ~CBS_ASN1_CONSTRUCTED;
-          }
-          if (!CBB_add_asn1(out, &out_contents_storage, out_tag)) {
-            return 0;
-          }
-          out_contents = &out_contents_storage;
-        }
-
-        if (!cbs_convert_ber(in, out_contents,
-                             squash_child_headers,
-                             1 /* looking for eoc */, depth + 1)) {
-          return 0;
-        }
-        if (out_contents != out && !CBB_flush(out)) {
-          return 0;
-        }
-        continue;
-      }
+    if (is_eoc(header_len, &contents)) {
+      return looking_for_eoc;
     }
 
-    if (!squash_header) {
-      if (!CBB_add_asn1(out, &out_contents_storage, tag)) {
+    if (string_tag != 0) {
+      // This is part of a constructed string. All elements must match
+      // |string_tag| up to the constructed bit and get appended to |out|
+      // without a child element.
+      if ((tag & ~CBS_ASN1_CONSTRUCTED) != string_tag) {
+        return 0;
+      }
+      out_contents = out;
+    } else {
+      unsigned out_tag = tag;
+      if ((tag & CBS_ASN1_CONSTRUCTED) && is_string_type(tag)) {
+        // If a constructed string, clear the constructed bit and inform
+        // children to concatenate bodies.
+        out_tag &= ~CBS_ASN1_CONSTRUCTED;
+        child_string_tag = out_tag;
+      }
+      if (!CBB_add_asn1(out, &out_contents_storage, out_tag)) {
         return 0;
       }
       out_contents = &out_contents_storage;
+    }
+
+    if (CBS_len(&contents) == header_len && header_len > 0 &&
+        CBS_data(&contents)[header_len - 1] == 0x80) {
+      // This is an indefinite length element.
+      if (!cbs_convert_ber(in, out_contents, child_string_tag,
+                           1 /* looking for eoc */, depth + 1) ||
+          !CBB_flush(out)) {
+        return 0;
+      }
+      continue;
     }
 
     if (!CBS_skip(&contents, header_len)) {
@@ -174,18 +168,20 @@ static int cbs_convert_ber(CBS *in, CBB *out, char squash_header,
     }
 
     if (tag & CBS_ASN1_CONSTRUCTED) {
-      if (!cbs_convert_ber(&contents, out_contents, 0 /* don't squash header */,
+      // Recurse into children.
+      if (!cbs_convert_ber(&contents, out_contents, child_string_tag,
                            0 /* not looking for eoc */, depth + 1)) {
         return 0;
       }
     } else {
+      // Copy primitive contents as-is.
       if (!CBB_add_bytes(out_contents, CBS_data(&contents),
                          CBS_len(&contents))) {
         return 0;
       }
     }
 
-    if (out_contents != out && !CBB_flush(out)) {
+    if (!CBB_flush(out)) {
       return 0;
     }
   }
@@ -196,8 +192,8 @@ static int cbs_convert_ber(CBS *in, CBB *out, char squash_header,
 int CBS_asn1_ber_to_der(CBS *in, uint8_t **out, size_t *out_len) {
   CBB cbb;
 
-  /* First, do a quick walk to find any indefinite-length elements. Most of the
-   * time we hope that there aren't any and thus we can quickly return. */
+  // First, do a quick walk to find any indefinite-length elements. Most of the
+  // time we hope that there aren't any and thus we can quickly return.
   char conversion_needed;
   if (!cbs_find_ber(in, &conversion_needed, 0)) {
     return 0;
@@ -209,13 +205,57 @@ int CBS_asn1_ber_to_der(CBS *in, uint8_t **out, size_t *out_len) {
     return 1;
   }
 
-  if (!CBB_init(&cbb, CBS_len(in))) {
-    return 0;
-  }
-  if (!cbs_convert_ber(in, &cbb, 0, 0, 0)) {
+  if (!CBB_init(&cbb, CBS_len(in)) ||
+      !cbs_convert_ber(in, &cbb, 0, 0, 0) ||
+      !CBB_finish(&cbb, out, out_len)) {
     CBB_cleanup(&cbb);
     return 0;
   }
 
-  return CBB_finish(&cbb, out, out_len);
+  return 1;
+}
+
+int CBS_get_asn1_implicit_string(CBS *in, CBS *out, uint8_t **out_storage,
+                                 unsigned outer_tag, unsigned inner_tag) {
+  assert(!(outer_tag & CBS_ASN1_CONSTRUCTED));
+  assert(!(inner_tag & CBS_ASN1_CONSTRUCTED));
+  assert(is_string_type(inner_tag));
+
+  if (CBS_peek_asn1_tag(in, outer_tag)) {
+    // Normal implicitly-tagged string.
+    *out_storage = NULL;
+    return CBS_get_asn1(in, out, outer_tag);
+  }
+
+  // Otherwise, try to parse an implicitly-tagged constructed string.
+  // |CBS_asn1_ber_to_der| is assumed to have run, so only allow one level deep
+  // of nesting.
+  CBB result;
+  CBS child;
+  if (!CBB_init(&result, CBS_len(in)) ||
+      !CBS_get_asn1(in, &child, outer_tag | CBS_ASN1_CONSTRUCTED)) {
+    goto err;
+  }
+
+  while (CBS_len(&child) > 0) {
+    CBS chunk;
+    if (!CBS_get_asn1(&child, &chunk, inner_tag) ||
+        !CBB_add_bytes(&result, CBS_data(&chunk), CBS_len(&chunk))) {
+      goto err;
+    }
+  }
+
+  uint8_t *data;
+  size_t len;
+  if (!CBB_finish(&result, &data, &len)) {
+    goto err;
+  }
+
+  CBS_init(out, data, len);
+  *out_storage = data;
+  return 1;
+
+err:
+  CBB_cleanup(&result);
+  return 0;
 }

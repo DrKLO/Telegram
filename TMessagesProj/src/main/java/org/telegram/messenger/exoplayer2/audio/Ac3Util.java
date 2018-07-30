@@ -15,29 +15,47 @@
  */
 package org.telegram.messenger.exoplayer2.audio;
 
+import android.support.annotation.IntDef;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
+import org.telegram.messenger.exoplayer2.audio.Ac3Util.SyncFrameInfo.StreamType;
 import org.telegram.messenger.exoplayer2.drm.DrmInitData;
 import org.telegram.messenger.exoplayer2.util.MimeTypes;
 import org.telegram.messenger.exoplayer2.util.ParsableBitArray;
 import org.telegram.messenger.exoplayer2.util.ParsableByteArray;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.nio.ByteBuffer;
 
-/**
- * Utility methods for parsing (E-)AC-3 syncframes, which are access units in (E-)AC-3 bitstreams.
- */
+/** Utility methods for parsing Dolby TrueHD and (E-)AC3 syncframes. */
 public final class Ac3Util {
 
-  /**
-   * Holds sample format information as presented by a syncframe header.
-   */
-  public static final class Ac3SyncFrameInfo {
+  /** Holds sample format information as presented by a syncframe header. */
+  public static final class SyncFrameInfo {
+
+    /** AC3 stream types. See also ETSI TS 102 366 E.1.3.1.1. */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({STREAM_TYPE_UNDEFINED, STREAM_TYPE_TYPE0, STREAM_TYPE_TYPE1, STREAM_TYPE_TYPE2})
+    public @interface StreamType {}
+    /** Undefined AC3 stream type. */
+    public static final int STREAM_TYPE_UNDEFINED = -1;
+    /** Type 0 AC3 stream type. */
+    public static final int STREAM_TYPE_TYPE0 = 0;
+    /** Type 1 AC3 stream type. */
+    public static final int STREAM_TYPE_TYPE1 = 1;
+    /** Type 2 AC3 stream type. */
+    public static final int STREAM_TYPE_TYPE2 = 2;
 
     /**
      * The sample mime type of the bitstream. One of {@link MimeTypes#AUDIO_AC3} and
      * {@link MimeTypes#AUDIO_E_AC3}.
      */
     public final String mimeType;
+    /**
+     * The type of the stream if {@link #mimeType} is {@link MimeTypes#AUDIO_E_AC3}, or {@link
+     * #STREAM_TYPE_UNDEFINED} otherwise.
+     */
+    public final @StreamType int streamType;
     /**
      * The audio sampling rate in Hz.
      */
@@ -55,9 +73,15 @@ public final class Ac3Util {
      */
     public final int sampleCount;
 
-    private Ac3SyncFrameInfo(String mimeType, int channelCount, int sampleRate, int frameSize,
+    private SyncFrameInfo(
+        String mimeType,
+        @StreamType int streamType,
+        int channelCount,
+        int sampleRate,
+        int frameSize,
         int sampleCount) {
       this.mimeType = mimeType;
+      this.streamType = streamType;
       this.channelCount = channelCount;
       this.sampleRate = sampleRate;
       this.frameSize = frameSize;
@@ -65,6 +89,17 @@ public final class Ac3Util {
     }
 
   }
+
+  /**
+   * The number of samples to store in each output chunk when rechunking TrueHD streams. The number
+   * of samples extracted from the container corresponding to one syncframe must be an integer
+   * multiple of this value.
+   */
+  public static final int TRUEHD_RECHUNK_SAMPLE_COUNT = 16;
+  /**
+   * The number of bytes that must be parsed from a TrueHD syncframe to calculate the sample count.
+   */
+  public static final int TRUEHD_SYNCFRAME_PREFIX_LENGTH = 10;
 
   /**
    * The number of new samples per (E-)AC-3 audio block.
@@ -138,8 +173,7 @@ public final class Ac3Util {
       String language, DrmInitData drmInitData) {
     data.skipBytes(2); // data_rate, num_ind_sub
 
-    // Read only the first substream.
-    // TODO: Read later substreams?
+    // Read the first independent substream.
     int fscod = (data.readUnsignedByte() & 0xC0) >> 6;
     int sampleRate = SAMPLE_RATE_BY_FSCOD[fscod];
     int nextByte = data.readUnsignedByte();
@@ -147,7 +181,26 @@ public final class Ac3Util {
     if ((nextByte & 0x01) != 0) { // lfeon
       channelCount++;
     }
-    return Format.createAudioSampleFormat(trackId, MimeTypes.AUDIO_E_AC3, null, Format.NO_VALUE,
+
+    // Read the first dependent substream.
+    nextByte = data.readUnsignedByte();
+    int numDepSub = ((nextByte & 0x1E) >> 1);
+    if (numDepSub > 0) {
+      int lowByteChanLoc = data.readUnsignedByte();
+      // Read Lrs/Rrs pair
+      // TODO: Read other channel configuration
+      if ((lowByteChanLoc & 0x02) != 0) {
+        channelCount += 2;
+      }
+    }
+    String mimeType = MimeTypes.AUDIO_E_AC3;
+    if (data.bytesLeft() > 0) {
+      nextByte = data.readUnsignedByte();
+      if ((nextByte & 0x01) != 0) { // flag_ec3_extension_type_a
+        mimeType = MimeTypes.AUDIO_E_AC3_JOC;
+      }
+    }
+    return Format.createAudioSampleFormat(trackId, mimeType, null, Format.NO_VALUE,
         Format.NO_VALUE, channelCount, sampleRate, null, drmInitData, 0, language);
   }
 
@@ -158,32 +211,196 @@ public final class Ac3Util {
    * @param data The data to parse, positioned at the start of the syncframe.
    * @return The (E-)AC-3 format data parsed from the header.
    */
-  public static Ac3SyncFrameInfo parseAc3SyncframeInfo(ParsableBitArray data) {
+  public static SyncFrameInfo parseAc3SyncframeInfo(ParsableBitArray data) {
     int initialPosition = data.getPosition();
     data.skipBits(40);
     boolean isEac3 = data.readBits(5) == 16;
     data.setPosition(initialPosition);
     String mimeType;
+    @StreamType int streamType = SyncFrameInfo.STREAM_TYPE_UNDEFINED;
     int sampleRate;
     int acmod;
     int frameSize;
     int sampleCount;
+    boolean lfeon;
+    int channelCount;
     if (isEac3) {
-      mimeType = MimeTypes.AUDIO_E_AC3;
-      data.skipBits(16 + 2 + 3); // syncword, strmtype, substreamid
+      // Syntax from ETSI TS 102 366 V1.2.1 subsections E.1.2.1 and E.1.2.2.
+      data.skipBits(16); // syncword
+      switch (data.readBits(2)) { // strmtyp
+        case 0:
+          streamType = SyncFrameInfo.STREAM_TYPE_TYPE0;
+          break;
+        case 1:
+          streamType = SyncFrameInfo.STREAM_TYPE_TYPE1;
+          break;
+        case 2:
+          streamType = SyncFrameInfo.STREAM_TYPE_TYPE2;
+          break;
+        default:
+          streamType = SyncFrameInfo.STREAM_TYPE_UNDEFINED;
+          break;
+      }
+      data.skipBits(3); // substreamid
       frameSize = (data.readBits(11) + 1) * 2;
       int fscod = data.readBits(2);
       int audioBlocks;
+      int numblkscod;
       if (fscod == 3) {
+        numblkscod = 3;
         sampleRate = SAMPLE_RATE_BY_FSCOD2[data.readBits(2)];
         audioBlocks = 6;
       } else {
-        int numblkscod = data.readBits(2);
+        numblkscod = data.readBits(2);
         audioBlocks = BLOCKS_PER_SYNCFRAME_BY_NUMBLKSCOD[numblkscod];
         sampleRate = SAMPLE_RATE_BY_FSCOD[fscod];
       }
       sampleCount = AUDIO_SAMPLES_PER_AUDIO_BLOCK * audioBlocks;
       acmod = data.readBits(3);
+      lfeon = data.readBit();
+      channelCount = CHANNEL_COUNT_BY_ACMOD[acmod] + (lfeon ? 1 : 0);
+      data.skipBits(5 + 5); // bsid, dialnorm
+      if (data.readBit()) { // compre
+        data.skipBits(8); // compr
+      }
+      if (acmod == 0) {
+        data.skipBits(5); // dialnorm2
+        if (data.readBit()) { // compr2e
+          data.skipBits(8); // compr2
+        }
+      }
+      if (streamType == SyncFrameInfo.STREAM_TYPE_TYPE1 && data.readBit()) { // chanmape
+        data.skipBits(16); // chanmap
+      }
+      if (data.readBit()) { // mixmdate
+        if (acmod > 2) {
+          data.skipBits(2); // dmixmod
+        }
+        if ((acmod & 0x01) != 0 && acmod > 2) {
+          data.skipBits(3 + 3); // ltrtcmixlev, lorocmixlev
+        }
+        if ((acmod & 0x04) != 0) {
+          data.skipBits(6); // ltrtsurmixlev, lorosurmixlev
+        }
+        if (lfeon && data.readBit()) { // lfemixlevcode
+          data.skipBits(5); // lfemixlevcod
+        }
+        if (streamType == SyncFrameInfo.STREAM_TYPE_TYPE0) {
+          if (data.readBit()) { // pgmscle
+            data.skipBits(6); //pgmscl
+          }
+          if (acmod == 0 && data.readBit()) { // pgmscl2e
+            data.skipBits(6); // pgmscl2
+          }
+          if (data.readBit()) { // extpgmscle
+            data.skipBits(6); // extpgmscl
+          }
+          int mixdef = data.readBits(2);
+          if (mixdef == 1) {
+            data.skipBits(1 + 1 + 3); // premixcmpsel, drcsrc, premixcmpscl
+          } else if (mixdef == 2) {
+            data.skipBits(12); // mixdata
+          } else if (mixdef == 3) {
+            int mixdeflen = data.readBits(5);
+            if (data.readBit()) { // mixdata2e
+              data.skipBits(1 + 1 + 3); // premixcmpsel, drcsrc, premixcmpscl
+              if (data.readBit()) { // extpgmlscle
+                data.skipBits(4); // extpgmlscl
+              }
+              if (data.readBit()) { // extpgmcscle
+                data.skipBits(4); // extpgmcscl
+              }
+              if (data.readBit()) { // extpgmrscle
+                data.skipBits(4); // extpgmrscl
+              }
+              if (data.readBit()) { // extpgmlsscle
+                data.skipBits(4); // extpgmlsscl
+              }
+              if (data.readBit()) { // extpgmrsscle
+                data.skipBits(4); // extpgmrsscl
+              }
+              if (data.readBit()) { // extpgmlfescle
+                data.skipBits(4); // extpgmlfescl
+              }
+              if (data.readBit()) { // dmixscle
+                data.skipBits(4); // dmixscl
+              }
+              if (data.readBit()) { // addche
+                if (data.readBit()) { // extpgmaux1scle
+                  data.skipBits(4); // extpgmaux1scl
+                }
+                if (data.readBit()) { // extpgmaux2scle
+                  data.skipBits(4); // extpgmaux2scl
+                }
+              }
+            }
+            if (data.readBit()) { // mixdata3e
+              data.skipBits(5); // spchdat
+              if (data.readBit()) { // addspchdate
+                data.skipBits(5 + 2); // spchdat1, spchan1att
+                if (data.readBit()) { // addspdat1e
+                  data.skipBits(5 + 3); // spchdat2, spchan2att
+                }
+              }
+            }
+            data.skipBits(8 * (mixdeflen + 2)); // mixdata
+            data.byteAlign(); // mixdatafill
+          }
+          if (acmod < 2) {
+            if (data.readBit()) { // paninfoe
+              data.skipBits(8 + 6); // panmean, paninfo
+            }
+            if (acmod == 0) {
+              if (data.readBit()) { // paninfo2e
+                data.skipBits(8 + 6); // panmean2, paninfo2
+              }
+            }
+          }
+          if (data.readBit()) { // frmmixcfginfoe
+            if (numblkscod == 0) {
+              data.skipBits(5); // blkmixcfginfo[0]
+            } else {
+              for (int blk = 0; blk < audioBlocks; blk++) {
+                if (data.readBit()) { // blkmixcfginfoe
+                  data.skipBits(5); // blkmixcfginfo[blk]
+                }
+              }
+            }
+          }
+        }
+      }
+      if (data.readBit()) { // infomdate
+        data.skipBits(3 + 1 + 1); // bsmod, copyrightb, origbs
+        if (acmod == 2) {
+          data.skipBits(2 + 2); // dsurmod, dheadphonmod
+        }
+        if (acmod >= 6) {
+          data.skipBits(2); // dsurexmod
+        }
+        if (data.readBit()) { // audioprodie
+          data.skipBits(5 + 2 + 1); // mixlevel, roomtyp, adconvtyp
+        }
+        if (acmod == 0 && data.readBit()) { // audioprodi2e
+          data.skipBits(5 + 2 + 1); // mixlevel2, roomtyp2, adconvtyp2
+        }
+        if (fscod < 3) {
+          data.skipBit(); // sourcefscod
+        }
+      }
+      if (streamType == SyncFrameInfo.STREAM_TYPE_TYPE0 && numblkscod != 3) {
+        data.skipBit(); // convsync
+      }
+      if (streamType == SyncFrameInfo.STREAM_TYPE_TYPE2
+          && (numblkscod == 3 || data.readBit())) { // blkid
+        data.skipBits(6); // frmsizecod
+      }
+      mimeType = MimeTypes.AUDIO_E_AC3;
+      if (data.readBit()) { // addbsie
+        int addbsil = data.readBits(6);
+        if (addbsil == 1 && data.readBits(8) == 1) { // addbsi
+          mimeType = MimeTypes.AUDIO_E_AC3_JOC;
+        }
+      }
     } else /* is AC-3 */ {
       mimeType = MimeTypes.AUDIO_AC3;
       data.skipBits(16 + 16); // syncword, crc1
@@ -203,10 +420,11 @@ public final class Ac3Util {
       }
       sampleRate = SAMPLE_RATE_BY_FSCOD[fscod];
       sampleCount = AC3_SYNCFRAME_AUDIO_SAMPLE_COUNT;
+      lfeon = data.readBit();
+      channelCount = CHANNEL_COUNT_BY_ACMOD[acmod] + (lfeon ? 1 : 0);
     }
-    boolean lfeon = data.readBit();
-    int channelCount = CHANNEL_COUNT_BY_ACMOD[acmod] + (lfeon ? 1 : 0);
-    return new Ac3SyncFrameInfo(mimeType, channelCount, sampleRate, frameSize, sampleCount);
+    return new SyncFrameInfo(
+        mimeType, streamType, channelCount, sampleRate, frameSize, sampleCount);
   }
 
   /**
@@ -243,6 +461,62 @@ public final class Ac3Util {
     int fscod = (buffer.get(buffer.position() + 4) & 0xC0) >> 6;
     return AUDIO_SAMPLES_PER_AUDIO_BLOCK * (fscod == 0x03 ? 6
         : BLOCKS_PER_SYNCFRAME_BY_NUMBLKSCOD[(buffer.get(buffer.position() + 4) & 0x30) >> 4]);
+  }
+
+  /**
+   * Returns the offset relative to the buffer's position of the start of a TrueHD syncframe, or
+   * {@link C#INDEX_UNSET} if no syncframe was found. The buffer's position is not modified.
+   *
+   * @param buffer The {@link ByteBuffer} within which to find a syncframe.
+   * @return The offset relative to the buffer's position of the start of a TrueHD syncframe, or
+   *     {@link C#INDEX_UNSET} if no syncframe was found.
+   */
+  public static int findTrueHdSyncframeOffset(ByteBuffer buffer) {
+    int startIndex = buffer.position();
+    int endIndex = buffer.limit() - TRUEHD_SYNCFRAME_PREFIX_LENGTH;
+    for (int i = startIndex; i <= endIndex; i++) {
+      // The syncword ends 0xBA for TrueHD or 0xBB for MLP.
+      if ((buffer.getInt(i + 4) & 0xFEFFFFFF) == 0xBA6F72F8) {
+        return i - startIndex;
+      }
+    }
+    return C.INDEX_UNSET;
+  }
+
+  /**
+   * Returns the number of audio samples represented by the given TrueHD syncframe, or 0 if the
+   * buffer is not the start of a syncframe.
+   *
+   * @param syncframe The bytes from which to read the syncframe. Must be at least {@link
+   *     #TRUEHD_SYNCFRAME_PREFIX_LENGTH} bytes long.
+   * @return The number of audio samples represented by the syncframe, or 0 if the buffer doesn't
+   *     contain the start of a syncframe.
+   */
+  public static int parseTrueHdSyncframeAudioSampleCount(byte[] syncframe) {
+    // TODO: Link to specification if available.
+    // The syncword ends 0xBA for TrueHD or 0xBB for MLP.
+    if (syncframe[4] != (byte) 0xF8
+        || syncframe[5] != (byte) 0x72
+        || syncframe[6] != (byte) 0x6F
+        || (syncframe[7] & 0xFE) != 0xBA) {
+      return 0;
+    }
+    boolean isMlp = (syncframe[7] & 0xFF) == 0xBB;
+    return 40 << ((syncframe[isMlp ? 9 : 8] >> 4) & 0x07);
+  }
+
+  /**
+   * Reads the number of audio samples represented by a TrueHD syncframe. The buffer's position is
+   * not modified.
+   *
+   * @param buffer The {@link ByteBuffer} from which to read the syncframe.
+   * @param offset The offset of the start of the syncframe relative to the buffer's position.
+   * @return The number of audio samples represented by the syncframe.
+   */
+  public static int parseTrueHdSyncframeAudioSampleCount(ByteBuffer buffer, int offset) {
+    // TODO: Link to specification if available.
+    boolean isMlp = (buffer.get(buffer.position() + offset + 7) & 0xFF) == 0xBB;
+    return 40 << ((buffer.get(buffer.position() + offset + (isMlp ? 9 : 8)) >> 4) & 0x07);
   }
 
   private static int getAc3SyncframeSize(int fscod, int frmsizecod) {

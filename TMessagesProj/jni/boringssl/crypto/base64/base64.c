@@ -60,118 +60,151 @@
 #include <limits.h>
 #include <string.h>
 
+#include <openssl/type_check.h>
 
-static const unsigned char data_bin2ascii[65] =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+#include "../internal.h"
 
-#define conv_bin2ascii(a) (data_bin2ascii[(a) & 0x3f])
 
-/* 64 char lines
- * pad input with 0
- * left over chars are set to =
- * 1 byte  => xx==
- * 2 bytes => xxx=
- * 3 bytes => xxxx
- */
-#define BIN_PER_LINE    (64/4*3)
-#define CHUNKS_PER_LINE (64/4)
-#define CHAR_PER_LINE   (64+1)
+// constant_time_lt_args_8 behaves like |constant_time_lt_8| but takes |uint8_t|
+// arguments for a slightly simpler implementation.
+static inline uint8_t constant_time_lt_args_8(uint8_t a, uint8_t b) {
+  crypto_word_t aw = a;
+  crypto_word_t bw = b;
+  // |crypto_word_t| is larger than |uint8_t|, so |aw| and |bw| have the same
+  // MSB. |aw| < |bw| iff MSB(|aw| - |bw|) is 1.
+  return constant_time_msb_w(aw - bw);
+}
 
-/* 0xF0 is a EOLN
- * 0xF1 is ignore but next needs to be 0xF0 (for \r\n processing).
- * 0xF2 is EOF
- * 0xE0 is ignore at start of line.
- * 0xFF is error */
+// constant_time_in_range_8 returns |CONSTTIME_TRUE_8| if |min| <= |a| <= |max|
+// and |CONSTTIME_FALSE_8| otherwise.
+static inline uint8_t constant_time_in_range_8(uint8_t a, uint8_t min,
+                                               uint8_t max) {
+  a -= min;
+  return constant_time_lt_args_8(a, max - min + 1);
+}
 
-#define B64_EOLN 0xF0
-#define B64_CR 0xF1
-#define B64_EOF 0xF2
-#define B64_WS 0xE0
-#define B64_ERROR 0xFF
-#define B64_NOT_BASE64(a) (((a) | 0x13) == 0xF3)
+// Encoding.
 
-static const uint8_t data_ascii2bin[128] = {
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE0, 0xF0, 0xFF,
-    0xFF, 0xF1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE0, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3E, 0xFF, 0xF2, 0xFF, 0x3F,
-    0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
-    0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12,
-    0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24,
-    0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30,
-    0x31, 0x32, 0x33, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-};
+static uint8_t conv_bin2ascii(uint8_t a) {
+  // Since PEM is sometimes used to carry private keys, we encode base64 data
+  // itself in constant-time.
+  a &= 0x3f;
+  uint8_t ret = constant_time_select_8(constant_time_eq_8(a, 62), '+', '/');
+  ret =
+      constant_time_select_8(constant_time_lt_args_8(a, 62), a - 52 + '0', ret);
+  ret =
+      constant_time_select_8(constant_time_lt_args_8(a, 52), a - 26 + 'a', ret);
+  ret = constant_time_select_8(constant_time_lt_args_8(a, 26), a + 'A', ret);
+  return ret;
+}
 
-static uint8_t conv_ascii2bin(uint8_t a) {
-  if (a >= 128) {
-    return 0xFF;
+OPENSSL_COMPILE_ASSERT(sizeof(((EVP_ENCODE_CTX *)(NULL))->data) % 3 == 0,
+                       data_length_must_be_multiple_of_base64_chunk_size);
+
+int EVP_EncodedLength(size_t *out_len, size_t len) {
+  if (len + 2 < len) {
+    return 0;
   }
-  return data_ascii2bin[a];
+  len += 2;
+  len /= 3;
+
+  if (((len << 2) >> 2) != len) {
+    return 0;
+  }
+  len <<= 2;
+
+  if (len + 1 < len) {
+    return 0;
+  }
+  len++;
+
+  *out_len = len;
+  return 1;
 }
 
 void EVP_EncodeInit(EVP_ENCODE_CTX *ctx) {
-  ctx->length = 48;
-  ctx->num = 0;
-  ctx->line_num = 0;
+  OPENSSL_memset(ctx, 0, sizeof(EVP_ENCODE_CTX));
 }
 
 void EVP_EncodeUpdate(EVP_ENCODE_CTX *ctx, uint8_t *out, int *out_len,
                       const uint8_t *in, size_t in_len) {
-  unsigned i, j;
-  unsigned total = 0;
+  size_t total = 0;
 
   *out_len = 0;
   if (in_len == 0) {
     return;
   }
 
-  assert(ctx->length <= sizeof(ctx->enc_data));
+  assert(ctx->data_used < sizeof(ctx->data));
 
-  if (ctx->num + in_len < ctx->length) {
-    memcpy(&ctx->enc_data[ctx->num], in, in_len);
-    ctx->num += in_len;
+  if (sizeof(ctx->data) - ctx->data_used > in_len) {
+    OPENSSL_memcpy(&ctx->data[ctx->data_used], in, in_len);
+    ctx->data_used += (unsigned)in_len;
     return;
   }
-  if (ctx->num != 0) {
-    i = ctx->length - ctx->num;
-    memcpy(&ctx->enc_data[ctx->num], in, i);
-    in += i;
-    in_len -= i;
-    j = EVP_EncodeBlock(out, ctx->enc_data, ctx->length);
-    ctx->num = 0;
-    out += j;
+
+  if (ctx->data_used != 0) {
+    const size_t todo = sizeof(ctx->data) - ctx->data_used;
+    OPENSSL_memcpy(&ctx->data[ctx->data_used], in, todo);
+    in += todo;
+    in_len -= todo;
+
+    size_t encoded = EVP_EncodeBlock(out, ctx->data, sizeof(ctx->data));
+    ctx->data_used = 0;
+
+    out += encoded;
     *(out++) = '\n';
     *out = '\0';
-    total = j + 1;
+
+    total = encoded + 1;
   }
-  while (in_len >= ctx->length) {
-    j = EVP_EncodeBlock(out, in, ctx->length);
-    in += ctx->length;
-    in_len -= ctx->length;
-    out += j;
+
+  while (in_len >= sizeof(ctx->data)) {
+    size_t encoded = EVP_EncodeBlock(out, in, sizeof(ctx->data));
+    in += sizeof(ctx->data);
+    in_len -= sizeof(ctx->data);
+
+    out += encoded;
     *(out++) = '\n';
     *out = '\0';
-    total += j + 1;
+
+    if (total + encoded + 1 < total) {
+      *out_len = 0;
+      return;
+    }
+
+    total += encoded + 1;
   }
+
   if (in_len != 0) {
-    memcpy(&ctx->enc_data[0], in, in_len);
+    OPENSSL_memcpy(ctx->data, in, in_len);
   }
-  ctx->num = in_len;
-  *out_len = total;
+
+  ctx->data_used = (unsigned)in_len;
+
+  if (total > INT_MAX) {
+    // We cannot signal an error, but we can at least avoid making *out_len
+    // negative.
+    total = 0;
+  }
+  *out_len = (int)total;
 }
 
 void EVP_EncodeFinal(EVP_ENCODE_CTX *ctx, uint8_t *out, int *out_len) {
-  unsigned ret = 0;
-
-  if (ctx->num != 0) {
-    ret = EVP_EncodeBlock(out, ctx->enc_data, ctx->num);
-    out[ret++] = '\n';
-    out[ret] = '\0';
-    ctx->num = 0;
+  if (ctx->data_used == 0) {
+    *out_len = 0;
+    return;
   }
-  *out_len = ret;
+
+  size_t encoded = EVP_EncodeBlock(out, ctx->data, ctx->data_used);
+  out[encoded++] = '\n';
+  out[encoded] = '\0';
+  ctx->data_used = 0;
+
+  // ctx->data_used is bounded by sizeof(ctx->data), so this does not
+  // overflow.
+  assert(encoded <= INT_MAX);
+  *out_len = (int)encoded;
 }
 
 size_t EVP_EncodeBlock(uint8_t *dst, const uint8_t *src, size_t src_len) {
@@ -206,273 +239,228 @@ size_t EVP_EncodeBlock(uint8_t *dst, const uint8_t *src, size_t src_len) {
   return ret;
 }
 
+
+// Decoding.
+
 int EVP_DecodedLength(size_t *out_len, size_t len) {
   if (len % 4 != 0) {
     return 0;
   }
+
   *out_len = (len / 4) * 3;
+  return 1;
+}
+
+void EVP_DecodeInit(EVP_ENCODE_CTX *ctx) {
+  OPENSSL_memset(ctx, 0, sizeof(EVP_ENCODE_CTX));
+}
+
+static uint8_t base64_ascii_to_bin(uint8_t a) {
+  // Since PEM is sometimes used to carry private keys, we decode base64 data
+  // itself in constant-time.
+  const uint8_t is_upper = constant_time_in_range_8(a, 'A', 'Z');
+  const uint8_t is_lower = constant_time_in_range_8(a, 'a', 'z');
+  const uint8_t is_digit = constant_time_in_range_8(a, '0', '9');
+  const uint8_t is_plus = constant_time_eq_8(a, '+');
+  const uint8_t is_slash = constant_time_eq_8(a, '/');
+  const uint8_t is_equals = constant_time_eq_8(a, '=');
+
+  uint8_t ret = 0xff;  // 0xff signals invalid.
+  ret = constant_time_select_8(is_upper, a - 'A', ret);       // [0,26)
+  ret = constant_time_select_8(is_lower, a - 'a' + 26, ret);  // [26,52)
+  ret = constant_time_select_8(is_digit, a - '0' + 52, ret);  // [52,62)
+  ret = constant_time_select_8(is_plus, 62, ret);
+  ret = constant_time_select_8(is_slash, 63, ret);
+  // Padding maps to zero, to be further handled by the caller.
+  ret = constant_time_select_8(is_equals, 0, ret);
+  return ret;
+}
+
+// base64_decode_quad decodes a single “quad” (i.e. four characters) of base64
+// data and writes up to three bytes to |out|. It sets |*out_num_bytes| to the
+// number of bytes written, which will be less than three if the quad ended
+// with padding.  It returns one on success or zero on error.
+static int base64_decode_quad(uint8_t *out, size_t *out_num_bytes,
+                              const uint8_t *in) {
+  const uint8_t a = base64_ascii_to_bin(in[0]);
+  const uint8_t b = base64_ascii_to_bin(in[1]);
+  const uint8_t c = base64_ascii_to_bin(in[2]);
+  const uint8_t d = base64_ascii_to_bin(in[3]);
+  if (a == 0xff || b == 0xff || c == 0xff || d == 0xff) {
+    return 0;
+  }
+
+  const uint32_t v = ((uint32_t)a) << 18 | ((uint32_t)b) << 12 |
+                     ((uint32_t)c) << 6 | (uint32_t)d;
+
+  const unsigned padding_pattern = (in[0] == '=') << 3 |
+                                   (in[1] == '=') << 2 |
+                                   (in[2] == '=') << 1 |
+                                   (in[3] == '=');
+
+  switch (padding_pattern) {
+    case 0:
+      // The common case of no padding.
+      *out_num_bytes = 3;
+      out[0] = v >> 16;
+      out[1] = v >> 8;
+      out[2] = v;
+      break;
+
+    case 1:  // xxx=
+      *out_num_bytes = 2;
+      out[0] = v >> 16;
+      out[1] = v >> 8;
+      break;
+
+    case 3:  // xx==
+      *out_num_bytes = 1;
+      out[0] = v >> 16;
+      break;
+
+    default:
+      return 0;
+  }
+
+  return 1;
+}
+
+int EVP_DecodeUpdate(EVP_ENCODE_CTX *ctx, uint8_t *out, int *out_len,
+                     const uint8_t *in, size_t in_len) {
+  *out_len = 0;
+
+  if (ctx->error_encountered) {
+    return -1;
+  }
+
+  size_t bytes_out = 0, i;
+  for (i = 0; i < in_len; i++) {
+    const char c = in[i];
+    switch (c) {
+      case ' ':
+      case '\t':
+      case '\r':
+      case '\n':
+        continue;
+    }
+
+    if (ctx->eof_seen) {
+      ctx->error_encountered = 1;
+      return -1;
+    }
+
+    ctx->data[ctx->data_used++] = c;
+    if (ctx->data_used == 4) {
+      size_t num_bytes_resulting;
+      if (!base64_decode_quad(out, &num_bytes_resulting, ctx->data)) {
+        ctx->error_encountered = 1;
+        return -1;
+      }
+
+      ctx->data_used = 0;
+      bytes_out += num_bytes_resulting;
+      out += num_bytes_resulting;
+
+      if (num_bytes_resulting < 3) {
+        ctx->eof_seen = 1;
+      }
+    }
+  }
+
+  if (bytes_out > INT_MAX) {
+    ctx->error_encountered = 1;
+    *out_len = 0;
+    return -1;
+  }
+  *out_len = (int)bytes_out;
+
+  if (ctx->eof_seen) {
+    return 0;
+  }
+
+  return 1;
+}
+
+int EVP_DecodeFinal(EVP_ENCODE_CTX *ctx, uint8_t *out, int *out_len) {
+  *out_len = 0;
+  if (ctx->error_encountered || ctx->data_used != 0) {
+    return -1;
+  }
+
   return 1;
 }
 
 int EVP_DecodeBase64(uint8_t *out, size_t *out_len, size_t max_out,
                      const uint8_t *in, size_t in_len) {
-  uint8_t a, b, c, d;
-  size_t pad_len = 0, len = 0, max_len, i;
-  uint32_t l;
+  *out_len = 0;
 
-  if (!EVP_DecodedLength(&max_len, in_len) || max_out < max_len) {
+  if (in_len % 4 != 0) {
     return 0;
   }
 
+  size_t max_len;
+  if (!EVP_DecodedLength(&max_len, in_len) ||
+      max_out < max_len) {
+    return 0;
+  }
+
+  size_t i, bytes_out = 0;
   for (i = 0; i < in_len; i += 4) {
-    a = conv_ascii2bin(*(in++));
-    b = conv_ascii2bin(*(in++));
-    if (i + 4 == in_len && in[1] == '=') {
-        if (in[0] == '=') {
-          pad_len = 2;
-        } else {
-          pad_len = 1;
-        }
-    }
-    if (pad_len < 2) {
-      c = conv_ascii2bin(*(in++));
-    } else {
-      c = 0;
-    }
-    if (pad_len < 1) {
-      d = conv_ascii2bin(*(in++));
-    } else {
-      d = 0;
-    }
-    if ((a & 0x80) || (b & 0x80) || (c & 0x80) || (d & 0x80)) {
+    size_t num_bytes_resulting;
+
+    if (!base64_decode_quad(out, &num_bytes_resulting, &in[i])) {
       return 0;
     }
-    l = ((((uint32_t)a) << 18L) | (((uint32_t)b) << 12L) |
-         (((uint32_t)c) << 6L) | (((uint32_t)d)));
-    *(out++) = (uint8_t)(l >> 16L) & 0xff;
-    if (pad_len < 2) {
-      *(out++) = (uint8_t)(l >> 8L) & 0xff;
+
+    bytes_out += num_bytes_resulting;
+    out += num_bytes_resulting;
+    if (num_bytes_resulting != 3 && i != in_len - 4) {
+      return 0;
     }
-    if (pad_len < 1) {
-      *(out++) = (uint8_t)(l) & 0xff;
-    }
-    len += 3 - pad_len;
   }
-  *out_len = len;
+
+  *out_len = bytes_out;
   return 1;
 }
 
-void EVP_DecodeInit(EVP_ENCODE_CTX *ctx) {
-  ctx->length = 30;
-  ctx->num = 0;
-  ctx->line_num = 0;
-  ctx->expect_nl = 0;
-}
-
-int EVP_DecodeUpdate(EVP_ENCODE_CTX *ctx, uint8_t *out, int *out_len,
-                     const uint8_t *in, size_t in_len) {
-  int seof = -1, eof = 0, rv = -1, v, tmp, exp_nl;
-  uint8_t *d;
-  unsigned i, n, ln, ret = 0;
-
-  n = ctx->num;
-  d = ctx->enc_data;
-  ln = ctx->line_num;
-  exp_nl = ctx->expect_nl;
-
-  /* last line of input. */
-  if (in_len == 0 || (n == 0 && conv_ascii2bin(in[0]) == B64_EOF)) {
-    rv = 0;
-    goto end;
-  }
-
-  /* We parse the input data */
-  for (i = 0; i < in_len; i++) {
-    /* If the current line is > 80 characters, scream alot */
-    if (ln >= 80) {
-      rv = -1;
-      goto end;
-    }
-
-    /* Get char and put it into the buffer */
-    tmp = *(in++);
-    v = conv_ascii2bin(tmp);
-    /* only save the good data :-) */
-    if (!B64_NOT_BASE64(v)) {
-      assert(n < sizeof(ctx->enc_data));
-      d[n++] = tmp;
-      ln++;
-    } else if (v == B64_ERROR) {
-      rv = -1;
-      goto end;
-    }
-
-    /* have we seen a '=' which is 'definitly' the last
-     * input line.  seof will point to the character that
-     * holds it. and eof will hold how many characters to
-     * chop off. */
-    if (tmp == '=') {
-      if (seof == -1) {
-        seof = n;
-      }
-      eof++;
-      if (eof > 2) {
-        /* There are, at most, two equals signs at the end of base64 data. */
-        rv = -1;
-        goto end;
-      }
-    }
-
-    if (v == B64_CR) {
-      ln = 0;
-      if (exp_nl) {
-        continue;
-      }
-    }
-
-    /* eoln */
-    if (v == B64_EOLN) {
-      ln = 0;
-      if (exp_nl) {
-        exp_nl = 0;
-        continue;
-      }
-    }
-    exp_nl = 0;
-
-    /* If we are at the end of input and it looks like a
-     * line, process it. */
-    if ((i + 1) == in_len && (((n & 3) == 0) || eof)) {
-      v = B64_EOF;
-      /* In case things were given us in really small
-         records (so two '=' were given in separate
-         updates), eof may contain the incorrect number
-         of ending bytes to skip, so let's redo the count */
-      eof = 0;
-      if (d[n - 1] == '=') {
-        eof++;
-      }
-      if (d[n - 2] == '=') {
-        eof++;
-      }
-      /* There will never be more than two '=' */
-    }
-
-    if ((v == B64_EOF && (n & 3) == 0) || n >= 64) {
-      /* This is needed to work correctly on 64 byte input
-       * lines.  We process the line and then need to
-       * accept the '\n' */
-      if (v != B64_EOF && n >= 64) {
-        exp_nl = 1;
-      }
-      if (n > 0) {
-        /* TODO(davidben): Switch this to EVP_DecodeBase64. */
-        v = EVP_DecodeBlock(out, d, n);
-        n = 0;
-        if (v < 0) {
-          rv = 0;
-          goto end;
-        }
-        if (eof > v) {
-          rv = -1;
-          goto end;
-        }
-        ret += (v - eof);
-      } else {
-        eof = 1;
-        v = 0;
-      }
-
-      /* This is the case where we have had a short
-       * but valid input line */
-      if (v < (int)ctx->length && eof) {
-        rv = 0;
-        goto end;
-      } else {
-        ctx->length = v;
-      }
-
-      if (seof >= 0) {
-        rv = 0;
-        goto end;
-      }
-      out += v;
-    }
-  }
-  rv = 1;
-
-end:
-  *out_len = ret;
-  ctx->num = n;
-  ctx->line_num = ln;
-  ctx->expect_nl = exp_nl;
-  return rv;
-}
-
-int EVP_DecodeFinal(EVP_ENCODE_CTX *ctx, uint8_t *out, int *outl) {
-  int i;
-
-  *outl = 0;
-  if (ctx->num != 0) {
-    /* TODO(davidben): Switch this to EVP_DecodeBase64. */
-    i = EVP_DecodeBlock(out, ctx->enc_data, ctx->num);
-    if (i < 0) {
-      return -1;
-    }
-    ctx->num = 0;
-    *outl = i;
-    return 1;
-  } else {
-    return 1;
-  }
-}
-
 int EVP_DecodeBlock(uint8_t *dst, const uint8_t *src, size_t src_len) {
-  size_t dst_len;
+  // Trim spaces and tabs from the beginning of the input.
+  while (src_len > 0) {
+    if (src[0] != ' ' && src[0] != '\t') {
+      break;
+    }
 
-  /* trim white space from the start of the line. */
-  while (conv_ascii2bin(*src) == B64_WS && src_len > 0) {
     src++;
     src_len--;
   }
 
-  /* strip off stuff at the end of the line
-   * ascii2bin values B64_WS, B64_EOLN, B64_EOLN and B64_EOF */
-  while (src_len > 3 && B64_NOT_BASE64(conv_ascii2bin(src[src_len - 1]))) {
-    src_len--;
+  // Trim newlines, spaces and tabs from the end of the line.
+  while (src_len > 0) {
+    switch (src[src_len-1]) {
+      case ' ':
+      case '\t':
+      case '\r':
+      case '\n':
+        src_len--;
+        continue;
+    }
+
+    break;
   }
 
-  if (!EVP_DecodedLength(&dst_len, src_len) || dst_len > INT_MAX) {
-    return -1;
-  }
-  if (!EVP_DecodeBase64(dst, &dst_len, dst_len, src, src_len)) {
+  size_t dst_len;
+  if (!EVP_DecodedLength(&dst_len, src_len) ||
+      dst_len > INT_MAX ||
+      !EVP_DecodeBase64(dst, &dst_len, dst_len, src, src_len)) {
     return -1;
   }
 
-  /* EVP_DecodeBlock does not take padding into account, so put the
-   * NULs back in... so the caller can strip them back out. */
+  // EVP_DecodeBlock does not take padding into account, so put the
+  // NULs back in... so the caller can strip them back out.
   while (dst_len % 3 != 0) {
     dst[dst_len++] = '\0';
   }
   assert(dst_len <= INT_MAX);
 
-  return dst_len;
-}
-
-int EVP_EncodedLength(size_t *out_len, size_t len) {
-  if (len + 2 < len) {
-    return 0;
-  }
-  len += 2;
-  len /= 3;
-  if (((len << 2) >> 2) != len) {
-    return 0;
-  }
-  len <<= 2;
-  if (len + 1 < len) {
-    return 0;
-  }
-  len++;
-  *out_len = len;
-  return 1;
+  return (int)dst_len;
 }

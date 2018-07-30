@@ -30,7 +30,10 @@ import java.util.List;
  * DiffUtil is a utility class that can calculate the difference between two lists and output a
  * list of update operations that converts the first list into the second one.
  * <p>
- * It can be used to calculate updates for a RecyclerView Adapter.
+ * It can be used to calculate updates for a RecyclerView Adapter. See
+ * {@link android.support.v7.recyclerview.extensions.ListAdapter} and
+ * {@link android.support.v7.recyclerview.extensions.AsyncListDiffer} which can compute diffs using
+ * DiffUtil on a background thread.
  * <p>
  * DiffUtil uses Eugene W. Myers's difference algorithm to calculate the minimal number of updates
  * to convert one list into another. Myers's algorithm does not handle items that are moved so
@@ -62,6 +65,8 @@ import java.util.List;
  * </ul>
  * <p>
  * Due to implementation constraints, the max size of the list can be 2^26.
+ *
+ * @see android.support.v7.recyclerview.extensions.AsyncListDiffer
  */
 public class DiffUtil {
 
@@ -205,7 +210,7 @@ public class DiffUtil {
                 // we can reach k from k - 1 or k + 1. Check which one is further in the graph
                 int x;
                 final boolean removal;
-                if (k == -d || k != d && forward[kOffset + k - 1] < forward[kOffset + k + 1]) {
+                if (k == -d || (k != d && forward[kOffset + k - 1] < forward[kOffset + k + 1])) {
                     x = forward[kOffset + k + 1];
                     removal = false;
                 } else {
@@ -238,8 +243,8 @@ public class DiffUtil {
                 final int backwardK = k + delta;
                 int x;
                 final boolean removal;
-                if (backwardK == d + delta || backwardK != -d + delta
-                        && backward[kOffset + backwardK - 1] < backward[kOffset + backwardK + 1]) {
+                if (backwardK == d + delta || (backwardK != -d + delta
+                        && backward[kOffset + backwardK - 1] < backward[kOffset + backwardK + 1])) {
                     x = backward[kOffset + backwardK - 1];
                     removal = false;
                 } else {
@@ -311,7 +316,7 @@ public class DiffUtil {
          * DiffUtil uses this method to check equality instead of {@link Object#equals(Object)}
          * so that you can change its behavior depending on your UI.
          * For example, if you are using DiffUtil with a
-         * {@link org.telegram.messenger.support.widget.RecyclerView.Adapter RecyclerView.Adapter}, you should
+         * {@link android.support.v7.widget.RecyclerView.Adapter RecyclerView.Adapter}, you should
          * return whether the items' visual representations are the same.
          * <p>
          * This method is called only if {@link #areItemsTheSame(int, int)} returns
@@ -331,7 +336,7 @@ public class DiffUtil {
          * <p>
          * For example, if you are using DiffUtil with {@link RecyclerView}, you can return the
          * particular field that changed in the item and your
-         * {@link org.telegram.messenger.support.widget.RecyclerView.ItemAnimator ItemAnimator} can use that
+         * {@link android.support.v7.widget.RecyclerView.ItemAnimator ItemAnimator} can use that
          * information to run the correct animation.
          * <p>
          * Default implementation returns {@code null}.
@@ -343,6 +348,72 @@ public class DiffUtil {
          */
         @Nullable
         public Object getChangePayload(int oldItemPosition, int newItemPosition) {
+            return null;
+        }
+    }
+
+    /**
+     * Callback for calculating the diff between two non-null items in a list.
+     * <p>
+     * {@link Callback} serves two roles - list indexing, and item diffing. ItemCallback handles
+     * just the second of these, which allows separation of code that indexes into an array or List
+     * from the presentation-layer and content specific diffing code.
+     *
+     * @param <T> Type of items to compare.
+     */
+    public abstract static class ItemCallback<T> {
+        /**
+         * Called to check whether two objects represent the same item.
+         * <p>
+         * For example, if your items have unique ids, this method should check their id equality.
+         *
+         * @param oldItem The item in the old list.
+         * @param newItem The item in the new list.
+         * @return True if the two items represent the same object or false if they are different.
+         *
+         * @see Callback#areItemsTheSame(int, int)
+         */
+        public abstract boolean areItemsTheSame(T oldItem, T newItem);
+
+        /**
+         * Called to check whether two items have the same data.
+         * <p>
+         * This information is used to detect if the contents of an item have changed.
+         * <p>
+         * This method to check equality instead of {@link Object#equals(Object)} so that you can
+         * change its behavior depending on your UI.
+         * <p>
+         * For example, if you are using DiffUtil with a
+         * {@link android.support.v7.widget.RecyclerView.Adapter RecyclerView.Adapter}, you should
+         * return whether the items' visual representations are the same.
+         * <p>
+         * This method is called only if {@link #areItemsTheSame(T, T)} returns {@code true} for
+         * these items.
+         *
+         * @param oldItem The item in the old list.
+         * @param newItem The item in the new list.
+         * @return True if the contents of the items are the same or false if they are different.
+         *
+         * @see Callback#areContentsTheSame(int, int)
+         */
+        public abstract boolean areContentsTheSame(T oldItem, T newItem);
+
+        /**
+         * When {@link #areItemsTheSame(T, T)} returns {@code true} for two items and
+         * {@link #areContentsTheSame(T, T)} returns false for them, this method is called to
+         * get a payload about the change.
+         * <p>
+         * For example, if you are using DiffUtil with {@link RecyclerView}, you can return the
+         * particular field that changed in the item and your
+         * {@link android.support.v7.widget.RecyclerView.ItemAnimator ItemAnimator} can use that
+         * information to run the correct animation.
+         * <p>
+         * Default implementation returns {@code null}.
+         *
+         * @see Callback#getChangePayload(int, int)
+         */
+        @SuppressWarnings({"WeakerAccess", "unused"})
+        public Object getChangePayload(T oldItem, T newItem) {
             return null;
         }
     }
@@ -627,7 +698,7 @@ public class DiffUtil {
         /**
          * Dispatches the update events to the given adapter.
          * <p>
-         * For example, if you have an {@link org.telegram.messenger.support.widget.RecyclerView.Adapter Adapter}
+         * For example, if you have an {@link android.support.v7.widget.RecyclerView.Adapter Adapter}
          * that is backed by a {@link List}, you can swap the list with the new one then call this
          * method to dispatch all updates to the RecyclerView.
          * <pre>
@@ -643,46 +714,27 @@ public class DiffUtil {
          * before RecyclerView tries to read it.
          * <p>
          * On the other hand, if you have another
-         * {@link org.telegram.messenger.support.widget.RecyclerView.AdapterDataObserver AdapterDataObserver}
+         * {@link android.support.v7.widget.RecyclerView.AdapterDataObserver AdapterDataObserver}
          * that tries to process events synchronously, this may confuse that observer because the
          * list is instantly moved to its final state while the adapter updates are dispatched later
          * on, one by one. If you have such an
-         * {@link org.telegram.messenger.support.widget.RecyclerView.AdapterDataObserver AdapterDataObserver},
+         * {@link android.support.v7.widget.RecyclerView.AdapterDataObserver AdapterDataObserver},
          * you can use
          * {@link #dispatchUpdatesTo(ListUpdateCallback)} to handle each modification
          * manually.
          *
          * @param adapter A RecyclerView adapter which was displaying the old list and will start
          *                displaying the new list.
+         * @see AdapterListUpdateCallback
          */
         public void dispatchUpdatesTo(final RecyclerView.Adapter adapter) {
-            dispatchUpdatesTo(new ListUpdateCallback() {
-                @Override
-                public void onInserted(int position, int count) {
-                    adapter.notifyItemRangeInserted(position, count);
-                }
-
-                @Override
-                public void onRemoved(int position, int count) {
-                    adapter.notifyItemRangeRemoved(position, count);
-                }
-
-                @Override
-                public void onMoved(int fromPosition, int toPosition) {
-                    adapter.notifyItemMoved(fromPosition, toPosition);
-                }
-
-                @Override
-                public void onChanged(int position, int count, Object payload) {
-                    adapter.notifyItemRangeChanged(position, count, payload);
-                }
-            });
+            dispatchUpdatesTo(new AdapterListUpdateCallback(adapter));
         }
 
         /**
          * Dispatches update operations to the given Callback.
          * <p>
-         * These updates are atomic such that the first update call effects every update call that
+         * These updates are atomic such that the first update call affects every update call that
          * comes after it (the same as RecyclerView).
          *
          * @param updateCallback The callback to receive the update operations.

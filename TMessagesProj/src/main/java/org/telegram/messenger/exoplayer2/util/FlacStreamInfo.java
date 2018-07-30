@@ -15,6 +15,8 @@
  */
 package org.telegram.messenger.exoplayer2.util;
 
+import org.telegram.messenger.exoplayer2.C;
+
 /**
  * Holder for FLAC stream info.
  */
@@ -52,8 +54,29 @@ public final class FlacStreamInfo {
     // Remaining 16 bytes is md5 value
   }
 
-  public FlacStreamInfo(int minBlockSize, int maxBlockSize, int minFrameSize, int maxFrameSize,
-      int sampleRate, int channels, int bitsPerSample, long totalSamples) {
+  /**
+   * Constructs a FlacStreamInfo given the parameters.
+   *
+   * @param minBlockSize Minimum block size of the FLAC stream.
+   * @param maxBlockSize Maximum block size of the FLAC stream.
+   * @param minFrameSize Minimum frame size of the FLAC stream.
+   * @param maxFrameSize Maximum frame size of the FLAC stream.
+   * @param sampleRate Sample rate of the FLAC stream.
+   * @param channels Number of channels of the FLAC stream.
+   * @param bitsPerSample Number of bits per sample of the FLAC stream.
+   * @param totalSamples Total samples of the FLAC stream.
+   * @see <a href="https://xiph.org/flac/format.html#metadata_block_streaminfo">FLAC format
+   *     METADATA_BLOCK_STREAMINFO</a>
+   */
+  public FlacStreamInfo(
+      int minBlockSize,
+      int maxBlockSize,
+      int minFrameSize,
+      int maxFrameSize,
+      int sampleRate,
+      int channels,
+      int bitsPerSample,
+      long totalSamples) {
     this.minBlockSize = minBlockSize;
     this.maxBlockSize = maxBlockSize;
     this.minFrameSize = minFrameSize;
@@ -64,16 +87,43 @@ public final class FlacStreamInfo {
     this.totalSamples = totalSamples;
   }
 
+  /** Returns the maximum size for a decoded frame from the FLAC stream. */
   public int maxDecodedFrameSize() {
-    return maxBlockSize * channels * 2;
+    return maxBlockSize * channels * (bitsPerSample / 8);
   }
 
+  /** Returns the bit-rate of the FLAC stream. */
   public int bitRate() {
     return bitsPerSample * sampleRate;
   }
 
+  /** Returns the duration of the FLAC stream in microseconds. */
   public long durationUs() {
     return (totalSamples * 1000000L) / sampleRate;
   }
 
+  /**
+   * Returns the sample index for the sample at given position.
+   *
+   * @param timeUs Time position in microseconds in the FLAC stream.
+   * @return The sample index for the sample at given position.
+   */
+  public long getSampleIndex(long timeUs) {
+    long sampleIndex = (timeUs * sampleRate) / C.MICROS_PER_SECOND;
+    return Util.constrainValue(sampleIndex, 0, totalSamples - 1);
+  }
+
+  /** Returns the approximate number of bytes per frame for the current FLAC stream. */
+  public long getApproxBytesPerFrame() {
+    long approxBytesPerFrame;
+    if (maxFrameSize > 0) {
+      approxBytesPerFrame = ((long) maxFrameSize + minFrameSize) / 2 + 1;
+    } else {
+      // Uses the stream's block-size if it's a known fixed block-size stream, otherwise uses the
+      // default value for FLAC block-size, which is 4096.
+      long blockSize = (minBlockSize == maxBlockSize && minBlockSize > 0) ? minBlockSize : 4096;
+      approxBytesPerFrame = (blockSize * channels * bitsPerSample) / 8 + 64;
+    }
+    return approxBytesPerFrame;
+  }
 }

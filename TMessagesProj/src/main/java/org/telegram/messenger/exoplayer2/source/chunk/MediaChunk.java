@@ -26,10 +26,8 @@ import org.telegram.messenger.exoplayer2.util.Assertions;
  */
 public abstract class MediaChunk extends Chunk {
 
-  /**
-   * The chunk index.
-   */
-  public final int chunkIndex;
+  /** The chunk index. */
+  public final long chunkIndex;
 
   /**
    * @param dataSource The source from which the data should be loaded.
@@ -41,19 +39,23 @@ public abstract class MediaChunk extends Chunk {
    * @param endTimeUs The end time of the media contained by the chunk, in microseconds.
    * @param chunkIndex The index of the chunk.
    */
-  public MediaChunk(DataSource dataSource, DataSpec dataSpec, Format trackFormat,
-      int trackSelectionReason, Object trackSelectionData, long startTimeUs, long endTimeUs,
-      int chunkIndex) {
+  public MediaChunk(
+      DataSource dataSource,
+      DataSpec dataSpec,
+      Format trackFormat,
+      int trackSelectionReason,
+      Object trackSelectionData,
+      long startTimeUs,
+      long endTimeUs,
+      long chunkIndex) {
     super(dataSource, dataSpec, C.DATA_TYPE_MEDIA, trackFormat, trackSelectionReason,
         trackSelectionData, startTimeUs, endTimeUs);
     Assertions.checkNotNull(trackFormat);
     this.chunkIndex = chunkIndex;
   }
 
-  /**
-   * Returns the next chunk index.
-   */
-  public int getNextChunkIndex() {
+  /** Returns the next chunk index. */
+  public long getNextChunkIndex() {
     return chunkIndex + 1;
   }
 

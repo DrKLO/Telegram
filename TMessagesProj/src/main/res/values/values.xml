@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <bool name="isTablet">false</bool>
+    <dimen name="custom_notification_corner_radius">2dip</dimen>
 </resources>

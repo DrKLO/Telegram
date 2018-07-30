@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.source.chunk;
 
+import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.upstream.DataSource;
 import org.telegram.messenger.exoplayer2.upstream.DataSpec;
@@ -23,6 +24,12 @@ import org.telegram.messenger.exoplayer2.upstream.DataSpec;
  * A base implementation of {@link MediaChunk} that outputs to a {@link BaseMediaChunkOutput}.
  */
 public abstract class BaseMediaChunk extends MediaChunk {
+
+  /**
+   * The media time from which output will begin, or {@link C#TIME_UNSET} if the whole chunk should
+   * be output.
+   */
+  public final long seekTimeUs;
 
   private BaseMediaChunkOutput output;
   private int[] firstSampleIndices;
@@ -35,13 +42,23 @@ public abstract class BaseMediaChunk extends MediaChunk {
    * @param trackSelectionData See {@link #trackSelectionData}.
    * @param startTimeUs The start time of the media contained by the chunk, in microseconds.
    * @param endTimeUs The end time of the media contained by the chunk, in microseconds.
+   * @param seekTimeUs The media time from which output will begin, or {@link C#TIME_UNSET} if the
+   *     whole chunk should be output.
    * @param chunkIndex The index of the chunk.
    */
-  public BaseMediaChunk(DataSource dataSource, DataSpec dataSpec, Format trackFormat,
-      int trackSelectionReason, Object trackSelectionData, long startTimeUs, long endTimeUs,
-      int chunkIndex) {
+  public BaseMediaChunk(
+      DataSource dataSource,
+      DataSpec dataSpec,
+      Format trackFormat,
+      int trackSelectionReason,
+      Object trackSelectionData,
+      long startTimeUs,
+      long endTimeUs,
+      long seekTimeUs,
+      long chunkIndex) {
     super(dataSource, dataSpec, trackFormat, trackSelectionReason, trackSelectionData, startTimeUs,
         endTimeUs, chunkIndex);
+    this.seekTimeUs = seekTimeUs;
   }
 
   /**

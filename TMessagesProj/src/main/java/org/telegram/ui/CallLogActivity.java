@@ -86,13 +86,13 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void didReceivedNotification(int id, Object... args) {
+	public void didReceivedNotification(int id, int account, Object... args) {
 		if (id == NotificationCenter.didReceivedNewMessages && firstLoaded) {
 			ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[1];
 			for (MessageObject msg : arr) {
 				if (msg.messageOwner.action != null && msg.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall) {
-					int userID = msg.messageOwner.from_id == UserConfig.getClientUserId() ? msg.messageOwner.to_id.user_id : msg.messageOwner.from_id;
-					int callType = msg.messageOwner.from_id == UserConfig.getClientUserId() ? TYPE_OUT : TYPE_IN;
+					int userID = msg.messageOwner.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? msg.messageOwner.to_id.user_id : msg.messageOwner.from_id;
+					int callType = msg.messageOwner.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? TYPE_OUT : TYPE_IN;
 					TLRPC.PhoneCallDiscardReason reason = msg.messageOwner.action.reason;
 					if (callType == TYPE_IN && (reason instanceof TLRPC.TL_phoneCallDiscardReasonMissed || reason instanceof TLRPC.TL_phoneCallDiscardReasonBusy)) {
 						callType = TYPE_MISSED;
@@ -108,7 +108,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					CallLogRow row = new CallLogRow();
 					row.calls = new ArrayList<>();
 					row.calls.add(msg.messageOwner);
-					row.user = MessagesController.getInstance().getUser(userID);
+					row.user = MessagesController.getInstance(currentAccount).getUser(userID);
 					row.type = callType;
 					calls.add(0, row);
 					listViewAdapter.notifyItemInserted(0);
@@ -156,8 +156,8 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		super.onFragmentCreate();
 		getCalls(0, 50);
 
-		NotificationCenter.getInstance().addObserver(this, NotificationCenter.didReceivedNewMessages);
-		NotificationCenter.getInstance().addObserver(this, NotificationCenter.messagesDeleted);
+		NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didReceivedNewMessages);
+		NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagesDeleted);
 
 		return true;
 	}
@@ -165,8 +165,8 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 	@Override
 	public void onFragmentDestroy() {
 		super.onFragmentDestroy();
-		NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didReceivedNewMessages);
-		NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messagesDeleted);
+		NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didReceivedNewMessages);
+		NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagesDeleted);
 	}
 
 	@Override
@@ -221,7 +221,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				Bundle args = new Bundle();
 				args.putInt("user_id", row.user.id);
 				args.putInt("message_id", row.calls.get(0).id);
-				NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+				NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
 				presentFragment(new ChatActivity(args), true);
 			}
 		});
@@ -264,8 +264,13 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				if (visibleItemCount > 0) {
 					int totalItemCount = listViewAdapter.getItemCount();
 					if (!endReached && !loading && !calls.isEmpty() && firstVisibleItem + visibleItemCount >= totalItemCount - 5) {
-						CallLogRow row = calls.get(calls.size() - 1);
-						getCalls(row.calls.get(row.calls.size() - 1).id, 100);
+						final CallLogRow row = calls.get(calls.size() - 1);
+						AndroidUtilities.runOnUIThread(new Runnable() {
+							@Override
+							public void run() {
+								getCalls(row.calls.get(row.calls.size() - 1).id, 100);
+							}
+						});
 					}
 				}
 
@@ -379,7 +384,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		req.filter = new TLRPC.TL_inputMessagesFilterPhoneCalls();
 		req.q = "";
 		req.offset_id = max_id;
-		int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+		int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
 			@Override
 			public void run(final TLObject response, final TLRPC.TL_error error) {
 				AndroidUtilities.runOnUIThread(new Runnable() {
@@ -399,12 +404,12 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 								if (msg.action == null || msg.action instanceof TLRPC.TL_messageActionHistoryClear) {
 									continue;
 								}
-								int callType = msg.from_id == UserConfig.getClientUserId() ? TYPE_OUT : TYPE_IN;
+								int callType = msg.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? TYPE_OUT : TYPE_IN;
 								TLRPC.PhoneCallDiscardReason reason = msg.action.reason;
 								if (callType == TYPE_IN && (reason instanceof TLRPC.TL_phoneCallDiscardReasonMissed || reason instanceof TLRPC.TL_phoneCallDiscardReasonBusy)) {
 									callType = TYPE_MISSED;
 								}
-								int userID = msg.from_id == UserConfig.getClientUserId() ? msg.to_id.user_id : msg.from_id;
+								int userID = msg.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? msg.to_id.user_id : msg.from_id;
 								if (currentRow == null || currentRow.user.id != userID || currentRow.type != callType) {
 									if (currentRow != null && !calls.contains(currentRow)) {
 										calls.add(currentRow);
@@ -435,11 +440,11 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				});
 			}
 		}, ConnectionsManager.RequestFlagFailOnServerErrors);
-		ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
+		ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
 	}
 
 	private void confirmAndDelete(final CallLogRow row) {
-		if(getParentActivity()==null)
+		if (getParentActivity() == null)
 			return;
 		new AlertDialog.Builder(getParentActivity())
 				.setTitle(LocaleController.getString("AppName", R.string.AppName))
@@ -451,7 +456,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 						for (TLRPC.Message msg : row.calls) {
 							ids.add(msg.id);
 						}
-						MessagesController.getInstance().deleteMessages(ids, null, null, 0, false);
+						MessagesController.getInstance(currentAccount).deleteMessages(ids, null, null, 0, false);
 					}
 				})
 				.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
@@ -599,14 +604,16 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 	@Override
 	public ThemeDescription[] getThemeDescriptions() {
-		ThemeDescription.ThemeDescriptionDelegate сellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
+		ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
 			@Override
-			public void didSetColor(int color) {
-				int count = listView.getChildCount();
-				for (int a = 0; a < count; a++) {
-					View child = listView.getChildAt(a);
-					if (child instanceof ProfileSearchCell) {
-						((ProfileSearchCell) child).update(0);
+			public void didSetColor() {
+				if (listView != null) {
+					int count = listView.getChildCount();
+					for (int a = 0; a < count; a++) {
+						View child = listView.getChildAt(a);
+						if (child instanceof ProfileSearchCell) {
+							((ProfileSearchCell) child).update(0);
+						}
 					}
 				}
 			}
@@ -644,13 +651,13 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, Theme.dialogs_onlinePaint, null, null, Theme.key_windowBackgroundWhiteBlueText3),
 				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, Theme.dialogs_namePaint, null, null, Theme.key_chats_name),
 				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
-				new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
-				new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
-				new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),
-				new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundGreen),
-				new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundCyan),
-				new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
-				new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundPink),
+				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
+				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
+				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
+				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen),
+				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
+				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
+				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
 
 				new ThemeDescription(listView, 0, new Class[]{View.class}, null, new Drawable[]{greenDrawable, greenDrawable2, Theme.chat_msgCallUpRedDrawable, Theme.chat_msgCallDownRedDrawable}, null, Theme.key_calls_callReceivedGreenIcon),
 				new ThemeDescription(listView, 0, new Class[]{View.class}, null, new Drawable[]{redDrawable, Theme.chat_msgCallUpGreenDrawable, Theme.chat_msgCallDownGreenDrawable}, null, Theme.key_calls_callReceivedRedIcon),

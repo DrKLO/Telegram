@@ -17,6 +17,7 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.support.annotation.Keep;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.SpannableStringBuilder;
@@ -24,6 +25,7 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
+import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
@@ -89,14 +91,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
     private int chatId;
 
-    private int maxCount = MessagesController.getInstance().maxMegagroupCount;
+    private int maxCount = MessagesController.getInstance(currentAccount).maxMegagroupCount;
     private int chatType = ChatObject.CHAT_TYPE_CHAT;
     private boolean isAlwaysShare;
     private boolean isNeverShare;
     private boolean searchWas;
     private boolean searching;
     private boolean isGroup;
-    private HashMap<Integer, GroupCreateSpan> selectedContacts = new HashMap<>();
+    private SparseArray<GroupCreateSpan> selectedContacts = new SparseArray<>();
     private ArrayList<GroupCreateSpan> allSpans = new ArrayList<>();
     private GroupCreateSpan currentDeletingSpan;
 
@@ -296,23 +298,23 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         isNeverShare = args.getBoolean("isNeverShare", false);
         isGroup = args.getBoolean("isGroup", false);
         chatId = args.getInt("chatId");
-        maxCount = chatType == ChatObject.CHAT_TYPE_CHAT ? MessagesController.getInstance().maxMegagroupCount : MessagesController.getInstance().maxBroadcastCount;
+        maxCount = chatType == ChatObject.CHAT_TYPE_CHAT ? MessagesController.getInstance(currentAccount).maxMegagroupCount : MessagesController.getInstance(currentAccount).maxBroadcastCount;
     }
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.contactsDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatDidCreated);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatDidCreated);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatDidCreated);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.contactsDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatDidCreated);
     }
 
     @Override
@@ -437,6 +439,13 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
         spansContainer = new SpansContainer(context);
         scrollView.addView(spansContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        spansContainer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                editText.requestFocus();
+                AndroidUtilities.showKeyboard(editText);
+            }
+        });
 
         editText = new EditTextBoldCursor(context) {
             @Override
@@ -553,7 +562,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         });
 
         emptyView = new EmptyTextProgressView(context);
-        if (ContactsController.getInstance().isLoadingContacts()) {
+        if (ContactsController.getInstance(currentAccount).isLoadingContacts()) {
             emptyView.showProgress();
         } else {
             emptyView.showTextView();
@@ -585,14 +594,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     return;
                 }
                 boolean exists;
-                if (exists = selectedContacts.containsKey(user.id)) {
+                if (exists = selectedContacts.indexOfKey(user.id) >= 0) {
                     GroupCreateSpan span = selectedContacts.get(user.id);
                     spansContainer.removeSpan(span);
                 } else {
                     if (maxCount != 0 && selectedContacts.size() == maxCount) {
                         return;
                     }
-                    if (chatType == ChatObject.CHAT_TYPE_CHAT && selectedContacts.size() == MessagesController.getInstance().maxGroupCount) {
+                    if (chatType == ChatObject.CHAT_TYPE_CHAT && selectedContacts.size() == MessagesController.getInstance(currentAccount).maxGroupCount) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         builder.setMessage(LocaleController.getString("SoftUserLimitAlert", R.string.SoftUserLimitAlert));
@@ -600,7 +609,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         showDialog(builder.create());
                         return;
                     }
-                    MessagesController.getInstance().putUser(user, !searching);
+                    MessagesController.getInstance(currentAccount).putUser(user, !searching);
                     GroupCreateSpan span = new GroupCreateSpan(editText.getContext(), user);
                     spansContainer.addSpan(span);
                     span.setOnClickListener(GroupCreateActivity.this);
@@ -638,7 +647,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.contactsDidLoaded) {
             if (emptyView != null) {
                 emptyView.showTextView();
@@ -664,6 +673,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         }
     }
 
+    @Keep
     public void setContainerHeight(int value) {
         containerHeight = value;
         if (spansContainer != null) {
@@ -683,7 +693,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 GroupCreateUserCell cell = (GroupCreateUserCell) child;
                 TLRPC.User user = cell.getUser();
                 if (user != null) {
-                    cell.setChecked(selectedContacts.containsKey(user.id), true);
+                    cell.setChecked(selectedContacts.indexOfKey(user.id) >= 0, true);
                 }
             }
         }
@@ -692,23 +702,25 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private boolean onDonePressed() {
         if (chatType == ChatObject.CHAT_TYPE_CHANNEL) {
             ArrayList<TLRPC.InputUser> result = new ArrayList<>();
-            for (Integer uid : selectedContacts.keySet()) {
-                TLRPC.InputUser user = MessagesController.getInputUser(MessagesController.getInstance().getUser(uid));
+            for (int a = 0; a < selectedContacts.size(); a++) {
+                TLRPC.InputUser user = MessagesController.getInstance(currentAccount).getInputUser(MessagesController.getInstance(currentAccount).getUser(selectedContacts.keyAt(a)));
                 if (user != null) {
                     result.add(user);
                 }
             }
-            MessagesController.getInstance().addUsersToChannel(chatId, result, null);
-            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+            MessagesController.getInstance(currentAccount).addUsersToChannel(chatId, result, null);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
             Bundle args2 = new Bundle();
             args2.putInt("chat_id", chatId);
             presentFragment(new ChatActivity(args2), true);
         } else {
-            if (!doneButtonVisible || selectedContacts.isEmpty()) {
+            if (!doneButtonVisible || selectedContacts.size() == 0) {
                 return false;
             }
             ArrayList<Integer> result = new ArrayList<>();
-            result.addAll(selectedContacts.keySet());
+            for (int a = 0; a < selectedContacts.size(); a++) {
+                result.add(selectedContacts.keyAt(a));
+            }
             if (isAlwaysShare || isNeverShare) {
                 if (delegate != null) {
                     delegate.didSelectUsers(result);
@@ -740,7 +752,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (chatType == ChatObject.CHAT_TYPE_CHANNEL) {
                 actionBar.setSubtitle(LocaleController.formatPluralString("Members", selectedContacts.size()));
             } else {
-                if (selectedContacts.isEmpty()) {
+                if (selectedContacts.size() == 0) {
                     actionBar.setSubtitle(LocaleController.formatString("MembersCountZero", R.string.MembersCountZero, LocaleController.formatPluralString("Members", maxCount)));
                 } else {
                     actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
@@ -791,16 +803,16 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         public GroupCreateAdapter(Context ctx) {
             context = ctx;
 
-            ArrayList<TLRPC.TL_contact> arrayList  = ContactsController.getInstance().contacts;
+            ArrayList<TLRPC.TL_contact> arrayList  = ContactsController.getInstance(currentAccount).contacts;
             for (int a = 0; a < arrayList.size(); a++) {
-                TLRPC.User user = MessagesController.getInstance().getUser(arrayList.get(a).user_id);
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(arrayList.get(a).user_id);
                 if (user == null || user.self || user.deleted) {
                     continue;
                 }
                 contacts.add(user);
             }
 
-            searchAdapterHelper = new SearchAdapterHelper();
+            searchAdapterHelper = new SearchAdapterHelper(true);
             searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
                 @Override
                 public void onDataSetChanged() {
@@ -914,8 +926,20 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                     foundUserName = foundUserName.substring(1);
                                 }
                                 try {
-                                    username = new SpannableStringBuilder(username);
-                                    ((SpannableStringBuilder) username).setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), 0, foundUserName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                    int index;
+                                    SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
+                                    spannableStringBuilder.append("@");
+                                    spannableStringBuilder.append(user.username);
+                                    if ((index = user.username.toLowerCase().indexOf(foundUserName)) != -1) {
+                                        int len = foundUserName.length();
+                                        if (index == 0) {
+                                            len++;
+                                        } else {
+                                            index++;
+                                        }
+                                        spannableStringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), index, index + len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                    }
+                                    username = spannableStringBuilder;
                                 } catch (Exception e) {
                                     username = user.username;
                                 }
@@ -925,7 +949,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         user = contacts.get(position);
                     }
                     cell.setUser(user, name, username);
-                    cell.setChecked(selectedContacts.containsKey(user.id), false);
+                    cell.setChecked(selectedContacts.indexOfKey(user.id) >= 0, false);
                     break;
                 }
             }
@@ -1063,14 +1087,16 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate сellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
             @Override
-            public void didSetColor(int color) {
-                int count = listView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    View child = listView.getChildAt(a);
-                    if (child instanceof GroupCreateUserCell) {
-                        ((GroupCreateUserCell) child).update(0);
+            public void didSetColor() {
+                if (listView != null) {
+                    int count = listView.getChildCount();
+                    for (int a = 0; a < count; a++) {
+                        View child = listView.getChildAt(a);
+                        if (child instanceof GroupCreateUserCell) {
+                            ((GroupCreateUserCell) child).update(0);
+                        }
                     }
                 }
             }
@@ -1112,13 +1138,13 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{GroupCreateUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_groupcreate_onlineText),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{GroupCreateUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_groupcreate_offlineText),
                 new ThemeDescription(listView, 0, new Class[]{GroupCreateUserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundGreen),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundCyan),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundPink),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
 
                 new ThemeDescription(spansContainer, 0, new Class[]{GroupCreateSpan.class}, null, null, null, Theme.key_avatar_backgroundGroupCreateSpanBlue),
                 new ThemeDescription(spansContainer, 0, new Class[]{GroupCreateSpan.class}, null, null, null, Theme.key_groupcreate_spanBackground),

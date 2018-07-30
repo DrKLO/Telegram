@@ -58,52 +58,71 @@
 
 #include <openssl/bn.h>
 
-#include "internal.h"
 
+int DH_check_pub_key(const DH *dh, const BIGNUM *pub_key, int *out_flags) {
+  *out_flags = 0;
 
-int DH_check_pub_key(const DH *dh, const BIGNUM *pub_key, int *ret) {
+  BN_CTX *ctx = BN_CTX_new();
+  if (ctx == NULL) {
+    return 0;
+  }
+  BN_CTX_start(ctx);
+
   int ok = 0;
-  BIGNUM q;
 
-  *ret = 0;
-  BN_init(&q);
-  if (!BN_set_word(&q, 1)) {
+  // Check |pub_key| is greater than 1.
+  BIGNUM *tmp = BN_CTX_get(ctx);
+  if (tmp == NULL ||
+      !BN_set_word(tmp, 1)) {
     goto err;
   }
-
-  if (BN_cmp(pub_key, &q) <= 0) {
-    *ret |= DH_CHECK_PUBKEY_TOO_SMALL;
+  if (BN_cmp(pub_key, tmp) <= 0) {
+    *out_flags |= DH_CHECK_PUBKEY_TOO_SMALL;
   }
-  if (!BN_copy(&q, dh->p) ||
-      !BN_sub_word(&q, 1)) {
+
+  // Check |pub_key| is less than |dh->p| - 1.
+  if (!BN_copy(tmp, dh->p) ||
+      !BN_sub_word(tmp, 1)) {
     goto err;
   }
-  if (BN_cmp(pub_key, &q) >= 0) {
-    *ret |= DH_CHECK_PUBKEY_TOO_LARGE;
+  if (BN_cmp(pub_key, tmp) >= 0) {
+    *out_flags |= DH_CHECK_PUBKEY_TOO_LARGE;
+  }
+
+  if (dh->q != NULL) {
+    // Check |pub_key|^|dh->q| is 1 mod |dh->p|. This is necessary for RFC 5114
+    // groups which are not safe primes but pick a generator on a prime-order
+    // subgroup of size |dh->q|.
+    if (!BN_mod_exp_mont(tmp, pub_key, dh->q, dh->p, ctx, NULL)) {
+      goto err;
+    }
+    if (!BN_is_one(tmp)) {
+      *out_flags |= DH_CHECK_PUBKEY_INVALID;
+    }
   }
 
   ok = 1;
 
 err:
-  BN_free(&q);
+  BN_CTX_end(ctx);
+  BN_CTX_free(ctx);
   return ok;
 }
 
 
-int DH_check(const DH *dh, int *ret) {
-  /* Check that p is a safe prime and if g is 2, 3 or 5, check that it is a
-   * suitable generator where:
-   *   for 2, p mod 24 == 11
-   *   for 3, p mod 12 == 5
-   *   for 5, p mod 10 == 3 or 7
-   * should hold.
-   */
-  int ok = 0;
+int DH_check(const DH *dh, int *out_flags) {
+  // Check that p is a safe prime and if g is 2, 3 or 5, check that it is a
+  // suitable generator where:
+  //   for 2, p mod 24 == 11
+  //   for 3, p mod 12 == 5
+  //   for 5, p mod 10 == 3 or 7
+  // should hold.
+  int ok = 0, r;
   BN_CTX *ctx = NULL;
   BN_ULONG l;
   BIGNUM *t1 = NULL, *t2 = NULL;
 
-  *ret = 0;
+  *out_flags = 0;
   ctx = BN_CTX_new();
   if (ctx == NULL) {
     goto err;
@@ -120,53 +139,71 @@ int DH_check(const DH *dh, int *ret) {
 
   if (dh->q) {
     if (BN_cmp(dh->g, BN_value_one()) <= 0) {
-      *ret |= DH_CHECK_NOT_SUITABLE_GENERATOR;
+      *out_flags |= DH_CHECK_NOT_SUITABLE_GENERATOR;
     } else if (BN_cmp(dh->g, dh->p) >= 0) {
-      *ret |= DH_CHECK_NOT_SUITABLE_GENERATOR;
+      *out_flags |= DH_CHECK_NOT_SUITABLE_GENERATOR;
     } else {
-      /* Check g^q == 1 mod p */
-      if (!BN_mod_exp(t1, dh->g, dh->q, dh->p, ctx)) {
+      // Check g^q == 1 mod p
+      if (!BN_mod_exp_mont(t1, dh->g, dh->q, dh->p, ctx, NULL)) {
         goto err;
       }
       if (!BN_is_one(t1)) {
-        *ret |= DH_CHECK_NOT_SUITABLE_GENERATOR;
+        *out_flags |= DH_CHECK_NOT_SUITABLE_GENERATOR;
       }
     }
-    if (!BN_is_prime_ex(dh->q, BN_prime_checks, ctx, NULL)) {
-      *ret |= DH_CHECK_Q_NOT_PRIME;
+    r = BN_is_prime_ex(dh->q, BN_prime_checks, ctx, NULL);
+    if (r < 0) {
+      goto err;
     }
-    /* Check p == 1 mod q  i.e. q divides p - 1 */
+    if (!r) {
+      *out_flags |= DH_CHECK_Q_NOT_PRIME;
+    }
+    // Check p == 1 mod q  i.e. q divides p - 1
     if (!BN_div(t1, t2, dh->p, dh->q, ctx)) {
       goto err;
     }
     if (!BN_is_one(t2)) {
-      *ret |= DH_CHECK_INVALID_Q_VALUE;
+      *out_flags |= DH_CHECK_INVALID_Q_VALUE;
     }
     if (dh->j && BN_cmp(dh->j, t1)) {
-      *ret |= DH_CHECK_INVALID_J_VALUE;
+      *out_flags |= DH_CHECK_INVALID_J_VALUE;
     }
   } else if (BN_is_word(dh->g, DH_GENERATOR_2)) {
     l = BN_mod_word(dh->p, 24);
+    if (l == (BN_ULONG)-1) {
+      goto err;
+    }
     if (l != 11) {
-      *ret |= DH_CHECK_NOT_SUITABLE_GENERATOR;
+      *out_flags |= DH_CHECK_NOT_SUITABLE_GENERATOR;
     }
   } else if (BN_is_word(dh->g, DH_GENERATOR_5)) {
     l = BN_mod_word(dh->p, 10);
+    if (l == (BN_ULONG)-1) {
+      goto err;
+    }
     if (l != 3 && l != 7) {
-      *ret |= DH_CHECK_NOT_SUITABLE_GENERATOR;
+      *out_flags |= DH_CHECK_NOT_SUITABLE_GENERATOR;
     }
   } else {
-    *ret |= DH_CHECK_UNABLE_TO_CHECK_GENERATOR;
+    *out_flags |= DH_CHECK_UNABLE_TO_CHECK_GENERATOR;
   }
 
-  if (!BN_is_prime_ex(dh->p, BN_prime_checks, ctx, NULL)) {
-    *ret |= DH_CHECK_P_NOT_PRIME;
+  r = BN_is_prime_ex(dh->p, BN_prime_checks, ctx, NULL);
+  if (r < 0) {
+    goto err;
+  }
+  if (!r) {
+    *out_flags |= DH_CHECK_P_NOT_PRIME;
   } else if (!dh->q) {
     if (!BN_rshift1(t1, dh->p)) {
       goto err;
     }
-    if (!BN_is_prime_ex(t1, BN_prime_checks, ctx, NULL)) {
-      *ret |= DH_CHECK_P_NOT_SAFE_PRIME;
+    r = BN_is_prime_ex(t1, BN_prime_checks, ctx, NULL);
+    if (r < 0) {
+      goto err;
+    }
+    if (!r) {
+      *out_flags |= DH_CHECK_P_NOT_SAFE_PRIME;
     }
   }
   ok = 1;

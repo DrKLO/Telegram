@@ -28,6 +28,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -35,6 +36,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.SharingLiveLocationCell;
 import org.telegram.ui.StickerPreviewViewer;
 
+import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 public class SharingLocationsAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
@@ -57,7 +59,7 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
 
     public SharingLocationsAlert(Context context, SharingLocationsAlertDelegate sharingLocationsAlertDelegate) {
         super(context, false);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.liveLocationsChanged);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.liveLocationsChanged);
         delegate = sharingLocationsAlertDelegate;
 
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow).mutate();
@@ -86,7 +88,7 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
                     height -= AndroidUtilities.statusBarHeight;
                 }
                 int measuredWidth = getMeasuredWidth();
-                int contentSize = AndroidUtilities.dp(48 + 8) + AndroidUtilities.dp(56) + 1 + LocationController.getInstance().sharingLocationsUI.size() * AndroidUtilities.dp(54);
+                int contentSize = AndroidUtilities.dp(48 + 8) + AndroidUtilities.dp(56) + 1 + LocationController.getLocationsCount() * AndroidUtilities.dp(54);
 
                 int padding;
                 if (contentSize < (height / 5 * 3)) {
@@ -160,10 +162,10 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
             @Override
             public void onItemClick(View view, int position) {
                 position -= 1;
-                if (position < 0 || position >= LocationController.getInstance().sharingLocationsUI.size()) {
+                if (position < 0 || position >= LocationController.getLocationsCount()) {
                     return;
                 }
-                delegate.didSelectLocation(LocationController.getInstance().sharingLocationsUI.get(position));
+                delegate.didSelectLocation(getLocation(position));
                 dismiss();
             }
         });
@@ -182,7 +184,9 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
         pickerBottomLayout.cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                LocationController.getInstance().removeAllLocationSharings();
+                for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                    LocationController.getInstance(a).removeAllLocationSharings();
+                }
                 dismiss();
             }
         });
@@ -223,9 +227,9 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.liveLocationsChanged) {
-            if (LocationController.getInstance().sharingLocationsUI.isEmpty()) {
+            if (LocationController.getLocationsCount() == 0) {
                 dismiss();
             } else {
                 adapter.notifyDataSetChanged();
@@ -233,10 +237,22 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
         }
     }
 
+    private LocationController.SharingLocationInfo getLocation(int position) {
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            ArrayList<LocationController.SharingLocationInfo> infos = LocationController.getInstance(a).sharingLocationsUI;
+            if (position >= infos.size()) {
+                position -= infos.size();
+            } else {
+                return infos.get(position);
+            }
+        }
+        return null;
+    }
+
     @Override
     public void dismiss() {
         super.dismiss();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.liveLocationsChanged);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.liveLocationsChanged);
     }
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
@@ -249,7 +265,7 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
 
         @Override
         public int getItemCount() {
-            return LocationController.getInstance().sharingLocationsUI.size() + 1;
+            return LocationController.getLocationsCount() + 1;
         }
 
         @Override
@@ -304,12 +320,12 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
             switch (holder.getItemViewType()) {
                 case 0: {
                     SharingLiveLocationCell cell = (SharingLiveLocationCell) holder.itemView;
-                    cell.setDialog(LocationController.getInstance().sharingLocationsUI.get(position - 1));
+                    cell.setDialog(getLocation(position - 1));
                     break;
                 }
                 case 1: {
                     if (textView != null) {
-                        textView.setText(LocaleController.formatString("SharingLiveLocationTitle", R.string.SharingLiveLocationTitle, LocaleController.formatPluralString("Chats", LocationController.getInstance().sharingLocationsUI.size())));
+                        textView.setText(LocaleController.formatString("SharingLiveLocationTitle", R.string.SharingLiveLocationTitle, LocaleController.formatPluralString("Chats", LocationController.getLocationsCount())));
                     }
                     break;
                 }

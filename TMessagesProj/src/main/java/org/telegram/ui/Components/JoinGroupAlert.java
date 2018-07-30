@@ -139,12 +139,12 @@ public class JoinGroupAlert extends BottomSheet {
                 dismiss();
                 final TLRPC.TL_messages_importChatInvite req = new TLRPC.TL_messages_importChatInvite();
                 req.hash = hash;
-                ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
                     @Override
                     public void run(final TLObject response, final TLRPC.TL_error error) {
                         if (error == null) {
                             TLRPC.Updates updates = (TLRPC.Updates) response;
-                            MessagesController.getInstance().processUpdates(updates, false);
+                            MessagesController.getInstance(currentAccount).processUpdates(updates, false);
                         }
                         AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
@@ -158,17 +158,17 @@ public class JoinGroupAlert extends BottomSheet {
                                         TLRPC.Chat chat = updates.chats.get(0);
                                         chat.left = false;
                                         chat.kicked = false;
-                                        MessagesController.getInstance().putUsers(updates.users, false);
-                                        MessagesController.getInstance().putChats(updates.chats, false);
+                                        MessagesController.getInstance(currentAccount).putUsers(updates.users, false);
+                                        MessagesController.getInstance(currentAccount).putChats(updates.chats, false);
                                         Bundle args = new Bundle();
                                         args.putInt("chat_id", chat.id);
-                                        if (MessagesController.checkCanOpenChat(args, fragment)) {
+                                        if (MessagesController.getInstance(currentAccount).checkCanOpenChat(args, fragment)) {
                                             ChatActivity chatActivity = new ChatActivity(args);
                                             fragment.presentFragment(chatActivity, fragment instanceof ChatActivity);
                                         }
                                     }
                                 } else {
-                                    AlertsCreator.processError(error, fragment, req);
+                                    AlertsCreator.processError(currentAccount, error, fragment, req);
                                 }
                             }
                         });

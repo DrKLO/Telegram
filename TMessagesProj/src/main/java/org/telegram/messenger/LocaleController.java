@@ -50,7 +50,7 @@ public class LocaleController {
 
     public static boolean isRTL = false;
     public static int nameDisplayOrder = 1;
-    private static boolean is24HourFormat = false;
+    public static boolean is24HourFormat = false;
     public FastDateFormat formatterDay;
     public FastDateFormat formatterWeek;
     public FastDateFormat formatterMonth;
@@ -273,7 +273,7 @@ public class LocaleController {
             AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    loadRemoteLanguages();
+                    loadRemoteLanguages(UserConfig.selectedAccount);
                 }
             });
         }
@@ -290,6 +290,7 @@ public class LocaleController {
             if (existingLocale != null) {
                 existingLocale.pathToFile = locale.pathToFile;
                 existingLocale.version = locale.version;
+                remoteLanguages.set(a, existingLocale);
             } else {
                 languages.add(locale);
                 languagesDict.put(locale.getKey(), locale);
@@ -302,7 +303,7 @@ public class LocaleController {
         boolean override = false;
 
         try {
-            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
             String lang = preferences.getString("language", null);
             if (lang != null) {
                 currentInfo = getLanguageFromDict(lang);
@@ -321,7 +322,7 @@ public class LocaleController {
                 }
             }
 
-            applyLanguage(currentInfo, override, true);
+            applyLanguage(currentInfo, override, true, UserConfig.selectedAccount);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -372,8 +373,17 @@ public class LocaleController {
         return currentLocaleInfo.isLocal();
     }
 
-    public void reloadCurrentRemoteLocale() {
-        applyRemoteLanguage(currentLocaleInfo, null, true);
+    public void reloadCurrentRemoteLocale(int currentAccount) {
+        applyRemoteLanguage(currentLocaleInfo, true, currentAccount);
+    }
+
+    public void checkUpdateForCurrentRemoteLocale(int currentAccount, int version) {
+        if (currentLocaleInfo == null || currentLocaleInfo != null && !currentLocaleInfo.isRemote()) {
+            return;
+        }
+        if (currentLocaleInfo.version < version) {
+            applyRemoteLanguage(currentLocaleInfo, false, currentAccount);
+        }
     }
 
     private String getLocaleString(Locale locale) {
@@ -481,7 +491,7 @@ public class LocaleController {
         return null;
     }
 
-    public boolean applyLanguageFile(File file) {
+    public boolean applyLanguageFile(File file, int currentAccount) {
         try {
             HashMap<String, String> stringMap = getLocaleFileStrings(file);
 
@@ -508,7 +518,8 @@ public class LocaleController {
                     return false;
                 }
 
-                LocaleInfo localeInfo = getLanguageFromDict(languageCode);
+                String key = "local_" + languageCode.toLowerCase();
+                LocaleInfo localeInfo = getLanguageFromDict(key);
                 if (localeInfo == null) {
                     localeInfo = new LocaleInfo();
                     localeInfo.name = languageName;
@@ -523,7 +534,7 @@ public class LocaleController {
                     saveOtherLanguages();
                 }
                 localeValues = stringMap;
-                applyLanguage(localeInfo, true, false, true, false);
+                applyLanguage(localeInfo, true, false, true, false, currentAccount);
                 return true;
             }
         } catch (Exception e) {
@@ -562,7 +573,7 @@ public class LocaleController {
         editor.commit();
     }
 
-    public boolean deleteLanguage(LocaleInfo localeInfo) {
+    public boolean deleteLanguage(LocaleInfo localeInfo, int currentAccount) {
         if (localeInfo.pathToFile == null || localeInfo.isRemote()) {
             return false;
         }
@@ -577,7 +588,7 @@ public class LocaleController {
             if (info == null) {
                 info = getLanguageFromDict("en");
             }
-            applyLanguage(info, true, false);
+            applyLanguage(info, true, false, currentAccount);
         }
 
         otherLanguages.remove(localeInfo);
@@ -627,6 +638,7 @@ public class LocaleController {
             }
             HashMap<String, String> stringMap = new HashMap<>();
             XmlPullParser parser = Xml.newPullParser();
+            //AndroidUtilities.copyFile(file, new File(ApplicationLoader.applicationContext.getExternalFilesDir(null), "locale10.xml"));
             stream = new FileInputStream(file);
             parser.setInput(stream, "UTF-8");
             int eventType = parser.getEventType();
@@ -687,30 +699,32 @@ public class LocaleController {
         return new HashMap<>();
     }
 
-    public void applyLanguage(LocaleInfo localeInfo, boolean override, boolean init) {
-        applyLanguage(localeInfo, override, init, false, false);
+    public void applyLanguage(LocaleInfo localeInfo, boolean override, boolean init, final int currentAccount) {
+        applyLanguage(localeInfo, override, init, false, false, currentAccount);
     }
 
-    public void applyLanguage(final LocaleInfo localeInfo, boolean override, boolean init, boolean fromFile, boolean force) {
+    public void applyLanguage(final LocaleInfo localeInfo, boolean override, boolean init, boolean fromFile, boolean force, final int currentAccount) {
         if (localeInfo == null) {
             return;
         }
         File pathToFile = localeInfo.getPathToFile();
         String shortName = localeInfo.shortName;
         if (!init) {
-            ConnectionsManager.getInstance().setLangCode(shortName.replace("_", "-"));
+            ConnectionsManager.setLangCode(shortName.replace("_", "-"));
         }
         if (localeInfo.isRemote() && (force || !pathToFile.exists())) {
-            FileLog.d("reload locale because file doesn't exist " + pathToFile);
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("reload locale because file doesn't exist " + pathToFile);
+            }
             if (init) {
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        applyRemoteLanguage(localeInfo, null, true);
+                        applyRemoteLanguage(localeInfo, true, currentAccount);
                     }
                 });
             } else {
-                applyRemoteLanguage(localeInfo, null, true);
+                applyRemoteLanguage(localeInfo, true, currentAccount);
             }
         }
         try {
@@ -724,7 +738,7 @@ public class LocaleController {
             if (override) {
                 languageOverride = localeInfo.shortName;
 
-                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putString("language", localeInfo.getKey());
                 editor.commit();
@@ -754,11 +768,11 @@ public class LocaleController {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            reloadCurrentRemoteLocale();
+                            reloadCurrentRemoteLocale(currentAccount);
                         }
                     });
                 } else {
-                    reloadCurrentRemoteLocale();
+                    reloadCurrentRemoteLocale(currentAccount);
                 }
                 reloadLastFile = false;
             }
@@ -859,10 +873,20 @@ public class LocaleController {
         double doubleAmount;
         boolean discount = amount < 0;
         amount = Math.abs(amount);
+        Currency currency = Currency.getInstance(type);
         switch (type) {
             case "CLF":
                 customFormat = " %.4f";
                 doubleAmount = amount / 10000.0;
+                break;
+
+            case "IRR":
+                doubleAmount = amount / 100.0f;
+                if (amount % 100 == 0) {
+                    customFormat = " %.0f";
+                } else {
+                    customFormat = " %.2f";
+                }
                 break;
 
             case "BHD":
@@ -910,10 +934,13 @@ public class LocaleController {
                 doubleAmount = amount / 100.0;
                 break;
         }
-        Currency сurrency = Currency.getInstance(type);
-        if (сurrency != null) {
+        String result;
+        if (currency != null) {
             NumberFormat format = NumberFormat.getCurrencyInstance(currentLocale != null ? currentLocale : systemDefaultLocale);
-            format.setCurrency(сurrency);
+            format.setCurrency(currency);
+            if (type.equals("IRR")) {
+                format.setMaximumFractionDigits(0);
+            }
             return (discount ? "-" : "") + format.format(doubleAmount);
         }
         return (discount ? "-" : "") + String.format(Locale.US, type + customFormat, doubleAmount);
@@ -928,6 +955,15 @@ public class LocaleController {
             case "CLF":
                 customFormat = " %.4f";
                 doubleAmount = amount / 10000.0;
+                break;
+
+            case "IRR":
+                doubleAmount = amount / 100.0f;
+                if (amount % 100 == 0) {
+                    customFormat = " %.0f";
+                } else {
+                    customFormat = " %.2f";
+                }
                 break;
 
             case "BHD":
@@ -1015,7 +1051,7 @@ public class LocaleController {
         if (languageOverride != null) {
             LocaleInfo toSet = currentLocaleInfo;
             currentLocaleInfo = null;
-            applyLanguage(toSet, false, false);
+            applyLanguage(toSet, false, false, UserConfig.selectedAccount);
         } else {
             Locale newLocale = newConfig.locale;
             if (newLocale != null) {
@@ -1086,9 +1122,9 @@ public class LocaleController {
             int dateYear = rightNow.get(Calendar.YEAR);
 
             if (dateDay == day && year == dateYear) {
-                return String.format("%s %s", LocaleController.getString("TodayAt", R.string.TodayAt), getInstance().formatterDay.format(new Date(date)));
+                return LocaleController.formatString("TodayAtFormatted", R.string.TodayAtFormatted, getInstance().formatterDay.format(new Date(date)));
             } else if (dateDay + 1 == day && year == dateYear) {
-                return String.format("%s %s", LocaleController.getString("YesterdayAt", R.string.YesterdayAt), getInstance().formatterDay.format(new Date(date)));
+                return LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().formatterDay.format(new Date(date)));
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
                 return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterMonth.format(new Date(date)), getInstance().formatterDay.format(new Date(date)));
             } else {
@@ -1113,7 +1149,7 @@ public class LocaleController {
             if (dateDay == day && year == dateYear) {
                 return getInstance().formatterDay.format(new Date(date));
             } else if (dateDay + 1 == day && year == dateYear) {
-                return String.format("%s %s", LocaleController.getString("YesterdayAt", R.string.YesterdayAt), getInstance().formatterDay.format(new Date(date)));
+                return LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().formatterDay.format(new Date(date)));
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
                 return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().chatDate.format(new Date(date)), getInstance().formatterDay.format(new Date(date)));
             } else {
@@ -1136,21 +1172,21 @@ public class LocaleController {
             int dateYear = rightNow.get(Calendar.YEAR);
 
             if (dateDay == day && year == dateYear) {
-                int diff = (int) (ConnectionsManager.getInstance().getCurrentTime() - date / 1000) / 60;
+                int diff = (int) (ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime() - date / 1000) / 60;
                 if (diff < 1) {
                     return LocaleController.getString("LocationUpdatedJustNow", R.string.LocationUpdatedJustNow);
                 } else if (diff < 60) {
                     return LocaleController.formatPluralString("UpdatedMinutes", diff);
                 }
-                return String.format("%s %s %s", LocaleController.getString("LocationUpdated", R.string.LocationUpdated), LocaleController.getString("TodayAt", R.string.TodayAt), getInstance().formatterDay.format(new Date(date)));
+                return LocaleController.formatString("LocationUpdatedFormatted", R.string.LocationUpdatedFormatted, LocaleController.formatString("TodayAtFormatted", R.string.TodayAtFormatted, getInstance().formatterDay.format(new Date(date))));
             } else if (dateDay + 1 == day && year == dateYear) {
-                return String.format("%s %s %s", LocaleController.getString("LocationUpdated", R.string.LocationUpdated), LocaleController.getString("YesterdayAt", R.string.YesterdayAt), getInstance().formatterDay.format(new Date(date)));
+                return LocaleController.formatString("LocationUpdatedFormatted", R.string.LocationUpdatedFormatted, LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().formatterDay.format(new Date(date))));
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
                 String format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterMonth.format(new Date(date)), getInstance().formatterDay.format(new Date(date)));
-                return String.format("%s %s", LocaleController.getString("LocationUpdated", R.string.LocationUpdated), format);
+                return LocaleController.formatString("LocationUpdatedFormatted", R.string.LocationUpdatedFormatted, format);
             } else {
                 String format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterYear.format(new Date(date)), getInstance().formatterDay.format(new Date(date)));
-                return String.format("%s %s", LocaleController.getString("LocationUpdated", R.string.LocationUpdated), format);
+                return LocaleController.formatString("LocationUpdatedFormatted", R.string.LocationUpdatedFormatted, format);
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -1185,7 +1221,7 @@ public class LocaleController {
             int dateYear = rightNow.get(Calendar.YEAR);
 
             if (dateDay == day && year == dateYear) {
-                return String.format("%s %s %s", LocaleController.getString("LastSeen", R.string.LastSeen), LocaleController.getString("TodayAt", R.string.TodayAt), getInstance().formatterDay.format(new Date(date)));
+                return LocaleController.formatString("LastSeenFormatted", R.string.LastSeenFormatted, LocaleController.formatString("TodayAtFormatted", R.string.TodayAtFormatted, getInstance().formatterDay.format(new Date(date))));
                 /*int diff = (int) (ConnectionsManager.getInstance().getCurrentTime() - date) / 60;
                 if (diff < 1) {
                     return LocaleController.getString("LastSeenNow", R.string.LastSeenNow);
@@ -1195,13 +1231,13 @@ public class LocaleController {
                     return LocaleController.formatPluralString("LastSeenHours", (int) Math.ceil(diff / 60.0f));
                 }*/
             } else if (dateDay + 1 == day && year == dateYear) {
-                return String.format("%s %s %s", LocaleController.getString("LastSeen", R.string.LastSeen), LocaleController.getString("YesterdayAt", R.string.YesterdayAt), getInstance().formatterDay.format(new Date(date)));
+                return LocaleController.formatString("LastSeenFormatted", R.string.LastSeenFormatted, LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().formatterDay.format(new Date(date))));
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
                 String format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterMonth.format(new Date(date)), getInstance().formatterDay.format(new Date(date)));
-                return String.format("%s %s", LocaleController.getString("LastSeenDate", R.string.LastSeenDate), format);
+                return LocaleController.formatString("LastSeenDateFormatted", R.string.LastSeenDateFormatted, format);
             } else {
                 String format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterYear.format(new Date(date)), getInstance().formatterDay.format(new Date(date)));
-                return String.format("%s %s", LocaleController.getString("LastSeenDate", R.string.LastSeenDate), format);
+                return LocaleController.formatString("LastSeenDateFormatted", R.string.LastSeenDateFormatted, format);
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -1233,7 +1269,7 @@ public class LocaleController {
             lang = "en";
         }
         lang = lang.toLowerCase();
-        isRTL = lang.startsWith("ar") || BuildVars.DEBUG_VERSION && (lang.startsWith("he") || lang.startsWith("iw") || lang.startsWith("fa"));
+        isRTL = lang.startsWith("ar") || lang.startsWith("fa") || lang.startsWith("he") || lang.startsWith("iw");
         nameDisplayOrder = lang.equals("ko") ? 2 : 1;
 
         formatterMonth = createFormatter(locale, getStringInternal("formatterMonth", R.string.formatterMonth), "dd MMM");
@@ -1328,7 +1364,7 @@ public class LocaleController {
         }
     }
 
-    public static String formatUserStatus(TLRPC.User user) {
+    public static String formatUserStatus(int currentAccount, TLRPC.User user) {
         if (user != null && user.status != null && user.status.expires == 0) {
             if (user.status instanceof TLRPC.TL_userStatusRecently) {
                 user.status.expires = -100;
@@ -1339,14 +1375,14 @@ public class LocaleController {
             }
         }
         if (user != null && user.status != null && user.status.expires <= 0) {
-            if (MessagesController.getInstance().onlinePrivacy.containsKey(user.id)) {
+            if (MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(user.id)) {
                 return getString("Online", R.string.Online);
             }
         }
         if (user == null || user.status == null || user.status.expires == 0 || UserObject.isDeleted(user) || user instanceof TLRPC.TL_userEmpty) {
             return getString("ALongTimeAgo", R.string.ALongTimeAgo);
         } else {
-            int currentTime = ConnectionsManager.getInstance().getCurrentTime();
+            int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
             if (user.status.expires > currentTime) {
                 return getString("Online", R.string.Online);
             } else {
@@ -1369,14 +1405,17 @@ public class LocaleController {
         if (str.contains("[CDATA")) {
             return str;
         }
-        return str.replace("<", "&lt;").replace(">", "&gt;").replace("&", "&amp;");
+        return str.replace("<", "&lt;").replace(">", "&gt;").replace("& ", "&amp; ");
     }
 
-    public void saveRemoteLocaleStrings(final TLRPC.TL_langPackDifference difference) {
-        if (difference == null || difference.strings.isEmpty()) {
+    public void saveRemoteLocaleStrings(final TLRPC.TL_langPackDifference difference, int currentAccount) {
+        if (difference == null || difference.strings.isEmpty() || currentLocaleInfo == null) {
             return;
         }
         final String langCode = difference.lang_code.replace('-', '_').toLowerCase();
+        if (!langCode.equals(currentLocaleInfo.shortName)) {
+            return;
+        }
         File finalFile = new File(ApplicationLoader.getFilesDirFixed(), "remote_" + langCode + ".xml");
         try {
             final HashMap<String, String> values;
@@ -1400,7 +1439,9 @@ public class LocaleController {
                     values.remove(string.key);
                 }
             }
-            FileLog.d("save locale file to " + finalFile);
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("save locale file to " + finalFile);
+            }
             BufferedWriter writer = new BufferedWriter(new FileWriter(finalFile));
             writer.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
             writer.write("<resources>\n");
@@ -1432,7 +1473,7 @@ public class LocaleController {
                         if (newLocale != null) {
                             languageOverride = localeInfo.shortName;
 
-                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                             SharedPreferences.Editor editor = preferences.edit();
                             editor.putString("language", localeInfo.getKey());
                             editor.commit();
@@ -1457,7 +1498,7 @@ public class LocaleController {
                         changingConfiguration = false;
                     }
                     recreateFormatters();
-                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.reloadInterface);
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
                 }
             });
         } catch (Exception ignore) {
@@ -1465,13 +1506,13 @@ public class LocaleController {
         }
     }
 
-    public void loadRemoteLanguages() {
+    public void loadRemoteLanguages(final int currentAccount) {
         if (loadingRemoteLanguages) {
             return;
         }
         loadingRemoteLanguages = true;
         TLRPC.TL_langpack_getLanguages req = new TLRPC.TL_langpack_getLanguages();
-        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(final TLObject response, TLRPC.TL_error error) {
                 if (response != null) {
@@ -1484,7 +1525,9 @@ public class LocaleController {
                             remoteLanguages.clear();
                             for (int a = 0; a < res.objects.size(); a++) {
                                 TLRPC.TL_langPackLanguage language = (TLRPC.TL_langPackLanguage) res.objects.get(a);
-                                FileLog.d("loaded lang " + language.name);
+                                if (BuildVars.LOGS_ENABLED) {
+                                    FileLog.d("loaded lang " + language.name);
+                                }
                                 LocaleInfo localeInfo = new LocaleInfo();
                                 localeInfo.nameEnglish = language.name;
                                 localeInfo.name = language.native_name;
@@ -1500,6 +1543,7 @@ public class LocaleController {
                                     existing.nameEnglish = localeInfo.nameEnglish;
                                     existing.name = localeInfo.name;
                                     existing.pathToFile = localeInfo.pathToFile;
+                                    localeInfo = existing;
                                 }
                                 remoteLanguages.add(localeInfo);
                                 remoteLoaded.put(localeInfo.getKey(), existing);
@@ -1511,7 +1555,9 @@ public class LocaleController {
                                 }
                                 LocaleInfo existing = remoteLoaded.get(info.getKey());
                                 if (existing == null) {
-                                    FileLog.d("remove lang " + info.getKey());
+                                    if (BuildVars.LOGS_ENABLED) {
+                                        FileLog.d("remove lang " + info.getKey());
+                                    }
                                     languages.remove(a);
                                     languagesDict.remove(info.getKey());
                                     a--;
@@ -1525,14 +1571,14 @@ public class LocaleController {
                                         if (info == null) {
                                             info = getLanguageFromDict("en");
                                         }
-                                        applyLanguage(info, true, false);
-                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.reloadInterface);
+                                        applyLanguage(info, true, false, currentAccount);
+                                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
                                     }
                                 }
                             }
                             saveOtherLanguages();
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.suggestedLangpack);
-                            applyLanguage(currentLocaleInfo, true, false);
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.suggestedLangpack);
+                            applyLanguage(currentLocaleInfo, true, false, currentAccount);
                         }
                     });
                 }
@@ -1540,43 +1586,40 @@ public class LocaleController {
         }, ConnectionsManager.RequestFlagWithoutLogin);
     }
 
-    private void applyRemoteLanguage(LocaleInfo localeInfo, TLRPC.TL_langPackLanguage language, boolean force) {
-        if (localeInfo == null && language == null || localeInfo != null && !localeInfo.isRemote()) {
+    private void applyRemoteLanguage(LocaleInfo localeInfo, boolean force, final int currentAccount) {
+        if (localeInfo == null || localeInfo != null && !localeInfo.isRemote()) {
             return;
         }
         if (localeInfo.version != 0 && !force) {
             TLRPC.TL_langpack_getDifference req = new TLRPC.TL_langpack_getDifference();
             req.from_version = localeInfo.version;
-            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, TLRPC.TL_error error) {
                     if (response != null) {
                         AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
-                                saveRemoteLocaleStrings((TLRPC.TL_langPackDifference) response);
+                                saveRemoteLocaleStrings((TLRPC.TL_langPackDifference) response, currentAccount);
                             }
                         });
                     }
                 }
             }, ConnectionsManager.RequestFlagWithoutLogin);
         } else {
-            ConnectionsManager.getInstance().setLangCode(localeInfo != null ? localeInfo.shortName : language.lang_code);
-            TLRPC.TL_langpack_getLangPack req = new TLRPC.TL_langpack_getLangPack();
-            if (language == null) {
-                req.lang_code = localeInfo.shortName;
-            } else {
-                req.lang_code = language.lang_code;
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                ConnectionsManager.setLangCode(localeInfo.shortName);
             }
-            req.lang_code = req.lang_code.replace("_", "-");
-            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+            TLRPC.TL_langpack_getLangPack req = new TLRPC.TL_langpack_getLangPack();
+            req.lang_code = localeInfo.shortName.replace("_", "-");
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, TLRPC.TL_error error) {
                     if (response != null) {
                         AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
-                                saveRemoteLocaleStrings((TLRPC.TL_langPackDifference) response);
+                                saveRemoteLocaleStrings((TLRPC.TL_langPackDifference) response, currentAccount);
                             }
                         });
                     }
@@ -2368,5 +2411,9 @@ public class LocaleController {
                 return QUANTITY_OTHER;
             }
         }
+    }
+
+    public static String addNbsp(String src) {
+        return src.replace(' ', '\u00A0');
     }
 }

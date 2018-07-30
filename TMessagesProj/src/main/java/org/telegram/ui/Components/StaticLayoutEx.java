@@ -113,8 +113,8 @@ public class StaticLayoutEx {
                             .setIncludePad(includePad)
                             .setEllipsize(null)
                             .setEllipsizedWidth(ellipsisWidth)
-                            .setBreakStrategy(Layout.BREAK_STRATEGY_HIGH_QUALITY)
-                            .setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NORMAL);
+                            .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
+                            .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE);
                     layout = builder.build();
                 } else {
                     layout = new StaticLayout(source, paint, outerWidth, align, spacingMult, spacingAdd, includePad);

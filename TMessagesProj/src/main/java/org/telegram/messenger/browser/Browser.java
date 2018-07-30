@@ -26,10 +26,11 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.CustomTabsCopyReceiver;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.ShareBroadcastReceiver;
+import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.support.customtabs.CustomTabsCallback;
 import org.telegram.messenger.support.customtabs.CustomTabsClient;
 import org.telegram.messenger.support.customtabs.CustomTabsIntent;
@@ -96,7 +97,7 @@ public class Browser {
                 @Override
                 public void onServiceConnected(CustomTabsClient client) {
                     customTabsClient = client;
-                    if (MediaController.getInstance().canCustomTabs()) {
+                    if (SharedConfig.customTabs) {
                         if (customTabsClient != null) {
                             try {
                                 customTabsClient.warmup(0);
@@ -166,21 +167,26 @@ public class Browser {
         openUrl(context, uri, allowCustom, true);
     }
 
+    public static void openUrl(final Context context, final String url, final boolean allowCustom, boolean tryTelegraph) {
+        openUrl(context, Uri.parse(url), allowCustom, tryTelegraph);
+    }
+
     public static void openUrl(final Context context, final Uri uri, final boolean allowCustom, boolean tryTelegraph) {
         if (context == null || uri == null) {
             return;
         }
+        final int currentAccount = UserConfig.selectedAccount;
         boolean forceBrowser[] = new boolean[] {false};
         boolean internalUri = isInternalUri(uri, forceBrowser);
         if (tryTelegraph) {
             try {
                 String host = uri.getHost().toLowerCase();
-                if (host.equals("telegra.ph") || uri.toString().contains("telegram.org/faq")) {
+                if (host.equals("telegra.ph") || uri.toString().toLowerCase().contains("telegram.org/faq")) {
                     final AlertDialog progressDialog[] = new AlertDialog[] {new AlertDialog(context, 1)};
 
                     TLRPC.TL_messages_getWebPagePreview req = new TLRPC.TL_messages_getWebPagePreview();
                     req.message = uri.toString();
-                    final int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                    final int reqId = ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, new RequestDelegate() {
                         @Override
                         public void run(final TLObject response, TLRPC.TL_error error) {
                             AndroidUtilities.runOnUIThread(new Runnable() {
@@ -197,7 +203,7 @@ public class Browser {
                                     if (response instanceof TLRPC.TL_messageMediaWebPage) {
                                         TLRPC.TL_messageMediaWebPage webPage = (TLRPC.TL_messageMediaWebPage) response;
                                         if (webPage.webpage instanceof TLRPC.TL_webPage && webPage.webpage.cached_page != null) {
-                                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.openArticle, webPage.webpage, uri.toString());
+                                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.openArticle, webPage.webpage, uri.toString());
                                             ok = true;
                                         }
                                     }
@@ -221,7 +227,7 @@ public class Browser {
                                 progressDialog[0].setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
-                                        ConnectionsManager.getInstance().cancelRequest(reqId, true);
+                                        ConnectionsManager.getInstance(UserConfig.selectedAccount).cancelRequest(reqId, true);
                                         try {
                                             dialog.dismiss();
                                         } catch (Exception e) {
@@ -243,7 +249,7 @@ public class Browser {
         }
         try {
             String scheme = uri.getScheme() != null ? uri.getScheme().toLowerCase() : "";
-            if (allowCustom && MediaController.getInstance().canCustomTabs() && !internalUri && !scheme.equals("tel")) {
+            if (allowCustom && SharedConfig.customTabs && !internalUri && !scheme.equals("tel")) {
                 String browserPackageNames[] = null;
                 try {
                     Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.google.com"));
@@ -252,7 +258,9 @@ public class Browser {
                         browserPackageNames = new String[list.size()];
                         for (int a = 0; a < list.size(); a++) {
                             browserPackageNames[a] = list.get(a).activityInfo.packageName;
-                            FileLog.d("default browser name = " + browserPackageNames[a]);
+                            if (BuildVars.LOGS_ENABLED) {
+                                FileLog.d("default browser name = " + browserPackageNames[a]);
+                            }
                         }
                     }
                 } catch (Exception ignore) {
@@ -281,7 +289,7 @@ public class Browser {
                             }
                         }
                     }
-                    if (BuildVars.DEBUG_VERSION) {
+                    if (BuildVars.LOGS_ENABLED) {
                         for (int a = 0; a < allActivities.size(); a++) {
                             FileLog.d("device has " + allActivities.get(a).activityInfo.packageName + " to open " + uri.toString());
                         }
@@ -302,6 +310,7 @@ public class Browser {
                     builder.setShowTitle(true);
                     builder.setActionButton(BitmapFactory.decodeResource(context.getResources(), R.drawable.abc_ic_menu_share_mtrl_alpha), LocaleController.getString("ShareFile", R.string.ShareFile), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, share, 0), false);
                     CustomTabsIntent intent = builder.build();
+                    intent.setUseNewTask();
                     intent.launchUrl(context, uri);
                     return;
                 }

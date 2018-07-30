@@ -17,6 +17,7 @@ package org.telegram.messenger.exoplayer2.drm;
 
 import android.annotation.TargetApi;
 import android.os.Looper;
+import org.telegram.messenger.exoplayer2.drm.DrmInitData.SchemeData;
 
 /**
  * Manages a DRM session.
@@ -39,7 +40,8 @@ public interface DrmSessionManager<T extends ExoMediaCrypto> {
    * must be returned to {@link #releaseSession(DrmSession)} when it is no longer required.
    *
    * @param playbackLooper The looper associated with the media playback thread.
-   * @param drmInitData DRM initialization data.
+   * @param drmInitData DRM initialization data. All contained {@link SchemeData}s must contain
+   *     non-null {@link SchemeData#data}.
    * @return The DRM session.
    */
   DrmSession<T> acquireSession(Looper playbackLooper, DrmInitData drmInitData);

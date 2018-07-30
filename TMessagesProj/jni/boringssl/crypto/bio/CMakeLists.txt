@@ -1,4 +1,4 @@
-include_directories(. .. ../../include)
+include_directories(../../include)
 
 add_library(
   bio
@@ -7,7 +7,6 @@ add_library(
 
   bio.c
   bio_mem.c
-  buffer.c
   connect.c
   fd.c
   file.c

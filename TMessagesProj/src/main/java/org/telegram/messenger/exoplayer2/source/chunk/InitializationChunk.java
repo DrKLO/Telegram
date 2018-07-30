@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer2.source.chunk;
 
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.extractor.DefaultExtractorInput;
@@ -44,8 +45,12 @@ public final class InitializationChunk extends Chunk {
    * @param trackSelectionData See {@link #trackSelectionData}.
    * @param extractorWrapper A wrapped extractor to use for parsing the initialization data.
    */
-  public InitializationChunk(DataSource dataSource, DataSpec dataSpec, Format trackFormat,
-      int trackSelectionReason, Object trackSelectionData,
+  public InitializationChunk(
+      DataSource dataSource,
+      DataSpec dataSpec,
+      Format trackFormat,
+      int trackSelectionReason,
+      @Nullable Object trackSelectionData,
       ChunkExtractorWrapper extractorWrapper) {
     super(dataSource, dataSpec, C.DATA_TYPE_MEDIA_INITIALIZATION, trackFormat, trackSelectionReason,
         trackSelectionData, C.TIME_UNSET, C.TIME_UNSET);
@@ -78,7 +83,7 @@ public final class InitializationChunk extends Chunk {
       ExtractorInput input = new DefaultExtractorInput(dataSource,
           loadDataSpec.absoluteStreamPosition, dataSource.open(loadDataSpec));
       if (bytesLoaded == 0) {
-        extractorWrapper.init(null);
+        extractorWrapper.init(/* trackOutputProvider= */ null, C.TIME_UNSET);
       }
       // Load and decode the initialization data.
       try {

@@ -33,13 +33,21 @@ import org.telegram.messenger.exoplayer2.util.Util;
     public final int maximumSize;
     public final long[] timestamps;
     public final int[] flags;
+    public final long duration;
 
-    private Results(long[] offsets, int[] sizes, int maximumSize, long[] timestamps, int[] flags) {
+    private Results(
+        long[] offsets,
+        int[] sizes,
+        int maximumSize,
+        long[] timestamps,
+        int[] flags,
+        long duration) {
       this.offsets = offsets;
       this.sizes = sizes;
       this.maximumSize = maximumSize;
       this.timestamps = timestamps;
       this.flags = flags;
+      this.duration = duration;
     }
 
   }
@@ -95,8 +103,9 @@ import org.telegram.messenger.exoplayer2.util.Util;
         newSampleIndex++;
       }
     }
+    long duration = timestampDeltaInTimeUnits * originalSampleIndex;
 
-    return new Results(offsets, sizes, maximumSize, timestamps, flags);
+    return new Results(offsets, sizes, maximumSize, timestamps, flags, duration);
   }
 
 }

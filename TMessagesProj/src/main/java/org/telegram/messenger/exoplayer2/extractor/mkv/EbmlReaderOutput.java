@@ -15,24 +15,46 @@
  */
 package org.telegram.messenger.exoplayer2.extractor.mkv;
 
+import android.support.annotation.IntDef;
 import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorInput;
 import java.io.IOException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 /**
  * Defines EBML element IDs/types and reacts to events.
  */
 /* package */ interface EbmlReaderOutput {
 
+  /** EBML element types. */
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({TYPE_UNKNOWN, TYPE_MASTER, TYPE_UNSIGNED_INT, TYPE_STRING, TYPE_BINARY, TYPE_FLOAT})
+  @interface ElementType {}
+  /** Type for unknown elements. */
+  int TYPE_UNKNOWN = 0;
+  /** Type for elements that contain child elements. */
+  int TYPE_MASTER = 1;
+  /** Type for integer value elements of up to 8 bytes. */
+  int TYPE_UNSIGNED_INT = 2;
+  /** Type for string elements. */
+  int TYPE_STRING = 3;
+  /** Type for binary elements. */
+  int TYPE_BINARY = 4;
+  /** Type for IEEE floating point value elements of either 4 or 8 bytes. */
+  int TYPE_FLOAT = 5;
+
   /**
    * Maps an element ID to a corresponding type.
-   * <p>
-   * If {@link EbmlReader#TYPE_UNKNOWN} is returned then the element is skipped. Note that all
-   * children of a skipped element are also skipped.
+   *
+   * <p>If {@link #TYPE_UNKNOWN} is returned then the element is skipped. Note that all children of
+   * a skipped element are also skipped.
    *
    * @param id The element ID to map.
-   * @return One of the {@code TYPE_} constants defined in {@link EbmlReader}.
+   * @return One of {@link #TYPE_UNKNOWN}, {@link #TYPE_MASTER}, {@link #TYPE_UNSIGNED_INT}, {@link
+   *     #TYPE_STRING}, {@link #TYPE_BINARY} and {@link #TYPE_FLOAT}.
    */
+  @ElementType
   int getElementType(int id);
 
   /**

@@ -20,7 +20,7 @@ import android.os.Handler;
 import android.os.SystemClock;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.ParserException;
-import org.telegram.messenger.exoplayer2.source.AdaptiveMediaSourceEventListener.EventDispatcher;
+import org.telegram.messenger.exoplayer2.source.MediaSourceEventListener.EventDispatcher;
 import org.telegram.messenger.exoplayer2.source.chunk.ChunkedTrackBlacklistUtil;
 import org.telegram.messenger.exoplayer2.source.hls.HlsDataSourceFactory;
 import org.telegram.messenger.exoplayer2.source.hls.playlist.HlsMasterPlaylist.HlsUrl;
@@ -83,7 +83,6 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
      * @param mediaPlaylist The primary playlist new snapshot.
      */
     void onPrimaryPlaylistRefreshed(HlsMediaPlaylist mediaPlaylist);
-
   }
 
   /**
@@ -100,11 +99,10 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
      * Called if an error is encountered while loading a playlist.
      *
      * @param url The loaded url that caused the error.
-     * @param blacklistDurationMs The number of milliseconds for which the playlist has been
-     *     blacklisted.
+     * @param shouldBlacklist Whether the playlist should be blacklisted.
+     * @return True if blacklisting did not encounter errors. False otherwise.
      */
-    void onPlaylistBlacklisted(HlsUrl url, long blacklistDurationMs);
-
+    boolean onPlaylistError(HlsUrl url, boolean shouldBlacklist);
   }
 
   /**
@@ -128,14 +126,16 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
   private HlsUrl primaryHlsUrl;
   private HlsMediaPlaylist primaryUrlSnapshot;
   private boolean isLive;
+  private long initialStartTimeUs;
 
   /**
    * @param initialPlaylistUri Uri for the initial playlist of the stream. Can refer a media
    *     playlist or a master playlist.
    * @param dataSourceFactory A factory for {@link DataSource} instances.
    * @param eventDispatcher A dispatcher to notify of events.
-   * @param minRetryCount The minimum number of times the load must be retried before blacklisting a
-   *     playlist.
+   * @param minRetryCount The minimum number of times loads must be retried before
+   *     {@link #maybeThrowPlaylistRefreshError(HlsUrl)} and
+   *     {@link #maybeThrowPrimaryPlaylistRefreshError()} propagate any loading errors.
    * @param primaryPlaylistListener A callback for the primary playlist change events.
    */
   public HlsPlaylistTracker(Uri initialPlaylistUri, HlsDataSourceFactory dataSourceFactory,
@@ -152,6 +152,7 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
     initialPlaylistLoader = new Loader("HlsPlaylistTracker:MasterPlaylist");
     playlistBundles = new IdentityHashMap<>();
     playlistRefreshHandler = new Handler();
+    initialStartTimeUs = C.TIME_UNSET;
   }
 
   /**
@@ -205,6 +206,14 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
       maybeSetPrimaryUrl(url);
     }
     return snapshot;
+  }
+
+  /**
+   * Returns the start time of the first loaded primary playlist, or {@link C#TIME_UNSET} if no
+   * media playlist has been loaded.
+   */
+  public long getInitialStartTimeUs() {
+    return initialStartTimeUs;
   }
 
   /**
@@ -313,8 +322,11 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
   }
 
   @Override
-  public int onLoadError(ParsingLoadable<HlsPlaylist> loadable, long elapsedRealtimeMs,
-      long loadDurationMs, IOException error) {
+  public @Loader.RetryAction int onLoadError(
+      ParsingLoadable<HlsPlaylist> loadable,
+      long elapsedRealtimeMs,
+      long loadDurationMs,
+      IOException error) {
     boolean isFatal = error instanceof ParserException;
     eventDispatcher.loadError(loadable.dataSpec, C.DATA_TYPE_MANIFEST, elapsedRealtimeMs,
         loadDurationMs, loadable.bytesLoaded(), error, isFatal);
@@ -370,6 +382,7 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
       if (primaryUrlSnapshot == null) {
         // This is the first primary url snapshot.
         isLive = !newSnapshot.hasEndTag;
+        initialStartTimeUs = newSnapshot.startTimeUs;
       }
       primaryUrlSnapshot = newSnapshot;
       primaryPlaylistListener.onPrimaryPlaylistRefreshed(newSnapshot);
@@ -380,11 +393,13 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
     }
   }
 
-  private void notifyPlaylistBlacklisting(HlsUrl url, long blacklistMs) {
+  private boolean notifyPlaylistError(HlsUrl playlistUrl, boolean shouldBlacklist) {
     int listenersSize = listeners.size();
+    boolean anyBlacklistingFailed = false;
     for (int i = 0; i < listenersSize; i++) {
-      listeners.get(i).onPlaylistBlacklisted(url, blacklistMs);
+      anyBlacklistingFailed |= !listeners.get(i).onPlaylistError(playlistUrl, shouldBlacklist);
     }
+    return anyBlacklistingFailed;
   }
 
   private HlsMediaPlaylist getLatestPlaylistSnapshot(HlsMediaPlaylist oldPlaylist,
@@ -449,7 +464,7 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
 
   private static Segment getFirstOldOverlappingSegment(HlsMediaPlaylist oldPlaylist,
       HlsMediaPlaylist loadedPlaylist) {
-    int mediaSequenceOffset = loadedPlaylist.mediaSequence - oldPlaylist.mediaSequence;
+    int mediaSequenceOffset = (int) (loadedPlaylist.mediaSequence - oldPlaylist.mediaSequence);
     List<Segment> oldSegments = oldPlaylist.segments;
     return mediaSequenceOffset < oldSegments.size() ? oldSegments.get(mediaSequenceOffset) : null;
   }
@@ -546,19 +561,24 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
     }
 
     @Override
-    public int onLoadError(ParsingLoadable<HlsPlaylist> loadable, long elapsedRealtimeMs,
-        long loadDurationMs, IOException error) {
+    public @Loader.RetryAction int onLoadError(
+        ParsingLoadable<HlsPlaylist> loadable,
+        long elapsedRealtimeMs,
+        long loadDurationMs,
+        IOException error) {
       boolean isFatal = error instanceof ParserException;
       eventDispatcher.loadError(loadable.dataSpec, C.DATA_TYPE_MANIFEST, elapsedRealtimeMs,
           loadDurationMs, loadable.bytesLoaded(), error, isFatal);
+      boolean shouldBlacklist = ChunkedTrackBlacklistUtil.shouldBlacklist(error);
+      boolean shouldRetryIfNotFatal =
+          notifyPlaylistError(playlistUrl, shouldBlacklist) || !shouldBlacklist;
       if (isFatal) {
         return Loader.DONT_RETRY_FATAL;
       }
-      boolean shouldRetry = true;
-      if (ChunkedTrackBlacklistUtil.shouldBlacklist(error)) {
-        shouldRetry = blacklistPlaylist();
+      if (shouldBlacklist) {
+        shouldRetryIfNotFatal |= blacklistPlaylist();
       }
-      return shouldRetry ? Loader.RETRY : Loader.DONT_RETRY;
+      return shouldRetryIfNotFatal ? Loader.RETRY : Loader.DONT_RETRY;
     }
 
     // Runnable implementation.
@@ -589,11 +609,13 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
             < playlistSnapshot.mediaSequence) {
           // The media sequence jumped backwards. The server has probably reset.
           playlistError = new PlaylistResetException(playlistUrl.url);
+          notifyPlaylistError(playlistUrl, false);
         } else if (currentTimeMs - lastSnapshotChangeMs
             > C.usToMs(playlistSnapshot.targetDurationUs)
                 * PLAYLIST_STUCK_TARGET_DURATION_COEFFICIENT) {
           // The playlist seems to be stuck. Blacklist it.
           playlistError = new PlaylistStuckException(playlistUrl.url);
+          notifyPlaylistError(playlistUrl, true);
           blacklistPlaylist();
         }
       }
@@ -617,7 +639,6 @@ public final class HlsPlaylistTracker implements Loader.Callback<ParsingLoadable
     private boolean blacklistPlaylist() {
       blacklistUntilMs = SystemClock.elapsedRealtime()
           + ChunkedTrackBlacklistUtil.DEFAULT_TRACK_BLACKLIST_MS;
-      notifyPlaylistBlacklisting(playlistUrl, ChunkedTrackBlacklistUtil.DEFAULT_TRACK_BLACKLIST_MS);
       return primaryHlsUrl == playlistUrl && !maybeSelectNewPrimaryUrl();
     }
 

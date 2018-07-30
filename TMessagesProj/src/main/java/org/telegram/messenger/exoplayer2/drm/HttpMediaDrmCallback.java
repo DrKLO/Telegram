@@ -24,10 +24,12 @@ import org.telegram.messenger.exoplayer2.drm.ExoMediaDrm.ProvisionRequest;
 import org.telegram.messenger.exoplayer2.upstream.DataSourceInputStream;
 import org.telegram.messenger.exoplayer2.upstream.DataSpec;
 import org.telegram.messenger.exoplayer2.upstream.HttpDataSource;
+import org.telegram.messenger.exoplayer2.upstream.HttpDataSource.InvalidResponseCodeException;
 import org.telegram.messenger.exoplayer2.util.Assertions;
 import org.telegram.messenger.exoplayer2.util.Util;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -36,6 +38,8 @@ import java.util.UUID;
  */
 @TargetApi(18)
 public final class HttpMediaDrmCallback implements MediaDrmCallback {
+
+  private static final int MAX_MANUAL_REDIRECTS = 5;
 
   private final HttpDataSource.Factory dataSourceFactory;
   private final String defaultLicenseUrl;
@@ -138,14 +142,46 @@ public final class HttpMediaDrmCallback implements MediaDrmCallback {
         dataSource.setRequestProperty(requestProperty.getKey(), requestProperty.getValue());
       }
     }
-    DataSpec dataSpec = new DataSpec(Uri.parse(url), data, 0, 0, C.LENGTH_UNSET, null,
-        DataSpec.FLAG_ALLOW_GZIP);
-    DataSourceInputStream inputStream = new DataSourceInputStream(dataSource, dataSpec);
-    try {
-      return Util.toByteArray(inputStream);
-    } finally {
-      Util.closeQuietly(inputStream);
+
+    int manualRedirectCount = 0;
+    while (true) {
+      DataSpec dataSpec =
+          new DataSpec(
+              Uri.parse(url),
+              data,
+              /* absoluteStreamPosition= */ 0,
+              /* position= */ 0,
+              /* length= */ C.LENGTH_UNSET,
+              /* key= */ null,
+              DataSpec.FLAG_ALLOW_GZIP);
+      DataSourceInputStream inputStream = new DataSourceInputStream(dataSource, dataSpec);
+      try {
+        return Util.toByteArray(inputStream);
+      } catch (InvalidResponseCodeException e) {
+        // For POST requests, the underlying network stack will not normally follow 307 or 308
+        // redirects automatically. Do so manually here.
+        boolean manuallyRedirect =
+            (e.responseCode == 307 || e.responseCode == 308)
+                && manualRedirectCount++ < MAX_MANUAL_REDIRECTS;
+        url = manuallyRedirect ? getRedirectUrl(e) : null;
+        if (url == null) {
+          throw e;
+        }
+      } finally {
+        Util.closeQuietly(inputStream);
+      }
     }
+  }
+
+  private static String getRedirectUrl(InvalidResponseCodeException exception) {
+    Map<String, List<String>> headerFields = exception.headerFields;
+    if (headerFields != null) {
+      List<String> locationHeaders = headerFields.get("Location");
+      if (locationHeaders != null && !locationHeaders.isEmpty()) {
+        return locationHeaders.get(0);
+      }
+    }
+    return null;
   }
 
 }

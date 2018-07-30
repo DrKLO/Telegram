@@ -11,6 +11,9 @@ package org.telegram.messenger;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import java.io.File;
+import java.io.RandomAccessFile;
+
 public class StatsController {
 
     public static final int TYPE_MOBILE = 0;
@@ -26,14 +29,17 @@ public class StatsController {
     public static final int TYPE_TOTAL = 6;
     private static final int TYPES_COUNT = 7;
 
+    private byte[] buffer = new byte[8];
+
+    private long lastInternalStatsSaveTime;
     private long sentBytes[][] = new long[3][TYPES_COUNT];
     private long receivedBytes[][] = new long[3][TYPES_COUNT];
     private int sentItems[][] = new int[3][TYPES_COUNT];
     private int receivedItems[][] = new int[3][TYPES_COUNT];
     private long resetStatsDate[] = new long[3];
     private int callsTotalTime[] = new int[3];
-    private SharedPreferences.Editor editor;
-    private DispatchQueue statsSaveQueue = new DispatchQueue("statsSaveQueue");
+    private RandomAccessFile statsFile;
+    private static DispatchQueue statsSaveQueue = new DispatchQueue("statsSaveQueue");
 
     private static final ThreadLocal<Long> lastStatsSaveTime = new ThreadLocal<Long>() {
         @Override
@@ -42,41 +48,141 @@ public class StatsController {
         }
     };
 
-    private static volatile StatsController Instance = null;
+    private byte[] intToBytes(int value) {
+        buffer[0] = (byte) (value >>> 24);
+        buffer[1] = (byte) (value >>> 16);
+        buffer[2] = (byte) (value >>> 8);
+        buffer[3] = (byte) (value);
+        return buffer;
+    }
 
-    public static StatsController getInstance() {
-        StatsController localInstance = Instance;
+    private int bytesToInt(byte[] bytes) {
+        return bytes[0] << 24 | (bytes[1] & 0xFF) << 16 | (bytes[2] & 0xFF) << 8 | (bytes[3] & 0xFF);
+    }
+
+    private byte[] longToBytes(long value) {
+        buffer[0] = (byte) (value >>> 56);
+        buffer[1] = (byte) (value >>> 48);
+        buffer[2] = (byte) (value >>> 40);
+        buffer[3] = (byte) (value >>> 32);
+        buffer[4] = (byte) (value >>> 24);
+        buffer[5] = (byte) (value >>> 16);
+        buffer[6] = (byte) (value >>> 8);
+        buffer[7] = (byte) (value);
+        return buffer;
+    }
+
+    private long bytesToLong(byte[] bytes) {
+        return ((long) bytes[0] & 0xFF) << 56 | ((long) bytes[1] & 0xFF) << 48 | ((long) bytes[2] & 0xFF) << 40 | ((long) bytes[3] & 0xFF) << 32 | ((long) bytes[4] & 0xFF) << 24 | ((long) bytes[5] & 0xFF) << 16 | ((long) bytes[6] & 0xFF) << 8 | ((long) bytes[7] & 0xFF);
+    }
+
+    private Runnable saveRunnable = new Runnable() {
+        @Override
+        public void run() {
+            long newTime = System.currentTimeMillis();
+            if (Math.abs(newTime - lastInternalStatsSaveTime) < 2000) {
+                return;
+            }
+            lastInternalStatsSaveTime = newTime;
+            try {
+                statsFile.seek(0);
+                for (int a = 0; a < 3; a++) {
+                    for (int b = 0; b < TYPES_COUNT; b++) {
+                        statsFile.write(longToBytes(sentBytes[a][b]), 0, 8);
+                        statsFile.write(longToBytes(receivedBytes[a][b]), 0, 8);
+                        statsFile.write(intToBytes(sentItems[a][b]), 0, 4);
+                        statsFile.write(intToBytes(receivedItems[a][b]), 0, 4);
+                    }
+                    statsFile.write(intToBytes(callsTotalTime[a]), 0, 4);
+                    statsFile.write(longToBytes(resetStatsDate[a]), 0, 8);
+                }
+                statsFile.getFD().sync();
+            } catch (Exception ignore) {
+
+            }
+        }
+    };
+
+    private static volatile StatsController Instance[] = new StatsController[UserConfig.MAX_ACCOUNT_COUNT];
+
+    public static StatsController getInstance(int num) {
+        StatsController localInstance = Instance[num];
         if (localInstance == null) {
             synchronized (StatsController.class) {
-                localInstance = Instance;
+                localInstance = Instance[num];
                 if (localInstance == null) {
-                    Instance = localInstance = new StatsController();
+                    Instance[num] = localInstance = new StatsController(num);
                 }
             }
         }
         return localInstance;
     }
 
-    private StatsController() {
-        SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("stats", Context.MODE_PRIVATE);
-        boolean save = false;
-        editor = sharedPreferences.edit();
-        for (int a = 0; a < 3; a++) {
-            callsTotalTime[a] = sharedPreferences.getInt("callsTotalTime" + a, 0);
-            resetStatsDate[a] = sharedPreferences.getLong("resetStatsDate" + a, 0);
-            for (int b = 0; b < TYPES_COUNT; b++) {
-                sentBytes[a][b] = sharedPreferences.getLong("sentBytes" + a + "_" + b, 0);
-                receivedBytes[a][b] = sharedPreferences.getLong("receivedBytes" + a + "_" + b, 0);
-                sentItems[a][b] = sharedPreferences.getInt("sentItems" + a + "_" + b, 0);
-                receivedItems[a][b] = sharedPreferences.getInt("receivedItems" + a + "_" + b, 0);
-            }
-            if (resetStatsDate[a] == 0) {
-                save = true;
-                resetStatsDate[a] = System.currentTimeMillis();
-            }
+    private StatsController(int account) {
+        File filesDir = ApplicationLoader.getFilesDirFixed();
+        if (account != 0) {
+            filesDir = new File(ApplicationLoader.getFilesDirFixed(), "account" + account + "/");
+            filesDir.mkdirs();
         }
-        if (save) {
-            saveStats();
+
+        boolean needConvert = true;
+        try {
+            statsFile = new RandomAccessFile(new File(filesDir, "stats2.dat"), "rw");
+            if (statsFile.length() > 0) {
+                boolean save = false;
+                for (int a = 0; a < 3; a++) {
+                    for (int b = 0; b < TYPES_COUNT; b++) {
+                        statsFile.readFully(buffer, 0, 8);
+                        sentBytes[a][b] = bytesToLong(buffer);
+                        statsFile.readFully(buffer, 0, 8);
+                        receivedBytes[a][b] = bytesToLong(buffer);
+                        statsFile.readFully(buffer, 0, 4);
+                        sentItems[a][b] = bytesToInt(buffer);
+                        statsFile.readFully(buffer, 0, 4);
+                        receivedItems[a][b] = bytesToInt(buffer);
+                    }
+                    statsFile.readFully(buffer, 0, 4);
+                    callsTotalTime[a] = bytesToInt(buffer);
+                    statsFile.readFully(buffer, 0, 8);
+                    resetStatsDate[a] = bytesToLong(buffer);
+                    if (resetStatsDate[a] == 0) {
+                        save = true;
+                        resetStatsDate[a] = System.currentTimeMillis();
+                    }
+                }
+                if (save) {
+                    saveStats();
+                }
+                needConvert = false;
+            }
+        } catch (Exception ignore) {
+
+        }
+        if (needConvert) {
+            SharedPreferences sharedPreferences;
+            if (account == 0) {
+                sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("stats", Context.MODE_PRIVATE);
+            } else {
+                sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("stats" + account, Context.MODE_PRIVATE);
+            }
+            boolean save = false;
+            for (int a = 0; a < 3; a++) {
+                callsTotalTime[a] = sharedPreferences.getInt("callsTotalTime" + a, 0);
+                resetStatsDate[a] = sharedPreferences.getLong("resetStatsDate" + a, 0);
+                for (int b = 0; b < TYPES_COUNT; b++) {
+                    sentBytes[a][b] = sharedPreferences.getLong("sentBytes" + a + "_" + b, 0);
+                    receivedBytes[a][b] = sharedPreferences.getLong("receivedBytes" + a + "_" + b, 0);
+                    sentItems[a][b] = sharedPreferences.getInt("sentItems" + a + "_" + b, 0);
+                    receivedItems[a][b] = sharedPreferences.getInt("receivedItems" + a + "_" + b, 0);
+                }
+                if (resetStatsDate[a] == 0) {
+                    save = true;
+                    resetStatsDate[a] = System.currentTimeMillis();
+                }
+            }
+            if (save) {
+                saveStats();
+            }
         }
     }
 
@@ -149,28 +255,9 @@ public class StatsController {
 
     private void saveStats() {
         long newTime = System.currentTimeMillis();
-        if (Math.abs(newTime - lastStatsSaveTime.get()) >= 1000) {
+        if (Math.abs(newTime - lastStatsSaveTime.get()) >= 2000) {
             lastStatsSaveTime.set(newTime);
-            statsSaveQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    for (int networkType = 0; networkType < 3; networkType++) {
-                        for (int a = 0; a < TYPES_COUNT; a++) {
-                            editor.putInt("receivedItems" + networkType + "_" + a, receivedItems[networkType][a]);
-                            editor.putInt("sentItems" + networkType + "_" + a, sentItems[networkType][a]);
-                            editor.putLong("receivedBytes" + networkType + "_" + a, receivedBytes[networkType][a]);
-                            editor.putLong("sentBytes" + networkType + "_" + a, sentBytes[networkType][a]);
-                        }
-                        editor.putInt("callsTotalTime" + networkType, callsTotalTime[networkType]);
-                        editor.putLong("resetStatsDate" + networkType, resetStatsDate[networkType]);
-                    }
-                    try {
-                        editor.apply();
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                }
-            });
+            statsSaveQueue.postRunnable(saveRunnable);
         }
     }
 }

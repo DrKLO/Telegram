@@ -14,7 +14,7 @@ import android.text.TextPaint;
 import android.text.style.MetricAffectingSpan;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 
 public class URLSpanMono extends MetricAffectingSpan {
@@ -22,12 +22,13 @@ public class URLSpanMono extends MetricAffectingSpan {
     private CharSequence currentMessage;
     private int currentStart;
     private int currentEnd;
-    private boolean isOut;
+    private byte currentType;
 
-    public URLSpanMono(CharSequence message, int start, int end, boolean out) {
+    public URLSpanMono(CharSequence message, int start, int end, byte type) {
         currentMessage = message;
         currentStart = start;
         currentEnd = end;
+        currentType = type;
     }
 
     public void copyToClipboard() {
@@ -37,16 +38,18 @@ public class URLSpanMono extends MetricAffectingSpan {
     @Override
     public void updateMeasureState(TextPaint p) {
         p.setTypeface(Typeface.MONOSPACE);
-        p.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize - 1));
+        p.setTextSize(AndroidUtilities.dp(SharedConfig.fontSize - 1));
         p.setFlags(p.getFlags() | Paint.SUBPIXEL_TEXT_FLAG);
     }
 
     @Override
     public void updateDrawState(TextPaint ds) {
-        ds.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize - 1));
+        ds.setTextSize(AndroidUtilities.dp(SharedConfig.fontSize - 1));
         ds.setTypeface(Typeface.MONOSPACE);
         ds.setUnderlineText(false);
-        if (isOut) {
+        if (currentType == 2) {
+            ds.setColor(0xffffffff);
+        } else if (currentType == 1) {
             ds.setColor(Theme.getColor(Theme.key_chat_messageTextOut));
         } else {
             ds.setColor(Theme.getColor(Theme.key_chat_messageTextIn));

@@ -17,6 +17,7 @@ package org.telegram.messenger.exoplayer2.metadata.id3;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.util.Util;
 import java.util.Arrays;
 
@@ -43,7 +44,7 @@ public final class PrivFrame extends Id3Frame {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(@Nullable Object obj) {
     if (this == obj) {
       return true;
     }
@@ -61,6 +62,12 @@ public final class PrivFrame extends Id3Frame {
     result = 31 * result + Arrays.hashCode(privateData);
     return result;
   }
+
+  @Override
+  public String toString() {
+    return id + ": owner=" + owner;
+  }
+  // Parcelable implementation.
 
   @Override
   public void writeToParcel(Parcel dest, int flags) {

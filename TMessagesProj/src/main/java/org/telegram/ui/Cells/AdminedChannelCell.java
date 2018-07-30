@@ -22,6 +22,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
@@ -39,6 +40,7 @@ public class AdminedChannelCell extends FrameLayout {
     private ImageView deleteButton;
     private TLRPC.Chat currentChannel;
     private boolean isLast;
+    private int currentAccount = UserConfig.selectedAccount;
 
     public AdminedChannelCell(Context context, View.OnClickListener onClickListener) {
         super(context);
@@ -75,7 +77,7 @@ public class AdminedChannelCell extends FrameLayout {
         if (channel.photo != null) {
             photo = channel.photo.photo_small;
         }
-        final String url = MessagesController.getInstance().linkPrefix + "/";
+        final String url = MessagesController.getInstance(currentAccount).linkPrefix + "/";
         currentChannel = channel;
         avatarDrawable.setInfo(channel);
         nameTextView.setText(channel.title);

@@ -15,6 +15,9 @@
  */
 package org.telegram.messenger.exoplayer2.source;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.support.annotation.Nullable;
 import org.telegram.messenger.exoplayer2.C;
 import org.telegram.messenger.exoplayer2.Format;
 import org.telegram.messenger.exoplayer2.util.Assertions;
@@ -24,12 +27,12 @@ import java.util.Arrays;
 // does not apply.
 /**
  * Defines a group of tracks exposed by a {@link MediaPeriod}.
- * <p>
- * A {@link MediaPeriod} is only able to provide one {@link SampleStream} corresponding to a group
- * at any given time, however this {@link SampleStream} may adapt between multiple tracks within the
- * group.
+ *
+ * <p>A {@link MediaPeriod} is only able to provide one {@link SampleStream} corresponding to a
+ * group at any given time, however this {@link SampleStream} may adapt between multiple tracks
+ * within the group.
  */
-public final class TrackGroup {
+public final class TrackGroup implements Parcelable {
 
   /**
    * The number of tracks in the group.
@@ -48,6 +51,14 @@ public final class TrackGroup {
     Assertions.checkState(formats.length > 0);
     this.formats = formats;
     this.length = formats.length;
+  }
+
+  /* package */ TrackGroup(Parcel in) {
+    length = in.readInt();
+    formats = new Format[length];
+    for (int i = 0; i < length; i++) {
+      formats[i] = in.readParcelable(Format.class.getClassLoader());
+    }
   }
 
   /**
@@ -86,7 +97,7 @@ public final class TrackGroup {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(@Nullable Object obj) {
     if (this == obj) {
       return true;
     }
@@ -97,4 +108,32 @@ public final class TrackGroup {
     return length == other.length && Arrays.equals(formats, other.formats);
   }
 
+  // Parcelable implementation.
+
+  @Override
+  public int describeContents() {
+    return 0;
+  }
+
+  @Override
+  public void writeToParcel(Parcel dest, int flags) {
+    dest.writeInt(length);
+    for (int i = 0; i < length; i++) {
+      dest.writeParcelable(formats[i], 0);
+    }
+  }
+
+  public static final Parcelable.Creator<TrackGroup> CREATOR =
+      new Parcelable.Creator<TrackGroup>() {
+
+        @Override
+        public TrackGroup createFromParcel(Parcel in) {
+          return new TrackGroup(in);
+        }
+
+        @Override
+        public TrackGroup[] newArray(int size) {
+          return new TrackGroup[size];
+        }
+      };
 }

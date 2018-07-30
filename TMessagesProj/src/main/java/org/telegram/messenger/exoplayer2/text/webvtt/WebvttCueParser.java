@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
 /**
  * Parser for WebVTT cues. (https://w3c.github.io/webvtt/#cues)
  */
-/* package */ final class WebvttCueParser {
+public final class WebvttCueParser {
 
   public static final Pattern CUE_HEADER_PATTERN = Pattern
       .compile("^(\\S+)\\s+-->\\s+(\\S+)(.*)?$");
@@ -90,7 +90,7 @@ import java.util.regex.Pattern;
    * @param styles List of styles defined by the CSS style blocks preceeding the cues.
    * @return Whether a valid Cue was found.
    */
-  /* package */ boolean parseCue(ParsableByteArray webvttData, WebvttCue.Builder builder,
+  public boolean parseCue(ParsableByteArray webvttData, WebvttCue.Builder builder,
       List<WebvttCssStyle> styles) {
     String firstLine = webvttData.readLine();
     if (firstLine == null) {

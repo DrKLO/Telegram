@@ -18,6 +18,7 @@ package org.telegram.messenger.exoplayer2.extractor.ogg;
 import org.telegram.messenger.exoplayer2.ParserException;
 import org.telegram.messenger.exoplayer2.extractor.ExtractorInput;
 import org.telegram.messenger.exoplayer2.extractor.SeekMap;
+import org.telegram.messenger.exoplayer2.extractor.SeekPoint;
 import org.telegram.messenger.exoplayer2.util.Assertions;
 import java.io.EOFException;
 import java.io.IOException;
@@ -186,7 +187,7 @@ import java.io.IOException;
         return start;
       }
 
-      long offset = pageSize * (granuleDistance <= 0 ? 2 : 1);
+      long offset = pageSize * (granuleDistance <= 0 ? 2L : 1L);
       long nextPosition = input.getPosition() - offset
           + (granuleDistance * (end - start) / (endGranule - startGranule));
 
@@ -219,12 +220,13 @@ import java.io.IOException;
     }
 
     @Override
-    public long getPosition(long timeUs) {
+    public SeekPoints getSeekPoints(long timeUs) {
       if (timeUs == 0) {
-        return startPosition;
+        return new SeekPoints(new SeekPoint(0, startPosition));
       }
       long granule = streamReader.convertTimeToGranule(timeUs);
-      return getEstimatedPosition(startPosition, granule, DEFAULT_OFFSET);
+      long estimatedPosition = getEstimatedPosition(startPosition, granule, DEFAULT_OFFSET);
+      return new SeekPoints(new SeekPoint(timeUs, estimatedPosition));
     }
 
     @Override

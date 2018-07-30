@@ -52,7 +52,7 @@ import org.telegram.ui.Cells.GroupCreateUserCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.AvatarUpdater;
+import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.ContextProgressView;
@@ -62,9 +62,9 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CountDownLatch;
 
-public class GroupCreateFinalActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, AvatarUpdater.AvatarUpdaterDelegate {
+public class GroupCreateFinalActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ImageUpdater.ImageUpdaterDelegate {
 
     private GroupCreateAdapter adapter;
     private RecyclerView listView;
@@ -81,7 +81,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     private ArrayList<Integer> selectedContacts;
     private boolean createAfterUpload;
     private boolean donePressed;
-    private AvatarUpdater avatarUpdater = new AvatarUpdater();
+    private ImageUpdater imageUpdater = new ImageUpdater();
     private String nameToSet;
     private int chatType = ChatObject.CHAT_TYPE_CHAT;
 
@@ -98,31 +98,31 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     @SuppressWarnings("unchecked")
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatDidCreated);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatDidFailCreate);
-        avatarUpdater.parentFragment = this;
-        avatarUpdater.delegate = this;
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatDidCreated);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatDidFailCreate);
+        imageUpdater.parentFragment = this;
+        imageUpdater.delegate = this;
         selectedContacts = getArguments().getIntegerArrayList("result");
         final ArrayList<Integer> usersToLoad = new ArrayList<>();
         for (int a = 0; a < selectedContacts.size(); a++) {
             Integer uid = selectedContacts.get(a);
-            if (MessagesController.getInstance().getUser(uid) == null) {
+            if (MessagesController.getInstance(currentAccount).getUser(uid) == null) {
                 usersToLoad.add(uid);
             }
         }
         if (!usersToLoad.isEmpty()) {
-            final Semaphore semaphore = new Semaphore(0);
+            final CountDownLatch countDownLatch = new CountDownLatch(1);
             final ArrayList<TLRPC.User> users = new ArrayList<>();
-            MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
+            MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    users.addAll(MessagesStorage.getInstance().getUsers(usersToLoad));
-                    semaphore.release();
+                    users.addAll(MessagesStorage.getInstance(currentAccount).getUsers(usersToLoad));
+                    countDownLatch.countDown();
                 }
             });
             try {
-                semaphore.acquire();
+                countDownLatch.await();
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -131,7 +131,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             }
             if (!users.isEmpty()) {
                 for (TLRPC.User user : users) {
-                    MessagesController.getInstance().putUser(user, true);
+                    MessagesController.getInstance(currentAccount).putUser(user, true);
                 }
             } else {
                 return false;
@@ -143,12 +143,12 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatDidCreated);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.chatDidFailCreate);
-        avatarUpdater.clear();
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatDidCreated);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatDidFailCreate);
+        imageUpdater.clear();
         if (reqId != 0) {
-            ConnectionsManager.getInstance().cancelRequest(reqId, true);
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
         }
     }
 
@@ -187,11 +187,11 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                     AndroidUtilities.hideKeyboard(editText);
                     editText.setEnabled(false);
 
-                    if (avatarUpdater.uploadingAvatar != null) {
+                    if (imageUpdater.uploadingImage != null) {
                         createAfterUpload = true;
                     } else {
                         showEditDoneProgress(true);
-                        reqId = MessagesController.getInstance().createChat(editText.getText().toString(), selectedContacts, null, chatType, GroupCreateFinalActivity.this);
+                        reqId = MessagesController.getInstance(currentAccount).createChat(editText.getText().toString(), selectedContacts, null, chatType, GroupCreateFinalActivity.this);
                     }
                 }
             }
@@ -246,9 +246,9 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         if (i == 0) {
-                            avatarUpdater.openCamera();
+                            imageUpdater.openCamera();
                         } else if (i == 1) {
-                            avatarUpdater.openGallery();
+                            imageUpdater.openGallery();
                         } else if (i == 2) {
                             avatar = null;
                             uploadedAvatar = null;
@@ -322,7 +322,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public void didUploadedPhoto(final TLRPC.InputFile file, final TLRPC.PhotoSize small, final TLRPC.PhotoSize big) {
+    public void didUploadedPhoto(final TLRPC.InputFile file, final TLRPC.PhotoSize small, final TLRPC.PhotoSize big, final TLRPC.TL_secureFile secureFile) {
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
@@ -330,7 +330,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 avatar = small.location;
                 avatarImage.setImage(avatar, "50_50", avatarDrawable);
                 if (createAfterUpload) {
-                    MessagesController.getInstance().createChat(editText.getText().toString(), selectedContacts, null, chatType, GroupCreateFinalActivity.this);
+                    MessagesController.getInstance(currentAccount).createChat(editText.getText().toString(), selectedContacts, null, chatType, GroupCreateFinalActivity.this);
                 }
             }
         });
@@ -338,13 +338,13 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
-        avatarUpdater.onActivityResult(requestCode, resultCode, data);
+        imageUpdater.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
     public void saveSelfArgs(Bundle args) {
-        if (avatarUpdater != null && avatarUpdater.currentPicturePath != null) {
-            args.putString("path", avatarUpdater.currentPicturePath);
+        if (imageUpdater != null && imageUpdater.currentPicturePath != null) {
+            args.putString("path", imageUpdater.currentPicturePath);
         }
         if (editText != null) {
             String text = editText.getText().toString();
@@ -356,8 +356,8 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
     @Override
     public void restoreSelfArgs(Bundle args) {
-        if (avatarUpdater != null) {
-            avatarUpdater.currentPicturePath = args.getString("path");
+        if (imageUpdater != null) {
+            imageUpdater.currentPicturePath = args.getString("path");
         }
         String text = args.getString("nameTextView");
         if (text != null) {
@@ -378,7 +378,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public void didReceivedNotification(int id, final Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.updateInterfaces) {
             if (listView == null) {
                 return;
@@ -403,12 +403,12 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         } else if (id == NotificationCenter.chatDidCreated) {
             reqId = 0;
             int chat_id = (Integer) args[0];
-            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
             Bundle args2 = new Bundle();
             args2.putInt("chat_id", chat_id);
             presentFragment(new ChatActivity(args2), true);
             if (uploadedAvatar != null) {
-                MessagesController.getInstance().changeChatAvatar(chat_id, uploadedAvatar);
+                MessagesController.getInstance(currentAccount).changeChatAvatar(chat_id, uploadedAvatar);
             }
         }
     }
@@ -508,7 +508,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 }
                 default: {
                     GroupCreateUserCell cell = (GroupCreateUserCell) holder.itemView;
-                    TLRPC.User user = MessagesController.getInstance().getUser(selectedContacts.get(position - 1));
+                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(selectedContacts.get(position - 1));
                     cell.setUser(user, null, null);
                     break;
                 }
@@ -535,18 +535,20 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate сellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
             @Override
-            public void didSetColor(int color) {
-                int count = listView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    View child = listView.getChildAt(a);
-                    if (child instanceof GroupCreateUserCell) {
-                        ((GroupCreateUserCell) child).update(0);
+            public void didSetColor() {
+                if (listView != null) {
+                    int count = listView.getChildCount();
+                    for (int a = 0; a < count; a++) {
+                        View child = listView.getChildAt(a);
+                        if (child instanceof GroupCreateUserCell) {
+                            ((GroupCreateUserCell) child).update(0);
+                        }
                     }
+                    avatarDrawable.setInfo(5, editText.length() > 0 ? editText.getText().toString() : null, null, false);
+                    avatarImage.invalidate();
                 }
-                avatarDrawable.setInfo(5, editText.length() > 0 ? editText.getText().toString() : null, null, false);
-                avatarImage.invalidate();
             }
         };
 
@@ -580,14 +582,14 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{GroupCreateUserCell.class}, new String[]{"textView"}, null, null, null, Theme.key_groupcreate_sectionText),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{GroupCreateUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_groupcreate_onlineText),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{GroupCreateUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_groupcreate_offlineText),
-                new ThemeDescription(listView, 0, new Class[]{GroupCreateUserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, сellDelegate, Theme.key_avatar_text),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundGreen),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundCyan),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundPink),
+                new ThemeDescription(listView, 0, new Class[]{GroupCreateUserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
 
                 new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressInner2),
                 new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressOuter2),

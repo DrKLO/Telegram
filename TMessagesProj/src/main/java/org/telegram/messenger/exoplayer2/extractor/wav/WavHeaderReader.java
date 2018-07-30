@@ -31,6 +31,8 @@ import java.io.IOException;
 
   /** Integer PCM audio data. */
   private static final int TYPE_PCM = 0x0001;
+  /** Float PCM audio data. */
+  private static final int TYPE_FLOAT = 0x0003;
   /** Extended WAVE format. */
   private static final int TYPE_WAVE_FORMAT_EXTENSIBLE = 0xFFFE;
 
@@ -87,14 +89,22 @@ import java.io.IOException;
           + blockAlignment);
     }
 
-    @C.PcmEncoding int encoding = Util.getPcmEncoding(bitsPerSample);
-    if (encoding == C.ENCODING_INVALID) {
-      Log.e(TAG, "Unsupported WAV bit depth: " + bitsPerSample);
-      return null;
+    @C.PcmEncoding int encoding;
+    switch (type) {
+      case TYPE_PCM:
+      case TYPE_WAVE_FORMAT_EXTENSIBLE:
+        encoding = Util.getPcmEncoding(bitsPerSample);
+        break;
+      case TYPE_FLOAT:
+        encoding = bitsPerSample == 32 ? C.ENCODING_PCM_FLOAT : C.ENCODING_INVALID;
+        break;
+      default:
+        Log.e(TAG, "Unsupported WAV format type: " + type);
+        return null;
     }
 
-    if (type != TYPE_PCM && type != TYPE_WAVE_FORMAT_EXTENSIBLE) {
-      Log.e(TAG, "Unsupported WAV format type: " + type);
+    if (encoding == C.ENCODING_INVALID) {
+      Log.e(TAG, "Unsupported WAV bit depth " + bitsPerSample + " for type " + type);
       return null;
     }
 

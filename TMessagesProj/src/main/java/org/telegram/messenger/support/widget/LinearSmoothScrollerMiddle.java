@@ -72,7 +72,7 @@ public class LinearSmoothScrollerMiddle extends RecyclerView.SmoothScroller {
     }
 
     protected int calculateTimeForDeceleration(int dx) {
-        return  (int) Math.ceil(calculateTimeForScrolling(dx) / .3356);
+        return (int) Math.ceil(calculateTimeForScrolling(dx) / .3356);
     }
 
     protected int calculateTimeForScrolling(int dx) {
@@ -122,9 +122,6 @@ public class LinearSmoothScrollerMiddle extends RecyclerView.SmoothScroller {
         int start = layoutManager.getPaddingTop();
         int end = layoutManager.getHeight() - layoutManager.getPaddingBottom();
 
-        if (top > start && bottom < end) {
-            return 0;
-        }
         int boxSize = end - start;
         int viewSize = bottom - top;
         start = (boxSize - viewSize) / 2;

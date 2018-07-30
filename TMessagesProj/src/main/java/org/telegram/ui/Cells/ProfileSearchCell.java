@@ -51,6 +51,8 @@ public class ProfileSearchCell extends BaseCell {
 
     public boolean useSeparator;
 
+    private int currentAccount = UserConfig.selectedAccount;
+
     private int nameLeft;
     private int nameTop;
     private StaticLayout nameLayout;
@@ -60,6 +62,7 @@ public class ProfileSearchCell extends BaseCell {
     private boolean drawNameBot;
     private int nameLockLeft;
     private int nameLockTop;
+    private int nameWidth;
 
     private boolean drawCount;
     private int lastUnreadCount;
@@ -176,7 +179,7 @@ public class ProfileSearchCell extends BaseCell {
                     nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline + 2) - (drawNameGroup ? Theme.dialogs_groupDrawable.getIntrinsicWidth() : Theme.dialogs_broadcastDrawable.getIntrinsicWidth());
                     nameLeft = AndroidUtilities.dp(11);
                 }
-            } else {
+            } else if (user != null) {
                 dialog_id = user.id;
                 if (!LocaleController.isRTL) {
                     nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
@@ -225,7 +228,6 @@ public class ProfileSearchCell extends BaseCell {
         }
 
         int onlineWidth;
-        int nameWidth;
         if (!LocaleController.isRTL) {
             onlineWidth = nameWidth = getMeasuredWidth() - nameLeft - AndroidUtilities.dp(14);
         } else {
@@ -245,7 +247,7 @@ public class ProfileSearchCell extends BaseCell {
         onlineWidth -= paddingRight;
 
         if (drawCount) {
-            TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
+            TLRPC.TL_dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
             if (dialog != null && dialog.unread_count != 0) {
                 lastUnreadCount = dialog.unread_count;
                 String countString = String.format("%d", dialog.unread_count);
@@ -286,9 +288,11 @@ public class ProfileSearchCell extends BaseCell {
             } else if (user != null) {
                 if (user.bot) {
                     onlineString = LocaleController.getString("Bot", R.string.Bot);
+                } else if (user.id == 333000 || user.id == 777000) {
+                    onlineString = LocaleController.getString("ServiceNotifications", R.string.ServiceNotifications);
                 } else {
-                    onlineString = LocaleController.formatUserStatus(user);
-                    if (user != null && (user.id == UserConfig.getClientUserId() || user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime())) {
+                    onlineString = LocaleController.formatUserStatus(currentAccount, user);
+                    if (user != null && (user.id == UserConfig.getInstance(currentAccount).getClientUserId() || user.status != null && user.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime())) {
                         currentOnlinePaint = Theme.dialogs_onlinePaint;
                         onlineString = LocaleController.getString("Online", R.string.Online);
                     }
@@ -414,7 +418,7 @@ public class ProfileSearchCell extends BaseCell {
                 }
             }
             if (!continueUpdate && drawCount && (mask & MessagesController.UPDATE_MASK_READ_DIALOG_MESSAGE) != 0) {
-                TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
+                TLRPC.TL_dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
                 if (dialog != null && dialog.unread_count != lastUnreadCount) {
                     continueUpdate = true;
                 }
@@ -483,9 +487,14 @@ public class ProfileSearchCell extends BaseCell {
             if (drawCheck) {
                 int x;
                 if (LocaleController.isRTL) {
-                    x = nameLeft - AndroidUtilities.dp(4) - Theme.dialogs_checkDrawable.getIntrinsicWidth();
+                    if (nameLayout.getLineLeft(0) == 0) {
+                        x = nameLeft - AndroidUtilities.dp(6) - Theme.dialogs_verifiedDrawable.getIntrinsicWidth();
+                    } else {
+                        float w = nameLayout.getLineWidth(0);
+                        x = (int) (nameLeft + nameWidth - Math.ceil(w) - AndroidUtilities.dp(6) - Theme.dialogs_verifiedDrawable.getIntrinsicWidth());
+                    }
                 } else {
-                    x = nameLeft + (int) nameLayout.getLineWidth(0) + AndroidUtilities.dp(4);
+                    x = (int) (nameLeft + nameLayout.getLineRight(0) + AndroidUtilities.dp(6));
                 }
                 setDrawableBounds(Theme.dialogs_verifiedDrawable, x, nameLockTop);
                 setDrawableBounds(Theme.dialogs_verifiedCheckDrawable, x, nameLockTop);
@@ -504,7 +513,7 @@ public class ProfileSearchCell extends BaseCell {
         if (countLayout != null) {
             int x = countLeft - AndroidUtilities.dp(5.5f);
             rect.set(x, countTop, x + countWidth + AndroidUtilities.dp(11), countTop + AndroidUtilities.dp(23));
-            canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, MessagesController.getInstance().isDialogMuted(dialog_id) ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint);
+            canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, MessagesController.getInstance(currentAccount).isDialogMuted(dialog_id) ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint);
             canvas.save();
             canvas.translate(countLeft, countTop + AndroidUtilities.dp(4));
             countLayout.draw(canvas);

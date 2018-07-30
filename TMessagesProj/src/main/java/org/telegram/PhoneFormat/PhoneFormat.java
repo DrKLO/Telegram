@@ -193,7 +193,7 @@ public class PhoneFormat {
                 CallingCodeInfo info = findCallingCodeInfo(rest);
                 if (info != null) {
                     String phone = info.format(rest);
-                    return "+" +  phone;
+                    return "+" + phone;
                 } else {
                     return orig;
                 }

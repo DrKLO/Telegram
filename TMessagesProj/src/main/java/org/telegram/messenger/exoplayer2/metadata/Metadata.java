@@ -17,6 +17,7 @@ package org.telegram.messenger.exoplayer2.metadata;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.Nullable;
 import java.util.Arrays;
 import java.util.List;
 
@@ -76,7 +77,7 @@ public final class Metadata implements Parcelable {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(@Nullable Object obj) {
     if (this == obj) {
       return true;
     }
@@ -91,6 +92,8 @@ public final class Metadata implements Parcelable {
   public int hashCode() {
     return Arrays.hashCode(entries);
   }
+
+  // Parcelable implementation.
 
   @Override
   public int describeContents() {

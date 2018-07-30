@@ -8,11 +8,21 @@
 
 package org.telegram.ui.Components;
 
+import android.net.Uri;
 import android.text.style.URLSpan;
+import android.view.View;
+
+import org.telegram.messenger.browser.Browser;
 
 public class URLSpanReplacement extends URLSpan {
 
     public URLSpanReplacement(String url) {
         super(url);
+    }
+
+    @Override
+    public void onClick(View widget) {
+        Uri uri = Uri.parse(getURL());
+        Browser.openUrl(widget.getContext(), uri);
     }
 }

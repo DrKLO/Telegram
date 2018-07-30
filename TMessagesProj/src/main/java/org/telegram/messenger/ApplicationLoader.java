@@ -19,14 +19,16 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.res.Configuration;
-import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.text.TextUtils;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.firebase.iid.FirebaseInstanceId;
 
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.ForegroundDetector;
 
 import java.io.File;
@@ -40,6 +42,7 @@ public class ApplicationLoader extends Application {
 
     public static volatile boolean isScreenOn = false;
     public static volatile boolean mainInterfacePaused = true;
+    public static volatile boolean externalInterfacePaused = true;
     public static volatile boolean mainInterfacePausedStageQueue = true;
     public static volatile long mainInterfacePausedStageQueueTime;
 
@@ -86,26 +89,39 @@ public class ApplicationLoader extends Application {
         try {
             PowerManager pm = (PowerManager)ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
             isScreenOn = pm.isScreenOn();
-            FileLog.e("screen state = " + isScreenOn);
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("screen state = " + isScreenOn);
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }
 
-        UserConfig.loadConfig();
-        MessagesController.getInstance();
-        ConnectionsManager.getInstance();
-        if (UserConfig.getCurrentUser() != null) {
-            MessagesController.getInstance().putUser(UserConfig.getCurrentUser(), true);
-            MessagesController.getInstance().getBlockedUsers(true);
-            SendMessagesHelper.getInstance().checkUnsentMessages();
+        SharedConfig.loadConfig();
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            UserConfig.getInstance(a).loadConfig();
+            MessagesController.getInstance(a);
+            ConnectionsManager.getInstance(a);
+            TLRPC.User user = UserConfig.getInstance(a).getCurrentUser();
+            if (user != null) {
+                MessagesController.getInstance(a).putUser(user, true);
+                MessagesController.getInstance(a).getBlockedUsers(true);
+                SendMessagesHelper.getInstance(a).checkUnsentMessages();
+            }
         }
 
         ApplicationLoader app = (ApplicationLoader)ApplicationLoader.applicationContext;
         app.initPlayServices();
-        FileLog.e("app initied");
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("app initied");
+        }
 
-        ContactsController.getInstance().checkAppAccount();
         MediaController.getInstance();
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            ContactsController.getInstance(a).checkAppAccount();
+            DownloadController.getInstance(a);
+        }
+
+        WearDataLayerListenerService.updateWatchConnectionState();
     }
 
     @Override
@@ -114,38 +130,27 @@ public class ApplicationLoader extends Application {
 
         applicationContext = getApplicationContext();
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
-        ConnectionsManager.native_setJava(Build.VERSION.SDK_INT == 14 || Build.VERSION.SDK_INT == 15);
+        ConnectionsManager.native_setJava(false);
         new ForegroundDetector(this);
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
 
-        startPushService();
-    }
-
-    /*public static void sendRegIdToBackend(final String token) {
-        Utilities.stageQueue.postRunnable(new Runnable() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
-                UserConfig.pushString = token;
-                UserConfig.registeredForPush = false;
-                UserConfig.saveConfig(false);
-                if (UserConfig.getClientUserId() != 0) {
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            MessagesController.getInstance().registerForPush(token);
-                        }
-                    });
-                }
+                startPushService();
             }
         });
-    }*/
+    }
 
     public static void startPushService() {
-        SharedPreferences preferences = applicationContext.getSharedPreferences("Notifications", MODE_PRIVATE);
-
+        SharedPreferences preferences = MessagesController.getGlobalNotificationsSettings();
         if (preferences.getBoolean("pushService", true)) {
-            applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
+            try {
+                applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
         } else {
             stopPushService();
         }
@@ -175,51 +180,37 @@ public class ApplicationLoader extends Application {
             @Override
             public void run() {
                 if (checkPlayServices()) {
-                    if (UserConfig.pushString != null && UserConfig.pushString.length() != 0) {
-                        FileLog.d("GCM regId = " + UserConfig.pushString);
+                    final String currentPushString = SharedConfig.pushString;
+                    if (!TextUtils.isEmpty(currentPushString)) {
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.d("GCM regId = " + currentPushString);
+                        }
                     } else {
-                        FileLog.d("GCM Registration not found.");
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.d("GCM Registration not found.");
+                        }
                     }
-
-                    //if (UserConfig.pushString == null || UserConfig.pushString.length() == 0) {
-                    Intent intent = new Intent(applicationContext, GcmRegistrationIntentService.class);
-                    startService(intent);
-                    //} else {
-                    //    FileLog.d("GCM regId = " + UserConfig.pushString);
-                    //}
+                    Utilities.globalQueue.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                String token = FirebaseInstanceId.getInstance().getToken();
+                                if (!TextUtils.isEmpty(token)) {
+                                    GcmInstanceIDListenerService.sendRegistrationToServer(token);
+                                }
+                            } catch (Throwable e) {
+                                FileLog.e(e);
+                            }
+                        }
+                    });
                 } else {
-                    FileLog.d("No valid Google Play Services APK found.");
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("No valid Google Play Services APK found.");
+                    }
                 }
             }
         }, 1000);
     }
-
-    /*private void initPlayServices() {
-        AndroidUtilities.runOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                if (checkPlayServices()) {
-                    if (UserConfig.pushString != null && UserConfig.pushString.length() != 0) {
-                        FileLog.d("GCM regId = " + UserConfig.pushString);
-                    } else {
-                        FileLog.d("GCM Registration not found.");
-                    }
-                    try {
-                        if (!FirebaseApp.getApps(ApplicationLoader.applicationContext).isEmpty()) {
-                            String token = FirebaseInstanceId.getInstance().getToken();
-                            if (token != null) {
-                                sendRegIdToBackend(token);
-                            }
-                        }
-                    } catch (Throwable e) {
-                        FileLog.e(e);
-                    }
-                } else {
-                    FileLog.d("No valid Google Play Services APK found.");
-                }
-            }
-        }, 2000);
-    }*/
 
     private boolean checkPlayServices() {
         try {
@@ -229,15 +220,5 @@ public class ApplicationLoader extends Application {
             FileLog.e(e);
         }
         return true;
-
-        /*if (resultCode != ConnectionResult.SUCCESS) {
-            if (GooglePlayServicesUtil.isUserRecoverableError(resultCode)) {
-                GooglePlayServicesUtil.getErrorDialog(resultCode, this, PLAY_SERVICES_RESOLUTION_REQUEST).show();
-            } else {
-                Log.i("tmessages", "This device is not supported.");
-            }
-            return false;
-        }
-        return true;*/
     }
 }

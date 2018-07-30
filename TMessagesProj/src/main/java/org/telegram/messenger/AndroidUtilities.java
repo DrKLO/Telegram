@@ -13,7 +13,9 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -21,27 +23,21 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
-import android.content.pm.ShortcutInfo;
-import android.content.pm.ShortcutManager;
+import android.content.res.AssetFileDescriptor;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.BitmapShader;
-import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -49,27 +45,39 @@ import android.os.Handler;
 import android.provider.CallLog;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.v4.content.FileProvider;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.EdgeEffectCompat;
 import android.telephony.TelephonyManager;
+import android.text.Selection;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
 import android.text.style.ForegroundColorSpan;
 import android.util.DisplayMetrics;
 import android.util.StateSet;
+import android.util.TypedValue;
 import android.view.Display;
+import android.view.MotionEvent;
+import android.view.Gravity;
 import android.view.Surface;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.EdgeEffect;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
+import android.widget.TextView;
 
 import com.android.internal.telephony.ITelephony;
 
@@ -83,22 +91,28 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Components.ForegroundDetector;
+import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PickerBottomLayout;
 import org.telegram.ui.Components.TypefaceSpan;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.Locale;
@@ -125,6 +139,7 @@ public class AndroidUtilities {
     public static boolean isInMultiwindow;
 
     public static DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator();
+    public static AccelerateInterpolator accelerateInterpolator = new AccelerateInterpolator();
     public static OvershootInterpolator overshootInterpolator = new OvershootInterpolator();
 
     private static Boolean isTablet = null;
@@ -389,14 +404,416 @@ public class AndroidUtilities {
         }
     }
 
+    private static class VcardData {
+        String name;
+        ArrayList<String> phones = new ArrayList<>();
+        StringBuilder vcard = new StringBuilder();
+    }
+
+    public static class VcardItem {
+        public ArrayList<String> vcardData = new ArrayList<>();
+        public String fullData = "";
+        public int type;
+        public boolean checked = true;
+
+        public String[] getRawValue() {
+            int idx = fullData.indexOf(':');
+            if (idx < 0) {
+                return new String[0];
+            }
+
+            String valueType = fullData.substring(0, idx);
+            String value = fullData.substring(idx + 1, fullData.length());
+
+            String nameEncoding = null;
+            String nameCharset = "UTF-8";
+            String[] params = valueType.split(";");
+            for (int a = 0; a < params.length; a++) {
+                String[] args2 = params[a].split("=");
+                if (args2.length != 2) {
+                    continue;
+                }
+                if (args2[0].equals("CHARSET")) {
+                    nameCharset = args2[1];
+                } else if (args2[0].equals("ENCODING")) {
+                    nameEncoding = args2[1];
+                }
+            }
+            String[] args = value.split(";");
+            boolean added = false;
+            for (int a = 0; a < args.length; a++) {
+                if (TextUtils.isEmpty(args[a])) {
+                    continue;
+                }
+                if (nameEncoding != null && nameEncoding.equalsIgnoreCase("QUOTED-PRINTABLE")) {
+                    byte[] bytes = decodeQuotedPrintable(getStringBytes(args[a]));
+                    if (bytes != null && bytes.length != 0) {
+                        try {
+                            args[a] = new String(bytes, nameCharset);
+                        } catch (Exception ignore) {
+
+                        }
+                    }
+                }
+            }
+            return args;
+        }
+
+        public String getValue(boolean format) {
+            StringBuilder result = new StringBuilder();
+
+            int idx = fullData.indexOf(':');
+            if (idx < 0) {
+                return "";
+            }
+
+            if (result.length() > 0) {
+                result.append(", ");
+            }
+
+            String valueType = fullData.substring(0, idx);
+            String value = fullData.substring(idx + 1, fullData.length());
+
+            String nameEncoding = null;
+            String nameCharset = "UTF-8";
+            String[] params = valueType.split(";");
+            for (int a = 0; a < params.length; a++) {
+                String[] args2 = params[a].split("=");
+                if (args2.length != 2) {
+                    continue;
+                }
+                if (args2[0].equals("CHARSET")) {
+                    nameCharset = args2[1];
+                } else if (args2[0].equals("ENCODING")) {
+                    nameEncoding = args2[1];
+                }
+            }
+            String[] args = value.split(";");
+            boolean added = false;
+            for (int a = 0; a < args.length; a++) {
+                if (TextUtils.isEmpty(args[a])) {
+                    continue;
+                }
+                if (nameEncoding != null && nameEncoding.equalsIgnoreCase("QUOTED-PRINTABLE")) {
+                    byte[] bytes = decodeQuotedPrintable(getStringBytes(args[a]));
+                    if (bytes != null && bytes.length != 0) {
+                        try {
+                            args[a] = new String(bytes, nameCharset);
+                        } catch (Exception ignore) {
+
+                        }
+                    }
+                }
+                if (added && result.length() > 0) {
+                    result.append(" ");
+                }
+                result.append(args[a]);
+                if (!added) {
+                    added = args[a].length() > 0;
+                }
+            }
+
+            if (format) {
+                if (type == 0) {
+                    return PhoneFormat.getInstance().format(result.toString());
+                } else if (type == 5) {
+                    String[] date = result.toString().split("T");
+                    if (date.length > 0) {
+                        date = date[0].split("-");
+                        if (date.length == 3) {
+                            Calendar calendar = Calendar.getInstance();
+                            calendar.set(Calendar.YEAR, Utilities.parseInt(date[0]));
+                            calendar.set(Calendar.MONTH, Utilities.parseInt(date[1]) - 1);
+                            calendar.set(Calendar.DAY_OF_MONTH, Utilities.parseInt(date[2]));
+                            return LocaleController.getInstance().formatterYearMax.format(calendar.getTime());
+                        }
+                    }
+                }
+            }
+            return result.toString();
+        }
+
+        public String getRawType(boolean first) {
+            int idx = fullData.indexOf(':');
+            if (idx < 0) {
+                return "";
+            }
+            String value = fullData.substring(0, idx);
+            if (type == 20) {
+                value = value.substring(2);
+                String args[] = value.split(";");
+                if (first) {
+                    value = args[0];
+                } else if (args.length > 1) {
+                    value = args[args.length - 1];
+                } else {
+                    value = "";
+                }
+            } else {
+                String args[] = value.split(";");
+                for (int a = 0; a < args.length; a++) {
+                    if (args[a].indexOf('=') >= 0) {
+                        continue;
+                    }
+                    value = args[a];
+                }
+                return value;
+            }
+            return value;
+        }
+
+        public String getType() {
+            if (type == 5) {
+                return LocaleController.getString("ContactBirthday", R.string.ContactBirthday);
+            } else if (type == 6) {
+                if ("ORG".equalsIgnoreCase(getRawType(true))) {
+                    return LocaleController.getString("ContactJob", R.string.ContactJob);
+                } else {
+                    return LocaleController.getString("ContactJobTitle", R.string.ContactJobTitle);
+                }
+            }
+            int idx = fullData.indexOf(':');
+            if (idx < 0) {
+                return "";
+            }
+            String value = fullData.substring(0, idx);
+            if (type == 20) {
+                value = value.substring(2);
+                String args[] = value.split(";");
+                value = args[0];
+            } else {
+                String args[] = value.split(";");
+                for (int a = 0; a < args.length; a++) {
+                    if (args[a].indexOf('=') >= 0) {
+                        continue;
+                    }
+                    value = args[a];
+                }
+                if (value.startsWith("X-")) {
+                    value = value.substring(2);
+                }
+                if ("PREF".equals(value)) {
+                    value = LocaleController.getString("PhoneMain", R.string.PhoneMain);
+                } else if ("HOME".equals(value)) {
+                    value = LocaleController.getString("PhoneHome", R.string.PhoneHome);
+                } else if ("MOBILE".equals(value) || "CELL".equals(value)) {
+                    value = LocaleController.getString("PhoneMobile", R.string.PhoneMobile);
+                } else if ("OTHER".equals(value)) {
+                    value = LocaleController.getString("PhoneOther", R.string.PhoneOther);
+                } else if ("WORK".equals(value)) {
+                    value = LocaleController.getString("PhoneWork", R.string.PhoneWork);
+                }
+            }
+            value = value.substring(0, 1).toUpperCase() + value.substring(1, value.length()).toLowerCase();
+            return value;
+        }
+    }
+
+    public static byte[] getStringBytes(String src) {
+        try {
+            return src.getBytes("UTF-8");
+        } catch (Exception ignore) {
+
+        }
+        return new byte[0];
+    }
+
+    public static ArrayList<TLRPC.User> loadVCardFromStream(Uri uri, int currentAccount, boolean asset, ArrayList<VcardItem> items, String name) {
+        ArrayList<TLRPC.User> result = null;
+        try {
+            InputStream stream;
+            if (asset) {
+                AssetFileDescriptor fd = ApplicationLoader.applicationContext.getContentResolver().openAssetFileDescriptor(uri, "r");
+                stream = fd.createInputStream();
+            } else {
+                ContentResolver cr = ApplicationLoader.applicationContext.getContentResolver();
+                stream = cr.openInputStream(uri);
+            }
+
+            ArrayList<VcardData> vcardDatas = new ArrayList<>();
+            VcardData currentData = null;
+
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+            String line;
+            String originalLine;
+            String pendingLine = null;
+            boolean currentIsPhoto = false;
+            VcardItem currentItem = null;
+            while ((originalLine = line = bufferedReader.readLine()) != null) {
+                if (originalLine.startsWith("PHOTO")) {
+                    currentIsPhoto = true;
+                    continue;
+                } else {
+                    if (originalLine.indexOf(':') >= 0) {
+                        currentItem = null;
+                        currentIsPhoto = false;
+                        if (originalLine.startsWith("BEGIN:VCARD")) {
+                            vcardDatas.add(currentData = new VcardData());
+                            currentData.name = name;
+                        } else if (originalLine.startsWith("END:VCARD")) {
+
+                        } else if (items != null) {
+                            if (originalLine.startsWith("TEL")) {
+                                currentItem = new VcardItem();
+                                currentItem.type = 0;
+                            } else if (originalLine.startsWith("EMAIL")) {
+                                currentItem = new VcardItem();
+                                currentItem.type = 1;
+                            } else if (originalLine.startsWith("ADR") || originalLine.startsWith("LABEL") || originalLine.startsWith("GEO")) {
+                                currentItem = new VcardItem();
+                                currentItem.type = 2;
+                            } else if (originalLine.startsWith("URL")) {
+                                currentItem = new VcardItem();
+                                currentItem.type = 3;
+                            } else if (originalLine.startsWith("NOTE")) {
+                                currentItem = new VcardItem();
+                                currentItem.type = 4;
+                            } else if (originalLine.startsWith("BDAY")) {
+                                currentItem = new VcardItem();
+                                currentItem.type = 5;
+                            } else if (originalLine.startsWith("ORG") || originalLine.startsWith("TITLE") || originalLine.startsWith("ROLE")) {
+                                if (currentItem == null) {
+                                    currentItem = new VcardItem();
+                                    currentItem.type = 6;
+                                }
+                            } else if (originalLine.startsWith("X-ANDROID")) {
+                                currentItem = new VcardItem();
+                                currentItem.type = -1;
+                            } else if (originalLine.startsWith("X-PHONETIC")) {
+                                currentItem = null;
+                            } else if (originalLine.startsWith("X-")) {
+                                currentItem = new VcardItem();
+                                currentItem.type = 20;
+                            }
+                            if (currentItem != null && currentItem.type >= 0) {
+                                items.add(currentItem);
+                            }
+                        }
+                    }
+                }
+                if (!currentIsPhoto && currentData != null) {
+                    if (currentItem == null) {
+                        if (currentData.vcard.length() > 0) {
+                            currentData.vcard.append('\n');
+                        }
+                        currentData.vcard.append(originalLine);
+                    } else {
+                        currentItem.vcardData.add(originalLine);
+                    }
+                }
+                if (pendingLine != null) {
+                    pendingLine += line;
+                    line = pendingLine;
+                    pendingLine = null;
+                }
+                if (line.contains("=QUOTED-PRINTABLE") && line.endsWith("=")) {
+                    pendingLine = line.substring(0, line.length() - 1);
+                    continue;
+                }
+                if (!currentIsPhoto && currentData != null && currentItem != null) {
+                    currentItem.fullData = line;
+                }
+                int idx = line.indexOf(":");
+                String[] args;
+                if (idx >= 0) {
+                    args = new String[]{
+                            line.substring(0, idx),
+                            line.substring(idx + 1, line.length()).trim()
+                    };
+                } else {
+                    args = new String[]{line.trim()};
+                }
+                if (args.length < 2 || currentData == null) {
+                    continue;
+                }
+                if (args[0].startsWith("FN") || args[0].startsWith("ORG") && TextUtils.isEmpty(currentData.name)) {
+                    String nameEncoding = null;
+                    String nameCharset = null;
+                    String[] params = args[0].split(";");
+                    for (String param : params) {
+                        String[] args2 = param.split("=");
+                        if (args2.length != 2) {
+                            continue;
+                        }
+                        if (args2[0].equals("CHARSET")) {
+                            nameCharset = args2[1];
+                        } else if (args2[0].equals("ENCODING")) {
+                            nameEncoding = args2[1];
+                        }
+                    }
+                    currentData.name = args[1];
+                    if (nameEncoding != null && nameEncoding.equalsIgnoreCase("QUOTED-PRINTABLE")) {
+                        byte[] bytes = decodeQuotedPrintable(getStringBytes(currentData.name));
+                        if (bytes != null && bytes.length != 0) {
+                            String decodedName = new String(bytes, nameCharset);
+                            if (decodedName != null) {
+                                currentData.name = decodedName;
+                            }
+                        }
+                    }
+                } else if (args[0].startsWith("TEL")) {
+                    currentData.phones.add(args[1]);
+                }
+            }
+            try {
+                bufferedReader.close();
+                stream.close();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            for (int a = 0; a < vcardDatas.size(); a++) {
+                VcardData vcardData = vcardDatas.get(a);
+                if (vcardData.name != null && !vcardData.phones.isEmpty()) {
+                    if (result == null) {
+                        result = new ArrayList<>();
+                    }
+
+                    String phoneToUse = vcardData.phones.get(0);
+                    for (int b = 0; b < vcardData.phones.size(); b++) {
+                        String phone = vcardData.phones.get(b);
+                        String sphone = phone.substring(Math.max(0, phone.length() - 7));
+                        if (ContactsController.getInstance(currentAccount).contactsByShortPhone.get(sphone) != null) {
+                            phoneToUse = phone;
+                            break;
+                        }
+                    }
+                    TLRPC.User user = new TLRPC.TL_userContact_old2();
+                    user.phone = phoneToUse;
+                    user.first_name = vcardData.name;
+                    user.last_name = "";
+                    user.id = 0;
+                    user.restriction_reason = vcardData.vcard.toString();
+                    result.add(user);
+                }
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+        return result;
+    }
+
     public static Typeface getTypeface(String assetPath) {
         synchronized (typefaceCache) {
             if (!typefaceCache.containsKey(assetPath)) {
                 try {
-                    Typeface t = Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), assetPath);
+                    Typeface t;
+                    if (Build.VERSION.SDK_INT >= 26) {
+                        Typeface.Builder builder = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), assetPath);
+                        if (assetPath.contains("medium")) {
+                            builder.setWeight(700);
+                        }
+                        if (assetPath.contains("italic")) {
+                            builder.setItalic(true);
+                        }
+                        t = builder.build();
+                    } else {
+                        t = Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), assetPath);
+                    }
                     typefaceCache.put(assetPath, t);
                 } catch (Exception e) {
-                    FileLog.e("Could not get typeface '" + assetPath + "' because " + e.getMessage());
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.e("Could not get typeface '" + assetPath + "' because " + e.getMessage());
+                    }
                     return null;
                 }
             }
@@ -565,9 +982,53 @@ public class AndroidUtilities {
                     roundMessageSize = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.6f);
                 }
             }
-            FileLog.e("display size = " + displaySize.x + " " + displaySize.y + " " + displayMetrics.xdpi + "x" + displayMetrics.ydpi);
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e("display size = " + displaySize.x + " " + displaySize.y + " " + displayMetrics.xdpi + "x" + displayMetrics.ydpi);
+            }
         } catch (Exception e) {
             FileLog.e(e);
+        }
+    }
+
+    public static double fixLocationCoord(double value) {
+        return ((long) (value * 1000000)) / 1000000.0;
+    }
+
+    public static String formapMapUrl(int account, double lat, double lon, int width, int height, boolean marker, int zoom) {
+        int scale = Math.min(2, (int) Math.ceil(AndroidUtilities.density));
+        int provider = MessagesController.getInstance(account).mapProvider;
+        if (provider == 1 || provider == 3) {
+            String lang = null;
+            String[] availableLangs = new String[]{"ru_RU", "tr_TR"};
+            LocaleController.LocaleInfo localeInfo = LocaleController.getInstance().getCurrentLocaleInfo();
+            for (int a = 0; a < availableLangs.length; a++) {
+                if (availableLangs[a].toLowerCase().contains(localeInfo.shortName)) {
+                    lang = availableLangs[a];
+                }
+            }
+            if (lang == null) {
+                lang = "en_US";
+            }
+            if (marker) {
+                return String.format(Locale.US, "https://static-maps.yandex.ru/1.x/?ll=%.6f,%.6f&z=%d&size=%d,%d&l=map&scale=%d&pt=%.6f,%.6f,vkbkm&lang=%s", lon, lat, zoom, width * scale, height * scale, scale, lon, lat, lang);
+            } else {
+                return String.format(Locale.US, "https://static-maps.yandex.ru/1.x/?ll=%.6f,%.6f&z=%d&size=%d,%d&l=map&scale=%d&lang=%s", lon, lat, zoom, width * scale, height * scale, scale, lang);
+            }
+        } else {
+            String k = MessagesController.getInstance(account).mapKey;
+            if (!TextUtils.isEmpty(k)) {
+                if (marker) {
+                    return String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%.6f,%.6f&zoom=%d&size=%dx%d&maptype=roadmap&scale=%d&markers=color:red%%7Csize:mid%%7C%.6f,%.6f&sensor=false&key=%s", lat, lon, zoom, width, height, scale, lat, lon, k);
+                } else {
+                    return String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%.6f,%.6f&zoom=%d&size=%dx%d&maptype=roadmap&scale=%d&key=%s", lat, lon, zoom, width, height, scale, k);
+                }
+            } else {
+                if (marker) {
+                    return String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%.6f,%.6f&zoom=%d&size=%dx%d&maptype=roadmap&scale=%d&markers=color:red%%7Csize:mid%%7C%.6f,%.6f&sensor=false", lat, lon, zoom, width, height, scale, lat, lon);
+                } else {
+                    return String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%.6f,%.6f&zoom=%d&size=%dx%d&maptype=roadmap&scale=%d", lat, lon, zoom, width, height, scale);
+                }
+            }
         }
     }
 
@@ -681,7 +1142,7 @@ public class AndroidUtilities {
             telephonyService.silenceRinger();
             telephonyService.endCall();
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 
@@ -720,7 +1181,9 @@ public class AndroidUtilities {
             while (cursor.moveToNext()) {
                 String number = cursor.getString(0);
                 long date = cursor.getLong(1);
-                FileLog.e("number = " + number);
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("number = " + number);
+                }
                 if (Math.abs(System.currentTimeMillis() - date) >= 60 * 60 * 1000) {
                     continue;
                 }
@@ -819,237 +1282,6 @@ public class AndroidUtilities {
         }
     }
 
-    private static Intent createIntrnalShortcutIntent(long did) {
-        Intent shortcutIntent = new Intent(ApplicationLoader.applicationContext, OpenChatReceiver.class);
-
-        int lower_id = (int) did;
-        int high_id = (int) (did >> 32);
-
-        if (lower_id == 0) {
-            shortcutIntent.putExtra("encId", high_id);
-            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(high_id);
-            if (encryptedChat == null) {
-                return null;
-            }
-        } else if (lower_id > 0) {
-            shortcutIntent.putExtra("userId", lower_id);
-        } else if (lower_id < 0) {
-            shortcutIntent.putExtra("chatId", -lower_id);
-        } else {
-            return null;
-        }
-        shortcutIntent.setAction("com.tmessages.openchat" + did);
-        shortcutIntent.addFlags(0x4000000);
-        return shortcutIntent;
-    }
-
-    public static void installShortcut(long did) {
-        try {
-
-            Intent shortcutIntent = createIntrnalShortcutIntent(did);
-
-            int lower_id = (int) did;
-            int high_id = (int) (did >> 32);
-
-            TLRPC.User user = null;
-            TLRPC.Chat chat = null;
-            if (lower_id == 0) {
-                TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(high_id);
-                if (encryptedChat == null) {
-                    return;
-                }
-                user = MessagesController.getInstance().getUser(encryptedChat.user_id);
-            } else if (lower_id > 0) {
-                user = MessagesController.getInstance().getUser(lower_id);
-            } else if (lower_id < 0) {
-                chat = MessagesController.getInstance().getChat(-lower_id);
-            } else {
-                return;
-            }
-            if (user == null && chat == null) {
-                return;
-            }
-
-            String name;
-            TLRPC.FileLocation photo = null;
-
-            boolean selfUser = false;
-
-            if (user != null) {
-                if (UserObject.isUserSelf(user)) {
-                    name = LocaleController.getString("SavedMessages", R.string.SavedMessages);
-                    selfUser = true;
-                } else {
-                    name = ContactsController.formatName(user.first_name, user.last_name);
-                    if (user.photo != null) {
-                        photo = user.photo.photo_small;
-                    }
-                }
-            } else {
-                name = chat.title;
-                if (chat.photo != null) {
-                    photo = chat.photo.photo_small;
-                }
-            }
-
-            Bitmap bitmap = null;
-            if (selfUser || photo != null) {
-                try {
-                    if (!selfUser) {
-                        File path = FileLoader.getPathToAttach(photo, true);
-                        bitmap = BitmapFactory.decodeFile(path.toString());
-                    }
-                    if (selfUser || bitmap != null) {
-                        int size = AndroidUtilities.dp(58);
-                        Bitmap result = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-                        result.eraseColor(Color.TRANSPARENT);
-                        Canvas canvas = new Canvas(result);
-                        if (selfUser) {
-                            AvatarDrawable avatarDrawable = new AvatarDrawable(user);
-                            avatarDrawable.setSavedMessages(1);
-                            avatarDrawable.setBounds(0, 0, size, size);
-                            avatarDrawable.draw(canvas);
-                        } else {
-                            BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-                            if (roundPaint == null) {
-                                roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                                bitmapRect = new RectF();
-                            }
-                            float scale = size / (float) bitmap.getWidth();
-                            canvas.save();
-                            canvas.scale(scale, scale);
-                            roundPaint.setShader(shader);
-                            bitmapRect.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
-                            canvas.drawRoundRect(bitmapRect, bitmap.getWidth(), bitmap.getHeight(), roundPaint);
-                            canvas.restore();
-                        }
-                        Drawable drawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.book_logo);
-                        int w = AndroidUtilities.dp(15);
-                        int left = size - w - AndroidUtilities.dp(2);
-                        int top = size - w - AndroidUtilities.dp(2);
-                        drawable.setBounds(left, top, left + w, top + w);
-                        drawable.draw(canvas);
-                        try {
-                            canvas.setBitmap(null);
-                        } catch (Exception e) {
-                            //don't promt, this will crash on 2.x
-                        }
-                        bitmap = result;
-                    }
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                }
-            }
-
-            if (Build.VERSION.SDK_INT >= 26) {
-                ShortcutInfo.Builder pinShortcutInfo =
-                        new ShortcutInfo.Builder(ApplicationLoader.applicationContext, "sdid_" + did)
-                                .setShortLabel(name)
-                                .setIntent(shortcutIntent);
-
-                if (bitmap != null) {
-                    pinShortcutInfo.setIcon(Icon.createWithBitmap(bitmap));
-                } else {
-                    if (user != null) {
-                        if (user.bot) {
-                            pinShortcutInfo.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_bot));
-                        } else {
-                            pinShortcutInfo.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_user));
-                        }
-                    } else if (chat != null) {
-                        if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                            pinShortcutInfo.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_channel));
-                        } else {
-                            pinShortcutInfo.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_group));
-                        }
-                    }
-                }
-
-                ShortcutManager shortcutManager = ApplicationLoader.applicationContext.getSystemService(ShortcutManager.class);
-                shortcutManager.requestPinShortcut(pinShortcutInfo.build(), null);
-            } else {
-                Intent addIntent = new Intent();
-                if (bitmap != null) {
-                    addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmap);
-                } else {
-                    if (user != null) {
-                        if (user.bot) {
-                            addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(ApplicationLoader.applicationContext, R.drawable.book_bot));
-                        } else {
-                            addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(ApplicationLoader.applicationContext, R.drawable.book_user));
-                        }
-                    } else if (chat != null) {
-                        if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                            addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(ApplicationLoader.applicationContext, R.drawable.book_channel));
-                        } else {
-                            addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(ApplicationLoader.applicationContext, R.drawable.book_group));
-                        }
-                    }
-                }
-
-                addIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent);
-                addIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, name);
-                addIntent.putExtra("duplicate", false);
-
-                addIntent.setAction("com.android.launcher.action.INSTALL_SHORTCUT");
-                ApplicationLoader.applicationContext.sendBroadcast(addIntent);
-            }
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-    }
-
-    public static void uninstallShortcut(long did) {
-        try {
-            if (Build.VERSION.SDK_INT >= 26) {
-                ShortcutManager shortcutManager = ApplicationLoader.applicationContext.getSystemService(ShortcutManager.class);
-                ArrayList<String> arrayList = new ArrayList<>();
-                arrayList.add("sdid_" + did);
-                shortcutManager.removeDynamicShortcuts(arrayList);
-            } else {
-                int lower_id = (int) did;
-                int high_id = (int) (did >> 32);
-
-                TLRPC.User user = null;
-                TLRPC.Chat chat = null;
-                if (lower_id == 0) {
-                    TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(high_id);
-                    if (encryptedChat == null) {
-                        return;
-                    }
-                    user = MessagesController.getInstance().getUser(encryptedChat.user_id);
-                } else if (lower_id > 0) {
-                    user = MessagesController.getInstance().getUser(lower_id);
-                } else if (lower_id < 0) {
-                    chat = MessagesController.getInstance().getChat(-lower_id);
-                } else {
-                    return;
-                }
-                if (user == null && chat == null) {
-                    return;
-                }
-
-                String name;
-
-                if (user != null) {
-                    name = ContactsController.formatName(user.first_name, user.last_name);
-                } else {
-                    name = chat.title;
-                }
-
-                Intent addIntent = new Intent();
-                addIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, createIntrnalShortcutIntent(did));
-                addIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, name);
-                addIntent.putExtra("duplicate", false);
-
-                addIntent.setAction("com.android.launcher.action.UNINSTALL_SHORTCUT");
-                ApplicationLoader.applicationContext.sendBroadcast(addIntent);
-            }
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-    }
-
     private static Field mAttachInfoField;
     private static Field mStableInsetsField;
     public static int getViewInset(View view) {
@@ -1096,6 +1328,19 @@ public class AndroidUtilities {
             FileLog.e(e);
         }
         return size;
+    }
+
+    public static void setEnabled(View view, boolean enabled) {
+        if (view == null) {
+            return;
+        }
+        view.setEnabled(enabled);
+        if (view instanceof ViewGroup) {
+            ViewGroup viewGroup = (ViewGroup) view;
+            for (int i = 0; i < viewGroup.getChildCount(); i++) {
+                setEnabled(viewGroup.getChildAt(i), enabled);
+            }
+        }
     }
 
     public static CharSequence getTrimmedString(CharSequence src) {
@@ -1188,13 +1433,14 @@ public class AndroidUtilities {
     public static final int FLAG_TAG_BR = 1;
     public static final int FLAG_TAG_BOLD = 2;
     public static final int FLAG_TAG_COLOR = 4;
-    public static final int FLAG_TAG_ALL = FLAG_TAG_BR | FLAG_TAG_BOLD;
+    public static final int FLAG_TAG_URL = 8;
+    public static final int FLAG_TAG_ALL = FLAG_TAG_BR | FLAG_TAG_BOLD | FLAG_TAG_URL;
 
     public static SpannableStringBuilder replaceTags(String str) {
         return replaceTags(str, FLAG_TAG_ALL);
     }
 
-    public static SpannableStringBuilder replaceTags(String str, int flag) {
+    public static SpannableStringBuilder replaceTags(String str, int flag, Object... args) {
         try {
             int start;
             int end;
@@ -1229,6 +1475,17 @@ public class AndroidUtilities {
                     }
                 }
             }
+            if ((flag & FLAG_TAG_URL) != 0) {
+                while ((start = stringBuilder.indexOf("**")) != -1) {
+                    stringBuilder.replace(start, start + 2, "");
+                    end = stringBuilder.indexOf("**");
+                    if (end >= 0) {
+                        stringBuilder.replace(end, end + 2, "");
+                        bolds.add(start);
+                        bolds.add(end);
+                    }
+                }
+            }
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(stringBuilder);
             for (int a = 0; a < bolds.size() / 2; a++) {
                 spannableStringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), bolds.get(a * 2), bolds.get(a * 2 + 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -1240,17 +1497,36 @@ public class AndroidUtilities {
         return new SpannableStringBuilder(str);
     }
 
+    public static class LinkMovementMethodMy extends LinkMovementMethod {
+        @Override
+        public boolean onTouchEvent(TextView widget, Spannable buffer, MotionEvent event) {
+            try {
+                boolean result = super.onTouchEvent(widget, buffer, event);
+                if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    Selection.removeSelection(buffer);
+                }
+                return result;
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            return false;
+        }
+    }
+
     public static boolean needShowPasscode(boolean reset) {
         boolean wasInBackground = ForegroundDetector.getInstance().isWasInBackground(reset);
         if (reset) {
             ForegroundDetector.getInstance().resetBackgroundVar();
         }
-        return UserConfig.passcodeHash.length() > 0 && wasInBackground &&
-                (UserConfig.appLocked || UserConfig.autoLockIn != 0 && UserConfig.lastPauseTime != 0 && !UserConfig.appLocked &&
-                        (UserConfig.lastPauseTime + UserConfig.autoLockIn) <= ConnectionsManager.getInstance().getCurrentTime() || ConnectionsManager.getInstance().getCurrentTime() + 5 < UserConfig.lastPauseTime);
+        return SharedConfig.passcodeHash.length() > 0 && wasInBackground &&
+                (SharedConfig.appLocked || SharedConfig.autoLockIn != 0 && SharedConfig.lastPauseTime != 0 && !SharedConfig.appLocked &&
+                        (SharedConfig.lastPauseTime + SharedConfig.autoLockIn) <= ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime() || ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime() + 5 < SharedConfig.lastPauseTime);
     }
 
     public static void shakeView(final View view, final float x, final int num) {
+        if (view == null) {
+            return;
+        }
         if (num == 6) {
             view.setTranslationX(0);
             return;
@@ -1371,19 +1647,23 @@ public class AndroidUtilities {
 
     private static File getAlbumDir() {
         if (Build.VERSION.SDK_INT >= 23 && ApplicationLoader.applicationContext.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            return FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE);
+            return FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
         }
         File storageDir = null;
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
             storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Telegram");
             if (!storageDir.mkdirs()) {
                 if (!storageDir.exists()){
-                    FileLog.d("failed to create directory");
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("failed to create directory");
+                    }
                     return null;
                 }
             }
         } else {
-            FileLog.d("External storage is not mounted READ/WRITE.");
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("External storage is not mounted READ/WRITE.");
+            }
         }
 
         return storageDir;
@@ -1637,7 +1917,7 @@ public class AndroidUtilities {
         return key_hash;
     }
 
-    public static void openForView(MessageObject message, Activity activity) throws Exception {
+    public static void openForView(MessageObject message, final Activity activity) throws Exception {
         File f = null;
         String fileName = message.getFileName();
         if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
@@ -1663,6 +1943,25 @@ public class AndroidUtilities {
                         realMimeType = null;
                     }
                 }
+            }
+            if (Build.VERSION.SDK_INT >= 26 && realMimeType != null && realMimeType.equals("application/vnd.android.package-archive") && !ApplicationLoader.applicationContext.getPackageManager().canRequestPackageInstalls()) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                builder.setMessage(LocaleController.getString("ApkRestricted", R.string.ApkRestricted));
+                builder.setPositiveButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), new DialogInterface.OnClickListener() {
+                    @TargetApi(Build.VERSION_CODES.O)
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        try {
+                            activity.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + activity.getPackageName())));
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    }
+                });
+                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.show();
+                return;
             }
             if (Build.VERSION.SDK_INT >= 24) {
                 intent.setDataAndType(FileProvider.getUriForFile(activity, BuildConfig.APPLICATION_ID + ".provider", f), realMimeType != null ? realMimeType : "text/plain");
@@ -1786,6 +2085,7 @@ public class AndroidUtilities {
                 String password = null;
                 String port = null;
                 String address = null;
+                String secret = null;
                 String scheme = data.getScheme();
                 if (scheme != null) {
                     if ((scheme.equals("http") || scheme.equals("https"))) {
@@ -1793,23 +2093,25 @@ public class AndroidUtilities {
                         if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog") || host.equals("telesco.pe")) {
                             String path = data.getPath();
                             if (path != null) {
-                                if (path.startsWith("/socks")) {
+                                if (path.startsWith("/socks") || path.startsWith("/proxy")) {
                                     address = data.getQueryParameter("server");
                                     port = data.getQueryParameter("port");
                                     user = data.getQueryParameter("user");
                                     password = data.getQueryParameter("pass");
+                                    secret = data.getQueryParameter("secret");
                                 }
                             }
                         }
                     } else if (scheme.equals("tg")) {
                         String url = data.toString();
-                        if (url.startsWith("tg:socks") || url.startsWith("tg://socks")) {
-                            url = url.replace("tg:proxy", "tg://telegram.org").replace("tg://proxy", "tg://telegram.org");
+                        if (url.startsWith("tg:proxy") || url.startsWith("tg://proxy") || url.startsWith("tg:socks") || url.startsWith("tg://socks")) {
+                            url = url.replace("tg:proxy", "tg://telegram.org").replace("tg://proxy", "tg://telegram.org").replace("tg://socks", "tg://telegram.org").replace("tg:socks", "tg://telegram.org");
                             data = Uri.parse(url);
                             address = data.getQueryParameter("server");
                             port = data.getQueryParameter("port");
                             user = data.getQueryParameter("user");
                             password = data.getQueryParameter("pass");
+                            secret = data.getQueryParameter("secret");
                         }
                     }
                 }
@@ -1820,7 +2122,10 @@ public class AndroidUtilities {
                     if (password == null) {
                         password = "";
                     }
-                    showProxyAlert(activity, address, port, user, password);
+                    if (secret == null) {
+                        secret = "";
+                    }
+                    showProxyAlert(activity, address, port, user, password, secret);
                     return true;
                 }
             }
@@ -1830,45 +2135,113 @@ public class AndroidUtilities {
         return false;
     }
 
-    public static void showProxyAlert(Activity activity, final String address, final String port, final String user, final String password) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-        builder.setTitle(LocaleController.getString("Proxy", R.string.Proxy));
-        StringBuilder stringBuilder = new StringBuilder(LocaleController.getString("EnableProxyAlert", R.string.EnableProxyAlert));
-        stringBuilder.append("\n\n");
-        stringBuilder.append(LocaleController.getString("UseProxyAddress", R.string.UseProxyAddress)).append(": ").append(address).append("\n");
-        stringBuilder.append(LocaleController.getString("UseProxyPort", R.string.UseProxyPort)).append(": ").append(port).append("\n");
-        if (!TextUtils.isEmpty(user)) {
-            stringBuilder.append(LocaleController.getString("UseProxyUsername", R.string.UseProxyUsername)).append(": ").append(user).append("\n");
+    public static void showProxyAlert(Activity activity, final String address, final String port, final String user, final String password, final String secret) {
+        BottomSheet.Builder builder = new BottomSheet.Builder(activity);
+        final Runnable dismissRunnable = builder.getDismissRunnable();
+
+        builder.setApplyTopPadding(false);
+        builder.setApplyBottomPadding(false);
+        LinearLayout linearLayout = new LinearLayout(activity);
+        builder.setCustomView(linearLayout);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+        if (!TextUtils.isEmpty(secret)) {
+            TextView titleTextView = new TextView(activity);
+            titleTextView.setText(LocaleController.getString("UseProxyTelegramInfo2", R.string.UseProxyTelegramInfo2));
+            titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray4));
+            titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            titleTextView.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+            linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 8, 17, 8));
+
+            View lineView = new View(activity);
+            lineView.setBackgroundColor(Theme.getColor(Theme.key_divider));
+            linearLayout.addView(lineView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
         }
-        if (!TextUtils.isEmpty(password)) {
-            stringBuilder.append(LocaleController.getString("UseProxyPassword", R.string.UseProxyPassword)).append(": ").append(password).append("\n");
+        for (int a = 0; a < 5; a++) {
+            String text = null;
+            String detail = null;
+            if (a == 0) {
+                text = address;
+                detail = LocaleController.getString("UseProxyAddress", R.string.UseProxyAddress);
+            } else if (a == 1) {
+                text = "" + port;
+                detail = LocaleController.getString("UseProxyPort", R.string.UseProxyPort);
+            } else if (a == 2) {
+                text = secret;
+                detail = LocaleController.getString("UseProxySecret", R.string.UseProxySecret);
+            } else if (a == 3) {
+                text = user;
+                detail = LocaleController.getString("UseProxyUsername", R.string.UseProxyUsername);
+            } else if (a == 4) {
+                text = password;
+                detail = LocaleController.getString("UseProxyPassword", R.string.UseProxyPassword);
+            }
+            if (TextUtils.isEmpty(text)) {
+                continue;
+            }
+            TextDetailSettingsCell cell = new TextDetailSettingsCell(activity);
+            cell.setTextAndValue(text, detail, true);
+            cell.getTextView().setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            cell.getValueTextView().setTextColor(Theme.getColor(Theme.key_dialogTextGray3));
+            linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            if (a == 2) {
+                break;
+            }
         }
-        stringBuilder.append("\n").append(LocaleController.getString("EnableProxyAlert2", R.string.EnableProxyAlert2));
-        builder.setMessage(stringBuilder.toString());
-        builder.setPositiveButton(LocaleController.getString("ConnectingToProxyEnable", R.string.ConnectingToProxyEnable), new DialogInterface.OnClickListener() {
+
+        PickerBottomLayout pickerBottomLayout = new PickerBottomLayout(activity, false);
+        pickerBottomLayout.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
+        linearLayout.addView(pickerBottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
+        pickerBottomLayout.cancelButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
+        pickerBottomLayout.cancelButton.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
+        pickerBottomLayout.cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
+        pickerBottomLayout.cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit();
+            public void onClick(View view) {
+                dismissRunnable.run();
+            }
+        });
+        pickerBottomLayout.doneButtonTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
+        pickerBottomLayout.doneButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
+        pickerBottomLayout.doneButtonBadgeTextView.setVisibility(View.GONE);
+        pickerBottomLayout.doneButtonTextView.setText(LocaleController.getString("ConnectingConnectProxy", R.string.ConnectingConnectProxy).toUpperCase());
+        pickerBottomLayout.doneButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
                 editor.putBoolean("proxy_enabled", true);
                 editor.putString("proxy_ip", address);
                 int p = Utilities.parseInt(port);
                 editor.putInt("proxy_port", p);
-                if (TextUtils.isEmpty(password)) {
+
+                SharedConfig.ProxyInfo info;
+                if (TextUtils.isEmpty(secret)) {
+                    editor.remove("proxy_secret");
+                    if (TextUtils.isEmpty(password)) {
+                        editor.remove("proxy_pass");
+                    } else {
+                        editor.putString("proxy_pass", password);
+                    }
+                    if (TextUtils.isEmpty(user)) {
+                        editor.remove("proxy_user");
+                    } else {
+                        editor.putString("proxy_user", user);
+                    }
+                    info = new SharedConfig.ProxyInfo(address, p, user, password, "");
+                } else {
                     editor.remove("proxy_pass");
-                } else {
-                    editor.putString("proxy_pass", password);
-                }
-                if (TextUtils.isEmpty(user)) {
                     editor.remove("proxy_user");
-                } else {
-                    editor.putString("proxy_user", user);
+                    editor.putString("proxy_secret", secret);
+                    info = new SharedConfig.ProxyInfo(address, p, "", "", secret);
                 }
                 editor.commit();
-                ConnectionsManager.native_setProxySettings(address, p, user, password);
-                NotificationCenter.getInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
+
+                SharedConfig.currentProxy = SharedConfig.addProxy(info);
+
+                ConnectionsManager.setProxySettings(true, address, p, user, password, secret);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
+                dismissRunnable.run();
             }
         });
-        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-        builder.show().setCanceledOnTouchOutside(true);
+        builder.show();
     }
 }

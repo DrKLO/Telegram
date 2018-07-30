@@ -62,6 +62,14 @@ public class TextDetailSettingsCell extends FrameLayout {
         }
     }
 
+    public TextView getTextView() {
+        return textView;
+    }
+
+    public TextView getValueTextView() {
+        return valueTextView;
+    }
+
     public void setMultilineDetail(boolean value) {
         multiline = value;
         if (value) {
@@ -82,6 +90,10 @@ public class TextDetailSettingsCell extends FrameLayout {
         valueTextView.setText(value);
         needDivider = divider;
         setWillNotDraw(!divider);
+    }
+
+    public void setValue(CharSequence value) {
+        valueTextView.setText(value);
     }
 
     public void setTextWithEmojiAndValue(String text, CharSequence value, boolean divider) {

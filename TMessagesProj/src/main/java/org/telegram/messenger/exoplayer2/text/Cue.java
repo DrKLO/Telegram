@@ -78,6 +78,25 @@ public class Cue {
    */
   public static final int LINE_TYPE_NUMBER = 1;
 
+  /** The type of default text size for this cue, which may be unset. */
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    TYPE_UNSET,
+    TEXT_SIZE_TYPE_FRACTIONAL,
+    TEXT_SIZE_TYPE_FRACTIONAL_IGNORE_PADDING,
+    TEXT_SIZE_TYPE_ABSOLUTE
+  })
+  public @interface TextSizeType {}
+
+  /** Text size is measured as a fraction of the viewport size minus the view padding. */
+  public static final int TEXT_SIZE_TYPE_FRACTIONAL = 0;
+
+  /** Text size is measured as a fraction of the viewport size, ignoring the view padding */
+  public static final int TEXT_SIZE_TYPE_FRACTIONAL_IGNORE_PADDING = 1;
+
+  /** Text size is measured in number of pixels. */
+  public static final int TEXT_SIZE_TYPE_ABSOLUTE = 2;
+
   /**
    * The cue text, or null if this is an image cue. Note the {@link CharSequence} may be decorated
    * with styling spans.
@@ -106,40 +125,39 @@ public class Cue {
 
   /**
    * The type of the {@link #line} value.
-   * <p>
-   * {@link #LINE_TYPE_FRACTION} indicates that {@link #line} is a fractional position within the
+   *
+   * <p>{@link #LINE_TYPE_FRACTION} indicates that {@link #line} is a fractional position within the
    * viewport.
-   * <p>
-   * {@link #LINE_TYPE_NUMBER} indicates that {@link #line} is a line number, where the size of each
-   * line is taken to be the size of the first line of the cue. When {@link #line} is greater than
-   * or equal to 0 lines count from the start of the viewport, with 0 indicating zero offset from
-   * the start edge. When {@link #line} is negative lines count from the end of the viewport, with
-   * -1 indicating zero offset from the end edge. For horizontal text the line spacing is the height
-   * of the first line of the cue, and the start and end of the viewport are the top and bottom
-   * respectively.
-   * <p>
-   * Note that it's particularly important to consider the effect of {@link #lineAnchor} when using
-   * {@link #LINE_TYPE_NUMBER}. {@code (line == 0 && lineAnchor == ANCHOR_TYPE_START)} positions a
-   * (potentially multi-line) cue at the very top of the viewport.
-   * {@code (line == -1 && lineAnchor == ANCHOR_TYPE_END)} positions a (potentially multi-line) cue
-   * at the very bottom of the viewport. {@code (line == 0 && lineAnchor == ANCHOR_TYPE_END)}
-   * and {@code (line == -1 && lineAnchor == ANCHOR_TYPE_START)} position cues entirely outside of
-   * the viewport. {@code (line == 1 && lineAnchor == ANCHOR_TYPE_END)} positions a cue so that only
-   * the last line is visible at the top of the viewport.
-   * {@code (line == -2 && lineAnchor == ANCHOR_TYPE_START)} position a cue so that only its first
-   * line is visible at the bottom of the viewport.
+   *
+   * <p>{@link #LINE_TYPE_NUMBER} indicates that {@link #line} is a line number, where the size of
+   * each line is taken to be the size of the first line of the cue. When {@link #line} is greater
+   * than or equal to 0 lines count from the start of the viewport, with 0 indicating zero offset
+   * from the start edge. When {@link #line} is negative lines count from the end of the viewport,
+   * with -1 indicating zero offset from the end edge. For horizontal text the line spacing is the
+   * height of the first line of the cue, and the start and end of the viewport are the top and
+   * bottom respectively.
+   *
+   * <p>Note that it's particularly important to consider the effect of {@link #lineAnchor} when
+   * using {@link #LINE_TYPE_NUMBER}. {@code (line == 0 && lineAnchor == ANCHOR_TYPE_START)}
+   * positions a (potentially multi-line) cue at the very top of the viewport. {@code (line == -1 &&
+   * lineAnchor == ANCHOR_TYPE_END)} positions a (potentially multi-line) cue at the very bottom of
+   * the viewport. {@code (line == 0 && lineAnchor == ANCHOR_TYPE_END)} and {@code (line == -1 &&
+   * lineAnchor == ANCHOR_TYPE_START)} position cues entirely outside of the viewport. {@code (line
+   * == 1 && lineAnchor == ANCHOR_TYPE_END)} positions a cue so that only the last line is visible
+   * at the top of the viewport. {@code (line == -2 && lineAnchor == ANCHOR_TYPE_START)} position a
+   * cue so that only its first line is visible at the bottom of the viewport.
    */
-  @LineType public final int lineType;
+  public final @LineType int lineType;
 
   /**
-   * The cue box anchor positioned by {@link #line}. One of {@link #ANCHOR_TYPE_START},
-   * {@link #ANCHOR_TYPE_MIDDLE}, {@link #ANCHOR_TYPE_END} and {@link #TYPE_UNSET}.
-   * <p>
-   * For the normal case of horizontal text, {@link #ANCHOR_TYPE_START}, {@link #ANCHOR_TYPE_MIDDLE}
-   * and {@link #ANCHOR_TYPE_END} correspond to the top, middle and bottom of the cue box
-   * respectively.
+   * The cue box anchor positioned by {@link #line}. One of {@link #ANCHOR_TYPE_START}, {@link
+   * #ANCHOR_TYPE_MIDDLE}, {@link #ANCHOR_TYPE_END} and {@link #TYPE_UNSET}.
+   *
+   * <p>For the normal case of horizontal text, {@link #ANCHOR_TYPE_START}, {@link
+   * #ANCHOR_TYPE_MIDDLE} and {@link #ANCHOR_TYPE_END} correspond to the top, middle and bottom of
+   * the cue box respectively.
    */
-  @AnchorType public final int lineAnchor;
+  public final @AnchorType int lineAnchor;
 
   /**
    * The fractional position of the {@link #positionAnchor} of the cue box within the viewport in
@@ -152,14 +170,14 @@ public class Cue {
   public final float position;
 
   /**
-   * The cue box anchor positioned by {@link #position}. One of {@link #ANCHOR_TYPE_START},
-   * {@link #ANCHOR_TYPE_MIDDLE}, {@link #ANCHOR_TYPE_END} and {@link #TYPE_UNSET}.
-   * <p>
-   * For the normal case of horizontal text, {@link #ANCHOR_TYPE_START}, {@link #ANCHOR_TYPE_MIDDLE}
-   * and {@link #ANCHOR_TYPE_END} correspond to the left, middle and right of the cue box
-   * respectively.
+   * The cue box anchor positioned by {@link #position}. One of {@link #ANCHOR_TYPE_START}, {@link
+   * #ANCHOR_TYPE_MIDDLE}, {@link #ANCHOR_TYPE_END} and {@link #TYPE_UNSET}.
+   *
+   * <p>For the normal case of horizontal text, {@link #ANCHOR_TYPE_START}, {@link
+   * #ANCHOR_TYPE_MIDDLE} and {@link #ANCHOR_TYPE_END} correspond to the left, middle and right of
+   * the cue box respectively.
    */
-  @AnchorType public final int positionAnchor;
+  public final @AnchorType int positionAnchor;
 
   /**
    * The size of the cue box in the writing direction specified as a fraction of the viewport size
@@ -185,6 +203,18 @@ public class Cue {
   public final int windowColor;
 
   /**
+   * The default text size type for this cue's text, or {@link #TYPE_UNSET} if this cue has no
+   * default text size.
+   */
+  public final @TextSizeType int textSizeType;
+
+  /**
+   * The default text size for this cue's text, or {@link #DIMEN_UNSET} if this cue has no default
+   * text size.
+   */
+  public final float textSize;
+
+  /**
    * Creates an image cue.
    *
    * @param bitmap See {@link #bitmap}.
@@ -194,17 +224,36 @@ public class Cue {
    *     {@link #ANCHOR_TYPE_MIDDLE}, {@link #ANCHOR_TYPE_END} and {@link #TYPE_UNSET}.
    * @param verticalPosition The position of the vertical anchor within the viewport, expressed as a
    *     fraction of the viewport height.
-   * @param verticalPositionAnchor The vertical anchor. One of {@link #ANCHOR_TYPE_START},
-   *     {@link #ANCHOR_TYPE_MIDDLE}, {@link #ANCHOR_TYPE_END} and {@link #TYPE_UNSET}.
+   * @param verticalPositionAnchor The vertical anchor. One of {@link #ANCHOR_TYPE_START}, {@link
+   *     #ANCHOR_TYPE_MIDDLE}, {@link #ANCHOR_TYPE_END} and {@link #TYPE_UNSET}.
    * @param width The width of the cue as a fraction of the viewport width.
-   * @param height The height of the cue as a fraction of the viewport height, or
-   *     {@link #DIMEN_UNSET} if the bitmap should be displayed at its natural height for the
-   *     specified {@code width}.
+   * @param height The height of the cue as a fraction of the viewport height, or {@link
+   *     #DIMEN_UNSET} if the bitmap should be displayed at its natural height for the specified
+   *     {@code width}.
    */
-  public Cue(Bitmap bitmap, float horizontalPosition, @AnchorType int horizontalPositionAnchor,
-      float verticalPosition, @AnchorType int verticalPositionAnchor, float width, float height) {
-    this(null, null, bitmap, verticalPosition, LINE_TYPE_FRACTION, verticalPositionAnchor,
-        horizontalPosition, horizontalPositionAnchor, width, height, false, Color.BLACK);
+  public Cue(
+      Bitmap bitmap,
+      float horizontalPosition,
+      @AnchorType int horizontalPositionAnchor,
+      float verticalPosition,
+      @AnchorType int verticalPositionAnchor,
+      float width,
+      float height) {
+    this(
+        /* text= */ null,
+        /* textAlignment= */ null,
+        bitmap,
+        verticalPosition,
+        /* lineType= */ LINE_TYPE_FRACTION,
+        verticalPositionAnchor,
+        horizontalPosition,
+        horizontalPositionAnchor,
+        /* textSizeType= */ TYPE_UNSET,
+        /* textSize= */ DIMEN_UNSET,
+        width,
+        height,
+        /* windowColorSet= */ false,
+        /* windowColor= */ Color.BLACK);
   }
 
   /**
@@ -214,7 +263,15 @@ public class Cue {
    * @param text See {@link #text}.
    */
   public Cue(CharSequence text) {
-    this(text, null, DIMEN_UNSET, TYPE_UNSET, TYPE_UNSET, DIMEN_UNSET, TYPE_UNSET, DIMEN_UNSET);
+    this(
+        text,
+        /* textAlignment= */ null,
+        /* line= */ DIMEN_UNSET,
+        /* lineType= */ TYPE_UNSET,
+        /* lineAnchor= */ TYPE_UNSET,
+        /* position= */ DIMEN_UNSET,
+        /* positionAnchor= */ TYPE_UNSET,
+        /* size= */ DIMEN_UNSET);
   }
 
   /**
@@ -229,10 +286,68 @@ public class Cue {
    * @param positionAnchor See {@link #positionAnchor}.
    * @param size See {@link #size}.
    */
-  public Cue(CharSequence text, Alignment textAlignment, float line, @LineType int lineType,
-      @AnchorType int lineAnchor, float position, @AnchorType int positionAnchor, float size) {
-    this(text, textAlignment, line, lineType, lineAnchor, position, positionAnchor, size, false,
-        Color.BLACK);
+  public Cue(
+      CharSequence text,
+      Alignment textAlignment,
+      float line,
+      @LineType int lineType,
+      @AnchorType int lineAnchor,
+      float position,
+      @AnchorType int positionAnchor,
+      float size) {
+    this(
+        text,
+        textAlignment,
+        line,
+        lineType,
+        lineAnchor,
+        position,
+        positionAnchor,
+        size,
+        /* windowColorSet= */ false,
+        /* windowColor= */ Color.BLACK);
+  }
+
+  /**
+   * Creates a text cue.
+   *
+   * @param text See {@link #text}.
+   * @param textAlignment See {@link #textAlignment}.
+   * @param line See {@link #line}.
+   * @param lineType See {@link #lineType}.
+   * @param lineAnchor See {@link #lineAnchor}.
+   * @param position See {@link #position}.
+   * @param positionAnchor See {@link #positionAnchor}.
+   * @param size See {@link #size}.
+   * @param textSizeType See {@link #textSizeType}.
+   * @param textSize See {@link #textSize}.
+   */
+  public Cue(
+      CharSequence text,
+      Alignment textAlignment,
+      float line,
+      @LineType int lineType,
+      @AnchorType int lineAnchor,
+      float position,
+      @AnchorType int positionAnchor,
+      float size,
+      @TextSizeType int textSizeType,
+      float textSize) {
+    this(
+        text,
+        textAlignment,
+        /* bitmap= */ null,
+        line,
+        lineType,
+        lineAnchor,
+        position,
+        positionAnchor,
+        textSizeType,
+        textSize,
+        size,
+        /* bitmapHeight= */ DIMEN_UNSET,
+        /* windowColorSet= */ false,
+        /* windowColor= */ Color.BLACK);
   }
 
   /**
@@ -249,16 +364,48 @@ public class Cue {
    * @param windowColorSet See {@link #windowColorSet}.
    * @param windowColor See {@link #windowColor}.
    */
-  public Cue(CharSequence text, Alignment textAlignment, float line, @LineType int lineType,
-      @AnchorType int lineAnchor, float position, @AnchorType int positionAnchor, float size,
-      boolean windowColorSet, int windowColor) {
-    this(text, textAlignment, null, line, lineType, lineAnchor, position, positionAnchor, size,
-        DIMEN_UNSET, windowColorSet, windowColor);
+  public Cue(
+      CharSequence text,
+      Alignment textAlignment,
+      float line,
+      @LineType int lineType,
+      @AnchorType int lineAnchor,
+      float position,
+      @AnchorType int positionAnchor,
+      float size,
+      boolean windowColorSet,
+      int windowColor) {
+    this(
+        text,
+        textAlignment,
+        /* bitmap= */ null,
+        line,
+        lineType,
+        lineAnchor,
+        position,
+        positionAnchor,
+        /* textSizeType= */ TYPE_UNSET,
+        /* textSize= */ DIMEN_UNSET,
+        size,
+        /* bitmapHeight= */ DIMEN_UNSET,
+        windowColorSet,
+        windowColor);
   }
 
-  private Cue(CharSequence text, Alignment textAlignment, Bitmap bitmap, float line,
-      @LineType int lineType, @AnchorType int lineAnchor, float position,
-      @AnchorType int positionAnchor, float size, float bitmapHeight, boolean windowColorSet,
+  private Cue(
+      CharSequence text,
+      Alignment textAlignment,
+      Bitmap bitmap,
+      float line,
+      @LineType int lineType,
+      @AnchorType int lineAnchor,
+      float position,
+      @AnchorType int positionAnchor,
+      @TextSizeType int textSizeType,
+      float textSize,
+      float size,
+      float bitmapHeight,
+      boolean windowColorSet,
       int windowColor) {
     this.text = text;
     this.textAlignment = textAlignment;
@@ -272,6 +419,8 @@ public class Cue {
     this.bitmapHeight = bitmapHeight;
     this.windowColorSet = windowColorSet;
     this.windowColor = windowColor;
+    this.textSizeType = textSizeType;
+    this.textSize = textSize;
   }
 
 }

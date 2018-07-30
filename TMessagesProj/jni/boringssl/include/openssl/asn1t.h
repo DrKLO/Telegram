@@ -1,4 +1,3 @@
-/* asn1t.h */
 /* Written by Dr Stephen N Henson (steve@openssl.org) for the OpenSSL
  * project 2000.
  */
@@ -61,16 +60,16 @@
 #include <openssl/base.h>
 #include <openssl/asn1.h>
 
-#ifdef OPENSSL_BUILD_SHLIBCRYPTO
-# undef OPENSSL_EXTERN
-# define OPENSSL_EXTERN OPENSSL_EXPORT
-#endif
-
-/* ASN1 template defines, structures and functions */
-
 #ifdef  __cplusplus
 extern "C" {
 #endif
+
+
+/* Legacy ASN.1 library template definitions.
+ *
+ * This header is used to define new types in OpenSSL's ASN.1 implementation. It
+ * is deprecated and will be unexported from the library. Use the new |CBS| and
+ * |CBB| library in <openssl/bytestring.h> instead. */
 
 
 /* Macro to obtain ASN1_ADB pointer from a type (only used internally) */
@@ -408,10 +407,12 @@ ASN1_ITEM_EXP *item;		/* Relevant ASN1_ITEM or ASN1_ADB */
 typedef struct ASN1_ADB_TABLE_st ASN1_ADB_TABLE;
 typedef struct ASN1_ADB_st ASN1_ADB;
 
+typedef struct asn1_must_be_null_st ASN1_MUST_BE_NULL;
+
 struct ASN1_ADB_st {
 	unsigned long flags;	/* Various flags */
 	unsigned long offset;	/* Offset of selector field */
-	STACK_OF(ASN1_ADB_TABLE) **app_items; /* Application defined items */
+	ASN1_MUST_BE_NULL *unused;
 	const ASN1_ADB_TABLE *tbl;	/* Table of possible types */
 	long tblcount;		/* Number of entries in tbl */
 	const ASN1_TEMPLATE *default_tt;  /* Type to use if no match */
@@ -632,6 +633,7 @@ typedef struct ASN1_EXTERN_FUNCS_st {
 	ASN1_ex_free_func *asn1_ex_clear;
 	ASN1_ex_d2i *asn1_ex_d2i;
 	ASN1_ex_i2d *asn1_ex_i2d;
+	/* asn1_ex_print is unused. */
 	ASN1_ex_print_func *asn1_ex_print;
 } ASN1_EXTERN_FUNCS;
 
@@ -836,17 +838,6 @@ typedef struct ASN1_STREAM_ARG_st {
         return ASN1_item_dup(ASN1_ITEM_rptr(stname), x); \
         }
 
-#define IMPLEMENT_ASN1_PRINT_FUNCTION(stname) \
-	IMPLEMENT_ASN1_PRINT_FUNCTION_fname(stname, stname, stname)
-
-#define IMPLEMENT_ASN1_PRINT_FUNCTION_fname(stname, itname, fname) \
-	int fname##_print_ctx(BIO *out, stname *x, int indent, \
-						const ASN1_PCTX *pctx) \
-	{ \
-		return ASN1_item_print(out, (ASN1_VALUE *)x, indent, \
-			ASN1_ITEM_rptr(itname), pctx); \
-	} 
-
 #define IMPLEMENT_ASN1_FUNCTIONS_const(name) \
 		IMPLEMENT_ASN1_FUNCTIONS_const_fname(name, name, name)
 
@@ -860,12 +851,8 @@ DECLARE_ASN1_ITEM(ASN1_BOOLEAN)
 DECLARE_ASN1_ITEM(ASN1_TBOOLEAN)
 DECLARE_ASN1_ITEM(ASN1_FBOOLEAN)
 DECLARE_ASN1_ITEM(ASN1_SEQUENCE)
-DECLARE_ASN1_ITEM(CBIGNUM)
-DECLARE_ASN1_ITEM(BIGNUM)
-DECLARE_ASN1_ITEM(LONG)
-DECLARE_ASN1_ITEM(ZLONG)
 
-DECLARE_STACK_OF(ASN1_VALUE)
+DEFINE_STACK_OF(ASN1_VALUE)
 
 /* Functions used internally by the ASN1 code */
 
@@ -875,12 +862,10 @@ int ASN1_template_new(ASN1_VALUE **pval, const ASN1_TEMPLATE *tt);
 int ASN1_primitive_new(ASN1_VALUE **pval, const ASN1_ITEM *it);
 
 void ASN1_template_free(ASN1_VALUE **pval, const ASN1_TEMPLATE *tt);
-int ASN1_template_d2i(ASN1_VALUE **pval, const unsigned char **in, long len, const ASN1_TEMPLATE *tt);
 int ASN1_item_ex_d2i(ASN1_VALUE **pval, const unsigned char **in, long len, const ASN1_ITEM *it,
 				int tag, int aclass, char opt, ASN1_TLC *ctx);
 
 int ASN1_item_ex_i2d(ASN1_VALUE **pval, unsigned char **out, const ASN1_ITEM *it, int tag, int aclass);
-int ASN1_template_i2d(ASN1_VALUE **pval, unsigned char **out, const ASN1_TEMPLATE *tt);
 void ASN1_primitive_free(ASN1_VALUE **pval, const ASN1_ITEM *it);
 
 int asn1_ex_i2c(ASN1_VALUE **pval, unsigned char *cont, int *putype, const ASN1_ITEM *it);

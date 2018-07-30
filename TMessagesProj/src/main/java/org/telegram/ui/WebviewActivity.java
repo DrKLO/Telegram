@@ -32,6 +32,7 @@ import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -77,7 +78,9 @@ public class WebviewActivity extends BaseFragment {
                     if (getParentActivity() == null) {
                         return;
                     }
-                    FileLog.e(eventName);
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d(eventName);
+                    }
                     switch (eventName) {
                         case "share_game":
                             currentMessageObject.messageOwner.with_my_score = false;
@@ -98,7 +101,7 @@ public class WebviewActivity extends BaseFragment {
             if (currentMessageObject == null || getParentActivity() == null || typingRunnable == null) {
                 return;
             }
-            MessagesController.getInstance().sendTyping(currentMessageObject.getDialogId(), 6, 0);
+            MessagesController.getInstance(currentAccount).sendTyping(currentMessageObject.getDialogId(), 6, 0);
             AndroidUtilities.runOnUIThread(typingRunnable, 25000);
         }
     };
@@ -110,7 +113,7 @@ public class WebviewActivity extends BaseFragment {
         currentGame = gameName;
         currentMessageObject = messageObject;
         short_param = startParam;
-        linkToCopy = "https://" + MessagesController.getInstance().linkPrefix + "/" + currentBot + (TextUtils.isEmpty(startParam) ? "" : "?game=" + startParam);
+        linkToCopy = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/" + currentBot + (TextUtils.isEmpty(startParam) ? "" : "?game=" + startParam);
     }
 
     @Override
@@ -301,9 +304,10 @@ public class WebviewActivity extends BaseFragment {
             SerializedData serializedData = new SerializedData(messageObject.messageOwner.getObjectSize());
             messageObject.messageOwner.serializeToStream(serializedData);
             editor.putString(hash + "_m", Utilities.bytesToHex(serializedData.toByteArray()));
-            editor.putString(hash + "_link", "https://" + MessagesController.getInstance().linkPrefix + "/" + username + (TextUtils.isEmpty(short_name) ? "" : "?game=" + short_name));
+            editor.putString(hash + "_link", "https://" + MessagesController.getInstance(messageObject.currentAccount).linkPrefix + "/" + username + (TextUtils.isEmpty(short_name) ? "" : "?game=" + short_name));
             editor.commit();
             Browser.openUrl(parentActivity, url, false);
+            serializedData.cleanup();
         } catch (Exception e) {
             FileLog.e(e);
         }

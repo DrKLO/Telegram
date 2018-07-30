@@ -35,6 +35,7 @@ import java.util.Locale;
 
 public class LocationActivityAdapter extends BaseLocationAdapter {
 
+    private int currentAccount = UserConfig.selectedAccount;
     private Context mContext;
     private int overScrollHeight;
     private SendLocationCell sendLocationCell;
@@ -87,7 +88,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter {
 
     public void setLiveLocations(ArrayList<LocationActivity.LiveLocation> liveLocations) {
         currentLiveLocations = new ArrayList<>(liveLocations);
-        int uid = UserConfig.getClientUserId();
+        int uid = UserConfig.getInstance(currentAccount).getClientUserId();
         for (int a = 0; a < currentLiveLocations.size(); a++) {
             if (currentLiveLocations.get(a).id == uid) {
                 currentLiveLocations.remove(a);
@@ -241,11 +242,11 @@ public class LocationActivityAdapter extends BaseLocationAdapter {
             }
             return null;
         } else if (liveLocationType == 1) {
-            if (i > 3 && i < places.size() + 3) {
+            if (i > 3 && i < places.size() + 4) {
                 return places.get(i - 4);
             }
         } else {
-            if (i > 2 && i < places.size() + 2) {
+            if (i > 2 && i < places.size() + 3) {
                 return places.get(i - 3);
             }
         }
@@ -304,7 +305,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter {
     public boolean isEnabled(RecyclerView.ViewHolder holder) {
         int viewType = holder.getItemViewType();
         if (viewType == 6) {
-            return !(LocationController.getInstance().getSharingLocationInfo(dialogId) == null && gpsLocation == null);
+            return !(LocationController.getInstance(currentAccount).getSharingLocationInfo(dialogId) == null && gpsLocation == null);
         }
         return viewType == 1 || viewType == 3 || viewType == 7;
     }

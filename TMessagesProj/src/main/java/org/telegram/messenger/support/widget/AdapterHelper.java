@@ -43,9 +43,9 @@ import java.util.List;
  */
 class AdapterHelper implements OpReorderer.Callback {
 
-    final static int POSITION_TYPE_INVISIBLE = 0;
+    static final int POSITION_TYPE_INVISIBLE = 0;
 
-    final static int POSITION_TYPE_NEW_OR_LAID_OUT = 1;
+    static final int POSITION_TYPE_NEW_OR_LAID_OUT = 1;
 
     private static final boolean DEBUG = false;
 
@@ -286,7 +286,7 @@ class AdapterHelper implements OpReorderer.Callback {
                 if (op.cmd == UpdateOp.UPDATE) {
                     offsetPositionForPartial += tmpCnt;
                 }
-                tmpStart = updatedPos;// need to remove previously dispatched
+                tmpStart = updatedPos; // need to remove previously dispatched
                 tmpCnt = 1;
             }
         }
@@ -585,7 +585,7 @@ class AdapterHelper implements OpReorderer.Callback {
 
     public int applyPendingUpdatesToPosition(int position) {
         final int size = mPendingUpdates.size();
-        for (int i = 0; i < size; i ++) {
+        for (int i = 0; i < size; i++) {
             UpdateOp op = mPendingUpdates.get(i);
             switch (op.cmd) {
                 case UpdateOp.ADD:
@@ -604,7 +604,7 @@ class AdapterHelper implements OpReorderer.Callback {
                     break;
                 case UpdateOp.MOVE:
                     if (op.positionStart == position) {
-                        position = op.itemCount;//position end
+                        position = op.itemCount; //position end
                     } else {
                         if (op.positionStart < position) {
                             position -= 1;
@@ -672,7 +672,7 @@ class AdapterHelper implements OpReorderer.Callback {
         public String toString() {
             return Integer.toHexString(System.identityHashCode(this))
                     + "[" + cmdToString() + ",s:" + positionStart + "c:" + itemCount
-                    +",p:"+payload + "]";
+                    + ",p:" + payload + "]";
         }
 
         @Override

@@ -67,17 +67,17 @@ extern "C" {
 #endif
 
 
-/* Config files look like:
- *
- *   # Comment
- *
- *   # This key is in the default section.
- *   key=value
- *
- *   [section_name]
- *   key2=value2
- *
- * Config files are representated by a |CONF|. */
+// Config files look like:
+//
+//   # Comment
+//
+//   # This key is in the default section.
+//   key=value
+//
+//   [section_name]
+//   key2=value2
+//
+// Config files are represented by a |CONF|.
 
 struct conf_value_st {
   char *section;
@@ -89,50 +89,87 @@ struct conf_st {
   LHASH_OF(CONF_VALUE) *data;
 };
 
+DEFINE_STACK_OF(CONF_VALUE)
 
-/* NCONF_new returns a fresh, empty |CONF|, or NULL on error. The |method|
- * argument must be NULL. */
-CONF *NCONF_new(void *method);
 
-/* NCONF_free frees all the data owned by |conf| and then |conf| itself. */
-void NCONF_free(CONF *conf);
+// NCONF_new returns a fresh, empty |CONF|, or NULL on error. The |method|
+// argument must be NULL.
+OPENSSL_EXPORT CONF *NCONF_new(void *method);
 
-/* NCONF_load parses the file named |filename| and adds the values found to
- * |conf|. It returns one on success and zero on error. In the event of an
- * error, if |out_error_line| is not NULL, |*out_error_line| is set to the
- * number of the line that contained the error. */
+// NCONF_free frees all the data owned by |conf| and then |conf| itself.
+OPENSSL_EXPORT void NCONF_free(CONF *conf);
+
+// NCONF_load parses the file named |filename| and adds the values found to
+// |conf|. It returns one on success and zero on error. In the event of an
+// error, if |out_error_line| is not NULL, |*out_error_line| is set to the
+// number of the line that contained the error.
 int NCONF_load(CONF *conf, const char *filename, long *out_error_line);
 
-/* NCONF_load_bio acts like |NCONF_load| but reads from |bio| rather than from
- * a named file. */
+// NCONF_load_bio acts like |NCONF_load| but reads from |bio| rather than from
+// a named file.
 int NCONF_load_bio(CONF *conf, BIO *bio, long *out_error_line);
 
-/* NCONF_get_section returns a stack of values for a given section in |conf|.
- * If |section| is NULL, the default section is returned. It returns NULL on
- * error. */
+// NCONF_get_section returns a stack of values for a given section in |conf|.
+// If |section| is NULL, the default section is returned. It returns NULL on
+// error.
 STACK_OF(CONF_VALUE) *NCONF_get_section(const CONF *conf, const char *section);
 
-/* NCONF_get_string returns the value of the key |name|, in section |section|.
- * The |section| argument may be NULL to indicate the default section. It
- * returns the value or NULL on error. */
+// NCONF_get_string returns the value of the key |name|, in section |section|.
+// The |section| argument may be NULL to indicate the default section. It
+// returns the value or NULL on error.
 const char *NCONF_get_string(const CONF *conf, const char *section,
                              const char *name);
 
 
-/* Utility functions */
+// Utility functions
 
-/* CONF_parse_list takes a list separated by 'sep' and calls |list_cb| giving
- * the start and length of each member, optionally stripping leading and
- * trailing whitespace. This can be used to parse comma separated lists for
- * example. If |list_cb| returns <= 0, then the iteration is halted and that
- * value is returned immediately. Otherwise it returns one. Note that |list_cb|
- * may be called on an empty member. */
+// CONF_parse_list takes a list separated by 'sep' and calls |list_cb| giving
+// the start and length of each member, optionally stripping leading and
+// trailing whitespace. This can be used to parse comma separated lists for
+// example. If |list_cb| returns <= 0, then the iteration is halted and that
+// value is returned immediately. Otherwise it returns one. Note that |list_cb|
+// may be called on an empty member.
 int CONF_parse_list(const char *list, char sep, int remove_whitespace,
                     int (*list_cb)(const char *elem, int len, void *usr),
                     void *arg);
 
+
+// Deprecated functions
+
+// These defines do nothing but are provided to make old code easier to
+// compile.
+#define CONF_MFLAGS_DEFAULT_SECTION 0
+#define CONF_MFLAGS_IGNORE_MISSING_FILE 0
+
+// CONF_modules_load_file returns one. BoringSSL is defined to have no config
+// file options, thus loading from |filename| always succeeds by doing nothing.
+OPENSSL_EXPORT int CONF_modules_load_file(const char *filename,
+                                          const char *appname,
+                                          unsigned long flags);
+
+// CONF_modules_free does nothing.
+OPENSSL_EXPORT void CONF_modules_free(void);
+
+// OPENSSL_config does nothing.
+OPENSSL_EXPORT void OPENSSL_config(const char *config_name);
+
+// OPENSSL_no_config does nothing.
+OPENSSL_EXPORT void OPENSSL_no_config(void);
+
+
 #if defined(__cplusplus)
-}  /* extern C */
+}  // extern C
+
+extern "C++" {
+
+namespace bssl {
+
+BORINGSSL_MAKE_DELETER(CONF, NCONF_free)
+
+}  // namespace bssl
+
+}  // extern C++
+
 #endif
 
 #define CONF_R_LIST_CANNOT_BE_NULL 100
@@ -141,5 +178,6 @@ int CONF_parse_list(const char *list, char sep, int remove_whitespace,
 #define CONF_R_NO_CLOSE_BRACE 103
 #define CONF_R_UNABLE_TO_CREATE_NEW_SECTION 104
 #define CONF_R_VARIABLE_HAS_NO_VALUE 105
+#define CONF_R_VARIABLE_EXPANSION_TOO_LONG 106
 
-#endif  /* OPENSSL_HEADER_THREAD_H */
+#endif  // OPENSSL_HEADER_THREAD_H

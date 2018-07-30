@@ -78,7 +78,8 @@ public final class FixedTrackSelection extends BaseTrackSelection {
   }
 
   @Override
-  public void updateSelectedTrack(long bufferedDurationUs) {
+  public void updateSelectedTrack(long playbackPositionUs, long bufferedDurationUs,
+      long availableDurationUs) {
     // Do nothing.
   }
 

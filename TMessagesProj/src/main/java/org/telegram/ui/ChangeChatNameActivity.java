@@ -8,7 +8,6 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -31,7 +30,6 @@ import android.widget.LinearLayout;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
@@ -46,17 +44,17 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.AvatarUpdater;
+import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 
-public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdater.AvatarUpdaterDelegate {
+public class ChangeChatNameActivity extends BaseFragment implements ImageUpdater.ImageUpdaterDelegate {
 
     private EditTextBoldCursor nameTextView;
     private BackupImageView avatarImage;
     private AvatarDrawable avatarDrawable;
-    private AvatarUpdater avatarUpdater;
+    private ImageUpdater imageUpdater;
     private View headerLabelView;
     private TLRPC.InputFile uploadedAvatar;
     private AlertDialog progressDialog;
@@ -78,9 +76,9 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
         super.onFragmentCreate();
         avatarDrawable = new AvatarDrawable();
         chatId = getArguments().getInt("chat_id", 0);
-        avatarUpdater = new AvatarUpdater();
-        avatarUpdater.parentFragment = this;
-        avatarUpdater.delegate = this;
+        imageUpdater = new ImageUpdater();
+        imageUpdater.parentFragment = this;
+        imageUpdater.delegate = this;
         return true;
     }
 
@@ -108,7 +106,7 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
                     }
                     donePressed = true;
 
-                    if (avatarUpdater.uploadingAvatar != null) {
+                    if (imageUpdater.uploadingImage != null) {
                         createAfterUpload = true;
                         progressDialog = new AlertDialog(getParentActivity(), 1);
                         progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
@@ -131,9 +129,9 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
                         return;
                     }
                     if (uploadedAvatar != null) {
-                        MessagesController.getInstance().changeChatAvatar(chatId, uploadedAvatar);
+                        MessagesController.getInstance(currentAccount).changeChatAvatar(chatId, uploadedAvatar);
                     } else if (avatar == null && currentChat.photo instanceof TLRPC.TL_chatPhoto) {
-                        MessagesController.getInstance().changeChatAvatar(chatId, null);
+                        MessagesController.getInstance(currentAccount).changeChatAvatar(chatId, null);
                     }
                     finishFragment();
 
@@ -148,7 +146,7 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
         ActionBarMenu menu = actionBar.createMenu();
         doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-        currentChat = MessagesController.getInstance().getChat(chatId);
+        currentChat = MessagesController.getInstance(currentAccount).getChat(chatId);
 
         LinearLayout linearLayout = new LinearLayout(context);
         fragmentView = linearLayout;
@@ -195,9 +193,9 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         if (i == 0) {
-                            avatarUpdater.openCamera();
+                            imageUpdater.openCamera();
                         } else if (i == 1) {
-                            avatarUpdater.openGallery();
+                            imageUpdater.openGallery();
                         } else if (i == 2) {
                             avatar = null;
                             uploadedAvatar = null;
@@ -275,13 +273,13 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
+                            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.closeChats);
                             if (AndroidUtilities.isTablet()) {
-                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, -(long) chatId);
+                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats, -(long) chatId);
                             } else {
-                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
                             }
-                            MessagesController.getInstance().deleteUserFromChat(chatId, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), null, true);
+                            MessagesController.getInstance(currentAccount).deleteUserFromChat(chatId, MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId()), null, true);
                             finishFragment();
                         }
                     });
@@ -312,7 +310,7 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
     @Override
     public void onResume() {
         super.onResume();
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             nameTextView.requestFocus();
@@ -321,7 +319,7 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
     }
 
     @Override
-    public void didUploadedPhoto(final TLRPC.InputFile file, final TLRPC.PhotoSize small, final TLRPC.PhotoSize big) {
+    public void didUploadedPhoto(final TLRPC.InputFile file, final TLRPC.PhotoSize small, final TLRPC.PhotoSize big, final TLRPC.TL_secureFile secureFile) {
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
@@ -346,13 +344,13 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
 
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
-        avatarUpdater.onActivityResult(requestCode, resultCode, data);
+        imageUpdater.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
     public void saveSelfArgs(Bundle args) {
-        if (avatarUpdater != null && avatarUpdater.currentPicturePath != null) {
-            args.putString("path", avatarUpdater.currentPicturePath);
+        if (imageUpdater != null && imageUpdater.currentPicturePath != null) {
+            args.putString("path", imageUpdater.currentPicturePath);
         }
         if (nameTextView != null) {
             String text = nameTextView.getText().toString();
@@ -364,8 +362,8 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
 
     @Override
     public void restoreSelfArgs(Bundle args) {
-        if (avatarUpdater != null) {
-            avatarUpdater.currentPicturePath = args.getString("path");
+        if (imageUpdater != null) {
+            imageUpdater.currentPicturePath = args.getString("path");
         }
     }
 
@@ -385,6 +383,6 @@ public class ChangeChatNameActivity extends BaseFragment implements AvatarUpdate
     }
 
     private void saveName() {
-        MessagesController.getInstance().changeChatTitle(chatId, nameTextView.getText().toString());
+        MessagesController.getInstance(currentAccount).changeChatTitle(chatId, nameTextView.getText().toString());
     }
 }

@@ -38,6 +38,8 @@ public class GroupCreateUserCell extends FrameLayout {
     private CharSequence currentName;
     private CharSequence currentStatus;
 
+    private int currentAccount = UserConfig.selectedAccount;
+
     private String lastName;
     private int lastStatus;
     private TLRPC.FileLocation lastAvatar;
@@ -151,14 +153,14 @@ public class GroupCreateUserCell extends FrameLayout {
                 statusTextView.setTextColor(Theme.getColor(Theme.key_groupcreate_offlineText));
                 statusTextView.setText(LocaleController.getString("Bot", R.string.Bot));
             } else {
-                if (currentUser.id == UserConfig.getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance().getCurrentTime() || MessagesController.getInstance().onlinePrivacy.containsKey(currentUser.id)) {
+                if (currentUser.id == UserConfig.getInstance(currentAccount).getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(currentUser.id)) {
                     statusTextView.setTag(Theme.key_groupcreate_offlineText);
                     statusTextView.setTextColor(Theme.getColor(Theme.key_groupcreate_onlineText));
                     statusTextView.setText(LocaleController.getString("Online", R.string.Online));
                 } else {
                     statusTextView.setTag(Theme.key_groupcreate_offlineText);
                     statusTextView.setTextColor(Theme.getColor(Theme.key_groupcreate_offlineText));
-                    statusTextView.setText(LocaleController.formatUserStatus(currentUser));
+                    statusTextView.setText(LocaleController.formatUserStatus(currentAccount, currentUser));
                 }
             }
         }

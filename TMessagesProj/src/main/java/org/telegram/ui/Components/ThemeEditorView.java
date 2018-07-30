@@ -923,27 +923,51 @@ public class ThemeEditorView {
                     if (!dragging) {
                         if (editorAlert == null) {
                             LaunchActivity launchActivity = (LaunchActivity) parentActivity;
-                            ActionBarLayout actionBarLayout = launchActivity.getActionBarLayout();
-                            if (!actionBarLayout.fragmentsStack.isEmpty()) {
-                                BaseFragment fragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
-                                ThemeDescription[] items = fragment.getThemeDescriptions();
-                                if (items != null) {
-                                    editorAlert = new EditorAlert(parentActivity, items);
-                                    editorAlert.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                        @Override
-                                        public void onDismiss(DialogInterface dialog) {
 
-                                        }
-                                    });
-                                    editorAlert.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                        @Override
-                                        public void onDismiss(DialogInterface dialog) {
-                                            editorAlert = null;
-                                            show();
-                                        }
-                                    });
-                                    editorAlert.show();
-                                    hide();
+                            ActionBarLayout actionBarLayout = null;
+
+                            if (AndroidUtilities.isTablet()) {
+                                actionBarLayout = launchActivity.getLayersActionBarLayout();
+                                if (actionBarLayout != null && actionBarLayout.fragmentsStack.isEmpty()) {
+                                    actionBarLayout = null;
+                                }
+                                if (actionBarLayout == null) {
+                                    actionBarLayout = launchActivity.getRightActionBarLayout();
+                                    if (actionBarLayout != null && actionBarLayout.fragmentsStack.isEmpty()) {
+                                        actionBarLayout = null;
+                                    }
+                                }
+                            }
+                            if (actionBarLayout == null) {
+                                actionBarLayout = launchActivity.getActionBarLayout();
+                            }
+                            if (actionBarLayout != null) {
+                                BaseFragment fragment;
+                                if (!actionBarLayout.fragmentsStack.isEmpty()) {
+                                    fragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
+                                } else {
+                                    fragment = null;
+                                }
+                                if (fragment != null) {
+                                    ThemeDescription[] items = fragment.getThemeDescriptions();
+                                    if (items != null) {
+                                        editorAlert = new EditorAlert(parentActivity, items);
+                                        editorAlert.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                            @Override
+                                            public void onDismiss(DialogInterface dialog) {
+
+                                            }
+                                        });
+                                        editorAlert.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                            @Override
+                                            public void onDismiss(DialogInterface dialog) {
+                                                editorAlert = null;
+                                                show();
+                                            }
+                                        });
+                                        editorAlert.show();
+                                        hide();
+                                    }
                                 }
                             }
                         }

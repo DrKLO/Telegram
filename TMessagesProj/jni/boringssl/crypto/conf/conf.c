@@ -65,7 +65,13 @@
 #include <openssl/mem.h>
 
 #include "conf_def.h"
+#include "internal.h"
+#include "../internal.h"
 
+
+// The maximum length we can grow a value to after variable expansion. 64k
+// should be more than enough for all reasonable uses.
+#define MAX_CONF_VALUE_LENGTH 65536
 
 static uint32_t conf_value_hash(const CONF_VALUE *v) {
   return (lh_strhash(v->section) << 2) ^ lh_strhash(v->name);
@@ -111,6 +117,16 @@ CONF *NCONF_new(void *method) {
   return conf;
 }
 
+CONF_VALUE *CONF_VALUE_new(void) {
+  CONF_VALUE *v = OPENSSL_malloc(sizeof(CONF_VALUE));
+  if (!v) {
+    OPENSSL_PUT_ERROR(CONF, ERR_R_MALLOC_FAILURE);
+    return NULL;
+  }
+  OPENSSL_memset(v, 0, sizeof(CONF_VALUE));
+  return v;
+}
+
 static void value_free_contents(CONF_VALUE *value) {
   if (value->section) {
     OPENSSL_free(value->section);
@@ -137,29 +153,26 @@ void NCONF_free(CONF *conf) {
     return;
   }
 
-  lh_CONF_VALUE_doall(conf->data, value_free_contents);
+  lh_CONF_VALUE_doall(conf->data, value_free);
   lh_CONF_VALUE_free(conf->data);
   OPENSSL_free(conf);
 }
 
-CONF_VALUE *NCONF_new_section(const CONF *conf, const char *section) {
+static CONF_VALUE *NCONF_new_section(const CONF *conf, const char *section) {
   STACK_OF(CONF_VALUE) *sk = NULL;
-  int ok = 0, i;
+  int ok = 0;
   CONF_VALUE *v = NULL, *old_value;
 
   sk = sk_CONF_VALUE_new_null();
-  v = OPENSSL_malloc(sizeof(CONF_VALUE));
+  v = CONF_VALUE_new();
   if (sk == NULL || v == NULL) {
     goto err;
   }
-  i = strlen(section) + 1;
-  v->section = OPENSSL_malloc(i);
+  v->section = OPENSSL_strdup(section);
   if (v->section == NULL) {
     goto err;
   }
 
-  memcpy(v->section, section, i);
-  v->section[i-1] = 0;
   v->name = NULL;
   v->value = (char *)sk;
 
@@ -250,7 +263,7 @@ static int str_copy(CONF *conf, char *section, char **pto, char *from) {
     } else if (IS_EOF(conf, *from)) {
       break;
     } else if (*from == '$') {
-      /* try to expand it */
+      // try to expand it
       rrp = NULL;
       s = &(from[1]);
       if (*s == '{') {
@@ -290,14 +303,14 @@ static int str_copy(CONF *conf, char *section, char **pto, char *from) {
         }
         e++;
       }
-      /* So at this point we have
-       * np which is the start of the name string which is
-       *   '\0' terminated.
-       * cp which is the start of the section string which is
-       *   '\0' terminated.
-       * e is the 'next point after'.
-       * r and rr are the chars replaced by the '\0'
-       * rp and rrp is where 'r' and 'rr' came from. */
+      // So at this point we have
+      // np which is the start of the name string which is
+      //   '\0' terminated.
+      // cp which is the start of the section string which is
+      //   '\0' terminated.
+      // e is the 'next point after'.
+      // r and rr are the chars replaced by the '\0'
+      // rp and rrp is where 'r' and 'rr' came from.
       p = NCONF_get_string(conf, cp, np);
       if (rrp != NULL) {
         *rrp = rr;
@@ -307,7 +320,15 @@ static int str_copy(CONF *conf, char *section, char **pto, char *from) {
         OPENSSL_PUT_ERROR(CONF, CONF_R_VARIABLE_HAS_NO_VALUE);
         goto err;
       }
-      BUF_MEM_grow_clean(buf, (strlen(p) + buf->length - (e - from)));
+      size_t newsize = strlen(p) + buf->length - (e - from);
+      if (newsize > MAX_CONF_VALUE_LENGTH) {
+        OPENSSL_PUT_ERROR(CONF, CONF_R_VARIABLE_EXPANSION_TOO_LONG);
+        goto err;
+      }
+      if (!BUF_MEM_grow_clean(buf, newsize)) {
+        OPENSSL_PUT_ERROR(CONF, ERR_R_MALLOC_FAILURE);
+        goto err;
+      }
       while (*p) {
         buf->data[to++] = *(p++);
       }
@@ -345,7 +366,7 @@ err:
 static CONF_VALUE *get_section(const CONF *conf, const char *section) {
   CONF_VALUE template;
 
-  memset(&template, 0, sizeof(template));
+  OPENSSL_memset(&template, 0, sizeof(template));
   template.section = (char *) section;
   return lh_CONF_VALUE_retrieve(conf->data, &template);
 }
@@ -362,7 +383,7 @@ const char *NCONF_get_string(const CONF *conf, const char *section,
                              const char *name) {
   CONF_VALUE template, *value;
 
-  memset(&template, 0, sizeof(template));
+  OPENSSL_memset(&template, 0, sizeof(template));
   template.section = (char *) section;
   template.name = (char *) name;
   value = lh_CONF_VALUE_retrieve(conf->data, &template);
@@ -372,11 +393,12 @@ const char *NCONF_get_string(const CONF *conf, const char *section,
   return value->value;
 }
 
-int add_string(const CONF *conf, CONF_VALUE *section, CONF_VALUE *value) {
+static int add_string(const CONF *conf, CONF_VALUE *section,
+                      CONF_VALUE *value) {
   STACK_OF(CONF_VALUE) *section_stack = (STACK_OF(CONF_VALUE)*) section->value;
   CONF_VALUE *old_value;
 
-  value->section = section->section;
+  value->section = OPENSSL_strdup(section->section);
   if (!sk_CONF_VALUE_push(section_stack, value)) {
     return 0;
   }
@@ -509,12 +531,11 @@ static int def_load_bio(CONF *conf, BIO *in, long *out_error_line) {
     goto err;
   }
 
-  section = (char *)OPENSSL_malloc(10);
+  section = OPENSSL_strdup("default");
   if (section == NULL) {
     OPENSSL_PUT_ERROR(CONF, ERR_R_MALLOC_FAILURE);
     goto err;
   }
-  BUF_strlcpy(section, "default", 10);
 
   sv = NCONF_new_section(conf, section);
   if (sv == NULL) {
@@ -545,25 +566,25 @@ static int def_load_bio(CONF *conf, BIO *in, long *out_error_line) {
         i--;
       }
     }
-    /* we removed some trailing stuff so there is a new
-     * line on the end. */
+    // we removed some trailing stuff so there is a new
+    // line on the end.
     if (ii && i == ii) {
-      again = 1; /* long line */
+      again = 1;  // long line
     } else {
       p[i] = '\0';
-      eline++; /* another input line */
+      eline++;  // another input line
     }
 
-    /* we now have a line with trailing \r\n removed */
+    // we now have a line with trailing \r\n removed
 
-    /* i is the number of bytes */
+    // i is the number of bytes
     bufnum += i;
 
     v = NULL;
-    /* check for line continuation */
+    // check for line continuation
     if (bufnum >= 1) {
-      /* If we have bytes and the last char '\\' and
-       * second last char is not '\\' */
+      // If we have bytes and the last char '\\' and
+      // second last char is not '\\'
       p = &(buff->data[bufnum - 1]);
       if (IS_ESC(conf, p[0]) && ((bufnum <= 1) || !IS_ESC(conf, p[-1]))) {
         bufnum--;
@@ -579,7 +600,7 @@ static int def_load_bio(CONF *conf, BIO *in, long *out_error_line) {
     clear_comments(conf, buf);
     s = eat_ws(conf, buf);
     if (IS_EOF(conf, *s)) {
-      continue; /* blank line */
+      continue;  // blank line
     }
     if (*s == '[') {
       char *ss;
@@ -639,20 +660,17 @@ static int def_load_bio(CONF *conf, BIO *in, long *out_error_line) {
       p++;
       *p = '\0';
 
-      if (!(v = (CONF_VALUE *)OPENSSL_malloc(sizeof(CONF_VALUE)))) {
-        OPENSSL_PUT_ERROR(CONF, ERR_R_MALLOC_FAILURE);
+      if (!(v = CONF_VALUE_new())) {
         goto err;
       }
       if (psection == NULL) {
         psection = section;
       }
-      v->name = (char *)OPENSSL_malloc(strlen(pname) + 1);
-      v->value = NULL;
+      v->name = OPENSSL_strdup(pname);
       if (v->name == NULL) {
         OPENSSL_PUT_ERROR(CONF, ERR_R_MALLOC_FAILURE);
         goto err;
       }
-      BUF_strlcpy(v->name, pname, strlen(pname) + 1);
       if (!str_copy(conf, psection, &(v->value), start)) {
         goto err;
       }
@@ -772,3 +790,14 @@ int CONF_parse_list(const char *list, char sep, int remove_whitespace,
     lstart = p + 1;
   }
 }
+
+int CONF_modules_load_file(const char *filename, const char *appname,
+                           unsigned long flags) {
+  return 1;
+}
+
+void CONF_modules_free(void) {}
+
+void OPENSSL_config(const char *config_name) {}
+
+void OPENSSL_no_config(void) {}

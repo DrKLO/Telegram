@@ -48,17 +48,17 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.blockedUsersDidLoaded);
-        MessagesController.getInstance().getBlockedUsers(false);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.blockedUsersDidLoaded);
+        MessagesController.getInstance(currentAccount).getBlockedUsers(false);
         return true;
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.blockedUsersDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.blockedUsersDidLoaded);
     }
 
     @Override
@@ -104,11 +104,11 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
-                if (position >= MessagesController.getInstance().blockedUsers.size()) {
+                if (position >= MessagesController.getInstance(currentAccount).blockedUsers.size()) {
                     return;
                 }
                 Bundle args = new Bundle();
-                args.putInt("user_id", MessagesController.getInstance().blockedUsers.get(position));
+                args.putInt("user_id", MessagesController.getInstance(currentAccount).blockedUsers.get(position));
                 presentFragment(new ProfileActivity(args));
             }
         });
@@ -116,10 +116,10 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         listView.setOnItemLongClickListener(new RecyclerListView.OnItemLongClickListener() {
             @Override
             public boolean onItemClick(View view, int position) {
-                if (position >= MessagesController.getInstance().blockedUsers.size() || getParentActivity() == null) {
+                if (position >= MessagesController.getInstance(currentAccount).blockedUsers.size() || getParentActivity() == null) {
                     return true;
                 }
-                selectedUserId = MessagesController.getInstance().blockedUsers.get(position);
+                selectedUserId = MessagesController.getInstance(currentAccount).blockedUsers.get(position);
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                 CharSequence[] items = new CharSequence[]{LocaleController.getString("Unblock", R.string.Unblock)};
@@ -127,7 +127,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         if (i == 0) {
-                            MessagesController.getInstance().unblockUser(selectedUserId);
+                            MessagesController.getInstance(currentAccount).unblockUser(selectedUserId);
                         }
                     }
                 });
@@ -137,7 +137,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
             }
         });
 
-        if (MessagesController.getInstance().loadingBlockedUsers) {
+        if (MessagesController.getInstance(currentAccount).loadingBlockedUsers) {
             emptyView.showProgress();
         } else {
             emptyView.showTextView();
@@ -146,7 +146,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer) args[0];
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
@@ -186,7 +186,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         if (user == null) {
             return;
         }
-        MessagesController.getInstance().blockUser(user.id);
+        MessagesController.getInstance(currentAccount).blockUser(user.id);
     }
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
@@ -199,10 +199,10 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
 
         @Override
         public int getItemCount() {
-            if (MessagesController.getInstance().blockedUsers.isEmpty()) {
+            if (MessagesController.getInstance(currentAccount).blockedUsers.isEmpty()) {
                 return 0;
             }
-            return MessagesController.getInstance().blockedUsers.size() + 1;
+            return MessagesController.getInstance(currentAccount).blockedUsers.size() + 1;
         }
 
         @Override
@@ -229,7 +229,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             if (holder.getItemViewType() == 0) {
-                TLRPC.User user = MessagesController.getInstance().getUser(MessagesController.getInstance().blockedUsers.get(position));
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(MessagesController.getInstance(currentAccount).blockedUsers.get(position));
                 if (user != null) {
                     String number;
                     if (user.bot) {
@@ -246,7 +246,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
 
         @Override
         public int getItemViewType(int i) {
-            if (i == MessagesController.getInstance().blockedUsers.size()) {
+            if (i == MessagesController.getInstance(currentAccount).blockedUsers.size()) {
                 return 1;
             }
             return 0;
@@ -255,14 +255,16 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate сellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
             @Override
-            public void didSetColor(int color) {
-                int count = listView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    View child = listView.getChildAt(a);
-                    if (child instanceof UserCell) {
-                        ((UserCell) child).update(0);
+            public void didSetColor() {
+                if (listView != null) {
+                    int count = listView.getChildCount();
+                    for (int a = 0; a < count; a++) {
+                        View child = listView.getChildAt(a);
+                        if (child instanceof UserCell) {
+                            ((UserCell) child).update(0);
+                        }
                     }
                 }
             }
@@ -284,16 +286,16 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
 
                 new ThemeDescription(listView, 0, new Class[]{TextInfoCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText5),
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusColor"}, null, null, сellDelegate, Theme.key_windowBackgroundWhiteGrayText),
+                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText),
 
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundRed),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundOrange),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundViolet),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundGreen),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundCyan),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundBlue),
-                new ThemeDescription(null, 0, null, null, null, сellDelegate, Theme.key_avatar_backgroundPink),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
+                new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
         };
     }
 }

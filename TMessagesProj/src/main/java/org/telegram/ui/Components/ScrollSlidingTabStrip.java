@@ -23,8 +23,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 
 public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
@@ -112,9 +112,9 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         TextView textView = new TextView(getContext());
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        textView.setTextColor(0xffffffff);
+        textView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelBadgeText));
         textView.setGravity(Gravity.CENTER);
-        textView.setBackgroundResource(R.drawable.sticker_badge);
+        textView.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), Theme.getColor(Theme.key_chat_emojiPanelBadgeBackground)));
         textView.setMinWidth(AndroidUtilities.dp(18));
         textView.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), AndroidUtilities.dp(1));
         tab.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 18, Gravity.TOP | Gravity.LEFT, 26, 6, 0, 0));
@@ -260,7 +260,9 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                 imageView.setImageDrawable(null);
             } else {
                 TLRPC.Document sticker = (TLRPC.Document) object;
-                imageView.setImage(sticker.thumb.location, null, "webp", null);
+                if (sticker.thumb != null) {
+                    imageView.setImage(sticker.thumb.location, null, "webp", null);
+                }
             }
         }
     }

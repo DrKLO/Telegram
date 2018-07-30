@@ -8,7 +8,6 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.InputType;
@@ -24,7 +23,6 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -72,9 +70,9 @@ public class ChangeNameActivity extends BaseFragment {
         ActionBarMenu menu = actionBar.createMenu();
         doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-        TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
+        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
         if (user == null) {
-            user = UserConfig.getCurrentUser();
+            user = UserConfig.getInstance(currentAccount).getCurrentUser();
         }
 
         LinearLayout linearLayout = new LinearLayout(context);
@@ -155,7 +153,7 @@ public class ChangeNameActivity extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
             firstNameField.requestFocus();
@@ -164,7 +162,7 @@ public class ChangeNameActivity extends BaseFragment {
     }
 
     private void saveName() {
-        TLRPC.User currentUser = UserConfig.getCurrentUser();
+        TLRPC.User currentUser = UserConfig.getInstance(currentAccount).getCurrentUser();
         if (currentUser == null || lastNameField.getText() == null || firstNameField.getText() == null) {
             return;
         }
@@ -177,15 +175,15 @@ public class ChangeNameActivity extends BaseFragment {
         req.flags = 3;
         currentUser.first_name = req.first_name = newFirst;
         currentUser.last_name = req.last_name = newLast;
-        TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
+        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
         if (user != null) {
             user.first_name = req.first_name;
             user.last_name = req.last_name;
         }
-        UserConfig.saveConfig(true);
-        NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
-        NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
-        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+        UserConfig.getInstance(currentAccount).saveConfig(true);
+        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
 

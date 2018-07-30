@@ -58,15 +58,15 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
     @Override
     public boolean onFragmentCreate() {
         fillLanguages();
-        LocaleController.getInstance().loadRemoteLanguages();
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.suggestedLangpack);
+        LocaleController.getInstance().loadRemoteLanguages(currentAccount);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.suggestedLangpack);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
     }
 
     @Override
@@ -155,7 +155,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                     }
                 }
                 if (localeInfo != null) {
-                    LocaleController.getInstance().applyLanguage(localeInfo, true, false, false, true);
+                    LocaleController.getInstance().applyLanguage(localeInfo, true, false, false, true, currentAccount);
                     parentLayout.rebuildAllFragmentViews(false, false);
                 }
                 finishFragment();
@@ -185,7 +185,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        if (LocaleController.getInstance().deleteLanguage(finalLocaleInfo)) {
+                        if (LocaleController.getInstance().deleteLanguage(finalLocaleInfo, currentAccount)) {
                             fillLanguages();
                             if (searchResult != null) {
                                 searchResult.remove(finalLocaleInfo);
@@ -218,7 +218,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
     }
 
     @Override
-    public void didReceivedNotification(int id, Object... args) {
+    public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.suggestedLangpack) {
             if (listAdapter != null) {
                 fillLanguages();
