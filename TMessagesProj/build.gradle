@@ -13,11 +13,6 @@ configurations {
 dependencies {
     compileOnly 'org.checkerframework:checker-qual:2.5.0'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
-    implementation 'com.google.firebase:firebase-core:16.0.3'
-    implementation 'com.google.firebase:firebase-messaging:17.3.0'
-    implementation 'com.google.firebase:firebase-config:16.0.0'
-    implementation 'com.google.android.gms:play-services-maps:15.0.1'
-    implementation 'com.google.android.gms:play-services-wearable:15.0.1'
     implementation 'com.android.support:support-core-ui:28.0.0-rc01'
     implementation 'com.android.support:support-compat:28.0.0-rc01'
     implementation 'com.android.support:support-core-utils:28.0.0-rc01'
@@ -249,4 +244,3 @@ android {
         }
     }
 }
-
