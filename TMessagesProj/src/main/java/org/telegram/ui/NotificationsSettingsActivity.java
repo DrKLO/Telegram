@@ -520,11 +520,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putBoolean("pushService", !enabled);
                 editor.commit();
-                if (!enabled) {
-                    ApplicationLoader.startPushService();
-                } else {
-                    ApplicationLoader.stopPushService();
-                }
+                ApplicationLoader.stopPushService();
+                ApplicationLoader.startPushService();
             } else if (position == messageLedRow || position == groupLedRow) {
                 if (getParentActivity() == null) {
                     return;

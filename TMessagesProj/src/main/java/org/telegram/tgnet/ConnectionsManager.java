@@ -148,7 +148,7 @@ public class ConnectionsManager {
         }
         String configPath = config.toString();
         SharedPreferences preferences = MessagesController.getGlobalNotificationsSettings();
-        boolean enablePushConnection = preferences.getBoolean("pushConnection", true);
+        boolean enablePushConnection = true;
         try {
             systemLangCode = LocaleController.getSystemLocaleStringIso639().toLowerCase();
             langCode = LocaleController.getLocaleStringIso639().toLowerCase();
