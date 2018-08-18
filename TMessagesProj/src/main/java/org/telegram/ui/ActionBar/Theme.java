@@ -1224,11 +1224,11 @@ public class Theme {
         defaultColors.put(key_avatar_subtitleInProfilePink, 0xffd7eafa);
         defaultColors.put(key_avatar_nameInMessageRed, 0xffca5650);
         defaultColors.put(key_avatar_nameInMessageOrange, 0xffd87b29);
-        defaultColors.put(key_avatar_nameInMessageViolet, 0xff4e92cc);
+        defaultColors.put(key_avatar_nameInMessageViolet, 0xff877ee2);
         defaultColors.put(key_avatar_nameInMessageGreen, 0xff50b232);
         defaultColors.put(key_avatar_nameInMessageCyan, 0xff42b1a8);
         defaultColors.put(key_avatar_nameInMessageBlue, 0xff4e92cc);
-        defaultColors.put(key_avatar_nameInMessagePink, 0xff4e92cc);
+        defaultColors.put(key_avatar_nameInMessagePink, 0xffe56e92);
         defaultColors.put(key_avatar_actionBarSelectorRed, 0xffbc4b41);
         defaultColors.put(key_avatar_actionBarSelectorOrange, 0xffe67429);
         defaultColors.put(key_avatar_actionBarSelectorViolet, 0xff735fbe);
