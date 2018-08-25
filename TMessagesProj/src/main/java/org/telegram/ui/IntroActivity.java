@@ -33,6 +33,8 @@ import android.os.Parcelable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.TypedValue;
+import android.view.accessibility.AccessibilityEvent;
+import  android.view.accessibility.AccessibilityNodeInfo;
 import android.view.Gravity;
 import android.view.TextureView;
 import android.view.View;
@@ -43,6 +45,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Button;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
@@ -121,6 +124,30 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
                 rect.set(x, 0, x + AndroidUtilities.dp(5), AndroidUtilities.dp(5));
             }
             canvas.drawRoundRect(rect, AndroidUtilities.dp(2.5f), AndroidUtilities.dp(2.5f), paint);
+        }
+    }
+
+    public class TextViewButton extends TextView {
+
+        public TextViewButton(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void onInitializeAccessibilityEvent(AccessibilityEvent event) {
+            super.onInitializeAccessibilityEvent(event);
+            event.setClassName(getAccessibilityClassName());
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            info.setClassName(getAccessibilityClassName());
+        }
+
+        @Override
+        public CharSequence getAccessibilityClassName() {
+            return Button.class.getName();
         }
     }
 
@@ -259,7 +286,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             }
         });
 
-        TextView startMessagingButton = new TextView(this);
+        TextViewButton startMessagingButton = new TextViewButton(this);
         startMessagingButton.setText(LocaleController.getString("StartMessaging", R.string.StartMessaging).toUpperCase());
         startMessagingButton.setGravity(Gravity.CENTER);
         startMessagingButton.setTextColor(0xffffffff);
@@ -300,7 +327,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         bottomPages = new BottomPagesView(this);
         frameLayout.addView(bottomPages, LayoutHelper.createFrame(66, 5, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 350, 0, 0));
 
-        textView = new TextView(this);
+        textView = new TextViewButton(this);
         textView.setTextColor(0xff1393d2);
         textView.setGravity(Gravity.CENTER);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
