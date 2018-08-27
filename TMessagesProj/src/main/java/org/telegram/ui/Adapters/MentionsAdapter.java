@@ -10,7 +10,6 @@ package org.telegram.ui.Adapters;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -51,7 +50,6 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 
 public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
@@ -262,30 +260,21 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                     builder.setTitle(LocaleController.getString("ShareYouLocationTitle", R.string.ShareYouLocationTitle));
                     builder.setMessage(LocaleController.getString("ShareYouLocationInline", R.string.ShareYouLocationInline));
                     final boolean buttonClicked[] = new boolean[1];
-                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            buttonClicked[0] = true;
-                            if (foundContextBotFinal != null) {
-                                SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                                preferences.edit().putBoolean("inlinegeo_" + foundContextBotFinal.id, true).commit();
-                                checkLocationPermissionsOrStart();
-                            }
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
+                        buttonClicked[0] = true;
+                        if (foundContextBotFinal != null) {
+                            SharedPreferences preferences1 = MessagesController.getNotificationsSettings(currentAccount);
+                            preferences1.edit().putBoolean("inlinegeo_" + foundContextBotFinal.id, true).commit();
+                            checkLocationPermissionsOrStart();
                         }
                     });
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            buttonClicked[0] = true;
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), (dialog, which) -> {
+                        buttonClicked[0] = true;
+                        onLocationUnavailable();
+                    });
+                    parentFragment.showDialog(builder.create(), dialog -> {
+                        if (!buttonClicked[0]) {
                             onLocationUnavailable();
-                        }
-                    });
-                    parentFragment.showDialog(builder.create(), new DialogInterface.OnDismissListener() {
-                        @Override
-                        public void onDismiss(DialogInterface dialog) {
-                            if (!buttonClicked[0]) {
-                                onLocationUnavailable();
-                            }
                         }
                     });
                 } else {
@@ -387,29 +376,21 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                     } else {
                         TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
                         req.username = searchingContextUsername;
-                        contextUsernameReqid = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                            @Override
-                            public void run(final TLObject response, final TLRPC.TL_error error) {
-                                AndroidUtilities.runOnUIThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (searchingContextUsername == null || !searchingContextUsername.equals(username)) {
-                                            return;
-                                        }
-                                        TLRPC.User user = null;
-                                        if (error == null) {
-                                            TLRPC.TL_contacts_resolvedPeer res = (TLRPC.TL_contacts_resolvedPeer) response;
-                                            if (!res.users.isEmpty()) {
-                                                user = res.users.get(0);
-                                                messagesController.putUser(user, false);
-                                                messagesStorage.putUsersAndChats(res.users, null, true, true);
-                                            }
-                                        }
-                                        processFoundUser(user);
-                                    }
-                                });
+                        contextUsernameReqid = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                            if (searchingContextUsername == null || !searchingContextUsername.equals(username)) {
+                                return;
                             }
-                        });
+                            TLRPC.User user = null;
+                            if (error == null) {
+                                TLRPC.TL_contacts_resolvedPeer res = (TLRPC.TL_contacts_resolvedPeer) response;
+                                if (!res.users.isEmpty()) {
+                                    user = res.users.get(0);
+                                    messagesController.putUser(user, false);
+                                    messagesStorage.putUsersAndChats(res.users, null, true, true);
+                                }
+                            }
+                            processFoundUser(user);
+                        }));
                     }
                 }
             }
@@ -479,69 +460,61 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
         }
         final String key = dialog_id + "_" + query + "_" + offset + "_" + dialog_id + "_" + user.id + "_" + (user.bot_inline_geo && lastKnownLocation != null && lastKnownLocation.getLatitude() != -1000 ? lastKnownLocation.getLatitude() + lastKnownLocation.getLongitude() : "");
         final MessagesStorage messagesStorage = MessagesStorage.getInstance(currentAccount);
-        RequestDelegate requestDelegate = new RequestDelegate() {
-            @Override
-            public void run(final TLObject response, final TLRPC.TL_error error) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (searchingContextQuery == null || !query.equals(searchingContextQuery)) {
-                            return;
-                        }
-                        contextQueryReqid = 0;
-                        if (cache && response == null) {
-                            searchForContextBotResults(false, user, query, offset);
-                        } else if (delegate != null) {
-                            delegate.onContextSearch(false);
-                        }
-                        if (response != null) {
-                            TLRPC.TL_messages_botResults res = (TLRPC.TL_messages_botResults) response;
-                            if (!cache && res.cache_time != 0) {
-                                messagesStorage.saveBotCache(key, res);
-                            }
-                            nextQueryOffset = res.next_offset;
-                            if (searchResultBotContextSwitch == null) {
-                                searchResultBotContextSwitch = res.switch_pm;
-                            }
-                            for (int a = 0; a < res.results.size(); a++) {
-                                TLRPC.BotInlineResult result = res.results.get(a);
-                                if (!(result.document instanceof TLRPC.TL_document) && !(result.photo instanceof TLRPC.TL_photo) && result.content == null && result.send_message instanceof TLRPC.TL_botInlineMessageMediaAuto) {
-                                    res.results.remove(a);
-                                    a--;
-                                }
-                                result.query_id = res.query_id;
-                            }
-                            boolean added = false;
-                            if (searchResultBotContext == null || offset.length() == 0) {
-                                searchResultBotContext = res.results;
-                                contextMedia = res.gallery;
-                            } else {
-                                added = true;
-                                searchResultBotContext.addAll(res.results);
-                                if (res.results.isEmpty()) {
-                                    nextQueryOffset = "";
-                                }
-                            }
-                            searchResultHashtags = null;
-                            searchResultUsernames = null;
-                            searchResultUsernamesMap = null;
-                            searchResultCommands = null;
-                            searchResultSuggestions = null;
-                            searchResultCommandsHelp = null;
-                            searchResultCommandsUsers = null;
-                            if (added) {
-                                boolean hasTop = searchResultBotContextSwitch != null;
-                                notifyItemChanged(searchResultBotContext.size() - res.results.size() + (hasTop ? 1 : 0) - 1);
-                                notifyItemRangeInserted(searchResultBotContext.size() - res.results.size() + (hasTop ? 1 : 0), res.results.size());
-                            } else {
-                                notifyDataSetChanged();
-                            }
-                            delegate.needChangePanelVisibility(!searchResultBotContext.isEmpty() || searchResultBotContextSwitch != null);
-                        }
-                    }
-                });
+        RequestDelegate requestDelegate = (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (searchingContextQuery == null || !query.equals(searchingContextQuery)) {
+                return;
             }
-        };
+            contextQueryReqid = 0;
+            if (cache && response == null) {
+                searchForContextBotResults(false, user, query, offset);
+            } else if (delegate != null) {
+                delegate.onContextSearch(false);
+            }
+            if (response instanceof TLRPC.TL_messages_botResults) {
+                TLRPC.TL_messages_botResults res = (TLRPC.TL_messages_botResults) response;
+                if (!cache && res.cache_time != 0) {
+                    messagesStorage.saveBotCache(key, res);
+                }
+                nextQueryOffset = res.next_offset;
+                if (searchResultBotContextSwitch == null) {
+                    searchResultBotContextSwitch = res.switch_pm;
+                }
+                for (int a = 0; a < res.results.size(); a++) {
+                    TLRPC.BotInlineResult result = res.results.get(a);
+                    if (!(result.document instanceof TLRPC.TL_document) && !(result.photo instanceof TLRPC.TL_photo) && result.content == null && result.send_message instanceof TLRPC.TL_botInlineMessageMediaAuto) {
+                        res.results.remove(a);
+                        a--;
+                    }
+                    result.query_id = res.query_id;
+                }
+                boolean added = false;
+                if (searchResultBotContext == null || offset.length() == 0) {
+                    searchResultBotContext = res.results;
+                    contextMedia = res.gallery;
+                } else {
+                    added = true;
+                    searchResultBotContext.addAll(res.results);
+                    if (res.results.isEmpty()) {
+                        nextQueryOffset = "";
+                    }
+                }
+                searchResultHashtags = null;
+                searchResultUsernames = null;
+                searchResultUsernamesMap = null;
+                searchResultCommands = null;
+                searchResultSuggestions = null;
+                searchResultCommandsHelp = null;
+                searchResultCommandsUsers = null;
+                if (added) {
+                    boolean hasTop = searchResultBotContextSwitch != null;
+                    notifyItemChanged(searchResultBotContext.size() - res.results.size() + (hasTop ? 1 : 0) - 1);
+                    notifyItemRangeInserted(searchResultBotContext.size() - res.results.size() + (hasTop ? 1 : 0), res.results.size());
+                } else {
+                    notifyDataSetChanged();
+                }
+                delegate.needChangePanelVisibility(!searchResultBotContext.isEmpty() || searchResultBotContextSwitch != null);
+            }
+        });
 
         if (cache) {
             messagesStorage.getBotCache(key, requestDelegate);
@@ -778,63 +751,52 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                         req.filter = new TLRPC.TL_channelParticipantsSearch();
                         req.filter.q = usernameString;
                         final int currentReqId = ++channelLastReqId;
-                        channelReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                            @Override
-                            public void run(final TLObject response, final TLRPC.TL_error error) {
-                                AndroidUtilities.runOnUIThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (channelReqId != 0 && currentReqId == channelLastReqId && searchResultUsernamesMap != null && searchResultUsernames != null) {
-                                            if (error == null) {
-                                                TLRPC.TL_channels_channelParticipants res = (TLRPC.TL_channels_channelParticipants) response;
-                                                messagesController.putUsers(res.users, false);
-                                                if (!res.participants.isEmpty()) {
-                                                    int currentUserId = UserConfig.getInstance(currentAccount).getClientUserId();
-                                                    for (int a = 0; a < res.participants.size(); a++) {
-                                                        TLRPC.ChannelParticipant participant = res.participants.get(a);
-                                                        if (searchResultUsernamesMap.indexOfKey(participant.user_id) >= 0 || !isSearchingMentions && participant.user_id == currentUserId) {
-                                                            continue;
-                                                        }
-                                                        TLRPC.User user = messagesController.getUser(participant.user_id);
-                                                        if (user == null) {
-                                                            return;
-                                                        }
-                                                        searchResultUsernames.add(user);
-                                                    }
-                                                    notifyDataSetChanged();
-                                                }
+                        channelReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                            if (channelReqId != 0 && currentReqId == channelLastReqId && searchResultUsernamesMap != null && searchResultUsernames != null) {
+                                if (error == null) {
+                                    TLRPC.TL_channels_channelParticipants res = (TLRPC.TL_channels_channelParticipants) response;
+                                    messagesController.putUsers(res.users, false);
+                                    if (!res.participants.isEmpty()) {
+                                        int currentUserId = UserConfig.getInstance(currentAccount).getClientUserId();
+                                        for (int a = 0; a < res.participants.size(); a++) {
+                                            TLRPC.ChannelParticipant participant = res.participants.get(a);
+                                            if (searchResultUsernamesMap.indexOfKey(participant.user_id) >= 0 || !isSearchingMentions && participant.user_id == currentUserId) {
+                                                continue;
                                             }
+                                            TLRPC.User user = messagesController.getUser(participant.user_id);
+                                            if (user == null) {
+                                                return;
+                                            }
+                                            searchResultUsernames.add(user);
                                         }
-                                        channelReqId = 0;
+                                        notifyDataSetChanged();
                                     }
-                                });
+                                }
                             }
-                        });
+                            channelReqId = 0;
+                        }));
                     }
                 }, 200);
             }
 
-            Collections.sort(searchResultUsernames, new Comparator<TLRPC.User>() {
-                @Override
-                public int compare(TLRPC.User lhs, TLRPC.User rhs) {
-                    if (newResultsHashMap.indexOfKey(lhs.id) >= 0 && newResultsHashMap.indexOfKey(rhs.id) >= 0) {
-                        return 0;
-                    } else if (newResultsHashMap.indexOfKey(lhs.id) >= 0) {
-                        return -1;
-                    } else if (newResultsHashMap.indexOfKey(rhs.id) >= 0) {
-                        return 1;
-                    }
-                    int lhsNum = users.indexOf(lhs.id);
-                    int rhsNum = users.indexOf(rhs.id);
-                    if (lhsNum != -1 && rhsNum != -1) {
-                        return lhsNum < rhsNum ? -1 : (lhsNum == rhsNum ? 0 : 1);
-                    } else if (lhsNum != -1 && rhsNum == -1) {
-                        return -1;
-                    } else if (lhsNum == -1 && rhsNum != -1) {
-                        return 1;
-                    }
+            Collections.sort(searchResultUsernames, (lhs, rhs) -> {
+                if (newResultsHashMap.indexOfKey(lhs.id) >= 0 && newResultsHashMap.indexOfKey(rhs.id) >= 0) {
                     return 0;
+                } else if (newResultsHashMap.indexOfKey(lhs.id) >= 0) {
+                    return -1;
+                } else if (newResultsHashMap.indexOfKey(rhs.id) >= 0) {
+                    return 1;
                 }
+                int lhsNum = users.indexOf(lhs.id);
+                int rhsNum = users.indexOf(rhs.id);
+                if (lhsNum != -1 && rhsNum != -1) {
+                    return lhsNum < rhsNum ? -1 : (lhsNum == rhsNum ? 0 : 1);
+                } else if (lhsNum != -1 && rhsNum == -1) {
+                    return -1;
+                } else if (lhsNum == -1 && rhsNum != -1) {
+                    return 1;
+                }
+                return 0;
             });
             notifyDataSetChanged();
             delegate.needChangePanelVisibility(!newResult.isEmpty());
@@ -893,19 +855,16 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                         searchResultSuggestions.add(suggestion);
                     }
                     Emoji.loadRecentEmoji();
-                    Collections.sort(searchResultSuggestions, new Comparator<EmojiSuggestion>() {
-                        @Override
-                        public int compare(EmojiSuggestion o1, EmojiSuggestion o2) {
-                            Integer n1 = Emoji.emojiUseHistory.get(o1.emoji);
-                            if (n1 == null) {
-                                n1 = 0;
-                            }
-                            Integer n2 = Emoji.emojiUseHistory.get(o2.emoji);
-                            if (n2 == null) {
-                                n2 = 0;
-                            }
-                            return n2.compareTo(n1);
+                    Collections.sort(searchResultSuggestions, (o1, o2) -> {
+                        Integer n1 = Emoji.emojiUseHistory.get(o1.emoji);
+                        if (n1 == null) {
+                            n1 = 0;
                         }
+                        Integer n2 = Emoji.emojiUseHistory.get(o2.emoji);
+                        if (n2 == null) {
+                            n2 = 0;
+                        }
+                        return n2.compareTo(n1);
                     });
                 }
                 searchResultHashtags = null;
@@ -1057,12 +1016,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                 break;
             case 1:
                 view = new ContextLinkCell(mContext);
-                ((ContextLinkCell) view).setDelegate(new ContextLinkCell.ContextLinkCellDelegate() {
-                    @Override
-                    public void didPressedImage(ContextLinkCell cell) {
-                        delegate.onContextClick(cell.getResult());
-                    }
-                });
+                ((ContextLinkCell) view).setDelegate(cell -> delegate.onContextClick(cell.getResult()));
                 break;
             case 2:
                 view = new BotSwitchCell(mContext);

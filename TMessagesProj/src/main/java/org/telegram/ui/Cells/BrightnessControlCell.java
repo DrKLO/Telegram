@@ -45,12 +45,7 @@ public class BrightnessControlCell extends FrameLayout {
             }
         };
         seekBarView.setReportChanges(true);
-        seekBarView.setDelegate(new SeekBarView.SeekBarViewDelegate() {
-            @Override
-            public void onSeekBarDrag(float progress) {
-                didChangedValue(progress);
-            }
-        });
+        seekBarView.setDelegate(this::didChangedValue);
         addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.TOP | Gravity.LEFT, 58, 9, 58, 0));
 
         rightImageView = new ImageView(context);

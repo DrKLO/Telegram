@@ -18,7 +18,7 @@ public class SQLitePreparedStatement {
 
     private boolean isFinalized = false;
     private long sqliteStatementHandle;
-    private boolean finalizeAfterQuery = false;
+    private boolean finalizeAfterQuery;
 
     //private static HashMap<SQLitePreparedStatement, String> hashMap;
 
@@ -53,7 +53,8 @@ public class SQLitePreparedStatement {
         reset(sqliteStatementHandle);
 
         int i = 1;
-        for (Object obj : args) {
+        for (int a = 0; a < args.length; a++) {
+            Object obj = args[a];
             if (obj == null) {
                 bindNull(sqliteStatementHandle, i);
             } else if (obj instanceof Integer) {

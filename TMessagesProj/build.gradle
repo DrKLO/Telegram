@@ -11,26 +11,29 @@ configurations {
 }
 
 dependencies {
-    compile 'com.google.firebase:firebase-messaging:17.1.0'
-    compile 'com.google.firebase:firebase-config:16.0.0'
-    compile 'com.google.android.gms:play-services-maps:15.0.1'
-    compile 'com.google.android.gms:play-services-vision:15.0.2'
-    compile 'com.google.android.gms:play-services-wallet:15.0.1'
-    compile 'com.google.android.gms:play-services-wearable:15.0.1'
-    implementation 'com.android.support:support-core-ui:27.1.1'
-    implementation 'com.android.support:support-compat:27.1.1'
-    implementation 'com.android.support:support-core-utils:27.1.1'
-    implementation 'com.android.support:support-v13:27.1.1'
-    implementation 'com.android.support:palette-v7:27.1.1'
-    implementation 'com.android.support:exifinterface:27.1.1'
-    compile 'net.hockeyapp.android:HockeySDK:5.1.0'
-    compile 'com.googlecode.mp4parser:isoparser:1.0.6'
-    compile 'com.stripe:stripe-android:2.0.2'
+    compileOnly 'org.checkerframework:checker-qual:2.5.0'
+    compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
+    implementation 'com.google.firebase:firebase-core:16.0.3'
+    implementation 'com.google.firebase:firebase-messaging:17.3.0'
+    implementation 'com.google.firebase:firebase-config:16.0.0'
+    implementation 'com.google.android.gms:play-services-maps:15.0.1'
+    implementation 'com.google.android.gms:play-services-vision:15.0.2'
+    implementation 'com.google.android.gms:play-services-wallet:16.0.0'
+    implementation 'com.google.android.gms:play-services-wearable:15.0.1'
+    implementation 'com.android.support:support-core-ui:28.0.0-rc01'
+    implementation 'com.android.support:support-compat:28.0.0-rc01'
+    implementation 'com.android.support:support-core-utils:28.0.0-rc01'
+    implementation 'com.android.support:support-v13:28.0.0-rc01'
+    implementation 'com.android.support:palette-v7:28.0.0-rc01'
+    implementation 'com.android.support:exifinterface:28.0.0-rc01'
+    implementation 'net.hockeyapp.android:HockeySDK:5.1.0'
+    implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
+    implementation 'com.stripe:stripe-android:2.0.2'
 }
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion '27.0.3'
+    compileSdkVersion 28
+    buildToolsVersion '28.0.2'
 
     defaultConfig.applicationId = "org.telegram.messenger"
 
@@ -52,8 +55,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     signingConfigs {
@@ -98,7 +101,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 1340
+    defaultConfig.versionCode = 1358
 
     sourceSets.debug {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
@@ -235,7 +238,7 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 27
-        versionName "4.9.0"
+        versionName "4.9.1"
 
 		vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 

@@ -54,6 +54,8 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import com.google.android.exoplayer2.ExoPlayer;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
@@ -69,7 +71,6 @@ import org.telegram.messenger.camera.CameraController;
 import org.telegram.messenger.camera.CameraInfo;
 import org.telegram.messenger.camera.CameraSession;
 import org.telegram.messenger.camera.Size;
-import org.telegram.messenger.exoplayer2.ExoPlayer;
 import org.telegram.messenger.video.MP4Builder;
 import org.telegram.messenger.video.Mp4Movie;
 import org.telegram.tgnet.ConnectionsManager;
@@ -1940,6 +1941,12 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 format.setInteger(MediaFormat.KEY_BIT_RATE, videoBitrate);
                 format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
                 format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
+                if (Build.VERSION.SDK_INT >= 21) {
+                    format.setInteger(MediaFormat.KEY_PROFILE, MediaCodecInfo.CodecProfileLevel.AVCProfileHigh);
+                    if (Build.VERSION.SDK_INT >= 23) {
+                        format.setInteger(MediaFormat.KEY_LEVEL, MediaCodecInfo.CodecProfileLevel.AVCLevel5);
+                    }
+                }
 
                 videoEncoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
                 surface = videoEncoder.createInputSurface();

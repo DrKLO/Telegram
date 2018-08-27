@@ -9,7 +9,6 @@
 package org.telegram.ui;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -42,7 +41,6 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -67,7 +65,6 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -187,7 +184,7 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                 blockedEmptyRow = rowCount++;
             }
         } else if (type == 1) {
-            if (currentChat.creator && currentChat.megagroup) {
+            if ((currentChat.creator || currentChat.admin_rights != null && currentChat.admin_rights.change_info) && currentChat.megagroup) {
                 changeAddHeaderRow = rowCount++;
                 changeAddRadio1Row = rowCount++;
                 changeAddRadio2Row = rowCount++;
@@ -339,183 +336,163 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                if (position == addNewRow) {
-                    if (type == 0) {
-                        Bundle bundle = new Bundle();
-                        bundle.putInt("chat_id", chatId);
-                        bundle.putInt("type", 2);
-                        bundle.putInt("selectType", 2);
-                        presentFragment(new ChannelUsersActivity(bundle));
-                    } else if (type == 1) {
-                        Bundle bundle = new Bundle();
-                        bundle.putInt("chat_id", chatId);
-                        bundle.putInt("type", 2);
-                        bundle.putInt("selectType", 1);
-                        presentFragment(new ChannelUsersActivity(bundle));
-                    } else if (type == 2) {
-                        Bundle args = new Bundle();
-                        args.putBoolean("onlyUsers", true);
-                        args.putBoolean("destroyAfterSelect", true);
-                        args.putBoolean("returnAsResult", true);
-                        args.putBoolean("needForwardCount", false);
-                        args.putString("selectAlertString", LocaleController.getString("ChannelAddTo", R.string.ChannelAddTo));
-                        ContactsActivity fragment = new ContactsActivity(args);
-                        fragment.setDelegate(new ContactsActivity.ContactsActivityDelegate() {
-                            @Override
-                            public void didSelectContact(TLRPC.User user, String param, ContactsActivity activity) {
-                                MessagesController.getInstance(currentAccount).addUserToChat(chatId, user, null, param != null ? Utilities.parseInt(param) : 0, null, ChannelUsersActivity.this);
-                            }
-                        });
-                        presentFragment(fragment);
+        listView.setOnItemClickListener((view, position) -> {
+            if (position == addNewRow) {
+                if (type == 0) {
+                    Bundle bundle = new Bundle();
+                    bundle.putInt("chat_id", chatId);
+                    bundle.putInt("type", 2);
+                    bundle.putInt("selectType", 2);
+                    presentFragment(new ChannelUsersActivity(bundle));
+                } else if (type == 1) {
+                    Bundle bundle = new Bundle();
+                    bundle.putInt("chat_id", chatId);
+                    bundle.putInt("type", 2);
+                    bundle.putInt("selectType", 1);
+                    presentFragment(new ChannelUsersActivity(bundle));
+                } else if (type == 2) {
+                    Bundle args = new Bundle();
+                    args.putBoolean("onlyUsers", true);
+                    args.putBoolean("destroyAfterSelect", true);
+                    args.putBoolean("returnAsResult", true);
+                    args.putBoolean("needForwardCount", false);
+                    args.putString("selectAlertString", LocaleController.getString("ChannelAddTo", R.string.ChannelAddTo));
+                    ContactsActivity fragment = new ContactsActivity(args);
+                    fragment.setDelegate((user, param, activity) -> MessagesController.getInstance(currentAccount).addUserToChat(chatId, user, null, param != null ? Utilities.parseInt(param) : 0, null, ChannelUsersActivity.this));
+                    presentFragment(fragment);
+                }
+            } else if (position == addNew2Row) {
+                presentFragment(new GroupInviteActivity(chatId));
+            } else if (position == changeAddRadio1Row || position == changeAddRadio2Row) {
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
+                if (chat == null) {
+                    return;
+                }
+                boolean changed = false;
+                if (position == 1 && !chat.democracy) {
+                    chat.democracy = true;
+                    changed = true;
+                } else if (position == 2 && chat.democracy) {
+                    chat.democracy = false;
+                    changed = true;
+                }
+                if (changed) {
+                    MessagesController.getInstance(currentAccount).toogleChannelInvites(chatId, chat.democracy);
+                    int count = listView.getChildCount();
+                    for (int a = 0; a < count; a++) {
+                        View child = listView.getChildAt(a);
+                        if (child instanceof RadioCell) {
+                            int num = (Integer) child.getTag();
+                            ((RadioCell) child).setChecked(num == 0 && chat.democracy || num == 1 && !chat.democracy, true);
+                        }
                     }
-                } else if (position == addNew2Row) {
-                    presentFragment(new GroupInviteActivity(chatId));
-                } else if (position == changeAddRadio1Row || position == changeAddRadio2Row) {
-                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
-                    if (chat == null) {
-                        return;
-                    }
-                    boolean changed = false;
-                    if (position == 1 && !chat.democracy) {
-                        chat.democracy = true;
-                        changed = true;
-                    } else if (position == 2 && chat.democracy) {
-                        chat.democracy = false;
-                        changed = true;
-                    }
-                    if (changed) {
-                        MessagesController.getInstance(currentAccount).toogleChannelInvites(chatId, chat.democracy);
-                        int count = listView.getChildCount();
-                        for (int a = 0; a < count; a++) {
-                            View child = listView.getChildAt(a);
-                            if (child instanceof RadioCell) {
-                                int num = (Integer) child.getTag();
-                                ((RadioCell) child).setChecked(num == 0 && chat.democracy || num == 1 && !chat.democracy, true);
-                            }
+                }
+            } else {
+                TLRPC.TL_channelBannedRights banned_rights = null;
+                TLRPC.TL_channelAdminRights admin_rights = null;
+                final TLRPC.ChannelParticipant participant;
+                int user_id = 0;
+                int promoted_by = 0;
+                boolean canEditAdmin = false;
+                if (listView.getAdapter() == listViewAdapter) {
+                    participant = listViewAdapter.getItem(position);
+                    if (participant != null) {
+                        user_id = participant.user_id;
+                        banned_rights = participant.banned_rights;
+                        admin_rights = participant.admin_rights;
+                        canEditAdmin = !(participant instanceof TLRPC.TL_channelParticipantAdmin || participant instanceof TLRPC.TL_channelParticipantCreator) || participant.can_edit;
+                        if (participant instanceof TLRPC.TL_channelParticipantCreator) {
+                            admin_rights = new TLRPC.TL_channelAdminRights();
+                            admin_rights.change_info = admin_rights.post_messages = admin_rights.edit_messages =
+                                    admin_rights.delete_messages = admin_rights.ban_users = admin_rights.invite_users =
+                                            admin_rights.invite_link = admin_rights.pin_messages = admin_rights.add_admins = true;
                         }
                     }
                 } else {
-                    TLRPC.TL_channelBannedRights banned_rights = null;
-                    TLRPC.TL_channelAdminRights admin_rights = null;
-                    final TLRPC.ChannelParticipant participant;
-                    int user_id = 0;
-                    int promoted_by = 0;
-                    boolean canEditAdmin = false;
-                    if (listView.getAdapter() == listViewAdapter) {
-                        participant = listViewAdapter.getItem(position);
-                        if (participant != null) {
-                            user_id = participant.user_id;
-                            banned_rights = participant.banned_rights;
-                            admin_rights = participant.admin_rights;
-                            canEditAdmin = !(participant instanceof TLRPC.TL_channelParticipantAdmin || participant instanceof TLRPC.TL_channelParticipantCreator) || participant.can_edit;
-                            if (participant instanceof TLRPC.TL_channelParticipantCreator) {
-                                admin_rights = new TLRPC.TL_channelAdminRights();
-                                admin_rights.change_info = admin_rights.post_messages = admin_rights.edit_messages =
-                                        admin_rights.delete_messages = admin_rights.ban_users = admin_rights.invite_users =
-                                                admin_rights.invite_link = admin_rights.pin_messages = admin_rights.add_admins = true;
-                            }
+                    TLObject object = searchListViewAdapter.getItem(position);
+                    if (object instanceof TLRPC.User) {
+                        TLRPC.User user = (TLRPC.User) object;
+                        MessagesController.getInstance(currentAccount).putUser(user, false);
+                        participant = participantsMap.get(user_id = user.id);
+                    } else if (object instanceof TLRPC.ChannelParticipant) {
+                        participant = (TLRPC.ChannelParticipant) object;
+                    } else {
+                        participant = null;
+                    }
+                    if (participant != null) {
+                        user_id = participant.user_id;
+                        canEditAdmin = !(participant instanceof TLRPC.TL_channelParticipantAdmin || participant instanceof TLRPC.TL_channelParticipantCreator) || participant.can_edit;
+                        banned_rights = participant.banned_rights;
+                        admin_rights = participant.admin_rights;
+                    } else {
+                        canEditAdmin = true;
+                    }
+                }
+                if (user_id != 0) {
+                    if (selectType != 0) {
+                        if (currentChat.megagroup || selectType == 1) {
+                            ChannelRightsEditActivity fragment = new ChannelRightsEditActivity(user_id, chatId, admin_rights, banned_rights, selectType == 1 ? 0 : 1, canEditAdmin);
+                            fragment.setDelegate((rights, rightsAdmin, rightsBanned) -> {
+                                if (participant != null) {
+                                    participant.admin_rights = rightsAdmin;
+                                    participant.banned_rights = rightsBanned;
+                                    TLRPC.ChannelParticipant p = participantsMap.get(participant.user_id);
+                                    if (p != null) {
+                                        p.admin_rights = rightsAdmin;
+                                        p.banned_rights = rightsBanned;
+                                    }
+                                }
+                                removeSelfFromStack();
+                            });
+                            presentFragment(fragment);
+                        } else {
+                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(user_id);
+                            MessagesController.getInstance(currentAccount).deleteUserFromChat(chatId, user, null);
+                            finishFragment();
                         }
                     } else {
-                        TLObject object = searchListViewAdapter.getItem(position);
-                        if (object instanceof TLRPC.User) {
-                            TLRPC.User user = (TLRPC.User) object;
-                            MessagesController.getInstance(currentAccount).putUser(user, false);
-                            participant = participantsMap.get(user_id = user.id);
-                        } else if (object instanceof TLRPC.ChannelParticipant) {
-                            participant = (TLRPC.ChannelParticipant) object;
-                        } else {
-                            participant = null;
+                        boolean canEdit = false;
+                        if (type == 1) {
+                            canEdit = user_id != UserConfig.getInstance(currentAccount).getClientUserId() && (currentChat.creator || canEditAdmin);
+                        } else if (type == 0) {
+                            canEdit = ChatObject.canBlockUsers(currentChat);
                         }
-                        if (participant != null) {
-                            user_id = participant.user_id;
-                            canEditAdmin = !(participant instanceof TLRPC.TL_channelParticipantAdmin || participant instanceof TLRPC.TL_channelParticipantCreator) || participant.can_edit;
-                            banned_rights = participant.banned_rights;
-                            admin_rights = participant.admin_rights;
+                        if (type != 1 && !currentChat.megagroup || type == 2 && selectType == 0) {
+                            Bundle args = new Bundle();
+                            args.putInt("user_id", user_id);
+                            presentFragment(new ProfileActivity(args));
                         } else {
-                            canEditAdmin = true;
-                        }
-                    }
-                    if (user_id != 0) {
-                        if (selectType != 0) {
-                            if (currentChat.megagroup || selectType == 1) {
-                                ChannelRightsEditActivity fragment = new ChannelRightsEditActivity(user_id, chatId, admin_rights, banned_rights, selectType == 1 ? 0 : 1, canEditAdmin);
-                                fragment.setDelegate(new ChannelRightsEditActivity.ChannelRightsEditActivityDelegate() {
-                                    @Override
-                                    public void didSetRights(int rights, TLRPC.TL_channelAdminRights rightsAdmin, TLRPC.TL_channelBannedRights rightsBanned) {
-                                        if (participant != null) {
-                                            participant.admin_rights = rightsAdmin;
-                                            participant.banned_rights = rightsBanned;
-                                            TLRPC.ChannelParticipant p = participantsMap.get(participant.user_id);
-                                            if (p != null) {
-                                                p.admin_rights = rightsAdmin;
-                                                p.banned_rights = rightsBanned;
-                                            }
-                                        }
-                                        removeSelfFromStack();
+                            if (banned_rights == null) {
+                                banned_rights = new TLRPC.TL_channelBannedRights();
+                                banned_rights.view_messages = true;
+                                banned_rights.send_stickers = true;
+                                banned_rights.send_media = true;
+                                banned_rights.embed_links = true;
+                                banned_rights.send_messages = true;
+                                banned_rights.send_games = true;
+                                banned_rights.send_inline = true;
+                                banned_rights.send_gifs = true;
+                            }
+                            ChannelRightsEditActivity fragment = new ChannelRightsEditActivity(user_id, chatId, admin_rights, banned_rights, type == 1 ? 0 : 1, canEdit);
+                            fragment.setDelegate((rights, rightsAdmin, rightsBanned) -> {
+                                if (participant != null) {
+                                    participant.admin_rights = rightsAdmin;
+                                    participant.banned_rights = rightsBanned;
+                                    TLRPC.ChannelParticipant p = participantsMap.get(participant.user_id);
+                                    if (p != null) {
+                                        p.admin_rights = rightsAdmin;
+                                        p.banned_rights = rightsBanned;
                                     }
-                                });
-                                presentFragment(fragment);
-                            } else {
-                                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(user_id);
-                                MessagesController.getInstance(currentAccount).deleteUserFromChat(chatId, user, null);
-                                finishFragment();
-                            }
-                        } else {
-                            boolean canEdit = false;
-                            if (type == 1) {
-                                canEdit = user_id != UserConfig.getInstance(currentAccount).getClientUserId() && (currentChat.creator || canEditAdmin);
-                            } else if (type == 0) {
-                                canEdit = ChatObject.canBlockUsers(currentChat);
-                            }
-                            if (type != 1 && !currentChat.megagroup || type == 2 && selectType == 0) {
-                                Bundle args = new Bundle();
-                                args.putInt("user_id", user_id);
-                                presentFragment(new ProfileActivity(args));
-                            } else {
-                                if (banned_rights == null) {
-                                    banned_rights = new TLRPC.TL_channelBannedRights();
-                                    banned_rights.view_messages = true;
-                                    banned_rights.send_stickers = true;
-                                    banned_rights.send_media = true;
-                                    banned_rights.embed_links = true;
-                                    banned_rights.send_messages = true;
-                                    banned_rights.send_games = true;
-                                    banned_rights.send_inline = true;
-                                    banned_rights.send_gifs = true;
                                 }
-                                ChannelRightsEditActivity fragment = new ChannelRightsEditActivity(user_id, chatId, admin_rights, banned_rights, type == 1 ? 0 : 1, canEdit);
-                                fragment.setDelegate(new ChannelRightsEditActivity.ChannelRightsEditActivityDelegate() {
-                                    @Override
-                                    public void didSetRights(int rights, TLRPC.TL_channelAdminRights rightsAdmin, TLRPC.TL_channelBannedRights rightsBanned) {
-                                        if (participant != null) {
-                                            participant.admin_rights = rightsAdmin;
-                                            participant.banned_rights = rightsBanned;
-                                            TLRPC.ChannelParticipant p = participantsMap.get(participant.user_id);
-                                            if (p != null) {
-                                                p.admin_rights = rightsAdmin;
-                                                p.banned_rights = rightsBanned;
-                                            }
-                                        }
-                                    }
-                                });
-                                presentFragment(fragment);
-                            }
+                            });
+                            presentFragment(fragment);
                         }
                     }
                 }
             }
         });
 
-        listView.setOnItemLongClickListener(new RecyclerListView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemClick(View view, int position) {
-                return !(getParentActivity() == null || listView.getAdapter() != listViewAdapter) && createMenuForParticipant(listViewAdapter.getItem(position), false);
-
-            }
-        });
+        listView.setOnItemLongClickListener((view, position) -> !(getParentActivity() == null || listView.getAdapter() != listViewAdapter) && createMenuForParticipant(listViewAdapter.getItem(position), false));
         if (searchItem != null) {
             listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
                 @Override
@@ -591,61 +568,55 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
             }
 
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setItems(items.toArray(new CharSequence[actions.size()]), new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, final int i) {
-                    if (actions.get(i) == 2) {
-                        MessagesController.getInstance(currentAccount).deleteUserFromChat(chatId, user, null);
-                        for (int a = 0; a < participants.size(); a++) {
-                            TLRPC.ChannelParticipant p = participants.get(a);
-                            if (p.user_id == participant.user_id) {
-                                participants.remove(a);
-                                updateRows();
-                                listViewAdapter.notifyDataSetChanged();
-                                break;
-                            }
+            builder.setItems(items.toArray(new CharSequence[actions.size()]), (dialogInterface, i) -> {
+                if (actions.get(i) == 2) {
+                    MessagesController.getInstance(currentAccount).deleteUserFromChat(chatId, user, null);
+                    for (int a = 0; a < participants.size(); a++) {
+                        TLRPC.ChannelParticipant p = participants.get(a);
+                        if (p.user_id == participant.user_id) {
+                            participants.remove(a);
+                            updateRows();
+                            listViewAdapter.notifyDataSetChanged();
+                            break;
                         }
-                    } else {
-                        ChannelRightsEditActivity fragment = new ChannelRightsEditActivity(user.id, chatId, participant.admin_rights, participant.banned_rights, actions.get(i), true);
-                        fragment.setDelegate(new ChannelRightsEditActivity.ChannelRightsEditActivityDelegate() {
-                            @Override
-                            public void didSetRights(int rights, TLRPC.TL_channelAdminRights rightsAdmin, TLRPC.TL_channelBannedRights rightsBanned) {
-                                if (actions.get(i) == 0) {
-                                    for (int a = 0; a < participants.size(); a++) {
-                                        TLRPC.ChannelParticipant p = participants.get(a);
-                                        if (p.user_id == participant.user_id) {
-                                            TLRPC.ChannelParticipant newPart;
-                                            if (rights == 1) {
-                                                newPart = new TLRPC.TL_channelParticipantAdmin();
-                                            } else {
-                                                newPart = new TLRPC.TL_channelParticipant();
-                                            }
-                                            newPart.admin_rights = rightsAdmin;
-                                            newPart.banned_rights = rightsBanned;
-                                            newPart.inviter_id = UserConfig.getInstance(currentAccount).getClientUserId();
-                                            newPart.user_id = participant.user_id;
-                                            newPart.date = participant.date;
-                                            participants.set(a, newPart);
-                                            break;
-                                        }
+                    }
+                } else {
+                    ChannelRightsEditActivity fragment = new ChannelRightsEditActivity(user.id, chatId, participant.admin_rights, participant.banned_rights, actions.get(i), true);
+                    fragment.setDelegate((rights, rightsAdmin, rightsBanned) -> {
+                        if (actions.get(i) == 0) {
+                            for (int a = 0; a < participants.size(); a++) {
+                                TLRPC.ChannelParticipant p = participants.get(a);
+                                if (p.user_id == participant.user_id) {
+                                    TLRPC.ChannelParticipant newPart;
+                                    if (rights == 1) {
+                                        newPart = new TLRPC.TL_channelParticipantAdmin();
+                                    } else {
+                                        newPart = new TLRPC.TL_channelParticipant();
                                     }
-                                } else if (actions.get(i) == 1) {
-                                    if (rights == 0) {
-                                        for (int a = 0; a < participants.size(); a++) {
-                                            TLRPC.ChannelParticipant p = participants.get(a);
-                                            if (p.user_id == participant.user_id) {
-                                                participants.remove(a);
-                                                updateRows();
-                                                listViewAdapter.notifyDataSetChanged();
-                                                break;
-                                            }
-                                        }
+                                    newPart.admin_rights = rightsAdmin;
+                                    newPart.banned_rights = rightsBanned;
+                                    newPart.inviter_id = UserConfig.getInstance(currentAccount).getClientUserId();
+                                    newPart.user_id = participant.user_id;
+                                    newPart.date = participant.date;
+                                    participants.set(a, newPart);
+                                    break;
+                                }
+                            }
+                        } else if (actions.get(i) == 1) {
+                            if (rights == 0) {
+                                for (int a = 0; a < participants.size(); a++) {
+                                    TLRPC.ChannelParticipant p = participants.get(a);
+                                    if (p.user_id == participant.user_id) {
+                                        participants.remove(a);
+                                        updateRows();
+                                        listViewAdapter.notifyDataSetChanged();
+                                        break;
                                     }
                                 }
                             }
-                        });
-                        presentFragment(fragment);
-                    }
+                        }
+                    });
+                    presentFragment(fragment);
                 }
             });
             showDialog(builder.create());
@@ -666,41 +637,32 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                 return false;
             }
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setItems(items, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    if (i == 0) {
-                        if (type == 0) {
-                            participants.remove(participant);
-                            updateRows();
-                            listViewAdapter.notifyDataSetChanged();
-                            TLRPC.TL_channels_editBanned req = new TLRPC.TL_channels_editBanned();
-                            req.user_id = MessagesController.getInstance(currentAccount).getInputUser(participant.user_id);
-                            req.channel = MessagesController.getInstance(currentAccount).getInputChannel(chatId);
-                            req.banned_rights = new TLRPC.TL_channelBannedRights();
-                            ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                                @Override
-                                public void run(TLObject response, TLRPC.TL_error error) {
-                                    if (response != null) {
-                                        final TLRPC.Updates updates = (TLRPC.Updates) response;
-                                        MessagesController.getInstance(currentAccount).processUpdates(updates, false);
-                                        if (!updates.chats.isEmpty()) {
-                                            AndroidUtilities.runOnUIThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    TLRPC.Chat chat = updates.chats.get(0);
-                                                    MessagesController.getInstance(currentAccount).loadFullChat(chat.id, 0, true);
-                                                }
-                                            }, 1000);
-                                        }
-                                    }
+            builder.setItems(items, (dialogInterface, i) -> {
+                if (i == 0) {
+                    if (type == 0) {
+                        participants.remove(participant);
+                        updateRows();
+                        listViewAdapter.notifyDataSetChanged();
+                        TLRPC.TL_channels_editBanned req = new TLRPC.TL_channels_editBanned();
+                        req.user_id = MessagesController.getInstance(currentAccount).getInputUser(participant.user_id);
+                        req.channel = MessagesController.getInstance(currentAccount).getInputChannel(chatId);
+                        req.banned_rights = new TLRPC.TL_channelBannedRights();
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                            if (response != null) {
+                                final TLRPC.Updates updates = (TLRPC.Updates) response;
+                                MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+                                if (!updates.chats.isEmpty()) {
+                                    AndroidUtilities.runOnUIThread(() -> {
+                                        TLRPC.Chat chat = updates.chats.get(0);
+                                        MessagesController.getInstance(currentAccount).loadFullChat(chat.id, 0, true);
+                                    }, 1000);
                                 }
-                            });
-                        } else if (type == 1) {
-                            MessagesController.getInstance(currentAccount).setUserAdminRole(chatId, MessagesController.getInstance(currentAccount).getUser(participant.user_id), new TLRPC.TL_channelAdminRights(), currentChat.megagroup, ChannelUsersActivity.this);
-                        } else if (type == 2) {
-                            MessagesController.getInstance(currentAccount).deleteUserFromChat(chatId, MessagesController.getInstance(currentAccount).getUser(participant.user_id), null);
-                        }
+                            }
+                        });
+                    } else if (type == 1) {
+                        MessagesController.getInstance(currentAccount).setUserAdminRole(chatId, MessagesController.getInstance(currentAccount).getUser(participant.user_id), new TLRPC.TL_channelAdminRights(), currentChat.megagroup, ChannelUsersActivity.this);
+                    } else if (type == 2) {
+                        MessagesController.getInstance(currentAccount).deleteUserFromChat(chatId, MessagesController.getInstance(currentAccount).getUser(participant.user_id), null);
                     }
                 }
             });
@@ -715,12 +677,9 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
             boolean byChannelUsers = (Boolean) args[2];
             if (chatFull.id == chatId && !byChannelUsers) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        firstEndReached = false;
-                        getChannelParticipants(0, 200);
-                    }
+                AndroidUtilities.runOnUIThread(() -> {
+                    firstEndReached = false;
+                    getChannelParticipants(0, 200);
                 });
             }
         }
@@ -764,123 +723,109 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
         req.filter.q = "";
         req.offset = offset;
         req.limit = count;
-        int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(final TLObject response, final TLRPC.TL_error error) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        boolean changeFirst = !firstLoaded;
-                        loadingUsers = false;
-                        firstLoaded = true;
-                        if (emptyView != null) {
-                            emptyView.showTextView();
-                        }
-                        if (error == null) {
-                            TLRPC.TL_channels_channelParticipants res = (TLRPC.TL_channels_channelParticipants) response;
-                            MessagesController.getInstance(currentAccount).putUsers(res.users, false);
-                            int selfId = UserConfig.getInstance(currentAccount).getClientUserId();
-                            if (selectType != 0) {
-                                for (int a = 0; a < res.participants.size(); a++) {
-                                    if (res.participants.get(a).user_id == selfId) {
-                                        res.participants.remove(a);
-                                        break;
-                                    }
-                                }
-                            }
-                            if (type == 0) {
-                                if (byEndReached) {
-                                    participants2 = res.participants;
-                                } else {
-                                    participants2 = new ArrayList<>();
-                                    participantsMap.clear();
-                                    participants = res.participants;
-                                    if (changeFirst) {
-                                        firstLoaded = false;
-                                    }
-                                    firstEndReached = true;
-                                    getChannelParticipants(0, 200);
-                                }
-                            } else {
-                                participantsMap.clear();
-                                participants = res.participants;
-                            }
-                            for (int a = 0; a < res.participants.size(); a++) {
-                                TLRPC.ChannelParticipant participant = res.participants.get(a);
-                                participantsMap.put(participant.user_id, participant);
-                            }
-                            try {
-                                if (type == 0 || type == 2) {
-                                    Collections.sort(res.participants, new Comparator<TLRPC.ChannelParticipant>() {
-                                        @Override
-                                        public int compare(TLRPC.ChannelParticipant lhs, TLRPC.ChannelParticipant rhs) {
-                                            TLRPC.User user1 = MessagesController.getInstance(currentAccount).getUser(rhs.user_id);
-                                            TLRPC.User user2 = MessagesController.getInstance(currentAccount).getUser(lhs.user_id);
-                                            int status1 = 0;
-                                            int status2 = 0;
-                                            if (user1 != null && user1.status != null) {
-                                                if (user1.id == UserConfig.getInstance(currentAccount).getClientUserId()) {
-                                                    status1 = ConnectionsManager.getInstance(currentAccount).getCurrentTime() + 50000;
-                                                } else {
-                                                    status1 = user1.status.expires;
-                                                }
-                                            }
-                                            if (user2 != null && user2.status != null) {
-                                                if (user2.id == UserConfig.getInstance(currentAccount).getClientUserId()) {
-                                                    status2 = ConnectionsManager.getInstance(currentAccount).getCurrentTime() + 50000;
-                                                } else {
-                                                    status2 = user2.status.expires;
-                                                }
-                                            }
-                                            if (status1 > 0 && status2 > 0) {
-                                                if (status1 > status2) {
-                                                    return 1;
-                                                } else if (status1 < status2) {
-                                                    return -1;
-                                                }
-                                                return 0;
-                                            } else if (status1 < 0 && status2 < 0) {
-                                                if (status1 > status2) {
-                                                    return 1;
-                                                } else if (status1 < status2) {
-                                                    return -1;
-                                                }
-                                                return 0;
-                                            } else if (status1 < 0 && status2 > 0 || status1 == 0 && status2 != 0) {
-                                                return -1;
-                                            } else if (status2 < 0 && status1 > 0 || status2 == 0 && status1 != 0) {
-                                                return 1;
-                                            }
-                                            return 0;
-                                        }
-                                    });
-                                } else if (type == 1) {
-                                    Collections.sort(res.participants, new Comparator<TLRPC.ChannelParticipant>() {
-                                        @Override
-                                        public int compare(TLRPC.ChannelParticipant lhs, TLRPC.ChannelParticipant rhs) {
-                                            int type1 = getChannelAdminParticipantType(lhs);
-                                            int type2 = getChannelAdminParticipantType(rhs);
-                                            if (type1 > type2) {
-                                                return 1;
-                                            } else if (type1 < type2) {
-                                                return -1;
-                                            }
-                                            return 0;
-                                        }
-                                    });
-                                }
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
-                        }
-                        updateRows();
-                        if (listViewAdapter != null) {
-                            listViewAdapter.notifyDataSetChanged();
+        int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            boolean changeFirst = !firstLoaded;
+            loadingUsers = false;
+            firstLoaded = true;
+            if (emptyView != null) {
+                emptyView.showTextView();
+            }
+            if (error == null) {
+                TLRPC.TL_channels_channelParticipants res = (TLRPC.TL_channels_channelParticipants) response;
+                MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                int selfId = UserConfig.getInstance(currentAccount).getClientUserId();
+                if (selectType != 0) {
+                    for (int a = 0; a < res.participants.size(); a++) {
+                        if (res.participants.get(a).user_id == selfId) {
+                            res.participants.remove(a);
+                            break;
                         }
                     }
-                });
+                }
+                if (type == 0) {
+                    if (byEndReached) {
+                        participants2 = res.participants;
+                    } else {
+                        participants2 = new ArrayList<>();
+                        participantsMap.clear();
+                        participants = res.participants;
+                        if (changeFirst) {
+                            firstLoaded = false;
+                        }
+                        firstEndReached = true;
+                        getChannelParticipants(0, 200);
+                    }
+                } else {
+                    participantsMap.clear();
+                    participants = res.participants;
+                }
+                for (int a = 0; a < res.participants.size(); a++) {
+                    TLRPC.ChannelParticipant participant = res.participants.get(a);
+                    participantsMap.put(participant.user_id, participant);
+                }
+                try {
+                    if (type == 0 || type == 2) {
+                        Collections.sort(res.participants, (lhs, rhs) -> {
+                            TLRPC.User user1 = MessagesController.getInstance(currentAccount).getUser(rhs.user_id);
+                            TLRPC.User user2 = MessagesController.getInstance(currentAccount).getUser(lhs.user_id);
+                            int status1 = 0;
+                            int status2 = 0;
+                            if (user1 != null && user1.status != null) {
+                                if (user1.id == UserConfig.getInstance(currentAccount).getClientUserId()) {
+                                    status1 = ConnectionsManager.getInstance(currentAccount).getCurrentTime() + 50000;
+                                } else {
+                                    status1 = user1.status.expires;
+                                }
+                            }
+                            if (user2 != null && user2.status != null) {
+                                if (user2.id == UserConfig.getInstance(currentAccount).getClientUserId()) {
+                                    status2 = ConnectionsManager.getInstance(currentAccount).getCurrentTime() + 50000;
+                                } else {
+                                    status2 = user2.status.expires;
+                                }
+                            }
+                            if (status1 > 0 && status2 > 0) {
+                                if (status1 > status2) {
+                                    return 1;
+                                } else if (status1 < status2) {
+                                    return -1;
+                                }
+                                return 0;
+                            } else if (status1 < 0 && status2 < 0) {
+                                if (status1 > status2) {
+                                    return 1;
+                                } else if (status1 < status2) {
+                                    return -1;
+                                }
+                                return 0;
+                            } else if (status1 < 0 && status2 > 0 || status1 == 0 && status2 != 0) {
+                                return -1;
+                            } else if (status2 < 0 && status1 > 0 || status2 == 0 && status1 != 0) {
+                                return 1;
+                            }
+                            return 0;
+                        });
+                    } else if (type == 1) {
+                        Collections.sort(res.participants, (lhs, rhs) -> {
+                            int type1 = getChannelAdminParticipantType(lhs);
+                            int type2 = getChannelAdminParticipantType(rhs);
+                            if (type1 > type2) {
+                                return 1;
+                            } else if (type1 < type2) {
+                                return -1;
+                            }
+                            return 0;
+                        });
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
             }
-        });
+            updateRows();
+            if (listViewAdapter != null) {
+                listViewAdapter.notifyDataSetChanged();
+            }
+        }));
         ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
     }
 
@@ -960,82 +905,73 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
         }
 
         private void processSearch(final String query) {
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    searchAdapterHelper.queryServerSearch(query, selectType != 0, false, true, true, chatId, type == 0);
-                    if (selectType == 1) {
-                        final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>(ContactsController.getInstance(currentAccount).contacts);
-                        Utilities.searchQueue.postRunnable(new Runnable() {
-                            @Override
-                            public void run() {
-                                String search1 = query.trim().toLowerCase();
-                                if (search1.length() == 0) {
-                                    updateSearchResults(new ArrayList<TLRPC.User>(), new ArrayList<CharSequence>());
-                                    return;
-                                }
-                                String search2 = LocaleController.getInstance().getTranslitString(search1);
-                                if (search1.equals(search2) || search2.length() == 0) {
-                                    search2 = null;
-                                }
-                                String search[] = new String[1 + (search2 != null ? 1 : 0)];
-                                search[0] = search1;
-                                if (search2 != null) {
-                                    search[1] = search2;
-                                }
+            AndroidUtilities.runOnUIThread(() -> {
+                searchAdapterHelper.queryServerSearch(query, selectType != 0, false, true, true, chatId, type == 0);
+                if (selectType == 1) {
+                    final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>(ContactsController.getInstance(currentAccount).contacts);
+                    Utilities.searchQueue.postRunnable(() -> {
+                        String search1 = query.trim().toLowerCase();
+                        if (search1.length() == 0) {
+                            updateSearchResults(new ArrayList<>(), new ArrayList<>());
+                            return;
+                        }
+                        String search2 = LocaleController.getInstance().getTranslitString(search1);
+                        if (search1.equals(search2) || search2.length() == 0) {
+                            search2 = null;
+                        }
+                        String search[] = new String[1 + (search2 != null ? 1 : 0)];
+                        search[0] = search1;
+                        if (search2 != null) {
+                            search[1] = search2;
+                        }
 
-                                ArrayList<TLRPC.User> resultArray = new ArrayList<>();
-                                ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
+                        ArrayList<TLRPC.User> resultArray = new ArrayList<>();
+                        ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
 
-                                for (int a = 0; a < contactsCopy.size(); a++) {
-                                    TLRPC.TL_contact contact = contactsCopy.get(a);
-                                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(contact.user_id);
-                                    if (user.id == UserConfig.getInstance(currentAccount).getClientUserId()) {
-                                        continue;
-                                    }
-
-                                    String name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
-                                    String tName = LocaleController.getInstance().getTranslitString(name);
-                                    if (name.equals(tName)) {
-                                        tName = null;
-                                    }
-
-                                    int found = 0;
-                                    for (String q : search) {
-                                        if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
-                                            found = 1;
-                                        } else if (user.username != null && user.username.startsWith(q)) {
-                                            found = 2;
-                                        }
-
-                                        if (found != 0) {
-                                            if (found == 1) {
-                                                resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
-                                            } else {
-                                                resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
-                                            }
-                                            resultArray.add(user);
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                updateSearchResults(resultArray, resultArrayNames);
+                        for (int a = 0; a < contactsCopy.size(); a++) {
+                            TLRPC.TL_contact contact = contactsCopy.get(a);
+                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(contact.user_id);
+                            if (user.id == UserConfig.getInstance(currentAccount).getClientUserId()) {
+                                continue;
                             }
-                        });
-                    }
+
+                            String name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
+                            String tName = LocaleController.getInstance().getTranslitString(name);
+                            if (name.equals(tName)) {
+                                tName = null;
+                            }
+
+                            int found = 0;
+                            for (String q : search) {
+                                if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
+                                    found = 1;
+                                } else if (user.username != null && user.username.startsWith(q)) {
+                                    found = 2;
+                                }
+
+                                if (found != 0) {
+                                    if (found == 1) {
+                                        resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
+                                    } else {
+                                        resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
+                                    }
+                                    resultArray.add(user);
+                                    break;
+                                }
+                            }
+                        }
+
+                        updateSearchResults(resultArray, resultArrayNames);
+                    });
                 }
             });
         }
 
         private void updateSearchResults(final ArrayList<TLRPC.User> users, final ArrayList<CharSequence> names) {
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    searchResult = users;
-                    searchResultNames = names;
-                    notifyDataSetChanged();
-                }
+            AndroidUtilities.runOnUIThread(() -> {
+                searchResult = users;
+                searchResultNames = names;
+                notifyDataSetChanged();
             });
         }
 
@@ -1157,16 +1093,13 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                 case 0:
                     view = new ManageChatUserCell(mContext, 2, selectType == 0);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                    ((ManageChatUserCell) view).setDelegate(new ManageChatUserCell.ManageChatUserCellDelegate() {
-                        @Override
-                        public boolean onOptionsButtonCheck(ManageChatUserCell cell, boolean click) {
-                            TLObject object = getItem((Integer) cell.getTag());
-                            if (object instanceof TLRPC.ChannelParticipant) {
-                                TLRPC.ChannelParticipant participant = (TLRPC.ChannelParticipant) getItem((Integer) cell.getTag());
-                                return createMenuForParticipant(participant, !click);
-                            } else {
-                                return false;
-                            }
+                    ((ManageChatUserCell) view).setDelegate((cell, click) -> {
+                        TLObject object = getItem((Integer) cell.getTag());
+                        if (object instanceof TLRPC.ChannelParticipant) {
+                            TLRPC.ChannelParticipant participant = (TLRPC.ChannelParticipant) getItem((Integer) cell.getTag());
+                            return createMenuForParticipant(participant, !click);
+                        } else {
+                            return false;
                         }
                     });
                     break;
@@ -1347,12 +1280,9 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                 case 0:
                     view = new ManageChatUserCell(mContext, type == 0 ? 8 : 1, selectType == 0);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                    ((ManageChatUserCell) view).setDelegate(new ManageChatUserCell.ManageChatUserCellDelegate() {
-                        @Override
-                        public boolean onOptionsButtonCheck(ManageChatUserCell cell, boolean click) {
-                            TLRPC.ChannelParticipant participant = listViewAdapter.getItem((Integer) cell.getTag());
-                            return createMenuForParticipant(participant, !click);
-                        }
+                    ((ManageChatUserCell) view).setDelegate((cell, click) -> {
+                        TLRPC.ChannelParticipant participant = listViewAdapter.getItem((Integer) cell.getTag());
+                        return createMenuForParticipant(participant, !click);
                     });
                     break;
                 case 1:
@@ -1574,16 +1504,13 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
-            @Override
-            public void didSetColor() {
-                if (listView != null) {
-                    int count = listView.getChildCount();
-                    for (int a = 0; a < count; a++) {
-                        View child = listView.getChildAt(a);
-                        if (child instanceof ManageChatUserCell) {
-                            ((ManageChatUserCell) child).update(0);
-                        }
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
+            if (listView != null) {
+                int count = listView.getChildCount();
+                for (int a = 0; a < count; a++) {
+                    View child = listView.getChildAt(a);
+                    if (child instanceof ManageChatUserCell) {
+                        ((ManageChatUserCell) child).update(0);
                     }
                 }
             }

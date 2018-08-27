@@ -36,11 +36,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.webkit.JavascriptInterface;
-import android.webkit.ValueCallback;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -54,9 +57,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.exoplayer2.C;
-import org.telegram.messenger.exoplayer2.ExoPlayer;
-import org.telegram.messenger.exoplayer2.ui.AspectRatioFrameLayout;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 
@@ -402,7 +402,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             }
         }
 
-        private String extractFunction(String funcName) throws Exception {
+        private String extractFunction(String funcName) {
             try {
                 String quote = Pattern.quote(funcName);
                 Pattern funcPattern = Pattern.compile(String.format(Locale.US, "(?x)(?:function\\s+%s|[{;,]\\s*%s\\s*=\\s*function|var\\s+%s\\s*=\\s*function)\\s*\\(([^)]*)\\)\\s*\\{([^}]+)\\}", quote, quote, quote));
@@ -789,26 +789,20 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                             }
                             final String functionCodeFinal = functionCode;
                             try {
-                                AndroidUtilities.runOnUIThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (Build.VERSION.SDK_INT >= 21) {
-                                            webView.evaluateJavascript(functionCodeFinal, new ValueCallback<String>() {
-                                                @Override
-                                                public void onReceiveValue(String value) {
-                                                    result[0] = result[0].replace(sig, "/signature/" + value.substring(1, value.length() - 1));
-                                                    countDownLatch.countDown();
-                                                }
-                                            });
-                                        } else {
-                                            try {
-                                                String javascript = "<script>" + functionCodeFinal + "</script>";
-                                                byte[] data = javascript.getBytes("UTF-8");
-                                                final String base64 = Base64.encodeToString(data, Base64.DEFAULT);
-                                                webView.loadUrl("data:text/html;charset=utf-8;base64," + base64);
-                                            } catch (Exception e) {
-                                                FileLog.e(e);
-                                            }
+                                AndroidUtilities.runOnUIThread(() -> {
+                                    if (Build.VERSION.SDK_INT >= 21) {
+                                        webView.evaluateJavascript(functionCodeFinal, value -> {
+                                            result[0] = result[0].replace(sig, "/signature/" + value.substring(1, value.length() - 1));
+                                            countDownLatch.countDown();
+                                        });
+                                    } else {
+                                        try {
+                                            String javascript = "<script>" + functionCodeFinal + "</script>";
+                                            byte[] data = javascript.getBytes("UTF-8");
+                                            final String base64 = Base64.encodeToString(data, Base64.DEFAULT);
+                                            webView.loadUrl("data:text/html;charset=utf-8;base64," + base64);
+                                        } catch (Exception e) {
+                                            FileLog.e(e);
                                         }
                                     }
                                 });
@@ -1185,12 +1179,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                                 currentBitmap = null;
                             }
                         }
-                        AndroidUtilities.runOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                delegate.onInlineSurfaceTextureReady();
-                            }
-                        });
+                        AndroidUtilities.runOnUIThread(() -> delegate.onInlineSurfaceTextureReady());
                         waitingForFirstTextureUpload = 0;
                         return true;
                     }
@@ -1268,12 +1257,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         private AnimatorSet currentAnimation;
         private int lastProgressX;
         private int currentProgressX;
-        private Runnable hideRunnable = new Runnable() {
-            @Override
-            public void run() {
-                show(false, true);
-            }
-        };
+        private Runnable hideRunnable = () -> show(false, true);
 
         public ControlsView(Context context) {
             super(context);
@@ -1559,13 +1543,10 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
 
         interfaceName = "JavaScriptInterface";
         webView = new WebView(context);
-        webView.addJavascriptInterface(new JavaScriptInterface(new CallJavaResultInterface() {
-            @Override
-            public void jsCallFinished(String value) {
-                if (currentTask != null && !currentTask.isCancelled()) {
-                    if (currentTask instanceof YoutubeVideoTask) {
-                        ((YoutubeVideoTask) currentTask).onInterfaceResult(value);
-                    }
+        webView.addJavascriptInterface(new JavaScriptInterface(value -> {
+            if (currentTask != null && !currentTask.isCancelled()) {
+                if (currentTask instanceof YoutubeVideoTask) {
+                    ((YoutubeVideoTask) currentTask).onInterfaceResult(value);
                 }
             }
         }), interfaceName);
@@ -1611,96 +1592,87 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         fullscreenButton = new ImageView(context);
         fullscreenButton.setScaleType(ImageView.ScaleType.CENTER);
         controlsView.addView(fullscreenButton, LayoutHelper.createFrame(56, 56, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 0, 5));
-        fullscreenButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!initied || changingTextureView || switchingInlineMode || !firstFrameRendered) {
-                    return;
-                }
-                inFullscreen = !inFullscreen;
-                updateFullscreenState(true);
+        fullscreenButton.setOnClickListener(v -> {
+            if (!initied || changingTextureView || switchingInlineMode || !firstFrameRendered) {
+                return;
             }
+            inFullscreen = !inFullscreen;
+            updateFullscreenState(true);
         });
 
         playButton = new ImageView(context);
         playButton.setScaleType(ImageView.ScaleType.CENTER);
         controlsView.addView(playButton, LayoutHelper.createFrame(48, 48, Gravity.CENTER));
-        playButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!initied || playVideoUrl == null) {
-                    return;
-                }
-                if (!videoPlayer.isPlayerPrepared()) {
-                    preparePlayer();
-                }
-                if (videoPlayer.isPlaying()) {
-                    videoPlayer.pause();
-                } else {
-                    isCompleted = false;
-                    videoPlayer.play();
-                }
-                updatePlayButton();
+        playButton.setOnClickListener(v -> {
+            if (!initied || playVideoUrl == null) {
+                return;
             }
+            if (!videoPlayer.isPlayerPrepared()) {
+                preparePlayer();
+            }
+            if (videoPlayer.isPlaying()) {
+                videoPlayer.pause();
+            } else {
+                isCompleted = false;
+                videoPlayer.play();
+            }
+            updatePlayButton();
         });
 
         if (allowInline) {
             inlineButton = new ImageView(context);
             inlineButton.setScaleType(ImageView.ScaleType.CENTER);
             controlsView.addView(inlineButton, LayoutHelper.createFrame(56, 48, Gravity.RIGHT | Gravity.TOP));
-            inlineButton.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (textureView == null || !delegate.checkInlinePermissions() || changingTextureView || switchingInlineMode || !firstFrameRendered) {
-                        return;
+            inlineButton.setOnClickListener(v -> {
+                if (textureView == null || !delegate.checkInlinePermissions() || changingTextureView || switchingInlineMode || !firstFrameRendered) {
+                    return;
+                }
+                switchingInlineMode = true;
+                if (!isInline) {
+                    inFullscreen = false;
+                    delegate.prepareToSwitchInlineMode(true, switchToInlineRunnable, aspectRatioFrameLayout.getAspectRatio(), allowInlineAnimation);
+                } else {
+                    ViewGroup parent = (ViewGroup) aspectRatioFrameLayout.getParent();
+                    if (parent != WebPlayerView.this) {
+                        if (parent != null) {
+                            parent.removeView(aspectRatioFrameLayout);
+                        }
+                        addView(aspectRatioFrameLayout, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
+                        aspectRatioFrameLayout.measure(MeasureSpec.makeMeasureSpec(WebPlayerView.this.getMeasuredWidth(), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(WebPlayerView.this.getMeasuredHeight() - AndroidUtilities.dp(10), MeasureSpec.EXACTLY));
                     }
-                    switchingInlineMode = true;
-                    if (!isInline) {
-                        inFullscreen = false;
-                        delegate.prepareToSwitchInlineMode(true, switchToInlineRunnable, aspectRatioFrameLayout.getAspectRatio(), allowInlineAnimation);
+                    if (currentBitmap != null) {
+                        currentBitmap.recycle();
+                        currentBitmap = null;
+                    }
+                    changingTextureView = true;
+
+                    isInline = false;
+                    updatePlayButton();
+                    updateShareButton();
+                    updateFullscreenButton();
+                    updateInlineButton();
+
+                    textureView.setVisibility(INVISIBLE);
+                    if (textureViewContainer != null) {
+                        textureViewContainer.addView(textureView);
                     } else {
-                        ViewGroup parent = (ViewGroup) aspectRatioFrameLayout.getParent();
-                        if (parent != WebPlayerView.this) {
-                            if (parent != null) {
-                                parent.removeView(aspectRatioFrameLayout);
-                            }
-                            addView(aspectRatioFrameLayout, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
-                            aspectRatioFrameLayout.measure(MeasureSpec.makeMeasureSpec(WebPlayerView.this.getMeasuredWidth(), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(WebPlayerView.this.getMeasuredHeight() - AndroidUtilities.dp(10), MeasureSpec.EXACTLY));
-                        }
-                        if (currentBitmap != null) {
-                            currentBitmap.recycle();
-                            currentBitmap = null;
-                        }
-                        changingTextureView = true;
-
-                        isInline = false;
-                        updatePlayButton();
-                        updateShareButton();
-                        updateFullscreenButton();
-                        updateInlineButton();
-
-                        textureView.setVisibility(INVISIBLE);
-                        if (textureViewContainer != null) {
-                            textureViewContainer.addView(textureView);
-                        } else {
-                            aspectRatioFrameLayout.addView(textureView);
-                        }
-
-                        parent = (ViewGroup) controlsView.getParent();
-                        if (parent != WebPlayerView.this) {
-                            if (parent != null) {
-                                parent.removeView(controlsView);
-                            }
-                            if (textureViewContainer != null) {
-                                textureViewContainer.addView(controlsView);
-                            } else {
-                                addView(controlsView, 1);
-                            }
-                        }
-
-                        controlsView.show(false, false);
-                        delegate.prepareToSwitchInlineMode(false, null, aspectRatioFrameLayout.getAspectRatio(), allowInlineAnimation);
+                        aspectRatioFrameLayout.addView(textureView);
                     }
+
+                    parent = (ViewGroup) controlsView.getParent();
+                    if (parent != WebPlayerView.this) {
+                        if (parent != null) {
+                            parent.removeView(controlsView);
+                        }
+                        if (textureViewContainer != null) {
+                            textureViewContainer.addView(controlsView);
+                        } else {
+                            addView(controlsView, 1);
+                        }
+                    }
+
+                    controlsView.show(false, false);
+                    delegate.prepareToSwitchInlineMode(false, null, aspectRatioFrameLayout.getAspectRatio(), allowInlineAnimation);
                 }
             });
         }
@@ -1710,12 +1682,9 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             shareButton.setScaleType(ImageView.ScaleType.CENTER);
             shareButton.setImageResource(R.drawable.ic_share_video);
             controlsView.addView(shareButton, LayoutHelper.createFrame(56, 48, Gravity.RIGHT | Gravity.TOP));
-            shareButton.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (delegate != null) {
-                        delegate.onSharePressed();
-                    }
+            shareButton.setOnClickListener(v -> {
+                if (delegate != null) {
+                    delegate.onSharePressed();
                 }
             });
         }

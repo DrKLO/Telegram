@@ -91,12 +91,7 @@ public class ManageChatUserCell extends FrameLayout {
             optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
             optionsButton.setScaleType(ImageView.ScaleType.CENTER);
             addView(optionsButton, LayoutHelper.createFrame(48, 64, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP));
-            optionsButton.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    delegate.onOptionsButtonCheck(ManageChatUserCell.this, true);
-                }
-            });
+            optionsButton.setOnClickListener(v -> delegate.onOptionsButtonCheck(ManageChatUserCell.this, true));
         }
     }
 

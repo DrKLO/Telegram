@@ -40,8 +40,6 @@ import org.telegram.messenger.support.customtabsclient.shared.CustomTabsHelper;
 import org.telegram.messenger.support.customtabsclient.shared.ServiceConnection;
 import org.telegram.messenger.support.customtabsclient.shared.ServiceConnectionCallback;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
@@ -186,59 +184,45 @@ public class Browser {
 
                     TLRPC.TL_messages_getWebPagePreview req = new TLRPC.TL_messages_getWebPagePreview();
                     req.message = uri.toString();
-                    final int reqId = ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, new RequestDelegate() {
-                        @Override
-                        public void run(final TLObject response, TLRPC.TL_error error) {
-                            AndroidUtilities.runOnUIThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        progressDialog[0].dismiss();
-                                    } catch (Throwable ignore) {
+                    final int reqId = ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                        try {
+                            progressDialog[0].dismiss();
+                        } catch (Throwable ignore) {
 
-                                    }
-                                    progressDialog[0] = null;
+                        }
+                        progressDialog[0] = null;
 
-                                    boolean ok = false;
-                                    if (response instanceof TLRPC.TL_messageMediaWebPage) {
-                                        TLRPC.TL_messageMediaWebPage webPage = (TLRPC.TL_messageMediaWebPage) response;
-                                        if (webPage.webpage instanceof TLRPC.TL_webPage && webPage.webpage.cached_page != null) {
-                                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.openArticle, webPage.webpage, uri.toString());
-                                            ok = true;
-                                        }
-                                    }
-                                    if (!ok) {
-                                        openUrl(context, uri, allowCustom, false);
-                                    }
+                        boolean ok = false;
+                        if (response instanceof TLRPC.TL_messageMediaWebPage) {
+                            TLRPC.TL_messageMediaWebPage webPage = (TLRPC.TL_messageMediaWebPage) response;
+                            if (webPage.webpage instanceof TLRPC.TL_webPage && webPage.webpage.cached_page != null) {
+                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.openArticle, webPage.webpage, uri.toString());
+                                ok = true;
+                            }
+                        }
+                        if (!ok) {
+                            openUrl(context, uri, allowCustom, false);
+                        }
+                    }));
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (progressDialog[0] == null) {
+                            return;
+                        }
+                        try {
+                            progressDialog[0].setMessage(LocaleController.getString("Loading", R.string.Loading));
+                            progressDialog[0].setCanceledOnTouchOutside(false);
+                            progressDialog[0].setCancelable(false);
+                            progressDialog[0].setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), (dialog, which) -> {
+                                ConnectionsManager.getInstance(UserConfig.selectedAccount).cancelRequest(reqId, true);
+                                try {
+                                    dialog.dismiss();
+                                } catch (Exception e) {
+                                    FileLog.e(e);
                                 }
                             });
-                        }
-                    });
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (progressDialog[0] == null) {
-                                return;
-                            }
-                            try {
-                                progressDialog[0].setMessage(LocaleController.getString("Loading", R.string.Loading));
-                                progressDialog[0].setCanceledOnTouchOutside(false);
-                                progressDialog[0].setCancelable(false);
-                                progressDialog[0].setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        ConnectionsManager.getInstance(UserConfig.selectedAccount).cancelRequest(reqId, true);
-                                        try {
-                                            dialog.dismiss();
-                                        } catch (Exception e) {
-                                            FileLog.e(e);
-                                        }
-                                    }
-                                });
-                                progressDialog[0].show();
-                            } catch (Exception ignore) {
+                            progressDialog[0].show();
+                        } catch (Exception ignore) {
 
-                            }
                         }
                     }, 1000);
                     return;
@@ -334,6 +318,18 @@ public class Browser {
 
     public static boolean isInternalUrl(String url, boolean forceBrowser[]) {
         return isInternalUri(Uri.parse(url), forceBrowser);
+    }
+
+    public static boolean isPassportUrl(String url) {
+        try {
+            url = url.toLowerCase();
+            if (url.startsWith("tg:passport") || url.startsWith("tg://passport") || url.startsWith("tg:secureid") || url.contains("resolve") && url.contains("domain=telegrampassport")) {
+                return true;
+            }
+        } catch (Throwable ignore) {
+
+        }
+        return false;
     }
 
     public static boolean isInternalUri(Uri uri, boolean forceBrowser[]) {

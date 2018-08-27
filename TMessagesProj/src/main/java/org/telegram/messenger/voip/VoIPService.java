@@ -180,6 +180,7 @@ public class VoIPService extends VoIPBaseService{
 	public void onCreate(){
 		super.onCreate();
 		if(callIShouldHavePutIntoIntent!=null && Build.VERSION.SDK_INT>=Build.VERSION_CODES.O){
+			NotificationsController.checkOtherNotificationsChannel();
 			Notification.Builder bldr=new Notification.Builder(this, NotificationsController.OTHER_NOTIFICATIONS_CHANNEL)
 					.setSmallIcon(R.drawable.notification)
 					.setContentTitle(LocaleController.getString("VoipOutgoingCall", R.string.VoipOutgoingCall))
@@ -455,6 +456,11 @@ public class VoIPService extends VoIPBaseService{
 				showNotification();
 			}
 		}
+	}
+
+	@Override
+	protected boolean isRinging(){
+		return currentState==STATE_WAITING_INCOMING;
 	}
 
 	public void acceptIncomingCall() {
@@ -755,7 +761,7 @@ public class VoIPService extends VoIPBaseService{
 				byte[] correctedAuth = new byte[256];
 				System.arraycopy(authKey, 0, correctedAuth, 256 - authKey.length, authKey.length);
 				for (int a = 0; a < 256 - authKey.length; a++) {
-					authKey[a] = 0;
+					correctedAuth[a] = 0;
 				}
 				authKey = correctedAuth;
 			}
@@ -844,7 +850,7 @@ public class VoIPService extends VoIPBaseService{
 			byte[] correctedAuth = new byte[256];
 			System.arraycopy(authKey, 0, correctedAuth, 256 - authKey.length, authKey.length);
 			for (int a = 0; a < 256 - authKey.length; a++) {
-				authKey[a] = 0;
+				correctedAuth[a] = 0;
 			}
 			authKey = correctedAuth;
 		}
@@ -944,7 +950,7 @@ public class VoIPService extends VoIPBaseService{
 			}
 
 			controller.setRemoteEndpoints(endpoints, call.protocol.udp_p2p && allowP2p, BuildVars.DEBUG_VERSION && prefs.getBoolean("dbg_force_tcp_in_calls", false), call.protocol.max_layer);
-			if(BuildVars.DEBUG_VERSION && prefs.getBoolean("dbg_force_tcp_in_calls", false)){
+			if(prefs.getBoolean("dbg_force_tcp_in_calls", false)){
 				AndroidUtilities.runOnUIThread(new Runnable(){
 					@Override
 					public void run(){
@@ -1073,7 +1079,7 @@ public class VoIPService extends VoIPBaseService{
 	}
 
 	/*package*/ void onMediaButtonEvent(KeyEvent ev) {
-		if (ev.getKeyCode() == KeyEvent.KEYCODE_HEADSETHOOK) {
+		if (ev.getKeyCode() == KeyEvent.KEYCODE_HEADSETHOOK || ev.getKeyCode()==KeyEvent.KEYCODE_MEDIA_PAUSE || ev.getKeyCode()==KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
 			if (ev.getAction() == KeyEvent.ACTION_UP) {
 				if (currentState == STATE_WAITING_INCOMING) {
 					acceptIncomingCall();

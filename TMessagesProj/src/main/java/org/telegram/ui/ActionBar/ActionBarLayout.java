@@ -97,6 +97,9 @@ public class ActionBarLayout extends FrameLayout {
 
         @Override
         public boolean hasOverlappingRendering() {
+            if (Build.VERSION.SDK_INT >= 28) {
+                return true;
+            }
             return false;
         }
 
@@ -819,12 +822,9 @@ public class ActionBarLayout extends FrameLayout {
 
                 transitionAnimationStartTime = System.currentTimeMillis();
                 transitionAnimationInProgress = true;
-                onOpenAnimationEndRunnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        fragment.onTransitionAnimationEnd(true, false);
-                        fragment.onBecomeFullyVisible();
-                    }
+                onOpenAnimationEndRunnable = () -> {
+                    fragment.onTransitionAnimationEnd(true, false);
+                    fragment.onBecomeFullyVisible();
                 };
                 ArrayList<Animator> animators = new ArrayList<>();
                 animators.add(ObjectAnimator.ofFloat(this, "alpha", 0.0f, 1.0f));
@@ -849,31 +849,23 @@ public class ActionBarLayout extends FrameLayout {
                 transitionAnimationPreviewMode = preview;
                 transitionAnimationStartTime = System.currentTimeMillis();
                 transitionAnimationInProgress = true;
-                onOpenAnimationEndRunnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        if (preview) {
-                            inPreviewMode = true;
-                            transitionAnimationPreviewMode = false;
-                            containerView.setScaleX(1.0f);
-                            containerView.setScaleY(1.0f);
-                        } else {
-                            presentFragmentInternalRemoveOld(removeLast, currentFragment);
-                            containerView.setTranslationX(0);
-                        }
-                        fragment.onTransitionAnimationEnd(true, false);
-                        fragment.onBecomeFullyVisible();
+                onOpenAnimationEndRunnable = () -> {
+                    if (preview) {
+                        inPreviewMode = true;
+                        transitionAnimationPreviewMode = false;
+                        containerView.setScaleX(1.0f);
+                        containerView.setScaleY(1.0f);
+                    } else {
+                        presentFragmentInternalRemoveOld(removeLast, currentFragment);
+                        containerView.setTranslationX(0);
                     }
+                    fragment.onTransitionAnimationEnd(true, false);
+                    fragment.onBecomeFullyVisible();
                 };
                 fragment.onTransitionAnimationStart(true, false);
                 AnimatorSet animation = null;
                 if (!preview) {
-                    animation = fragment.onCustomTransitionAnimation(true, new Runnable() {
-                        @Override
-                        public void run() {
-                            onAnimationEndCheck(false);
-                        }
-                    });
+                    animation = fragment.onCustomTransitionAnimation(true, () -> onAnimationEndCheck(false));
                 }
                 if (animation == null) {
                     containerView.setAlpha(0.0f);
@@ -1089,31 +1081,23 @@ public class ActionBarLayout extends FrameLayout {
                 transitionAnimationStartTime = System.currentTimeMillis();
                 transitionAnimationInProgress = true;
                 final BaseFragment previousFragmentFinal = previousFragment;
-                onCloseAnimationEndRunnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        if (inPreviewMode || transitionAnimationPreviewMode) {
-                            containerViewBack.setScaleX(1.0f);
-                            containerViewBack.setScaleY(1.0f);
-                            inPreviewMode = false;
-                            transitionAnimationPreviewMode = false;
-                        } else {
-                            containerViewBack.setTranslationX(0);
-                        }
-                        closeLastFragmentInternalRemoveOld(currentFragment);
-                        currentFragment.onTransitionAnimationEnd(false, false);
-                        previousFragmentFinal.onTransitionAnimationEnd(true, true);
-                        previousFragmentFinal.onBecomeFullyVisible();
+                onCloseAnimationEndRunnable = () -> {
+                    if (inPreviewMode || transitionAnimationPreviewMode) {
+                        containerViewBack.setScaleX(1.0f);
+                        containerViewBack.setScaleY(1.0f);
+                        inPreviewMode = false;
+                        transitionAnimationPreviewMode = false;
+                    } else {
+                        containerViewBack.setTranslationX(0);
                     }
+                    closeLastFragmentInternalRemoveOld(currentFragment);
+                    currentFragment.onTransitionAnimationEnd(false, false);
+                    previousFragmentFinal.onTransitionAnimationEnd(true, true);
+                    previousFragmentFinal.onBecomeFullyVisible();
                 };
                 AnimatorSet animation = null;
                 if (!inPreviewMode && !transitionAnimationPreviewMode) {
-                    animation = currentFragment.onCustomTransitionAnimation(false, new Runnable() {
-                        @Override
-                        public void run() {
-                            onAnimationEndCheck(false);
-                        }
-                    });
+                    animation = currentFragment.onCustomTransitionAnimation(false, () -> onAnimationEndCheck(false));
                 }
                 if (animation == null) {
                     if (containerView.isKeyboardVisible || containerViewBack.isKeyboardVisible) {
@@ -1144,17 +1128,14 @@ public class ActionBarLayout extends FrameLayout {
                 transitionAnimationStartTime = System.currentTimeMillis();
                 transitionAnimationInProgress = true;
 
-                onCloseAnimationEndRunnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        removeFragmentFromStackInternal(currentFragment);
-                        setVisibility(GONE);
-                        if (backgroundView != null) {
-                            backgroundView.setVisibility(GONE);
-                        }
-                        if (drawerLayoutContainer != null) {
-                            drawerLayoutContainer.setAllowOpenDrawer(true, false);
-                        }
+                onCloseAnimationEndRunnable = () -> {
+                    removeFragmentFromStackInternal(currentFragment);
+                    setVisibility(GONE);
+                    if (backgroundView != null) {
+                        backgroundView.setVisibility(GONE);
+                    }
+                    if (drawerLayoutContainer != null) {
+                        drawerLayoutContainer.setAllowOpenDrawer(true, false);
                     }
                 };
 

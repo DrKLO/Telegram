@@ -142,10 +142,12 @@ jlong Java_org_telegram_SQLite_SQLiteDatabase_opendb(JNIEnv *env, jobject object
     char const *fileNameStr = env->GetStringUTFChars(fileName, 0);
     char const *tempDirStr = env->GetStringUTFChars(tempDir, 0);
 
-    if (sqlite3_temp_directory != 0) {
+    if (sqlite3_temp_directory != 0 && strcmp(sqlite3_temp_directory, tempDirStr)) {
         sqlite3_free(sqlite3_temp_directory);
     }
-    sqlite3_temp_directory = sqlite3_mprintf("%s", tempDirStr);
+    if (sqlite3_temp_directory == 0) {
+        sqlite3_temp_directory = sqlite3_mprintf("%s", tempDirStr);
+    }
 
     sqlite3 *handle = 0;
     int err = sqlite3_open(fileNameStr, &handle);

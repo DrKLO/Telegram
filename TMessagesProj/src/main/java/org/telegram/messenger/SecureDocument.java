@@ -11,6 +11,7 @@ public class SecureDocument extends TLObject {
     public TLRPC.TL_inputFile inputFile;
     public byte[] fileSecret;
     public byte[] fileHash;
+    public int type;
 
     public SecureDocument(SecureDocumentKey key, TLRPC.TL_secureFile file, String p, byte[] fh, byte[] secret) {
         secureDocumentKey = key;

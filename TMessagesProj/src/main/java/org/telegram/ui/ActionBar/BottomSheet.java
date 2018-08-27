@@ -12,7 +12,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -101,12 +100,7 @@ public class BottomSheet extends Dialog {
 
     private ArrayList<BottomSheetCell> itemViews = new ArrayList<>();
 
-    private Runnable dismissRunnable = new Runnable() {
-        @Override
-        public void run() {
-            dismiss();
-        }
-    };
+    private Runnable dismissRunnable = this::dismiss;
 
     private BottomSheetDelegateInterface delegate;
 
@@ -574,14 +568,10 @@ public class BottomSheet extends Dialog {
         focusable = needFocus;
         if (Build.VERSION.SDK_INT >= 21) {
             container.setFitsSystemWindows(true);
-            container.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
-                @SuppressLint("NewApi")
-                @Override
-                public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
-                    lastInsets = insets;
-                    v.requestLayout();
-                    return insets.consumeSystemWindowInsets();
-                }
+            container.setOnApplyWindowInsetsListener((v, insets) -> {
+                lastInsets = insets;
+                v.requestLayout();
+                return insets.consumeSystemWindowInsets();
             });
             container.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }
@@ -631,12 +621,7 @@ public class BottomSheet extends Dialog {
             titleView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), AndroidUtilities.dp(8));
             titleView.setGravity(Gravity.CENTER_VERTICAL);
             containerView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
-            titleView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    return true;
-                }
-            });
+            titleView.setOnTouchListener((v, event) -> true);
             topOffset += 48;
         }
         if (customView != null) {
@@ -658,12 +643,7 @@ public class BottomSheet extends Dialog {
                     containerView.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP, 0, topOffset, 0, 0));
                     topOffset += 48;
                     cell.setTag(a);
-                    cell.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            dismissWithButtonClick((Integer) v.getTag());
-                        }
-                    });
+                    cell.setOnClickListener(v -> dismissWithButtonClick((Integer) v.getTag()));
                     itemViews.add(cell);
                 }
             }
@@ -870,14 +850,11 @@ public class BottomSheet extends Dialog {
                     if (onClickListener != null) {
                         onClickListener.onClick(BottomSheet.this, item);
                     }
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                BottomSheet.super.dismiss();
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
+                    AndroidUtilities.runOnUIThread(() -> {
+                        try {
+                            BottomSheet.super.dismiss();
+                        } catch (Exception e) {
+                            FileLog.e(e);
                         }
                     });
                 }
@@ -923,14 +900,11 @@ public class BottomSheet extends Dialog {
                 public void onAnimationEnd(Animator animation) {
                     if (currentSheetAnimation != null && currentSheetAnimation.equals(animation)) {
                         currentSheetAnimation = null;
-                        AndroidUtilities.runOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    dismissInternal();
-                                } catch (Exception e) {
-                                    FileLog.e(e);
-                                }
+                        AndroidUtilities.runOnUIThread(() -> {
+                            try {
+                                dismissInternal();
+                            } catch (Exception e) {
+                                FileLog.e(e);
                             }
                         });
                     }

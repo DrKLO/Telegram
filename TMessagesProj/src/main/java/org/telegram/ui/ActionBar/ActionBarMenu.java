@@ -76,19 +76,16 @@ public class ActionBarMenu extends LinearLayout {
             menuItem.iconView.setImageResource(icon);
         }
         addView(menuItem, new LinearLayout.LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT));
-        menuItem.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                ActionBarMenuItem item = (ActionBarMenuItem) view;
-                if (item.hasSubMenu()) {
-                    if (parentActionBar.actionBarMenuOnItemClick.canOpenMenu()) {
-                        item.toggleSubMenu();
-                    }
-                } else if (item.isSearchField()) {
-                    parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch(true));
-                } else {
-                    onItemClick((Integer) view.getTag());
+        menuItem.setOnClickListener(view -> {
+            ActionBarMenuItem item = (ActionBarMenuItem) view;
+            if (item.hasSubMenu()) {
+                if (parentActionBar.actionBarMenuOnItemClick.canOpenMenu()) {
+                    item.toggleSubMenu();
                 }
+            } else if (item.isSearchField()) {
+                parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch(true));
+            } else {
+                onItemClick((Integer) view.getTag());
             }
         });
         return menuItem;

@@ -393,16 +393,13 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                             builder.setMessage(LocaleController.getString("InviteUser", R.string.InviteUser));
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                             final String arg1 = usePhone;
-                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    try {
-                                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", arg1, null));
-                                        intent.putExtra("sms_body", ContactsController.getInstance(currentAccount).getInviteText(1));
-                                        getParentActivity().startActivityForResult(intent, 500);
-                                    } catch (Exception e) {
-                                        FileLog.e(e);
-                                    }
+                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
+                                try {
+                                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", arg1, null));
+                                    intent.putExtra("sms_body", ContactsController.getInstance(currentAccount).getInviteText(1));
+                                    getParentActivity().startActivityForResult(intent, 500);
+                                } catch (Exception e) {
+                                    FileLog.e(e);
                                 }
                             });
                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);

@@ -79,6 +79,10 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
@@ -97,9 +101,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.browser.Browser;
-import org.telegram.messenger.exoplayer2.C;
-import org.telegram.messenger.exoplayer2.ExoPlayer;
-import org.telegram.messenger.exoplayer2.ui.AspectRatioFrameLayout;
 import org.telegram.messenger.support.widget.GridLayoutManager;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
@@ -135,6 +136,7 @@ import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.Components.WebPlayerView;
 
 import java.io.File;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -1606,11 +1608,15 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 if (url != null) {
                     int index;
                     boolean isAnchor = false;
-                    final String anchor;
+                    String anchor;
                     if ((index = url.lastIndexOf('#')) != -1) {
-                        anchor = url.substring(index + 1);
+                        try {
+                            anchor = URLDecoder.decode(url.substring(index + 1), "UTF-8");
+                        } catch (Exception ignore) {
+                            anchor = "";
+                        }
                         if (url.toLowerCase().contains(currentPage.url.toLowerCase())) {
-                            Integer row = anchors.get(anchor);
+                            Integer row = anchors.get(anchor.toLowerCase());
                             if (row != null) {
                                 layoutManager.scrollToPositionWithOffset(row, 0);
                                 isAnchor = true;
@@ -1621,6 +1627,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     }
                     if (!isAnchor) {
                         if (openUrlReqId == 0) {
+                            final String anchorFinal = anchor;
                             showProgressView(true);
                             final TLRPC.TL_messages_getWebPage req = new TLRPC.TL_messages_getWebPage();
                             req.url = pressedLink.getUrl();
@@ -1638,7 +1645,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                                             showProgressView(false);
                                             if (isVisible) {
                                                 if (response instanceof TLRPC.TL_webPage && ((TLRPC.TL_webPage) response).cached_page instanceof TLRPC.TL_pageFull) {
-                                                    addPageToStack((TLRPC.TL_webPage) response, anchor);
+                                                    addPageToStack((TLRPC.TL_webPage) response, anchorFinal);
                                                 } else {
                                                     Browser.openUrl(parentActivity, req.url);
                                                 }

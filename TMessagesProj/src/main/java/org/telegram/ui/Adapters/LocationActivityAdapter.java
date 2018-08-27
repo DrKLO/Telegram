@@ -175,12 +175,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter {
             return;
         }
         pulledUp = true;
-        AndroidUtilities.runOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                notifyItemChanged(liveLocationType == 0 ? 2 : 3);
-            }
-        });
+        AndroidUtilities.runOnUIThread(() -> notifyItemChanged(liveLocationType == 0 ? 2 : 3));
     }
 
     public boolean isPulledUp() {

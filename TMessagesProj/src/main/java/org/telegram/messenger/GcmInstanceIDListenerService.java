@@ -17,15 +17,12 @@ public class GcmInstanceIDListenerService extends FirebaseInstanceIdService {
     public void onTokenRefresh() {
         try {
             final String refreshedToken = FirebaseInstanceId.getInstance().getToken();
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("Refreshed token: " + refreshedToken);
-                    }
-                    ApplicationLoader.postInitApplication();
-                    sendRegistrationToServer(refreshedToken);
+            AndroidUtilities.runOnUIThread(() -> {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("Refreshed token: " + refreshedToken);
                 }
+                ApplicationLoader.postInitApplication();
+                sendRegistrationToServer(refreshedToken);
             });
         } catch (Throwable e) {
             FileLog.e(e);
@@ -33,23 +30,15 @@ public class GcmInstanceIDListenerService extends FirebaseInstanceIdService {
     }
 
     public static void sendRegistrationToServer(final String token) {
-        Utilities.stageQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                SharedConfig.pushString = token;
-                for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                    UserConfig userConfig = UserConfig.getInstance(a);
-                    userConfig.registeredForPush = false;
-                    userConfig.saveConfig(false);
-                    if (userConfig.getClientUserId() != 0) {
-                        final int currentAccount = a;
-                        AndroidUtilities.runOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                MessagesController.getInstance(currentAccount).registerForPush(token);
-                            }
-                        });
-                    }
+        Utilities.stageQueue.postRunnable(() -> {
+            SharedConfig.pushString = token;
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                UserConfig userConfig = UserConfig.getInstance(a);
+                userConfig.registeredForPush = false;
+                userConfig.saveConfig(false);
+                if (userConfig.getClientUserId() != 0) {
+                    final int currentAccount = a;
+                    AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).registerForPush(token));
                 }
             }
         });

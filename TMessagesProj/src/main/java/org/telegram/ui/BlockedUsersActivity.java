@@ -9,7 +9,6 @@
 package org.telegram.ui;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.View;
@@ -101,40 +100,31 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                if (position >= MessagesController.getInstance(currentAccount).blockedUsers.size()) {
-                    return;
-                }
-                Bundle args = new Bundle();
-                args.putInt("user_id", MessagesController.getInstance(currentAccount).blockedUsers.get(position));
-                presentFragment(new ProfileActivity(args));
+        listView.setOnItemClickListener((view, position) -> {
+            if (position >= MessagesController.getInstance(currentAccount).blockedUsers.size()) {
+                return;
             }
+            Bundle args = new Bundle();
+            args.putInt("user_id", MessagesController.getInstance(currentAccount).blockedUsers.get(position));
+            presentFragment(new ProfileActivity(args));
         });
 
-        listView.setOnItemLongClickListener(new RecyclerListView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemClick(View view, int position) {
-                if (position >= MessagesController.getInstance(currentAccount).blockedUsers.size() || getParentActivity() == null) {
-                    return true;
-                }
-                selectedUserId = MessagesController.getInstance(currentAccount).blockedUsers.get(position);
-
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                CharSequence[] items = new CharSequence[]{LocaleController.getString("Unblock", R.string.Unblock)};
-                builder.setItems(items, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        if (i == 0) {
-                            MessagesController.getInstance(currentAccount).unblockUser(selectedUserId);
-                        }
-                    }
-                });
-                showDialog(builder.create());
-
+        listView.setOnItemLongClickListener((view, position) -> {
+            if (position >= MessagesController.getInstance(currentAccount).blockedUsers.size() || getParentActivity() == null) {
                 return true;
             }
+            selectedUserId = MessagesController.getInstance(currentAccount).blockedUsers.get(position);
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            CharSequence[] items = new CharSequence[]{LocaleController.getString("Unblock", R.string.Unblock)};
+            builder.setItems(items, (dialogInterface, i) -> {
+                if (i == 0) {
+                    MessagesController.getInstance(currentAccount).unblockUser(selectedUserId);
+                }
+            });
+            showDialog(builder.create());
+
+            return true;
         });
 
         if (MessagesController.getInstance(currentAccount).loadingBlockedUsers) {
@@ -199,7 +189,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
 
         @Override
         public int getItemCount() {
-            if (MessagesController.getInstance(currentAccount).blockedUsers.isEmpty()) {
+            if (MessagesController.getInstance(currentAccount).blockedUsers.size() == 0) {
                 return 0;
             }
             return MessagesController.getInstance(currentAccount).blockedUsers.size() + 1;
@@ -255,16 +245,13 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
-            @Override
-            public void didSetColor() {
-                if (listView != null) {
-                    int count = listView.getChildCount();
-                    for (int a = 0; a < count; a++) {
-                        View child = listView.getChildAt(a);
-                        if (child instanceof UserCell) {
-                            ((UserCell) child).update(0);
-                        }
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
+            if (listView != null) {
+                int count = listView.getChildCount();
+                for (int a = 0; a < count; a++) {
+                    View child = listView.getChildAt(a);
+                    if (child instanceof UserCell) {
+                        ((UserCell) child).update(0);
                     }
                 }
             }

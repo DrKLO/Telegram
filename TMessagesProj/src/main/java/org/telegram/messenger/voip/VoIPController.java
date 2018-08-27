@@ -25,26 +25,26 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Locale;
 
-public class VoIPController {
+public class VoIPController{
 
-	public static final int NET_TYPE_UNKNOWN = 0;
-	public static final int NET_TYPE_GPRS = 1;
-	public static final int NET_TYPE_EDGE = 2;
-	public static final int NET_TYPE_3G = 3;
-	public static final int NET_TYPE_HSPA = 4;
-	public static final int NET_TYPE_LTE = 5;
-	public static final int NET_TYPE_WIFI = 6;
-	public static final int NET_TYPE_ETHERNET = 7;
-	public static final int NET_TYPE_OTHER_HIGH_SPEED = 8;
-	public static final int NET_TYPE_OTHER_LOW_SPEED = 9;
-	public static final int NET_TYPE_DIALUP = 10;
-	public static final int NET_TYPE_OTHER_MOBILE = 11;
+	public static final int NET_TYPE_UNKNOWN=0;
+	public static final int NET_TYPE_GPRS=1;
+	public static final int NET_TYPE_EDGE=2;
+	public static final int NET_TYPE_3G=3;
+	public static final int NET_TYPE_HSPA=4;
+	public static final int NET_TYPE_LTE=5;
+	public static final int NET_TYPE_WIFI=6;
+	public static final int NET_TYPE_ETHERNET=7;
+	public static final int NET_TYPE_OTHER_HIGH_SPEED=8;
+	public static final int NET_TYPE_OTHER_LOW_SPEED=9;
+	public static final int NET_TYPE_DIALUP=10;
+	public static final int NET_TYPE_OTHER_MOBILE=11;
 
-	public static final int STATE_WAIT_INIT = 1;
-	public static final int STATE_WAIT_INIT_ACK = 2;
-	public static final int STATE_ESTABLISHED = 3;
-	public static final int STATE_FAILED = 4;
-	public static final int STATE_RECONNECTING = 5;
+	public static final int STATE_WAIT_INIT=1;
+	public static final int STATE_WAIT_INIT_ACK=2;
+	public static final int STATE_ESTABLISHED=3;
+	public static final int STATE_FAILED=4;
+	public static final int STATE_RECONNECTING=5;
 
 	public static final int DATA_SAVING_NEVER=0;
 	public static final int DATA_SAVING_MOBILE=1;
@@ -62,79 +62,79 @@ public class VoIPController {
 
 	public static final int PEER_CAP_GROUP_CALLS=1;
 
-	protected long nativeInst = 0;
+	protected long nativeInst=0;
 	protected long callStartTime;
 	protected ConnectionStateListener listener;
 
-	public VoIPController() {
-		nativeInst = nativeInit();
+	public VoIPController(){
+		nativeInst=nativeInit();
 	}
 
-	public void start() {
+	public void start(){
 		ensureNativeInstance();
 		nativeStart(nativeInst);
 	}
 
-	public void connect() {
+	public void connect(){
 		ensureNativeInstance();
 		nativeConnect(nativeInst);
 	}
 
-	public void setRemoteEndpoints(TLRPC.TL_phoneConnection[] endpoints, boolean allowP2p, boolean tcp, int connectionMaxLayer) {
-		if (endpoints.length == 0) {
+	public void setRemoteEndpoints(TLRPC.TL_phoneConnection[] endpoints, boolean allowP2p, boolean tcp, int connectionMaxLayer){
+		if(endpoints.length==0){
 			throw new IllegalArgumentException("endpoints size is 0");
 		}
-		for (int a = 0; a < endpoints.length; a++) {
-			TLRPC.TL_phoneConnection endpoint = endpoints[a];
-			if (endpoint.ip == null || endpoint.ip.length() == 0) {
-				throw new IllegalArgumentException("endpoint " + endpoint + " has empty/null ipv4");
+		for(int a=0; a<endpoints.length; a++){
+			TLRPC.TL_phoneConnection endpoint=endpoints[a];
+			if(endpoint.ip==null || endpoint.ip.length()==0){
+				throw new IllegalArgumentException("endpoint "+endpoint+" has empty/null ipv4");
 			}
-			if (endpoint.peer_tag != null && endpoint.peer_tag.length != 16) {
-				throw new IllegalArgumentException("endpoint " + endpoint + " has peer_tag of wrong length");
+			if(endpoint.peer_tag!=null && endpoint.peer_tag.length!=16){
+				throw new IllegalArgumentException("endpoint "+endpoint+" has peer_tag of wrong length");
 			}
 		}
 		ensureNativeInstance();
 		nativeSetRemoteEndpoints(nativeInst, endpoints, allowP2p, tcp, connectionMaxLayer);
 	}
 
-	public void setEncryptionKey(byte[] key, boolean isOutgoing) {
-		if (key.length != 256) {
-			throw new IllegalArgumentException("key length must be exactly 256 bytes but is " + key.length);
+	public void setEncryptionKey(byte[] key, boolean isOutgoing){
+		if(key.length!=256){
+			throw new IllegalArgumentException("key length must be exactly 256 bytes but is "+key.length);
 		}
 		ensureNativeInstance();
 		nativeSetEncryptionKey(nativeInst, key, isOutgoing);
 	}
 
-	public static void setNativeBufferSize(int size) {
+	public static void setNativeBufferSize(int size){
 		nativeSetNativeBufferSize(size);
 	}
 
-	public void release() {
+	public void release(){
 		ensureNativeInstance();
 		nativeRelease(nativeInst);
-		nativeInst = 0;
+		nativeInst=0;
 	}
 
-	public String getDebugString() {
+	public String getDebugString(){
 		ensureNativeInstance();
 		return nativeGetDebugString(nativeInst);
 	}
 
-	protected void ensureNativeInstance() {
-		if (nativeInst == 0) {
+	protected void ensureNativeInstance(){
+		if(nativeInst==0){
 			throw new IllegalStateException("Native instance is not valid");
 		}
 	}
 
-	public void setConnectionStateListener(ConnectionStateListener connectionStateListener) {
-		listener = connectionStateListener;
+	public void setConnectionStateListener(ConnectionStateListener connectionStateListener){
+		listener=connectionStateListener;
 	}
 
 	// called from native code
-	private void handleStateChange(int state) {
+	private void handleStateChange(int state){
 		if(state==STATE_ESTABLISHED && callStartTime==0)
-			callStartTime = SystemClock.elapsedRealtime();
-		if (listener != null) {
+			callStartTime=SystemClock.elapsedRealtime();
+		if(listener!=null){
 			listener.onConnectionStateChanged(state);
 		}
 	}
@@ -163,16 +163,16 @@ public class VoIPController {
 			listener.onCallUpgradeRequestReceived();
 	}
 
-	public void setNetworkType(int type) {
+	public void setNetworkType(int type){
 		ensureNativeInstance();
 		nativeSetNetworkType(nativeInst, type);
 	}
 
-	public long getCallDuration() {
-		return SystemClock.elapsedRealtime() - callStartTime;
+	public long getCallDuration(){
+		return SystemClock.elapsedRealtime()-callStartTime;
 	}
 
-	public void setMicMute(boolean mute) {
+	public void setMicMute(boolean mute){
 		ensureNativeInstance();
 		nativeSetMicMute(nativeInst, mute);
 	}
@@ -180,7 +180,7 @@ public class VoIPController {
 	public void setConfig(double recvTimeout, double initTimeout, int dataSavingOption, long callID){
 		ensureNativeInstance();
 		boolean sysAecAvailable=false, sysNsAvailable=false;
-		if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.JELLY_BEAN){
+		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN){
 			try{
 				sysAecAvailable=AcousticEchoCanceler.isAvailable();
 				sysNsAvailable=AcousticEchoCanceler.isAvailable();
@@ -188,12 +188,12 @@ public class VoIPController {
 
 			}
 		}
-		SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-		boolean dump = preferences.getBoolean("dbg_dump_call_stats", false);
+		SharedPreferences preferences=MessagesController.getGlobalMainSettings();
+		boolean dump=preferences.getBoolean("dbg_dump_call_stats", false);
 		nativeSetConfig(nativeInst, recvTimeout, initTimeout, dataSavingOption,
 				!(sysAecAvailable && VoIPServerConfig.getBoolean("use_system_aec", true)),
 				!(sysNsAvailable && VoIPServerConfig.getBoolean("use_system_ns", true)),
-				true, BuildConfig.DEBUG ? getLogFilePath("voip") : getLogFilePath(callID), BuildConfig.DEBUG && dump ? getLogFilePath("voipStats") : null);
+				true, BuildConfig.DEBUG ? getLogFilePath("voip"+callID) : getLogFilePath(callID), BuildConfig.DEBUG && dump ? getLogFilePath("voipStats") : null);
 	}
 
 	public void debugCtl(int request, int param){
@@ -314,7 +314,7 @@ public class VoIPController {
 	private native void nativeSendGroupCallKey(long inst, byte[] key);
 	private native void nativeRequestCallUpgrade(long inst);
 
-	public interface ConnectionStateListener {
+	public interface ConnectionStateListener{
 		void onConnectionStateChanged(int newState);
 		void onSignalBarCountChanged(int newCount);
 		void onGroupCallKeyReceived(byte[] key);

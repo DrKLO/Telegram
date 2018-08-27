@@ -140,6 +140,7 @@ public class LocationSharingService extends Service implements NotificationCente
             builder.setWhen(System.currentTimeMillis());
             builder.setSmallIcon(R.drawable.live_loc);
             builder.setContentIntent(contentIntent);
+            NotificationsController.checkOtherNotificationsChannel();
             builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
             builder.setContentTitle(LocaleController.getString("AppName", R.string.AppName));
             Intent stopIntent = new Intent(ApplicationLoader.applicationContext, StopLiveLocationReceiver.class);

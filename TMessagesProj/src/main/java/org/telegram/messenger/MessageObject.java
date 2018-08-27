@@ -24,6 +24,7 @@ import android.util.Base64;
 import android.util.SparseArray;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
@@ -1892,7 +1893,7 @@ public class MessageObject {
 
     public ArrayList<MessageObject> getWebPagePhotos(ArrayList<MessageObject> array, ArrayList<TLRPC.PageBlock> blocksToSearch) {
         TLRPC.WebPage webPage = messageOwner.media.webpage;
-        ArrayList<MessageObject> messageObjects = array == null ? new ArrayList<MessageObject>() : array;
+        ArrayList<MessageObject> messageObjects = array == null ? new ArrayList<>() : array;
         if (webPage.cached_page == null) {
             return messageObjects;
         }
@@ -2220,7 +2221,7 @@ public class MessageObject {
                 }
             } else if (messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
                 if (!(messageOwner.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty)) {
-                    if (!update) {
+                    if (!update || photoThumbs == null) {
                         photoThumbs = new ArrayList<>();
                         photoThumbs.add(messageOwner.media.document.thumb);
                     } else if (photoThumbs != null && !photoThumbs.isEmpty() && messageOwner.media.document.thumb != null) {
@@ -2734,6 +2735,9 @@ public class MessageObject {
                 } else if (entity instanceof TLRPC.TL_messageEntityEmail) {
                     spannable.setSpan(new URLSpanReplacement("mailto:" + url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 } else if (entity instanceof TLRPC.TL_messageEntityUrl) {
+                    if (Browser.isPassportUrl(entity.url)) {
+                        continue;
+                    }
                     hasUrls = true;
                     if (!url.toLowerCase().startsWith("http") && !url.toLowerCase().startsWith("tg://")) {
                         spannable.setSpan(new URLSpanBrowser("http://" + url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -2746,8 +2750,11 @@ public class MessageObject {
                     if (url.startsWith("+")) {
                         tel = "+" + tel;
                     }
-                    spannable.setSpan(new URLSpanBrowser("tel://" + tel), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    spannable.setSpan(new URLSpanBrowser("tel:" + tel), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 } else if (entity instanceof TLRPC.TL_messageEntityTextUrl) {
+                    if (Browser.isPassportUrl(entity.url)) {
+                        continue;
+                    }
                     spannable.setSpan(new URLSpanReplacement(entity.url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
             }
@@ -3922,7 +3929,7 @@ public class MessageObject {
                     return messageOwner.fwd_from.from_id;
                 } else if (messageOwner.fwd_from.channel_id != 0) {
                     return -messageOwner.fwd_from.channel_id;
-                }else {
+                } else {
                     return -messageOwner.fwd_from.saved_from_peer.chat_id;
                 }
             }

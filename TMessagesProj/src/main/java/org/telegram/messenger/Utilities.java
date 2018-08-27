@@ -59,6 +59,8 @@ public class Utilities {
     public native static String readlink(String path);
     public native static long getDirSize(String path, int docType);
     public native static void clearDir(String path, int docType, long time);
+    private native static int pbkdf2(byte[] password, byte[] salt, byte[] dst, int iterations);
+    public native static int argon2(int iterations);
 
     public static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, boolean changeIv, int offset, int length) {
         aesIgeEncryption(buffer, key, changeIv ? iv : iv.clone(), encrypt, offset, length);
@@ -187,7 +189,7 @@ public class Utilities {
     }
 
     public static boolean isGoodGaAndGb(BigInteger g_a, BigInteger p) {
-        return !(g_a.compareTo(BigInteger.valueOf(1)) != 1 || g_a.compareTo(p.subtract(BigInteger.valueOf(1))) != -1);
+        return !(g_a.compareTo(BigInteger.valueOf(1)) <= 0 || g_a.compareTo(p.subtract(BigInteger.valueOf(1))) >= 0);
     }
 
     public static boolean arraysEquals(byte[] arr1, int offset1, byte[] arr2, int offset2) {
@@ -255,6 +257,19 @@ public class Utilities {
         return new byte[32];
     }
 
+    public static byte[] computeSHA256(byte[]... args) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            for (int a = 0; a < args.length; a++) {
+                md.update(args[a], 0, args[a].length);
+            }
+            return md.digest();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return new byte[32];
+    }
+
     public static byte[] computeSHA512(byte[] convertme) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-512");
@@ -276,6 +291,12 @@ public class Utilities {
             FileLog.e(e);
         }
         return new byte[64];
+    }
+
+    public static byte[] computePBKDF2(byte[] password, byte[] salt) {
+        byte[] dst = new byte[64];
+        Utilities.pbkdf2(password, salt, dst, 100000);
+        return dst;
     }
 
     public static byte[] computeSHA512(byte[] convertme, byte[] convertme2, byte[] convertme3) {

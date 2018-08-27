@@ -14,36 +14,37 @@ import android.net.Uri;
 import android.os.Handler;
 import android.view.TextureView;
 
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.source.LoopingMediaSource;
+import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.DefaultRenderersFactory;
+import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.TrackGroupArray;
+import com.google.android.exoplayer2.source.dash.DashMediaSource;
+import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
+import com.google.android.exoplayer2.source.hls.HlsMediaSource;
+import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource;
+import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.exoplayer2.Player;
-import org.telegram.messenger.exoplayer2.source.LoopingMediaSource;
 import org.telegram.messenger.secretmedia.ExtendedDefaultDataSourceFactory;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.exoplayer2.DefaultLoadControl;
-import org.telegram.messenger.exoplayer2.DefaultRenderersFactory;
-import org.telegram.messenger.exoplayer2.ExoPlaybackException;
-import org.telegram.messenger.exoplayer2.ExoPlayer;
-import org.telegram.messenger.exoplayer2.ExoPlayerFactory;
-import org.telegram.messenger.exoplayer2.PlaybackParameters;
-import org.telegram.messenger.exoplayer2.SimpleExoPlayer;
-import org.telegram.messenger.exoplayer2.Timeline;
-import org.telegram.messenger.exoplayer2.extractor.DefaultExtractorsFactory;
-import org.telegram.messenger.exoplayer2.source.ExtractorMediaSource;
-import org.telegram.messenger.exoplayer2.source.MediaSource;
-import org.telegram.messenger.exoplayer2.source.TrackGroupArray;
-import org.telegram.messenger.exoplayer2.source.dash.DashMediaSource;
-import org.telegram.messenger.exoplayer2.source.dash.DefaultDashChunkSource;
-import org.telegram.messenger.exoplayer2.source.hls.HlsMediaSource;
-import org.telegram.messenger.exoplayer2.source.smoothstreaming.DefaultSsChunkSource;
-import org.telegram.messenger.exoplayer2.source.smoothstreaming.SsMediaSource;
-import org.telegram.messenger.exoplayer2.trackselection.AdaptiveTrackSelection;
-import org.telegram.messenger.exoplayer2.trackselection.DefaultTrackSelector;
-import org.telegram.messenger.exoplayer2.trackselection.MappingTrackSelector;
-import org.telegram.messenger.exoplayer2.trackselection.TrackSelection;
-import org.telegram.messenger.exoplayer2.trackselection.TrackSelectionArray;
-import org.telegram.messenger.exoplayer2.upstream.DataSource;
-import org.telegram.messenger.exoplayer2.upstream.DefaultBandwidthMeter;
-import org.telegram.messenger.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 
 @SuppressLint("NewApi")
 public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.VideoListener, NotificationCenter.NotificationCenterDelegate {
@@ -354,6 +355,11 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
 
     @Override
     public void onRepeatModeChanged(int repeatMode) {
+
+    }
+
+    @Override
+    public void onSurfaceSizeChanged(int width, int height) {
 
     }
 

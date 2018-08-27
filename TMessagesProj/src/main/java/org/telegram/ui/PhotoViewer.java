@@ -81,6 +81,10 @@ import android.widget.Scroller;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+
 import com.coremedia.iso.IsoFile;
 import com.coremedia.iso.boxes.Box;
 import com.coremedia.iso.boxes.MediaBox;
@@ -110,9 +114,6 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.WebFile;
-import org.telegram.messenger.exoplayer2.C;
-import org.telegram.messenger.exoplayer2.ExoPlayer;
-import org.telegram.messenger.exoplayer2.ui.AspectRatioFrameLayout;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -7040,15 +7041,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     public void closePhoto(boolean animated, boolean fromEditMode) {
         if (!fromEditMode && currentEditMode != 0) {
             if (currentEditMode == 3 && photoPaintView != null) {
-                photoPaintView.maybeShowDismissalAlert(this, parentActivity, new Runnable() {
-                    @Override
-                    public void run() {
-                        switchToEditMode(0);
-                    }
-                });
+                photoPaintView.maybeShowDismissalAlert(this, parentActivity, () -> switchToEditMode(0));
                 return;
             }
-
             if (currentEditMode == 1) {
                 photoCropView.cancelAnimationRunnable();
             }
@@ -7082,6 +7077,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             } else if (currentEditMode == 1) {
                 editorDoneLayout.setVisibility(View.GONE);
                 photoCropView.setVisibility(View.GONE);
+            } else if (currentEditMode == 3) {
+                photoPaintView.shutdown();
+                containerView.removeView(photoPaintView);
+                photoPaintView = null;
             }
             currentEditMode = 0;
         }

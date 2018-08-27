@@ -10,10 +10,11 @@ package org.telegram.messenger;
 
 import android.net.Uri;
 
-import org.telegram.messenger.exoplayer2.C;
-import org.telegram.messenger.exoplayer2.upstream.DataSource;
-import org.telegram.messenger.exoplayer2.upstream.DataSpec;
-import org.telegram.messenger.exoplayer2.upstream.TransferListener;
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DataSpec;
+import com.google.android.exoplayer2.upstream.TransferListener;
+
 import org.telegram.tgnet.TLRPC;
 
 import java.io.EOFException;
@@ -23,10 +24,11 @@ import java.util.concurrent.CountDownLatch;
 
 public class FileStreamLoadOperation implements DataSource {
 
-    private final TransferListener<? super FileStreamLoadOperation> listener;
+    private final TransferListener listener;
     private FileLoadOperation loadOperation;
 
     private Uri uri;
+    private DataSpec dataSpec;
     private long bytesRemaining;
     private boolean opened;
     private int currentOffset;
@@ -39,13 +41,14 @@ public class FileStreamLoadOperation implements DataSource {
         this(null);
     }
 
-    public FileStreamLoadOperation(TransferListener<? super FileStreamLoadOperation> listener) {
+    public FileStreamLoadOperation(TransferListener listener) {
         this.listener = listener;
     }
 
     @Override
     public long open(DataSpec dataSpec) throws IOException {
         uri = dataSpec.uri;
+        this.dataSpec = dataSpec;
         currentAccount = Utilities.parseInt(uri.getQueryParameter("account"));
         document = new TLRPC.TL_document();
         document.access_hash = Utilities.parseLong(uri.getQueryParameter("hash"));
@@ -68,7 +71,7 @@ public class FileStreamLoadOperation implements DataSource {
         }
         opened = true;
         if (listener != null) {
-            listener.onTransferStart(this, dataSpec);
+            listener.onTransferStart(this, dataSpec, false);
         }
         file = new RandomAccessFile(loadOperation.getCurrentFile(), "r");
         file.seek(currentOffset);
@@ -101,7 +104,7 @@ public class FileStreamLoadOperation implements DataSource {
                 currentOffset += availableLength;
                 bytesRemaining -= availableLength;
                 if (listener != null) {
-                    listener.onBytesTransferred(this, availableLength);
+                    listener.onBytesTransferred(this, dataSpec, false, availableLength);
                 }
             } catch (Exception e) {
                 throw new IOException(e);
@@ -135,7 +138,7 @@ public class FileStreamLoadOperation implements DataSource {
         if (opened) {
             opened = false;
             if (listener != null) {
-                listener.onTransferEnd(this);
+                listener.onTransferEnd(this, dataSpec, false);
             }
         }
     }

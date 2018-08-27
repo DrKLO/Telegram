@@ -9,7 +9,6 @@
 package org.telegram.ui.Components;
 
 import android.app.Activity;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Point;
@@ -58,42 +57,39 @@ public class WallpaperUpdater {
         } else {
             items = new CharSequence[]{LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("Cancel", R.string.Cancel)};
         }
-        builder.setItems(items, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                try {
-                    if (i == 0) {
-                        try {
-                            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                            File image = AndroidUtilities.generatePicturePath();
-                            if (image != null) {
-                                if (Build.VERSION.SDK_INT >= 24) {
-                                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(parentActivity, BuildConfig.APPLICATION_ID + ".provider", image));
-                                    takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                                    takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                } else {
-                                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
-                                }
-                                currentPicturePath = image.getAbsolutePath();
+        builder.setItems(items, (dialogInterface, i) -> {
+            try {
+                if (i == 0) {
+                    try {
+                        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                        File image = AndroidUtilities.generatePicturePath();
+                        if (image != null) {
+                            if (Build.VERSION.SDK_INT >= 24) {
+                                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(parentActivity, BuildConfig.APPLICATION_ID + ".provider", image));
+                                takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                                takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            } else {
+                                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
                             }
-                            parentActivity.startActivityForResult(takePictureIntent, 10);
-                        } catch (Exception e) {
-                            FileLog.e(e);
+                            currentPicturePath = image.getAbsolutePath();
                         }
-                    } else if (i == 1) {
-                        Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                        photoPickerIntent.setType("image/*");
-                        parentActivity.startActivityForResult(photoPickerIntent, 11);
-                    } else if (fromTheme) {
-                        if (i == 2) {
-                            delegate.needOpenColorPicker();
-                        } else if (i == 3) {
-                            delegate.didSelectWallpaper(null, null);
-                        }
+                        parentActivity.startActivityForResult(takePictureIntent, 10);
+                    } catch (Exception e) {
+                        FileLog.e(e);
                     }
-                } catch (Exception e) {
-                    FileLog.e(e);
+                } else if (i == 1) {
+                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+                    photoPickerIntent.setType("image/*");
+                    parentActivity.startActivityForResult(photoPickerIntent, 11);
+                } else if (fromTheme) {
+                    if (i == 2) {
+                        delegate.needOpenColorPicker();
+                    } else if (i == 3) {
+                        delegate.didSelectWallpaper(null, null);
+                    }
                 }
+            } catch (Exception e) {
+                FileLog.e(e);
             }
         });
         builder.show();

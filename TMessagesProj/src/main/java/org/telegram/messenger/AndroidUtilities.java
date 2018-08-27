@@ -15,11 +15,13 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -843,8 +845,25 @@ public class AndroidUtilities {
         return value;
     }
 
+    private static CallReceiver callReceiver;
+
     public static void setWaitingForCall(boolean value) {
         synchronized (callLock) {
+            try {
+                if (value) {
+                    if (callReceiver == null) {
+                        final IntentFilter filter = new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
+                        ApplicationLoader.applicationContext.registerReceiver(callReceiver = new CallReceiver(), filter);
+                    }
+                } else {
+                    if (callReceiver != null) {
+                        ApplicationLoader.applicationContext.unregisterReceiver(callReceiver);
+                        callReceiver = null;
+                    }
+                }
+            } catch (Exception ignore) {
+
+            }
             waitingForCall = value;
         }
     }
@@ -2243,5 +2262,13 @@ public class AndroidUtilities {
             }
         });
         builder.show();
+    }
+
+    public static String getSystemProperty(String key){
+        try{
+            Class props=Class.forName("android.os.SystemProperties");
+            return (String)props.getMethod("get", String.class).invoke(null, key);
+        }catch(Exception ignore){}
+        return null;
     }
 }
