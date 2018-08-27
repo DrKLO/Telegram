@@ -323,56 +323,57 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
         }
 
         if (remoteControlClient != null) {
-            int currentID=MediaController.getInstance().getPlayingMessageObject().getId();
-            if(notificationMessageID!=currentID){
-                notificationMessageID=currentID;
-                RemoteControlClient.MetadataEditor metadataEditor=remoteControlClient.editMetadata(true);
+            int currentID = MediaController.getInstance().getPlayingMessageObject().getId();
+            if (notificationMessageID != currentID) {
+                notificationMessageID = currentID;
+                RemoteControlClient.MetadataEditor metadataEditor = remoteControlClient.editMetadata(true);
                 metadataEditor.putString(MediaMetadataRetriever.METADATA_KEY_ARTIST, authorName);
                 metadataEditor.putString(MediaMetadataRetriever.METADATA_KEY_TITLE, songName);
-                if(audioInfo!=null && !TextUtils.isEmpty(audioInfo.getAlbum()))
+                if (audioInfo != null && !TextUtils.isEmpty(audioInfo.getAlbum()))
                     metadataEditor.putString(MediaMetadataRetriever.METADATA_KEY_ALBUM, audioInfo.getAlbum());
-                metadataEditor.putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, MediaController.getInstance().getPlayingMessageObject().audioPlayerDuration*1000L);
-                if(audioInfo!=null && audioInfo.getCover()!=null){
-                    try{
+                metadataEditor.putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, MediaController.getInstance().getPlayingMessageObject().audioPlayerDuration * 1000L);
+                if (audioInfo != null && audioInfo.getCover() != null) {
+                    try {
                         metadataEditor.putBitmap(RemoteControlClient.MetadataEditor.BITMAP_KEY_ARTWORK, audioInfo.getCover());
-                    }catch(Throwable e){
+                    } catch (Throwable e) {
                         FileLog.e(e);
                     }
                 }
                 metadataEditor.apply();
-                AndroidUtilities.runOnUIThread(new Runnable(){
+                AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
-                    public void run(){
-                    	if(remoteControlClient==null)
-                    	    return;
-                    	if(MediaController.getInstance().getPlayingMessageObject().audioPlayerDuration==C.TIME_UNSET){
-                    	    AndroidUtilities.runOnUIThread(this, 500);
-                    	    return;
+                    public void run() {
+                        if (remoteControlClient == null || MediaController.getInstance().getPlayingMessageObject() == null) {
+                            return;
                         }
-                        RemoteControlClient.MetadataEditor metadataEditor=remoteControlClient.editMetadata(false);
-                        metadataEditor.putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, MediaController.getInstance().getPlayingMessageObject().audioPlayerDuration*1000L);
+                        if (MediaController.getInstance().getPlayingMessageObject().audioPlayerDuration == C.TIME_UNSET) {
+                            AndroidUtilities.runOnUIThread(this, 500);
+                            return;
+                        }
+                        RemoteControlClient.MetadataEditor metadataEditor = remoteControlClient.editMetadata(false);
+                        metadataEditor.putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, MediaController.getInstance().getPlayingMessageObject().audioPlayerDuration * 1000L);
                         metadataEditor.apply();
-                        if(Build.VERSION.SDK_INT>=18){
+                        if (Build.VERSION.SDK_INT >= 18) {
                             remoteControlClient.setPlaybackState(MediaController.getInstance().isMessagePaused() ? RemoteControlClient.PLAYSTATE_PAUSED : RemoteControlClient.PLAYSTATE_PLAYING,
-                                    Math.max(MediaController.getInstance().getPlayingMessageObject().audioProgressSec*1000L, 100),
+                                    Math.max(MediaController.getInstance().getPlayingMessageObject().audioProgressSec * 1000L, 100),
                                     MediaController.getInstance().isMessagePaused() ? 0f : 1f);
-                        }else{
+                        } else {
                             remoteControlClient.setPlaybackState(MediaController.getInstance().isMessagePaused() ? RemoteControlClient.PLAYSTATE_PAUSED : RemoteControlClient.PLAYSTATE_PLAYING);
                         }
                     }
                 }, 1000);
             }
-            if(MediaController.getInstance().isDownloadingCurrentMessage()){
+            if (MediaController.getInstance().isDownloadingCurrentMessage()) {
                 remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_BUFFERING);
-            }else{
-                RemoteControlClient.MetadataEditor metadataEditor=remoteControlClient.editMetadata(false);
-                metadataEditor.putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, MediaController.getInstance().getPlayingMessageObject().audioPlayerDuration*1000L);
+            } else {
+                RemoteControlClient.MetadataEditor metadataEditor = remoteControlClient.editMetadata(false);
+                metadataEditor.putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, MediaController.getInstance().getPlayingMessageObject().audioPlayerDuration * 1000L);
                 metadataEditor.apply();
-                if(Build.VERSION.SDK_INT>=18){
+                if (Build.VERSION.SDK_INT >= 18) {
                     remoteControlClient.setPlaybackState(MediaController.getInstance().isMessagePaused() ? RemoteControlClient.PLAYSTATE_PAUSED : RemoteControlClient.PLAYSTATE_PLAYING,
-                            Math.max(MediaController.getInstance().getPlayingMessageObject().audioProgressSec*1000L, 100),
+                            Math.max(MediaController.getInstance().getPlayingMessageObject().audioProgressSec * 1000L, 100),
                             MediaController.getInstance().isMessagePaused() ? 0f : 1f);
-                }else{
+                } else {
                     remoteControlClient.setPlaybackState(MediaController.getInstance().isMessagePaused() ? RemoteControlClient.PLAYSTATE_PAUSED : RemoteControlClient.PLAYSTATE_PLAYING);
                 }
             }
@@ -420,10 +421,10 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             } else {
                 stopSelf();
             }
-        }else if(id==NotificationCenter.messagePlayingDidSeek){
+        } else if (id == NotificationCenter.messagePlayingDidSeek) {
             MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
-            if(remoteControlClient!=null && Build.VERSION.SDK_INT>=18){
-                long progress=Math.round(messageObject.audioPlayerDuration*(float)args[1])*1000L;
+            if (remoteControlClient != null && Build.VERSION.SDK_INT >= 18) {
+                long progress = Math.round(messageObject.audioPlayerDuration * (float) args[1]) * 1000L;
                 remoteControlClient.setPlaybackState(MediaController.getInstance().isMessagePaused() ? RemoteControlClient.PLAYSTATE_PAUSED : RemoteControlClient.PLAYSTATE_PLAYING,
                         progress,
                         MediaController.getInstance().isMessagePaused() ? 0f : 1f);
