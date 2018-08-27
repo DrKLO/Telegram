@@ -40,7 +40,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -152,27 +151,24 @@ public class CountrySelectActivity extends BaseFragment {
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                Country country;
-                if (searching && searchWas) {
-                    country = searchListViewAdapter.getItem(position);
-                } else {
-                    int section = listViewAdapter.getSectionForPosition(position);
-                    int row = listViewAdapter.getPositionInSectionForPosition(position);
-                    if (row < 0 || section < 0) {
-                        return;
-                    }
-                    country = listViewAdapter.getItem(section, row);
-                }
-                if (position < 0) {
+        listView.setOnItemClickListener((view, position) -> {
+            Country country;
+            if (searching && searchWas) {
+                country = searchListViewAdapter.getItem(position);
+            } else {
+                int section = listViewAdapter.getSectionForPosition(position);
+                int row = listViewAdapter.getPositionInSectionForPosition(position);
+                if (row < 0 || section < 0) {
                     return;
                 }
-                finishFragment();
-                if (country != null && delegate != null) {
-                    delegate.didSelectCountry(country.name, country.shortname);
-                }
+                country = listViewAdapter.getItem(section, row);
+            }
+            if (position < 0) {
+                return;
+            }
+            finishFragment();
+            if (country != null && delegate != null) {
+                delegate.didSelectCountry(country.name, country.shortname);
             }
         });
 
@@ -240,20 +236,10 @@ public class CountrySelectActivity extends BaseFragment {
                 FileLog.e(e);
             }
 
-            Collections.sort(sortedCountries, new Comparator<String>() {
-                @Override
-                public int compare(String lhs, String rhs) {
-                    return lhs.compareTo(rhs);
-                }
-            });
+            Collections.sort(sortedCountries, String::compareTo);
 
             for (ArrayList<Country> arr : countries.values()) {
-                Collections.sort(arr, new Comparator<Country>() {
-                    @Override
-                    public int compare(Country country, Country country2) {
-                        return country.name.compareTo(country2.name);
-                    }
-                });
+                Collections.sort(arr, (country, country2) -> country.name.compareTo(country2.name));
             }
         }
 
@@ -390,39 +376,33 @@ public class CountrySelectActivity extends BaseFragment {
         }
 
         private void processSearch(final String query) {
-            Utilities.searchQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
+            Utilities.searchQueue.postRunnable(() -> {
 
-                    String q = query.trim().toLowerCase();
-                    if (q.length() == 0) {
-                        updateSearchResults(new ArrayList<Country>());
-                        return;
-                    }
-                    ArrayList<Country> resultArray = new ArrayList<>();
+                String q = query.trim().toLowerCase();
+                if (q.length() == 0) {
+                    updateSearchResults(new ArrayList<>());
+                    return;
+                }
+                ArrayList<Country> resultArray = new ArrayList<>();
 
-                    String n = query.substring(0, 1);
-                    ArrayList<Country> arr = countries.get(n.toUpperCase());
-                    if (arr != null) {
-                        for (Country c : arr) {
-                            if (c.name.toLowerCase().startsWith(query)) {
-                                resultArray.add(c);
-                            }
+                String n = query.substring(0, 1);
+                ArrayList<Country> arr = countries.get(n.toUpperCase());
+                if (arr != null) {
+                    for (Country c : arr) {
+                        if (c.name.toLowerCase().startsWith(query)) {
+                            resultArray.add(c);
                         }
                     }
-
-                    updateSearchResults(resultArray);
                 }
+
+                updateSearchResults(resultArray);
             });
         }
 
         private void updateSearchResults(final ArrayList<Country> arrCounties) {
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    searchResult = arrCounties;
-                    notifyDataSetChanged();
-                }
+            AndroidUtilities.runOnUIThread(() -> {
+                searchResult = arrCounties;
+                notifyDataSetChanged();
             });
         }
 

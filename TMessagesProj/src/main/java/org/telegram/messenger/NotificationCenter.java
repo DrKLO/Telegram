@@ -106,6 +106,7 @@ public class NotificationCenter {
     public static final int messagePlayingDidReset = totalEvents++;
     public static final int messagePlayingPlayStateChanged = totalEvents++;
     public static final int messagePlayingDidStarted = totalEvents++;
+    public static final int messagePlayingDidSeek = totalEvents++;
     public static final int recordProgressChanged = totalEvents++;
     public static final int recordStarted = totalEvents++;
     public static final int recordStartError = totalEvents++;

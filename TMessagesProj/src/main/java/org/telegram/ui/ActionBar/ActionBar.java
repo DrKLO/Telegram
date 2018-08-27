@@ -91,12 +91,9 @@ public class ActionBar extends FrameLayout {
 
     public ActionBar(Context context) {
         super(context);
-        setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (titleActionRunnable != null) {
-                    titleActionRunnable.run();
-                }
+        setOnClickListener(v -> {
+            if (titleActionRunnable != null) {
+                titleActionRunnable.run();
             }
         });
     }
@@ -114,16 +111,13 @@ public class ActionBar extends FrameLayout {
         backButtonImageView.setPadding(AndroidUtilities.dp(1), 0, 0, 0);
         addView(backButtonImageView, LayoutHelper.createFrame(54, 54, Gravity.LEFT | Gravity.TOP));
 
-        backButtonImageView.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!actionModeVisible && isSearchFieldVisible) {
-                    closeSearchField();
-                    return;
-                }
-                if (actionBarMenuOnItemClick != null) {
-                    actionBarMenuOnItemClick.onItemClick(-1);
-                }
+        backButtonImageView.setOnClickListener(v -> {
+            if (!actionModeVisible && isSearchFieldVisible) {
+                closeSearchField();
+                return;
+            }
+            if (actionBarMenuOnItemClick != null) {
+                actionBarMenuOnItemClick.onItemClick(-1);
             }
         });
     }

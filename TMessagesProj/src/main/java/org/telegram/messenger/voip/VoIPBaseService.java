@@ -474,6 +474,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			builder.setColor(0xff2ca5e0);
 		}
 		if (Build.VERSION.SDK_INT >= 26) {
+			NotificationsController.checkOtherNotificationsChannel();
 			builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
 		}
 		if (photo!= null) {
@@ -755,8 +756,17 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			if(isBluetoothHeadsetConnected() && hasEarpiece()){
 				switch(audioRouteToSet){
 					case AUDIO_ROUTE_BLUETOOTH:
-						am.setBluetoothScoOn(true);
-						am.setSpeakerphoneOn(false);
+						if(!bluetoothScoActive){
+							needSwitchToBluetoothAfterScoActivates=true;
+							try {
+								am.startBluetoothSco();
+							} catch (Throwable ignore) {
+
+							}
+						}else{
+							am.setBluetoothScoOn(true);
+							am.setSpeakerphoneOn(false);
+						}
 						break;
 					case AUDIO_ROUTE_EARPIECE:
 						am.setBluetoothScoOn(false);
@@ -862,7 +872,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			FileLog.d("updateBluetoothHeadsetState: "+connected);
 		isBtHeadsetConnected=connected;
 		final AudioManager am=(AudioManager)getSystemService(AUDIO_SERVICE);
-		if(connected){
+		if(connected && !isRinging() && currentState!=0){
 			if(bluetoothScoActive){
 				if(BuildVars.LOGS_ENABLED)
 					FileLog.d("SCO already active, setting audio routing");
@@ -1355,6 +1365,10 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		return currentState==STATE_ENDED || currentState==STATE_FAILED;
 	}
 
+	protected boolean isRinging(){
+		return false;
+	}
+
 	@TargetApi(Build.VERSION_CODES.O)
 	protected PhoneAccountHandle addAccountToTelecomManager(){
 		TelecomManager tm=(TelecomManager) getSystemService(TELECOM_SERVICE);
@@ -1381,6 +1395,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 				|| "marlin".equals(Build.PRODUCT)		// Pixel XL
 				|| "walleye".equals(Build.PRODUCT)		// Pixel 2
 				|| "taimen".equals(Build.PRODUCT)		// Pixel 2 XL
+				|| MessagesController.getGlobalMainSettings().getBoolean("dbg_force_connection_service", false)
 				;
 	}
 

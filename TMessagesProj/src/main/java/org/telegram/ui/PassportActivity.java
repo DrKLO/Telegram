@@ -6,11 +6,9 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -47,7 +45,6 @@ import android.util.Base64;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -78,6 +75,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MrzRecognizer;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.SecureDocument;
 import org.telegram.messenger.SecureDocumentKey;
 import org.telegram.messenger.SendMessagesHelper;
@@ -129,6 +127,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -148,15 +147,21 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     public final static int TYPE_MANAGE = 8;
 
     private final static int FIELD_NAME = 0;
-    private final static int FIELD_SURNAME = 1;
-    private final static int FIELD_BIRTHDAY = 2;
-    private final static int FIELD_GENDER = 3;
-    private final static int FIELD_CITIZENSHIP = 4;
-    private final static int FIELD_RESIDENCE = 5;
-    private final static int FIELD_CARDNUMBER = 6;
-    private final static int FIELD_EXPIRE = 7;
-    private final static int FIELD_IDENTITY_COUNT = 8;
-    private final static int FIELD_IDENTITY_NODOC_COUNT = 6;
+    private final static int FIELD_MIDNAME = 1;
+    private final static int FIELD_SURNAME = 2;
+    private final static int FIELD_BIRTHDAY = 3;
+    private final static int FIELD_GENDER = 4;
+    private final static int FIELD_CITIZENSHIP = 5;
+    private final static int FIELD_RESIDENCE = 6;
+    private final static int FIELD_CARDNUMBER = 7;
+    private final static int FIELD_EXPIRE = 8;
+    private final static int FIELD_IDENTITY_COUNT = 9;
+    private final static int FIELD_IDENTITY_NODOC_COUNT = 7;
+
+    private final static int FIELD_NATIVE_NAME = 0;
+    private final static int FIELD_NATIVE_MIDNAME = 1;
+    private final static int FIELD_NATIVE_SURNAME = 2;
+    private final static int FIELD_NATIVE_COUNT = 3;
 
     private final static int FIELD_STREET1 = 0;
     private final static int FIELD_STREET2 = 1;
@@ -178,6 +183,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     private final static int UPLOADING_TYPE_SELFIE = 1;
     private final static int UPLOADING_TYPE_FRONT = 2;
     private final static int UPLOADING_TYPE_REVERSE = 3;
+    private final static int UPLOADING_TYPE_TRANSLATION = 4;
 
     private String initialValues;
     private int currentActivityType;
@@ -193,12 +199,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     private int[] currentExpireDate = new int[3];
     private TLRPC.TL_account_authorizationForm currentForm;
 
-    private TLRPC.SecureValueType currentType;
-    private TLRPC.SecureValueType currentDocumentsType;
-    private ArrayList<TLRPC.SecureValueType> availableDocumentTypes;
+    private TLRPC.TL_secureRequiredType currentType;
+    private TLRPC.TL_secureRequiredType currentDocumentsType;
+    private ArrayList<TLRPC.TL_secureRequiredType> availableDocumentTypes;
     private TLRPC.TL_secureValue currentTypeValue;
     private TLRPC.TL_secureValue currentDocumentsTypeValue;
-    private TLRPC.account_Password currentPassword;
+    private TLRPC.TL_account_password currentPassword;
     private TLRPC.TL_auth_sentCode currentPhoneVerification;
 
     private ActionBarMenuItem doneItem;
@@ -211,23 +217,36 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
     private TextSettingsCell uploadDocumentCell;
     private View extraBackgroundView;
+    private View extraBackgroundView2;
     private TextDetailSettingsCell uploadFrontCell;
     private TextDetailSettingsCell uploadReverseCell;
     private TextDetailSettingsCell uploadSelfieCell;
+    private TextSettingsCell uploadTranslationCell;
     private EditTextBoldCursor[] inputFields;
     private ViewGroup[] inputFieldContainers;
+    private EditTextBoldCursor[] inputExtraFields;
     private ScrollView scrollView;
     private LinearLayout linearLayout2;
     private LinearLayout documentsLayout;
     private LinearLayout frontLayout;
     private LinearLayout reverseLayout;
     private LinearLayout selfieLayout;
+    private LinearLayout translationLayout;
     private LinearLayout currentPhotoViewerLayout;
     private HeaderCell headerCell;
     private ArrayList<View> dividers = new ArrayList<>();
     private ShadowSectionCell sectionCell;
+    private ShadowSectionCell sectionCell2;
     private TextInfoPrivacyCell bottomCell;
+    private TextInfoPrivacyCell bottomCellTranslation;
+    private TextInfoPrivacyCell topErrorCell;
+    private TextInfoPrivacyCell nativeInfoCell;
     private TextSettingsCell scanDocumentCell;
+
+    private boolean[] nonLatinNames = new boolean[3];
+    private boolean allowNonLatinName = true;
+
+    private boolean documentOnly;
 
     private TextView plusTextView;
 
@@ -285,26 +304,31 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
     private ArrayList<SecureDocument> documents = new ArrayList<>();
     private SecureDocument selfieDocument;
+    private ArrayList<SecureDocument> translationDocuments = new ArrayList<>();
     private SecureDocument frontDocument;
     private SecureDocument reverseDocument;
     private HashMap<SecureDocument, SecureDocumentCell> documentsCells = new HashMap<>();
     private HashMap<String, SecureDocument> uploadingDocuments = new HashMap<>();
-    private HashMap<TLRPC.SecureValueType, HashMap<String, String>> typesValues = new HashMap<>();
-    private HashMap<TLRPC.SecureValueType, TextDetailSecureCell> typesViews = new HashMap<>();
+    private HashMap<TLRPC.TL_secureRequiredType, HashMap<String, String>> typesValues = new HashMap<>();
+    private HashMap<TLRPC.TL_secureRequiredType, TextDetailSecureCell> typesViews = new HashMap<>();
+    private HashMap<TLRPC.TL_secureRequiredType, TLRPC.TL_secureRequiredType> documentsToTypesLink = new HashMap<>();
     private HashMap<String, String> currentValues;
+    private HashMap<String, String> currentDocumentValues;
     private HashMap<String, HashMap<String, String>> errorsMap = new HashMap<>();
+    private HashMap<String, String> mainErrorsMap = new HashMap<>();
     private HashMap<String, String> fieldsErrors;
     private HashMap<String, String> documentsErrors;
     private HashMap<String, String> errorsValues = new HashMap<>();
     private CharSequence noAllDocumentsErrorText;
+    private CharSequence noAllTranslationErrorText;
 
     private PassportActivityDelegate delegate;
 
     private boolean needActivityResult;
 
     private interface PassportActivityDelegate {
-        void saveValue(TLRPC.SecureValueType type, String text, String json, TLRPC.SecureValueType documentsType, String documentsJson, ArrayList<SecureDocument> documents, SecureDocument selfie, SecureDocument front, SecureDocument reverse, Runnable finishRunnable, ErrorRunnable errorRunnable);
-        void deleteValue(TLRPC.SecureValueType type, TLRPC.SecureValueType documentsType, boolean deleteType, Runnable finishRunnable, ErrorRunnable errorRunnable);
+        void saveValue(TLRPC.TL_secureRequiredType type, String text, String json, TLRPC.TL_secureRequiredType documentType, String documentsJson, ArrayList<SecureDocument> documents, SecureDocument selfie, ArrayList<SecureDocument> translationDocuments, SecureDocument front, SecureDocument reverse, Runnable finishRunnable, ErrorRunnable errorRunnable);
+        void deleteValue(TLRPC.TL_secureRequiredType type, TLRPC.TL_secureRequiredType documentType, ArrayList<TLRPC.TL_secureRequiredType> documentRequiredTypes, boolean deleteType, Runnable finishRunnable, ErrorRunnable errorRunnable);
         SecureDocument saveFile(TLRPC.TL_secureFile secureFile);
     }
 
@@ -336,6 +360,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             SecureDocument document;
             if (uploadingFileType == UPLOADING_TYPE_SELFIE) {
                 document = selfieDocument;
+            } else if (uploadingFileType == UPLOADING_TYPE_TRANSLATION) {
+                document = translationDocuments.get(index);
             } else if (uploadingFileType == UPLOADING_TYPE_FRONT) {
                 document = frontDocument;
             } else if (uploadingFileType == UPLOADING_TYPE_REVERSE) {
@@ -352,6 +378,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             if (uploadingFileType == UPLOADING_TYPE_SELFIE) {
                 selfieDocument = null;
                 key = "selfie" + hash;
+            } else if (uploadingFileType == UPLOADING_TYPE_TRANSLATION) {
+                key = "translation" + hash;
             } else if (uploadingFileType == UPLOADING_TYPE_FRONT) {
                 frontDocument = null;
                 key = "front" + hash;
@@ -631,8 +659,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    public PassportActivity(int type, int botId, String scope, String publicKey, String payload, String callbackUrl, TLRPC.TL_account_authorizationForm form, TLRPC.account_Password accountPassword) {
-        this(type, form, accountPassword, null, null, null, null, null);
+    public PassportActivity(int type, int botId, String scope, String publicKey, String payload, String callbackUrl, TLRPC.TL_account_authorizationForm form, TLRPC.TL_account_password accountPassword) {
+        this(type, form, accountPassword, null, null, null, null, null, null);
         currentBotId = botId;
         currentPayload = payload;
         currentScope = scope;
@@ -641,6 +669,44 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         if (type == TYPE_REQUEST) {
             if (!form.errors.isEmpty()) {
                 try {
+                    Collections.sort(form.errors, new Comparator<TLRPC.SecureValueError>() {
+
+                        int getErrorValue(TLRPC.SecureValueError error) {
+                            if (error instanceof TLRPC.TL_secureValueError) {
+                                return 0;
+                            } else if (error instanceof TLRPC.TL_secureValueErrorFrontSide) {
+                                return 1;
+                            } else if (error instanceof TLRPC.TL_secureValueErrorReverseSide) {
+                                return 2;
+                            } else if (error instanceof TLRPC.TL_secureValueErrorSelfie) {
+                                return 3;
+                            } else if (error instanceof TLRPC.TL_secureValueErrorTranslationFile) {
+                                return 4;
+                            } else if (error instanceof TLRPC.TL_secureValueErrorTranslationFiles) {
+                                return 5;
+                            } else if (error instanceof TLRPC.TL_secureValueErrorFile) {
+                                return 6;
+                            } else if (error instanceof TLRPC.TL_secureValueErrorFiles) {
+                                return 7;
+                            } else if (error instanceof TLRPC.TL_secureValueErrorData) {
+                                TLRPC.TL_secureValueErrorData errorData = (TLRPC.TL_secureValueErrorData) error;
+                                return getFieldCost(errorData.field);
+                            }
+                            return 100;
+                        }
+
+                        @Override
+                        public int compare(TLRPC.SecureValueError e1, TLRPC.SecureValueError e2) {
+                            int val1 = getErrorValue(e1);
+                            int val2 = getErrorValue(e2);
+                            if (val1 < val2) {
+                                return -1;
+                            } else if (val1 > val2) {
+                                return 1;
+                            }
+                            return 0;
+                        }
+                    });
                     for (int a = 0, size = form.errors.size(); a < size; a++) {
                         TLRPC.SecureValueError secureValueError = form.errors.get(a);
                         String key;
@@ -668,6 +734,17 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                             description = secureValueErrorSelfie.text;
                             file_hash = secureValueErrorSelfie.file_hash;
                             target = "selfie";
+                        } else if (secureValueError instanceof TLRPC.TL_secureValueErrorTranslationFile) {
+                            TLRPC.TL_secureValueErrorTranslationFile secureValueErrorTranslationFile = (TLRPC.TL_secureValueErrorTranslationFile) secureValueError;
+                            key = getNameForType(secureValueErrorTranslationFile.type);
+                            description = secureValueErrorTranslationFile.text;
+                            file_hash = secureValueErrorTranslationFile.file_hash;
+                            target = "translation";
+                        } else if (secureValueError instanceof TLRPC.TL_secureValueErrorTranslationFiles) {
+                            TLRPC.TL_secureValueErrorTranslationFiles secureValueErrorTranslationFiles = (TLRPC.TL_secureValueErrorTranslationFiles) secureValueError;
+                            key = getNameForType(secureValueErrorTranslationFiles.type);
+                            description = secureValueErrorTranslationFiles.text;
+                            target = "translation";
                         } else if (secureValueError instanceof TLRPC.TL_secureValueErrorFile) {
                             TLRPC.TL_secureValueErrorFile secureValueErrorFile = (TLRPC.TL_secureValueErrorFile) secureValueError;
                             key = getNameForType(secureValueErrorFile.type);
@@ -679,6 +756,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                             key = getNameForType(secureValueErrorFiles.type);
                             description = secureValueErrorFiles.text;
                             target = "files";
+                        } else if (secureValueError instanceof TLRPC.TL_secureValueError) {
+                            TLRPC.TL_secureValueError secureValueErrorAll = (TLRPC.TL_secureValueError) secureValueError;
+                            key = getNameForType(secureValueErrorAll.type);
+                            description = secureValueErrorAll.text;
+                            file_hash = secureValueErrorAll.hash;
+                            target = "error_all";
                         } else if (secureValueError instanceof TLRPC.TL_secureValueErrorData) {
                             TLRPC.TL_secureValueErrorData secureValueErrorData = (TLRPC.TL_secureValueErrorData) secureValueError;
                             boolean found = false;
@@ -704,6 +787,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         if (vals == null) {
                             vals = new HashMap<>();
                             errorsMap.put(key, vals);
+                            mainErrorsMap.put(key, description);
                         }
                         String hash;
                         if (file_hash != null) {
@@ -723,10 +807,18 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                             }
                         } else if ("selfie".equals(target)) {
                             vals.put("selfie" + hash, description);
+                        } else if ("translation".equals(target)) {
+                            if (file_hash != null) {
+                                vals.put("translation" + hash, description);
+                            } else {
+                                vals.put("translation_all", description);
+                            }
                         } else if ("front".equals(target)) {
                             vals.put("front" + hash, description);
                         } else if ("reverse".equals(target)) {
                             vals.put("reverse" + hash, description);
+                        } else if ("error_all".equals(target)) {
+                            vals.put("error_all", description);
                         }
                     }
                 } catch (Exception ignore) {
@@ -736,16 +828,20 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    public PassportActivity(int type, TLRPC.TL_account_authorizationForm form, TLRPC.account_Password accountPassword, TLRPC.SecureValueType secureType, TLRPC.TL_secureValue secureValue, TLRPC.SecureValueType secureDocumentsType, TLRPC.TL_secureValue secureDocumentsValue, HashMap<String, String> values) {
+    public PassportActivity(int type, TLRPC.TL_account_authorizationForm form, TLRPC.TL_account_password accountPassword, TLRPC.TL_secureRequiredType secureType, TLRPC.TL_secureValue secureValue, TLRPC.TL_secureRequiredType secureDocumentsType, TLRPC.TL_secureValue secureDocumentsValue, HashMap<String, String> values, HashMap<String, String> documentValues) {
         super();
         currentActivityType = type;
         currentForm = form;
         currentType = secureType;
+        if (currentType != null) {
+            allowNonLatinName = currentType.native_names;
+        }
         currentTypeValue = secureValue;
         currentDocumentsType = secureDocumentsType;
         currentDocumentsTypeValue = secureDocumentsValue;
         currentPassword = accountPassword;
         currentValues = values;
+        currentDocumentValues = documentValues;
         if (currentActivityType == TYPE_PHONE) {
             permissionsItems = new ArrayList<>();
         } else if (currentActivityType == TYPE_PHONE_VERIFICATION) {
@@ -753,6 +849,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
         if (currentValues == null) {
             currentValues = new HashMap<>();
+        }
+        if (currentDocumentValues == null) {
+            currentDocumentValues = new HashMap<>();
         }
         if (type == TYPE_PASSWORD) {
             if (UserConfig.getInstance(currentAccount).savedPasswordHash != null && UserConfig.getInstance(currentAccount).savedSaltedPassword != null) {
@@ -763,13 +862,22 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             if (currentPassword == null) {
                 loadPasswordInfo();
             } else {
-                byte[] salt = new byte[currentPassword.new_salt.length + 8];
-                Utilities.random.nextBytes(salt);
-                System.arraycopy(currentPassword.new_salt, 0, salt, 0, currentPassword.new_salt.length);
-                currentPassword.new_salt = salt;
+                TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
+                if (usingSavedPassword == 1) {
+                    onPasswordDone(true);
+                }
             }
-            if (usingSavedPassword == 1) {
-                onPasswordDone(true);
+            if (!SharedConfig.isPassportConfigLoaded()) {
+                TLRPC.TL_help_getPassportConfig req = new TLRPC.TL_help_getPassportConfig();
+                req.hash = SharedConfig.passportConfigHash;
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (response instanceof TLRPC.TL_help_passportConfig) {
+                        TLRPC.TL_help_passportConfig res = (TLRPC.TL_help_passportConfig) response;
+                        SharedConfig.setPassportConfig(res.countries_langs.data, res.hash);
+                    } else {
+                        SharedConfig.getCountryLangs();
+                    }
+                }));
             }
         }
     }
@@ -783,13 +891,10 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         if (currentActivityType == TYPE_PASSWORD && inputFieldContainers != null && inputFieldContainers[FIELD_PASSWORD] != null && inputFieldContainers[FIELD_PASSWORD].getVisibility() == View.VISIBLE) {
             inputFields[FIELD_PASSWORD].requestFocus();
             AndroidUtilities.showKeyboard(inputFields[FIELD_PASSWORD]);
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (inputFieldContainers != null && inputFieldContainers[FIELD_PASSWORD] != null && inputFieldContainers[FIELD_PASSWORD].getVisibility() == View.VISIBLE) {
-                        inputFields[FIELD_PASSWORD].requestFocus();
-                        AndroidUtilities.showKeyboard(inputFields[FIELD_PASSWORD]);
-                    }
+            AndroidUtilities.runOnUIThread(() -> {
+                if (inputFieldContainers != null && inputFieldContainers[FIELD_PASSWORD] != null && inputFieldContainers[FIELD_PASSWORD].getVisibility() == View.VISIBLE) {
+                    inputFields[FIELD_PASSWORD].requestFocus();
+                    AndroidUtilities.showKeyboard(inputFields[FIELD_PASSWORD]);
                 }
             }, 200);
         }
@@ -840,7 +945,6 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 progressDialog = null;
             }
         }
-        //AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid); TODO check
     }
 
     @Override
@@ -850,6 +954,132 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         actionBar.setAllowOverlayTitle(true);
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+
+            private boolean onIdentityDone(Runnable finishRunnable, ErrorRunnable errorRunnable) {
+                if (!uploadingDocuments.isEmpty() || checkFieldsForError()) {
+                    return false;
+                }
+                if (allowNonLatinName) {
+                    allowNonLatinName = false;
+                    boolean error = false;
+                    for (int a = 0; a < nonLatinNames.length; a++) {
+                        if (nonLatinNames[a]) {
+                            inputFields[a].setErrorText(LocaleController.getString("PassportUseLatinOnly", R.string.PassportUseLatinOnly));
+                            if (!error) {
+                                error = true;
+                                String firstName = nonLatinNames[0] ? getTranslitString(inputExtraFields[FIELD_NATIVE_NAME].getText().toString()) : inputFields[FIELD_NAME].getText().toString();
+                                String middleName = nonLatinNames[1] ? getTranslitString(inputExtraFields[FIELD_NATIVE_MIDNAME].getText().toString()) : inputFields[FIELD_MIDNAME].getText().toString();
+                                String lastName = nonLatinNames[2] ? getTranslitString(inputExtraFields[FIELD_NATIVE_SURNAME].getText().toString()) : inputFields[FIELD_SURNAME].getText().toString();
+
+                                if (!TextUtils.isEmpty(firstName) && !TextUtils.isEmpty(middleName) && !TextUtils.isEmpty(lastName)) {
+                                    int num = a;
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                                    builder.setMessage(LocaleController.formatString("PassportNameCheckAlert", R.string.PassportNameCheckAlert, firstName, middleName, lastName));
+                                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                    builder.setPositiveButton(LocaleController.getString("Done", R.string.Done), (dialogInterface, i) -> {
+                                        inputFields[FIELD_NAME].setText(firstName);
+                                        inputFields[FIELD_MIDNAME].setText(middleName);
+                                        inputFields[FIELD_SURNAME].setText(lastName);
+                                        showEditDoneProgress(true, true);
+                                        onIdentityDone(finishRunnable, errorRunnable);
+                                    });
+                                    builder.setNegativeButton(LocaleController.getString("Edit", R.string.Edit), (dialogInterface, i) -> onFieldError(inputFields[num]));
+                                    showDialog(builder.create());
+                                } else {
+                                    onFieldError(inputFields[a]);
+                                }
+                            }
+                        }
+                    }
+                    if (error) {
+                        return false;
+                    }
+                }
+                if (isHasNotAnyChanges()) {
+                    finishFragment();
+                    return false;
+                }
+                JSONObject json = null;
+                JSONObject documentsJson = null;
+                try {
+                    if (!documentOnly) {
+                        HashMap<String, String> valuesToSave = new HashMap<>(currentValues);
+                        if (currentType.native_names) {
+                            if (nativeInfoCell.getVisibility() == View.VISIBLE) {
+                                valuesToSave.put("first_name_native", inputExtraFields[FIELD_NATIVE_NAME].getText().toString());
+                                valuesToSave.put("middle_name_native", inputExtraFields[FIELD_NATIVE_MIDNAME].getText().toString());
+                                valuesToSave.put("last_name_native", inputExtraFields[FIELD_NATIVE_SURNAME].getText().toString());
+                            } else {
+                                valuesToSave.put("first_name_native", inputFields[FIELD_NATIVE_NAME].getText().toString());
+                                valuesToSave.put("middle_name_native", inputFields[FIELD_NATIVE_MIDNAME].getText().toString());
+                                valuesToSave.put("last_name_native", inputFields[FIELD_NATIVE_SURNAME].getText().toString());
+                            }
+                        }
+                        valuesToSave.put("first_name", inputFields[FIELD_NAME].getText().toString());
+                        valuesToSave.put("middle_name", inputFields[FIELD_MIDNAME].getText().toString());
+                        valuesToSave.put("last_name", inputFields[FIELD_SURNAME].getText().toString());
+                        valuesToSave.put("birth_date", inputFields[FIELD_BIRTHDAY].getText().toString());
+                        valuesToSave.put("gender", currentGender);
+                        valuesToSave.put("country_code", currentCitizeship);
+                        valuesToSave.put("residence_country_code", currentResidence);
+
+                        json = new JSONObject();
+                        ArrayList<String> keys = new ArrayList<>(valuesToSave.keySet());
+                        Collections.sort(keys, (key1, key2) -> {
+                            int val1 = getFieldCost(key1);
+                            int val2 = getFieldCost(key2);
+                            if (val1 < val2) {
+                                return -1;
+                            } else if (val1 > val2) {
+                                return 1;
+                            }
+                            return 0;
+                        });
+                        for (int a = 0, size = keys.size(); a < size; a++) {
+                            String key = keys.get(a);
+                            json.put(key, valuesToSave.get(key));
+                        }
+                    }
+
+                    if (currentDocumentsType != null) {
+                        HashMap<String, String> valuesToSave = new HashMap<>(currentDocumentValues);
+                        valuesToSave.put("document_no", inputFields[FIELD_CARDNUMBER].getText().toString());
+                        if (currentExpireDate[0] != 0) {
+                            valuesToSave.put("expiry_date", String.format(Locale.US, "%02d.%02d.%d", currentExpireDate[2], currentExpireDate[1], currentExpireDate[0]));
+                        } else {
+                            valuesToSave.put("expiry_date", "");
+                        }
+
+                        documentsJson = new JSONObject();
+                        ArrayList<String> keys = new ArrayList<>(valuesToSave.keySet());
+                        Collections.sort(keys, (key1, key2) -> {
+                            int val1 = getFieldCost(key1);
+                            int val2 = getFieldCost(key2);
+                            if (val1 < val2) {
+                                return -1;
+                            } else if (val1 > val2) {
+                                return 1;
+                            }
+                            return 0;
+                        });
+                        for (int a = 0, size = keys.size(); a < size; a++) {
+                            String key = keys.get(a);
+                            documentsJson.put(key, valuesToSave.get(key));
+                        }
+                    }
+                } catch (Exception ignore) {
+
+                }
+                if (fieldsErrors != null) {
+                    fieldsErrors.clear();
+                }
+                if (documentsErrors != null) {
+                    documentsErrors.clear();
+                }
+                delegate.saveValue(currentType, null, json != null ? json.toString() : null, currentDocumentsType, documentsJson != null ? documentsJson.toString() : null, null, selfieDocument, translationDocuments, frontDocument, reverseLayout != null && reverseLayout.getVisibility() == View.VISIBLE ? reverseDocument : null, finishRunnable, errorRunnable);
+                return true;
+            }
+
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -899,12 +1129,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         onPasswordDone(false);
                         return;
                     }
-                    final Runnable finishRunnable = new Runnable() {
-                        @Override
-                        public void run() {
-                            finishFragment();
-                        }
-                    };
+                    final Runnable finishRunnable = () -> finishFragment();
                     final ErrorRunnable errorRunnable = new ErrorRunnable() {
                         @Override
                         public void onError(String error, String text) {
@@ -925,7 +1150,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                             }
                             value = inputFields[FIELD_EMAIL].getText().toString();
                         }
-                        delegate.saveValue(currentType, value, null, null, null, null, null, null, null, finishRunnable, errorRunnable);
+                        delegate.saveValue(currentType, value, null, null, null, null, null, null, null, null, finishRunnable, errorRunnable);
                     } else if (currentActivityType == TYPE_PHONE) {
                         String value;
                         if (useCurrentValue) {
@@ -936,7 +1161,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                             }
                             value = inputFields[FIELD_PHONECODE].getText().toString() + inputFields[FIELD_PHONE].getText().toString();
                         }
-                        delegate.saveValue(currentType, value, null, null, null, null, null, null, null, finishRunnable, errorRunnable);
+                        delegate.saveValue(currentType, value, null, null, null, null, null, null, null, null, finishRunnable, errorRunnable);
                     } else if (currentActivityType == TYPE_ADDRESS) {
                         if (!uploadingDocuments.isEmpty() || checkFieldsForError()) {
                             return;
@@ -947,50 +1172,14 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         }
                         JSONObject json = null;
                         try {
-                            json = new JSONObject();
-                            json.put("street_line1", inputFields[FIELD_STREET1].getText().toString());
-                            json.put("street_line2", inputFields[FIELD_STREET2].getText().toString());
-                            json.put("post_code", inputFields[FIELD_POSTCODE].getText().toString());
-                            json.put("city", inputFields[FIELD_CITY].getText().toString());
-                            json.put("state", inputFields[FIELD_STATE].getText().toString());
-                            json.put("country_code", currentCitizeship);
-                        } catch (Exception ignore) {
-
-                        }
-                        if (fieldsErrors != null) {
-                            fieldsErrors.clear();
-                        }
-                        if (documentsErrors != null) {
-                            documentsErrors.clear();
-                        }
-                        delegate.saveValue(currentType, null, json.toString(), currentDocumentsType, null, documents, selfieDocument, null, null, finishRunnable, errorRunnable);
-                    } else if (currentActivityType == TYPE_IDENTITY) {
-                        if (!uploadingDocuments.isEmpty() || checkFieldsForError()) {
-                            return;
-                        }
-                        if (isHasNotAnyChanges()) {
-                            finishFragment();
-                            return;
-                        }
-                        JSONObject json = null;
-                        JSONObject documentsJson = null;
-                        try {
-                            json = new JSONObject();
-                            json.put("first_name", inputFields[FIELD_NAME].getText().toString());
-                            json.put("last_name", inputFields[FIELD_SURNAME].getText().toString());
-                            json.put("birth_date", inputFields[FIELD_BIRTHDAY].getText().toString());
-                            json.put("gender", currentGender);
-                            json.put("country_code", currentCitizeship);
-                            json.put("residence_country_code", currentResidence);
-
-                            if (currentDocumentsType != null) {
-                                documentsJson = new JSONObject();
-                                documentsJson.put("document_no", inputFields[FIELD_CARDNUMBER].getText().toString());
-                                if (currentExpireDate[0] != 0) {
-                                    documentsJson.put("expiry_date", String.format(Locale.US, "%02d.%02d.%d", currentExpireDate[2], currentExpireDate[1], currentExpireDate[0]));
-                                } else {
-                                    documentsJson.put("expiry_date", "");
-                                }
+                            if (!documentOnly) {
+                                json = new JSONObject();
+                                json.put("street_line1", inputFields[FIELD_STREET1].getText().toString());
+                                json.put("street_line2", inputFields[FIELD_STREET2].getText().toString());
+                                json.put("post_code", inputFields[FIELD_POSTCODE].getText().toString());
+                                json.put("city", inputFields[FIELD_CITY].getText().toString());
+                                json.put("state", inputFields[FIELD_STATE].getText().toString());
+                                json.put("country_code", currentCitizeship);
                             }
                         } catch (Exception ignore) {
 
@@ -1001,27 +1190,23 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         if (documentsErrors != null) {
                             documentsErrors.clear();
                         }
-                        delegate.saveValue(currentType, null, json.toString(), currentDocumentsType, documentsJson != null ? documentsJson.toString() : null, null, selfieDocument, frontDocument, reverseLayout != null && reverseLayout.getVisibility() == View.VISIBLE ? reverseDocument : null, finishRunnable, errorRunnable);
+                        delegate.saveValue(currentType, null, json != null ? json.toString() : null, currentDocumentsType, null, documents, selfieDocument, translationDocuments, null, null, finishRunnable, errorRunnable);
+                    } else if (currentActivityType == TYPE_IDENTITY) {
+                        if (!onIdentityDone(finishRunnable, errorRunnable)) {
+                            return;
+                        }
                     } else if (currentActivityType == TYPE_EMAIL_VERIFICATION) {
                         final TLRPC.TL_account_verifyEmail req = new TLRPC.TL_account_verifyEmail();
                         req.email = currentValues.get("email");
                         req.code = inputFields[FIELD_EMAIL].getText().toString();
-                        int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                            @Override
-                            public void run(final TLObject response, final TLRPC.TL_error error) {
-                                AndroidUtilities.runOnUIThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (error == null) {
-                                            delegate.saveValue(currentType, currentValues.get("email"), null, null, null, null, null, null, null, finishRunnable, errorRunnable);
-                                        } else {
-                                            AlertsCreator.processError(currentAccount, error, PassportActivity.this, req);
-                                            errorRunnable.onError(null, null);
-                                        }
-                                    }
-                                });
+                        int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                            if (error == null) {
+                                delegate.saveValue(currentType, currentValues.get("email"), null, null, null, null, null, null, null, null, finishRunnable, errorRunnable);
+                            } else {
+                                AlertsCreator.processError(currentAccount, error, PassportActivity.this, req);
+                                errorRunnable.onError(null, null);
                             }
-                        });
+                        }));
                         ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
                     } else if (currentActivityType == TYPE_PHONE_VERIFICATION) {
                         views[currentViewNum].onNextPressed();
@@ -1130,6 +1315,47 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         super.dismissCurrentDialig();
     }
 
+    private String getTranslitString(String value) {
+        return LocaleController.getInstance().getTranslitString(value, true);
+    }
+
+    private int getFieldCost(String key) {
+        switch (key) {
+            case "first_name":
+            case "first_name_native":
+                return 20;
+            case "middle_name":
+            case "middle_name_native":
+                return 21;
+            case "last_name":
+            case "last_name_native":
+                return 22;
+            case "birth_date":
+                return 23;
+            case "gender":
+                return 24;
+            case "country_code":
+                return 25;
+            case "residence_country_code":
+                return 26;
+            case "document_no":
+                return 27;
+            case "expiry_date":
+                return 28;
+            case "street_line1":
+                return 29;
+            case "street_line2":
+                return 30;
+            case "post_code":
+                return 31;
+            case "city":
+                return 32;
+            case "state":
+                return 33;
+        }
+        return 100;
+    }
+
     private void createPhoneVerificationInterface(Context context) {
         actionBar.setTitle(LocaleController.getString("PassportPhone", R.string.PassportPhone));
 
@@ -1148,31 +1374,25 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
     private void loadPasswordInfo() {
         TLRPC.TL_account_getPassword req = new TLRPC.TL_account_getPassword();
-        int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(final TLObject response, TLRPC.TL_error error) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (response != null) {
-                            currentPassword = (TLRPC.account_Password) response;
+        int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (response != null) {
+                currentPassword = (TLRPC.TL_account_password) response;
+                if (!TwoStepVerificationActivity.canHandleCurrentPassword(currentPassword, false)) {
+                    AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
+                    return;
+                }
+                TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
+                updatePasswordInterface();
 
-                            byte[] salt = new byte[currentPassword.new_salt.length + 8];
-                            Utilities.random.nextBytes(salt);
-                            System.arraycopy(currentPassword.new_salt, 0, salt, 0, currentPassword.new_salt.length);
-                            currentPassword.new_salt = salt;
-
-                            updatePasswordInterface();
-
-                            if (inputFieldContainers[FIELD_PASSWORD].getVisibility() == View.VISIBLE) {
-                                inputFields[FIELD_PASSWORD].requestFocus();
-                                AndroidUtilities.showKeyboard(inputFields[FIELD_PASSWORD]);
-                            }
-                        }
-                    }
-                });
+                if (inputFieldContainers[FIELD_PASSWORD].getVisibility() == View.VISIBLE) {
+                    inputFields[FIELD_PASSWORD].requestFocus();
+                    AndroidUtilities.showKeyboard(inputFields[FIELD_PASSWORD]);
+                }
+                if (usingSavedPassword == 1) {
+                    onPasswordDone(true);
+                }
             }
-        });
+        }));
         ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
     }
 
@@ -1207,15 +1427,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             container.addView(inputFields[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 17, 12, 17, 6));
 
-            inputFields[a].setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_DONE || i == EditorInfo.IME_ACTION_NEXT) {
-                        doneItem.callOnClick();
-                        return true;
-                    }
-                    return false;
+            inputFields[a].setOnEditorActionListener((textView, i, keyEvent) -> {
+                if (i == EditorInfo.IME_ACTION_DONE || i == EditorInfo.IME_ACTION_NEXT) {
+                    doneItem.callOnClick();
+                    return true;
                 }
+                return false;
             });
 
             inputFields[a].addTextChangedListener(new TextWatcher() {
@@ -1313,14 +1530,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         noPasswordSetTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         noPasswordSetTextView.setText(LocaleController.getString("TelegramPassportCreatePassword", R.string.TelegramPassportCreatePassword));
         linearLayout2.addView(noPasswordSetTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 9, 17, 0));
-        noPasswordSetTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                TwoStepVerificationActivity activity = new TwoStepVerificationActivity(currentAccount, 1);
-                activity.setCloseAfterSet(true);
-                activity.setCurrentPasswordInfo(new byte[0], currentPassword);
-                presentFragment(activity);
-            }
+        noPasswordSetTextView.setOnClickListener(v -> {
+            TwoStepVerificationActivity activity = new TwoStepVerificationActivity(currentAccount, 1);
+            activity.setCloseAfterSet(true);
+            activity.setCurrentPasswordInfo(new byte[0], currentPassword);
+            presentFragment(activity);
         });
 
         inputFields = new EditTextBoldCursor[1];
@@ -1350,15 +1564,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             inputFieldContainers[a].addView(inputFields[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 17, 12, 17, 6));
 
-            inputFields[a].setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_NEXT || i == EditorInfo.IME_ACTION_DONE) {
-                        doneItem.callOnClick();
-                        return true;
-                    }
-                    return false;
+            inputFields[a].setOnEditorActionListener((textView, i, keyEvent) -> {
+                if (i == EditorInfo.IME_ACTION_NEXT || i == EditorInfo.IME_ACTION_DONE) {
+                    doneItem.callOnClick();
+                    return true;
                 }
+                return false;
             });
             inputFields[a].setCustomSelectionActionModeCallback(new ActionMode.Callback() {
                 public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
@@ -1389,73 +1600,54 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         passwordForgotButton.setText(LocaleController.getString("ForgotPassword", R.string.ForgotPassword));
         passwordForgotButton.setPadding(0, 0, 0, 0);
         linearLayout2.addView(passwordForgotButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 0, 17, 0));
-        passwordForgotButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (currentPassword.has_recovery) {
-                    needShowProgress();
-                    TLRPC.TL_auth_requestPasswordRecovery req = new TLRPC.TL_auth_requestPasswordRecovery();
-                    int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                        @Override
-                        public void run(final TLObject response, final TLRPC.TL_error error) {
-                            AndroidUtilities.runOnUIThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    needHideProgress();
-                                    if (error == null) {
-                                        final TLRPC.TL_auth_passwordRecovery res = (TLRPC.TL_auth_passwordRecovery) response;
-                                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                                        builder.setMessage(LocaleController.formatString("RestoreEmailSent", R.string.RestoreEmailSent, res.email_pattern));
-                                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialogInterface, int i) {
-                                                TwoStepVerificationActivity fragment = new TwoStepVerificationActivity(currentAccount, 1);
-                                                fragment.setRecoveryParams(currentPassword);
-                                                currentPassword.email_unconfirmed_pattern = res.email_pattern;
-                                                presentFragment(fragment);
-                                            }
-                                        });
-                                        Dialog dialog = showDialog(builder.create());
-                                        if (dialog != null) {
-                                            dialog.setCanceledOnTouchOutside(false);
-                                            dialog.setCancelable(false);
-                                        }
-                                    } else {
-                                        if (error.text.startsWith("FLOOD_WAIT")) {
-                                            int time = Utilities.parseInt(error.text);
-                                            String timeString;
-                                            if (time < 60) {
-                                                timeString = LocaleController.formatPluralString("Seconds", time);
-                                            } else {
-                                                timeString = LocaleController.formatPluralString("Minutes", time / 60);
-                                            }
-                                            showAlertWithText(LocaleController.getString("AppName", R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
-                                        } else {
-                                            showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
-                                        }
-                                    }
-                                }
-                            });
+        passwordForgotButton.setOnClickListener(v -> {
+            if (currentPassword.has_recovery) {
+                needShowProgress();
+                TLRPC.TL_auth_requestPasswordRecovery req = new TLRPC.TL_auth_requestPasswordRecovery();
+                int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    needHideProgress();
+                    if (error == null) {
+                        final TLRPC.TL_auth_passwordRecovery res = (TLRPC.TL_auth_passwordRecovery) response;
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setMessage(LocaleController.formatString("RestoreEmailSent", R.string.RestoreEmailSent, res.email_pattern));
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
+                            TwoStepVerificationActivity fragment = new TwoStepVerificationActivity(currentAccount, 1);
+                            fragment.setRecoveryParams(currentPassword);
+                            currentPassword.email_unconfirmed_pattern = res.email_pattern;
+                            presentFragment(fragment);
+                        });
+                        Dialog dialog = showDialog(builder.create());
+                        if (dialog != null) {
+                            dialog.setCanceledOnTouchOutside(false);
+                            dialog.setCancelable(false);
                         }
-                    }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
-                    ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
-                } else {
-                    if (getParentActivity() == null) {
-                        return;
+                    } else {
+                        if (error.text.startsWith("FLOOD_WAIT")) {
+                            int time = Utilities.parseInt(error.text);
+                            String timeString;
+                            if (time < 60) {
+                                timeString = LocaleController.formatPluralString("Seconds", time);
+                            } else {
+                                timeString = LocaleController.formatPluralString("Minutes", time / 60);
+                            }
+                            showAlertWithText(LocaleController.getString("AppName", R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                        } else {
+                            showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
+                        }
                     }
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                    builder.setNegativeButton(LocaleController.getString("RestorePasswordResetAccount", R.string.RestorePasswordResetAccount), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            Browser.openUrl(getParentActivity(), "https://telegram.org/deactivate?phone=" + UserConfig.getInstance(currentAccount).getClientPhone());
-                        }
-                    });
-                    builder.setTitle(LocaleController.getString("RestorePasswordNoEmailTitle", R.string.RestorePasswordNoEmailTitle));
-                    builder.setMessage(LocaleController.getString("RestorePasswordNoEmailText", R.string.RestorePasswordNoEmailText));
-                    showDialog(builder.create());
+                }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
+            } else {
+                if (getParentActivity() == null) {
+                    return;
                 }
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                builder.setNegativeButton(LocaleController.getString("RestorePasswordResetAccount", R.string.RestorePasswordResetAccount), (dialog, which) -> Browser.openUrl(getParentActivity(), "https://telegram.org/deactivate?phone=" + UserConfig.getInstance(currentAccount).getClientPhone()));
+                builder.setTitle(LocaleController.getString("RestorePasswordNoEmailTitle", R.string.RestorePasswordNoEmailTitle));
+                builder.setMessage(LocaleController.getString("RestorePasswordNoEmailText", R.string.RestorePasswordNoEmailText));
+                showDialog(builder.create());
             }
         });
 
@@ -1463,10 +1655,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     }
 
     private void onPasswordDone(final boolean saved) {
-        final byte[] currentPasswordHash;
         final String textPassword;
         if (saved) {
-            currentPasswordHash = savedPasswordHash;
             textPassword = null;
         } else {
             textPassword = inputFields[FIELD_PASSWORD].getText().toString();
@@ -1475,167 +1665,230 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 return;
             }
             showEditDoneProgress(true, true);
-            byte[] passwordBytes = AndroidUtilities.getStringBytes(textPassword);
-            byte[] hash = new byte[currentPassword.current_salt.length * 2 + passwordBytes.length];
-            System.arraycopy(currentPassword.current_salt, 0, hash, 0, currentPassword.current_salt.length);
-            System.arraycopy(passwordBytes, 0, hash, currentPassword.current_salt.length, passwordBytes.length);
-            System.arraycopy(currentPassword.current_salt, 0, hash, hash.length - currentPassword.current_salt.length, currentPassword.current_salt.length);
-            currentPasswordHash = Utilities.computeSHA256(hash, 0, hash.length);
         }
 
-        RequestDelegate requestDelegate = new RequestDelegate() {
+        Utilities.globalQueue.postRunnable(() -> {
+            TLRPC.TL_account_getPasswordSettings req = new TLRPC.TL_account_getPasswordSettings();
 
-            private void openRequestInterface() {
-                if (inputFields == null) {
-                    return;
-                }
-                if (!saved) {
-                    UserConfig.getInstance(currentAccount).savePassword(currentPasswordHash, saltedPassword);
-                }
-
-                AndroidUtilities.hideKeyboard(inputFields[FIELD_PASSWORD]);
-                ignoreOnFailure = true;
-                int type;
-                if (currentBotId == 0) {
-                    type = TYPE_MANAGE;
-                } else {
-                    type = TYPE_REQUEST;
-                }
-                PassportActivity activity = new PassportActivity(type, currentBotId, currentScope, currentPublicKey, currentPayload, currentCallbackUrl, currentForm, currentPassword);
-                activity.currentEmail = currentEmail;
-                activity.currentAccount = currentAccount;
-                activity.saltedPassword = saltedPassword;
-                activity.secureSecret = secureSecret;
-                activity.secureSecretId = secureSecretId;
-                activity.needActivityResult = needActivityResult;
-                if (parentLayout == null || !parentLayout.checkTransitionAnimation()) {
-                    presentFragment(activity, true);
-                } else {
-                    presentAfterAnimation = activity;
-                }
+            final byte x_bytes[];
+            if (saved) {
+                x_bytes = savedPasswordHash;
+            } else if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
+                byte[] passwordBytes = AndroidUtilities.getStringBytes(textPassword);
+                TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
+                x_bytes = SRPHelper.getX(passwordBytes, algo);
+            } else {
+                x_bytes = null;
             }
 
-            private void resetSecret() {
-                TLRPC.TL_account_updatePasswordSettings req = new TLRPC.TL_account_updatePasswordSettings();
-                req.current_password_hash = currentPasswordHash;
-                req.new_settings = new TLRPC.TL_account_passwordInputSettings();
-                req.new_settings.new_secure_secret = new byte[0];
-                req.new_settings.new_secure_salt = new byte[0];
-                req.new_settings.new_secure_secret_id = 0;
-                req.new_settings.flags |= 4;
-                ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                    @Override
-                    public void run(TLObject response, TLRPC.TL_error error) {
-                        AndroidUtilities.runOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                generateNewSecret();
-                            }
-                        });
+            RequestDelegate requestDelegate = new RequestDelegate() {
+
+                private void openRequestInterface() {
+                    if (inputFields == null) {
+                        return;
                     }
-                });
-            }
+                    if (!saved) {
+                        UserConfig.getInstance(currentAccount).savePassword(x_bytes, saltedPassword);
+                    }
 
-            private void generateNewSecret() {
-                Utilities.random.setSeed(currentPassword.secure_random);
-                byte[] secureSalt = new byte[currentPassword.new_secure_salt.length + 8];
-                Utilities.random.nextBytes(secureSalt);
-                System.arraycopy(currentPassword.new_secure_salt, 0, secureSalt, 0, currentPassword.new_secure_salt.length);
+                    AndroidUtilities.hideKeyboard(inputFields[FIELD_PASSWORD]);
+                    ignoreOnFailure = true;
+                    int type;
+                    if (currentBotId == 0) {
+                        type = TYPE_MANAGE;
+                    } else {
+                        type = TYPE_REQUEST;
+                    }
+                    PassportActivity activity = new PassportActivity(type, currentBotId, currentScope, currentPublicKey, currentPayload, currentCallbackUrl, currentForm, currentPassword);
+                    activity.currentEmail = currentEmail;
+                    activity.currentAccount = currentAccount;
+                    activity.saltedPassword = saltedPassword;
+                    activity.secureSecret = secureSecret;
+                    activity.secureSecretId = secureSecretId;
+                    activity.needActivityResult = needActivityResult;
+                    if (parentLayout == null || !parentLayout.checkTransitionAnimation()) {
+                        presentFragment(activity, true);
+                    } else {
+                        presentAfterAnimation = activity;
+                    }
+                }
 
-                saltedPassword = Utilities.computeSHA512(secureSalt, AndroidUtilities.getStringBytes(textPassword), secureSalt);
-                byte[] key = new byte[32];
-                System.arraycopy(saltedPassword, 0, key, 0, 32);
-                byte[] iv = new byte[16];
-                System.arraycopy(saltedPassword, 32, iv, 0, 16);
-
-                secureSecret = getRandomSecret();
-                secureSecretId = Utilities.bytesToLong(Utilities.computeSHA256(secureSecret));
-                Utilities.aesCbcEncryptionByteArraySafe(secureSecret, key, iv, 0, secureSecret.length, 0, 1);
-
-                TLRPC.TL_account_updatePasswordSettings req = new TLRPC.TL_account_updatePasswordSettings();
-                req.current_password_hash = currentPasswordHash;
-                req.new_settings = new TLRPC.TL_account_passwordInputSettings();
-                req.new_settings.new_secure_secret = secureSecret;
-                req.new_settings.new_secure_salt = secureSalt;
-                req.new_settings.new_secure_secret_id = secureSecretId;
-                req.new_settings.flags |= 4;
-                ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                    @Override
-                    public void run(TLObject response, TLRPC.TL_error error) {
-                        AndroidUtilities.runOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (currentForm == null) {
-                                    currentForm = new TLRPC.TL_account_authorizationForm();
-                                    currentForm.selfie_required = true;
+                private void resetSecret() {
+                    TLRPC.TL_account_updatePasswordSettings req2 = new TLRPC.TL_account_updatePasswordSettings();
+                    if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
+                        TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
+                        req2.password = SRPHelper.startCheck(x_bytes, currentPassword.srp_id, currentPassword.srp_B, algo);
+                    }
+                    req2.new_settings = new TLRPC.TL_account_passwordInputSettings();
+                    req2.new_settings.new_secure_settings = new TLRPC.TL_secureSecretSettings();
+                    req2.new_settings.new_secure_settings.secure_secret = new byte[0];
+                    req2.new_settings.new_secure_settings.secure_algo = new TLRPC.TL_securePasswordKdfAlgoUnknown();
+                    req2.new_settings.new_secure_settings.secure_secret_id = 0;
+                    req2.new_settings.flags |= 4;
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                        if (error != null && "SRP_ID_INVALID".equals(error.text)) {
+                            TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
+                            ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
+                                if (error2 == null) {
+                                    currentPassword = (TLRPC.TL_account_password) response2;
+                                    TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
+                                    resetSecret();
                                 }
-                                openRequestInterface();
-                            }
-                        });
-                    }
-                });
-            }
+                            }), ConnectionsManager.RequestFlagWithoutLogin);
+                            return;
+                        }
+                        generateNewSecret();
+                    }));
+                }
 
-            @Override
-            public void run(final TLObject response, final TLRPC.TL_error error) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (error == null) {
-                            TLRPC.TL_account_passwordSettings settings = (TLRPC.TL_account_passwordSettings) response;
-                            secureSecret = settings.secure_secret;
-                            secureSecretId = settings.secure_secret_id;
-                            currentEmail = settings.email;
-                            if (saved) {
-                                saltedPassword = savedSaltedPassword;
-                            } else {
-                                saltedPassword = Utilities.computeSHA512(settings.secure_salt, AndroidUtilities.getStringBytes(textPassword), settings.secure_salt);
-                            }
+                private void generateNewSecret() {
+                    Utilities.globalQueue.postRunnable(() -> {
+                        Utilities.random.setSeed(currentPassword.secure_random);
 
-                            if (!checkSecret(decryptSecret(secureSecret, saltedPassword), secureSecretId) || settings.secure_salt.length == 0 || secureSecretId == 0) {
-                                if (saved) {
-                                    UserConfig.getInstance(currentAccount).resetSavedPassword();
-                                    usingSavedPassword = 0;
-                                    updatePasswordInterface();
-                                } else {
-                                    if (secureSecret == null || secureSecret.length == 0) {
+                        TLRPC.TL_account_updatePasswordSettings req1 = new TLRPC.TL_account_updatePasswordSettings();
+                        if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
+                            TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
+                            req1.password = SRPHelper.startCheck(x_bytes, currentPassword.srp_id, currentPassword.srp_B, algo);
+                        }
+                        req1.new_settings = new TLRPC.TL_account_passwordInputSettings();
+
+                        secureSecret = getRandomSecret();
+                        secureSecretId = Utilities.bytesToLong(Utilities.computeSHA256(secureSecret));
+                        if (currentPassword.new_secure_algo instanceof TLRPC.TL_securePasswordKdfAlgoPBKDF2HMACSHA512iter100000) {
+                            TLRPC.TL_securePasswordKdfAlgoPBKDF2HMACSHA512iter100000 newAlgo = (TLRPC.TL_securePasswordKdfAlgoPBKDF2HMACSHA512iter100000) currentPassword.new_secure_algo;
+
+                            saltedPassword = Utilities.computePBKDF2(AndroidUtilities.getStringBytes(textPassword), newAlgo.salt);
+                            byte[] key = new byte[32];
+                            System.arraycopy(saltedPassword, 0, key, 0, 32);
+                            byte[] iv = new byte[16];
+                            System.arraycopy(saltedPassword, 32, iv, 0, 16);
+
+                            Utilities.aesCbcEncryptionByteArraySafe(secureSecret, key, iv, 0, secureSecret.length, 0, 1);
+
+                            req1.new_settings.new_secure_settings = new TLRPC.TL_secureSecretSettings();
+                            req1.new_settings.new_secure_settings.secure_algo = newAlgo;
+                            req1.new_settings.new_secure_settings.secure_secret = secureSecret;
+                            req1.new_settings.new_secure_settings.secure_secret_id = secureSecretId;
+                            req1.new_settings.flags |= 4;
+                        }
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req1, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                            if (error != null && "SRP_ID_INVALID".equals(error.text)) {
+                                TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
+                                ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
+                                    if (error2 == null) {
+                                        currentPassword = (TLRPC.TL_account_password) response2;
+                                        TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
                                         generateNewSecret();
-                                    } else {
-                                        resetSecret();
                                     }
-                                }
-                            } else if (currentBotId == 0) {
-                                TLRPC.TL_account_getAllSecureValues req = new TLRPC.TL_account_getAllSecureValues();
-                                ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                                    @Override
-                                    public void run(final TLObject response, final TLRPC.TL_error error) {
-                                        AndroidUtilities.runOnUIThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                if (response != null) {
-                                                    currentForm = new TLRPC.TL_account_authorizationForm();
-                                                    currentForm.selfie_required = true;
-                                                    TLRPC.Vector vector = (TLRPC.Vector) response;
-                                                    for (int a = 0, size = vector.objects.size(); a < size; a++) {
-                                                        currentForm.values.add((TLRPC.TL_secureValue) vector.objects.get(a));
-                                                    }
-                                                    openRequestInterface();
-                                                } else {
-                                                    showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
-                                                }
-                                            }
-                                        });
-                                    }
-                                });
-                            } else {
-                                openRequestInterface();
+                                }), ConnectionsManager.RequestFlagWithoutLogin);
+                                return;
                             }
-                        } else {
+                            if (currentForm == null) {
+                                currentForm = new TLRPC.TL_account_authorizationForm();
+                            }
+                            openRequestInterface();
+                        }));
+                    });
+                }
+
+                @Override
+                public void run(final TLObject response, final TLRPC.TL_error error) {
+                    if (error != null && "SRP_ID_INVALID".equals(error.text)) {
+                        TLRPC.TL_account_getPassword getPasswordReq = new TLRPC.TL_account_getPassword();
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
+                            if (error2 == null) {
+                                currentPassword = (TLRPC.TL_account_password) response2;
+                                TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
+                                onPasswordDone(saved);
+                            }
+                        }), ConnectionsManager.RequestFlagWithoutLogin);
+                        return;
+                    }
+                    if (error == null) {
+                        Utilities.globalQueue.postRunnable(() -> {
+                            TLRPC.TL_account_passwordSettings settings = (TLRPC.TL_account_passwordSettings) response;
+                            byte[] secure_salt;
+                            if (settings.secure_settings != null) {
+                                secureSecret = settings.secure_settings.secure_secret;
+                                secureSecretId = settings.secure_settings.secure_secret_id;
+                                if (settings.secure_settings.secure_algo instanceof TLRPC.TL_securePasswordKdfAlgoSHA512) {
+                                    TLRPC.TL_securePasswordKdfAlgoSHA512 algo = (TLRPC.TL_securePasswordKdfAlgoSHA512) settings.secure_settings.secure_algo;
+                                    secure_salt = algo.salt;
+                                    saltedPassword = Utilities.computeSHA512(secure_salt, AndroidUtilities.getStringBytes(textPassword), secure_salt);
+                                } else if (settings.secure_settings.secure_algo instanceof TLRPC.TL_securePasswordKdfAlgoPBKDF2HMACSHA512iter100000) {
+                                    TLRPC.TL_securePasswordKdfAlgoPBKDF2HMACSHA512iter100000 algo = (TLRPC.TL_securePasswordKdfAlgoPBKDF2HMACSHA512iter100000) settings.secure_settings.secure_algo;
+                                    secure_salt = algo.salt;
+                                    saltedPassword = Utilities.computePBKDF2(AndroidUtilities.getStringBytes(textPassword), algo.salt);
+                                } else if (settings.secure_settings.secure_algo instanceof TLRPC.TL_securePasswordKdfAlgoUnknown) {
+                                    AndroidUtilities.runOnUIThread(() -> AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true));
+                                    return;
+                                } else {
+                                    secure_salt = new byte[0];
+                                }
+                            } else {
+                                if (currentPassword.new_secure_algo instanceof TLRPC.TL_securePasswordKdfAlgoPBKDF2HMACSHA512iter100000) {
+                                    TLRPC.TL_securePasswordKdfAlgoPBKDF2HMACSHA512iter100000 algo = (TLRPC.TL_securePasswordKdfAlgoPBKDF2HMACSHA512iter100000) currentPassword.new_secure_algo;
+                                    secure_salt = algo.salt;
+                                    saltedPassword = Utilities.computePBKDF2(AndroidUtilities.getStringBytes(textPassword), algo.salt);
+                                } else {
+                                    secure_salt = new byte[0];
+                                }
+                                secureSecret = null;
+                                secureSecretId = 0;
+                            }
+                            AndroidUtilities.runOnUIThread(() -> {
+                                currentEmail = settings.email;
+                                if (saved) {
+                                    saltedPassword = savedSaltedPassword;
+                                }
+
+                                if (!checkSecret(decryptSecret(secureSecret, saltedPassword), secureSecretId) || secure_salt.length == 0 || secureSecretId == 0) {
+                                    if (saved) {
+                                        UserConfig.getInstance(currentAccount).resetSavedPassword();
+                                        usingSavedPassword = 0;
+                                        updatePasswordInterface();
+                                    } else {
+                                        if (currentForm != null) {
+                                            currentForm.values.clear();
+                                            currentForm.errors.clear();
+                                        }
+                                        if (secureSecret == null || secureSecret.length == 0) {
+                                            generateNewSecret();
+                                        } else {
+                                            resetSecret();
+                                        }
+                                    }
+                                } else if (currentBotId == 0) {
+                                    TLRPC.TL_account_getAllSecureValues req12 = new TLRPC.TL_account_getAllSecureValues();
+                                    ConnectionsManager.getInstance(currentAccount).sendRequest(req12, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
+                                        if (response1 != null) {
+                                            currentForm = new TLRPC.TL_account_authorizationForm();
+                                            TLRPC.Vector vector = (TLRPC.Vector) response1;
+                                            for (int a = 0, size = vector.objects.size(); a < size; a++) {
+                                                currentForm.values.add((TLRPC.TL_secureValue) vector.objects.get(a));
+                                            }
+                                            openRequestInterface();
+                                        } else {
+                                            if ("APP_VERSION_OUTDATED".equals(error1.text)) {
+                                                AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
+                                            } else {
+                                                showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error1.text);
+                                            }
+                                            showEditDoneProgress(true, false);
+                                        }
+                                    }));
+                                } else {
+                                    openRequestInterface();
+                                }
+                            });
+                        });
+                    } else {
+                        AndroidUtilities.runOnUIThread(() -> {
                             if (saved) {
                                 UserConfig.getInstance(currentAccount).resetSavedPassword();
                                 usingSavedPassword = 0;
                                 updatePasswordInterface();
-                                if (inputFieldContainers[FIELD_PASSWORD].getVisibility() == View.VISIBLE) {
+                                if (inputFieldContainers != null && inputFieldContainers[FIELD_PASSWORD].getVisibility() == View.VISIBLE) {
                                     inputFields[FIELD_PASSWORD].requestFocus();
                                     AndroidUtilities.showKeyboard(inputFields[FIELD_PASSWORD]);
                                 }
@@ -1656,16 +1909,43 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                                     showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
                                 }
                             }
-                        }
+                        });
                     }
-                });
-            }
-        };
+                }
+            };
 
-        TLRPC.TL_account_getPasswordSettings req = new TLRPC.TL_account_getPasswordSettings();
-        req.current_password_hash = currentPasswordHash;
-        int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, requestDelegate, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
-        ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
+            if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
+                TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
+                req.password = SRPHelper.startCheck(x_bytes, currentPassword.srp_id, currentPassword.srp_B, algo);
+                if (req.password == null) {
+                    TLRPC.TL_error error = new TLRPC.TL_error();
+                    error.text = "ALGO_INVALID";
+                    requestDelegate.run(null, error);
+                    return;
+                }
+                int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, requestDelegate, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
+            } else {
+                TLRPC.TL_error error = new TLRPC.TL_error();
+                error.text = "PASSWORD_HASH_INVALID";
+                requestDelegate.run(null, error);
+            }
+        });
+    }
+
+    private boolean isPersonalDocument(TLRPC.SecureValueType type) {
+        return type instanceof TLRPC.TL_secureValueTypeDriverLicense ||
+                type instanceof TLRPC.TL_secureValueTypePassport ||
+                type instanceof TLRPC.TL_secureValueTypeInternalPassport ||
+                type instanceof TLRPC.TL_secureValueTypeIdentityCard;
+    }
+
+    private boolean isAddressDocument(TLRPC.SecureValueType type) {
+        return type instanceof TLRPC.TL_secureValueTypeUtilityBill ||
+                type instanceof TLRPC.TL_secureValueTypeBankStatement ||
+                type instanceof TLRPC.TL_secureValueTypePassportRegistration ||
+                type instanceof TLRPC.TL_secureValueTypeTemporaryRegistration ||
+                type instanceof TLRPC.TL_secureValueTypeRentalAgreement;
     }
 
     private void createRequestInterface(Context context) {
@@ -1715,38 +1995,137 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         if (currentForm != null) {
-            for (int a = 0, size = currentForm.required_types.size(); a < size; a++) {
-                TLRPC.SecureValueType type = currentForm.required_types.get(a);
-                ArrayList<TLRPC.SecureValueType> documentTypes;
-                if (type instanceof TLRPC.TL_secureValueTypePhone || type instanceof TLRPC.TL_secureValueTypeEmail) {
-                    documentTypes = null;
-                } else if (type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
-                    documentTypes = new ArrayList<>();
-                    for (int b = 0; b < size; b++) {
-                        TLRPC.SecureValueType innerType = currentForm.required_types.get(b);
-                        if (innerType instanceof TLRPC.TL_secureValueTypeDriverLicense ||
-                                innerType instanceof TLRPC.TL_secureValueTypePassport ||
-                                innerType instanceof TLRPC.TL_secureValueTypeInternalPassport ||
-                                innerType instanceof TLRPC.TL_secureValueTypeIdentityCard) {
-                            documentTypes.add(innerType);
-                        }
+            int size = currentForm.required_types.size();
+            ArrayList<TLRPC.TL_secureRequiredType> personalDocuments = new ArrayList<>();
+            ArrayList<TLRPC.TL_secureRequiredType> addressDocuments = new ArrayList<>();
+            int personalCount = 0;
+            int addressCount = 0;
+            boolean hasPersonalInfo = false;
+            boolean hasAddressInfo = false;
+            for (int a = 0; a < size; a++) {
+                TLRPC.SecureRequiredType secureRequiredType = currentForm.required_types.get(a);
+                if (secureRequiredType instanceof TLRPC.TL_secureRequiredType) {
+                    TLRPC.TL_secureRequiredType requiredType = (TLRPC.TL_secureRequiredType) secureRequiredType;
+                    if (isPersonalDocument(requiredType.type)) {
+                        personalDocuments.add(requiredType);
+                        personalCount++;
+                    } else if (isAddressDocument(requiredType.type)) {
+                        addressDocuments.add(requiredType);
+                        addressCount++;
+                    } else if (requiredType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
+                        hasPersonalInfo = true;
+                    } else if (requiredType.type instanceof TLRPC.TL_secureValueTypeAddress) {
+                        hasAddressInfo = true;
                     }
-                } else if (type instanceof TLRPC.TL_secureValueTypeAddress) {
-                    documentTypes = new ArrayList<>();
-                    for (int b = 0; b < size; b++) {
-                        TLRPC.SecureValueType innerType = currentForm.required_types.get(b);
-                        if (innerType instanceof TLRPC.TL_secureValueTypeUtilityBill ||
-                                innerType instanceof TLRPC.TL_secureValueTypeBankStatement ||
-                                innerType instanceof TLRPC.TL_secureValueTypePassportRegistration ||
-                                innerType instanceof TLRPC.TL_secureValueTypeTemporaryRegistration ||
-                                innerType instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
-                            documentTypes.add(innerType);
+                } else if (secureRequiredType instanceof TLRPC.TL_secureRequiredTypeOneOf) {
+                    TLRPC.TL_secureRequiredTypeOneOf requiredTypeOneOf = (TLRPC.TL_secureRequiredTypeOneOf) secureRequiredType;
+                    if (requiredTypeOneOf.types.isEmpty()) {
+                        continue;
+                    }
+                    TLRPC.SecureRequiredType innerType = requiredTypeOneOf.types.get(0);
+                    if (!(innerType instanceof TLRPC.TL_secureRequiredType)) {
+                        continue;
+                    }
+                    TLRPC.TL_secureRequiredType requiredType = (TLRPC.TL_secureRequiredType) innerType;
+
+                    if (isPersonalDocument(requiredType.type)) {
+                        for (int b = 0, size2 = requiredTypeOneOf.types.size(); b < size2; b++) {
+                            innerType = requiredTypeOneOf.types.get(b);
+                            if (!(innerType instanceof TLRPC.TL_secureRequiredType)) {
+                                continue;
+                            }
+                            personalDocuments.add((TLRPC.TL_secureRequiredType) innerType);
                         }
+                        personalCount++;
+                    } else if (isAddressDocument(requiredType.type)) {
+                        for (int b = 0, size2 = requiredTypeOneOf.types.size(); b < size2; b++) {
+                            innerType = requiredTypeOneOf.types.get(b);
+                            if (!(innerType instanceof TLRPC.TL_secureRequiredType)) {
+                                continue;
+                            }
+                            addressDocuments.add((TLRPC.TL_secureRequiredType) innerType);
+                        }
+                        addressCount++;
+                    }
+                }
+            }
+            boolean separatePersonal = !hasPersonalInfo || personalCount > 1;
+            boolean separateAddress = !hasAddressInfo || addressCount > 1;
+            for (int a = 0; a < size; a++) {
+                TLRPC.SecureRequiredType secureRequiredType = currentForm.required_types.get(a);
+                ArrayList<TLRPC.TL_secureRequiredType> documentTypes;
+                TLRPC.TL_secureRequiredType requiredType;
+                boolean documentOnly;
+                if (secureRequiredType instanceof TLRPC.TL_secureRequiredType) {
+                    requiredType = (TLRPC.TL_secureRequiredType) secureRequiredType;
+                    if (requiredType.type instanceof TLRPC.TL_secureValueTypePhone || requiredType.type instanceof TLRPC.TL_secureValueTypeEmail) {
+                        documentTypes = null;
+                        documentOnly = false;
+                    } else if (requiredType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
+                        if (separatePersonal) {
+                            documentTypes = null;
+                        } else {
+                            documentTypes = personalDocuments;
+                        }
+                        documentOnly = false;
+                    } else if (requiredType.type instanceof TLRPC.TL_secureValueTypeAddress) {
+                        if (separateAddress) {
+                            documentTypes = null;
+                        } else {
+                            documentTypes = addressDocuments;
+                        }
+                        documentOnly = false;
+                    } else if (separatePersonal && isPersonalDocument(requiredType.type)) {
+                        documentTypes = new ArrayList<>();
+                        documentTypes.add(requiredType);
+                        requiredType = new TLRPC.TL_secureRequiredType();
+                        requiredType.type = new TLRPC.TL_secureValueTypePersonalDetails();
+                        documentOnly = true;
+                    } else if (separateAddress && isAddressDocument(requiredType.type)) {
+                        documentTypes = new ArrayList<>();
+                        documentTypes.add(requiredType);
+                        requiredType = new TLRPC.TL_secureRequiredType();
+                        requiredType.type = new TLRPC.TL_secureValueTypeAddress();
+                        documentOnly = true;
+                    } else {
+                        continue;
+                    }
+                } else if (secureRequiredType instanceof TLRPC.TL_secureRequiredTypeOneOf) {
+                    TLRPC.TL_secureRequiredTypeOneOf requiredTypeOneOf = (TLRPC.TL_secureRequiredTypeOneOf) secureRequiredType;
+                    if (requiredTypeOneOf.types.isEmpty()) {
+                        continue;
+                    }
+                    TLRPC.SecureRequiredType innerType = requiredTypeOneOf.types.get(0);
+                    if (!(innerType instanceof TLRPC.TL_secureRequiredType)) {
+                        continue;
+                    }
+                    requiredType = (TLRPC.TL_secureRequiredType) innerType;
+
+                    if (separatePersonal && isPersonalDocument(requiredType.type) || separateAddress && isAddressDocument(requiredType.type)) {
+                        documentTypes = new ArrayList<>();
+                        for (int b = 0, size2 = requiredTypeOneOf.types.size(); b < size2; b++) {
+                            innerType = requiredTypeOneOf.types.get(b);
+                            if (!(innerType instanceof TLRPC.TL_secureRequiredType)) {
+                                continue;
+                            }
+                            documentTypes.add((TLRPC.TL_secureRequiredType) innerType);
+                        }
+                        if (isPersonalDocument(requiredType.type)) {
+                            requiredType = new TLRPC.TL_secureRequiredType();
+                            requiredType.type = new TLRPC.TL_secureValueTypePersonalDetails();
+                        } else {
+                            requiredType = new TLRPC.TL_secureRequiredType();
+                            requiredType.type = new TLRPC.TL_secureValueTypeAddress();
+                        }
+
+                        documentOnly = true;
+                    } else {
+                        continue;
                     }
                 } else {
                     continue;
                 }
-                addField(context, currentForm.required_types.get(a), documentTypes, a == size - 1);
+                addField(context, requiredType, documentTypes, documentOnly, a == size - 1);
             }
         }
 
@@ -1777,210 +2156,215 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         bottomLayout = new FrameLayout(context);
         bottomLayout.setBackgroundDrawable(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_passport_authorizeBackground), Theme.getColor(Theme.key_passport_authorizeBackgroundSelected)));
         frameLayout.addView(bottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM));
-        bottomLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                ArrayList<TLRPC.TL_secureValue> valuesToSend = new ArrayList<>();
-                for (int a = 0, size = currentForm.required_types.size(); a < size; a++) {
-                    TLRPC.SecureValueType type = currentForm.required_types.get(a);
-                    TLRPC.SecureValueType innerType = null;
-                    boolean needDocuments = false;
-                    TLRPC.TL_secureValue documentValue = null;
-                    if (type instanceof TLRPC.TL_secureValueTypePhone || type instanceof TLRPC.TL_secureValueTypeEmail) {
-                        needDocuments = false;
-                    } else if (type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
-                        for (int b = 0; b < size; b++) {
-                            innerType = currentForm.required_types.get(b);
-                            if (innerType instanceof TLRPC.TL_secureValueTypeDriverLicense ||
-                                    innerType instanceof TLRPC.TL_secureValueTypePassport ||
-                                    innerType instanceof TLRPC.TL_secureValueTypeInternalPassport ||
-                                    innerType instanceof TLRPC.TL_secureValueTypeIdentityCard) {
-                                needDocuments = true;
-                                documentValue = getValueByType(innerType, true);
-                                if (documentValue != null) {
-                                    break;
-                                }
-                            }
-                        }
-                    } else if (type instanceof TLRPC.TL_secureValueTypeAddress) {
-                        for (int b = 0; b < size; b++) {
-                            innerType = currentForm.required_types.get(b);
-                            if (innerType instanceof TLRPC.TL_secureValueTypeUtilityBill ||
-                                    innerType instanceof TLRPC.TL_secureValueTypeBankStatement ||
-                                    innerType instanceof TLRPC.TL_secureValueTypePassportRegistration ||
-                                    innerType instanceof TLRPC.TL_secureValueTypeTemporaryRegistration ||
-                                    innerType instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
-                                needDocuments = true;
-                                documentValue = getValueByType(innerType, true);
-                                if (documentValue != null) {
-                                    break;
-                                }
-                            }
-                        }
-                    } else {
+        bottomLayout.setOnClickListener(view -> {
+
+            class ValueToSend {
+                TLRPC.TL_secureValue value;
+                boolean selfie_required;
+                boolean translation_required;
+
+                public ValueToSend(TLRPC.TL_secureValue v, boolean s, boolean t) {
+                    value = v;
+                    selfie_required = s;
+                    translation_required = t;
+                }
+            }
+
+            ArrayList<ValueToSend> valuesToSend = new ArrayList<>();
+            for (int a = 0, size = currentForm.required_types.size(); a < size; a++) {
+
+                TLRPC.TL_secureRequiredType requiredType;
+
+                TLRPC.SecureRequiredType secureRequiredType = currentForm.required_types.get(a);
+                if (secureRequiredType instanceof TLRPC.TL_secureRequiredType) {
+                    requiredType = (TLRPC.TL_secureRequiredType) secureRequiredType;
+                } else if (secureRequiredType instanceof TLRPC.TL_secureRequiredTypeOneOf) {
+                    TLRPC.TL_secureRequiredTypeOneOf requiredTypeOneOf = (TLRPC.TL_secureRequiredTypeOneOf) secureRequiredType;
+                    if (requiredTypeOneOf.types.isEmpty()) {
                         continue;
                     }
-                    TLRPC.TL_secureValue value = getValueByType(type, true);
-                    if (value == null || documentValue == null && needDocuments) {
-                        Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
-                        if (v != null) {
-                            v.vibrate(200);
+                    secureRequiredType = requiredTypeOneOf.types.get(0);
+                    if (!(secureRequiredType instanceof TLRPC.TL_secureRequiredType)) {
+                        continue;
+                    }
+                    requiredType = (TLRPC.TL_secureRequiredType) secureRequiredType;
+
+                    for (int b = 0, size2 = requiredTypeOneOf.types.size(); b < size2; b++) {
+                        secureRequiredType = requiredTypeOneOf.types.get(b);
+                        if (!(secureRequiredType instanceof TLRPC.TL_secureRequiredType)) {
+                            continue;
                         }
-                        AndroidUtilities.shakeView(typesViews.get(type), 2, 0);
-                        return;
-                    }
-                    String key = getNameForType(type);
-                    String key2 = innerType != null ? getNameForType(innerType) : null;
-                    HashMap<String, String> errors = errorsMap.get(key);
-                    HashMap<String, String> errors2 = key2 != null ? errorsMap.get(key2) : null;
-                    if (errors != null && !errors.isEmpty() || errors2 != null && !errors2.isEmpty()) {
-                        Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
-                        if (v != null) {
-                            v.vibrate(200);
+                        TLRPC.TL_secureRequiredType innerType = (TLRPC.TL_secureRequiredType) secureRequiredType;
+                        if (getValueByType(innerType, true) != null) {
+                            requiredType = innerType;
+                            break;
                         }
-                        AndroidUtilities.shakeView(typesViews.get(type), 2, 0);
-                        return;
                     }
-                    valuesToSend.add(value);
-                    if (documentValue != null) {
-                        valuesToSend.add(documentValue);
-                    }
+                } else {
+                    continue;
                 }
-                showEditDoneProgress(false, true);
-                TLRPC.TL_account_acceptAuthorization req = new TLRPC.TL_account_acceptAuthorization();
-                req.bot_id = currentBotId;
-                req.scope = currentScope;
-                req.public_key = currentPublicKey;
-                JSONObject jsonObject = new JSONObject();
-                for (int a = 0, size = valuesToSend.size(); a < size; a++) {
-                    TLRPC.TL_secureValue secureValue = valuesToSend.get(a);
 
-                    JSONObject data = new JSONObject();
-
-                    if (secureValue.plain_data != null) {
-                        if (secureValue.plain_data instanceof TLRPC.TL_securePlainEmail) {
-                            TLRPC.TL_securePlainEmail securePlainEmail = (TLRPC.TL_securePlainEmail) secureValue.plain_data;
-                        } else if (secureValue.plain_data instanceof TLRPC.TL_securePlainPhone) {
-                            TLRPC.TL_securePlainPhone securePlainPhone = (TLRPC.TL_securePlainPhone) secureValue.plain_data;
-                        }
-                    } else {
-                        try {
-                            JSONObject result = new JSONObject();
-                            if (secureValue.data != null) {
-                                byte[] decryptedSecret = decryptValueSecret(secureValue.data.secret, secureValue.data.data_hash);
-
-                                data.put("data_hash", Base64.encodeToString(secureValue.data.data_hash, Base64.NO_WRAP));
-                                data.put("secret", Base64.encodeToString(decryptedSecret, Base64.NO_WRAP));
-
-                                result.put("data", data);
-                            }
-                            if (!secureValue.files.isEmpty()) {
-                                JSONArray files = new JSONArray();
-                                for (int b = 0, size2 = secureValue.files.size(); b < size2; b++) {
-                                    TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) secureValue.files.get(b);
-                                    byte[] decryptedSecret = decryptValueSecret(secureFile.secret, secureFile.file_hash);
-
-                                    JSONObject file = new JSONObject();
-                                    file.put("file_hash", Base64.encodeToString(secureFile.file_hash, Base64.NO_WRAP));
-                                    file.put("secret", Base64.encodeToString(decryptedSecret, Base64.NO_WRAP));
-                                    files.put(file);
-                                }
-                                result.put("files", files);
-                            }
-                            if (secureValue.front_side instanceof TLRPC.TL_secureFile) {
-                                TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) secureValue.front_side;
-                                byte[] decryptedSecret = decryptValueSecret(secureFile.secret, secureFile.file_hash);
-
-                                JSONObject front = new JSONObject();
-                                front.put("file_hash", Base64.encodeToString(secureFile.file_hash, Base64.NO_WRAP));
-                                front.put("secret", Base64.encodeToString(decryptedSecret, Base64.NO_WRAP));
-                                result.put("front_side", front);
-                            }
-                            if (secureValue.reverse_side instanceof TLRPC.TL_secureFile) {
-                                TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) secureValue.reverse_side;
-                                byte[] decryptedSecret = decryptValueSecret(secureFile.secret, secureFile.file_hash);
-
-                                JSONObject reverse = new JSONObject();
-                                reverse.put("file_hash", Base64.encodeToString(secureFile.file_hash, Base64.NO_WRAP));
-                                reverse.put("secret", Base64.encodeToString(decryptedSecret, Base64.NO_WRAP));
-                                result.put("reverse_side", reverse);
-                            }
-                            if (currentForm.selfie_required && secureValue.selfie instanceof TLRPC.TL_secureFile) {
-                                TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) secureValue.selfie;
-                                byte[] decryptedSecret = decryptValueSecret(secureFile.secret, secureFile.file_hash);
-
-                                JSONObject selfie = new JSONObject();
-                                selfie.put("file_hash", Base64.encodeToString(secureFile.file_hash, Base64.NO_WRAP));
-                                selfie.put("secret", Base64.encodeToString(decryptedSecret, Base64.NO_WRAP));
-                                result.put("selfie", selfie);
-                            }
-                            jsonObject.put(getNameForType(secureValue.type), result);
-                        } catch (Exception ignore) {
-
-                        }
+                TLRPC.TL_secureValue value = getValueByType(requiredType, true);
+                if (value == null) {
+                    Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                    if (v != null) {
+                        v.vibrate(200);
                     }
-
-                    TLRPC.TL_secureValueHash hash = new TLRPC.TL_secureValueHash();
-                    hash.type = secureValue.type;
-                    hash.hash = secureValue.hash;
-                    req.value_hashes.add(hash);
+                    AndroidUtilities.shakeView(getViewByType(requiredType), 2, 0);
+                    return;
                 }
-                JSONObject result = new JSONObject();
-                try {
-                    result.put("secure_data", jsonObject);
-                } catch (Exception ignore) {
-
+                String key = getNameForType(requiredType.type);
+                HashMap<String, String> errors = errorsMap.get(key);
+                if (errors != null && !errors.isEmpty()) {
+                    Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                    if (v != null) {
+                        v.vibrate(200);
+                    }
+                    AndroidUtilities.shakeView(getViewByType(requiredType), 2, 0);
+                    return;
                 }
-                if (currentPayload != null) {
+                valuesToSend.add(new ValueToSend(value, requiredType.selfie_required, requiredType.translation_required));
+            }
+            showEditDoneProgress(false, true);
+            TLRPC.TL_account_acceptAuthorization req = new TLRPC.TL_account_acceptAuthorization();
+            req.bot_id = currentBotId;
+            req.scope = currentScope;
+            req.public_key = currentPublicKey;
+            JSONObject jsonObject = new JSONObject();
+            for (int a = 0, size = valuesToSend.size(); a < size; a++) {
+                ValueToSend valueToSend = valuesToSend.get(a);
+                TLRPC.TL_secureValue secureValue = valueToSend.value;
+
+                JSONObject data = new JSONObject();
+
+                if (secureValue.plain_data != null) {
+                    if (secureValue.plain_data instanceof TLRPC.TL_securePlainEmail) {
+                        TLRPC.TL_securePlainEmail securePlainEmail = (TLRPC.TL_securePlainEmail) secureValue.plain_data;
+                    } else if (secureValue.plain_data instanceof TLRPC.TL_securePlainPhone) {
+                        TLRPC.TL_securePlainPhone securePlainPhone = (TLRPC.TL_securePlainPhone) secureValue.plain_data;
+                    }
+                } else {
                     try {
-                        result.put("payload", currentPayload);
+                        JSONObject result = new JSONObject();
+                        if (secureValue.data != null) {
+                            byte[] decryptedSecret = decryptValueSecret(secureValue.data.secret, secureValue.data.data_hash);
+
+                            data.put("data_hash", Base64.encodeToString(secureValue.data.data_hash, Base64.NO_WRAP));
+                            data.put("secret", Base64.encodeToString(decryptedSecret, Base64.NO_WRAP));
+
+                            result.put("data", data);
+                        }
+                        if (!secureValue.files.isEmpty()) {
+                            JSONArray files = new JSONArray();
+                            for (int b = 0, size2 = secureValue.files.size(); b < size2; b++) {
+                                TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) secureValue.files.get(b);
+                                byte[] decryptedSecret = decryptValueSecret(secureFile.secret, secureFile.file_hash);
+
+                                JSONObject file = new JSONObject();
+                                file.put("file_hash", Base64.encodeToString(secureFile.file_hash, Base64.NO_WRAP));
+                                file.put("secret", Base64.encodeToString(decryptedSecret, Base64.NO_WRAP));
+                                files.put(file);
+                            }
+                            result.put("files", files);
+                        }
+                        if (secureValue.front_side instanceof TLRPC.TL_secureFile) {
+                            TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) secureValue.front_side;
+                            byte[] decryptedSecret = decryptValueSecret(secureFile.secret, secureFile.file_hash);
+
+                            JSONObject front = new JSONObject();
+                            front.put("file_hash", Base64.encodeToString(secureFile.file_hash, Base64.NO_WRAP));
+                            front.put("secret", Base64.encodeToString(decryptedSecret, Base64.NO_WRAP));
+                            result.put("front_side", front);
+                        }
+                        if (secureValue.reverse_side instanceof TLRPC.TL_secureFile) {
+                            TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) secureValue.reverse_side;
+                            byte[] decryptedSecret = decryptValueSecret(secureFile.secret, secureFile.file_hash);
+
+                            JSONObject reverse = new JSONObject();
+                            reverse.put("file_hash", Base64.encodeToString(secureFile.file_hash, Base64.NO_WRAP));
+                            reverse.put("secret", Base64.encodeToString(decryptedSecret, Base64.NO_WRAP));
+                            result.put("reverse_side", reverse);
+                        }
+                        if (valueToSend.selfie_required && secureValue.selfie instanceof TLRPC.TL_secureFile) {
+                            TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) secureValue.selfie;
+                            byte[] decryptedSecret = decryptValueSecret(secureFile.secret, secureFile.file_hash);
+
+                            JSONObject selfie = new JSONObject();
+                            selfie.put("file_hash", Base64.encodeToString(secureFile.file_hash, Base64.NO_WRAP));
+                            selfie.put("secret", Base64.encodeToString(decryptedSecret, Base64.NO_WRAP));
+                            result.put("selfie", selfie);
+                        }
+                        if (valueToSend.translation_required && !secureValue.translation.isEmpty()) {
+                            JSONArray translation = new JSONArray();
+                            for (int b = 0, size2 = secureValue.translation.size(); b < size2; b++) {
+                                TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) secureValue.translation.get(b);
+                                byte[] decryptedSecret = decryptValueSecret(secureFile.secret, secureFile.file_hash);
+
+                                JSONObject file = new JSONObject();
+                                file.put("file_hash", Base64.encodeToString(secureFile.file_hash, Base64.NO_WRAP));
+                                file.put("secret", Base64.encodeToString(decryptedSecret, Base64.NO_WRAP));
+                                translation.put(file);
+                            }
+                            result.put("translation", translation);
+                        }
+                        jsonObject.put(getNameForType(secureValue.type), result);
                     } catch (Exception ignore) {
 
                     }
                 }
-                String json = result.toString();
 
-                EncryptionResult encryptionResult = encryptData(AndroidUtilities.getStringBytes(json));
-
-                req.credentials = new TLRPC.TL_secureCredentialsEncrypted();
-                req.credentials.hash = encryptionResult.fileHash;
-                req.credentials.data = encryptionResult.encryptedData;
-                try {
-                    String key = currentPublicKey.replaceAll("\\n", "").replace("-----BEGIN PUBLIC KEY-----", "").replace("-----END PUBLIC KEY-----", "");
-                    KeyFactory kf = KeyFactory.getInstance("RSA");
-                    X509EncodedKeySpec keySpecX509 = new X509EncodedKeySpec(Base64.decode(key, Base64.DEFAULT));
-                    RSAPublicKey pubKey = (RSAPublicKey) kf.generatePublic(keySpecX509);
-
-                    Cipher c = Cipher.getInstance("RSA/NONE/OAEPWithSHA1AndMGF1Padding", "BC");
-                    c.init(Cipher.ENCRYPT_MODE, pubKey);
-                    req.credentials.secret = c.doFinal(encryptionResult.decrypyedFileSecret);
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-                int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                    @Override
-                    public void run(TLObject response, final TLRPC.TL_error error) {
-                        AndroidUtilities.runOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (error == null) {
-                                    ignoreOnFailure = true;
-                                    callCallback(true);
-                                    finishFragment();
-                                } else {
-                                    showEditDoneProgress(false, false);
-                                    if ("APP_VERSION_OUTDATED".equals(error.text)) {
-                                        AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
-                                    } else {
-                                        showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                });
-                ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
+                TLRPC.TL_secureValueHash hash = new TLRPC.TL_secureValueHash();
+                hash.type = secureValue.type;
+                hash.hash = secureValue.hash;
+                req.value_hashes.add(hash);
             }
+            JSONObject result = new JSONObject();
+            try {
+                result.put("secure_data", jsonObject);
+            } catch (Exception ignore) {
+
+            }
+            if (currentPayload != null) {
+                try {
+                    result.put("payload", currentPayload);
+                } catch (Exception ignore) {
+
+                }
+            }
+            String json = result.toString();
+
+            EncryptionResult encryptionResult = encryptData(AndroidUtilities.getStringBytes(json));
+
+            req.credentials = new TLRPC.TL_secureCredentialsEncrypted();
+            req.credentials.hash = encryptionResult.fileHash;
+            req.credentials.data = encryptionResult.encryptedData;
+            try {
+                String key = currentPublicKey.replaceAll("\\n", "").replace("-----BEGIN PUBLIC KEY-----", "").replace("-----END PUBLIC KEY-----", "");
+                KeyFactory kf = KeyFactory.getInstance("RSA");
+                X509EncodedKeySpec keySpecX509 = new X509EncodedKeySpec(Base64.decode(key, Base64.DEFAULT));
+                RSAPublicKey pubKey = (RSAPublicKey) kf.generatePublic(keySpecX509);
+
+                Cipher c = Cipher.getInstance("RSA/NONE/OAEPWithSHA1AndMGF1Padding", "BC");
+                c.init(Cipher.ENCRYPT_MODE, pubKey);
+                req.credentials.secret = c.doFinal(encryptionResult.decrypyedFileSecret);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (error == null) {
+                    ignoreOnFailure = true;
+                    callCallback(true);
+                    finishFragment();
+                } else {
+                    showEditDoneProgress(false, false);
+                    if ("APP_VERSION_OUTDATED".equals(error.text)) {
+                        AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
+                    } else {
+                        showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
+                    }
+                }
+            }));
+            ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
         });
 
         acceptTextView = new TextView(context);
@@ -2022,59 +2406,40 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         addDocumentCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
         addDocumentCell.setText(LocaleController.getString("PassportNoDocumentsAdd", R.string.PassportNoDocumentsAdd), true);
         linearLayout2.addView(addDocumentCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        addDocumentCell.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openAddDocumentAlert();
-            }
-        });
+        addDocumentCell.setOnClickListener(v -> openAddDocumentAlert());
 
         deletePassportCell = new TextSettingsCell(context);
         deletePassportCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText3));
         deletePassportCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
         deletePassportCell.setText(LocaleController.getString("TelegramPassportDelete", R.string.TelegramPassportDelete), false);
         linearLayout2.addView(deletePassportCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        deletePassportCell.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        TLRPC.TL_account_deleteSecureValue req = new TLRPC.TL_account_deleteSecureValue();
-                        for (int a = 0; a < currentForm.values.size(); a++) {
-                            req.types.add(currentForm.values.get(a).type);
+        deletePassportCell.setOnClickListener(v -> {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+                TLRPC.TL_account_deleteSecureValue req = new TLRPC.TL_account_deleteSecureValue();
+                for (int a = 0; a < currentForm.values.size(); a++) {
+                    req.types.add(currentForm.values.get(a).type);
+                }
+                needShowProgress();
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    for (int a = 0; a < linearLayout2.getChildCount(); a++) {
+                        View child = linearLayout2.getChildAt(a);
+                        if (child instanceof TextDetailSecureCell) {
+                            linearLayout2.removeView(child);
+                            a--;
                         }
-                        needShowProgress();
-                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                            @Override
-                            public void run(TLObject response, TLRPC.TL_error error) {
-                                AndroidUtilities.runOnUIThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        for (int a = 0; a < linearLayout2.getChildCount(); a++) {
-                                            View child = linearLayout2.getChildAt(a);
-                                            if (child instanceof TextDetailSecureCell) {
-                                                linearLayout2.removeView(child);
-                                                a--;
-                                            }
-                                        }
-                                        needHideProgress();
-                                        typesViews.clear();
-                                        typesValues.clear();
-                                        currentForm.values.clear();
-                                        updateManageVisibility();
-                                    }
-                                });
-                            }
-                        });
                     }
-                });
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                builder.setMessage(LocaleController.getString("TelegramPassportDeleteAlert", R.string.TelegramPassportDeleteAlert));
-                showDialog(builder.create());
-            }
+                    needHideProgress();
+                    typesViews.clear();
+                    typesValues.clear();
+                    currentForm.values.clear();
+                    updateManageVisibility();
+                }));
+            });
+            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+            builder.setMessage(LocaleController.getString("TelegramPassportDeleteAlert", R.string.TelegramPassportDeleteAlert));
+            showDialog(builder.create());
         });
 
         addDocumentSectionCell = new ShadowSectionCell(context);
@@ -2085,7 +2450,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         emptyLayout.setOrientation(LinearLayout.VERTICAL);
         emptyLayout.setGravity(Gravity.CENTER);
         emptyLayout.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-        linearLayout2.addView(emptyLayout, new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, AndroidUtilities.displaySize.y - ActionBar.getCurrentActionBarHeight()));
+        if (AndroidUtilities.isTablet()) {
+            linearLayout2.addView(emptyLayout, new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(528) - ActionBar.getCurrentActionBarHeight()));
+        } else {
+            linearLayout2.addView(emptyLayout, new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, AndroidUtilities.displaySize.y - ActionBar.getCurrentActionBarHeight()));
+        }
 
         emptyImageView = new ImageView(context);
         emptyImageView.setImageResource(R.drawable.no_passport);
@@ -2116,37 +2485,39 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         emptyTextView3.setGravity(Gravity.CENTER);
         emptyTextView3.setText(LocaleController.getString("PassportNoDocumentsAdd", R.string.PassportNoDocumentsAdd).toUpperCase());
         emptyLayout.addView(emptyTextView3, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30, Gravity.CENTER, 0, 16, 0, 0));
-        emptyTextView3.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openAddDocumentAlert();
-            }
-        });
+        emptyTextView3.setOnClickListener(v -> openAddDocumentAlert());
 
         for (int a = 0, size = currentForm.values.size(); a < size; a++) {
             TLRPC.TL_secureValue value = currentForm.values.get(a);
-            TLRPC.SecureValueType type;
-            ArrayList<TLRPC.SecureValueType> documentTypes;
-            if (value.type instanceof TLRPC.TL_secureValueTypeDriverLicense ||
-                    value.type instanceof TLRPC.TL_secureValueTypePassport ||
-                    value.type instanceof TLRPC.TL_secureValueTypeInternalPassport ||
-                    value.type instanceof TLRPC.TL_secureValueTypeIdentityCard) {
-                type = new TLRPC.TL_secureValueTypePersonalDetails();
+            TLRPC.TL_secureRequiredType requiredType;
+            ArrayList<TLRPC.TL_secureRequiredType> documentTypes;
+            boolean documentOnly;
+            if (isPersonalDocument(value.type)) {
                 documentTypes = new ArrayList<>();
-                documentTypes.add(value.type);
-            } else if (value.type instanceof TLRPC.TL_secureValueTypeUtilityBill ||
-                    value.type instanceof TLRPC.TL_secureValueTypeBankStatement ||
-                    value.type instanceof TLRPC.TL_secureValueTypePassportRegistration ||
-                    value.type instanceof TLRPC.TL_secureValueTypeTemporaryRegistration ||
-                    value.type instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
-                type = new TLRPC.TL_secureValueTypeAddress();
+                requiredType = new TLRPC.TL_secureRequiredType();
+                requiredType.type = value.type;
+                requiredType.selfie_required = true;
+                requiredType.translation_required = true;
+                documentTypes.add(requiredType);
+                requiredType = new TLRPC.TL_secureRequiredType();
+                requiredType.type = new TLRPC.TL_secureValueTypePersonalDetails();
+                documentOnly = true;
+            } else if (isAddressDocument(value.type)) {
                 documentTypes = new ArrayList<>();
-                documentTypes.add(value.type);
+                requiredType = new TLRPC.TL_secureRequiredType();
+                requiredType.type = value.type;
+                requiredType.translation_required = true;
+                documentTypes.add(requiredType);
+                requiredType = new TLRPC.TL_secureRequiredType();
+                requiredType.type = new TLRPC.TL_secureValueTypeAddress();
+                documentOnly = true;
             } else {
-                type = value.type;
+                requiredType = new TLRPC.TL_secureRequiredType();
+                requiredType.type = value.type;
                 documentTypes = null;
+                documentOnly = false;
             }
-            addField(context, type, documentTypes, a == size - 1);
+            addField(context, requiredType, documentTypes, documentOnly, a == size - 1);
         }
 
         updateManageVisibility();
@@ -2239,34 +2610,29 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("PassportNoDocumentsAdd", R.string.PassportNoDocumentsAdd));
-        builder.setItems(values.toArray(new CharSequence[values.size()]), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                TLRPC.SecureValueType type = null;
-                TLRPC.SecureValueType documentType = null;
-                try {
-                    type = types.get(which).newInstance();
-                } catch (Exception ignore) {
+        builder.setItems(values.toArray(new CharSequence[values.size()]), (dialog, which) -> {
+            TLRPC.TL_secureRequiredType requiredType = null;
+            TLRPC.TL_secureRequiredType documentRequiredType = null;
+            try {
+                requiredType = new TLRPC.TL_secureRequiredType();
+                requiredType.type = types.get(which).newInstance();
+            } catch (Exception ignore) {
 
-                }
-
-                if (type instanceof TLRPC.TL_secureValueTypeDriverLicense ||
-                        type instanceof TLRPC.TL_secureValueTypePassport ||
-                        type instanceof TLRPC.TL_secureValueTypeInternalPassport ||
-                        type instanceof TLRPC.TL_secureValueTypeIdentityCard) {
-                    documentType = type;
-                    type = new TLRPC.TL_secureValueTypePersonalDetails();
-                } else if (type instanceof TLRPC.TL_secureValueTypeUtilityBill ||
-                        type instanceof TLRPC.TL_secureValueTypeBankStatement ||
-                        type instanceof TLRPC.TL_secureValueTypePassportRegistration ||
-                        type instanceof TLRPC.TL_secureValueTypeTemporaryRegistration ||
-                        type instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
-                    documentType = type;
-                    type = new TLRPC.TL_secureValueTypeAddress();
-                }
-
-                openTypeActivity(type, documentType, new ArrayList<TLRPC.SecureValueType>());
             }
+
+            if (isPersonalDocument(requiredType.type)) {
+                documentRequiredType = requiredType;
+                documentRequiredType.selfie_required = true;
+                documentRequiredType.translation_required = true;
+                requiredType = new TLRPC.TL_secureRequiredType();
+                requiredType.type = new TLRPC.TL_secureValueTypePersonalDetails();
+            } else if (isAddressDocument(requiredType.type)) {
+                documentRequiredType = requiredType;
+                requiredType = new TLRPC.TL_secureRequiredType();
+                requiredType.type = new TLRPC.TL_secureValueTypeAddress();
+            }
+
+            openTypeActivity(requiredType, documentRequiredType, new ArrayList<>(), documentRequiredType != null);
         });
         showDialog(builder.create());
     }
@@ -2321,13 +2687,10 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             settingsCell1.setBackgroundDrawable(Theme.getSelectorDrawable(true));
             settingsCell1.setText(LocaleController.formatString("PassportPhoneUseSame", R.string.PassportPhoneUseSame, currentEmail), false);
             linearLayout2.addView(settingsCell1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            settingsCell1.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    useCurrentValue = true;
-                    doneItem.callOnClick();
-                    useCurrentValue = false;
-                }
+            settingsCell1.setOnClickListener(v -> {
+                useCurrentValue = true;
+                doneItem.callOnClick();
+                useCurrentValue = false;
             });
 
             bottomCell = new TextInfoPrivacyCell(context);
@@ -2370,15 +2733,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             container.addView(inputFields[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 17, 12, 17, 6));
 
-            inputFields[a].setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_DONE || i == EditorInfo.IME_ACTION_NEXT) {
-                        doneItem.callOnClick();
-                        return true;
-                    }
-                    return false;
+            inputFields[a].setOnEditorActionListener((textView, i, keyEvent) -> {
+                if (i == EditorInfo.IME_ACTION_DONE || i == EditorInfo.IME_ACTION_NEXT) {
+                    doneItem.callOnClick();
+                    return true;
                 }
+                return false;
             });
         }
 
@@ -2410,12 +2770,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             FileLog.e(e);
         }
 
-        Collections.sort(countriesArray, new Comparator<String>() {
-            @Override
-            public int compare(String lhs, String rhs) {
-                return lhs.compareTo(rhs);
-            }
-        });
+        Collections.sort(countriesArray, String::compareTo);
 
         String currentPhone = UserConfig.getInstance(currentAccount).getCurrentUser().phone;
         TextSettingsCell settingsCell1 = new TextSettingsCell(context);
@@ -2423,13 +2778,10 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         settingsCell1.setBackgroundDrawable(Theme.getSelectorDrawable(true));
         settingsCell1.setText(LocaleController.formatString("PassportPhoneUseSame", R.string.PassportPhoneUseSame, PhoneFormat.getInstance().format("+" + currentPhone)), false);
         linearLayout2.addView(settingsCell1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        settingsCell1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                useCurrentValue = true;
-                doneItem.callOnClick();
-                useCurrentValue = false;
-            }
+        settingsCell1.setOnClickListener(v -> {
+            useCurrentValue = true;
+            doneItem.callOnClick();
+            useCurrentValue = false;
         });
 
         bottomCell = new TextInfoPrivacyCell(context);
@@ -2474,41 +2826,30 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setCursorSize(AndroidUtilities.dp(20));
             inputFields[a].setCursorWidth(1.5f);
             if (a == FIELD_PHONECOUNTRY) {
-                inputFields[a].setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        if (getParentActivity() == null) {
-                            return false;
-                        }
-                        if (event.getAction() == MotionEvent.ACTION_UP) {
-                            CountrySelectActivity fragment = new CountrySelectActivity(false);
-                            fragment.setCountrySelectActivityDelegate(new CountrySelectActivity.CountrySelectActivityDelegate() {
-                                @Override
-                                public void didSelectCountry(String name, String shortName) {
-                                    inputFields[FIELD_PHONECOUNTRY].setText(name);
-                                    int index = countriesArray.indexOf(name);
-                                    if (index != -1) {
-                                        ignoreOnTextChange = true;
-                                        String code = countriesMap.get(name);
-                                        inputFields[FIELD_PHONECODE].setText(code);
-                                        String hint = phoneFormatMap.get(code);
-                                        inputFields[FIELD_PHONE].setHintText(hint != null ? hint.replace('X', '–') : null);
-                                        ignoreOnTextChange = false;
-                                    }
-                                    AndroidUtilities.runOnUIThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            AndroidUtilities.showKeyboard(inputFields[FIELD_PHONE]);
-                                        }
-                                    }, 300);
-                                    inputFields[FIELD_PHONE].requestFocus();
-                                    inputFields[FIELD_PHONE].setSelection(inputFields[FIELD_PHONE].length());
-                                }
-                            });
-                            presentFragment(fragment);
-                        }
-                        return true;
+                inputFields[a].setOnTouchListener((v, event) -> {
+                    if (getParentActivity() == null) {
+                        return false;
                     }
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        CountrySelectActivity fragment = new CountrySelectActivity(false);
+                        fragment.setCountrySelectActivityDelegate((name, shortName) -> {
+                            inputFields[FIELD_PHONECOUNTRY].setText(name);
+                            int index = countriesArray.indexOf(name);
+                            if (index != -1) {
+                                ignoreOnTextChange = true;
+                                String code = countriesMap.get(name);
+                                inputFields[FIELD_PHONECODE].setText(code);
+                                String hint = phoneFormatMap.get(code);
+                                inputFields[FIELD_PHONE].setHintText(hint != null ? hint.replace('X', '–') : null);
+                                ignoreOnTextChange = false;
+                            }
+                            AndroidUtilities.runOnUIThread(() -> AndroidUtilities.showKeyboard(inputFields[FIELD_PHONE]), 300);
+                            inputFields[FIELD_PHONE].requestFocus();
+                            inputFields[FIELD_PHONE].setSelection(inputFields[FIELD_PHONE].length());
+                        });
+                        presentFragment(fragment);
+                    }
+                    return true;
                 });
                 inputFields[a].setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
                 inputFields[a].setInputType(0);
@@ -2697,18 +3038,15 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 container.addView(inputFields[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 17, 12, 17, 6));
             }
 
-            inputFields[a].setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_NEXT) {
-                        inputFields[FIELD_PHONE].requestFocus();
-                        return true;
-                    } else if (i == EditorInfo.IME_ACTION_DONE) {
-                        doneItem.callOnClick();
-                        return true;
-                    }
-                    return false;
+            inputFields[a].setOnEditorActionListener((textView, i, keyEvent) -> {
+                if (i == EditorInfo.IME_ACTION_NEXT) {
+                    inputFields[FIELD_PHONE].requestFocus();
+                    return true;
+                } else if (i == EditorInfo.IME_ACTION_DONE) {
+                    doneItem.callOnClick();
+                    return true;
                 }
+                return false;
             });
 
             if (a == FIELD_PHONECOUNTRY) {
@@ -2759,21 +3097,25 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             FileLog.e(e);
         }
 
-        if (currentDocumentsType instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
-            actionBar.setTitle(LocaleController.getString("ActionBotDocumentRentalAgreement", R.string.ActionBotDocumentRentalAgreement));
-        } else if (currentDocumentsType instanceof TLRPC.TL_secureValueTypeBankStatement) {
-            actionBar.setTitle(LocaleController.getString("ActionBotDocumentBankStatement", R.string.ActionBotDocumentBankStatement));
-        } else if (currentDocumentsType instanceof TLRPC.TL_secureValueTypeUtilityBill) {
-            actionBar.setTitle(LocaleController.getString("ActionBotDocumentUtilityBill", R.string.ActionBotDocumentUtilityBill));
-        } else if (currentDocumentsType instanceof TLRPC.TL_secureValueTypePassportRegistration) {
-            actionBar.setTitle(LocaleController.getString("ActionBotDocumentPassportRegistration", R.string.ActionBotDocumentPassportRegistration));
-        } else if (currentDocumentsType instanceof TLRPC.TL_secureValueTypeTemporaryRegistration) {
-            actionBar.setTitle(LocaleController.getString("ActionBotDocumentTemporaryRegistration", R.string.ActionBotDocumentTemporaryRegistration));
-        } else {
-            actionBar.setTitle(LocaleController.getString("PassportAddress", R.string.PassportAddress));
-        }
+        topErrorCell = new TextInfoPrivacyCell(context);
+        topErrorCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
+        topErrorCell.setPadding(0, AndroidUtilities.dp(7), 0, 0);
+        linearLayout2.addView(topErrorCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        checkTopErrorCell(true);
 
         if (currentDocumentsType != null) {
+            if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
+                actionBar.setTitle(LocaleController.getString("ActionBotDocumentRentalAgreement", R.string.ActionBotDocumentRentalAgreement));
+            } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeBankStatement) {
+                actionBar.setTitle(LocaleController.getString("ActionBotDocumentBankStatement", R.string.ActionBotDocumentBankStatement));
+            } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeUtilityBill) {
+                actionBar.setTitle(LocaleController.getString("ActionBotDocumentUtilityBill", R.string.ActionBotDocumentUtilityBill));
+            } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypePassportRegistration) {
+                actionBar.setTitle(LocaleController.getString("ActionBotDocumentPassportRegistration", R.string.ActionBotDocumentPassportRegistration));
+            } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeTemporaryRegistration) {
+                actionBar.setTitle(LocaleController.getString("ActionBotDocumentTemporaryRegistration", R.string.ActionBotDocumentTemporaryRegistration));
+            }
+
             headerCell = new HeaderCell(context);
             headerCell.setText(LocaleController.getString("PassportDocuments", R.string.PassportDocuments));
             headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -2786,12 +3128,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             uploadDocumentCell = new TextSettingsCell(context);
             uploadDocumentCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
             linearLayout2.addView(uploadDocumentCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            uploadDocumentCell.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    uploadingFileType = UPLOADING_TYPE_DOCUMENTS;
-                    openAttachMenu();
-                }
+            uploadDocumentCell.setOnClickListener(v -> {
+                uploadingFileType = UPLOADING_TYPE_DOCUMENTS;
+                openAttachMenu();
             });
 
             bottomCell = new TextInfoPrivacyCell(context);
@@ -2800,15 +3139,15 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             if (currentBotId != 0) {
                 noAllDocumentsErrorText = LocaleController.getString("PassportAddAddressUploadInfo", R.string.PassportAddAddressUploadInfo);
             } else {
-                if (currentDocumentsType instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
+                if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
                     noAllDocumentsErrorText = LocaleController.getString("PassportAddAgreementInfo", R.string.PassportAddAgreementInfo);
-                } else if (currentDocumentsType instanceof TLRPC.TL_secureValueTypeUtilityBill) {
+                } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeUtilityBill) {
                     noAllDocumentsErrorText = LocaleController.getString("PassportAddBillInfo", R.string.PassportAddBillInfo);
-                } else if (currentDocumentsType instanceof TLRPC.TL_secureValueTypePassportRegistration) {
+                } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypePassportRegistration) {
                     noAllDocumentsErrorText = LocaleController.getString("PassportAddPassportRegistrationInfo", R.string.PassportAddPassportRegistrationInfo);
-                } else if (currentDocumentsType instanceof TLRPC.TL_secureValueTypeTemporaryRegistration) {
+                } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeTemporaryRegistration) {
                     noAllDocumentsErrorText = LocaleController.getString("PassportAddTemporaryRegistrationInfo", R.string.PassportAddTemporaryRegistrationInfo);
-                } else if (currentDocumentsType instanceof TLRPC.TL_secureValueTypeBankStatement) {
+                } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeBankStatement) {
                     noAllDocumentsErrorText = LocaleController.getString("PassportAddBankInfo", R.string.PassportAddBankInfo);
                 } else {
                     noAllDocumentsErrorText = "";
@@ -2829,6 +3168,63 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
             bottomCell.setText(text);
             linearLayout2.addView(bottomCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            if (currentDocumentsType.translation_required) {
+                headerCell = new HeaderCell(context);
+                headerCell.setText(LocaleController.getString("PassportTranslation", R.string.PassportTranslation));
+                headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+                translationLayout = new LinearLayout(context);
+                translationLayout.setOrientation(LinearLayout.VERTICAL);
+                linearLayout2.addView(translationLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+                uploadTranslationCell = new TextSettingsCell(context);
+                uploadTranslationCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+                linearLayout2.addView(uploadTranslationCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                uploadTranslationCell.setOnClickListener(v -> {
+                    uploadingFileType = UPLOADING_TYPE_TRANSLATION;
+                    openAttachMenu();
+                });
+
+                bottomCellTranslation = new TextInfoPrivacyCell(context);
+                bottomCellTranslation.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+
+                if (currentBotId != 0) {
+                    noAllTranslationErrorText = LocaleController.getString("PassportAddTranslationUploadInfo", R.string.PassportAddTranslationUploadInfo);
+                } else {
+                    if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
+                        noAllTranslationErrorText = LocaleController.getString("PassportAddTranslationAgreementInfo", R.string.PassportAddTranslationAgreementInfo);
+                    } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeUtilityBill) {
+                        noAllTranslationErrorText = LocaleController.getString("PassportAddTranslationBillInfo", R.string.PassportAddTranslationBillInfo);
+                    } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypePassportRegistration) {
+                        noAllTranslationErrorText = LocaleController.getString("PassportAddTranslationPassportRegistrationInfo", R.string.PassportAddTranslationPassportRegistrationInfo);
+                    } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeTemporaryRegistration) {
+                        noAllTranslationErrorText = LocaleController.getString("PassportAddTranslationTemporaryRegistrationInfo", R.string.PassportAddTranslationTemporaryRegistrationInfo);
+                    } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeBankStatement) {
+                        noAllTranslationErrorText = LocaleController.getString("PassportAddTranslationBankInfo", R.string.PassportAddTranslationBankInfo);
+                    } else {
+                        noAllTranslationErrorText = "";
+                    }
+                }
+
+                text = noAllTranslationErrorText;
+                if (documentsErrors != null) {
+                    String errorText;
+                    if ((errorText = documentsErrors.get("translation_all")) != null) {
+                        SpannableStringBuilder stringBuilder = new SpannableStringBuilder(errorText);
+                        stringBuilder.append("\n\n");
+                        stringBuilder.append(noAllTranslationErrorText);
+                        text = stringBuilder;
+                        stringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteRedText3)), 0, errorText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        errorsValues.put("translation_all", "");
+                    }
+                }
+                bottomCellTranslation.setText(text);
+                linearLayout2.addView(bottomCellTranslation, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            }
+        } else {
+            actionBar.setTitle(LocaleController.getString("PassportAddress", R.string.PassportAddress));
         }
 
         headerCell = new HeaderCell(context);
@@ -2894,7 +3290,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 linearLayout2.addView(extraBackgroundView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 6));
             }
 
-            if (currentBotId == 0 && currentDocumentsType != null) {
+            if (documentOnly && currentDocumentsType != null) {
                 container.setVisibility(View.GONE);
                 if (extraBackgroundView != null) {
                     extraBackgroundView.setVisibility(View.GONE);
@@ -2914,25 +3310,19 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setCursorWidth(1.5f);
             inputFields[a].setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated), Theme.getColor(Theme.key_windowBackgroundWhiteRedText3));
             if (a == FIELD_COUNTRY) {
-                inputFields[a].setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        if (getParentActivity() == null) {
-                            return false;
-                        }
-                        if (event.getAction() == MotionEvent.ACTION_UP) {
-                            CountrySelectActivity fragment = new CountrySelectActivity(false);
-                            fragment.setCountrySelectActivityDelegate(new CountrySelectActivity.CountrySelectActivityDelegate() {
-                                @Override
-                                public void didSelectCountry(String name, String shortName) {
-                                    inputFields[FIELD_COUNTRY].setText(name);
-                                    currentCitizeship = shortName;
-                                }
-                            });
-                            presentFragment(fragment);
-                        }
-                        return true;
+                inputFields[a].setOnTouchListener((v, event) -> {
+                    if (getParentActivity() == null) {
+                        return false;
                     }
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        CountrySelectActivity fragment = new CountrySelectActivity(false);
+                        fragment.setCountrySelectActivityDelegate((name, shortName) -> {
+                            inputFields[FIELD_COUNTRY].setText(name);
+                            currentCitizeship = shortName;
+                        });
+                        presentFragment(fragment);
+                    }
+                    return true;
                 });
                 inputFields[a].setInputType(0);
                 inputFields[a].setFocusable(false);
@@ -2970,7 +3360,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 default:
                     continue;
             }
-            setFieldValues(inputFields[a], key);
+            setFieldValues(currentValues, inputFields[a], key);
             if (a == FIELD_POSTCODE) {
                 inputFields[a].addTextChangedListener(new TextWatcher() {
 
@@ -3004,7 +3394,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         if (error) {
                             field.setErrorText(LocaleController.getString("PassportUseLatinOnly", R.string.PassportUseLatinOnly));
                         } else {
-                            checkFieldForError(field, key, s);
+                            checkFieldForError(field, key, s, false);
                         }
                     }
                 });
@@ -3025,7 +3415,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
                     @Override
                     public void afterTextChanged(Editable s) {
-                        checkFieldForError(field, key, s);
+                        checkFieldForError(field, key, s, false);
                     }
                 });
             }
@@ -3035,113 +3425,104 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
             container.addView(inputFields[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 64, Gravity.LEFT | Gravity.TOP, 17, 0, 17, 0));
 
-            inputFields[a].setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_NEXT) {
-                        int num = (Integer) textView.getTag();
-                        num++;
-                        if (num < inputFields.length) {
-                            if (inputFields[num].isFocusable()) {
-                                inputFields[num].requestFocus();
-                            } else {
-                                inputFields[num].dispatchTouchEvent(MotionEvent.obtain(0, 0, MotionEvent.ACTION_UP, 0, 0, 0));
-                                textView.clearFocus();
-                                AndroidUtilities.hideKeyboard(textView);
-                            }
+            inputFields[a].setOnEditorActionListener((textView, i, keyEvent) -> {
+                if (i == EditorInfo.IME_ACTION_NEXT) {
+                    int num = (Integer) textView.getTag();
+                    num++;
+                    if (num < inputFields.length) {
+                        if (inputFields[num].isFocusable()) {
+                            inputFields[num].requestFocus();
+                        } else {
+                            inputFields[num].dispatchTouchEvent(MotionEvent.obtain(0, 0, MotionEvent.ACTION_UP, 0, 0, 0));
+                            textView.clearFocus();
+                            AndroidUtilities.hideKeyboard(textView);
                         }
-                        return true;
                     }
-                    return false;
+                    return true;
                 }
+                return false;
             });
         }
 
         sectionCell = new ShadowSectionCell(context);
         linearLayout2.addView(sectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        if (currentBotId == 0 && currentDocumentsType != null) {
+        if (documentOnly && currentDocumentsType != null) {
             headerCell.setVisibility(View.GONE);
             sectionCell.setVisibility(View.GONE);
         }
 
-        if ((currentBotId != 0 || currentDocumentsType == null) && currentTypeValue != null || currentDocumentsTypeValue != null) {
+        if ((currentBotId != 0 || currentDocumentsType == null) && currentTypeValue != null && !documentOnly || currentDocumentsTypeValue != null) {
             if (currentDocumentsTypeValue != null) {
                 addDocumentViews(currentDocumentsTypeValue.files);
+                addTranslationDocumentViews(currentDocumentsTypeValue.translation);
             }
             sectionCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
 
             TextSettingsCell settingsCell1 = new TextSettingsCell(context);
             settingsCell1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText3));
             settingsCell1.setBackgroundDrawable(Theme.getSelectorDrawable(true));
-            if (currentBotId == 0 && currentDocumentsType == null) {
+            if (currentDocumentsType == null) {
                 settingsCell1.setText(LocaleController.getString("PassportDeleteInfo", R.string.PassportDeleteInfo), false);
             } else {
                 settingsCell1.setText(LocaleController.getString("PassportDeleteDocument", R.string.PassportDeleteDocument), false);
             }
             linearLayout2.addView(settingsCell1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            settingsCell1.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    createDocumentDeleteAlert();
-                }
-            });
+            settingsCell1.setOnClickListener(v -> createDocumentDeleteAlert());
 
             sectionCell = new ShadowSectionCell(context);
             sectionCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
             linearLayout2.addView(sectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         } else {
             sectionCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-            if (currentBotId == 0 && currentDocumentsType != null) {
+            if (documentOnly && currentDocumentsType != null) {
                 bottomCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
             }
         }
         updateUploadText(UPLOADING_TYPE_DOCUMENTS);
+        updateUploadText(UPLOADING_TYPE_TRANSLATION);
     }
 
     private void createDocumentDeleteAlert() {
         final boolean checks[] = new boolean[]{true};
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+            if (!documentOnly) {
                 currentValues.clear();
-                delegate.deleteValue(currentType, currentDocumentsType, checks[0], null, null);
-                finishFragment();
             }
+            currentDocumentValues.clear();
+            delegate.deleteValue(currentType, currentDocumentsType, availableDocumentTypes, checks[0], null, null);
+            finishFragment();
         });
         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-        if (currentBotId == 0 && currentDocumentsType == null && currentType instanceof TLRPC.TL_secureValueTypeAddress) {
+        if (documentOnly && currentDocumentsType == null && currentType.type instanceof TLRPC.TL_secureValueTypeAddress) {
             builder.setMessage(LocaleController.getString("PassportDeleteAddressAlert", R.string.PassportDeleteAddressAlert));
-        } else if (currentBotId == 0 && currentDocumentsType == null && currentType instanceof TLRPC.TL_secureValueTypePersonalDetails) {
+        } else if (documentOnly && currentDocumentsType == null && currentType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
             builder.setMessage(LocaleController.getString("PassportDeletePersonalAlert", R.string.PassportDeletePersonalAlert));
         } else {
             builder.setMessage(LocaleController.getString("PassportDeleteDocumentAlert", R.string.PassportDeleteDocumentAlert));
         }
 
-        if (currentBotId != 0 && currentDocumentsType != null) {
+        if (!documentOnly && currentDocumentsType != null) {
             FrameLayout frameLayout = new FrameLayout(getParentActivity());
             CheckBoxCell cell = new CheckBoxCell(getParentActivity(), 1);
             cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-            if (currentType instanceof TLRPC.TL_secureValueTypeAddress) {
+            if (currentType.type instanceof TLRPC.TL_secureValueTypeAddress) {
                 cell.setText(LocaleController.getString("PassportDeleteDocumentAddress", R.string.PassportDeleteDocumentAddress), "", true, false);
-            } else if (currentType instanceof TLRPC.TL_secureValueTypePersonalDetails) {
+            } else if (currentType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
                 cell.setText(LocaleController.getString("PassportDeleteDocumentPersonal", R.string.PassportDeleteDocumentPersonal), "", true, false);
             }
             cell.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
             frameLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.LEFT));
-            cell.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (!v.isEnabled()) {
-                        return;
-                    }
-                    CheckBoxCell cell = (CheckBoxCell) v;
-                    checks[0] = !checks[0];
-                    cell.setChecked(checks[0], true);
+            cell.setOnClickListener(v -> {
+                if (!v.isEnabled()) {
+                    return;
                 }
+                CheckBoxCell cell1 = (CheckBoxCell) v;
+                checks[0] = !checks[0];
+                cell1.setChecked(checks[0], true);
             });
             builder.setView(frameLayout);
         }
@@ -3158,6 +3539,10 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             v.vibrate(200);
         }
         AndroidUtilities.shakeView(field, 2, 0);
+        scrollToField(field);
+    }
+
+    private void scrollToField(View field) {
         while (field != null && linearLayout2.indexOfChild(field) < 0) {
             field = (View) field.getParent();
         }
@@ -3177,7 +3562,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         return "";
     }
 
-    private void checkFieldForError(EditTextBoldCursor field, String key, Editable s) {
+    private void checkFieldForError(EditTextBoldCursor field, String key, Editable s, boolean document) {
         String value;
         if (errorsValues != null && (value = errorsValues.get(key)) != null) {
             if (TextUtils.equals(value, s)) {
@@ -3192,10 +3577,19 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         } else {
             field.setErrorText(null);
         }
+        String errorKey = document ? "error_document_all" : "error_all";
+        if (errorsValues != null && errorsValues.containsKey(errorKey)) {
+            errorsValues.remove(errorKey);
+            checkTopErrorCell(false);
+        }
     }
 
     private boolean checkFieldsForError() {
         if (currentDocumentsType != null) {
+            if (errorsValues.containsKey("error_all") || errorsValues.containsKey("error_document_all")) {
+                onFieldError(topErrorCell);
+                return true;
+            }
             if (uploadDocumentCell != null) {
                 if (documents.isEmpty()) {
                     onFieldError(uploadDocumentCell);
@@ -3211,7 +3605,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             }
-            if (errorsValues.containsKey("files_all")) {
+            if (errorsValues.containsKey("files_all") || errorsValues.containsKey("translation_all")) {
                 onFieldError(bottomCell);
                 return true;
             }
@@ -3227,7 +3621,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             }
-            if (currentDocumentsType instanceof TLRPC.TL_secureValueTypeIdentityCard || currentDocumentsType instanceof TLRPC.TL_secureValueTypeDriverLicense) {
+            if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeIdentityCard || currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeDriverLicense) {
                 if (uploadReverseCell != null) {
                     if (reverseDocument == null) {
                         onFieldError(uploadReverseCell);
@@ -3241,7 +3635,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             }
-            if (uploadSelfieCell != null) {
+            if (uploadSelfieCell != null && currentBotId != 0) {
                 if (selfieDocument == null) {
                     onFieldError(uploadSelfieCell);
                     return true;
@@ -3253,127 +3647,178 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             }
-        }
-        for (int a = 0; a < inputFields.length; a++) {
-            boolean error = false;
-            if (inputFields[a].hasErrorText()) {
-                error = true;
-            }
-            if (!errorsValues.isEmpty()) {
-                String key;
-                if (currentType instanceof TLRPC.TL_secureValueTypePersonalDetails) {
-                    switch (a) {
-                        case FIELD_NAME:
-                            key = "first_name";
-                            break;
-                        case FIELD_SURNAME:
-                            key = "last_name";
-                            break;
-                        case FIELD_BIRTHDAY:
-                            key = "birth_date";
-                            break;
-                        case FIELD_GENDER:
-                            key = "gender";
-                            break;
-                        case FIELD_CITIZENSHIP:
-                            key = "country_code";
-                            break;
-                        case FIELD_RESIDENCE:
-                            key = "residence_country_code";
-                            break;
-                        case FIELD_CARDNUMBER:
-                            key = "document_no";
-                            break;
-                        case FIELD_EXPIRE:
-                            key = "expiry_date";
-                            break;
-                        default:
-                            key = null;
-                            break;
-                    }
-                } else if (currentType instanceof TLRPC.TL_secureValueTypeAddress) {
-                    switch (a) {
-                        case FIELD_STREET1:
-                            key = "street_line1";
-                            break;
-                        case FIELD_STREET2:
-                            key = "street_line2";
-                            break;
-                        case FIELD_CITY:
-                            key = "city";
-                            break;
-                        case FIELD_STATE:
-                            key = "state";
-                            break;
-                        case FIELD_COUNTRY:
-                            key = "country_code";
-                            break;
-                        case FIELD_POSTCODE:
-                            key = "post_code";
-                            break;
-                        default:
-                            key = null;
-                            break;
-                    }
+            if (uploadTranslationCell != null && currentBotId != 0) {
+                if (translationDocuments.isEmpty()) {
+                    onFieldError(uploadTranslationCell);
+                    return true;
                 } else {
-                    key = null;
-                }
-                if (key != null) {
-                    String value = errorsValues.get(key);
-                    if (!TextUtils.isEmpty(value)) {
-                        if (value.equals(inputFields[a].getText().toString())) {
-                            error = true;
+                    for (int a = 0, size = translationDocuments.size(); a < size; a++) {
+                        SecureDocument document = translationDocuments.get(a);
+                        String key = "translation" + getDocumentHash(document);
+                        if (key != null && errorsValues.containsKey(key)) {
+                            onFieldError(documentsCells.get(document));
+                            return true;
                         }
                     }
                 }
             }
-            if (currentBotId == 0) {
-                if (currentDocumentsType != null && a < FIELD_CARDNUMBER) {
-                    continue;
-                }
+        }
+        for (int i = 0; i < 2; i++) {
+            EditTextBoldCursor[] fields;
+            if (i == 0) {
+                fields = inputFields;
+            } else {
+                fields = nativeInfoCell != null && nativeInfoCell.getVisibility() == View.VISIBLE ? inputExtraFields : null;
             }
-            if (!error) {
-                int len = inputFields[a].length();
-                if (currentActivityType == TYPE_IDENTITY) {
-                    if (a == FIELD_EXPIRE) {
-                        continue;
-                    } else if (a == FIELD_NAME || a == FIELD_SURNAME) {
-                        if (len > 255) {
-                            error = true;
+            if (fields == null) {
+                continue;
+            }
+            for (int a = 0; a < fields.length; a++) {
+                boolean error = false;
+                if (fields[a].hasErrorText()) {
+                    error = true;
+                }
+                if (!errorsValues.isEmpty()) {
+                    String key;
+                    if (currentType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
+                        if (i == 0) {
+                            switch (a) {
+                                case FIELD_NAME:
+                                    key = "first_name";
+                                    break;
+                                case FIELD_MIDNAME:
+                                    key = "middle_name";
+                                    break;
+                                case FIELD_SURNAME:
+                                    key = "last_name";
+                                    break;
+                                case FIELD_BIRTHDAY:
+                                    key = "birth_date";
+                                    break;
+                                case FIELD_GENDER:
+                                    key = "gender";
+                                    break;
+                                case FIELD_CITIZENSHIP:
+                                    key = "country_code";
+                                    break;
+                                case FIELD_RESIDENCE:
+                                    key = "residence_country_code";
+                                    break;
+                                case FIELD_CARDNUMBER:
+                                    key = "document_no";
+                                    break;
+                                case FIELD_EXPIRE:
+                                    key = "expiry_date";
+                                    break;
+                                default:
+                                    key = null;
+                                    break;
+                            }
+                        } else {
+                            switch (a) {
+                                case FIELD_NATIVE_NAME:
+                                    key = "first_name_native";
+                                    break;
+                                case FIELD_NATIVE_MIDNAME:
+                                    key = "middle_name_native";
+                                    break;
+                                case FIELD_NATIVE_SURNAME:
+                                    key = "last_name_native";
+                                    break;
+                                default:
+                                    key = null;
+                                    break;
+                            }
                         }
-                    } else if (a == FIELD_CARDNUMBER) {
-                        if (len > 24) {
-                            error = true;
+                    } else if (currentType.type instanceof TLRPC.TL_secureValueTypeAddress) {
+                        switch (a) {
+                            case FIELD_STREET1:
+                                key = "street_line1";
+                                break;
+                            case FIELD_STREET2:
+                                key = "street_line2";
+                                break;
+                            case FIELD_CITY:
+                                key = "city";
+                                break;
+                            case FIELD_STATE:
+                                key = "state";
+                                break;
+                            case FIELD_COUNTRY:
+                                key = "country_code";
+                                break;
+                            case FIELD_POSTCODE:
+                                key = "post_code";
+                                break;
+                            default:
+                                key = null;
+                                break;
+                        }
+                    } else {
+                        key = null;
+                    }
+                    if (key != null) {
+                        String value = errorsValues.get(key);
+                        if (!TextUtils.isEmpty(value)) {
+                            if (value.equals(fields[a].getText().toString())) {
+                                error = true;
+                            }
                         }
                     }
-                } else if (currentActivityType == TYPE_ADDRESS) {
-                    if (a == FIELD_STREET2) {
+                }
+                if (documentOnly) {
+                    if (currentDocumentsType != null && a < FIELD_CARDNUMBER) {
                         continue;
-                    } else if (a == FIELD_CITY) {
-                        if (len < 2) {
-                            error = true;
+                    }
+                }
+                if (!error) {
+                    int len = fields[a].length();
+                    boolean allowZeroLength = false;
+                    if (currentActivityType == TYPE_IDENTITY) {
+                        if (a == FIELD_EXPIRE) {
+                            continue;
+                        } else if (i == 0 && (a == FIELD_NAME || a == FIELD_SURNAME || a == FIELD_MIDNAME) ||
+                                i == 1 && (a == FIELD_NATIVE_NAME || a == FIELD_NATIVE_MIDNAME || a == FIELD_NATIVE_SURNAME)) {
+                            if (len > 255) {
+                                error = true;
+                            }
+                            if (i == 0 && a == FIELD_MIDNAME || i == 1 && a == FIELD_NATIVE_MIDNAME) {
+                                allowZeroLength = true;
+                            }
+                        } else if (a == FIELD_CARDNUMBER) {
+                            if (len > 24) {
+                                error = true;
+                            }
                         }
-                    } else if (a == FIELD_STATE) {
-                        if ("US".equals(currentCitizeship)) {
+                    } else if (currentActivityType == TYPE_ADDRESS) {
+                        if (a == FIELD_STREET2) {
+                            continue;
+                        } else if (a == FIELD_CITY) {
                             if (len < 2) {
                                 error = true;
                             }
-                        } else {
-                            continue;
-                        }
-                    } else if (a == FIELD_POSTCODE) {
-                        if (len < 2 || len > 10) {
-                            error = true;
+                        } else if (a == FIELD_STATE) {
+                            if ("US".equals(currentCitizeship)) {
+                                if (len < 2) {
+                                    error = true;
+                                }
+                            } else {
+                                continue;
+                            }
+                        } else if (a == FIELD_POSTCODE) {
+                            if (len < 2 || len > 10) {
+                                error = true;
+                            }
                         }
                     }
+                    if (!error && !allowZeroLength && len == 0) {
+                        error = true;
+                    }
                 }
-                if (!error && len == 0) {
-                    error = true;
+                if (error) {
+                    onFieldError(fields[a]);
+                    return true;
                 }
-            }
-            if (error) {
-                onFieldError(inputFields[a]);
-                return true;
             }
         }
         return false;
@@ -3393,9 +3838,15 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             FileLog.e(e);
         }
 
+        topErrorCell = new TextInfoPrivacyCell(context);
+        topErrorCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
+        topErrorCell.setPadding(0, AndroidUtilities.dp(7), 0, 0);
+        linearLayout2.addView(topErrorCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        checkTopErrorCell(true);
+
         if (currentDocumentsType != null) {
             headerCell = new HeaderCell(context);
-            if (currentBotId == 0) {
+            if (documentOnly) {
                 headerCell.setText(LocaleController.getString("PassportDocuments", R.string.PassportDocuments));
             } else {
                 headerCell.setText(LocaleController.getString("PassportRequiredDocuments", R.string.PassportRequiredDocuments));
@@ -3410,45 +3861,38 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             uploadFrontCell = new TextDetailSettingsCell(context);
             uploadFrontCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
             linearLayout2.addView(uploadFrontCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            uploadFrontCell.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    uploadingFileType = UPLOADING_TYPE_FRONT;
-                    openAttachMenu();
-                }
+            uploadFrontCell.setOnClickListener(v -> {
+                uploadingFileType = UPLOADING_TYPE_FRONT;
+                openAttachMenu();
             });
 
             reverseLayout = new LinearLayout(context);
             reverseLayout.setOrientation(LinearLayout.VERTICAL);
             linearLayout2.addView(reverseLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+            boolean divider = currentDocumentsType.selfie_required;
+
             uploadReverseCell = new TextDetailSettingsCell(context);
             uploadReverseCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
-            uploadReverseCell.setTextAndValue(LocaleController.getString("PassportReverseSide", R.string.PassportReverseSide), LocaleController.getString("PassportReverseSideInfo", R.string.PassportReverseSideInfo), currentForm.selfie_required);
+            uploadReverseCell.setTextAndValue(LocaleController.getString("PassportReverseSide", R.string.PassportReverseSide), LocaleController.getString("PassportReverseSideInfo", R.string.PassportReverseSideInfo), divider);
             linearLayout2.addView(uploadReverseCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            uploadReverseCell.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    uploadingFileType = UPLOADING_TYPE_REVERSE;
-                    openAttachMenu();
-                }
+            uploadReverseCell.setOnClickListener(v -> {
+                uploadingFileType = UPLOADING_TYPE_REVERSE;
+                openAttachMenu();
             });
 
-            if (currentForm.selfie_required) {
+            if (currentDocumentsType.selfie_required) {
                 selfieLayout = new LinearLayout(context);
                 selfieLayout.setOrientation(LinearLayout.VERTICAL);
                 linearLayout2.addView(selfieLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
                 uploadSelfieCell = new TextDetailSettingsCell(context);
                 uploadSelfieCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
-                uploadSelfieCell.setTextAndValue(LocaleController.getString("PassportSelfie", R.string.PassportSelfie), LocaleController.getString("PassportSelfieInfo", R.string.PassportSelfieInfo), false);
+                uploadSelfieCell.setTextAndValue(LocaleController.getString("PassportSelfie", R.string.PassportSelfie), LocaleController.getString("PassportSelfieInfo", R.string.PassportSelfieInfo), currentType.translation_required);
                 linearLayout2.addView(uploadSelfieCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-                uploadSelfieCell.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        uploadingFileType = UPLOADING_TYPE_SELFIE;
-                        openAttachMenu();
-                    }
+                uploadSelfieCell.setOnClickListener(v -> {
+                    uploadingFileType = UPLOADING_TYPE_SELFIE;
+                    openAttachMenu();
                 });
             }
 
@@ -3456,61 +3900,111 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             bottomCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
             bottomCell.setText(LocaleController.getString("PassportPersonalUploadInfo", R.string.PassportPersonalUploadInfo));
             linearLayout2.addView(bottomCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            if (currentDocumentsType.translation_required) {
+                headerCell = new HeaderCell(context);
+                headerCell.setText(LocaleController.getString("PassportTranslation", R.string.PassportTranslation));
+                headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+                translationLayout = new LinearLayout(context);
+                translationLayout.setOrientation(LinearLayout.VERTICAL);
+                linearLayout2.addView(translationLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+                uploadTranslationCell = new TextSettingsCell(context);
+                uploadTranslationCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+                linearLayout2.addView(uploadTranslationCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                uploadTranslationCell.setOnClickListener(v -> {
+                    uploadingFileType = UPLOADING_TYPE_TRANSLATION;
+                    openAttachMenu();
+                });
+
+                bottomCellTranslation = new TextInfoPrivacyCell(context);
+                bottomCellTranslation.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+
+                if (currentBotId != 0) {
+                    noAllTranslationErrorText = LocaleController.getString("PassportAddTranslationUploadInfo", R.string.PassportAddTranslationUploadInfo);
+                } else {
+                    if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypePassport) {
+                        noAllTranslationErrorText = LocaleController.getString("PassportAddPassportInfo", R.string.PassportAddPassportInfo);
+                    } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeInternalPassport) {
+                        noAllTranslationErrorText = LocaleController.getString("PassportAddInternalPassportInfo", R.string.PassportAddInternalPassportInfo);
+                    } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeIdentityCard) {
+                        noAllTranslationErrorText = LocaleController.getString("PassportAddIdentityCardInfo", R.string.PassportAddIdentityCardInfo);
+                    } else if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeDriverLicense) {
+                        noAllTranslationErrorText = LocaleController.getString("PassportAddDriverLicenceInfo", R.string.PassportAddDriverLicenceInfo);
+                    } else {
+                        noAllTranslationErrorText = "";
+                    }
+                }
+
+                CharSequence text = noAllTranslationErrorText;
+                if (documentsErrors != null) {
+                    String errorText;
+                    if ((errorText = documentsErrors.get("translation_all")) != null) {
+                        SpannableStringBuilder stringBuilder = new SpannableStringBuilder(errorText);
+                        stringBuilder.append("\n\n");
+                        stringBuilder.append(noAllTranslationErrorText);
+                        text = stringBuilder;
+                        stringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteRedText3)), 0, errorText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        errorsValues.put("translation_all", "");
+                    }
+                }
+                bottomCellTranslation.setText(text);
+                linearLayout2.addView(bottomCellTranslation, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            }
         } else if (Build.VERSION.SDK_INT >= 18) {
             scanDocumentCell = new TextSettingsCell(context);
             scanDocumentCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
             scanDocumentCell.setText(LocaleController.getString("PassportScanPassport", R.string.PassportScanPassport), false);
             linearLayout2.addView(scanDocumentCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            scanDocumentCell.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (Build.VERSION.SDK_INT >= 23 && getParentActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                        getParentActivity().requestPermissions(new String[]{Manifest.permission.CAMERA}, 22);
-                        return;
-                    }
-                    MrzCameraActivity fragment = new MrzCameraActivity();
-                    fragment.setDelegate(new MrzCameraActivity.MrzCameraActivityDelegate() {
-                        @Override
-                        public void didFindMrzInfo(MrzRecognizer.Result result) {
-                            if (!TextUtils.isEmpty(result.firstName)) {
-                                inputFields[FIELD_NAME].setText(result.firstName);
-                            }
-                            if (!TextUtils.isEmpty(result.lastName)) {
-                                inputFields[FIELD_SURNAME].setText(result.lastName);
-                            }
-                            if (result.gender != MrzRecognizer.Result.GENDER_UNKNOWN) {
-                                switch (result.gender) {
-                                    case MrzRecognizer.Result.GENDER_MALE:
-                                        currentGender = "male";
-                                        inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportMale", R.string.PassportMale));
-                                        break;
-                                    case MrzRecognizer.Result.GENDER_FEMALE:
-                                        currentGender = "female";
-                                        inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportFemale", R.string.PassportFemale));
-                                        break;
-                                }
-                            }
-                            if (!TextUtils.isEmpty(result.nationality)) {
-                                currentCitizeship = result.nationality;
-                                String country = languageMap.get(currentCitizeship);
-                                if (country != null) {
-                                    inputFields[FIELD_CITIZENSHIP].setText(country);
-                                }
-                            }
-                            if (!TextUtils.isEmpty(result.issuingCountry)) {
-                                currentResidence = result.issuingCountry;
-                                String country = languageMap.get(currentResidence);
-                                if (country != null) {
-                                    inputFields[FIELD_RESIDENCE].setText(country);
-                                }
-                            }
-                            if (result.birthDay > 0 && result.birthMonth > 0 && result.birthYear > 0) {
-                                inputFields[FIELD_BIRTHDAY].setText(String.format(Locale.US, "%02d.%02d.%d", result.birthDay, result.birthMonth, result.birthYear));
-                            }
-                        }
-                    });
-                    presentFragment(fragment);
+            scanDocumentCell.setOnClickListener(v -> {
+                if (Build.VERSION.SDK_INT >= 23 && getParentActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                    getParentActivity().requestPermissions(new String[]{Manifest.permission.CAMERA}, 22);
+                    return;
                 }
+                MrzCameraActivity fragment = new MrzCameraActivity();
+                fragment.setDelegate(result -> {
+                    if (!TextUtils.isEmpty(result.firstName)) {
+                        inputFields[FIELD_NAME].setText(result.firstName);
+                    }
+                    if (!TextUtils.isEmpty(result.middleName)) {
+                        inputFields[FIELD_MIDNAME].setText(result.middleName);
+                    }
+                    if (!TextUtils.isEmpty(result.lastName)) {
+                        inputFields[FIELD_SURNAME].setText(result.lastName);
+                    }
+                    if (result.gender != MrzRecognizer.Result.GENDER_UNKNOWN) {
+                        switch (result.gender) {
+                            case MrzRecognizer.Result.GENDER_MALE:
+                                currentGender = "male";
+                                inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportMale", R.string.PassportMale));
+                                break;
+                            case MrzRecognizer.Result.GENDER_FEMALE:
+                                currentGender = "female";
+                                inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportFemale", R.string.PassportFemale));
+                                break;
+                        }
+                    }
+                    if (!TextUtils.isEmpty(result.nationality)) {
+                        currentCitizeship = result.nationality;
+                        String country = languageMap.get(currentCitizeship);
+                        if (country != null) {
+                            inputFields[FIELD_CITIZENSHIP].setText(country);
+                        }
+                    }
+                    if (!TextUtils.isEmpty(result.issuingCountry)) {
+                        currentResidence = result.issuingCountry;
+                        String country = languageMap.get(currentResidence);
+                        if (country != null) {
+                            inputFields[FIELD_RESIDENCE].setText(country);
+                        }
+                    }
+                    if (result.birthDay > 0 && result.birthMonth > 0 && result.birthYear > 0) {
+                        inputFields[FIELD_BIRTHDAY].setText(String.format(Locale.US, "%02d.%02d.%d", result.birthDay, result.birthMonth, result.birthYear));
+                    }
+                });
+                presentFragment(fragment);
             });
 
             bottomCell = new TextInfoPrivacyCell(context);
@@ -3520,7 +4014,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
 
         headerCell = new HeaderCell(context);
-        headerCell.setText(LocaleController.getString("PassportPersonal", R.string.PassportPersonal));
+        if (documentOnly) {
+            headerCell.setText(LocaleController.getString("PassportDocument", R.string.PassportDocument));
+        } else {
+            headerCell.setText(LocaleController.getString("PassportPersonal", R.string.PassportPersonal));
+        }
         headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -3584,7 +4082,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 linearLayout2.addView(extraBackgroundView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 6));
             }
 
-            if (currentBotId == 0 && currentDocumentsType != null && a < FIELD_CARDNUMBER) {
+            if (documentOnly && currentDocumentsType != null && a < FIELD_CARDNUMBER) {
                 container.setVisibility(View.GONE);
                 if (extraBackgroundView != null) {
                     extraBackgroundView.setVisibility(View.GONE);
@@ -3604,118 +4102,111 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setCursorWidth(1.5f);
             inputFields[a].setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated), Theme.getColor(Theme.key_windowBackgroundWhiteRedText3));
             if (a == FIELD_CITIZENSHIP || a == FIELD_RESIDENCE) {
-                inputFields[a].setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(final View v, MotionEvent event) {
-                        if (getParentActivity() == null) {
-                            return false;
-                        }
-                        if (event.getAction() == MotionEvent.ACTION_UP) {
-                            CountrySelectActivity fragment = new CountrySelectActivity(false);
-                            fragment.setCountrySelectActivityDelegate(new CountrySelectActivity.CountrySelectActivityDelegate() {
-                                @Override
-                                public void didSelectCountry(String name, String shortName) {
-                                    int field = (Integer) v.getTag();
-                                    final EditTextBoldCursor editText = inputFields[field];
-                                    editText.setText(name);
-                                    if (field == FIELD_CITIZENSHIP) {
-                                        currentCitizeship = shortName;
-                                    } else {
-                                        currentResidence = shortName;
-                                    }
-                                }
-                            });
-                            presentFragment(fragment);
-                        }
-                        return true;
+                inputFields[a].setOnTouchListener((v, event) -> {
+                    if (getParentActivity() == null) {
+                        return false;
                     }
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        CountrySelectActivity fragment = new CountrySelectActivity(false);
+                        fragment.setCountrySelectActivityDelegate((name, shortName) -> {
+                            int field12 = (Integer) v.getTag();
+                            final EditTextBoldCursor editText = inputFields[field12];
+                            if (field12 == FIELD_CITIZENSHIP) {
+                                currentCitizeship = shortName;
+                            } else {
+                                currentResidence = shortName;
+                            }
+                            editText.setText(name);
+                        });
+                        presentFragment(fragment);
+                    }
+                    return true;
                 });
                 inputFields[a].setInputType(0);
             } else if (a == FIELD_BIRTHDAY || a == FIELD_EXPIRE) {
-                inputFields[a].setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(final View v, MotionEvent event) {
-                        if (getParentActivity() == null) {
-                            return false;
-                        }
-                        if (event.getAction() == MotionEvent.ACTION_UP) {
-                            Calendar calendar = Calendar.getInstance();
-                            int year = calendar.get(Calendar.YEAR);
-                            int monthOfYear = calendar.get(Calendar.MONTH);
-                            int dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH);
-                            try {
-                                final EditTextBoldCursor field = (EditTextBoldCursor) v;
-                                int num = (Integer) field.getTag();
-                                int minYear;
-                                int maxYear;
-                                String title;
-                                if (num == FIELD_EXPIRE) {
-                                    title = LocaleController.getString("PassportSelectExpiredDate", R.string.PassportSelectExpiredDate);
-                                    minYear = 0;
-                                    maxYear = 20;
-                                } else {
-                                    title = LocaleController.getString("PassportSelectBithdayDate", R.string.PassportSelectBithdayDate);
-                                    minYear = -120;
-                                    maxYear = 0;
-                                }
-                                AlertDialog.Builder builder = AlertsCreator.createDatePickerDialog(context, minYear, maxYear, title, num == FIELD_EXPIRE, new AlertsCreator.DatePickerDelegate() {
-                                    @Override
-                                    public void didSelectDate(int year, int month, int dayOfMonth) {
-                                        currentExpireDate[0] = year;
-                                        currentExpireDate[1] = month + 1;
-                                        currentExpireDate[2] = dayOfMonth;
-                                        field.setText(String.format(Locale.US, "%02d.%02d.%d", dayOfMonth, month + 1, year));
-                                    }
-                                });
-                                if (num == FIELD_EXPIRE) {
-                                    builder.setNegativeButton(LocaleController.getString("PassportSelectNotExpire", R.string.PassportSelectNotExpire), new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            currentExpireDate[0] = currentExpireDate[1] = currentExpireDate[2] = 0;
-                                            field.setText(LocaleController.getString("PassportNoExpireDate", R.string.PassportNoExpireDate));
-                                        }
-                                    });
-                                }
-                                showDialog(builder.create());
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
-                        }
-                        return true;
+                inputFields[a].setOnTouchListener((v, event) -> {
+                    if (getParentActivity() == null) {
+                        return false;
                     }
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        Calendar calendar = Calendar.getInstance();
+                        int year = calendar.get(Calendar.YEAR);
+                        int monthOfYear = calendar.get(Calendar.MONTH);
+                        int dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH);
+                        try {
+                            final EditTextBoldCursor field1 = (EditTextBoldCursor) v;
+                            int num = (Integer) field1.getTag();
+                            int minYear;
+                            int maxYear;
+                            int currentYearDiff;
+                            String title;
+                            if (num == FIELD_EXPIRE) {
+                                title = LocaleController.getString("PassportSelectExpiredDate", R.string.PassportSelectExpiredDate);
+                                minYear = 0;
+                                maxYear = 20;
+                                currentYearDiff = 0;
+                            } else {
+                                title = LocaleController.getString("PassportSelectBithdayDate", R.string.PassportSelectBithdayDate);
+                                minYear = -120;
+                                maxYear = 0;
+                                currentYearDiff = -18;
+                            }
+                            int selectedDay = -1;
+                            int selectedMonth = -1;
+                            int selectedYear = -1;
+                            String args[] = field1.getText().toString().split("\\.");
+                            if (args.length == 3) {
+                                selectedDay = Utilities.parseInt(args[0]);
+                                selectedMonth = Utilities.parseInt(args[1]);
+                                selectedYear = Utilities.parseInt(args[2]);
+                            }
+                            AlertDialog.Builder builder = AlertsCreator.createDatePickerDialog(context, minYear, maxYear, currentYearDiff, selectedDay, selectedMonth, selectedYear, title, num == FIELD_EXPIRE, (year1, month, dayOfMonth1) -> {
+                                if (num == FIELD_EXPIRE) {
+                                    currentExpireDate[0] = year1;
+                                    currentExpireDate[1] = month + 1;
+                                    currentExpireDate[2] = dayOfMonth1;
+                                }
+                                field1.setText(String.format(Locale.US, "%02d.%02d.%d", dayOfMonth1, month + 1, year1));
+                            });
+                            if (num == FIELD_EXPIRE) {
+                                builder.setNegativeButton(LocaleController.getString("PassportSelectNotExpire", R.string.PassportSelectNotExpire), (dialog, which) -> {
+                                    currentExpireDate[0] = currentExpireDate[1] = currentExpireDate[2] = 0;
+                                    field1.setText(LocaleController.getString("PassportNoExpireDate", R.string.PassportNoExpireDate));
+                                });
+                            }
+                            showDialog(builder.create());
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    }
+                    return true;
                 });
                 inputFields[a].setInputType(0);
                 inputFields[a].setFocusable(false);
             } else if (a == FIELD_GENDER) {
-                inputFields[a].setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(final View v, MotionEvent event) {
-                        if (getParentActivity() == null) {
-                            return false;
-                        }
-                        if (event.getAction() == MotionEvent.ACTION_UP) {
-                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                            builder.setTitle(LocaleController.getString("PassportSelectGender", R.string.PassportSelectGender));
-                            builder.setItems(new CharSequence[]{
-                                    LocaleController.getString("PassportMale", R.string.PassportMale),
-                                    LocaleController.getString("PassportFemale", R.string.PassportFemale)
-                            }, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    if (i == 0) {
-                                        currentGender = "male";
-                                        inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportMale", R.string.PassportMale));
-                                    } else if (i == 1) {
-                                        currentGender = "female";
-                                        inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportFemale", R.string.PassportFemale));
-                                    }
-                                }
-                            });
-                            builder.setPositiveButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                            showDialog(builder.create());
-                        }
-                        return true;
+                inputFields[a].setOnTouchListener((v, event) -> {
+                    if (getParentActivity() == null) {
+                        return false;
                     }
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("PassportSelectGender", R.string.PassportSelectGender));
+                        builder.setItems(new CharSequence[]{
+                                LocaleController.getString("PassportMale", R.string.PassportMale),
+                                LocaleController.getString("PassportFemale", R.string.PassportFemale)
+                        }, (dialogInterface, i) -> {
+                            if (i == 0) {
+                                currentGender = "male";
+                                inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportMale", R.string.PassportMale));
+                            } else if (i == 1) {
+                                currentGender = "female";
+                                inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportFemale", R.string.PassportFemale));
+                            }
+                        });
+                        builder.setPositiveButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
+                    }
+                    return true;
                 });
                 inputFields[a].setInputType(0);
                 inputFields[a].setFocusable(false);
@@ -3725,45 +4216,71 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
             String value;
             final String key;
+            HashMap<String, String> values;
             switch (a) {
                 case FIELD_NAME:
-                    inputFields[a].setHintText(LocaleController.getString("PassportName", R.string.PassportName));
+                    if (currentType.native_names) {
+                        inputFields[a].setHintText(LocaleController.getString("PassportNameLatin", R.string.PassportNameLatin));
+                    } else {
+                        inputFields[a].setHintText(LocaleController.getString("PassportName", R.string.PassportName));
+                    }
                     key = "first_name";
+                    values = currentValues;
+                    break;
+                case FIELD_MIDNAME:
+                    if (currentType.native_names) {
+                        inputFields[a].setHintText(LocaleController.getString("PassportMidnameLatin", R.string.PassportMidnameLatin));
+                    } else {
+                        inputFields[a].setHintText(LocaleController.getString("PassportMidname", R.string.PassportMidname));
+                    }
+                    key = "middle_name";
+                    values = currentValues;
                     break;
                 case FIELD_SURNAME:
-                    inputFields[a].setHintText(LocaleController.getString("PassportSurname", R.string.PassportSurname));
+                    if (currentType.native_names) {
+                        inputFields[a].setHintText(LocaleController.getString("PassportSurnameLatin", R.string.PassportSurnameLatin));
+                    } else {
+                        inputFields[a].setHintText(LocaleController.getString("PassportSurname", R.string.PassportSurname));
+                    }
                     key = "last_name";
+                    values = currentValues;
                     break;
                 case FIELD_BIRTHDAY:
                     inputFields[a].setHintText(LocaleController.getString("PassportBirthdate", R.string.PassportBirthdate));
                     key = "birth_date";
+                    values = currentValues;
                     break;
                 case FIELD_GENDER:
                     inputFields[a].setHintText(LocaleController.getString("PassportGender", R.string.PassportGender));
                     key = "gender";
+                    values = currentValues;
                     break;
                 case FIELD_CITIZENSHIP:
                     inputFields[a].setHintText(LocaleController.getString("PassportCitizenship", R.string.PassportCitizenship));
                     key = "country_code";
+                    values = currentValues;
                     break;
                 case FIELD_RESIDENCE:
                     inputFields[a].setHintText(LocaleController.getString("PassportResidence", R.string.PassportResidence));
                     key = "residence_country_code";
+                    values = currentValues;
                     break;
                 case FIELD_CARDNUMBER:
                     inputFields[a].setHintText(LocaleController.getString("PassportDocumentNumber", R.string.PassportDocumentNumber));
                     key = "document_no";
+                    values = currentDocumentValues;
                     break;
                 case FIELD_EXPIRE:
                     inputFields[a].setHintText(LocaleController.getString("PassportExpired", R.string.PassportExpired));
                     key = "expiry_date";
+                    values = currentDocumentValues;
                     break;
                 default:
                     continue;
             }
-            setFieldValues(inputFields[a], key);
+            setFieldValues(values, inputFields[a], key);
             inputFields[a].setSelection(inputFields[a].length());
-            if (a == FIELD_NAME || a == FIELD_SURNAME) {
+            if (a == FIELD_NAME || a == FIELD_SURNAME || a == FIELD_MIDNAME) {
                 inputFields[a].addTextChangedListener(new TextWatcher() {
 
                     private boolean ignore;
@@ -3783,7 +4300,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         if (ignore) {
                             return;
                         }
-                        ignore = true;
+                        int num = (Integer) field.getTag();
                         boolean error = false;
                         for (int a = 0; a < s.length(); a++) {
                             char ch = s.charAt(a);
@@ -3792,11 +4309,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                                 break;
                             }
                         }
-                        ignore = false;
-                        if (error) {
+                        if (error && !allowNonLatinName) {
                             field.setErrorText(LocaleController.getString("PassportUseLatinOnly", R.string.PassportUseLatinOnly));
                         } else {
-                            checkFieldForError(field, key, s);
+                            nonLatinNames[num] = error;
+                            checkFieldForError(field, key, s, false);
                         }
                     }
                 });
@@ -3814,7 +4331,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
                     @Override
                     public void afterTextChanged(Editable s) {
-                        checkFieldForError(field, key, s);
+                        checkFieldForError(field, key, s, values == currentDocumentValues);
+                        int field12 = (Integer) field.getTag();
+                        final EditTextBoldCursor editText = inputFields[field12];
+                        if (field12 == FIELD_RESIDENCE) {
+                            checkNativeFields(true);
+                        }
                     }
                 });
             }
@@ -3823,32 +4345,178 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
             container.addView(inputFields[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 17, 0, 17, 0));
 
-            inputFields[a].setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_NEXT) {
-                        int num = (Integer) textView.getTag();
-                        num++;
-                        if (num < inputFields.length) {
-                            if (inputFields[num].isFocusable()) {
-                                inputFields[num].requestFocus();
-                            } else {
-                                inputFields[num].dispatchTouchEvent(MotionEvent.obtain(0, 0, MotionEvent.ACTION_UP, 0, 0, 0));
-                                textView.clearFocus();
-                                AndroidUtilities.hideKeyboard(textView);
-                            }
+            inputFields[a].setOnEditorActionListener((textView, i, keyEvent) -> {
+                if (i == EditorInfo.IME_ACTION_NEXT) {
+                    int num = (Integer) textView.getTag();
+                    num++;
+                    if (num < inputFields.length) {
+                        if (inputFields[num].isFocusable()) {
+                            inputFields[num].requestFocus();
+                        } else {
+                            inputFields[num].dispatchTouchEvent(MotionEvent.obtain(0, 0, MotionEvent.ACTION_UP, 0, 0, 0));
+                            textView.clearFocus();
+                            AndroidUtilities.hideKeyboard(textView);
                         }
-                        return true;
                     }
-                    return false;
+                    return true;
                 }
+                return false;
             });
         }
 
-        sectionCell = new ShadowSectionCell(context);
-        linearLayout2.addView(sectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        sectionCell2 = new ShadowSectionCell(context);
+        linearLayout2.addView(sectionCell2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        if ((currentBotId != 0 || currentDocumentsType == null) && currentTypeValue != null || currentDocumentsTypeValue != null) {
+        headerCell = new HeaderCell(context);
+        headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        inputExtraFields = new EditTextBoldCursor[FIELD_NATIVE_COUNT];
+        for (int a = 0; a < FIELD_NATIVE_COUNT; a++) {
+            final EditTextBoldCursor field = new EditTextBoldCursor(context);
+            inputExtraFields[a] = field;
+
+            ViewGroup container = new FrameLayout(context) {
+
+                private StaticLayout errorLayout;
+                private float offsetX;
+
+                @Override
+                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                    int width = MeasureSpec.getSize(widthMeasureSpec) - AndroidUtilities.dp(34);
+                    errorLayout = field.getErrorLayout(width);
+                    if (errorLayout != null) {
+                        int lineCount = errorLayout.getLineCount();
+                        if (lineCount > 1) {
+                            int height = AndroidUtilities.dp(64) + (errorLayout.getLineBottom(lineCount - 1) - errorLayout.getLineBottom(0));
+                            heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
+                        }
+                        if (LocaleController.isRTL) {
+                            float maxW = 0;
+                            for (int a = 0; a < lineCount; a++) {
+                                float l = errorLayout.getLineLeft(a);
+                                if (l != 0) {
+                                    offsetX = 0;
+                                    break;
+                                }
+                                maxW = Math.max(maxW, errorLayout.getLineWidth(a));
+                                if (a == lineCount - 1) {
+                                    offsetX = width - maxW;
+                                }
+                            }
+                        }
+                    }
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                }
+
+                @Override
+                protected void onDraw(Canvas canvas) {
+                    if (errorLayout != null) {
+                        canvas.save();
+                        canvas.translate(AndroidUtilities.dp(17) + offsetX, field.getLineY() + AndroidUtilities.dp(3));
+                        errorLayout.draw(canvas);
+                        canvas.restore();
+                    }
+                }
+            };
+            container.setWillNotDraw(false);
+            linearLayout2.addView(container, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 64));
+            container.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+
+            if (a == FIELD_NATIVE_COUNT - 1) {
+                extraBackgroundView2 = new View(context);
+                extraBackgroundView2.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                linearLayout2.addView(extraBackgroundView2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 6));
+            }
+
+            inputExtraFields[a].setTag(a);
+            inputExtraFields[a].setSupportRtlHint(true);
+            inputExtraFields[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            inputExtraFields[a].setHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+            inputExtraFields[a].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            inputExtraFields[a].setHeaderHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
+            inputExtraFields[a].setTransformHintToHeader(true);
+            inputExtraFields[a].setBackgroundDrawable(null);
+            inputExtraFields[a].setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            inputExtraFields[a].setCursorSize(AndroidUtilities.dp(20));
+            inputExtraFields[a].setCursorWidth(1.5f);
+            inputExtraFields[a].setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated), Theme.getColor(Theme.key_windowBackgroundWhiteRedText3));
+            inputExtraFields[a].setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+            inputExtraFields[a].setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+
+            String value;
+            final String key;
+            HashMap<String, String> values;
+            switch (a) {
+                case FIELD_NATIVE_NAME:
+                    key = "first_name_native";
+                    values = currentValues;
+                    break;
+                case FIELD_NATIVE_MIDNAME:
+                    key = "middle_name_native";
+                    values = currentValues;
+                    break;
+                case FIELD_NATIVE_SURNAME:
+                    key = "last_name_native";
+                    values = currentValues;
+                    break;
+                default:
+                    continue;
+            }
+            setFieldValues(values, inputExtraFields[a], key);
+            inputExtraFields[a].setSelection(inputExtraFields[a].length());
+            if (a == FIELD_NATIVE_NAME || a == FIELD_NATIVE_SURNAME || a == FIELD_NATIVE_MIDNAME) {
+                inputExtraFields[a].addTextChangedListener(new TextWatcher() {
+
+                    private boolean ignore;
+
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable s) {
+                        if (ignore) {
+                            return;
+                        }
+                        checkFieldForError(field, key, s, false);
+                    }
+                });
+            }
+
+            inputExtraFields[a].setPadding(0, 0, 0, 0);
+            inputExtraFields[a].setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+            container.addView(inputExtraFields[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 17, 0, 17, 0));
+
+            inputExtraFields[a].setOnEditorActionListener((textView, i, keyEvent) -> {
+                if (i == EditorInfo.IME_ACTION_NEXT) {
+                    int num = (Integer) textView.getTag();
+                    num++;
+                    if (num < inputExtraFields.length) {
+                        if (inputExtraFields[num].isFocusable()) {
+                            inputExtraFields[num].requestFocus();
+                        } else {
+                            inputExtraFields[num].dispatchTouchEvent(MotionEvent.obtain(0, 0, MotionEvent.ACTION_UP, 0, 0, 0));
+                            textView.clearFocus();
+                            AndroidUtilities.hideKeyboard(textView);
+                        }
+                    }
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        nativeInfoCell = new TextInfoPrivacyCell(context);
+        linearLayout2.addView(nativeInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        if ((currentBotId != 0 || currentDocumentsType == null) && currentTypeValue != null && !documentOnly || currentDocumentsTypeValue != null) {
             if (currentDocumentsTypeValue != null) {
                 addDocumentViews(currentDocumentsTypeValue.files);
                 if (currentDocumentsTypeValue.front_side instanceof TLRPC.TL_secureFile) {
@@ -3860,49 +4528,43 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 if (currentDocumentsTypeValue.selfie instanceof TLRPC.TL_secureFile) {
                     addDocumentViewInternal((TLRPC.TL_secureFile) currentDocumentsTypeValue.selfie, UPLOADING_TYPE_SELFIE);
                 }
+                addTranslationDocumentViews(currentDocumentsTypeValue.translation);
             }
-            sectionCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
 
             TextSettingsCell settingsCell1 = new TextSettingsCell(context);
             settingsCell1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText3));
             settingsCell1.setBackgroundDrawable(Theme.getSelectorDrawable(true));
-            if (currentBotId == 0 && currentDocumentsType == null) {
+            if (currentDocumentsType == null) {
                 settingsCell1.setText(LocaleController.getString("PassportDeleteInfo", R.string.PassportDeleteInfo), false);
             } else {
                 settingsCell1.setText(LocaleController.getString("PassportDeleteDocument", R.string.PassportDeleteDocument), false);
             }
             linearLayout2.addView(settingsCell1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            settingsCell1.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    createDocumentDeleteAlert();
-                }
-            });
+            settingsCell1.setOnClickListener(v -> createDocumentDeleteAlert());
+
+            nativeInfoCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
 
             sectionCell = new ShadowSectionCell(context);
             sectionCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
             linearLayout2.addView(sectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         } else {
-            sectionCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+            nativeInfoCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
         }
+
         updateInterfaceStringsForDocumentType();
+        checkNativeFields(false);
     }
 
     private void updateInterfaceStringsForDocumentType() {
-        if (currentDocumentsType instanceof TLRPC.TL_secureValueTypeIdentityCard) {
-            actionBar.setTitle(LocaleController.getString("ActionBotDocumentIdentityCard", R.string.ActionBotDocumentIdentityCard));
-        } else if (currentDocumentsType instanceof TLRPC.TL_secureValueTypePassport) {
-            actionBar.setTitle(LocaleController.getString("ActionBotDocumentPassport", R.string.ActionBotDocumentPassport));
-        } else if (currentDocumentsType instanceof TLRPC.TL_secureValueTypeInternalPassport) {
-            actionBar.setTitle(LocaleController.getString("ActionBotDocumentInternalPassport", R.string.ActionBotDocumentInternalPassport));
-        } else if (currentDocumentsType instanceof TLRPC.TL_secureValueTypeDriverLicense) {
-            actionBar.setTitle(LocaleController.getString("ActionBotDocumentDriverLicence", R.string.ActionBotDocumentDriverLicence));
+        if (currentDocumentsType != null) {
+            actionBar.setTitle(getTextForType(currentDocumentsType.type));
         } else {
             actionBar.setTitle(LocaleController.getString("PassportPersonal", R.string.PassportPersonal));
         }
         updateUploadText(UPLOADING_TYPE_FRONT);
         updateUploadText(UPLOADING_TYPE_REVERSE);
         updateUploadText(UPLOADING_TYPE_SELFIE);
+        updateUploadText(UPLOADING_TYPE_TRANSLATION);
     }
 
     private void updateUploadText(int type) {
@@ -3920,12 +4582,24 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 return;
             }
             uploadSelfieCell.setVisibility(selfieDocument != null ? View.GONE : View.VISIBLE);
+        } else if (type == UPLOADING_TYPE_TRANSLATION) {
+            if (uploadTranslationCell == null) {
+                return;
+            }
+            if (translationDocuments.size() >= 1) {
+                uploadTranslationCell.setText(LocaleController.getString("PassportUploadAdditinalDocument", R.string.PassportUploadAdditinalDocument), false);
+            } else {
+                uploadTranslationCell.setText(LocaleController.getString("PassportUploadDocument", R.string.PassportUploadDocument), false);
+            }
         } else if (type == UPLOADING_TYPE_FRONT) {
             if (uploadFrontCell == null) {
                 return;
             }
-            boolean divider = currentForm.selfie_required || currentDocumentsType instanceof TLRPC.TL_secureValueTypeIdentityCard || currentDocumentsType instanceof TLRPC.TL_secureValueTypeDriverLicense;
-            if (currentDocumentsType instanceof TLRPC.TL_secureValueTypePassport || currentDocumentsType instanceof TLRPC.TL_secureValueTypeInternalPassport) {
+            boolean divider = currentDocumentsType != null && (
+                    currentDocumentsType.selfie_required ||
+                            currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeIdentityCard ||
+                            currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeDriverLicense);
+            if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypePassport || currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeInternalPassport) {
                 uploadFrontCell.setTextAndValue(LocaleController.getString("PassportMainPage", R.string.PassportMainPage), LocaleController.getString("PassportMainPageInfo", R.string.PassportMainPageInfo), divider);
             } else {
                 uploadFrontCell.setTextAndValue(LocaleController.getString("PassportFrontSide", R.string.PassportFrontSide), LocaleController.getString("PassportFrontSideInfo", R.string.PassportFrontSideInfo), divider);
@@ -3935,13 +4609,49 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             if (uploadReverseCell == null) {
                 return;
             }
-            if (currentDocumentsType instanceof TLRPC.TL_secureValueTypeIdentityCard || currentDocumentsType instanceof TLRPC.TL_secureValueTypeDriverLicense) {
+            if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeIdentityCard || currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeDriverLicense) {
                 reverseLayout.setVisibility(View.VISIBLE);
                 uploadReverseCell.setVisibility(reverseDocument != null ? View.GONE : View.VISIBLE);
             } else {
                 reverseLayout.setVisibility(View.GONE);
                 uploadReverseCell.setVisibility(View.GONE);
             }
+        }
+    }
+
+    private void checkTopErrorCell(boolean init) {
+        if (topErrorCell == null) {
+            return;
+        }
+        SpannableStringBuilder stringBuilder = null;
+        if (fieldsErrors != null && (init || errorsValues.containsKey("error_all"))) {
+            String errorText = fieldsErrors.get("error_all");
+            if (errorText != null) {
+                stringBuilder = new SpannableStringBuilder(errorText);
+                if (init) {
+                    errorsValues.put("error_all", "");
+                }
+            }
+        }
+        if (documentsErrors != null && (init || errorsValues.containsKey("error_document_all"))) {
+            String errorText = documentsErrors.get("error_all");
+            if (errorText != null) {
+                if (stringBuilder == null) {
+                    stringBuilder = new SpannableStringBuilder(errorText);
+                } else {
+                    stringBuilder.append("\n\n").append(errorText);
+                }
+                if (init) {
+                    errorsValues.put("error_document_all", "");
+                }
+            }
+        }
+        if (stringBuilder != null) {
+            stringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteRedText3)), 0, stringBuilder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            topErrorCell.setText(stringBuilder);
+            topErrorCell.setVisibility(View.VISIBLE);
+        } else if (topErrorCell.getVisibility() != View.GONE) {
+            topErrorCell.setVisibility(View.GONE);
         }
     }
 
@@ -3961,9 +4671,19 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    private void setFieldValues(EditTextBoldCursor editText, String key) {
+    private void addTranslationDocumentViews(ArrayList<TLRPC.SecureFile> files) {
+        translationDocuments.clear();
+        for (int a = 0, size = files.size(); a < size; a++) {
+            TLRPC.SecureFile secureFile = files.get(a);
+            if (secureFile instanceof TLRPC.TL_secureFile) {
+                addDocumentViewInternal((TLRPC.TL_secureFile) secureFile, UPLOADING_TYPE_TRANSLATION);
+            }
+        }
+    }
+
+    private void setFieldValues(HashMap<String, String> values, EditTextBoldCursor editText, String key) {
         String value;
-        if ((value = currentValues.get(key)) != null) {
+        if ((value = values.get(key)) != null) {
             switch (key) {
                 case "country_code": {
                     currentCitizeship = value;
@@ -4027,6 +4747,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             if (selfieLayout == null) {
                 return;
             }
+        } else if (type == UPLOADING_TYPE_TRANSLATION) {
+            translationDocuments.add(document);
+            if (translationLayout == null) {
+                return;
+            }
         } else if (type == UPLOADING_TYPE_FRONT) {
             frontDocument = document;
             if (frontLayout == null) {
@@ -4060,8 +4785,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             text = LocaleController.getString("PassportSelfie", R.string.PassportSelfie);
             selfieLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             key = "selfie" + hash;
+        } else if (type == UPLOADING_TYPE_TRANSLATION) {
+            text = LocaleController.getString("AttachPhoto", R.string.AttachPhoto);
+            translationLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            key = "translation" + hash;
         } else if (type == UPLOADING_TYPE_FRONT) {
-            if (currentDocumentsType instanceof TLRPC.TL_secureValueTypePassport || currentDocumentsType instanceof TLRPC.TL_secureValueTypeInternalPassport) {
+            if (currentDocumentsType.type instanceof TLRPC.TL_secureValueTypePassport || currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeInternalPassport) {
                 text = LocaleController.getString("PassportMainPage", R.string.PassportMainPage);
             } else {
                 text = LocaleController.getString("PassportFrontSide", R.string.PassportFrontSide);
@@ -4086,81 +4815,77 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
 
         cell.setTextAndValueAndImage(text, value, document);
-        cell.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                uploadingFileType = type;
-                if (type == UPLOADING_TYPE_SELFIE) {
-                    currentPhotoViewerLayout = selfieLayout;
-                } else if (type == UPLOADING_TYPE_FRONT) {
-                    currentPhotoViewerLayout = frontLayout;
-                } else if (type == UPLOADING_TYPE_REVERSE) {
-                    currentPhotoViewerLayout = reverseLayout;
-                } else {
-                    currentPhotoViewerLayout = documentsLayout;
-                }
-                SecureDocument document = (SecureDocument) v.getTag();
-                PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                if (type == UPLOADING_TYPE_DOCUMENTS) {
-                    PhotoViewer.getInstance().openPhoto(documents, documents.indexOf(document), provider);
-                } else {
-                    ArrayList<SecureDocument> arrayList = new ArrayList<>();
-                    arrayList.add(document);
-                    PhotoViewer.getInstance().openPhoto(arrayList, 0, provider);
-                }
+        cell.setOnClickListener(v -> {
+            uploadingFileType = type;
+            if (type == UPLOADING_TYPE_SELFIE) {
+                currentPhotoViewerLayout = selfieLayout;
+            } else if (type == UPLOADING_TYPE_TRANSLATION) {
+                currentPhotoViewerLayout = translationLayout;
+            } else if (type == UPLOADING_TYPE_FRONT) {
+                currentPhotoViewerLayout = frontLayout;
+            } else if (type == UPLOADING_TYPE_REVERSE) {
+                currentPhotoViewerLayout = reverseLayout;
+            } else {
+                currentPhotoViewerLayout = documentsLayout;
+            }
+            SecureDocument document1 = (SecureDocument) v.getTag();
+            PhotoViewer.getInstance().setParentActivity(getParentActivity());
+            if (type == UPLOADING_TYPE_DOCUMENTS) {
+                PhotoViewer.getInstance().openPhoto(documents, documents.indexOf(document1), provider);
+            } else {
+                ArrayList<SecureDocument> arrayList = new ArrayList<>();
+                arrayList.add(document1);
+                PhotoViewer.getInstance().openPhoto(arrayList, 0, provider);
             }
         });
-        cell.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                if (type == UPLOADING_TYPE_SELFIE) {
-                    builder.setMessage(LocaleController.getString("PassportDeleteSelfie", R.string.PassportDeleteSelfie));
-                } else {
-                    builder.setMessage(LocaleController.getString("PassportDeleteScan", R.string.PassportDeleteScan));
-                }
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        documentsCells.remove(document);
-                        if (type == UPLOADING_TYPE_SELFIE) {
-                            selfieDocument = null;
-                            selfieLayout.removeView(cell);
-                        } else if (type == UPLOADING_TYPE_FRONT) {
-                            frontDocument = null;
-                            frontLayout.removeView(cell);
-                        } else if (type == UPLOADING_TYPE_REVERSE) {
-                            reverseDocument = null;
-                            reverseLayout.removeView(cell);
-                        } else {
-                            documents.remove(document);
-                            documentsLayout.removeView(cell);
-                        }
-
-                        if (key != null) {
-                            if (documentsErrors != null) {
-                                documentsErrors.remove(key);
-                            }
-                            if (errorsValues != null) {
-                                errorsValues.remove(key);
-                            }
-                        }
-
-                        updateUploadText(type);
-                        if (document.path != null && uploadingDocuments.remove(document.path) != null) {
-                            if (uploadingDocuments.isEmpty()) {
-                                doneItem.setEnabled(true);
-                                doneItem.setAlpha(1.0f);
-                            }
-                            FileLoader.getInstance(currentAccount).cancelUploadFile(document.path, false);
-                        }
-                    }
-                });
-                showDialog(builder.create());
-                return true;
+        cell.setOnLongClickListener(v -> {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            if (type == UPLOADING_TYPE_SELFIE) {
+                builder.setMessage(LocaleController.getString("PassportDeleteSelfie", R.string.PassportDeleteSelfie));
+            } else {
+                builder.setMessage(LocaleController.getString("PassportDeleteScan", R.string.PassportDeleteScan));
             }
+            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+                documentsCells.remove(document);
+                if (type == UPLOADING_TYPE_SELFIE) {
+                    selfieDocument = null;
+                    selfieLayout.removeView(cell);
+                } else if (type == UPLOADING_TYPE_TRANSLATION) {
+                    translationDocuments.remove(document);
+                    translationLayout.removeView(cell);
+                } else if (type == UPLOADING_TYPE_FRONT) {
+                    frontDocument = null;
+                    frontLayout.removeView(cell);
+                } else if (type == UPLOADING_TYPE_REVERSE) {
+                    reverseDocument = null;
+                    reverseLayout.removeView(cell);
+                } else {
+                    documents.remove(document);
+                    documentsLayout.removeView(cell);
+                }
+
+                if (key != null) {
+                    if (documentsErrors != null) {
+                        documentsErrors.remove(key);
+                    }
+                    if (errorsValues != null) {
+                        errorsValues.remove(key);
+                    }
+                }
+
+                updateUploadText(type);
+                if (document.path != null && uploadingDocuments.remove(document.path) != null) {
+                    if (uploadingDocuments.isEmpty()) {
+                        doneItem.setEnabled(true);
+                        doneItem.setAlpha(1.0f);
+                    }
+                    FileLoader.getInstance(currentAccount).cancelUploadFile(document.path, false);
+                }
+            });
+            showDialog(builder.create());
+            return true;
         });
     }
 
@@ -4195,27 +4920,68 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         return "";
     }
 
-    private void setTypeValue(TLRPC.SecureValueType type, String text, String json, TLRPC.SecureValueType documentType, String documentsJson) {
-        TextDetailSecureCell view = typesViews.get(type);
+    private TextDetailSecureCell getViewByType(TLRPC.TL_secureRequiredType requiredType) {
+        TextDetailSecureCell view = typesViews.get(requiredType);
+        if (view == null) {
+            requiredType = documentsToTypesLink.get(requiredType);
+            if (requiredType != null) {
+                view = typesViews.get(requiredType);
+            }
+        }
+        return view;
+    }
+
+    private String getTextForType(TLRPC.SecureValueType type) {
+        if (type instanceof TLRPC.TL_secureValueTypePassport) {
+            return LocaleController.getString("ActionBotDocumentPassport", R.string.ActionBotDocumentPassport);
+        } else if (type instanceof TLRPC.TL_secureValueTypeDriverLicense) {
+            return LocaleController.getString("ActionBotDocumentDriverLicence", R.string.ActionBotDocumentDriverLicence);
+        } else if (type instanceof TLRPC.TL_secureValueTypeIdentityCard) {
+            return LocaleController.getString("ActionBotDocumentIdentityCard", R.string.ActionBotDocumentIdentityCard);
+        } else if (type instanceof TLRPC.TL_secureValueTypeUtilityBill) {
+            return LocaleController.getString("ActionBotDocumentUtilityBill", R.string.ActionBotDocumentUtilityBill);
+        } else if (type instanceof TLRPC.TL_secureValueTypeBankStatement) {
+            return LocaleController.getString("ActionBotDocumentBankStatement", R.string.ActionBotDocumentBankStatement);
+        } else if (type instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
+            return LocaleController.getString("ActionBotDocumentRentalAgreement", R.string.ActionBotDocumentRentalAgreement);
+        } else if (type instanceof TLRPC.TL_secureValueTypeInternalPassport) {
+            return LocaleController.getString("ActionBotDocumentInternalPassport", R.string.ActionBotDocumentInternalPassport);
+        } else if (type instanceof TLRPC.TL_secureValueTypePassportRegistration) {
+            return LocaleController.getString("ActionBotDocumentPassportRegistration", R.string.ActionBotDocumentPassportRegistration);
+        } else if (type instanceof TLRPC.TL_secureValueTypeTemporaryRegistration) {
+            return LocaleController.getString("ActionBotDocumentTemporaryRegistration", R.string.ActionBotDocumentTemporaryRegistration);
+        } else if (type instanceof TLRPC.TL_secureValueTypePhone) {
+            return LocaleController.getString("ActionBotDocumentPhone", R.string.ActionBotDocumentPhone);
+        } else if (type instanceof TLRPC.TL_secureValueTypeEmail) {
+            return LocaleController.getString("ActionBotDocumentEmail", R.string.ActionBotDocumentEmail);
+        }
+        return "";
+    }
+
+    private void setTypeValue(TLRPC.TL_secureRequiredType requiredType, String text, String json, TLRPC.TL_secureRequiredType documentRequiredType, String documentsJson, boolean documentOnly, int availableDocumentTypesCount) {
+        TextDetailSecureCell view = typesViews.get(requiredType);
         if (view == null) {
             if (currentActivityType == TYPE_MANAGE) {
-                ArrayList<TLRPC.SecureValueType> documentTypes = new ArrayList<>();
-                if (documentType != null) {
-                    documentTypes.add(documentType);
+                ArrayList<TLRPC.TL_secureRequiredType> documentTypes = new ArrayList<>();
+                if (documentRequiredType != null) {
+                    documentTypes.add(documentRequiredType);
                 }
                 View prev = linearLayout2.getChildAt(linearLayout2.getChildCount() - 6);
                 if (prev instanceof TextDetailSecureCell) {
                     ((TextDetailSecureCell) prev).setNeedDivider(true);
                 }
-                view = addField(getParentActivity(), type, documentTypes, true);
+                view = addField(getParentActivity(), requiredType, documentTypes, true, true);
                 updateManageVisibility();
             } else {
                 return;
             }
         }
-        HashMap<String, String> values = typesValues.get(type);
+        HashMap<String, String> values = typesValues.get(requiredType);
+        HashMap<String, String> documentValues = documentRequiredType != null ? typesValues.get(documentRequiredType) : null;
+        TLRPC.TL_secureValue requiredTypeValue = getValueByType(requiredType, true);
+        TLRPC.TL_secureValue documentRequiredTypeValue = getValueByType(documentRequiredType, true);
 
-        if (json != null) {
+        if (json != null && languageMap == null) {
             languageMap = new HashMap<>();
             try {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(ApplicationLoader.applicationContext.getResources().getAssets().open("countries.txt")));
@@ -4233,177 +4999,222 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
 
         String value = null;
-        if (json != null || documentsJson != null) {
-            if (values == null) {
-                return;
+        if (text != null) {
+            if (requiredType.type instanceof TLRPC.TL_secureValueTypePhone) {
+                value = PhoneFormat.getInstance().format("+" + text);
+            } else if (requiredType.type instanceof TLRPC.TL_secureValueTypeEmail) {
+                value = text;
             }
-            values.clear();
-            String keys[] = null;
-            String documentKeys[] = null;
-            if (type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
-                if (currentActivityType == TYPE_REQUEST || currentActivityType == TYPE_MANAGE && documentType == null) {
-                    keys = new String[]{
-                            "first_name",
-                            "last_name",
-                            "birth_date",
-                            "gender",
-                            "country_code",
-                            "residence_country_code"
-                    };
+        } else {
+            StringBuilder stringBuilder = null;
+            if (currentActivityType != TYPE_MANAGE && documentRequiredType != null && (!TextUtils.isEmpty(documentsJson) || documentRequiredTypeValue != null)) {
+                if (stringBuilder == null) {
+                    stringBuilder = new StringBuilder();
                 }
-                if (currentActivityType == TYPE_REQUEST || currentActivityType == TYPE_MANAGE && documentType != null) {
-                    documentKeys = new String[]{
-                            "document_no",
-                            "expiry_date"
-                    };
-                }
-            } else if (type instanceof TLRPC.TL_secureValueTypeAddress) {
-                if (currentActivityType == TYPE_REQUEST || currentActivityType == TYPE_MANAGE && documentType == null) {
-                    keys = new String[]{
-                            "street_line1",
-                            "street_line2",
-                            "post_code",
-                            "city",
-                            "state",
-                            "country_code"
-                    };
+                if (availableDocumentTypesCount > 1) {
+                    stringBuilder.append(getTextForType(documentRequiredType.type));
+                } else if (TextUtils.isEmpty(documentsJson)) {
+                    stringBuilder.append(LocaleController.getString("PassportDocuments", R.string.PassportDocuments));
                 }
             }
-            if (keys != null || documentKeys != null) {
-                try {
-                    StringBuilder stringBuilder = null;
-                    JSONObject jsonObject = null;
-                    String currentKeys[] = null;
-                    for (int b = 0; b < 2; b++) {
-                        if (b == 0) {
-                            if (json != null) {
-                                jsonObject = new JSONObject(json);
-                                currentKeys = keys;
-                            }
-                        } else {
-                            if (documentsJson != null) {
-                                jsonObject = new JSONObject(documentsJson);
-                                currentKeys = documentKeys;
-                            }
-                        }
-                        if (currentKeys == null) {
-                            continue;
-                        }
-                        if (currentActivityType != TYPE_MANAGE && b == 0 && documentType != null && !TextUtils.isEmpty(documentsJson)) {
-                            if (stringBuilder == null) {
-                                stringBuilder = new StringBuilder();
-                            }
-                            if (documentType instanceof TLRPC.TL_secureValueTypePassport) {
-                                stringBuilder.append(LocaleController.getString("ActionBotDocumentPassport", R.string.ActionBotDocumentPassport));
-                            } else if (documentType instanceof TLRPC.TL_secureValueTypeDriverLicense) {
-                                stringBuilder.append(LocaleController.getString("ActionBotDocumentDriverLicence", R.string.ActionBotDocumentDriverLicence));
-                            } else if (documentType instanceof TLRPC.TL_secureValueTypeIdentityCard) {
-                                stringBuilder.append(LocaleController.getString("ActionBotDocumentIdentityCard", R.string.ActionBotDocumentIdentityCard));
-                            } else if (documentType instanceof TLRPC.TL_secureValueTypeUtilityBill) {
-                                stringBuilder.append(LocaleController.getString("ActionBotDocumentUtilityBill", R.string.ActionBotDocumentUtilityBill));
-                            } else if (documentType instanceof TLRPC.TL_secureValueTypeBankStatement) {
-                                stringBuilder.append(LocaleController.getString("ActionBotDocumentBankStatement", R.string.ActionBotDocumentBankStatement));
-                            } else if (documentType instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
-                                stringBuilder.append(LocaleController.getString("ActionBotDocumentRentalAgreement", R.string.ActionBotDocumentRentalAgreement));
-                            } else if (hasNotValueForType(TLRPC.TL_secureValueTypeInternalPassport.class)) {
-                                stringBuilder.append(LocaleController.getString("ActionBotDocumentInternalPassport", R.string.ActionBotDocumentInternalPassport));
-                            } else if (hasNotValueForType(TLRPC.TL_secureValueTypePassportRegistration.class)) {
-                                stringBuilder.append(LocaleController.getString("ActionBotDocumentPassportRegistration", R.string.ActionBotDocumentPassportRegistration));
-                            } else if (hasNotValueForType(TLRPC.TL_secureValueTypeTemporaryRegistration.class)) {
-                                stringBuilder.append(LocaleController.getString("ActionBotDocumentTemporaryRegistration", R.string.ActionBotDocumentTemporaryRegistration));
-                            }
-                        }
-                        for (int a = 0; a < currentKeys.length; a++) {
-                            if (jsonObject.has(currentKeys[a])) {
-                                if (stringBuilder == null) {
-                                    stringBuilder = new StringBuilder();
+            if (json != null || documentsJson != null) {
+                if (values == null) {
+                    return;
+                }
+                values.clear();
+                String keys[] = null;
+                String documentKeys[] = null;
+                if (requiredType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
+                    if (currentActivityType == TYPE_REQUEST && !documentOnly || currentActivityType == TYPE_MANAGE && documentRequiredType == null) {
+                        keys = new String[]{
+                                "first_name",
+                                "middle_name",
+                                "last_name",
+                                "first_name_native",
+                                "middle_name_native",
+                                "last_name_native",
+                                "birth_date",
+                                "gender",
+                                "country_code",
+                                "residence_country_code"
+                        };
+                    }
+                    if (currentActivityType == TYPE_REQUEST || currentActivityType == TYPE_MANAGE && documentRequiredType != null) {
+                        documentKeys = new String[]{
+                                "document_no",
+                                "expiry_date"
+                        };
+                    }
+                } else if (requiredType.type instanceof TLRPC.TL_secureValueTypeAddress) {
+                    if (currentActivityType == TYPE_REQUEST && !documentOnly || currentActivityType == TYPE_MANAGE && documentRequiredType == null) {
+                        keys = new String[]{
+                                "street_line1",
+                                "street_line2",
+                                "post_code",
+                                "city",
+                                "state",
+                                "country_code"
+                        };
+                    }
+                }
+                if (keys != null || documentKeys != null) {
+                    try {
+                        JSONObject jsonObject = null;
+                        String currentKeys[] = null;
+                        for (int b = 0; b < 2; b++) {
+                            if (b == 0) {
+                                if (json != null) {
+                                    jsonObject = new JSONObject(json);
+                                    currentKeys = keys;
                                 }
-                                String jsonValue = jsonObject.getString(currentKeys[a]);
-                                if (jsonValue != null) {
-                                    values.put(currentKeys[a], jsonValue);
-                                    if (!TextUtils.isEmpty(jsonValue)) {
-                                        if (stringBuilder.length() > 0) {
-                                            if ("last_name".equals(currentKeys[a])) {
-                                                stringBuilder.append(" ");
-                                            } else {
-                                                stringBuilder.append(", ");
+                            } else {
+                                if (documentValues == null) {
+                                    continue;
+                                }
+                                if (documentsJson != null) {
+                                    jsonObject = new JSONObject(documentsJson);
+                                    currentKeys = documentKeys;
+                                }
+                            }
+                            if (currentKeys == null || jsonObject == null) {
+                                continue;
+                            }
+                            try {
+                                Iterator<String> iter = jsonObject.keys();
+                                while (iter.hasNext()) {
+                                    String key = iter.next();
+                                    if (b == 0) {
+                                        values.put(key, jsonObject.getString(key));
+                                    } else {
+                                        documentValues.put(key, jsonObject.getString(key));
+                                    }
+                                }
+                            } catch (Throwable e) {
+                                FileLog.e(e);
+                            }
+
+                            for (int a = 0; a < currentKeys.length; a++) {
+                                if (jsonObject.has(currentKeys[a])) {
+                                    if (stringBuilder == null) {
+                                        stringBuilder = new StringBuilder();
+                                    }
+                                    String jsonValue = jsonObject.getString(currentKeys[a]);
+                                    if (jsonValue != null) {
+                                        if (!TextUtils.isEmpty(jsonValue)) {
+                                            if ("first_name_native".equals(currentKeys[a]) ||
+                                                    "middle_name_native".equals(currentKeys[a]) ||
+                                                    "last_name_native".equals(currentKeys[a])) {
+                                                continue;
                                             }
-                                        }
-                                        switch (currentKeys[a]) {
-                                            case "country_code":
-                                                String country = languageMap.get(jsonValue);
-                                                if (country != null) {
-                                                    stringBuilder.append(country);
+                                            if (stringBuilder.length() > 0) {
+                                                if ("last_name".equals(currentKeys[a]) || "last_name_native".equals(currentKeys[a]) || "middle_name".equals(currentKeys[a]) || "middle_name_native".equals(currentKeys[a])) {
+                                                    stringBuilder.append(" ");
+                                                } else {
+                                                    stringBuilder.append(", ");
                                                 }
-                                                break;
-                                            case "gender":
-                                                if ("male".equals(jsonValue)) {
-                                                    stringBuilder.append(LocaleController.getString("PassportMale", R.string.PassportMale));
-                                                } else if ("female".equals(jsonValue)) {
-                                                    stringBuilder.append(LocaleController.getString("PassportFemale", R.string.PassportFemale));
-                                                }
-                                                break;
-                                            default:
-                                                stringBuilder.append(jsonValue);
-                                                break;
+                                            }
+                                            switch (currentKeys[a]) {
+                                                case "country_code":
+                                                case "residence_country_code":
+                                                    String country = languageMap.get(jsonValue);
+                                                    if (country != null) {
+                                                        stringBuilder.append(country);
+                                                    }
+                                                    break;
+                                                case "gender":
+                                                    if ("male".equals(jsonValue)) {
+                                                        stringBuilder.append(LocaleController.getString("PassportMale", R.string.PassportMale));
+                                                    } else if ("female".equals(jsonValue)) {
+                                                        stringBuilder.append(LocaleController.getString("PassportFemale", R.string.PassportFemale));
+                                                    }
+                                                    break;
+                                                default:
+                                                    stringBuilder.append(jsonValue);
+                                                    break;
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                    if (stringBuilder != null) {
-                        value = stringBuilder.toString();
-                    }
-                } catch (Exception ignore) {
+                    } catch (Exception ignore) {
 
+                    }
                 }
             }
-        } else if (text != null) {
-            if (type instanceof TLRPC.TL_secureValueTypePhone) {
-                value = PhoneFormat.getInstance().format("+" + text);
-            } else if (type instanceof TLRPC.TL_secureValueTypeEmail) {
-                value = text;
+            if (stringBuilder != null) {
+                value = stringBuilder.toString();
             }
         }
 
         boolean isError = false;
-        HashMap<String, String> errors = errorsMap.get(getNameForType(type));
-        HashMap<String, String> documentsErrors = errorsMap.get(getNameForType(documentType));
+        HashMap<String, String> errors = !documentOnly ? errorsMap.get(getNameForType(requiredType.type)) : null;
+        HashMap<String, String> documentsErrors = documentRequiredType != null ? errorsMap.get(getNameForType(documentRequiredType.type)) : null;
         if (errors != null && errors.size() > 0 || documentsErrors != null && documentsErrors.size() > 0) {
-            value = LocaleController.getString("PassportCorrectErrors", R.string.PassportCorrectErrors);
-            //value = getErrorsString(errors, documentsErrors);
+            value = null;
+            if (!documentOnly) {
+                value = mainErrorsMap.get(getNameForType(requiredType.type));
+            }
+            if (value == null) {
+                value = mainErrorsMap.get(getNameForType(documentRequiredType.type));
+            }
             isError = true;
         } else {
-            if (type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
+            if (requiredType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
                 if (TextUtils.isEmpty(value)) {
-                    if (documentType == null) {
+                    if (documentRequiredType == null) {
                         value = LocaleController.getString("PassportPersonalDetailsInfo", R.string.PassportPersonalDetailsInfo);
                     } else {
                         if (currentActivityType == TYPE_MANAGE) {
                             value = LocaleController.getString("PassportDocuments", R.string.PassportDocuments);
                         } else {
-                            value = LocaleController.getString("PassportIdentityDocumentInfo", R.string.PassportIdentityDocumentInfo);
+                            if (availableDocumentTypesCount == 1) {
+                                if (documentRequiredType.type instanceof TLRPC.TL_secureValueTypePassport) {
+                                    value = LocaleController.getString("PassportIdentityPassport", R.string.PassportIdentityPassport);
+                                } else if (documentRequiredType.type instanceof TLRPC.TL_secureValueTypeInternalPassport) {
+                                    value = LocaleController.getString("PassportIdentityInternalPassport", R.string.PassportIdentityInternalPassport);
+                                } else if (documentRequiredType.type instanceof TLRPC.TL_secureValueTypeDriverLicense) {
+                                    value = LocaleController.getString("PassportIdentityDriverLicence", R.string.PassportIdentityDriverLicence);
+                                } else if (documentRequiredType.type instanceof TLRPC.TL_secureValueTypeIdentityCard) {
+                                    value = LocaleController.getString("PassportIdentityID", R.string.PassportIdentityID);
+                                }
+                            } else {
+                                value = LocaleController.getString("PassportIdentityDocumentInfo", R.string.PassportIdentityDocumentInfo);
+                            }
                         }
                     }
                 }
-            } else if (type instanceof TLRPC.TL_secureValueTypeAddress) {
+            } else if (requiredType.type instanceof TLRPC.TL_secureValueTypeAddress) {
                 if (TextUtils.isEmpty(value)) {
-                    if (documentType == null) {
+                    if (documentRequiredType == null) {
                         value = LocaleController.getString("PassportAddressNoUploadInfo", R.string.PassportAddressNoUploadInfo);
                     } else {
                         if (currentActivityType == TYPE_MANAGE) {
                             value = LocaleController.getString("PassportDocuments", R.string.PassportDocuments);
                         } else {
-                            value = LocaleController.getString("PassportAddressInfo", R.string.PassportAddressInfo);
+                            if (availableDocumentTypesCount == 1) {
+                                if (documentRequiredType.type instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
+                                    value = LocaleController.getString("PassportAddAgreementInfo", R.string.PassportAddAgreementInfo);
+                                } else if (documentRequiredType.type instanceof TLRPC.TL_secureValueTypeUtilityBill) {
+                                    value = LocaleController.getString("PassportAddBillInfo", R.string.PassportAddBillInfo);
+                                } else if (documentRequiredType.type instanceof TLRPC.TL_secureValueTypePassportRegistration) {
+                                    value = LocaleController.getString("PassportAddPassportRegistrationInfo", R.string.PassportAddPassportRegistrationInfo);
+                                } else if (documentRequiredType.type instanceof TLRPC.TL_secureValueTypeTemporaryRegistration) {
+                                    value = LocaleController.getString("PassportAddTemporaryRegistrationInfo", R.string.PassportAddTemporaryRegistrationInfo);
+                                } else if (documentRequiredType.type instanceof TLRPC.TL_secureValueTypeBankStatement) {
+                                    value = LocaleController.getString("PassportAddBankInfo", R.string.PassportAddBankInfo);
+                                }
+                            } else {
+                                value = LocaleController.getString("PassportAddressInfo", R.string.PassportAddressInfo);
+                            }
                         }
                     }
                 }
-            } else if (type instanceof TLRPC.TL_secureValueTypePhone) {
+            } else if (requiredType.type instanceof TLRPC.TL_secureValueTypePhone) {
                 if (TextUtils.isEmpty(value)) {
                     value = LocaleController.getString("PassportPhoneInfo", R.string.PassportPhoneInfo);
                 }
-            } else if (type instanceof TLRPC.TL_secureValueTypeEmail) {
+            } else if (requiredType.type instanceof TLRPC.TL_secureValueTypeEmail) {
                 if (TextUtils.isEmpty(value)) {
                     value = LocaleController.getString("PassportEmailInfo", R.string.PassportEmailInfo);
                 }
@@ -4411,7 +5222,97 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
         view.setValue(value);
         view.valueTextView.setTextColor(Theme.getColor(isError ? Theme.key_windowBackgroundWhiteRedText3 : Theme.key_windowBackgroundWhiteGrayText2));
-        view.setChecked(!isError && currentActivityType != TYPE_MANAGE && getValueByType(type, true) != null && (documentType == null || getValueByType(documentType, true) != null));
+        view.setChecked(!isError && currentActivityType != TYPE_MANAGE && (documentOnly && documentRequiredType != null || !documentOnly && requiredTypeValue != null) && (documentRequiredType == null || documentRequiredTypeValue != null));
+    }
+
+    private void checkNativeFields(boolean byEdit) {
+        if (inputExtraFields == null) {
+            return;
+        }
+        String country = languageMap.get(currentResidence);
+        HashMap<String, String> map = SharedConfig.getCountryLangs();
+        String lang = map.get(currentResidence);
+
+        if (!currentType.native_names || TextUtils.isEmpty(currentResidence) || "EN".equals(lang)) {
+            if (nativeInfoCell.getVisibility() != View.GONE) {
+                nativeInfoCell.setVisibility(View.GONE);
+                headerCell.setVisibility(View.GONE);
+                extraBackgroundView2.setVisibility(View.GONE);
+                for (int a = 0; a < inputExtraFields.length; a++) {
+                    ((View) inputExtraFields[a].getParent()).setVisibility(View.GONE);
+                }
+
+                if ((currentBotId != 0 || currentDocumentsType == null) && currentTypeValue != null && !documentOnly || currentDocumentsTypeValue != null) {
+                    sectionCell2.setBackgroundDrawable(Theme.getThemedDrawable(getParentActivity(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                } else {
+                    sectionCell2.setBackgroundDrawable(Theme.getThemedDrawable(getParentActivity(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                }
+            }
+        } else {
+            if (nativeInfoCell.getVisibility() != View.VISIBLE) {
+                nativeInfoCell.setVisibility(View.VISIBLE);
+                headerCell.setVisibility(View.VISIBLE);
+                extraBackgroundView2.setVisibility(View.VISIBLE);
+                for (int a = 0; a < inputExtraFields.length; a++) {
+                    ((View) inputExtraFields[a].getParent()).setVisibility(View.VISIBLE);
+                }
+                if (inputExtraFields[FIELD_NATIVE_NAME].length() == 0 && inputExtraFields[FIELD_NATIVE_MIDNAME].length() == 0 && inputExtraFields[FIELD_NATIVE_SURNAME].length() == 0) {
+                    for (int a = 0; a < nonLatinNames.length; a++) {
+                        if (nonLatinNames[a]) {
+                            inputExtraFields[FIELD_NATIVE_NAME].setText(inputFields[FIELD_NAME].getText());
+                            inputExtraFields[FIELD_NATIVE_MIDNAME].setText(inputFields[FIELD_MIDNAME].getText());
+                            inputExtraFields[FIELD_NATIVE_SURNAME].setText(inputFields[FIELD_SURNAME].getText());
+                            break;
+                        }
+                    }
+                }
+                sectionCell2.setBackgroundDrawable(Theme.getThemedDrawable(getParentActivity(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+            }
+
+            nativeInfoCell.setText(LocaleController.formatString("PassportNativeInfo", R.string.PassportNativeInfo, country));
+
+
+            String header = lang != null ? LocaleController.getServerString("PassportLanguage_" + lang) : null;
+            if (header != null) {
+                headerCell.setText(LocaleController.formatString("PassportNativeHeaderLang", R.string.PassportNativeHeaderLang, header));
+            } else {
+                headerCell.setText(LocaleController.getString("PassportNativeHeader", R.string.PassportNativeHeader));
+            }
+            for (int a = 0; a < FIELD_NATIVE_COUNT; a++) {
+                switch (a) {
+                    case FIELD_NATIVE_NAME:
+                        if (header != null) {
+                            inputExtraFields[a].setHintText(LocaleController.getString("PassportName", R.string.PassportName));
+                        } else {
+                            inputExtraFields[a].setHintText(LocaleController.formatString("PassportNameCountry", R.string.PassportNameCountry, country));
+                        }
+                        break;
+                    case FIELD_NATIVE_MIDNAME:
+                        if (header != null) {
+                            inputExtraFields[a].setHintText(LocaleController.getString("PassportMidname", R.string.PassportMidname));
+                        } else {
+                            inputExtraFields[a].setHintText(LocaleController.formatString("PassportMidnameCountry", R.string.PassportMidnameCountry, country));
+                        }
+                        break;
+                    case FIELD_NATIVE_SURNAME:
+                        if (header != null) {
+                            inputExtraFields[a].setHintText(LocaleController.getString("PassportSurname", R.string.PassportSurname));
+                        } else {
+                            inputExtraFields[a].setHintText(LocaleController.formatString("PassportSurnameCountry", R.string.PassportSurnameCountry, country));
+                        }
+                        break;
+                }
+            }
+
+            if (byEdit) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (inputExtraFields != null) {
+                        scrollToField(inputExtraFields[FIELD_NATIVE_NAME]);
+                    }
+                });
+
+            }
+        }
     }
 
     private String getErrorsString(HashMap<String, String> errors, HashMap<String, String> documentErrors) {
@@ -4444,56 +5345,94 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         return stringBuilder.toString();
     }
 
-    private TLRPC.TL_secureValue getValueByType(TLRPC.SecureValueType type, boolean check) {
-        if (type == null) {
+    private TLRPC.TL_secureValue getValueByType(TLRPC.TL_secureRequiredType requiredType, boolean check) {
+        if (requiredType == null) {
             return null;
         }
         for (int a = 0, size = currentForm.values.size(); a < size; a++) {
             TLRPC.TL_secureValue secureValue = currentForm.values.get(a);
-            if (type.getClass() == secureValue.type.getClass()) {
+            if (requiredType.type.getClass() == secureValue.type.getClass()) {
                 if (check) {
-                    if (currentForm.selfie_required &&
-                            (type instanceof TLRPC.TL_secureValueTypeDriverLicense ||
-                                    type instanceof TLRPC.TL_secureValueTypePassport ||
-                                    type instanceof TLRPC.TL_secureValueTypeInternalPassport ||
-                                    type instanceof TLRPC.TL_secureValueTypeIdentityCard)) {
+                    if (requiredType.selfie_required) {
                         if (!(secureValue.selfie instanceof TLRPC.TL_secureFile)) {
                             return null;
                         }
                     }
-                    if (type instanceof TLRPC.TL_secureValueTypeUtilityBill ||
-                            type instanceof TLRPC.TL_secureValueTypeBankStatement ||
-                            type instanceof TLRPC.TL_secureValueTypePassportRegistration ||
-                            type instanceof TLRPC.TL_secureValueTypeTemporaryRegistration ||
-                            type instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
+                    if (requiredType.translation_required) {
+                        if (secureValue.translation.isEmpty()) {
+                            return null;
+                        }
+                    }
+                    if (isAddressDocument(requiredType.type)) {
                         if (secureValue.files.isEmpty()) {
                             return null;
                         }
                     }
-                    if (type instanceof TLRPC.TL_secureValueTypeDriverLicense ||
-                            type instanceof TLRPC.TL_secureValueTypePassport ||
-                            type instanceof TLRPC.TL_secureValueTypeInternalPassport ||
-                            type instanceof TLRPC.TL_secureValueTypeIdentityCard) {
+                    if (isPersonalDocument(requiredType.type)) {
                         if (!(secureValue.front_side instanceof TLRPC.TL_secureFile)) {
                             return null;
                         }
                     }
-                    if (type instanceof TLRPC.TL_secureValueTypeDriverLicense ||
-                            type instanceof TLRPC.TL_secureValueTypeIdentityCard) {
+                    if (requiredType.type instanceof TLRPC.TL_secureValueTypeDriverLicense || requiredType.type instanceof TLRPC.TL_secureValueTypeIdentityCard) {
                         if (!(secureValue.reverse_side instanceof TLRPC.TL_secureFile)) {
                             return null;
                         }
                     }
+                    if (requiredType.type instanceof TLRPC.TL_secureValueTypePersonalDetails || requiredType.type instanceof TLRPC.TL_secureValueTypeAddress) {
+                        String[] keys;
+                        if (requiredType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
+                            if (requiredType.native_names) {
+                                keys = new String[]{
+                                        "first_name_native",
+                                        "last_name_native",
+                                        "birth_date",
+                                        "gender",
+                                        "country_code",
+                                        "residence_country_code"
+                                };
+                            } else {
+                                keys = new String[]{
+                                        "first_name",
+                                        "last_name",
+                                        "birth_date",
+                                        "gender",
+                                        "country_code",
+                                        "residence_country_code"
+                                };
+                            }
+                        } else {
+                            keys = new String[]{
+                                    "street_line1",
+                                    "street_line2",
+                                    "post_code",
+                                    "city",
+                                    "state",
+                                    "country_code"
+                            };
+                        }
+                        try {
+                            JSONObject jsonObject = new JSONObject(decryptData(secureValue.data.data, decryptValueSecret(secureValue.data.secret, secureValue.data.data_hash), secureValue.data.data_hash));
+                            for (int b = 0; b < keys.length; b++) {
+                                if (!jsonObject.has(keys[b]) || TextUtils.isEmpty(jsonObject.getString(keys[b]))) {
+                                    return null;
+                                }
+                            }
+                        } catch (Throwable ignore) {
+                            return null;
+                        }
+                    }
                 }
-
                 return secureValue;
             }
         }
         return null;
     }
 
-    private void openTypeActivity(TLRPC.SecureValueType type, TLRPC.SecureValueType documentsType, ArrayList<TLRPC.SecureValueType> availableDocumentTypes) {
+    private void openTypeActivity(TLRPC.TL_secureRequiredType requiredType, TLRPC.TL_secureRequiredType documentRequiredType, ArrayList<TLRPC.TL_secureRequiredType> availableDocumentTypes, boolean documentOnly) {
         int activityType = -1;
+        final int availableDocumentTypesCount = availableDocumentTypes != null ? availableDocumentTypes.size() : 0;
+        TLRPC.SecureValueType type = requiredType.type;
+        TLRPC.SecureValueType documentType = documentRequiredType != null ? documentRequiredType.type : null;
         if (type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
             activityType = TYPE_IDENTITY;
         } else if (type instanceof TLRPC.TL_secureValueTypeAddress) {
@@ -4504,12 +5443,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             activityType = TYPE_EMAIL;
         }
         if (activityType != -1) {
-            HashMap<String, String> errors = errorsMap.get(getNameForType(type));
-            HashMap<String, String> documentsErrors = errorsMap.get(getNameForType(documentsType));
-            TLRPC.TL_secureValue value = getValueByType(type, false);
-            TLRPC.TL_secureValue documentsValue = getValueByType(documentsType, false);
+            HashMap<String, String> errors = !documentOnly ? errorsMap.get(getNameForType(type)) : null;
+            HashMap<String, String> documentsErrors = errorsMap.get(getNameForType(documentType));
+            TLRPC.TL_secureValue value = getValueByType(requiredType, false);
+            TLRPC.TL_secureValue documentsValue = getValueByType(documentRequiredType, false);
 
-            final PassportActivity activity = new PassportActivity(activityType, currentForm, currentPassword, type, value, documentsType, documentsValue, typesValues.get(type));
+            final PassportActivity activity = new PassportActivity(activityType, currentForm, currentPassword, requiredType, value, documentRequiredType, documentsValue, typesValues.get(requiredType), documentRequiredType != null ? typesValues.get(documentRequiredType) : null);
             activity.delegate = new PassportActivityDelegate() {
 
                 private TLRPC.InputSecureFile getInputSecureFile(SecureDocument document) {
@@ -4539,12 +5478,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }
 
                 @Override
-                public void saveValue(final TLRPC.SecureValueType type, final String text, final String json, final TLRPC.SecureValueType documentsType, final String documentsJson, final ArrayList<SecureDocument> documents, final SecureDocument selfie, final SecureDocument front, final SecureDocument reverse, final Runnable finishRunnable, final ErrorRunnable errorRunnable) {
+                public void saveValue(final TLRPC.TL_secureRequiredType requiredType, final String text, final String json, final TLRPC.TL_secureRequiredType documentRequiredType, final String documentsJson, final ArrayList<SecureDocument> documents, final SecureDocument selfie, final ArrayList<SecureDocument> translationDocuments, final SecureDocument front, final SecureDocument reverse, final Runnable finishRunnable, final ErrorRunnable errorRunnable) {
                     TLRPC.TL_inputSecureValue inputSecureValue = null;
 
                     if (!TextUtils.isEmpty(json)) {
                         inputSecureValue = new TLRPC.TL_inputSecureValue();
-                        inputSecureValue.type = type;
+                        inputSecureValue.type = requiredType.type;
                         inputSecureValue.flags |= 1;
 
                         EncryptionResult result = encryptData(AndroidUtilities.getStringBytes(json));
@@ -4566,13 +5505,13 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                             return;
                         }
                         inputSecureValue = new TLRPC.TL_inputSecureValue();
-                        inputSecureValue.type = type;
+                        inputSecureValue.type = requiredType.type;
                         inputSecureValue.flags |= 32;
 
                         inputSecureValue.plain_data = plainData;
                     }
 
-                    if (inputSecureValue == null) {
+                    if (!documentOnly && inputSecureValue == null) {
                         if (errorRunnable != null) {
                             errorRunnable.onError(null, null);
                         }
@@ -4580,9 +5519,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     }
 
                     TLRPC.TL_inputSecureValue fileInputSecureValue;
-                    if (documentsType != null) {
+                    if (documentRequiredType != null) {
                         fileInputSecureValue = new TLRPC.TL_inputSecureValue();
-                        fileInputSecureValue.type = documentsType;
+                        fileInputSecureValue.type = documentRequiredType.type;
 
                         if (!TextUtils.isEmpty(documentsJson)) {
                             fileInputSecureValue.flags |= 1;
@@ -4606,6 +5545,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                             fileInputSecureValue.selfie = getInputSecureFile(selfie);
                             fileInputSecureValue.flags |= 8;
                         }
+                        if (translationDocuments != null && !translationDocuments.isEmpty()) {
+                            fileInputSecureValue.flags |= 64;
+                            for (int a = 0, size = translationDocuments.size(); a < size; a++) {
+                                fileInputSecureValue.translation.add(getInputSecureFile(translationDocuments.get(a)));
+                            }
+                        }
                         if (documents != null && !documents.isEmpty()) {
                             fileInputSecureValue.flags |= 16;
                             for (int a = 0, size = documents.size(); a < size; a++) {
@@ -4613,7 +5558,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                             }
                         }
 
-                        if (currentActivityType == TYPE_MANAGE) {
+                        if (documentOnly) {
                             inputSecureValue = fileInputSecureValue;
                             fileInputSecureValue = null;
                         }
@@ -4630,71 +5575,85 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
 
                         private void onResult(final TLRPC.TL_error error, final TLRPC.TL_secureValue newValue, final TLRPC.TL_secureValue newPendingValue) {
-                            AndroidUtilities.runOnUIThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (error != null) {
-                                        if (errorRunnable != null) {
-                                            errorRunnable.onError(error.text, text);
-                                        }
-                                        AlertsCreator.processError(currentAccount, error, PassportActivity.this, req, text);
-                                    } else {
-                                        if (currentActivityType == TYPE_MANAGE) {
-                                            if (documentsType != null) {
-                                                removeValue(documentsType);
-                                            } else {
-                                                removeValue(type);
-                                            }
+                            AndroidUtilities.runOnUIThread(() -> {
+                                if (error != null) {
+                                    if (errorRunnable != null) {
+                                        errorRunnable.onError(error.text, text);
+                                    }
+                                    AlertsCreator.processError(currentAccount, error, PassportActivity.this, req, text);
+                                } else {
+                                    if (documentOnly) {
+                                        if (documentRequiredType != null) {
+                                            removeValue(documentRequiredType);
                                         } else {
-                                            removeValue(type);
-                                            removeValue(documentsType);
+                                            removeValue(requiredType);
                                         }
-                                        if (newValue != null) {
-                                            currentForm.values.add(newValue);
-                                        }
-                                        if (newPendingValue != null) {
-                                            currentForm.values.add(newPendingValue);
-                                        }
-                                        if (documents != null && !documents.isEmpty()) {
-                                            for (int a = 0, size = documents.size(); a < size; a++) {
-                                                SecureDocument document = documents.get(a);
-                                                if (document.inputFile != null) {
-                                                    for (int b = 0, size2 = newValue.files.size(); b < size2; b++) {
-                                                        TLRPC.SecureFile file = newValue.files.get(b);
-                                                        if (file instanceof TLRPC.TL_secureFile) {
-                                                            TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) file;
-                                                            if (Utilities.arraysEquals(document.fileSecret, 0, secureFile.secret, 0)) {
-                                                                renameFile(document, secureFile);
-                                                                break;
-                                                            }
+                                    } else {
+                                        removeValue(requiredType);
+                                        removeValue(documentRequiredType);
+                                    }
+                                    if (newValue != null) {
+                                        currentForm.values.add(newValue);
+                                    }
+                                    if (newPendingValue != null) {
+                                        currentForm.values.add(newPendingValue);
+                                    }
+                                    if (documents != null && !documents.isEmpty()) {
+                                        for (int a = 0, size = documents.size(); a < size; a++) {
+                                            SecureDocument document = documents.get(a);
+                                            if (document.inputFile != null) {
+                                                for (int b = 0, size2 = newValue.files.size(); b < size2; b++) {
+                                                    TLRPC.SecureFile file = newValue.files.get(b);
+                                                    if (file instanceof TLRPC.TL_secureFile) {
+                                                        TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) file;
+                                                        if (Utilities.arraysEquals(document.fileSecret, 0, secureFile.secret, 0)) {
+                                                            renameFile(document, secureFile);
+                                                            break;
                                                         }
                                                     }
                                                 }
                                             }
                                         }
-                                        if (selfie != null && selfie.inputFile != null && newValue.selfie instanceof TLRPC.TL_secureFile) {
-                                            TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) newValue.selfie;
-                                            if (Utilities.arraysEquals(selfie.fileSecret, 0, secureFile.secret, 0)) {
-                                                renameFile(selfie, secureFile);
+                                    }
+                                    if (selfie != null && selfie.inputFile != null && newValue.selfie instanceof TLRPC.TL_secureFile) {
+                                        TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) newValue.selfie;
+                                        if (Utilities.arraysEquals(selfie.fileSecret, 0, secureFile.secret, 0)) {
+                                            renameFile(selfie, secureFile);
+                                        }
+                                    }
+                                    if (front != null && front.inputFile != null && newValue.front_side instanceof TLRPC.TL_secureFile) {
+                                        TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) newValue.front_side;
+                                        if (Utilities.arraysEquals(front.fileSecret, 0, secureFile.secret, 0)) {
+                                            renameFile(front, secureFile);
+                                        }
+                                    }
+                                    if (reverse != null && reverse.inputFile != null && newValue.reverse_side instanceof TLRPC.TL_secureFile) {
+                                        TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) newValue.reverse_side;
+                                        if (Utilities.arraysEquals(reverse.fileSecret, 0, secureFile.secret, 0)) {
+                                            renameFile(reverse, secureFile);
+                                        }
+                                    }
+                                    if (translationDocuments != null && !translationDocuments.isEmpty()) {
+                                        for (int a = 0, size = translationDocuments.size(); a < size; a++) {
+                                            SecureDocument document = translationDocuments.get(a);
+                                            if (document.inputFile != null) {
+                                                for (int b = 0, size2 = newValue.translation.size(); b < size2; b++) {
+                                                    TLRPC.SecureFile file = newValue.translation.get(b);
+                                                    if (file instanceof TLRPC.TL_secureFile) {
+                                                        TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) file;
+                                                        if (Utilities.arraysEquals(document.fileSecret, 0, secureFile.secret, 0)) {
+                                                            renameFile(document, secureFile);
+                                                            break;
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
-                                        if (front != null && front.inputFile != null && newValue.front_side instanceof TLRPC.TL_secureFile) {
-                                            TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) newValue.front_side;
-                                            if (Utilities.arraysEquals(front.fileSecret, 0, secureFile.secret, 0)) {
-                                                renameFile(front, secureFile);
-                                            }
-                                        }
-                                        if (reverse != null && reverse.inputFile != null && newValue.reverse_side instanceof TLRPC.TL_secureFile) {
-                                            TLRPC.TL_secureFile secureFile = (TLRPC.TL_secureFile) newValue.reverse_side;
-                                            if (Utilities.arraysEquals(reverse.fileSecret, 0, secureFile.secret, 0)) {
-                                                renameFile(reverse, secureFile);
-                                            }
-                                        }
+                                    }
 
-                                        setTypeValue(type, text, json, documentsType, documentsJson);
-                                        if (finishRunnable != null) {
-                                            finishRunnable.run();
-                                        }
+                                    setTypeValue(requiredType, text, json, documentRequiredType, documentsJson, documentOnly, availableDocumentTypesCount);
+                                    if (finishRunnable != null) {
+                                        finishRunnable.run();
                                     }
                                 }
                             });
@@ -4706,43 +5665,29 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                                 if (error.text.equals("EMAIL_VERIFICATION_NEEDED")) {
                                     TLRPC.TL_account_sendVerifyEmailCode req = new TLRPC.TL_account_sendVerifyEmailCode();
                                     req.email = text;
-                                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                                        @Override
-                                        public void run(final TLObject response, final TLRPC.TL_error error) {
-                                            AndroidUtilities.runOnUIThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    if (response != null) {
-                                                        TLRPC.TL_account_sentEmailCode res = (TLRPC.TL_account_sentEmailCode) response;
-                                                        HashMap<String, String> values = new HashMap<>();
-                                                        values.put("email", text);
-                                                        values.put("pattern", res.email_pattern);
-                                                        PassportActivity activity = new PassportActivity(TYPE_EMAIL_VERIFICATION, currentForm, currentPassword, type, null, null, null, values);
-                                                        activity.currentAccount = currentAccount;
-                                                        activity.emailCodeLength = res.length;
-                                                        activity.saltedPassword = saltedPassword;
-                                                        activity.secureSecret = secureSecret;
-                                                        activity.delegate = currentDelegate;
-                                                        presentFragment(activity, true);
-                                                    } else {
-                                                        showAlertWithText(LocaleController.getString("PassportEmail", R.string.PassportEmail), error.text);
-                                                        if (errorRunnable != null) {
-                                                            errorRunnable.onError(error.text, text);
-                                                        }
-                                                    }
-                                                }
-                                            });
-
+                                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
+                                        if (response1 != null) {
+                                            TLRPC.TL_account_sentEmailCode res = (TLRPC.TL_account_sentEmailCode) response1;
+                                            HashMap<String, String> values = new HashMap<>();
+                                            values.put("email", text);
+                                            values.put("pattern", res.email_pattern);
+                                            PassportActivity activity1 = new PassportActivity(TYPE_EMAIL_VERIFICATION, currentForm, currentPassword, requiredType, null, null, null, values, null);
+                                            activity1.currentAccount = currentAccount;
+                                            activity1.emailCodeLength = res.length;
+                                            activity1.saltedPassword = saltedPassword;
+                                            activity1.secureSecret = secureSecret;
+                                            activity1.delegate = currentDelegate;
+                                            presentFragment(activity1, true);
+                                        } else {
+                                            showAlertWithText(LocaleController.getString("PassportEmail", R.string.PassportEmail), error1.text);
+                                            if (errorRunnable != null) {
+                                                errorRunnable.onError(error1.text, text);
+                                            }
                                         }
-                                    });
+                                    }));
                                     return;
                                 } else if (error.text.equals("PHONE_VERIFICATION_NEEDED")) {
-                                    AndroidUtilities.runOnUIThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            errorRunnable.onError(error.text, text);
-                                        }
-                                    });
+                                    AndroidUtilities.runOnUIThread(() -> errorRunnable.onError(error.text, text));
                                     return;
                                 }
                             }
@@ -4751,12 +5696,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                                 final TLRPC.TL_account_saveSecureValue req = new TLRPC.TL_account_saveSecureValue();
                                 req.value = finalFileInputSecureValue;
                                 req.secure_secret_id = secureSecretId;
-                                ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                                    @Override
-                                    public void run(final TLObject response, final TLRPC.TL_error error) {
-                                        onResult(error, (TLRPC.TL_secureValue) response, pendingValue);
-                                    }
-                                });
+                                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response12, error12) -> onResult(error12, (TLRPC.TL_secureValue) response12, pendingValue));
                             } else {
                                 onResult(error, (TLRPC.TL_secureValue) response, null);
                             }
@@ -4772,8 +5712,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }
 
                 @Override
-                public void deleteValue(TLRPC.SecureValueType type, TLRPC.SecureValueType documentsType, boolean deleteType, Runnable finishRunnable, ErrorRunnable errorRunnable) {
-                    deleteValueInternal(type, documentsType, deleteType, finishRunnable, errorRunnable);
+                public void deleteValue(TLRPC.TL_secureRequiredType requiredType, TLRPC.TL_secureRequiredType documentRequiredType, ArrayList<TLRPC.TL_secureRequiredType> documentRequiredTypes, boolean deleteType, Runnable finishRunnable, ErrorRunnable errorRunnable) {
+                    deleteValueInternal(requiredType, documentRequiredType, documentRequiredTypes, deleteType, finishRunnable, errorRunnable, documentOnly);
                 }
             };
             activity.currentAccount = currentAccount;
@@ -4781,6 +5721,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             activity.secureSecret = secureSecret;
             activity.currentBotId = currentBotId;
             activity.fieldsErrors = errors;
+            activity.documentOnly = documentOnly;
             activity.documentsErrors = documentsErrors;
             activity.availableDocumentTypes = availableDocumentTypes;
             if (activityType == TYPE_EMAIL) {
@@ -4790,140 +5731,133 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    private TLRPC.TL_secureValue removeValue(TLRPC.SecureValueType type) {
-        if (type == null) {
+    private TLRPC.TL_secureValue removeValue(TLRPC.TL_secureRequiredType requiredType) {
+        if (requiredType == null) {
             return null;
         }
         for (int a = 0, size = currentForm.values.size(); a < size; a++) {
             TLRPC.TL_secureValue secureValue = currentForm.values.get(a);
-            if (type.getClass() == secureValue.type.getClass()) {
+            if (requiredType.type.getClass() == secureValue.type.getClass()) {
                 return currentForm.values.remove(a);
             }
         }
         return null;
     }
 
-    private void deleteValueInternal(final TLRPC.SecureValueType type, final TLRPC.SecureValueType documentsType, final boolean deleteType, final Runnable finishRunnable, final ErrorRunnable errorRunnable) {
-        if (type == null) {
+    private void deleteValueInternal(final TLRPC.TL_secureRequiredType requiredType, final TLRPC.TL_secureRequiredType documentRequiredType, final ArrayList<TLRPC.TL_secureRequiredType> documentRequiredTypes, final boolean deleteType, final Runnable finishRunnable, final ErrorRunnable errorRunnable, boolean documentOnly) {
+        if (requiredType == null) {
             return;
         }
         TLRPC.TL_account_deleteSecureValue req = new TLRPC.TL_account_deleteSecureValue();
-        if (currentActivityType == TYPE_MANAGE && documentsType != null) {
-            req.types.add(documentsType);
+        if (documentOnly && documentRequiredType != null) {
+            req.types.add(documentRequiredType.type);
         } else {
             if (deleteType) {
-                req.types.add(type);
+                req.types.add(requiredType.type);
             }
-            if (documentsType != null) {
-                req.types.add(documentsType);
+            if (documentRequiredType != null) {
+                req.types.add(documentRequiredType.type);
             }
         }
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(TLObject response, final TLRPC.TL_error error) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (error != null) {
-                            if (errorRunnable != null) {
-                                errorRunnable.onError(error.text, null);
-                            }
-                            showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
-                        } else {
-                            if (currentActivityType == TYPE_MANAGE) {
-                                if (documentsType != null) {
-                                    removeValue(documentsType);
-                                } else {
-                                    removeValue(type);
-                                }
-                            } else {
-                                if (deleteType) {
-                                    removeValue(type);
-                                }
-                                removeValue(documentsType);
-                            }
-                            if (currentActivityType == TYPE_MANAGE) {
-                                TextDetailSecureCell view = typesViews.remove(type);
-                                if (view != null) {
-                                    linearLayout2.removeView(view);
-                                    View child = linearLayout2.getChildAt(linearLayout2.getChildCount() - 6);
-                                    if (child instanceof TextDetailSecureCell) {
-                                        ((TextDetailSecureCell) child).setNeedDivider(false);
-                                    }
-                                }
-                                updateManageVisibility();
-                            } else {
-                                if (deleteType) {
-                                    setTypeValue(type, null, null, documentsType, null);
-                                } else {
-                                    String json = null;
-                                    TLRPC.TL_secureValue value = getValueByType(type, false);
-                                    if (value != null && value.data != null) {
-                                        json = decryptData(value.data.data, decryptValueSecret(value.data.secret, value.data.data_hash), value.data.data_hash);
-                                    }
-                                    setTypeValue(type, null, json, documentsType, null);
-                                }
-                            }
-                            if (finishRunnable != null) {
-                                finishRunnable.run();
-                            }
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (error != null) {
+                if (errorRunnable != null) {
+                    errorRunnable.onError(error.text, null);
+                }
+                showAlertWithText(LocaleController.getString("AppName", R.string.AppName), error.text);
+            } else {
+                if (documentOnly) {
+                    if (documentRequiredType != null) {
+                        removeValue(documentRequiredType);
+                    } else {
+                        removeValue(requiredType);
+                    }
+                } else {
+                    if (deleteType) {
+                        removeValue(requiredType);
+                    }
+                    removeValue(documentRequiredType);
+                }
+                if (currentActivityType == TYPE_MANAGE) {
+                    TextDetailSecureCell view = typesViews.remove(requiredType);
+                    if (view != null) {
+                        linearLayout2.removeView(view);
+                        View child = linearLayout2.getChildAt(linearLayout2.getChildCount() - 6);
+                        if (child instanceof TextDetailSecureCell) {
+                            ((TextDetailSecureCell) child).setNeedDivider(false);
                         }
                     }
-                });
+                    updateManageVisibility();
+                } else {
+
+                    String documentJson = null;
+                    TLRPC.TL_secureRequiredType documentsType = documentRequiredType;
+                    if (documentsType != null && documentRequiredTypes != null && documentRequiredTypes.size() > 1) {
+                        for (int a = 0, count = documentRequiredTypes.size(); a < count; a++) {
+                            TLRPC.TL_secureRequiredType documentType = documentRequiredTypes.get(a);
+                            TLRPC.TL_secureValue documentValue = getValueByType(documentType, false);
+                            if (documentValue != null) {
+                                if (documentValue.data != null) {
+                                    documentJson = decryptData(documentValue.data.data, decryptValueSecret(documentValue.data.secret, documentValue.data.data_hash), documentValue.data.data_hash);
+                                }
+                                documentsType = documentType;
+                                break;
+                            }
+                        }
+                        if (documentsType == null) {
+                            documentsType = documentRequiredTypes.get(0);
+                        }
+                    }
+
+                    if (deleteType) {
+                        setTypeValue(requiredType, null, null, documentsType, documentJson, documentOnly, documentRequiredTypes != null ? documentRequiredTypes.size() : 0);
+                    } else {
+                        String json = null;
+                        TLRPC.TL_secureValue value = getValueByType(requiredType, false);
+                        if (value != null && value.data != null) {
+                            json = decryptData(value.data.data, decryptValueSecret(value.data.secret, value.data.data_hash), value.data.data_hash);
+                        }
+                        setTypeValue(requiredType, null, json, documentsType, documentJson, documentOnly, documentRequiredTypes != null ? documentRequiredTypes.size() : 0);
+                    }
+                }
+                if (finishRunnable != null) {
+                    finishRunnable.run();
+                }
             }
-        });
+        }));
     }
 
-    private TextDetailSecureCell addField(Context context, final TLRPC.SecureValueType type, final ArrayList<TLRPC.SecureValueType> documentTypes, boolean last) {
+    private TextDetailSecureCell addField(Context context, final TLRPC.TL_secureRequiredType requiredType, final ArrayList<TLRPC.TL_secureRequiredType> documentRequiredTypes, boolean documentOnly, boolean last) {
+        final int availableDocumentTypesCount = documentRequiredTypes != null ? documentRequiredTypes.size() : 0;
         TextDetailSecureCell view = new TextDetailSecureCell(context);
         view.setBackgroundDrawable(Theme.getSelectorDrawable(true));
-        if (type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
+        if (requiredType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
             String text;
-            if (documentTypes == null || documentTypes.isEmpty()) {
+            if (documentRequiredTypes == null || documentRequiredTypes.isEmpty()) {
                 text = LocaleController.getString("PassportPersonalDetails", R.string.PassportPersonalDetails);
-            } else if (documentTypes.size() == 1) {
-                TLRPC.SecureValueType documentType = documentTypes.get(0);
-                if (documentType instanceof TLRPC.TL_secureValueTypePassport) {
-                    text = LocaleController.getString("ActionBotDocumentPassport", R.string.ActionBotDocumentPassport);
-                } else if (documentType instanceof TLRPC.TL_secureValueTypeDriverLicense) {
-                    text = LocaleController.getString("ActionBotDocumentDriverLicence", R.string.ActionBotDocumentDriverLicence);
-                } else if (documentType instanceof TLRPC.TL_secureValueTypeIdentityCard) {
-                    text = LocaleController.getString("ActionBotDocumentIdentityCard", R.string.ActionBotDocumentIdentityCard);
-                } else if (documentType instanceof TLRPC.TL_secureValueTypeInternalPassport) {
-                    text = LocaleController.getString("ActionBotDocumentInternalPassport", R.string.ActionBotDocumentInternalPassport);
-                } else {
-                    text = "LOC_ERR: NO NAME FOR ID TYPE";
-                }
+            } else if (documentOnly && documentRequiredTypes.size() == 1) {
+                text = getTextForType(documentRequiredTypes.get(0).type);
+            } else if (documentOnly && documentRequiredTypes.size() == 2) {
+                text = LocaleController.formatString("PassportTwoDocuments", R.string.PassportTwoDocuments, getTextForType(documentRequiredTypes.get(0).type), getTextForType(documentRequiredTypes.get(1).type));
             } else {
                 text = LocaleController.getString("PassportIdentityDocument", R.string.PassportIdentityDocument);
             }
             view.setTextAndValue(text, "", !last);
-        } else if (type instanceof TLRPC.TL_secureValueTypeAddress) {
+        } else if (requiredType.type instanceof TLRPC.TL_secureValueTypeAddress) {
             String text;
-            if (documentTypes == null || documentTypes.isEmpty()) {
+            if (documentRequiredTypes == null || documentRequiredTypes.isEmpty()) {
                 text = LocaleController.getString("PassportAddress", R.string.PassportAddress);
-            } else if (documentTypes.size() == 1) {
-                TLRPC.SecureValueType documentType = documentTypes.get(0);
-                if (documentType instanceof TLRPC.TL_secureValueTypeUtilityBill) {
-                    text = LocaleController.getString("ActionBotDocumentUtilityBill", R.string.ActionBotDocumentUtilityBill);
-                } else if (documentType instanceof TLRPC.TL_secureValueTypeBankStatement) {
-                    text = LocaleController.getString("ActionBotDocumentBankStatement", R.string.ActionBotDocumentBankStatement);
-                } else if (documentType instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
-                    text = LocaleController.getString("ActionBotDocumentRentalAgreement", R.string.ActionBotDocumentRentalAgreement);
-                } else if (documentType instanceof TLRPC.TL_secureValueTypePassportRegistration) {
-                    text = LocaleController.getString("ActionBotDocumentPassportRegistration", R.string.ActionBotDocumentPassportRegistration);
-                } else if (documentType instanceof TLRPC.TL_secureValueTypeTemporaryRegistration) {
-                    text = LocaleController.getString("ActionBotDocumentTemporaryRegistration", R.string.ActionBotDocumentTemporaryRegistration);
-                } else {
-                    text = "LOC_ERR: NO NAME FOR ADDRESS TYPE";
-                }
+            } else if (documentOnly && documentRequiredTypes.size() == 1) {
+                text = getTextForType(documentRequiredTypes.get(0).type);
+            } else if (documentOnly && documentRequiredTypes.size() == 2) {
+                text = LocaleController.formatString("PassportTwoDocuments", R.string.PassportTwoDocuments, getTextForType(documentRequiredTypes.get(0).type), getTextForType(documentRequiredTypes.get(1).type));
             } else {
                 text = LocaleController.getString("PassportResidentialAddress", R.string.PassportResidentialAddress);
             }
             view.setTextAndValue(text, "", !last);
-        } else if (type instanceof TLRPC.TL_secureValueTypePhone) {
+        } else if (requiredType.type instanceof TLRPC.TL_secureValueTypePhone) {
             view.setTextAndValue(LocaleController.getString("PassportPhone", R.string.PassportPhone), "", !last);
-        } else if (type instanceof TLRPC.TL_secureValueTypeEmail) {
+        } else if (requiredType.type instanceof TLRPC.TL_secureValueTypeEmail) {
             view.setTextAndValue(LocaleController.getString("PassportEmail", R.string.PassportEmail), "", !last);
         }
         if (currentActivityType == TYPE_MANAGE) {
@@ -4931,105 +5865,84 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         } else {
             linearLayout2.addView(view, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
-        view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                TLRPC.SecureValueType documentsType = null;
-                if (documentTypes != null) {
-                    for (int a = 0, count = documentTypes.size(); a < count; a++) {
-                        TLRPC.SecureValueType documentType = documentTypes.get(a);
-                        if (getValueByType(documentType, false) != null || count == 1) {
-                            documentsType = documentType;
-                            break;
-                        }
+        view.setOnClickListener(v -> {
+            TLRPC.TL_secureRequiredType documentsType = null;
+            if (documentRequiredTypes != null) {
+                for (int a = 0, count = documentRequiredTypes.size(); a < count; a++) {
+                    TLRPC.TL_secureRequiredType documentType = documentRequiredTypes.get(a);
+                    if (getValueByType(documentType, false) != null || count == 1) {
+                        documentsType = documentType;
+                        break;
                     }
                 }
-                if (type instanceof TLRPC.TL_secureValueTypePersonalDetails || type instanceof TLRPC.TL_secureValueTypeAddress) {
-                    if (documentsType == null && documentTypes != null && !documentTypes.isEmpty()) {
+            }
+            if (requiredType.type instanceof TLRPC.TL_secureValueTypePersonalDetails || requiredType.type instanceof TLRPC.TL_secureValueTypeAddress) {
+                if (documentsType == null && documentRequiredTypes != null && !documentRequiredTypes.isEmpty()) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setPositiveButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+
+                    if (requiredType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
+                        builder.setTitle(LocaleController.getString("PassportIdentityDocument", R.string.PassportIdentityDocument));
+                    } else if (requiredType.type instanceof TLRPC.TL_secureValueTypeAddress) {
+                        builder.setTitle(LocaleController.getString("PassportAddress", R.string.PassportAddress));
+                    }
+
+                    ArrayList<String> strings = new ArrayList<>();
+                    for (int a = 0, count = documentRequiredTypes.size(); a < count; a++) {
+                        TLRPC.TL_secureRequiredType documentType = documentRequiredTypes.get(a);
+                        if (documentType.type instanceof TLRPC.TL_secureValueTypeDriverLicense) {
+                            strings.add(LocaleController.getString("PassportAddLicence", R.string.PassportAddLicence));
+                        } else if (documentType.type instanceof TLRPC.TL_secureValueTypePassport) {
+                            strings.add(LocaleController.getString("PassportAddPassport", R.string.PassportAddPassport));
+                        } else if (documentType.type instanceof TLRPC.TL_secureValueTypeInternalPassport) {
+                            strings.add(LocaleController.getString("PassportAddInternalPassport", R.string.PassportAddInternalPassport));
+                        } else if (documentType.type instanceof TLRPC.TL_secureValueTypeIdentityCard) {
+                            strings.add(LocaleController.getString("PassportAddCard", R.string.PassportAddCard));
+                        } else if (documentType.type instanceof TLRPC.TL_secureValueTypeUtilityBill) {
+                            strings.add(LocaleController.getString("PassportAddBill", R.string.PassportAddBill));
+                        } else if (documentType.type instanceof TLRPC.TL_secureValueTypeBankStatement) {
+                            strings.add(LocaleController.getString("PassportAddBank", R.string.PassportAddBank));
+                        } else if (documentType.type instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
+                            strings.add(LocaleController.getString("PassportAddAgreement", R.string.PassportAddAgreement));
+                        } else if (documentType.type instanceof TLRPC.TL_secureValueTypeTemporaryRegistration) {
+                            strings.add(LocaleController.getString("PassportAddTemporaryRegistration", R.string.PassportAddTemporaryRegistration));
+                        } else if (documentType.type instanceof TLRPC.TL_secureValueTypePassportRegistration) {
+                            strings.add(LocaleController.getString("PassportAddPassportRegistration", R.string.PassportAddPassportRegistration));
+                        }
+                    }
+
+                    builder.setItems(strings.toArray(new CharSequence[strings.size()]), (dialog, which) -> openTypeActivity(requiredType, documentRequiredTypes.get(which), documentRequiredTypes, documentOnly));
+                    showDialog(builder.create());
+                    return;
+                }
+            } else {
+                boolean phoneField;
+                if ((phoneField = (requiredType.type instanceof TLRPC.TL_secureValueTypePhone)) || requiredType.type instanceof TLRPC.TL_secureValueTypeEmail) {
+                    final TLRPC.TL_secureValue value = getValueByType(requiredType, false);
+                    if (value != null) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setPositiveButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-
-                        if (type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
-                            builder.setTitle(LocaleController.getString("PassportIdentityDocument", R.string.PassportIdentityDocument));
-                        } else if (type instanceof TLRPC.TL_secureValueTypeAddress) {
-                            builder.setTitle(LocaleController.getString("PassportAddress", R.string.PassportAddress));
-                        }
-
-                        ArrayList<String> strings = new ArrayList<>();
-                        for (int a = 0, count = documentTypes.size(); a < count; a++) {
-                            TLRPC.SecureValueType documentType = documentTypes.get(a);
-                            if (documentType instanceof TLRPC.TL_secureValueTypeDriverLicense) {
-                                strings.add(LocaleController.getString("PassportAddLicence", R.string.PassportAddLicence));
-                            } else if (documentType instanceof TLRPC.TL_secureValueTypePassport) {
-                                strings.add(LocaleController.getString("PassportAddPassport", R.string.PassportAddPassport));
-                            } else if (documentType instanceof TLRPC.TL_secureValueTypeInternalPassport) {
-                                strings.add(LocaleController.getString("PassportAddInternalPassport", R.string.PassportAddInternalPassport));
-                            } else if (documentType instanceof TLRPC.TL_secureValueTypeIdentityCard) {
-                                strings.add(LocaleController.getString("PassportAddCard", R.string.PassportAddCard));
-                            } else if (documentType instanceof TLRPC.TL_secureValueTypeUtilityBill) {
-                                strings.add(LocaleController.getString("PassportAddBill", R.string.PassportAddBill));
-                            } else if (documentType instanceof TLRPC.TL_secureValueTypeBankStatement) {
-                                strings.add(LocaleController.getString("PassportAddBank", R.string.PassportAddBank));
-                            } else if (documentType instanceof TLRPC.TL_secureValueTypeRentalAgreement) {
-                                strings.add(LocaleController.getString("PassportAddAgreement", R.string.PassportAddAgreement));
-                            } else if (documentType instanceof TLRPC.TL_secureValueTypeTemporaryRegistration) {
-                                strings.add(LocaleController.getString("PassportAddTemporaryRegistration", R.string.PassportAddTemporaryRegistration));
-                            } else if (documentType instanceof TLRPC.TL_secureValueTypePassportRegistration) {
-                                strings.add(LocaleController.getString("PassportAddPassportRegistration", R.string.PassportAddPassportRegistration));
-                            }
-                        }
-
-                        builder.setItems(strings.toArray(new CharSequence[strings.size()]), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                openTypeActivity(type, documentTypes.get(which), documentTypes);
-                            }
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+                            needShowProgress();
+                            deleteValueInternal(requiredType, null, null, true, this::needHideProgress, (error, text) -> needHideProgress(), documentOnly);
                         });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setMessage(phoneField ? LocaleController.getString("PassportDeletePhoneAlert", R.string.PassportDeletePhoneAlert) : LocaleController.getString("PassportDeleteEmailAlert", R.string.PassportDeleteEmailAlert));
                         showDialog(builder.create());
                         return;
                     }
-                } else {
-                    boolean phoneField;
-                    if ((phoneField = (type instanceof TLRPC.TL_secureValueTypePhone)) || type instanceof TLRPC.TL_secureValueTypeEmail) {
-                        final TLRPC.TL_secureValue value = getValueByType(type, false);
-                        if (value != null) {
-                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    needShowProgress();
-                                    deleteValueInternal(type, null, true, new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            needHideProgress();
-                                        }
-                                    }, new ErrorRunnable() {
-                                        @Override
-                                        public void onError(String error, String text) {
-                                            needHideProgress();
-                                        }
-                                    });
-                                }
-                            });
-                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                            builder.setMessage(phoneField ? LocaleController.getString("PassportDeletePhoneAlert", R.string.PassportDeletePhoneAlert) : LocaleController.getString("PassportDeleteEmailAlert", R.string.PassportDeleteEmailAlert));
-                            showDialog(builder.create());
-                            return;
-                        }
-                    }
                 }
-                openTypeActivity(type, documentsType, documentTypes);
             }
+            openTypeActivity(requiredType, documentsType, documentRequiredTypes, documentOnly);
         });
-        typesViews.put(type, view);
+        typesViews.put(requiredType, view);
 
         String text = null;
         String json = null;
         String documentJson = null;
-        typesValues.put(type, new HashMap<String, String>());
+        typesValues.put(requiredType, new HashMap<>());
 
-        TLRPC.TL_secureValue value = getValueByType(type, false);
+        TLRPC.TL_secureValue value = getValueByType(requiredType, false);
         if (value != null) {
             if (value.plain_data instanceof TLRPC.TL_securePlainEmail) {
                 text = ((TLRPC.TL_securePlainEmail) value.plain_data).email;
@@ -5039,25 +5952,30 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 json = decryptData(value.data.data, decryptValueSecret(value.data.secret, value.data.data_hash), value.data.data_hash);
             }
         }
-        TLRPC.SecureValueType documentsType = null;
-        if (documentTypes != null && !documentTypes.isEmpty()) {
-            for (int a = 0, count = documentTypes.size(); a < count; a++) {
-                TLRPC.SecureValueType documentType = documentTypes.get(a);
-                TLRPC.TL_secureValue documentValue = getValueByType(documentType, false);
-                if (documentValue != null) {
-                    if (documentValue.data != null) {
-                        documentJson = decryptData(documentValue.data.data, decryptValueSecret(documentValue.data.secret, documentValue.data.data_hash), documentValue.data.data_hash);
+        TLRPC.TL_secureRequiredType documentsType = null;
+        if (documentRequiredTypes != null && !documentRequiredTypes.isEmpty()) {
+            boolean found = false;
+            for (int a = 0, count = documentRequiredTypes.size(); a < count; a++) {
+                TLRPC.TL_secureRequiredType documentType = documentRequiredTypes.get(a);
+                typesValues.put(documentType, new HashMap<>());
+                documentsToTypesLink.put(documentType, requiredType);
+                if (!found) {
+                    TLRPC.TL_secureValue documentValue = getValueByType(documentType, false);
+                    if (documentValue != null) {
+                        if (documentValue.data != null) {
+                            documentJson = decryptData(documentValue.data.data, decryptValueSecret(documentValue.data.secret, documentValue.data.data_hash), documentValue.data.data_hash);
+                        }
+                        documentsType = documentType;
+                        found = true;
                     }
-                    documentsType = documentType;
-                    break;
                 }
             }
             if (documentsType == null) {
-                documentsType = documentTypes.get(0);
+                documentsType = documentRequiredTypes.get(0);
             }
         }
 
-        setTypeValue(type, text, json, documentsType, documentJson);
+        setTypeValue(requiredType, text, json, documentsType, documentJson, documentOnly, availableDocumentTypesCount);
         return view;
     }
 
@@ -5179,7 +6097,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         return new String(decryptedData, dataOffset, decryptedData.length - dataOffset);
     }
 
-    private boolean checkSecret(byte[] secret, Long id) {
+    public static boolean checkSecret(byte[] secret, Long id) {
         if (secret == null || secret.length != 32) {
             return false;
         }
@@ -5355,29 +6273,21 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
         }
 
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(final TLObject response, final TLRPC.TL_error error) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (error == null) {
-                            HashMap<String, String> values = new HashMap<>();
-                            values.put("phone", phone);
-                            PassportActivity activity = new PassportActivity(TYPE_PHONE_VERIFICATION, currentForm, currentPassword, currentType, null, null, null, values);
-                            activity.currentAccount = currentAccount;
-                            activity.saltedPassword = saltedPassword;
-                            activity.secureSecret = secureSecret;
-                            activity.delegate = delegate;
-                            activity.currentPhoneVerification = (TLRPC.TL_auth_sentCode) response;
-                            presentFragment(activity, true);
-                        } else {
-                            AlertsCreator.processError(currentAccount, error, PassportActivity.this, req, phone);
-                        }
-                    }
-                });
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (error == null) {
+                HashMap<String, String> values = new HashMap<>();
+                values.put("phone", phone);
+                PassportActivity activity = new PassportActivity(TYPE_PHONE_VERIFICATION, currentForm, currentPassword, currentType, null, null, null, values, null);
+                activity.currentAccount = currentAccount;
+                activity.saltedPassword = saltedPassword;
+                activity.secureSecret = secureSecret;
+                activity.delegate = delegate;
+                activity.currentPhoneVerification = (TLRPC.TL_auth_sentCode) response;
+                presentFragment(activity, true);
+            } else {
+                AlertsCreator.processError(currentAccount, error, PassportActivity.this, req, phone);
             }
-        }, ConnectionsManager.RequestFlagFailOnServerErrors);
+        }), ConnectionsManager.RequestFlagFailOnServerErrors);
     }
 
     private void updatePasswordInterface() {
@@ -5395,7 +6305,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             passwordInfoRequestTextView.setVisibility(View.GONE);
             passwordRequestTextView.setVisibility(View.GONE);
             emptyView.setVisibility(View.VISIBLE);
-        } else if (currentPassword instanceof TLRPC.TL_account_noPassword) {
+        } else if (!currentPassword.has_password) {
             passwordRequestTextView.setVisibility(View.VISIBLE);
 
             noPasswordImageView.setVisibility(View.VISIBLE);
@@ -5550,9 +6460,20 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         cell.updateButtonState(true);
                     }
                 }
-                errorsValues.remove("files_all");
-                if (bottomCell != null && !TextUtils.isEmpty(noAllDocumentsErrorText)) {
-                    bottomCell.setText(noAllDocumentsErrorText);
+                if (errorsValues != null && errorsValues.containsKey("error_document_all")) {
+                    errorsValues.remove("error_document_all");
+                    checkTopErrorCell(false);
+                }
+                if (document.type == UPLOADING_TYPE_DOCUMENTS) {
+                    if (bottomCell != null && !TextUtils.isEmpty(noAllDocumentsErrorText)) {
+                        bottomCell.setText(noAllDocumentsErrorText);
+                    }
+                    errorsValues.remove("files_all");
+                } else if (document.type == UPLOADING_TYPE_TRANSLATION) {
+                    if (bottomCellTranslation != null && !TextUtils.isEmpty(noAllTranslationErrorText)) {
+                        bottomCellTranslation.setText(noAllTranslationErrorText);
+                    }
+                    errorsValues.remove("translation_all");
                 }
             }
         } else if (id == NotificationCenter.FileDidFailUpload) {
@@ -5564,11 +6485,14 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }
                 if (args[6] == null) {
                     currentPassword = new TLRPC.TL_account_password();
-                    currentPassword.current_salt = (byte[]) args[1];
-                    currentPassword.new_secure_salt = (byte[]) args[2];
+                    currentPassword.current_algo = (TLRPC.PasswordKdfAlgo) args[1];
+                    currentPassword.new_secure_algo = (TLRPC.SecurePasswordKdfAlgo) args[2];
                     currentPassword.secure_random = (byte[]) args[3];
                     currentPassword.has_recovery = !TextUtils.isEmpty((String) args[4]);
                     currentPassword.hint = (String) args[5];
+                    currentPassword.srp_id = -1;
+                    currentPassword.srp_B = new byte[256];
+                    Utilities.random.nextBytes(currentPassword.srp_B);
 
                     if (inputFields[FIELD_PASSWORD] != null && inputFields[FIELD_PASSWORD].length() > 0) {
                         usingSavedPassword = 2;
@@ -5587,12 +6511,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (presentAfterAnimation != null) {
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    presentFragment(presentAfterAnimation, true);
-                    presentAfterAnimation = null;
-                }
+            AndroidUtilities.runOnUIThread(() -> {
+                presentFragment(presentAfterAnimation, true);
+                presentAfterAnimation = null;
             });
         }
         if (currentActivityType == TYPE_PASSWORD) {
@@ -5670,17 +6591,13 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                     builder.setMessage(LocaleController.getString("PermissionNoAudioVideo", R.string.PermissionNoAudioVideo));
-                    builder.setNegativeButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), new DialogInterface.OnClickListener() {
-                        @TargetApi(Build.VERSION_CODES.GINGERBREAD)
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            try {
-                                Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                                intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
-                                getParentActivity().startActivity(intent);
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
+                    builder.setNegativeButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialog, which) -> {
+                        try {
+                            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                            intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
+                            getParentActivity().startActivity(intent);
+                        } catch (Exception e) {
+                            FileLog.e(e);
                         }
                     });
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
@@ -5849,7 +6766,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
         createChatAttachView();
         chatAttachAlert.setOpenWithFrontFaceCamera(uploadingFileType == UPLOADING_TYPE_SELFIE);
-        chatAttachAlert.setMaxSelectedPhotos(uploadingFileType == UPLOADING_TYPE_DOCUMENTS ? 20 - documents.size() : 1);
+        chatAttachAlert.setMaxSelectedPhotos(getMaxSelectedDocuments());
         chatAttachAlert.loadGalleryPhotos();
         if (Build.VERSION.SDK_INT == 21 || Build.VERSION.SDK_INT == 22) {
             AndroidUtilities.hideKeyboard(fragmentView.findFocus());
@@ -5923,6 +6840,16 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
     }
 
+    private int getMaxSelectedDocuments() {
+        if (uploadingFileType == UPLOADING_TYPE_DOCUMENTS) {
+            return 20 - documents.size();
+        } else if (uploadingFileType == UPLOADING_TYPE_TRANSLATION) {
+            return 20 - translationDocuments.size();
+        } else {
+            return 1;
+        }
+    }
+
     private void processSelectedAttach(int which) {
         if (which == attach_photo) {
             if (Build.VERSION.SDK_INT >= 23 && getParentActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -5953,7 +6880,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
             PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(false, false, false, null);
             fragment.setCurrentAccount(currentAccount);
-            fragment.setMaxSelectedPhotos(uploadingFileType == UPLOADING_TYPE_DOCUMENTS ? 20 - documents.size() : 1);
+            fragment.setMaxSelectedPhotos(getMaxSelectedDocuments());
             fragment.setAllowSearchImages(false);
             fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
                 @Override
@@ -5981,7 +6908,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             DocumentSelectActivity fragment = new DocumentSelectActivity();
             fragment.setCurrentAccount(currentAccount);
             fragment.setCanSelectOnlyImageFiles(true);
-            fragment.setMaxSelectedFiles(uploadingFileType == UPLOADING_TYPE_DOCUMENTS ? 20 - documents.size() : 1);
+            fragment.setMaxSelectedFiles(getMaxSelectedDocuments());
             fragment.setDelegate(new DocumentSelectActivity.DocumentSelectActivityDelegate() {
                 @Override
                 public void didSelectFiles(DocumentSelectActivity activity, ArrayList<String> files) {
@@ -6025,11 +6952,25 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         for (int a = 0; a < inputFields.length; a++) {
             values.append(inputFields[a].getText()).append(",");
         }
+        if (inputExtraFields != null) {
+            for (int a = 0; a < inputExtraFields.length; a++) {
+                values.append(inputExtraFields[a].getText()).append(",");
+            }
+        }
         for (int a = 0, count = documents.size(); a < count; a++) {
             values.append(documents.get(a).secureFile.id);
         }
+        if (frontDocument != null) {
+            values.append(frontDocument.secureFile.id);
+        }
+        if (reverseDocument != null) {
+            values.append(reverseDocument.secureFile.id);
+        }
         if (selfieDocument != null) {
             values.append(selfieDocument.secureFile.id);
+        }
+        for (int a = 0, count = translationDocuments.size(); a < count; a++) {
+            values.append(translationDocuments.get(a).secureFile.id);
         }
         return values.toString();
     }
@@ -6043,12 +6984,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             return false;
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setPositiveButton(LocaleController.getString("PassportDiscard", R.string.PassportDiscard), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                finishFragment();
-            }
-        });
+        builder.setPositiveButton(LocaleController.getString("PassportDiscard", R.string.PassportDiscard), (dialog, which) -> finishFragment());
         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
         builder.setTitle(LocaleController.getString("DiscardChanges", R.string.DiscardChanges));
         builder.setMessage(LocaleController.getString("PassportDiscardChanges", R.string.PassportDiscardChanges));
@@ -6061,9 +6997,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             return;
         }
         final boolean needRecoginze;
-        if (uploadingFileType == UPLOADING_TYPE_SELFIE) {
+        if (uploadingFileType == UPLOADING_TYPE_SELFIE || uploadingFileType == UPLOADING_TYPE_TRANSLATION) {
             needRecoginze = false;
-        } else if (currentType instanceof TLRPC.TL_secureValueTypePersonalDetails) {
+        } else if (currentType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
             boolean allFieldsAreEmpty = true;
             for (int a = 0; a < inputFields.length; a++) {
                 if (a == FIELD_CITIZENSHIP || a == FIELD_EXPIRE || a == FIELD_GENDER || a == FIELD_RESIDENCE) {
@@ -6079,178 +7015,177 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             needRecoginze = false;
         }
         final int type = uploadingFileType;
-        Utilities.globalQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                boolean didRecognizeSuccessfully = false;
-                for (int a = 0, count = Math.min(uploadingFileType == UPLOADING_TYPE_DOCUMENTS ? 20 : 1, photos.size()); a < count; a++) {
-                    SendMessagesHelper.SendingMediaInfo info = photos.get(a);
-                    Bitmap bitmap = ImageLoader.loadBitmap(info.path, info.uri, 2048, 2048, false);
-                    if (bitmap == null) {
-                        continue;
-                    }
-                    TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(bitmap, 2048, 2048, 89, false, 320, 320);
-                    if (size == null) {
-                        continue;
-                    }
-                    TLRPC.TL_secureFile secureFile = new TLRPC.TL_secureFile();
-                    secureFile.dc_id = (int) size.location.volume_id;
-                    secureFile.id = size.location.local_id;
-                    secureFile.date = (int) (System.currentTimeMillis() / 1000);
-
-                    final SecureDocument document = delegate.saveFile(secureFile);
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (uploadingFileType == UPLOADING_TYPE_SELFIE) {
-                                if (selfieDocument != null) {
-                                    SecureDocumentCell cell = documentsCells.remove(selfieDocument);
-                                    if (cell != null) {
-                                        selfieLayout.removeView(cell);
-                                    }
-                                    selfieDocument = null;
-                                }
-                            } else if (uploadingFileType == UPLOADING_TYPE_FRONT) {
-                                if (frontDocument != null) {
-                                    SecureDocumentCell cell = documentsCells.remove(frontDocument);
-                                    if (cell != null) {
-                                        frontLayout.removeView(cell);
-                                    }
-                                    frontDocument = null;
-                                }
-                            } else if (uploadingFileType == UPLOADING_TYPE_REVERSE) {
-                                if (reverseDocument != null) {
-                                    SecureDocumentCell cell = documentsCells.remove(reverseDocument);
-                                    if (cell != null) {
-                                        reverseLayout.removeView(cell);
-                                    }
-                                    reverseDocument = null;
-                                }
-                            } else if (uploadingFileType == UPLOADING_TYPE_DOCUMENTS) {
-                                if (documents.size() >= 20) {
-                                    return;
-                                }
-                            }
-                            uploadingDocuments.put(document.path, document);
-                            doneItem.setEnabled(false);
-                            doneItem.setAlpha(0.5f);
-                            FileLoader.getInstance(currentAccount).uploadFile(document.path, false, true, ConnectionsManager.FileTypePhoto);
-                            addDocumentView(document, type);
-                            updateUploadText(type);
-                        }
-                    });
-
-                    if (needRecoginze && !didRecognizeSuccessfully) {
-                        try {
-                            final MrzRecognizer.Result result = MrzRecognizer.recognize(bitmap, currentDocumentsType instanceof TLRPC.TL_secureValueTypeDriverLicense);
-                            if (result != null) {
-                                didRecognizeSuccessfully = true;
-                                AndroidUtilities.runOnUIThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (result.type == MrzRecognizer.Result.TYPE_ID) {
-                                            if (!(currentDocumentsType instanceof TLRPC.TL_secureValueTypeIdentityCard)) {
-                                                for (int a = 0, count = availableDocumentTypes.size(); a < count; a++) {
-                                                    TLRPC.SecureValueType type = availableDocumentTypes.get(a);
-                                                    if (type instanceof TLRPC.TL_secureValueTypeIdentityCard) {
-                                                        currentDocumentsType = type;
-                                                        updateInterfaceStringsForDocumentType();
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                        } else if (result.type == MrzRecognizer.Result.TYPE_PASSPORT) {
-                                            if (!(currentDocumentsType instanceof TLRPC.TL_secureValueTypePassport)) {
-                                                for (int a = 0, count = availableDocumentTypes.size(); a < count; a++) {
-                                                    TLRPC.SecureValueType type = availableDocumentTypes.get(a);
-                                                    if (type instanceof TLRPC.TL_secureValueTypePassport) {
-                                                        currentDocumentsType = type;
-                                                        updateInterfaceStringsForDocumentType();
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                        } else if (result.type == MrzRecognizer.Result.TYPE_INTERNAL_PASSPORT) {
-                                            if (!(currentDocumentsType instanceof TLRPC.TL_secureValueTypeInternalPassport)) {
-                                                for (int a = 0, count = availableDocumentTypes.size(); a < count; a++) {
-                                                    TLRPC.SecureValueType type = availableDocumentTypes.get(a);
-                                                    if (type instanceof TLRPC.TL_secureValueTypeInternalPassport) {
-                                                        currentDocumentsType = type;
-                                                        updateInterfaceStringsForDocumentType();
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                        } else if (result.type == MrzRecognizer.Result.TYPE_DRIVER_LICENSE) {
-                                            if (!(currentDocumentsType instanceof TLRPC.TL_secureValueTypeDriverLicense)) {
-                                                for (int a = 0, count = availableDocumentTypes.size(); a < count; a++) {
-                                                    TLRPC.SecureValueType type = availableDocumentTypes.get(a);
-                                                    if (type instanceof TLRPC.TL_secureValueTypeDriverLicense) {
-                                                        currentDocumentsType = type;
-                                                        updateInterfaceStringsForDocumentType();
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        if (!TextUtils.isEmpty(result.firstName)) {
-                                            inputFields[FIELD_NAME].setText(result.firstName);
-                                        }
-                                        if (!TextUtils.isEmpty(result.lastName)) {
-                                            inputFields[FIELD_SURNAME].setText(result.lastName);
-                                        }
-                                        if (!TextUtils.isEmpty(result.number)) {
-                                            inputFields[FIELD_CARDNUMBER].setText(result.number);
-                                        }
-                                        if (result.gender != MrzRecognizer.Result.GENDER_UNKNOWN) {
-                                            switch (result.gender) {
-                                                case MrzRecognizer.Result.GENDER_MALE:
-                                                    currentGender = "male";
-                                                    inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportMale", R.string.PassportMale));
-                                                    break;
-                                                case MrzRecognizer.Result.GENDER_FEMALE:
-                                                    currentGender = "female";
-                                                    inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportFemale", R.string.PassportFemale));
-                                                    break;
-                                            }
-                                        }
-                                        if (!TextUtils.isEmpty(result.nationality)) {
-                                            currentCitizeship = result.nationality;
-                                            String country = languageMap.get(currentCitizeship);
-                                            if (country != null) {
-                                                inputFields[FIELD_CITIZENSHIP].setText(country);
-                                            }
-                                        }
-                                        if (!TextUtils.isEmpty(result.issuingCountry)) {
-                                            currentResidence = result.issuingCountry;
-                                            String country = languageMap.get(currentResidence);
-                                            if (country != null) {
-                                                inputFields[FIELD_RESIDENCE].setText(country);
-                                            }
-                                        }
-                                        if (result.birthDay > 0 && result.birthMonth > 0 && result.birthYear > 0) {
-                                            inputFields[FIELD_BIRTHDAY].setText(String.format(Locale.US, "%02d.%02d.%d", result.birthDay, result.birthMonth, result.birthYear));
-                                        }
-                                        if (result.expiryDay > 0 && result.expiryMonth > 0 && result.expiryYear > 0) {
-                                            currentExpireDate[0] = result.expiryYear;
-                                            currentExpireDate[1] = result.expiryMonth;
-                                            currentExpireDate[2] = result.expiryDay;
-                                            inputFields[FIELD_EXPIRE].setText(String.format(Locale.US, "%02d.%02d.%d", result.expiryDay, result.expiryMonth, result.expiryYear));
-                                        } else {
-                                            currentExpireDate[0] = currentExpireDate[1] = currentExpireDate[2] = 0;
-                                            inputFields[FIELD_EXPIRE].setText(LocaleController.getString("PassportNoExpireDate", R.string.PassportNoExpireDate));
-                                        }
-                                    }
-                                });
-                            }
-                        } catch (Throwable e) {
-                            FileLog.e(e);
-                        }
-                    }
-
+        Utilities.globalQueue.postRunnable(() -> {
+            boolean didRecognizeSuccessfully = false;
+            for (int a = 0, count = Math.min(uploadingFileType == UPLOADING_TYPE_DOCUMENTS || uploadingFileType == UPLOADING_TYPE_TRANSLATION ? 20 : 1, photos.size()); a < count; a++) {
+                SendMessagesHelper.SendingMediaInfo info = photos.get(a);
+                Bitmap bitmap = ImageLoader.loadBitmap(info.path, info.uri, 2048, 2048, false);
+                if (bitmap == null) {
+                    continue;
                 }
-                SharedConfig.saveConfig();
+                TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(bitmap, 2048, 2048, 89, false, 320, 320);
+                if (size == null) {
+                    continue;
+                }
+                TLRPC.TL_secureFile secureFile = new TLRPC.TL_secureFile();
+                secureFile.dc_id = (int) size.location.volume_id;
+                secureFile.id = size.location.local_id;
+                secureFile.date = (int) (System.currentTimeMillis() / 1000);
+
+                final SecureDocument document = delegate.saveFile(secureFile);
+                document.type = type;
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (uploadingFileType == UPLOADING_TYPE_SELFIE) {
+                        if (selfieDocument != null) {
+                            SecureDocumentCell cell = documentsCells.remove(selfieDocument);
+                            if (cell != null) {
+                                selfieLayout.removeView(cell);
+                            }
+                            selfieDocument = null;
+                        }
+                    } else if (uploadingFileType == UPLOADING_TYPE_TRANSLATION) {
+                        if (translationDocuments.size() >= 20) {
+                            return;
+                        }
+                    } else if (uploadingFileType == UPLOADING_TYPE_FRONT) {
+                        if (frontDocument != null) {
+                            SecureDocumentCell cell = documentsCells.remove(frontDocument);
+                            if (cell != null) {
+                                frontLayout.removeView(cell);
+                            }
+                            frontDocument = null;
+                        }
+                    } else if (uploadingFileType == UPLOADING_TYPE_REVERSE) {
+                        if (reverseDocument != null) {
+                            SecureDocumentCell cell = documentsCells.remove(reverseDocument);
+                            if (cell != null) {
+                                reverseLayout.removeView(cell);
+                            }
+                            reverseDocument = null;
+                        }
+                    } else if (uploadingFileType == UPLOADING_TYPE_DOCUMENTS) {
+                        if (documents.size() >= 20) {
+                            return;
+                        }
+                    }
+                    uploadingDocuments.put(document.path, document);
+                    doneItem.setEnabled(false);
+                    doneItem.setAlpha(0.5f);
+                    FileLoader.getInstance(currentAccount).uploadFile(document.path, false, true, ConnectionsManager.FileTypePhoto);
+                    addDocumentView(document, type);
+                    updateUploadText(type);
+                });
+
+                if (needRecoginze && !didRecognizeSuccessfully) {
+                    try {
+                        final MrzRecognizer.Result result = MrzRecognizer.recognize(bitmap, currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeDriverLicense);
+                        if (result != null) {
+                            didRecognizeSuccessfully = true;
+                            AndroidUtilities.runOnUIThread(() -> {
+                                if (result.type == MrzRecognizer.Result.TYPE_ID) {
+                                    if (!(currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeIdentityCard)) {
+                                        for (int a1 = 0, count1 = availableDocumentTypes.size(); a1 < count1; a1++) {
+                                            TLRPC.TL_secureRequiredType requiredType = availableDocumentTypes.get(a1);
+                                            if (requiredType.type instanceof TLRPC.TL_secureValueTypeIdentityCard) {
+                                                currentDocumentsType = requiredType;
+                                                updateInterfaceStringsForDocumentType();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                } else if (result.type == MrzRecognizer.Result.TYPE_PASSPORT) {
+                                    if (!(currentDocumentsType.type instanceof TLRPC.TL_secureValueTypePassport)) {
+                                        for (int a1 = 0, count1 = availableDocumentTypes.size(); a1 < count1; a1++) {
+                                            TLRPC.TL_secureRequiredType requiredType = availableDocumentTypes.get(a1);
+                                            if (requiredType.type instanceof TLRPC.TL_secureValueTypePassport) {
+                                                currentDocumentsType = requiredType;
+                                                updateInterfaceStringsForDocumentType();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                } else if (result.type == MrzRecognizer.Result.TYPE_INTERNAL_PASSPORT) {
+                                    if (!(currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeInternalPassport)) {
+                                        for (int a1 = 0, count1 = availableDocumentTypes.size(); a1 < count1; a1++) {
+                                            TLRPC.TL_secureRequiredType requiredType = availableDocumentTypes.get(a1);
+                                            if (requiredType.type instanceof TLRPC.TL_secureValueTypeInternalPassport) {
+                                                currentDocumentsType = requiredType;
+                                                updateInterfaceStringsForDocumentType();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                } else if (result.type == MrzRecognizer.Result.TYPE_DRIVER_LICENSE) {
+                                    if (!(currentDocumentsType.type instanceof TLRPC.TL_secureValueTypeDriverLicense)) {
+                                        for (int a1 = 0, count1 = availableDocumentTypes.size(); a1 < count1; a1++) {
+                                            TLRPC.TL_secureRequiredType requiredType = availableDocumentTypes.get(a1);
+                                            if (requiredType.type instanceof TLRPC.TL_secureValueTypeDriverLicense) {
+                                                currentDocumentsType = requiredType;
+                                                updateInterfaceStringsForDocumentType();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                if (!TextUtils.isEmpty(result.firstName)) {
+                                    inputFields[FIELD_NAME].setText(result.firstName);
+                                }
+                                if (!TextUtils.isEmpty(result.middleName)) {
+                                    inputFields[FIELD_MIDNAME].setText(result.middleName);
+                                }
+                                if (!TextUtils.isEmpty(result.lastName)) {
+                                    inputFields[FIELD_SURNAME].setText(result.lastName);
+                                }
+                                if (!TextUtils.isEmpty(result.number)) {
+                                    inputFields[FIELD_CARDNUMBER].setText(result.number);
+                                }
+                                if (result.gender != MrzRecognizer.Result.GENDER_UNKNOWN) {
+                                    switch (result.gender) {
+                                        case MrzRecognizer.Result.GENDER_MALE:
+                                            currentGender = "male";
+                                            inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportMale", R.string.PassportMale));
+                                            break;
+                                        case MrzRecognizer.Result.GENDER_FEMALE:
+                                            currentGender = "female";
+                                            inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportFemale", R.string.PassportFemale));
+                                            break;
+                                    }
+                                }
+                                if (!TextUtils.isEmpty(result.nationality)) {
+                                    currentCitizeship = result.nationality;
+                                    String country = languageMap.get(currentCitizeship);
+                                    if (country != null) {
+                                        inputFields[FIELD_CITIZENSHIP].setText(country);
+                                    }
+                                }
+                                if (!TextUtils.isEmpty(result.issuingCountry)) {
+                                    currentResidence = result.issuingCountry;
+                                    String country = languageMap.get(currentResidence);
+                                    if (country != null) {
+                                        inputFields[FIELD_RESIDENCE].setText(country);
+                                    }
+                                }
+                                if (result.birthDay > 0 && result.birthMonth > 0 && result.birthYear > 0) {
+                                    inputFields[FIELD_BIRTHDAY].setText(String.format(Locale.US, "%02d.%02d.%d", result.birthDay, result.birthMonth, result.birthYear));
+                                }
+                                if (result.expiryDay > 0 && result.expiryMonth > 0 && result.expiryYear > 0) {
+                                    currentExpireDate[0] = result.expiryYear;
+                                    currentExpireDate[1] = result.expiryMonth;
+                                    currentExpireDate[2] = result.expiryDay;
+                                    inputFields[FIELD_EXPIRE].setText(String.format(Locale.US, "%02d.%02d.%d", result.expiryDay, result.expiryMonth, result.expiryYear));
+                                } else {
+                                    currentExpireDate[0] = currentExpireDate[1] = currentExpireDate[2] = 0;
+                                    inputFields[FIELD_EXPIRE].setText(LocaleController.getString("PassportNoExpireDate", R.string.PassportNoExpireDate));
+                                }
+                            });
+                        }
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
+                }
+
             }
+            SharedConfig.saveConfig();
         });
     }
 
@@ -6375,15 +7310,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             });
-            codeField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_NEXT) {
-                        onNextPressed();
-                        return true;
-                    }
-                    return false;
+            codeField.setOnEditorActionListener((textView, i, keyEvent) -> {
+                if (i == EditorInfo.IME_ACTION_NEXT) {
+                    onNextPressed();
+                    return true;
                 }
+                return false;
             });
             if (verificationType == 3) {
                 codeField.setEnabled(false);
@@ -6411,28 +7343,25 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             problemText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             problemText.setPadding(0, AndroidUtilities.dp(2), 0, AndroidUtilities.dp(12));
             addView(problemText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 20, 0, 0));
-            problemText.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (nextPressed) {
-                        return;
-                    }
-                    if (nextType != 0 && nextType != 4) {
-                        resendCode();
-                    } else {
-                        try {
-                            PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                            String version = String.format(Locale.US, "%s (%d)", pInfo.versionName, pInfo.versionCode);
+            problemText.setOnClickListener(v -> {
+                if (nextPressed) {
+                    return;
+                }
+                if (nextType != 0 && nextType != 4) {
+                    resendCode();
+                } else {
+                    try {
+                        PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
+                        String version = String.format(Locale.US, "%s (%d)", pInfo.versionName, pInfo.versionCode);
 
-                            Intent mailer = new Intent(Intent.ACTION_SEND);
-                            mailer.setType("message/rfc822");
-                            mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@stel.com"});
-                            mailer.putExtra(Intent.EXTRA_SUBJECT, "Android registration/login issue " + version + " " + phone);
-                            mailer.putExtra(Intent.EXTRA_TEXT, "Phone: " + phone + "\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault() + "\nError: " + lastError);
-                            getContext().startActivity(Intent.createChooser(mailer, "Send email..."));
-                        } catch (Exception e) {
-                            AlertsCreator.showSimpleAlert(PassportActivity.this, LocaleController.getString("NoMailInstalled", R.string.NoMailInstalled));
-                        }
+                        Intent mailer = new Intent(Intent.ACTION_SEND);
+                        mailer.setType("message/rfc822");
+                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@stel.com"});
+                        mailer.putExtra(Intent.EXTRA_SUBJECT, "Android registration/login issue " + version + " " + phone);
+                        mailer.putExtra(Intent.EXTRA_TEXT, "Phone: " + phone + "\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault() + "\nError: " + lastError);
+                        getContext().startActivity(Intent.createChooser(mailer, "Send email..."));
+                    } catch (Exception e) {
+                        AlertsCreator.showSimpleAlert(PassportActivity.this, LocaleController.getString("NoMailInstalled", R.string.NoMailInstalled));
                     }
                 }
             });
@@ -6448,32 +7377,21 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             final TLRPC.TL_auth_resendCode req = new TLRPC.TL_auth_resendCode();
             req.phone_number = phone;
             req.phone_code_hash = phoneHash;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                @Override
-                public void run(final TLObject response, final TLRPC.TL_error error) {
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            nextPressed = false;
-                            if (error == null) {
-                                fillNextCodeParams(params, (TLRPC.TL_auth_sentCode) response, true);
-                            } else {
-                                AlertDialog dialog = (AlertDialog) AlertsCreator.processError(currentAccount, error, PassportActivity.this, req);
-                                if (dialog != null && error.text.contains("PHONE_CODE_EXPIRED")) {
-                                    dialog.setPositiveButtonListener(new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            onBackPressed();
-                                            finishFragment();
-                                        }
-                                    });
-                                }
-                            }
-                            needHideProgress();
-                        }
-                    });
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                nextPressed = false;
+                if (error == null) {
+                    fillNextCodeParams(params, (TLRPC.TL_auth_sentCode) response, true);
+                } else {
+                    AlertDialog dialog = (AlertDialog) AlertsCreator.processError(currentAccount, error, PassportActivity.this, req);
+                    if (dialog != null && error.text.contains("PHONE_CODE_EXPIRED")) {
+                        dialog.setPositiveButtonListener((dialog1, which) -> {
+                            onBackPressed();
+                            finishFragment();
+                        });
+                    }
                 }
-            }, ConnectionsManager.RequestFlagFailOnServerErrors);
+                needHideProgress();
+            }), ConnectionsManager.RequestFlagFailOnServerErrors);
         }
 
         @Override
@@ -6577,13 +7495,10 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     double diff = currentTime - lastCodeTime;
                     codeTime -= diff;
                     lastCodeTime = currentTime;
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (codeTime <= 1000) {
-                                problemText.setVisibility(VISIBLE);
-                                destroyCodeTimer();
-                            }
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (codeTime <= 1000) {
+                            problemText.setVisibility(VISIBLE);
+                            destroyCodeTimer();
                         }
                     });
                 }
@@ -6650,17 +7565,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                                         TLRPC.TL_auth_resendCode req = new TLRPC.TL_auth_resendCode();
                                         req.phone_number = phone;
                                         req.phone_code_hash = phoneHash;
-                                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                                            @Override
-                                            public void run(TLObject response, final TLRPC.TL_error error) {
-                                                if (error != null && error.text != null) {
-                                                    AndroidUtilities.runOnUIThread(new Runnable() {
-                                                        @Override
-                                                        public void run() {
-                                                            lastError = error.text;
-                                                        }
-                                                    });
-                                                }
+                                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                                            if (error != null && error.text != null) {
+                                                AndroidUtilities.runOnUIThread(() -> lastError = error.text);
                                             }
                                         }, ConnectionsManager.RequestFlagFailOnServerErrors);
                                     } else if (nextType == 3) {
@@ -6711,44 +7618,31 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             req.phone_code_hash = phoneHash;
             destroyTimer();
             needShowProgress();
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                @Override
-                public void run(final TLObject response, final TLRPC.TL_error error) {
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            needHideProgress();
-                            nextPressed = false;
-                            if (error == null) {
-                                destroyTimer();
-                                destroyCodeTimer();
-                                delegate.saveValue(currentType, currentValues.get("phone"), null, null, null, null, null, null, null, new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        finishFragment();
-                                    }
-                                }, null);
-                            } else {
-                                lastError = error.text;
-                                if (verificationType == 3 && (nextType == 4 || nextType == 2) || verificationType == 2 && (nextType == 4 || nextType == 3)) {
-                                    createTimer();
-                                }
-                                if (verificationType == 2) {
-                                    AndroidUtilities.setWaitingForSms(true);
-                                    NotificationCenter.getGlobalInstance().addObserver(PhoneConfirmationView.this, NotificationCenter.didReceiveSmsCode);
-                                } else if (verificationType == 3) {
-                                    AndroidUtilities.setWaitingForCall(true);
-                                    NotificationCenter.getGlobalInstance().addObserver(PhoneConfirmationView.this, NotificationCenter.didReceiveCall);
-                                }
-                                waitingForEvent = true;
-                                if (verificationType != 3) {
-                                    AlertsCreator.processError(currentAccount, error, PassportActivity.this, req);
-                                }
-                            }
-                        }
-                    });
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                needHideProgress();
+                nextPressed = false;
+                if (error == null) {
+                    destroyTimer();
+                    destroyCodeTimer();
+                    delegate.saveValue(currentType, currentValues.get("phone"), null, null, null, null, null, null, null, null, PassportActivity.this::finishFragment, null);
+                } else {
+                    lastError = error.text;
+                    if (verificationType == 3 && (nextType == 4 || nextType == 2) || verificationType == 2 && (nextType == 4 || nextType == 3)) {
+                        createTimer();
+                    }
+                    if (verificationType == 2) {
+                        AndroidUtilities.setWaitingForSms(true);
+                        NotificationCenter.getGlobalInstance().addObserver(PhoneConfirmationView.this, NotificationCenter.didReceiveSmsCode);
+                    } else if (verificationType == 3) {
+                        AndroidUtilities.setWaitingForCall(true);
+                        NotificationCenter.getGlobalInstance().addObserver(PhoneConfirmationView.this, NotificationCenter.didReceiveCall);
+                    }
+                    waitingForEvent = true;
+                    if (verificationType != 3) {
+                        AlertsCreator.processError(currentAccount, error, PassportActivity.this, req);
+                    }
                 }
-            }, ConnectionsManager.RequestFlagFailOnServerErrors);
+            }), ConnectionsManager.RequestFlagFailOnServerErrors);
         }
 
         @Override
@@ -6756,11 +7650,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             TLRPC.TL_auth_cancelCode req = new TLRPC.TL_auth_cancelCode();
             req.phone_number = phone;
             req.phone_code_hash = phoneHash;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                @Override
-                public void run(TLObject response, TLRPC.TL_error error) {
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
 
-                }
             }, ConnectionsManager.RequestFlagFailOnServerErrors);
 
             destroyTimer();
@@ -6838,6 +7729,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         arrayList.add(new ThemeDescription(linearLayout2, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
         arrayList.add(new ThemeDescription(extraBackgroundView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+        if (extraBackgroundView2 != null) {
+            arrayList.add(new ThemeDescription(extraBackgroundView2, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+        }
 
         for (int a = 0; a < dividers.size(); a++) {
             arrayList.add(new ThemeDescription(dividers.get(a), ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_divider));
@@ -6888,6 +7782,18 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             arrayList.add(new ThemeDescription(null, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
             arrayList.add(new ThemeDescription(null, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
             arrayList.add(new ThemeDescription(null, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_windowBackgroundWhiteRedText3));
+        }
+
+        if (inputExtraFields != null) {
+            for (int a = 0; a < inputExtraFields.length; a++) {
+                arrayList.add(new ThemeDescription((View) inputExtraFields[a].getParent(), ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+                arrayList.add(new ThemeDescription(inputExtraFields[a], ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CURSORCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+                arrayList.add(new ThemeDescription(inputExtraFields[a], ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
+                arrayList.add(new ThemeDescription(inputExtraFields[a], ThemeDescription.FLAG_HINTTEXTCOLOR | ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
+                arrayList.add(new ThemeDescription(inputExtraFields[a], ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
+                arrayList.add(new ThemeDescription(inputExtraFields[a], ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
+                arrayList.add(new ThemeDescription(inputExtraFields[a], ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_windowBackgroundWhiteRedText3));
+            }
         }
 
         arrayList.add(new ThemeDescription(emptyView, ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_progressCircle));

@@ -9,7 +9,6 @@
 package org.telegram.ui;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Spannable;
@@ -30,8 +29,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -140,12 +137,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                                 builder.setMessage(LocaleController.getString("CustomHelp", R.string.CustomHelp));
                             }
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    applyCurrentPrivacySettings();
-                                    preferences.edit().putBoolean("privacyAlertShowed", true).commit();
-                                }
+                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
+                                applyCurrentPrivacySettings();
+                                preferences.edit().putBoolean("privacyAlertShowed", true).commit();
                             });
                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                             showDialog(builder.create());
@@ -173,84 +167,75 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         listView.setVerticalScrollBarEnabled(false);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setAdapter(listAdapter);
-        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, final int position) {
-                if (position == nobodyRow || position == everybodyRow || position == myContactsRow) {
-                    int newType = currentType;
-                    if (position == nobodyRow) {
-                        newType = 1;
-                    } else if (position == everybodyRow) {
-                        newType = 0;
-                    } else if (position == myContactsRow) {
-                        newType = 2;
-                    }
-                    if (newType == currentType) {
-                        return;
-                    }
-                    enableAnimation = true;
-                    doneButton.setVisibility(View.VISIBLE);
-                    lastCheckedType = currentType;
-                    currentType = newType;
-                    updateRows();
-                } else if (position == neverShareRow || position == alwaysShareRow) {
-                    ArrayList<Integer> createFromArray;
-                    if (position == neverShareRow) {
-                        createFromArray = currentMinus;
-                    } else {
-                        createFromArray = currentPlus;
-                    }
-                    if (createFromArray.isEmpty()) {
-                        Bundle args = new Bundle();
-                        args.putBoolean(position == neverShareRow ? "isNeverShare" : "isAlwaysShare", true);
-                        args.putBoolean("isGroup", rulesType != 0);
-                        GroupCreateActivity fragment = new GroupCreateActivity(args);
-                        fragment.setDelegate(new GroupCreateActivity.GroupCreateActivityDelegate() {
-                            @Override
-                            public void didSelectUsers(ArrayList<Integer> ids) {
-                                if (position == neverShareRow) {
-                                    currentMinus = ids;
-                                    for (int a = 0; a < currentMinus.size(); a++) {
-                                        currentPlus.remove(currentMinus.get(a));
-                                    }
-                                } else {
-                                    currentPlus = ids;
-                                    for (int a = 0; a < currentPlus.size(); a++) {
-                                        currentMinus.remove(currentPlus.get(a));
-                                    }
-                                }
-                                doneButton.setVisibility(View.VISIBLE);
-                                lastCheckedType = -1;
-                                listAdapter.notifyDataSetChanged();
+        listView.setOnItemClickListener((view, position) -> {
+            if (position == nobodyRow || position == everybodyRow || position == myContactsRow) {
+                int newType = currentType;
+                if (position == nobodyRow) {
+                    newType = 1;
+                } else if (position == everybodyRow) {
+                    newType = 0;
+                } else if (position == myContactsRow) {
+                    newType = 2;
+                }
+                if (newType == currentType) {
+                    return;
+                }
+                enableAnimation = true;
+                doneButton.setVisibility(View.VISIBLE);
+                lastCheckedType = currentType;
+                currentType = newType;
+                updateRows();
+            } else if (position == neverShareRow || position == alwaysShareRow) {
+                ArrayList<Integer> createFromArray;
+                if (position == neverShareRow) {
+                    createFromArray = currentMinus;
+                } else {
+                    createFromArray = currentPlus;
+                }
+                if (createFromArray.isEmpty()) {
+                    Bundle args = new Bundle();
+                    args.putBoolean(position == neverShareRow ? "isNeverShare" : "isAlwaysShare", true);
+                    args.putBoolean("isGroup", rulesType != 0);
+                    GroupCreateActivity fragment = new GroupCreateActivity(args);
+                    fragment.setDelegate(ids -> {
+                        if (position == neverShareRow) {
+                            currentMinus = ids;
+                            for (int a = 0; a < currentMinus.size(); a++) {
+                                currentPlus.remove(currentMinus.get(a));
                             }
-                        });
-                        presentFragment(fragment);
-                    } else {
-                        PrivacyUsersActivity fragment = new PrivacyUsersActivity(createFromArray, rulesType != 0, position == alwaysShareRow);
-                        fragment.setDelegate(new PrivacyUsersActivity.PrivacyActivityDelegate() {
-                            @Override
-                            public void didUpdatedUserList(ArrayList<Integer> ids, boolean added) {
-                                if (position == neverShareRow) {
-                                    currentMinus = ids;
-                                    if (added) {
-                                        for (int a = 0; a < currentMinus.size(); a++) {
-                                            currentPlus.remove(currentMinus.get(a));
-                                        }
-                                    }
-                                } else {
-                                    currentPlus = ids;
-                                    if (added) {
-                                        for (int a = 0; a < currentPlus.size(); a++) {
-                                            currentMinus.remove(currentPlus.get(a));
-                                        }
-                                    }
-                                }
-                                doneButton.setVisibility(View.VISIBLE);
-                                listAdapter.notifyDataSetChanged();
+                        } else {
+                            currentPlus = ids;
+                            for (int a = 0; a < currentPlus.size(); a++) {
+                                currentMinus.remove(currentPlus.get(a));
                             }
-                        });
-                        presentFragment(fragment);
-                    }
+                        }
+                        doneButton.setVisibility(View.VISIBLE);
+                        lastCheckedType = -1;
+                        listAdapter.notifyDataSetChanged();
+                    });
+                    presentFragment(fragment);
+                } else {
+                    PrivacyUsersActivity fragment = new PrivacyUsersActivity(createFromArray, rulesType != 0, position == alwaysShareRow);
+                    fragment.setDelegate((ids, added) -> {
+                        if (position == neverShareRow) {
+                            currentMinus = ids;
+                            if (added) {
+                                for (int a = 0; a < currentMinus.size(); a++) {
+                                    currentPlus.remove(currentMinus.get(a));
+                                }
+                            }
+                        } else {
+                            currentPlus = ids;
+                            if (added) {
+                                for (int a = 0; a < currentPlus.size(); a++) {
+                                    currentMinus.remove(currentPlus.get(a));
+                                }
+                            }
+                        }
+                        doneButton.setVisibility(View.VISIBLE);
+                        listAdapter.notifyDataSetChanged();
+                    });
+                    presentFragment(fragment);
                 }
             }
         });
@@ -316,31 +301,23 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             progressDialog.show();
         }
         final AlertDialog progressDialogFinal = progressDialog;
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(final TLObject response, final TLRPC.TL_error error) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            if (progressDialogFinal != null) {
-                                progressDialogFinal.dismiss();
-                            }
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        if (error == null) {
-                            finishFragment();
-                            TLRPC.TL_account_privacyRules rules = (TLRPC.TL_account_privacyRules) response;
-                            MessagesController.getInstance(currentAccount).putUsers(rules.users, false);
-                            ContactsController.getInstance(currentAccount).setPrivacyRules(rules.rules, rulesType);
-                        } else {
-                            showErrorAlert();
-                        }
-                    }
-                });
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            try {
+                if (progressDialogFinal != null) {
+                    progressDialogFinal.dismiss();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
             }
-        }, ConnectionsManager.RequestFlagFailOnServerErrors);
+            if (error == null) {
+                finishFragment();
+                TLRPC.TL_account_privacyRules rules = (TLRPC.TL_account_privacyRules) response;
+                MessagesController.getInstance(currentAccount).putUsers(rules.users, false);
+                ContactsController.getInstance(currentAccount).setPrivacyRules(rules.rules, rulesType);
+            } else {
+                showErrorAlert();
+            }
+        }), ConnectionsManager.RequestFlagFailOnServerErrors);
     }
 
     private void showErrorAlert() {

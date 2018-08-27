@@ -23,6 +23,7 @@ import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -38,8 +39,10 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.CheckBoxCell;
+import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Components.BetterRatingView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.VoIPActivity;
 
 import java.io.File;
@@ -214,7 +217,7 @@ public class VoIPHelper{
 	}
 
 	public static void showRateAlert(final Context context, final Runnable onDismiss, final long callID, final long accessHash, final int account){
-		final File log=new File(getLogsDir(), callID+".log");
+		final File log=getLogFile(callID);
 		LinearLayout alertView=new LinearLayout(context);
 		alertView.setOrientation(LinearLayout.VERTICAL);
 
@@ -311,6 +314,17 @@ public class VoIPHelper{
 					}
 				})
 				.create();
+		if(BuildVars.DEBUG_VERSION && log.exists()){
+			alert.setNeutralButton("Send log", new DialogInterface.OnClickListener(){
+				@Override
+				public void onClick(DialogInterface dialog, int which){
+					Intent intent=new Intent(context, LaunchActivity.class);
+					intent.setAction(Intent.ACTION_SEND);
+					intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(log));
+					context.startActivity(intent);
+				}
+			});
+		}
 		alert.setOnShowListener(new DialogInterface.OnShowListener(){
 			@Override
 			public void onShow(DialogInterface dialog){
@@ -338,6 +352,19 @@ public class VoIPHelper{
 		});
 	}
 
+	private static File getLogFile(long callID){
+		if(BuildVars.DEBUG_VERSION){
+			File debugLogsDir=new File(ApplicationLoader.applicationContext.getExternalFilesDir(null), "logs");
+			String[] logs=debugLogsDir.list();
+			for(String log:logs){
+				if(log.endsWith("voip"+callID+".txt")){
+					return new File(debugLogsDir, log);
+				}
+			}
+		}
+		return new File(getLogsDir(), callID+".log");
+	}
+
 	public static void upgradeP2pSetting(int account){
 		SharedPreferences prefs=MessagesController.getMainSettings(account);
 		if(prefs.contains("calls_p2p")){
@@ -347,5 +374,68 @@ public class VoIPHelper{
 			}
 			e.remove("calls_p2p").commit();
 		}
+	}
+
+	public static void showCallDebugSettings(final Context context){
+		final SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+		LinearLayout ll=new LinearLayout(context);
+		ll.setOrientation(LinearLayout.VERTICAL);
+
+		TextView warning=new TextView(context);
+		warning.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+		warning.setText("Please only change these settings if you know exactly what they do.");
+		warning.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+		ll.addView(warning, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 16, 8, 16, 8));
+
+		final TextCheckCell tcpCell=new TextCheckCell(context);
+		tcpCell.setTextAndCheck("Force TCP", preferences.getBoolean("dbg_force_tcp_in_calls", false), false);
+		tcpCell.setOnClickListener(new View.OnClickListener(){
+			@Override
+			public void onClick(View v){
+				boolean force= preferences.getBoolean("dbg_force_tcp_in_calls", false);
+				SharedPreferences.Editor editor = preferences.edit();
+				editor.putBoolean("dbg_force_tcp_in_calls", !force);
+				editor.commit();
+				tcpCell.setChecked(!force);
+			}
+		});
+		ll.addView(tcpCell);
+
+		if(BuildVars.DEBUG_VERSION && BuildVars.LOGS_ENABLED){
+			final TextCheckCell dumpCell=new TextCheckCell(context);
+			dumpCell.setTextAndCheck("Dump detailed stats", preferences.getBoolean("dbg_dump_call_stats", false), false);
+			dumpCell.setOnClickListener(new View.OnClickListener(){
+				@Override
+				public void onClick(View v){
+					boolean force= preferences.getBoolean("dbg_dump_call_stats", false);
+					SharedPreferences.Editor editor = preferences.edit();
+					editor.putBoolean("dbg_dump_call_stats", !force);
+					editor.commit();
+					dumpCell.setChecked(!force);
+				}
+			});
+			ll.addView(dumpCell);
+		}
+
+		if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.O){
+			final TextCheckCell connectionServiceCell=new TextCheckCell(context);
+			connectionServiceCell.setTextAndCheck("Enable ConnectionService", preferences.getBoolean("dbg_force_connection_service", false), false);
+			connectionServiceCell.setOnClickListener(new View.OnClickListener(){
+				@Override
+				public void onClick(View v){
+					boolean force= preferences.getBoolean("dbg_force_connection_service", false);
+					SharedPreferences.Editor editor = preferences.edit();
+					editor.putBoolean("dbg_force_connection_service", !force);
+					editor.commit();
+					connectionServiceCell.setChecked(!force);
+				}
+			});
+			ll.addView(connectionServiceCell);
+		}
+
+		new AlertDialog.Builder(context)
+				.setTitle(LocaleController.getString("DebugMenuCallSettings", R.string.DebugMenuCallSettings))
+				.setView(ll)
+				.show();
 	}
 }

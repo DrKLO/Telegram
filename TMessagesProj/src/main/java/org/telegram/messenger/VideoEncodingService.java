@@ -80,6 +80,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             FileLog.d("start video service");
         }
         if (builder == null) {
+            NotificationsController.checkOtherNotificationsChannel();
             builder = new NotificationCompat.Builder(ApplicationLoader.applicationContext);
             builder.setSmallIcon(android.R.drawable.stat_sys_upload);
             builder.setWhen(System.currentTimeMillis());

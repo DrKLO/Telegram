@@ -8,12 +8,12 @@
 
 package org.telegram.messenger;
 
-import org.telegram.messenger.exoplayer2.upstream.DataSource;
-import org.telegram.messenger.exoplayer2.upstream.TransferListener;
-
 import android.text.TextUtils;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
+
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.TransferListener;
 
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -952,7 +952,7 @@ public class FileLoader {
         return new File(dir, getAttachFileName(attach, ext));
     }
 
-    public static FileStreamLoadOperation getStreamLoadOperation(TransferListener<? super DataSource> listener) {
+    public static FileStreamLoadOperation getStreamLoadOperation(TransferListener listener) {
         return new FileStreamLoadOperation(listener);
     }
 

@@ -28,7 +28,6 @@ import com.googlecode.mp4parser.boxes.mp4.objectdescriptors.SLConfigDescriptor;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -48,13 +47,13 @@ public class Track {
         }
     }
 
-    private long trackId = 0;
+    private long trackId;
     private ArrayList<Sample> samples = new ArrayList<>();
     private long duration = 0;
     private int[] sampleCompositions;
     private String handler;
-    private AbstractMediaHeaderBox headerBox = null;
-    private SampleDescriptionBox sampleDescriptionBox = null;
+    private AbstractMediaHeaderBox headerBox;
+    private SampleDescriptionBox sampleDescriptionBox;
     private LinkedList<Integer> syncSamples = null;
     private int timeScale;
     private Date creationTime = new Date();
@@ -63,7 +62,7 @@ public class Track {
     private float volume = 0;
     private long[] sampleDurations;
     private ArrayList<SamplePresentationTime> samplePresentationTimes = new ArrayList<>();
-    private boolean isAudio = false;
+    private boolean isAudio;
     private static Map<Integer, Integer> samplingFrequencyIndexMap = new HashMap<>();
     private boolean first = true;
 
@@ -267,16 +266,13 @@ public class Track {
 
     public void prepare() {
         ArrayList<SamplePresentationTime> original = new ArrayList<>(samplePresentationTimes);
-        Collections.sort(samplePresentationTimes, new Comparator<SamplePresentationTime>() {
-            @Override
-            public int compare(SamplePresentationTime o1, SamplePresentationTime o2) {
-                if (o1.presentationTime > o2.presentationTime) {
-                    return 1;
-                } else if (o1.presentationTime < o2.presentationTime) {
-                    return -1;
-                }
-                return 0;
+        Collections.sort(samplePresentationTimes, (o1, o2) -> {
+            if (o1.presentationTime > o2.presentationTime) {
+                return 1;
+            } else if (o1.presentationTime < o2.presentationTime) {
+                return -1;
             }
+            return 0;
         });
         long lastPresentationTimeUs = 0;
         sampleDurations = new long[samplePresentationTimes.size()];

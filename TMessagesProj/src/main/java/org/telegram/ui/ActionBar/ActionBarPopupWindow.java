@@ -56,11 +56,8 @@ public class ActionBarPopupWindow extends PopupWindow {
         superListenerField = f;
     }
 
-    private static final ViewTreeObserver.OnScrollChangedListener NOP = new ViewTreeObserver.OnScrollChangedListener() {
-        @Override
-        public void onScrollChanged() {
-            /* do nothing */
-        }
+    private static final ViewTreeObserver.OnScrollChangedListener NOP = () -> {
+        /* do nothing */
     };
 
     private ViewTreeObserver.OnScrollChangedListener mSuperScrollListener;

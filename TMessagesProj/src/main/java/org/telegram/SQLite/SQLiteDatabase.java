@@ -16,8 +16,8 @@ public class SQLiteDatabase {
 
 	private final long sqliteHandle;
 
-	private boolean isOpen = false;
-    private boolean inTransaction = false;
+	private boolean isOpen;
+    private boolean inTransaction;
 
 	public long getSQLiteHandle() {
 		return sqliteHandle;

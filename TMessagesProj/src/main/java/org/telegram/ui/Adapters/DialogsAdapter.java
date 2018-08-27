@@ -198,14 +198,11 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 textView.setText(LocaleController.getString("RecentlyViewedHide", R.string.RecentlyViewedHide));
                 textView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
                 headerCell.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 17, 15, 17, 0));
-                textView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        MessagesController.getInstance(currentAccount).hintDialogs.clear();
-                        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                        preferences.edit().remove("installReferer").commit();
-                        notifyDataSetChanged();
-                    }
+                textView.setOnClickListener(view1 -> {
+                    MessagesController.getInstance(currentAccount).hintDialogs.clear();
+                    SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                    preferences.edit().remove("installReferer").commit();
+                    notifyDataSetChanged();
                 });
 
                 view = headerCell;

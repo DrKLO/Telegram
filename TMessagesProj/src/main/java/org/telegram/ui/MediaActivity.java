@@ -14,7 +14,6 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.net.Uri;
@@ -56,8 +55,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
@@ -406,13 +403,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                                     }
                                     cell.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
                                     frameLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
-                                    cell.setOnClickListener(new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            CheckBoxCell cell = (CheckBoxCell) v;
-                                            deleteForAll[0] = !deleteForAll[0];
-                                            cell.setChecked(deleteForAll[0], true);
-                                        }
+                                    cell.setOnClickListener(v -> {
+                                        CheckBoxCell cell1 = (CheckBoxCell) v;
+                                        deleteForAll[0] = !deleteForAll[0];
+                                        cell1.setChecked(deleteForAll[0], true);
                                     });
                                     builder.setView(frameLayout);
                                 }
@@ -420,42 +414,39 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         }
                     }
 
-                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            for (int a = 1; a >= 0; a--) {
-                                ArrayList<Integer> ids = new ArrayList<>();
-                                for (int b = 0; b < selectedFiles[a].size(); b++) {
-                                    ids.add(selectedFiles[a].keyAt(b));
-                                }
-                                ArrayList<Long> random_ids = null;
-                                TLRPC.EncryptedChat currentEncryptedChat = null;
-                                int channelId = 0;
-                                if (!ids.isEmpty()) {
-                                    MessageObject msg = selectedFiles[a].get(ids.get(0));
-                                    if (channelId == 0 && msg.messageOwner.to_id.channel_id != 0) {
-                                        channelId = msg.messageOwner.to_id.channel_id;
-                                    }
-                                }
-                                if ((int) dialog_id == 0) {
-                                    currentEncryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat((int) (dialog_id >> 32));
-                                }
-                                if (currentEncryptedChat != null) {
-                                    random_ids = new ArrayList<>();
-                                    for (int b = 0; b < selectedFiles[a].size(); b++) {
-                                        MessageObject msg = selectedFiles[a].valueAt(b);
-                                        if (msg.messageOwner.random_id != 0 && msg.type != 10) {
-                                            random_ids.add(msg.messageOwner.random_id);
-                                        }
-                                    }
-                                }
-                                MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, currentEncryptedChat, channelId, deleteForAll[0]);
-                                selectedFiles[a].clear();
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
+                        for (int a = 1; a >= 0; a--) {
+                            ArrayList<Integer> ids = new ArrayList<>();
+                            for (int b = 0; b < selectedFiles[a].size(); b++) {
+                                ids.add(selectedFiles[a].keyAt(b));
                             }
-                            actionBar.hideActionMode();
-                            actionBar.closeSearchField();
-                            cantDeleteMessagesCount = 0;
+                            ArrayList<Long> random_ids = null;
+                            TLRPC.EncryptedChat currentEncryptedChat = null;
+                            int channelId = 0;
+                            if (!ids.isEmpty()) {
+                                MessageObject msg = selectedFiles[a].get(ids.get(0));
+                                if (channelId == 0 && msg.messageOwner.to_id.channel_id != 0) {
+                                    channelId = msg.messageOwner.to_id.channel_id;
+                                }
+                            }
+                            if ((int) dialog_id == 0) {
+                                currentEncryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat((int) (dialog_id >> 32));
+                            }
+                            if (currentEncryptedChat != null) {
+                                random_ids = new ArrayList<>();
+                                for (int b = 0; b < selectedFiles[a].size(); b++) {
+                                    MessageObject msg = selectedFiles[a].valueAt(b);
+                                    if (msg.messageOwner.random_id != 0 && msg.type != 10) {
+                                        random_ids.add(msg.messageOwner.random_id);
+                                    }
+                                }
+                            }
+                            MessagesController.getInstance(currentAccount).deleteMessages(ids, random_ids, currentEncryptedChat, channelId, deleteForAll[0]);
+                            selectedFiles[a].clear();
                         }
+                        actionBar.hideActionMode();
+                        actionBar.closeSearchField();
+                        cantDeleteMessagesCount = 0;
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     showDialog(builder.create());
@@ -464,65 +455,62 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     args.putBoolean("onlySelect", true);
                     args.putInt("dialogsType", 3);
                     DialogsActivity fragment = new DialogsActivity(args);
-                    fragment.setDelegate(new DialogsActivity.DialogsActivityDelegate() {
-                        @Override
-                        public void didSelectDialogs(DialogsActivity fragment, ArrayList<Long> dids, CharSequence message, boolean param) {
-                            ArrayList<MessageObject> fmessages = new ArrayList<>();
-                            for (int a = 1; a >= 0; a--) {
-                                ArrayList<Integer> ids = new ArrayList<>();
-                                for (int b = 0; b < selectedFiles[a].size(); b++) {
-                                    ids.add(selectedFiles[a].keyAt(b));
-                                }
-                                Collections.sort(ids);
-                                for (Integer id : ids) {
-                                    if (id > 0) {
-                                        fmessages.add(selectedFiles[a].get(id));
-                                    }
-                                }
-                                selectedFiles[a].clear();
+                    fragment.setDelegate((fragment1, dids, message, param) -> {
+                        ArrayList<MessageObject> fmessages = new ArrayList<>();
+                        for (int a = 1; a >= 0; a--) {
+                            ArrayList<Integer> ids = new ArrayList<>();
+                            for (int b = 0; b < selectedFiles[a].size(); b++) {
+                                ids.add(selectedFiles[a].keyAt(b));
                             }
-                            cantDeleteMessagesCount = 0;
-                            actionBar.hideActionMode();
-
-                            if (dids.size() > 1 || dids.get(0) == UserConfig.getInstance(currentAccount).getClientUserId() || message != null) {
-                                for (int a = 0; a < dids.size(); a++) {
-                                    long did = dids.get(a);
-                                    if (message != null) {
-                                        SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, true, null, null, null);
-                                    }
-                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did);
+                            Collections.sort(ids);
+                            for (Integer id1 : ids) {
+                                if (id1 > 0) {
+                                    fmessages.add(selectedFiles[a].get(id1));
                                 }
-                                fragment.finishFragment();
+                            }
+                            selectedFiles[a].clear();
+                        }
+                        cantDeleteMessagesCount = 0;
+                        actionBar.hideActionMode();
+
+                        if (dids.size() > 1 || dids.get(0) == UserConfig.getInstance(currentAccount).getClientUserId() || message != null) {
+                            for (int a = 0; a < dids.size(); a++) {
+                                long did = dids.get(a);
+                                if (message != null) {
+                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, true, null, null, null);
+                                }
+                                SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did);
+                            }
+                            fragment1.finishFragment();
+                        } else {
+                            long did = dids.get(0);
+                            int lower_part = (int) did;
+                            int high_part = (int) (did >> 32);
+                            Bundle args1 = new Bundle();
+                            args1.putBoolean("scrollToTopOnResume", true);
+                            if (lower_part != 0) {
+                                if (lower_part > 0) {
+                                    args1.putInt("user_id", lower_part);
+                                } else if (lower_part < 0) {
+                                    args1.putInt("chat_id", -lower_part);
+                                }
                             } else {
-                                long did = dids.get(0);
-                                int lower_part = (int) did;
-                                int high_part = (int) (did >> 32);
-                                Bundle args = new Bundle();
-                                args.putBoolean("scrollToTopOnResume", true);
-                                if (lower_part != 0) {
-                                    if (lower_part > 0) {
-                                        args.putInt("user_id", lower_part);
-                                    } else if (lower_part < 0) {
-                                        args.putInt("chat_id", -lower_part);
-                                    }
-                                } else {
-                                    args.putInt("enc_id", high_part);
+                                args1.putInt("enc_id", high_part);
+                            }
+                            if (lower_part != 0) {
+                                if (!MessagesController.getInstance(currentAccount).checkCanOpenChat(args1, fragment1)) {
+                                    return;
                                 }
-                                if (lower_part != 0) {
-                                    if (!MessagesController.getInstance(currentAccount).checkCanOpenChat(args, fragment)) {
-                                        return;
-                                    }
-                                }
+                            }
 
-                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
+                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
 
-                                ChatActivity chatActivity = new ChatActivity(args);
-                                presentFragment(chatActivity, true);
-                                chatActivity.showFieldPanelForForward(true, fmessages);
+                            ChatActivity chatActivity = new ChatActivity(args1);
+                            presentFragment(chatActivity, true);
+                            chatActivity.showFieldPanelForForward(true, fmessages);
 
-                                if (!AndroidUtilities.isTablet()) {
-                                    removeSelfFromStack();
-                                }
+                            if (!AndroidUtilities.isTablet()) {
+                                removeSelfFromStack();
                             }
                         }
                     });
@@ -671,12 +659,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         selectedMessagesCountTextView.setTextSize(18);
         selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         selectedMessagesCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultIcon));
-        selectedMessagesCountTextView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
+        selectedMessagesCountTextView.setOnTouchListener((v, event) -> true);
         actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 65, 0, 0, 0));
 
         if ((int) dialog_id != 0) {
@@ -925,16 +908,13 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             mediaPages[a].listView.setSectionsType(2);
             mediaPages[a].listView.setLayoutManager(layoutManager);
             mediaPages[a].addView(mediaPages[a].listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-            mediaPages[a].listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
-                @Override
-                public void onItemClick(View view, int position) {
-                    if (mediaPage.selectedType == 1 && view instanceof SharedDocumentCell) {
-                        MediaActivity.this.onItemClick(position, view, ((SharedDocumentCell) view).getMessage(), 0, mediaPage.selectedType);
-                    } else if (mediaPage.selectedType == 3 && view instanceof SharedLinkCell) {
-                        MediaActivity.this.onItemClick(position, view, ((SharedLinkCell) view).getMessage(), 0, mediaPage.selectedType);
-                    } else if ((mediaPage.selectedType == 2 || mediaPage.selectedType == 4) && view instanceof SharedAudioCell) {
-                        MediaActivity.this.onItemClick(position, view, ((SharedAudioCell) view).getMessage(), 0, mediaPage.selectedType);
-                    }
+            mediaPages[a].listView.setOnItemClickListener((view, position) -> {
+                if (mediaPage.selectedType == 1 && view instanceof SharedDocumentCell) {
+                    MediaActivity.this.onItemClick(position, view, ((SharedDocumentCell) view).getMessage(), 0, mediaPage.selectedType);
+                } else if (mediaPage.selectedType == 3 && view instanceof SharedLinkCell) {
+                    MediaActivity.this.onItemClick(position, view, ((SharedLinkCell) view).getMessage(), 0, mediaPage.selectedType);
+                } else if ((mediaPage.selectedType == 2 || mediaPage.selectedType == 4) && view instanceof SharedAudioCell) {
+                    MediaActivity.this.onItemClick(position, view, ((SharedAudioCell) view).getMessage(), 0, mediaPage.selectedType);
                 }
             });
             mediaPages[a].listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -978,18 +958,15 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     }
                 }
             });
-            mediaPages[a].listView.setOnItemLongClickListener(new RecyclerListView.OnItemLongClickListener() {
-                @Override
-                public boolean onItemClick(View view, int position) {
-                    if (mediaPage.selectedType == 1 && view instanceof SharedDocumentCell) {
-                        return MediaActivity.this.onItemLongClick(((SharedDocumentCell) view).getMessage(), view, 0);
-                    } else if (mediaPage.selectedType == 3 && view instanceof SharedLinkCell) {
-                        return MediaActivity.this.onItemLongClick(((SharedLinkCell) view).getMessage(), view, 0);
-                    } else if ((mediaPage.selectedType == 2 || mediaPage.selectedType == 4) && view instanceof SharedAudioCell) {
-                        return MediaActivity.this.onItemLongClick(((SharedAudioCell) view).getMessage(), view, 0);
-                    }
-                    return false;
+            mediaPages[a].listView.setOnItemLongClickListener((view, position) -> {
+                if (mediaPage.selectedType == 1 && view instanceof SharedDocumentCell) {
+                    return MediaActivity.this.onItemLongClick(((SharedDocumentCell) view).getMessage(), view, 0);
+                } else if (mediaPage.selectedType == 3 && view instanceof SharedLinkCell) {
+                    return MediaActivity.this.onItemLongClick(((SharedLinkCell) view).getMessage(), view, 0);
+                } else if ((mediaPage.selectedType == 2 || mediaPage.selectedType == 4) && view instanceof SharedAudioCell) {
+                    return MediaActivity.this.onItemLongClick(((SharedAudioCell) view).getMessage(), view, 0);
                 }
+                return false;
             });
             if (a == 0 && scrollToPositionOnRecreate != -1) {
                 layoutManager.scrollToPositionWithOffset(scrollToPositionOnRecreate, scrollToOffsetOnRecreate);
@@ -1001,12 +978,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             mediaPages[a].emptyView.setVisibility(View.GONE);
             mediaPages[a].emptyView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
             mediaPages[a].addView(mediaPages[a].emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-            mediaPages[a].emptyView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    return true;
-                }
-            });
+            mediaPages[a].emptyView.setOnTouchListener((v, event) -> true);
 
             mediaPages[a].emptyImageView = new ImageView(context);
             mediaPages[a].emptyView.addView(mediaPages[a].emptyImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
@@ -1799,20 +1771,17 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         public void onLinkLongPress(final String urlFinal) {
             BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
             builder.setTitle(urlFinal);
-            builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, final int which) {
-                    if (which == 0) {
-                        Browser.openUrl(getParentActivity(), urlFinal, true);
-                    } else if (which == 1) {
-                        String url = urlFinal;
-                        if (url.startsWith("mailto:")) {
-                            url = url.substring(7);
-                        } else if (url.startsWith("tel:")) {
-                            url = url.substring(4);
-                        }
-                        AndroidUtilities.addToClipboard(url);
+            builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                if (which == 0) {
+                    Browser.openUrl(getParentActivity(), urlFinal, true);
+                } else if (which == 1) {
+                    String url = urlFinal;
+                    if (url.startsWith("mailto:")) {
+                        url = url.substring(7);
+                    } else if (url.startsWith("tel:")) {
+                        url = url.substring(4);
                     }
+                    AndroidUtilities.addToClipboard(url);
                 }
             });
             showDialog(builder.create());
@@ -2267,34 +2236,28 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             }
             final int currentReqId = ++lastReqId;
             searchesInProgress++;
-            reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                @Override
-                public void run(TLObject response, TLRPC.TL_error error) {
-                    final ArrayList<MessageObject> messageObjects = new ArrayList<>();
-                    if (error == null) {
-                        TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
-                        for (int a = 0; a < res.messages.size(); a++) {
-                            TLRPC.Message message = res.messages.get(a);
-                            if (max_id != 0 && message.id > max_id) {
-                                continue;
-                            }
-                            messageObjects.add(new MessageObject(currentAccount, message, false));
+            reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                final ArrayList<MessageObject> messageObjects = new ArrayList<>();
+                if (error == null) {
+                    TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
+                    for (int a = 0; a < res.messages.size(); a++) {
+                        TLRPC.Message message = res.messages.get(a);
+                        if (max_id != 0 && message.id > max_id) {
+                            continue;
                         }
+                        messageObjects.add(new MessageObject(currentAccount, message, false));
                     }
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (reqId != 0) {
-                                if (currentReqId == lastReqId) {
-                                    globalSearch = messageObjects;
-                                    searchesInProgress--;
-                                    notifyDataSetChanged();
-                                }
-                                reqId = 0;
-                            }
-                        }
-                    });
                 }
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (reqId != 0) {
+                        if (currentReqId == lastReqId) {
+                            globalSearch = messageObjects;
+                            searchesInProgress--;
+                            notifyDataSetChanged();
+                        }
+                        reqId = 0;
+                    }
+                });
             }, ConnectionsManager.RequestFlagFailOnServerErrors);
             ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
         }
@@ -2349,95 +2312,86 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         }
 
         private void processSearch(final String query) {
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (!sharedMediaData[currentType].messages.isEmpty() && (currentType == 1 || currentType == 4)) {
-                        MessageObject messageObject = sharedMediaData[currentType].messages.get(sharedMediaData[currentType].messages.size() - 1);
-                        queryServerSearch(query, messageObject.getId(), messageObject.getDialogId());
-                    } else if (currentType == 3) {
-                        queryServerSearch(query, 0, dialog_id);
-                    }
-                    if (currentType == 1 || currentType == 4) {
-                        final ArrayList<MessageObject> copy = new ArrayList<>(sharedMediaData[currentType].messages);
-                        searchesInProgress++;
-                        Utilities.searchQueue.postRunnable(new Runnable() {
-                            @Override
-                            public void run() {
-                                String search1 = query.trim().toLowerCase();
-                                if (search1.length() == 0) {
-                                    updateSearchResults(new ArrayList<MessageObject>());
-                                    return;
-                                }
-                                String search2 = LocaleController.getInstance().getTranslitString(search1);
-                                if (search1.equals(search2) || search2.length() == 0) {
-                                    search2 = null;
-                                }
-                                String search[] = new String[1 + (search2 != null ? 1 : 0)];
-                                search[0] = search1;
-                                if (search2 != null) {
-                                    search[1] = search2;
-                                }
+            AndroidUtilities.runOnUIThread(() -> {
+                if (!sharedMediaData[currentType].messages.isEmpty() && (currentType == 1 || currentType == 4)) {
+                    MessageObject messageObject = sharedMediaData[currentType].messages.get(sharedMediaData[currentType].messages.size() - 1);
+                    queryServerSearch(query, messageObject.getId(), messageObject.getDialogId());
+                } else if (currentType == 3) {
+                    queryServerSearch(query, 0, dialog_id);
+                }
+                if (currentType == 1 || currentType == 4) {
+                    final ArrayList<MessageObject> copy = new ArrayList<>(sharedMediaData[currentType].messages);
+                    searchesInProgress++;
+                    Utilities.searchQueue.postRunnable(() -> {
+                        String search1 = query.trim().toLowerCase();
+                        if (search1.length() == 0) {
+                            updateSearchResults(new ArrayList<>());
+                            return;
+                        }
+                        String search2 = LocaleController.getInstance().getTranslitString(search1);
+                        if (search1.equals(search2) || search2.length() == 0) {
+                            search2 = null;
+                        }
+                        String search[] = new String[1 + (search2 != null ? 1 : 0)];
+                        search[0] = search1;
+                        if (search2 != null) {
+                            search[1] = search2;
+                        }
 
-                                ArrayList<MessageObject> resultArray = new ArrayList<>();
+                        ArrayList<MessageObject> resultArray = new ArrayList<>();
 
-                                for (int a = 0; a < copy.size(); a++) {
-                                    MessageObject messageObject = copy.get(a);
-                                    for (int b = 0; b < search.length; b++) {
-                                        String q = search[b];
-                                        String name = messageObject.getDocumentName();
-                                        if (name == null || name.length() == 0) {
-                                            continue;
-                                        }
-                                        name = name.toLowerCase();
-                                        if (name.contains(q)) {
-                                            resultArray.add(messageObject);
+                        for (int a = 0; a < copy.size(); a++) {
+                            MessageObject messageObject = copy.get(a);
+                            for (int b = 0; b < search.length; b++) {
+                                String q = search[b];
+                                String name = messageObject.getDocumentName();
+                                if (name == null || name.length() == 0) {
+                                    continue;
+                                }
+                                name = name.toLowerCase();
+                                if (name.contains(q)) {
+                                    resultArray.add(messageObject);
+                                    break;
+                                }
+                                if (currentType == 4) {
+                                    TLRPC.Document document;
+                                    if (messageObject.type == 0) {
+                                        document = messageObject.messageOwner.media.webpage.document;
+                                    } else {
+                                        document = messageObject.messageOwner.media.document;
+                                    }
+                                    boolean ok = false;
+                                    for (int c = 0; c < document.attributes.size(); c++) {
+                                        TLRPC.DocumentAttribute attribute = document.attributes.get(c);
+                                        if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
+                                            if (attribute.performer != null) {
+                                                ok = attribute.performer.toLowerCase().contains(q);
+                                            }
+                                            if (!ok && attribute.title != null) {
+                                                ok = attribute.title.toLowerCase().contains(q);
+                                            }
                                             break;
                                         }
-                                        if (currentType == 4) {
-                                            TLRPC.Document document;
-                                            if (messageObject.type == 0) {
-                                                document = messageObject.messageOwner.media.webpage.document;
-                                            } else {
-                                                document = messageObject.messageOwner.media.document;
-                                            }
-                                            boolean ok = false;
-                                            for (int c = 0; c < document.attributes.size(); c++) {
-                                                TLRPC.DocumentAttribute attribute = document.attributes.get(c);
-                                                if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
-                                                    if (attribute.performer != null) {
-                                                        ok = attribute.performer.toLowerCase().contains(q);
-                                                    }
-                                                    if (!ok && attribute.title != null) {
-                                                        ok = attribute.title.toLowerCase().contains(q);
-                                                    }
-                                                    break;
-                                                }
-                                            }
-                                            if (ok) {
-                                                resultArray.add(messageObject);
-                                                break;
-                                            }
-                                        }
+                                    }
+                                    if (ok) {
+                                        resultArray.add(messageObject);
+                                        break;
                                     }
                                 }
-
-                                updateSearchResults(resultArray);
                             }
-                        });
-                    }
+                        }
+
+                        updateSearchResults(resultArray);
+                    });
                 }
             });
         }
 
         private void updateSearchResults(final ArrayList<MessageObject> documents) {
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    searchesInProgress--;
-                    searchResult = documents;
-                    notifyDataSetChanged();
-                }
+            AndroidUtilities.runOnUIThread(() -> {
+                searchesInProgress--;
+                searchResult = documents;
+                notifyDataSetChanged();
             });
         }
 
@@ -2591,16 +2545,13 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
         for (int a = 0; a < mediaPages.length; a++) {
             final int num = a;
-            ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
-                @Override
-                public void didSetColor() {
-                    if (mediaPages[num].listView != null) {
-                        int count = mediaPages[num].listView.getChildCount();
-                        for (int a = 0; a < count; a++) {
-                            View child = mediaPages[num].listView.getChildAt(a);
-                            if (child instanceof SharedPhotoVideoCell) {
-                                ((SharedPhotoVideoCell) child).updateCheckboxColor();
-                            }
+            ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
+                if (mediaPages[num].listView != null) {
+                    int count = mediaPages[num].listView.getChildCount();
+                    for (int a1 = 0; a1 < count; a1++) {
+                        View child = mediaPages[num].listView.getChildAt(a1);
+                        if (child instanceof SharedPhotoVideoCell) {
+                            ((SharedPhotoVideoCell) child).updateCheckboxColor();
                         }
                     }
                 }

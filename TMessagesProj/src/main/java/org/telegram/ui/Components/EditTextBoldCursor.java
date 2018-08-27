@@ -111,8 +111,10 @@ public class EditTextBoldCursor extends EditText {
         try {
             gradientDrawable = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {0xff54a1db, 0xff54a1db});
             editor = mEditor.get(this);
-            mCursorDrawable = (Drawable[]) mCursorDrawableField.get(editor);
-            mCursorDrawableResField.set(this, R.drawable.field_carret_empty);
+            if (mCursorDrawableField != null) {
+                mCursorDrawable = (Drawable[]) mCursorDrawableField.get(editor);
+                mCursorDrawableResField.set(this, R.drawable.field_carret_empty);
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }

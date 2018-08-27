@@ -9,13 +9,15 @@
 package org.telegram.messenger.secretmedia;
 
 import android.net.Uri;
+import android.support.annotation.Nullable;
+
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DataSpec;
+import com.google.android.exoplayer2.upstream.TransferListener;
 
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.exoplayer2.C;
-import org.telegram.messenger.exoplayer2.upstream.DataSource;
-import org.telegram.messenger.exoplayer2.upstream.DataSpec;
-import org.telegram.messenger.exoplayer2.upstream.TransferListener;
 
 import java.io.EOFException;
 import java.io.File;
@@ -32,10 +34,12 @@ public final class EncryptedFileDataSource implements DataSource {
 
     }
 
-    private final TransferListener<? super EncryptedFileDataSource> listener;
+    private final TransferListener listener;
 
     private RandomAccessFile file;
     private Uri uri;
+    private @Nullable
+    DataSpec dataSpec;
     private long bytesRemaining;
     private boolean opened;
     private byte[] key = new byte[32];
@@ -46,13 +50,14 @@ public final class EncryptedFileDataSource implements DataSource {
         this(null);
     }
 
-    public EncryptedFileDataSource(TransferListener<? super EncryptedFileDataSource> listener) {
+    public EncryptedFileDataSource(TransferListener listener) {
         this.listener = listener;
     }
 
     @Override
     public long open(DataSpec dataSpec) throws EncryptedFileDataSourceException {
         try {
+            this.dataSpec = dataSpec;
             uri = dataSpec.uri;
             File path = new File(dataSpec.uri.getPath());
             String name = path.getName();
@@ -75,7 +80,7 @@ public final class EncryptedFileDataSource implements DataSource {
 
         opened = true;
         if (listener != null) {
-            listener.onTransferStart(this, dataSpec);
+            listener.onTransferStart(this, dataSpec, false);
         }
 
         return bytesRemaining;
@@ -100,7 +105,7 @@ public final class EncryptedFileDataSource implements DataSource {
             if (bytesRead > 0) {
                 bytesRemaining -= bytesRead;
                 if (listener != null) {
-                    listener.onBytesTransferred(this, bytesRead);
+                    listener.onBytesTransferred(this, dataSpec, false, bytesRead);
                 }
             }
 
@@ -128,7 +133,7 @@ public final class EncryptedFileDataSource implements DataSource {
             if (opened) {
                 opened = false;
                 if (listener != null) {
-                    listener.onTransferEnd(this);
+                    listener.onTransferEnd(this, dataSpec, false);
                 }
             }
         }

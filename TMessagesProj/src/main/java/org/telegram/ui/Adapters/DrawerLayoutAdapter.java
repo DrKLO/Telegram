@@ -29,7 +29,6 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 
 public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
@@ -105,12 +104,9 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         switch (viewType) {
             case 0:
                 profileCell = new DrawerProfileCell(mContext);
-                profileCell.setOnArrowClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        DrawerProfileCell drawerProfileCell = (DrawerProfileCell) v;
-                        setAccountsShowed(drawerProfileCell.isAccountsShowed(), true);
-                    }
+                profileCell.setOnArrowClickListener(v -> {
+                    DrawerProfileCell drawerProfileCell = (DrawerProfileCell) v;
+                    setAccountsShowed(drawerProfileCell.isAccountsShowed(), true);
                 });
                 view = profileCell;
                 break;
@@ -200,18 +196,15 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
                 accountNumbers.add(a);
             }
         }
-        Collections.sort(accountNumbers, new Comparator<Integer>() {
-            @Override
-            public int compare(Integer o1, Integer o2) {
-                long l1 = UserConfig.getInstance(o1).loginTime;
-                long l2 = UserConfig.getInstance(o2).loginTime;
-                if (l1 > l2) {
-                    return 1;
-                } else if (l1 < l2) {
-                    return -1;
-                }
-                return 0;
+        Collections.sort(accountNumbers, (o1, o2) -> {
+            long l1 = UserConfig.getInstance(o1).loginTime;
+            long l2 = UserConfig.getInstance(o2).loginTime;
+            if (l1 > l2) {
+                return 1;
+            } else if (l1 < l2) {
+                return -1;
             }
+            return 0;
         });
 
         items.clear();

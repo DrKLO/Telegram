@@ -9,8 +9,8 @@
 package org.telegram.messenger.video;
 
 public class Sample {
-    private long offset = 0;
-    private long size = 0;
+    private long offset;
+    private long size;
 
     public Sample(long offset, long size) {
         this.offset = offset;

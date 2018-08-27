@@ -9,7 +9,6 @@
 package org.telegram.ui;
 
 import android.app.Activity;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Shader;
@@ -37,8 +36,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -126,39 +123,33 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
             FrameLayout shadowTablet = new FrameLayout(this);
             shadowTablet.setBackgroundColor(0x7F000000);
             launchLayout.addView(shadowTablet, LayoutHelper.createRelative(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-            shadowTablet.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    if (!actionBarLayout.fragmentsStack.isEmpty() && event.getAction() == MotionEvent.ACTION_UP) {
-                        float x = event.getX();
-                        float y = event.getY();
-                        int location[] = new int[2];
-                        layersActionBarLayout.getLocationOnScreen(location);
-                        int viewX = location[0];
-                        int viewY = location[1];
+            shadowTablet.setOnTouchListener((v, event) -> {
+                if (!actionBarLayout.fragmentsStack.isEmpty() && event.getAction() == MotionEvent.ACTION_UP) {
+                    float x = event.getX();
+                    float y = event.getY();
+                    int location[] = new int[2];
+                    layersActionBarLayout.getLocationOnScreen(location);
+                    int viewX = location[0];
+                    int viewY = location[1];
 
-                        if (layersActionBarLayout.checkTransitionAnimation() || x > viewX && x < viewX + layersActionBarLayout.getWidth() && y > viewY && y < viewY + layersActionBarLayout.getHeight()) {
-                            return false;
-                        } else {
-                            if (!layersActionBarLayout.fragmentsStack.isEmpty()) {
-                                for (int a = 0; a < layersActionBarLayout.fragmentsStack.size() - 1; a++) {
-                                    layersActionBarLayout.removeFragmentFromStack(layersActionBarLayout.fragmentsStack.get(0));
-                                    a--;
-                                }
-                                layersActionBarLayout.closeLastFragment(true);
+                    if (layersActionBarLayout.checkTransitionAnimation() || x > viewX && x < viewX + layersActionBarLayout.getWidth() && y > viewY && y < viewY + layersActionBarLayout.getHeight()) {
+                        return false;
+                    } else {
+                        if (!layersActionBarLayout.fragmentsStack.isEmpty()) {
+                            for (int a = 0; a < layersActionBarLayout.fragmentsStack.size() - 1; a++) {
+                                layersActionBarLayout.removeFragmentFromStack(layersActionBarLayout.fragmentsStack.get(0));
+                                a--;
                             }
-                            return true;
+                            layersActionBarLayout.closeLastFragment(true);
                         }
+                        return true;
                     }
-                    return false;
                 }
+                return false;
             });
 
-            shadowTablet.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
+            shadowTablet.setOnClickListener(v -> {
 
-                }
             });
 
             layersActionBarLayout = new ActionBarLayout(this);
@@ -219,19 +210,16 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
         passcodeView.onShow();
         SharedConfig.isWaitingForPasscodeEnter = true;
         drawerLayoutContainer.setAllowOpenDrawer(false, false);
-        passcodeView.setDelegate(new PasscodeView.PasscodeViewDelegate() {
-            @Override
-            public void didAcceptedPassword() {
-                SharedConfig.isWaitingForPasscodeEnter = false;
-                if (passcodeSaveIntent != null) {
-                    handleIntent(passcodeSaveIntent, passcodeSaveIntentIsNew, passcodeSaveIntentIsRestore, true, passcodeSaveIntentAccount, passcodeSaveIntentState);
-                    passcodeSaveIntent = null;
-                }
-                drawerLayoutContainer.setAllowOpenDrawer(true, false);
-                actionBarLayout.showLastFragment();
-                if (AndroidUtilities.isTablet()) {
-                    layersActionBarLayout.showLastFragment();
-                }
+        passcodeView.setDelegate(() -> {
+            SharedConfig.isWaitingForPasscodeEnter = false;
+            if (passcodeSaveIntent != null) {
+                handleIntent(passcodeSaveIntent, passcodeSaveIntentIsNew, passcodeSaveIntentIsRestore, true, passcodeSaveIntentAccount, passcodeSaveIntentState);
+                passcodeSaveIntent = null;
+            }
+            drawerLayoutContainer.setAllowOpenDrawer(true, false);
+            actionBarLayout.showLastFragment();
+            if (AndroidUtilities.isTablet()) {
+                layersActionBarLayout.showLastFragment();
             }
         });
     }
@@ -290,23 +278,17 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
 
                     return true;
                 } else if (activatedAccountsCount >= 2) {
-                    AlertDialog alertDialog = AlertsCreator.createAccountSelectDialog(this, new AlertsCreator.AccountSelectDelegate() {
-                        @Override
-                        public void didSelectAccount(int account) {
-                            if (account != intentAccount) {
-                                switchToAccount(account);
-                            }
-                            handleIntent(intent, isNew, restore, fromPassword, account, 1);
+                    AlertDialog alertDialog = AlertsCreator.createAccountSelectDialog(this, account -> {
+                        if (account != intentAccount) {
+                            switchToAccount(account);
                         }
+                        handleIntent(intent, isNew, restore, fromPassword, account, 1);
                     });
                     alertDialog.show();
                     alertDialog.setCanceledOnTouchOutside(false);
-                    alertDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                        @Override
-                        public void onDismiss(DialogInterface dialog) {
-                            setResult(RESULT_CANCELED);
-                            finish();
-                        }
+                    alertDialog.setOnDismissListener(dialog -> {
+                        setResult(RESULT_CANCELED);
+                        finish();
                     });
                     return true;
                 }
@@ -317,7 +299,10 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
             progressDialog.setCancelable(false);
 
             final int bot_id = intent.getIntExtra("bot_id", 0);
-            final String payload = intent.getStringExtra("payload");
+            String _payload=intent.getStringExtra("nonce");
+            if(TextUtils.isEmpty(_payload))
+                _payload=intent.getStringExtra("payload");
+            final String payload = _payload;
             final TLRPC.TL_account_getAuthorizationForm req = new TLRPC.TL_account_getAuthorizationForm();
             req.bot_id = bot_id;
             req.scope = intent.getStringExtra("scope");
@@ -330,82 +315,65 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
             }
 
             progressDialog.show();
-            requestId[0] = ConnectionsManager.getInstance(intentAccount).sendRequest(req, new RequestDelegate() {
-                @Override
-                public void run(final TLObject response, final TLRPC.TL_error error) {
-                    final TLRPC.TL_account_authorizationForm authorizationForm = (TLRPC.TL_account_authorizationForm) response;
-                    if (authorizationForm != null) {
-                        TLRPC.TL_account_getPassword req2 = new TLRPC.TL_account_getPassword();
-                        requestId[0] = ConnectionsManager.getInstance(intentAccount).sendRequest(req2, new RequestDelegate() {
-                            @Override
-                            public void run(final TLObject response, TLRPC.TL_error error) {
-                                AndroidUtilities.runOnUIThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        try {
-                                            progressDialog.dismiss();
-                                        } catch (Exception e) {
-                                            FileLog.e(e);
-                                        }
-                                        if (response != null) {
-                                            TLRPC.account_Password accountPassword = (TLRPC.account_Password) response;
-                                            MessagesController.getInstance(intentAccount).putUsers(authorizationForm.users, false);
-                                            PassportActivity fragment = new PassportActivity(PassportActivity.TYPE_PASSWORD, req.bot_id, req.scope, req.public_key, payload, null, authorizationForm, accountPassword);
-                                            fragment.setNeedActivityResult(true);
-                                            if (AndroidUtilities.isTablet()) {
-                                                layersActionBarLayout.addFragmentToStack(fragment);
-                                            } else {
-                                                actionBarLayout.addFragmentToStack(fragment);
-                                            }
-                                            if (!AndroidUtilities.isTablet()) {
-                                                backgroundTablet.setVisibility(View.GONE);
-                                            }
-                                            actionBarLayout.showLastFragment();
-                                            if (AndroidUtilities.isTablet()) {
-                                                layersActionBarLayout.showLastFragment();
-                                            }
-                                        }
-                                    }
-                                });
+            requestId[0] = ConnectionsManager.getInstance(intentAccount).sendRequest(req, (response, error) -> {
+                final TLRPC.TL_account_authorizationForm authorizationForm = (TLRPC.TL_account_authorizationForm) response;
+                if (authorizationForm != null) {
+                    TLRPC.TL_account_getPassword req2 = new TLRPC.TL_account_getPassword();
+                    requestId[0] = ConnectionsManager.getInstance(intentAccount).sendRequest(req2, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
+                        try {
+                            progressDialog.dismiss();
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        if (response1 != null) {
+                            TLRPC.TL_account_password accountPassword = (TLRPC.TL_account_password) response1;
+                            MessagesController.getInstance(intentAccount).putUsers(authorizationForm.users, false);
+                            PassportActivity fragment = new PassportActivity(PassportActivity.TYPE_PASSWORD, req.bot_id, req.scope, req.public_key, payload, null, authorizationForm, accountPassword);
+                            fragment.setNeedActivityResult(true);
+                            if (AndroidUtilities.isTablet()) {
+                                layersActionBarLayout.addFragmentToStack(fragment);
+                            } else {
+                                actionBarLayout.addFragmentToStack(fragment);
                             }
-                        });
-                    } else {
-                        AndroidUtilities.runOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    progressDialog.dismiss();
-                                    if ("APP_VERSION_OUTDATED".equals(error.text)) {
-                                        AlertDialog dialog = AlertsCreator.showUpdateAppAlert(ExternalActionActivity.this, LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
-                                        if (dialog != null) {
-                                            dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                                @Override
-                                                public void onDismiss(DialogInterface dialog) {
-                                                    setResult(RESULT_FIRST_USER, new Intent().putExtra("error", error.text));
-                                                    finish();
-                                                }
-                                            });
-                                        } else {
-                                            setResult(RESULT_FIRST_USER, new Intent().putExtra("error", error.text));
-                                            finish();
-                                        }
-                                    } else if (("BOT_INVALID".equals(error.text) ||
-                                            "PUBLIC_KEY_REQUIRED".equals(error.text) ||
-                                            "PUBLIC_KEY_INVALID".equals(error.text)
-                                            || "SCOPE_EMPTY".equals(error.text) ||
-                                            "PAYLOAD_EMPTY".equals(error.text))) {
+                            if (!AndroidUtilities.isTablet()) {
+                                backgroundTablet.setVisibility(View.GONE);
+                            }
+                            actionBarLayout.showLastFragment();
+                            if (AndroidUtilities.isTablet()) {
+                                layersActionBarLayout.showLastFragment();
+                            }
+                        }
+                    }));
+                } else {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        try {
+                            progressDialog.dismiss();
+                            if ("APP_VERSION_OUTDATED".equals(error.text)) {
+                                AlertDialog dialog = AlertsCreator.showUpdateAppAlert(ExternalActionActivity.this, LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
+                                if (dialog != null) {
+                                    dialog.setOnDismissListener(dialog1 -> {
                                         setResult(RESULT_FIRST_USER, new Intent().putExtra("error", error.text));
                                         finish();
-                                    } else {
-                                        setResult(RESULT_CANCELED);
-                                        finish();
-                                    }
-                                } catch (Exception e) {
-                                    FileLog.e(e);
+                                    });
+                                } else {
+                                    setResult(RESULT_FIRST_USER, new Intent().putExtra("error", error.text));
+                                    finish();
                                 }
+                            } else if (("BOT_INVALID".equals(error.text) ||
+                                    "PUBLIC_KEY_REQUIRED".equals(error.text) ||
+                                    "PUBLIC_KEY_INVALID".equals(error.text)
+                                    || "SCOPE_EMPTY".equals(error.text) ||
+                                    "PAYLOAD_EMPTY".equals(error.text))) {
+                                setResult(RESULT_FIRST_USER, new Intent().putExtra("error", error.text));
+                                finish();
+                            } else {
+                                setResult(RESULT_CANCELED);
+                                finish();
                             }
-                        });
-                    }
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    });
                 }
             }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
         } else {

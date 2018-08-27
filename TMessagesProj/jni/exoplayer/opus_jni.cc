@@ -28,10 +28,10 @@
                                              __VA_ARGS__))
 
 #define DECODER_FUNC(RETURN_TYPE, NAME, ...) \
-  JNIEXPORT RETURN_TYPE Java_org_telegram_messenger_exoplayer2_ext_opus_OpusDecoder_##NAME(JNIEnv* env, jobject thiz, ##__VA_ARGS__)
+  JNIEXPORT RETURN_TYPE Java_com_google_android_exoplayer2_ext_opus_OpusDecoder_##NAME(JNIEnv* env, jobject thiz, ##__VA_ARGS__)
 
 #define LIBRARY_FUNC(RETURN_TYPE, NAME, ...) \
-  JNIEXPORT RETURN_TYPE Java_org_telegram_messenger_exoplayer2_ext_opus_OpusLibrary_##NAME(JNIEnv* env, jobject thiz, ##__VA_ARGS__)
+  JNIEXPORT RETURN_TYPE Java_com_google_android_exoplayer2_ext_opus_OpusLibrary_##NAME(JNIEnv* env, jobject thiz, ##__VA_ARGS__)
 
 // JNI references for SimpleOutputBuffer class.
 static jmethodID outputBufferInit;
@@ -65,7 +65,7 @@ DECODER_FUNC(jlong, opusInit, jint sampleRate, jint channelCount,
 
   // Populate JNI References.
   const jclass outputBufferClass = env->FindClass(
-      "org/telegram/messenger/exoplayer2/decoder/SimpleOutputBuffer");
+      "com/google/android/exoplayer2/decoder/SimpleOutputBuffer");
   outputBufferInit = env->GetMethodID(outputBufferClass, "init",
       "(JI)Ljava/nio/ByteBuffer;");
 

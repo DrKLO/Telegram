@@ -62,6 +62,7 @@ public class MrzRecognizer {
 				}
 				res.firstName=capitalize(code.driverLicense.firstName);
 				res.lastName=capitalize(code.driverLicense.lastName);
+				res.middleName=capitalize(code.driverLicense.middleName);
 				res.number=code.driverLicense.licenseNumber;
 				if(code.driverLicense.gender!=null){
 					switch(code.driverLicense.gender){
@@ -114,6 +115,7 @@ public class MrzRecognizer {
 							res.expiryDay=Integer.parseInt(data[2].substring(6));
 							res.lastName=capitalize(cyrillicToLatin(data[3]));
 							res.firstName=capitalize(cyrillicToLatin(data[4]));
+							res.middleName=capitalize(cyrillicToLatin(data[5]));
 							res.birthYear=Integer.parseInt(data[6].substring(0, 4));
 							res.birthMonth=Integer.parseInt(data[6].substring(4, 6));
 							res.birthDay=Integer.parseInt(data[6].substring(6));
@@ -283,7 +285,10 @@ public class MrzRecognizer {
 					// Russian internal passports use transliteration for the name and have a number one digit longer than fits into the standard MRZ format
 					if ("RUS".equals(result.issuingCountry) && mrzLines[0].charAt(1) == 'N') {
 						result.type=Result.TYPE_INTERNAL_PASSPORT;
-						result.firstName = cyrillicToLatin(russianPassportTranslit(result.firstName.split(" ")[0]));
+						String[] names=result.firstName.split(" ");
+						result.firstName = cyrillicToLatin(russianPassportTranslit(names[0]));
+						if(names.length>1)
+							result.middleName=cyrillicToLatin(russianPassportTranslit(names[1]));
 						result.lastName = cyrillicToLatin(russianPassportTranslit(result.lastName));
 						if (result.number != null)
 							result.number = result.number.substring(0, 3) + mrzLines[1].charAt(28) + result.number.substring(3);
@@ -293,6 +298,7 @@ public class MrzRecognizer {
 					}
 					result.lastName = capitalize(result.lastName);
 					result.firstName = capitalize(result.firstName);
+					result.middleName = capitalize(result.middleName);
 				}
 			} else if (type == 'I' || type == 'A' || type == 'C') { // id
 				result.type = Result.TYPE_ID;
@@ -362,7 +368,11 @@ public class MrzRecognizer {
 				}
 				result.firstName = capitalize(result.firstName.replace('0', 'O').replace('8', 'B'));
 				result.lastName = capitalize(result.lastName.replace('0', 'O').replace('8', 'B'));
+			} else {
+				return null;
 			}
+			if(TextUtils.isEmpty(result.firstName) && TextUtils.isEmpty(result.lastName))
+				return null;
 			result.issuingCountry = countries.get(result.issuingCountry);
 			result.nationality = countries.get(result.nationality);
 			return result;
@@ -384,6 +394,8 @@ public class MrzRecognizer {
 	}
 
 	private static String capitalize(String s) {
+		if(s==null)
+			return null;
 		char[] chars = s.toCharArray();
 		boolean prevIsSpace = true;
 		for (int i = 0; i < chars.length; i++) {
@@ -472,6 +484,8 @@ public class MrzRecognizer {
 			return 0;
 		if (c == 'I')
 			return 1;
+		if (c == 'B')
+			return 8;
 		return c - '0';
 	}
 
@@ -749,6 +763,7 @@ public class MrzRecognizer {
 		public int type;
 		public String firstName;
 		public String lastName;
+		public String middleName;
 		public String number;
 		public int expiryYear, expiryMonth, expiryDay;
 		public int birthYear, birthMonth, birthDay;

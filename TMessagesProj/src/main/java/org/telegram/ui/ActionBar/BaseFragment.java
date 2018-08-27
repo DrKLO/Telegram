@@ -369,15 +369,12 @@ public class BaseFragment {
         try {
             visibleDialog = dialog;
             visibleDialog.setCanceledOnTouchOutside(true);
-            visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                @Override
-                public void onDismiss(DialogInterface dialog) {
-                    if (onDismissListener != null) {
-                        onDismissListener.onDismiss(dialog);
-                    }
-                    onDialogDismiss(visibleDialog);
-                    visibleDialog = null;
+            visibleDialog.setOnDismissListener(dialog1 -> {
+                if (onDismissListener != null) {
+                    onDismissListener.onDismiss(dialog1);
                 }
+                onDialogDismiss(visibleDialog);
+                visibleDialog = null;
             });
             visibleDialog.show();
             return visibleDialog;

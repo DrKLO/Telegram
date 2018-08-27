@@ -14,7 +14,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
@@ -81,44 +80,36 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             timeItem.setScaleType(ImageView.ScaleType.CENTER);
             timeItem.setImageDrawable(timerDrawable = new TimerDrawable(context));
             addView(timeItem);
-            timeItem.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    parentFragment.showDialog(AlertsCreator.createTTLAlert(getContext(), parentFragment.getCurrentEncryptedChat()).create());
-                }
-            });
+            timeItem.setOnClickListener(v -> parentFragment.showDialog(AlertsCreator.createTTLAlert(getContext(), parentFragment.getCurrentEncryptedChat()).create()));
         }
 
         if (parentFragment != null) {
-            setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    TLRPC.User user = parentFragment.getCurrentUser();
-                    TLRPC.Chat chat = parentFragment.getCurrentChat();
-                    if (user != null) {
-                        Bundle args = new Bundle();
-                        if (UserObject.isUserSelf(user)) {
-                            args.putLong("dialog_id", parentFragment.getDialogId());
-                            MediaActivity fragment = new MediaActivity(args, new int[]{-1, -1, -1, -1, -1});
-                            fragment.setChatInfo(parentFragment.getCurrentChatInfo());
-                            parentFragment.presentFragment(fragment);
-                        } else {
-                            args.putInt("user_id", user.id);
-                            if (timeItem != null) {
-                                args.putLong("dialog_id", parentFragment.getDialogId());
-                            }
-                            ProfileActivity fragment = new ProfileActivity(args);
-                            fragment.setPlayProfileAnimation(true);
-                            parentFragment.presentFragment(fragment);
-                        }
-                    } else if (chat != null) {
-                        Bundle args = new Bundle();
-                        args.putInt("chat_id", chat.id);
-                        ProfileActivity fragment = new ProfileActivity(args);
+            setOnClickListener(v -> {
+                TLRPC.User user = parentFragment.getCurrentUser();
+                TLRPC.Chat chat = parentFragment.getCurrentChat();
+                if (user != null) {
+                    Bundle args = new Bundle();
+                    if (UserObject.isUserSelf(user)) {
+                        args.putLong("dialog_id", parentFragment.getDialogId());
+                        MediaActivity fragment = new MediaActivity(args, new int[]{-1, -1, -1, -1, -1});
                         fragment.setChatInfo(parentFragment.getCurrentChatInfo());
+                        parentFragment.presentFragment(fragment);
+                    } else {
+                        args.putInt("user_id", user.id);
+                        if (timeItem != null) {
+                            args.putLong("dialog_id", parentFragment.getDialogId());
+                        }
+                        ProfileActivity fragment = new ProfileActivity(args);
                         fragment.setPlayProfileAnimation(true);
                         parentFragment.presentFragment(fragment);
                     }
+                } else if (chat != null) {
+                    Bundle args = new Bundle();
+                    args.putInt("chat_id", chat.id);
+                    ProfileActivity fragment = new ProfileActivity(args);
+                    fragment.setChatInfo(parentFragment.getCurrentChatInfo());
+                    fragment.setPlayProfileAnimation(true);
+                    parentFragment.presentFragment(fragment);
                 }
             });
 

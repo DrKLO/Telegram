@@ -15,7 +15,6 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
-import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -108,11 +107,8 @@ public class ArchivedStickerSetCell extends FrameLayout {
 
     public void setOnCheckClick(CompoundButton.OnCheckedChangeListener listener) {
         checkBox.setOnCheckedChangeListener(onCheckedChangeListener = listener);
-        checkBox.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        checkBox.setOnClickListener(v -> {
 
-            }
         });
     }
 

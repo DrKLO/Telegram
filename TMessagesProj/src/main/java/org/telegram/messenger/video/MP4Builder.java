@@ -38,8 +38,6 @@ import com.coremedia.iso.boxes.TrackHeaderBox;
 import com.googlecode.mp4parser.DataSource;
 import com.googlecode.mp4parser.util.Matrix;
 
-import org.telegram.messenger.FileLog;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -216,7 +214,7 @@ public class MP4Builder {
         }
 
         @Override
-        public void parse(DataSource dataSource, ByteBuffer header, long contentSize, BoxParser boxParser) throws IOException {
+        public void parse(DataSource dataSource, ByteBuffer header, long contentSize, BoxParser boxParser) {
 
         }
 
@@ -412,7 +410,7 @@ public class MP4Builder {
 
     protected void createStsc(Track track, SampleTableBox stbl) {
         SampleToChunkBox stsc = new SampleToChunkBox();
-        stsc.setEntries(new LinkedList<SampleToChunkBox.Entry>());
+        stsc.setEntries(new LinkedList<>());
 
         long lastOffset;
         int lastChunkNumber = 1;

@@ -11,16 +11,17 @@ package org.telegram.messenger.secretmedia;
 import android.content.Context;
 import android.net.Uri;
 
+import com.google.android.exoplayer2.upstream.AssetDataSource;
+import com.google.android.exoplayer2.upstream.ContentDataSource;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DataSpec;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
+import com.google.android.exoplayer2.upstream.FileDataSource;
+import com.google.android.exoplayer2.upstream.TransferListener;
+import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.Util;
+
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.exoplayer2.upstream.AssetDataSource;
-import org.telegram.messenger.exoplayer2.upstream.ContentDataSource;
-import org.telegram.messenger.exoplayer2.upstream.DataSource;
-import org.telegram.messenger.exoplayer2.upstream.DataSpec;
-import org.telegram.messenger.exoplayer2.upstream.DefaultHttpDataSource;
-import org.telegram.messenger.exoplayer2.upstream.FileDataSource;
-import org.telegram.messenger.exoplayer2.upstream.TransferListener;
-import org.telegram.messenger.exoplayer2.util.Assertions;
-import org.telegram.messenger.exoplayer2.util.Util;
 
 import java.io.IOException;
 
@@ -36,7 +37,7 @@ public final class ExtendedDefaultDataSource implements DataSource {
     private final DataSource contentDataSource;
 
     private DataSource dataSource;
-    private TransferListener<? super DataSource> listener;
+    private TransferListener listener;
 
     /**
      * Constructs a new instance, optionally configured to follow cross-protocol redirects.
@@ -47,7 +48,7 @@ public final class ExtendedDefaultDataSource implements DataSource {
      * @param allowCrossProtocolRedirects Whether cross-protocol redirects (i.e. redirects from HTTP
      *                                    to HTTPS and vice versa) are enabled when fetching remote data.
      */
-    public ExtendedDefaultDataSource(Context context, TransferListener<? super DataSource> listener,
+    public ExtendedDefaultDataSource(Context context, TransferListener listener,
                                      String userAgent, boolean allowCrossProtocolRedirects) {
         this(context, listener, userAgent, DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
                 DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS, allowCrossProtocolRedirects);
@@ -66,7 +67,7 @@ public final class ExtendedDefaultDataSource implements DataSource {
      * @param allowCrossProtocolRedirects Whether cross-protocol redirects (i.e. redirects from HTTP
      *                                    to HTTPS and vice versa) are enabled when fetching remote data.
      */
-    public ExtendedDefaultDataSource(Context context, TransferListener<? super DataSource> listener,
+    public ExtendedDefaultDataSource(Context context, TransferListener listener,
                                      String userAgent, int connectTimeoutMillis, int readTimeoutMillis,
                                      boolean allowCrossProtocolRedirects) {
         this(context, listener,
@@ -83,7 +84,7 @@ public final class ExtendedDefaultDataSource implements DataSource {
      * @param baseDataSource A {@link DataSource} to use for URI schemes other than file, asset and
      *                       content. This {@link DataSource} should normally support at least http(s).
      */
-    public ExtendedDefaultDataSource(Context context, TransferListener<? super DataSource> listener,
+    public ExtendedDefaultDataSource(Context context, TransferListener listener,
                                      DataSource baseDataSource) {
         this.baseDataSource = Assertions.checkNotNull(baseDataSource);
         this.fileDataSource = new FileDataSource(listener);

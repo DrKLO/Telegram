@@ -78,14 +78,11 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private View parentView = null;
     private View secondParentView = null;
 
-    protected final Runnable mInvalidateTask = new Runnable() {
-        @Override
-        public void run() {
-            if (secondParentView != null) {
-                secondParentView.invalidate();
-            } else if (parentView != null) {
-                parentView.invalidate();
-            }
+    protected final Runnable mInvalidateTask = () -> {
+        if (secondParentView != null) {
+            secondParentView.invalidate();
+        } else if (parentView != null) {
+            parentView.invalidate();
         }
     };
 
@@ -159,14 +156,11 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         }
     };
 
-    private final Runnable mStartTask = new Runnable() {
-        @Override
-        public void run() {
-            if (secondParentView != null) {
-                secondParentView.invalidate();
-            } else if (parentView != null) {
-                parentView.invalidate();
-            }
+    private final Runnable mStartTask = () -> {
+        if (secondParentView != null) {
+            secondParentView.invalidate();
+        } else if (parentView != null) {
+            parentView.invalidate();
         }
     };
 

@@ -97,12 +97,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     private Drawable shadowDrawable;
     private Rect backgroundPaddings;
 
-    private Runnable dismissRunnable = new Runnable() {
-        @Override
-        public void run() {
-            dismiss();
-        }
-    };
+    private Runnable dismissRunnable = this::dismiss;
 
     public static class AlertDialogCell extends FrameLayout {
 
@@ -269,28 +264,25 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                 inLayout = false;
 
                 if (lastScreenWidth != AndroidUtilities.displaySize.x) {
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            lastScreenWidth = AndroidUtilities.displaySize.x;
-                            final int calculatedWidth = AndroidUtilities.displaySize.x - AndroidUtilities.dp(56);
-                            int maxWidth;
-                            if (AndroidUtilities.isTablet()) {
-                                if (AndroidUtilities.isSmallTablet()) {
-                                    maxWidth = AndroidUtilities.dp(446);
-                                } else {
-                                    maxWidth = AndroidUtilities.dp(496);
-                                }
+                    AndroidUtilities.runOnUIThread(() -> {
+                        lastScreenWidth = AndroidUtilities.displaySize.x;
+                        final int calculatedWidth = AndroidUtilities.displaySize.x - AndroidUtilities.dp(56);
+                        int maxWidth;
+                        if (AndroidUtilities.isTablet()) {
+                            if (AndroidUtilities.isSmallTablet()) {
+                                maxWidth = AndroidUtilities.dp(446);
                             } else {
-                                maxWidth = AndroidUtilities.dp(356);
+                                maxWidth = AndroidUtilities.dp(496);
                             }
-
-                            Window window = getWindow();
-                            WindowManager.LayoutParams params = new WindowManager.LayoutParams();
-                            params.copyFrom(window.getAttributes());
-                            params.width = Math.min(maxWidth, calculatedWidth) + backgroundPaddings.left + backgroundPaddings.right;
-                            window.setAttributes(params);
+                        } else {
+                            maxWidth = AndroidUtilities.dp(356);
                         }
+
+                        Window window = getWindow();
+                        WindowManager.LayoutParams params = new WindowManager.LayoutParams();
+                        params.copyFrom(window.getAttributes());
+                        params.width = Math.min(maxWidth, calculatedWidth) + backgroundPaddings.left + backgroundPaddings.right;
+                        window.setAttributes(params);
                     });
                 }
             }
@@ -300,13 +292,10 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                 super.onLayout(changed, l, t, r, b);
                 if (contentScrollView != null) {
                     if (onScrollChangedListener == null) {
-                        onScrollChangedListener = new ViewTreeObserver.OnScrollChangedListener() {
-                            @Override
-                            public void onScrollChanged() {
-                                runShadowAnimation(0, titleTextView != null && contentScrollView.getScrollY() > scrollContainer.getTop());
-                                runShadowAnimation(1, buttonsLayout != null && contentScrollView.getScrollY() + contentScrollView.getHeight() < scrollContainer.getBottom());
-                                contentScrollView.invalidate();
-                            }
+                        onScrollChangedListener = () -> {
+                            runShadowAnimation(0, titleTextView != null && contentScrollView.getScrollY() > scrollContainer.getTop());
+                            runShadowAnimation(1, buttonsLayout != null && contentScrollView.getScrollY() + contentScrollView.getHeight() < scrollContainer.getBottom());
+                            contentScrollView.invalidate();
                         };
                         contentScrollView.getViewTreeObserver().addOnScrollChangedListener(onScrollChangedListener);
                     }
@@ -465,14 +454,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                 cell.setTextAndIcon(items[a], itemIcons != null ? itemIcons[a] : 0);
                 scrollContainer.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
                 cell.setTag(a);
-                cell.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (onClickListener != null) {
-                            onClickListener.onClick(AlertDialog.this, (Integer) v.getTag());
-                        }
-                        dismiss();
+                cell.setOnClickListener(v -> {
+                    if (onClickListener != null) {
+                        onClickListener.onClick(AlertDialog.this, (Integer) v.getTag());
                     }
+                    dismiss();
                 });
             }
         }
@@ -537,6 +523,32 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                         }
                     }
                 }
+
+                @Override
+                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+                    int totalWidth = 0;
+                    int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight();
+                    int count = getChildCount();
+                    for (int a = 0; a < count; a++) {
+                        View child = getChildAt(a);
+                        if (child instanceof TextView && child.getTag() != null) {
+                            totalWidth += child.getMeasuredWidth();
+                        }
+                    }
+                    if (totalWidth > availableWidth) {
+                        View negative = findViewWithTag(BUTTON_NEGATIVE);
+                        View neuntral = findViewWithTag(BUTTON_NEUTRAL);
+                        if (negative != null && neuntral != null) {
+                            if (negative.getMeasuredWidth() < neuntral.getMeasuredWidth()) {
+                                neuntral.measure(MeasureSpec.makeMeasureSpec(neuntral.getMeasuredWidth() - (totalWidth - availableWidth), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(neuntral.getMeasuredHeight(), MeasureSpec.EXACTLY));
+                            } else {
+                                negative.measure(MeasureSpec.makeMeasureSpec(negative.getMeasuredWidth() - (totalWidth - availableWidth), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(negative.getMeasuredHeight(), MeasureSpec.EXACTLY));
+                            }
+                        }
+                    }
+                }
             };
             buttonsLayout.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
             containerView.addView(buttonsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 52));
@@ -561,15 +573,12 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                 textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable());
                 textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
                 buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.TOP | Gravity.RIGHT));
-                textView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (positiveButtonListener != null) {
-                            positiveButtonListener.onClick(AlertDialog.this, Dialog.BUTTON_POSITIVE);
-                        }
-                        if (dismissDialogByButtons) {
-                            dismiss();
-                        }
+                textView.setOnClickListener(v -> {
+                    if (positiveButtonListener != null) {
+                        positiveButtonListener.onClick(AlertDialog.this, Dialog.BUTTON_POSITIVE);
+                    }
+                    if (dismissDialogByButtons) {
+                        dismiss();
                     }
                 });
             }
@@ -588,21 +597,18 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                 textView.setTextColor(getThemeColor(Theme.key_dialogButton));
                 textView.setGravity(Gravity.CENTER);
                 textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-//                textView.setLines(1);
-//                textView.setSingleLine(true);
+                textView.setEllipsize(TextUtils.TruncateAt.END);
+                textView.setSingleLine(true);
                 textView.setText(negativeButtonText.toString().toUpperCase());
                 textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable());
                 textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
                 buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.TOP | Gravity.RIGHT));
-                textView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (negativeButtonListener != null) {
-                            negativeButtonListener.onClick(AlertDialog.this, Dialog.BUTTON_NEGATIVE);
-                        }
-                        if (dismissDialogByButtons) {
-                            cancel();
-                        }
+                textView.setOnClickListener(v -> {
+                    if (negativeButtonListener != null) {
+                        negativeButtonListener.onClick(AlertDialog.this, Dialog.BUTTON_NEGATIVE);
+                    }
+                    if (dismissDialogByButtons) {
+                        cancel();
                     }
                 });
             }
@@ -621,21 +627,18 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                 textView.setTextColor(getThemeColor(Theme.key_dialogButton));
                 textView.setGravity(Gravity.CENTER);
                 textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-//                textView.setLines(1);
-//                textView.setSingleLine(true);
+                textView.setEllipsize(TextUtils.TruncateAt.END);
+                textView.setSingleLine(true);
                 textView.setText(neutralButtonText.toString().toUpperCase());
                 textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable());
                 textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
                 buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.TOP | Gravity.LEFT));
-                textView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (neutralButtonListener != null) {
-                            neutralButtonListener.onClick(AlertDialog.this, Dialog.BUTTON_NEGATIVE);
-                        }
-                        if (dismissDialogByButtons) {
-                            dismiss();
-                        }
+                textView.setOnClickListener(v -> {
+                    if (neutralButtonListener != null) {
+                        neutralButtonListener.onClick(AlertDialog.this, Dialog.BUTTON_NEGATIVE);
+                    }
+                    if (dismissDialogByButtons) {
+                        dismiss();
                     }
                 });
             }

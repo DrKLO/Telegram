@@ -21,8 +21,6 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.FileLoader;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.StickerCell;
 import org.telegram.ui.Components.RecyclerListView;
@@ -264,33 +262,25 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
         TLRPC.TL_messages_getStickers req = new TLRPC.TL_messages_getStickers();
         req.emoticon = emoji;
         req.hash = 0;
-        lastReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(final TLObject response, TLRPC.TL_error error) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        lastReqId = 0;
-                        if (!emoji.equals(lastSticker) || !(response instanceof TLRPC.TL_messages_stickers)) {
-                            return;
-                        }
-                        delayLocalResults = false;
-                        TLRPC.TL_messages_stickers res = (TLRPC.TL_messages_stickers) response;
-                        int oldCount = stickers != null ? stickers.size() : 0;
-                        addStickersToResult(res.stickers);
-                        int newCount = stickers != null ? stickers.size() : 0;
-                        if (!visible && stickers != null && !stickers.isEmpty()) {
-                            checkStickerFilesExistAndDownload();
-                            delegate.needChangePanelVisibility(stickers != null && !stickers.isEmpty() && stickersToLoad.isEmpty());
-                            visible = true;
-                        }
-                        if (oldCount != newCount) {
-                            notifyDataSetChanged();
-                        }
-                    }
-                });
+        lastReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            lastReqId = 0;
+            if (!emoji.equals(lastSticker) || !(response instanceof TLRPC.TL_messages_stickers)) {
+                return;
             }
-        });
+            delayLocalResults = false;
+            TLRPC.TL_messages_stickers res = (TLRPC.TL_messages_stickers) response;
+            int oldCount = stickers != null ? stickers.size() : 0;
+            addStickersToResult(res.stickers);
+            int newCount = stickers != null ? stickers.size() : 0;
+            if (!visible && stickers != null && !stickers.isEmpty()) {
+                checkStickerFilesExistAndDownload();
+                delegate.needChangePanelVisibility(stickers != null && !stickers.isEmpty() && stickersToLoad.isEmpty());
+                visible = true;
+            }
+            if (oldCount != newCount) {
+                notifyDataSetChanged();
+            }
+        }));
     }
 
     public void clearStickers() {

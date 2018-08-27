@@ -135,12 +135,7 @@ public class ApplicationLoader extends Application {
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
 
-        AndroidUtilities.runOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                startPushService();
-            }
-        });
+        AndroidUtilities.runOnUIThread(ApplicationLoader::startPushService);
     }
 
     public static void startPushService() {
@@ -148,8 +143,8 @@ public class ApplicationLoader extends Application {
         if (preferences.getBoolean("pushService", true)) {
             try {
                 applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
-            } catch (Throwable e) {
-                FileLog.e(e);
+            } catch (Throwable ignore) {
+
             }
         } else {
             stopPushService();
@@ -176,37 +171,31 @@ public class ApplicationLoader extends Application {
     }
 
     private void initPlayServices() {
-        AndroidUtilities.runOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                if (checkPlayServices()) {
-                    final String currentPushString = SharedConfig.pushString;
-                    if (!TextUtils.isEmpty(currentPushString)) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("GCM regId = " + currentPushString);
-                        }
-                    } else {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("GCM Registration not found.");
-                        }
+        AndroidUtilities.runOnUIThread(() -> {
+            if (checkPlayServices()) {
+                final String currentPushString = SharedConfig.pushString;
+                if (!TextUtils.isEmpty(currentPushString)) {
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("GCM regId = " + currentPushString);
                     }
-                    Utilities.globalQueue.postRunnable(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                String token = FirebaseInstanceId.getInstance().getToken();
-                                if (!TextUtils.isEmpty(token)) {
-                                    GcmInstanceIDListenerService.sendRegistrationToServer(token);
-                                }
-                            } catch (Throwable e) {
-                                FileLog.e(e);
-                            }
-                        }
-                    });
                 } else {
                     if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("No valid Google Play Services APK found.");
+                        FileLog.d("GCM Registration not found.");
                     }
+                }
+                Utilities.globalQueue.postRunnable(() -> {
+                    try {
+                        String token = FirebaseInstanceId.getInstance().getToken();
+                        if (!TextUtils.isEmpty(token)) {
+                            GcmInstanceIDListenerService.sendRegistrationToServer(token);
+                        }
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
+                });
+            } else {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("No valid Google Play Services APK found.");
                 }
             }
         }, 1000);

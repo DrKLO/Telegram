@@ -31,6 +31,8 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.RemoteViews;
 
+import com.google.android.exoplayer2.C;
+
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.ui.LaunchActivity;
 
@@ -48,11 +50,12 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
     private AudioManager audioManager;
 
     private static boolean supportBigNotifications = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
-    private static boolean supportLockScreenControls = Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP;
+    private static boolean supportLockScreenControls = Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP || !TextUtils.isEmpty(AndroidUtilities.getSystemProperty("ro.miui.ui.version.code"));
 
     private MediaSession mediaSession;
     private PlaybackState.Builder playbackState;
     private Bitmap albumArtPlaceholder;
+    private int notificationMessageID;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -63,7 +66,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
     public void onCreate() {
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingDidSeek);
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         }
 
@@ -162,7 +165,6 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
         Notification notification;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-
             Bitmap albumArt = audioInfo != null ? audioInfo.getSmallCover() : null;
             Bitmap fullAlbumArt = audioInfo != null ? audioInfo.getCover() : null;
             boolean isPlaying = !MediaController.getInstance().isMessagePaused();
@@ -188,6 +190,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                             .setMediaSession(mediaSession.getSessionToken())
                             .setShowActionsInCompactView(0, 1, 2));
             if (Build.VERSION.SDK_INT >= 26) {
+                NotificationsController.checkOtherNotificationsChannel();
                 bldr.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
             }
             if (albumArt != null) {
@@ -320,17 +323,59 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
         }
 
         if (remoteControlClient != null) {
-            RemoteControlClient.MetadataEditor metadataEditor = remoteControlClient.editMetadata(true);
-            metadataEditor.putString(MediaMetadataRetriever.METADATA_KEY_ARTIST, authorName);
-            metadataEditor.putString(MediaMetadataRetriever.METADATA_KEY_TITLE, songName);
-            if (audioInfo != null && audioInfo.getCover() != null) {
-                try {
-                    metadataEditor.putBitmap(RemoteControlClient.MetadataEditor.BITMAP_KEY_ARTWORK, audioInfo.getCover());
-                } catch (Throwable e) {
-                    FileLog.e(e);
+            int currentID=MediaController.getInstance().getPlayingMessageObject().getId();
+            if(notificationMessageID!=currentID){
+                notificationMessageID=currentID;
+                RemoteControlClient.MetadataEditor metadataEditor=remoteControlClient.editMetadata(true);
+                metadataEditor.putString(MediaMetadataRetriever.METADATA_KEY_ARTIST, authorName);
+                metadataEditor.putString(MediaMetadataRetriever.METADATA_KEY_TITLE, songName);
+                if(audioInfo!=null && !TextUtils.isEmpty(audioInfo.getAlbum()))
+                    metadataEditor.putString(MediaMetadataRetriever.METADATA_KEY_ALBUM, audioInfo.getAlbum());
+                metadataEditor.putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, MediaController.getInstance().getPlayingMessageObject().audioPlayerDuration*1000L);
+                if(audioInfo!=null && audioInfo.getCover()!=null){
+                    try{
+                        metadataEditor.putBitmap(RemoteControlClient.MetadataEditor.BITMAP_KEY_ARTWORK, audioInfo.getCover());
+                    }catch(Throwable e){
+                        FileLog.e(e);
+                    }
+                }
+                metadataEditor.apply();
+                AndroidUtilities.runOnUIThread(new Runnable(){
+                    @Override
+                    public void run(){
+                    	if(remoteControlClient==null)
+                    	    return;
+                    	if(MediaController.getInstance().getPlayingMessageObject().audioPlayerDuration==C.TIME_UNSET){
+                    	    AndroidUtilities.runOnUIThread(this, 500);
+                    	    return;
+                        }
+                        RemoteControlClient.MetadataEditor metadataEditor=remoteControlClient.editMetadata(false);
+                        metadataEditor.putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, MediaController.getInstance().getPlayingMessageObject().audioPlayerDuration*1000L);
+                        metadataEditor.apply();
+                        if(Build.VERSION.SDK_INT>=18){
+                            remoteControlClient.setPlaybackState(MediaController.getInstance().isMessagePaused() ? RemoteControlClient.PLAYSTATE_PAUSED : RemoteControlClient.PLAYSTATE_PLAYING,
+                                    Math.max(MediaController.getInstance().getPlayingMessageObject().audioProgressSec*1000L, 100),
+                                    MediaController.getInstance().isMessagePaused() ? 0f : 1f);
+                        }else{
+                            remoteControlClient.setPlaybackState(MediaController.getInstance().isMessagePaused() ? RemoteControlClient.PLAYSTATE_PAUSED : RemoteControlClient.PLAYSTATE_PLAYING);
+                        }
+                    }
+                }, 1000);
+            }
+            if(MediaController.getInstance().isDownloadingCurrentMessage()){
+                remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_BUFFERING);
+            }else{
+                RemoteControlClient.MetadataEditor metadataEditor=remoteControlClient.editMetadata(false);
+                metadataEditor.putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, MediaController.getInstance().getPlayingMessageObject().audioPlayerDuration*1000L);
+                metadataEditor.apply();
+                if(Build.VERSION.SDK_INT>=18){
+                    remoteControlClient.setPlaybackState(MediaController.getInstance().isMessagePaused() ? RemoteControlClient.PLAYSTATE_PAUSED : RemoteControlClient.PLAYSTATE_PLAYING,
+                            Math.max(MediaController.getInstance().getPlayingMessageObject().audioProgressSec*1000L, 100),
+                            MediaController.getInstance().isMessagePaused() ? 0f : 1f);
+                }else{
+                    remoteControlClient.setPlaybackState(MediaController.getInstance().isMessagePaused() ? RemoteControlClient.PLAYSTATE_PAUSED : RemoteControlClient.PLAYSTATE_PLAYING);
                 }
             }
-            metadataEditor.apply();
         }
     }
 
@@ -361,7 +406,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             mediaSession.release();
         }
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+            NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingDidSeek);
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         }
     }
@@ -374,6 +419,14 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                 createNotification(messageObject);
             } else {
                 stopSelf();
+            }
+        }else if(id==NotificationCenter.messagePlayingDidSeek){
+            MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+            if(remoteControlClient!=null && Build.VERSION.SDK_INT>=18){
+                long progress=Math.round(messageObject.audioPlayerDuration*(float)args[1])*1000L;
+                remoteControlClient.setPlaybackState(MediaController.getInstance().isMessagePaused() ? RemoteControlClient.PLAYSTATE_PAUSED : RemoteControlClient.PLAYSTATE_PLAYING,
+                        progress,
+                        MediaController.getInstance().isMessagePaused() ? 0f : 1f);
             }
         }
     }

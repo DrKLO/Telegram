@@ -16,7 +16,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.RecyclerListView;
@@ -77,12 +76,9 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            lastSearchLocation = null;
-                            searchPlacesWithQuery(query, coordinate, true);
-                        }
+                    AndroidUtilities.runOnUIThread(() -> {
+                        lastSearchLocation = null;
+                        searchPlacesWithQuery(query, coordinate, true);
                     });
                 }
             }, 200, 500);
@@ -96,23 +92,17 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
         searchingUser = true;
         TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
         req.username = MessagesController.getInstance(currentAccount).venueSearchBot;
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(final TLObject response, TLRPC.TL_error error) {
-                if (response != null) {
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            TLRPC.TL_contacts_resolvedPeer res = (TLRPC.TL_contacts_resolvedPeer) response;
-                            MessagesController.getInstance(currentAccount).putUsers(res.users, false);
-                            MessagesController.getInstance(currentAccount).putChats(res.chats, false);
-                            MessagesStorage.getInstance(currentAccount).putUsersAndChats(res.users, res.chats, true, true);
-                            Location coord = lastSearchLocation;
-                            lastSearchLocation = null;
-                            searchPlacesWithQuery(lastSearchQuery, coord, false);
-                        }
-                    });
-                }
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+            if (response != null) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    TLRPC.TL_contacts_resolvedPeer res = (TLRPC.TL_contacts_resolvedPeer) response;
+                    MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                    MessagesController.getInstance(currentAccount).putChats(res.chats, false);
+                    MessagesStorage.getInstance(currentAccount).putUsersAndChats(res.users, res.chats, true, true);
+                    Location coord = lastSearchLocation;
+                    lastSearchLocation = null;
+                    searchPlacesWithQuery(lastSearchQuery, coord, false);
+                });
             }
         });
     }
@@ -159,45 +149,37 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
             req.peer = new TLRPC.TL_inputPeerEmpty();
         }
 
-        currentRequestNum = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(final TLObject response, final TLRPC.TL_error error) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        currentRequestNum = 0;
-                        searching = false;
-                        places.clear();
-                        iconUrls.clear();
+        currentRequestNum = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            currentRequestNum = 0;
+            searching = false;
+            places.clear();
+            iconUrls.clear();
 
-                        if (error != null) {
-                            if (delegate != null) {
-                                delegate.didLoadedSearchResult(places);
-                            }
-                        } else {
-                            TLRPC.messages_BotResults res = (TLRPC.messages_BotResults) response;
-                            for (int a = 0, size = res.results.size(); a < size; a++) {
-                                TLRPC.BotInlineResult result = res.results.get(a);
-                                if (!"venue".equals(result.type) || !(result.send_message instanceof TLRPC.TL_botInlineMessageMediaVenue)) {
-                                    continue;
-                                }
-                                TLRPC.TL_botInlineMessageMediaVenue mediaVenue = (TLRPC.TL_botInlineMessageMediaVenue) result.send_message;
-                                iconUrls.add("https://ss3.4sqi.net/img/categories_v2/" + mediaVenue.venue_type + "_64.png");
-                                TLRPC.TL_messageMediaVenue venue = new TLRPC.TL_messageMediaVenue();
-                                venue.geo = mediaVenue.geo;
-                                venue.address = mediaVenue.address;
-                                venue.title = mediaVenue.title;
-                                venue.venue_type = mediaVenue.venue_type;
-                                venue.venue_id = mediaVenue.venue_id;
-                                venue.provider = mediaVenue.provider;
-                                places.add(venue);
-                            }
-                        }
-                        notifyDataSetChanged();
+            if (error != null) {
+                if (delegate != null) {
+                    delegate.didLoadedSearchResult(places);
+                }
+            } else {
+                TLRPC.messages_BotResults res = (TLRPC.messages_BotResults) response;
+                for (int a = 0, size = res.results.size(); a < size; a++) {
+                    TLRPC.BotInlineResult result = res.results.get(a);
+                    if (!"venue".equals(result.type) || !(result.send_message instanceof TLRPC.TL_botInlineMessageMediaVenue)) {
+                        continue;
                     }
-                });
+                    TLRPC.TL_botInlineMessageMediaVenue mediaVenue = (TLRPC.TL_botInlineMessageMediaVenue) result.send_message;
+                    iconUrls.add("https://ss3.4sqi.net/img/categories_v2/" + mediaVenue.venue_type + "_64.png");
+                    TLRPC.TL_messageMediaVenue venue = new TLRPC.TL_messageMediaVenue();
+                    venue.geo = mediaVenue.geo;
+                    venue.address = mediaVenue.address;
+                    venue.title = mediaVenue.title;
+                    venue.venue_type = mediaVenue.venue_type;
+                    venue.venue_id = mediaVenue.venue_id;
+                    venue.provider = mediaVenue.provider;
+                    places.add(venue);
+                }
             }
-        });
+            notifyDataSetChanged();
+        }));
         notifyDataSetChanged();
     }
 }

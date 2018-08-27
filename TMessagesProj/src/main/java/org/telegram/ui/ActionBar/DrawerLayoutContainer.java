@@ -78,17 +78,13 @@ public class DrawerLayoutContainer extends FrameLayout {
 
         if (Build.VERSION.SDK_INT >= 21) {
             setFitsSystemWindows(true);
-            setOnApplyWindowInsetsListener(new OnApplyWindowInsetsListener() {
-                @SuppressLint("NewApi")
-                @Override
-                public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
-                    final DrawerLayoutContainer drawerLayout = (DrawerLayoutContainer) v;
-                    AndroidUtilities.statusBarHeight = insets.getSystemWindowInsetTop();
-                    lastInsets = insets;
-                    drawerLayout.setWillNotDraw(insets.getSystemWindowInsetTop() <= 0 && getBackground() == null);
-                    drawerLayout.requestLayout();
-                    return insets.consumeSystemWindowInsets();
-                }
+            setOnApplyWindowInsetsListener((v, insets) -> {
+                final DrawerLayoutContainer drawerLayout = (DrawerLayoutContainer) v;
+                AndroidUtilities.statusBarHeight = insets.getSystemWindowInsetTop();
+                lastInsets = insets;
+                drawerLayout.setWillNotDraw(insets.getSystemWindowInsetTop() <= 0 && getBackground() == null);
+                drawerLayout.requestLayout();
+                return insets.consumeSystemWindowInsets();
             });
             setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }

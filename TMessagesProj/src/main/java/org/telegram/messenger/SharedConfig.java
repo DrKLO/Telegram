@@ -16,11 +16,14 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import org.json.JSONObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 
 public class SharedConfig {
 
@@ -45,6 +48,10 @@ public class SharedConfig {
     public static String lastUpdateVersion;
     public static int suggestStickers;
     private static int lastLocalId = -210000;
+
+    private static String passportConfigJson = "";
+    private static HashMap<String, String> passportConfigMap;
+    public static int passportConfigHash;
 
     private static boolean configLoaded;
     private static final Object sync = new Object();
@@ -135,6 +142,8 @@ public class SharedConfig {
                 editor.putString("pushString2", pushString);
                 editor.putString("pushAuthKey", pushAuthKey != null ? Base64.encodeToString(pushAuthKey, Base64.DEFAULT) : "");
                 editor.putInt("lastLocalId", lastLocalId);
+                editor.putString("passportConfigJson", passportConfigJson);
+                editor.putInt("passportConfigHash", passportConfigHash);
                 editor.commit();
             } catch (Exception e) {
                 FileLog.e(e);
@@ -172,6 +181,8 @@ public class SharedConfig {
             allowScreenCapture = preferences.getBoolean("allowScreenCapture", false);
             lastLocalId = preferences.getInt("lastLocalId", -210000);
             pushString = preferences.getString("pushString2", "");
+            passportConfigJson = preferences.getString("passportConfigJson", "");
+            passportConfigHash = preferences.getInt("passportConfigHash", 0);
             String authKeyString = preferences.getString("pushAuthKey", null);
             if (!TextUtils.isEmpty(authKeyString)) {
                 pushAuthKey = Base64.decode(authKeyString, Base64.DEFAULT);
@@ -240,6 +251,35 @@ public class SharedConfig {
             SharedConfig.lastUptimeMillis = SystemClock.elapsedRealtime();
         }
         saveConfig();
+    }
+
+    public static boolean isPassportConfigLoaded() {
+        return passportConfigMap != null;
+    }
+
+    public static void setPassportConfig(String json, int hash) {
+        passportConfigMap = null;
+        passportConfigJson = json;
+        passportConfigHash = hash;
+        saveConfig();
+        getCountryLangs();
+    }
+
+    public static HashMap<String, String> getCountryLangs() {
+        if (passportConfigMap == null) {
+            passportConfigMap = new HashMap<>();
+            try {
+                JSONObject object = new JSONObject(passportConfigJson);
+                Iterator<String> iter = object.keys();
+                while (iter.hasNext()) {
+                    String key = iter.next();
+                    passportConfigMap.put(key.toUpperCase(), object.getString(key).toUpperCase());
+                }
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+        }
+        return passportConfigMap;
     }
 
     public static boolean checkPasscode(String passcode) {

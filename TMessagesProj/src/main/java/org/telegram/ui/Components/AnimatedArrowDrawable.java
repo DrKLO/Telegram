@@ -80,6 +80,10 @@ public class AnimatedArrowDrawable extends Drawable {
         }
     }
 
+    public void setColor(int color) {
+        paint.setColor(color);
+    }
+
     public float getAnimationProgress() {
         return animProgress;
     }
