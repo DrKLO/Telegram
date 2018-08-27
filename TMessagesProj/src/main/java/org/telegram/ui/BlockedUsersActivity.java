@@ -105,7 +105,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
                 return;
             }
             Bundle args = new Bundle();
-            args.putInt("user_id", MessagesController.getInstance(currentAccount).blockedUsers.get(position));
+            args.putInt("user_id", MessagesController.getInstance(currentAccount).blockedUsers.keyAt(position));
             presentFragment(new ProfileActivity(args));
         });
 
@@ -113,7 +113,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
             if (position >= MessagesController.getInstance(currentAccount).blockedUsers.size() || getParentActivity() == null) {
                 return true;
             }
-            selectedUserId = MessagesController.getInstance(currentAccount).blockedUsers.get(position);
+            selectedUserId = MessagesController.getInstance(currentAccount).blockedUsers.keyAt(position);
 
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             CharSequence[] items = new CharSequence[]{LocaleController.getString("Unblock", R.string.Unblock)};
@@ -219,7 +219,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             if (holder.getItemViewType() == 0) {
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(MessagesController.getInstance(currentAccount).blockedUsers.get(position));
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(MessagesController.getInstance(currentAccount).blockedUsers.keyAt(position));
                 if (user != null) {
                     String number;
                     if (user.bot) {

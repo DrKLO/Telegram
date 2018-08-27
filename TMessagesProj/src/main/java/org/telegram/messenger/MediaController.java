@@ -3891,12 +3891,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate > 0 ? bitrate : 921600);
                             outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, framerate != 0 ? framerate : 25);
                             outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 10);
-                            if (Build.VERSION.SDK_INT >= 21) {
+                            /*if (Build.VERSION.SDK_INT >= 21) {
                                 outputFormat.setInteger(MediaFormat.KEY_PROFILE, MediaCodecInfo.CodecProfileLevel.AVCProfileHigh);
                                 if (Build.VERSION.SDK_INT >= 23) {
                                     outputFormat.setInteger(MediaFormat.KEY_LEVEL, MediaCodecInfo.CodecProfileLevel.AVCLevel5);
                                 }
-                            }
+                            }*/
                             if (Build.VERSION.SDK_INT < 18) {
                                 outputFormat.setInteger("stride", resultWidth + 32);
                                 outputFormat.setInteger("slice-height", resultHeight);
