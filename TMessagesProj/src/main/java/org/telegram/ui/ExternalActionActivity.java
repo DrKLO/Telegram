@@ -299,17 +299,15 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
             progressDialog.setCancelable(false);
 
             final int bot_id = intent.getIntExtra("bot_id", 0);
-            String _payload=intent.getStringExtra("nonce");
-            if(TextUtils.isEmpty(_payload))
-                _payload=intent.getStringExtra("payload");
-            final String payload = _payload;
+            final String nonce = intent.getStringExtra("nonce");
+            final String payload = intent.getStringExtra("payload");
             final TLRPC.TL_account_getAuthorizationForm req = new TLRPC.TL_account_getAuthorizationForm();
             req.bot_id = bot_id;
             req.scope = intent.getStringExtra("scope");
             req.public_key = intent.getStringExtra("public_key");
             final int[] requestId = {0};
 
-            if (bot_id == 0 || TextUtils.isEmpty(payload) || TextUtils.isEmpty(req.scope) || TextUtils.isEmpty(req.public_key)) {
+            if (bot_id == 0 || TextUtils.isEmpty(payload) && TextUtils.isEmpty(nonce) || TextUtils.isEmpty(req.scope) || TextUtils.isEmpty(req.public_key)) {
                 finish();
                 return false;
             }
@@ -328,7 +326,7 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
                         if (response1 != null) {
                             TLRPC.TL_account_password accountPassword = (TLRPC.TL_account_password) response1;
                             MessagesController.getInstance(intentAccount).putUsers(authorizationForm.users, false);
-                            PassportActivity fragment = new PassportActivity(PassportActivity.TYPE_PASSWORD, req.bot_id, req.scope, req.public_key, payload, null, authorizationForm, accountPassword);
+                            PassportActivity fragment = new PassportActivity(PassportActivity.TYPE_PASSWORD, req.bot_id, req.scope, req.public_key, payload, nonce, null, authorizationForm, accountPassword);
                             fragment.setNeedActivityResult(true);
                             if (AndroidUtilities.isTablet()) {
                                 layersActionBarLayout.addFragmentToStack(fragment);

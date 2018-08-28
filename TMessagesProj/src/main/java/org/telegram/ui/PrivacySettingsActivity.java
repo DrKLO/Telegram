@@ -386,7 +386,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 builder.setCustomView(linearLayout);
                 showDialog(builder.create());
             } else if (position == passportRow) {
-                presentFragment(new PassportActivity(PassportActivity.TYPE_PASSWORD, 0, "", "", null, null, null, null));
+                presentFragment(new PassportActivity(PassportActivity.TYPE_PASSWORD, 0, "", "", null, null, null, null, null));
             }
         });
 

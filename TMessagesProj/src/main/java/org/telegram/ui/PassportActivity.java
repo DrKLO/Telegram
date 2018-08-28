@@ -189,6 +189,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     private int currentActivityType;
     private int currentBotId;
     private String currentPayload;
+    private String currentNonce;
     private boolean useCurrentValue;
     private String currentScope;
     private String currentCallbackUrl;
@@ -659,10 +660,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    public PassportActivity(int type, int botId, String scope, String publicKey, String payload, String callbackUrl, TLRPC.TL_account_authorizationForm form, TLRPC.TL_account_password accountPassword) {
+    public PassportActivity(int type, int botId, String scope, String publicKey, String payload, String nonce, String callbackUrl, TLRPC.TL_account_authorizationForm form, TLRPC.TL_account_password accountPassword) {
         this(type, form, accountPassword, null, null, null, null, null, null);
         currentBotId = botId;
         currentPayload = payload;
+        currentNonce = nonce;
         currentScope = scope;
         currentPublicKey = publicKey;
         currentCallbackUrl = callbackUrl;
@@ -1699,7 +1701,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     } else {
                         type = TYPE_REQUEST;
                     }
-                    PassportActivity activity = new PassportActivity(type, currentBotId, currentScope, currentPublicKey, currentPayload, currentCallbackUrl, currentForm, currentPassword);
+                    PassportActivity activity = new PassportActivity(type, currentBotId, currentScope, currentPublicKey, currentPayload, currentNonce, currentCallbackUrl, currentForm, currentPassword);
                     activity.currentEmail = currentEmail;
                     activity.currentAccount = currentAccount;
                     activity.saltedPassword = saltedPassword;
@@ -2327,6 +2329,13 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             if (currentPayload != null) {
                 try {
                     result.put("payload", currentPayload);
+                } catch (Exception ignore) {
+
+                }
+            }
+            if (currentNonce != null) {
+                try {
+                    result.put("nonce", currentNonce);
                 } catch (Exception ignore) {
 
                 }

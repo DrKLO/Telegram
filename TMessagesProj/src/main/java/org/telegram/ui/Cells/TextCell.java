@@ -88,7 +88,11 @@ public class TextCell extends FrameLayout {
         valueTextView.layout(viewLeft, viewTop, viewLeft + valueTextView.getMeasuredWidth(), viewTop + valueTextView.getMeasuredHeight());
 
         viewTop = (height - textView.getTextHeight()) / 2;
-        viewLeft = !LocaleController.isRTL ? AndroidUtilities.dp(71) : AndroidUtilities.dp(24);
+        if (LocaleController.isRTL) {
+            viewLeft = getMeasuredWidth() - textView.getMeasuredWidth() - AndroidUtilities.dp(71);
+        } else {
+            viewLeft = AndroidUtilities.dp(71);
+        }
         textView.layout(viewLeft, viewTop, viewLeft + textView.getMeasuredWidth(), viewTop + textView.getMeasuredHeight());
 
         viewTop = AndroidUtilities.dp(5);
