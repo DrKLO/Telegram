@@ -1123,7 +1123,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             auth = new HashMap<>();
                                             String scope = data.getQueryParameter("scope");
                                             if (!TextUtils.isEmpty(scope) && scope.startsWith("{") && scope.endsWith("}")) {
-                                                auth.put("payload", data.getQueryParameter("nonce"));
+                                                auth.put("nonce", data.getQueryParameter("nonce"));
                                             } else {
                                                 auth.put("payload", data.getQueryParameter("payload"));
                                             }
@@ -1204,7 +1204,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         auth = new HashMap<>();
                                         String scope = data.getQueryParameter("scope");
                                         if (!TextUtils.isEmpty(scope) && scope.startsWith("{") && scope.endsWith("}")) {
-                                            auth.put("payload", data.getQueryParameter("nonce"));
+                                            auth.put("nonce", data.getQueryParameter("nonce"));
                                         } else {
                                             auth.put("payload", data.getQueryParameter("payload"));
                                         }
@@ -1767,6 +1767,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 return;
             }
             final String payload = auth.get("payload");
+            final String nonce = auth.get("nonce");
             final String callbackUrl = auth.get("callback_url");
             final TLRPC.TL_account_getAuthorizationForm req = new TLRPC.TL_account_getAuthorizationForm();
             req.bot_id = bot_id;
@@ -1785,7 +1786,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         if (response1 != null) {
                             TLRPC.TL_account_password accountPassword = (TLRPC.TL_account_password) response1;
                             MessagesController.getInstance(intentAccount).putUsers(authorizationForm.users, false);
-                            presentFragment(new PassportActivity(PassportActivity.TYPE_PASSWORD, req.bot_id, req.scope, req.public_key, payload, callbackUrl, authorizationForm, accountPassword));
+                            presentFragment(new PassportActivity(PassportActivity.TYPE_PASSWORD, req.bot_id, req.scope, req.public_key, payload, nonce, callbackUrl, authorizationForm, accountPassword));
                         }
                     }));
                 } else {
