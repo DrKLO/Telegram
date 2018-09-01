@@ -29,6 +29,7 @@ dependencies {
     implementation 'net.hockeyapp.android:HockeySDK:5.1.0'
     implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
     implementation 'com.stripe:stripe-android:2.0.2'
+    implementation 'org.osmdroid:osmdroid-android:6.0.2'
 }
 
 android {
