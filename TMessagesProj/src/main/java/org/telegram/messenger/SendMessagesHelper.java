@@ -4620,6 +4620,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             user.phone = result.send_message.phone_number;
             user.first_name = result.send_message.first_name;
             user.last_name = result.send_message.last_name;
+            user.restriction_reason = result.send_message.vcard;
             SendMessagesHelper.getInstance(currentAccount).sendMessage(user, dialog_id, reply_to_msg, result.send_message.reply_markup, params);
         }
     }
