@@ -366,7 +366,6 @@ LOCAL_SRC_FILES := \
 ./exoplayer/libFLAC/stream_encoder_intrin_avx2.c  \
 ./exoplayer/libFLAC/stream_encoder_intrin_sse2.c  \
 ./exoplayer/libFLAC/stream_encoder_intrin_ssse3.c \
-./exoplayer/libFLAC/windows_unicode_filenames     \
 ./exoplayer/libFLAC/window.c
 
 include $(BUILD_STATIC_LIBRARY)
