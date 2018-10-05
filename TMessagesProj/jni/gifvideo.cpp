@@ -147,8 +147,8 @@ jlong Java_org_telegram_ui_Components_AnimatedFileDrawable_createDecoder(JNIEnv 
     if (open_codec_context(&info->video_stream_idx, &info->video_dec_ctx, info->fmt_ctx, AVMEDIA_TYPE_VIDEO) >= 0) {
         info->video_stream = info->fmt_ctx->streams[info->video_stream_idx];
     }
-
-    if (info->video_stream <= 0) {
+    
+    if (info->video_stream == nullptr) {
         LOGE("can't find video stream in the input, aborting %s", info->src);
         delete info;
         return 0;
