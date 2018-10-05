@@ -11,7 +11,7 @@
 
 #include <stdint.h>
 #include <vector>
-#include <bits/unique_ptr.h>
+#include <memory>
 #include "Defines.h"
 
 #ifdef ANDROID

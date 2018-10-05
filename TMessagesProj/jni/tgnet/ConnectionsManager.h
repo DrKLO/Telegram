@@ -15,7 +15,7 @@
 #include <sys/epoll.h>
 #include <map>
 #include <atomic>
-#include <bits/unique_ptr.h>
+#include <memory>
 #include "Defines.h"
 
 #ifdef ANDROID

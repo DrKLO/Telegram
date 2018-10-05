@@ -12,7 +12,7 @@
 #include <functional>
 #include <list>
 #include <limits.h>
-#include <bits/unique_ptr.h>
+#include <memory>
 #include <sstream>
 #include <inttypes.h>
 #include "ByteArray.h"
