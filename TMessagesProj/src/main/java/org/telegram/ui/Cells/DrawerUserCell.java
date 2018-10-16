@@ -137,6 +137,7 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
         }
         avatarDrawable.setInfo(account, user);
         CharSequence text = ContactsController.formatName(user.first_name, user.last_name);
+        text = "...";
         try {
             text = Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
         } catch (Exception ignore) {}
