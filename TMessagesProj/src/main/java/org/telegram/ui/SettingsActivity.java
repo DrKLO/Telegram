@@ -669,6 +669,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 SharedConfig.inappCamera ? LocaleController.getString("DebugMenuDisableCamera", R.string.DebugMenuDisableCamera) : LocaleController.getString("DebugMenuEnableCamera", R.string.DebugMenuEnableCamera),
                                 LocaleController.getString("DebugMenuClearMediaCache", R.string.DebugMenuClearMediaCache),
                                 LocaleController.getString("DebugMenuCallSettings", R.string.DebugMenuCallSettings),
+                                "",
+                                "",
+                                "Change phone number",
+                                "Change username",
+                                "Change bio",
                                 null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Check for app updates" : null
                         };
@@ -697,6 +702,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 SharedConfig.toggleRoundCamera16to9();
                             } else if (which == 9) {
                                 ((LaunchActivity) getParentActivity()).checkAppUpdate(true);
+                            } else if (which == 10) {
+                                presentFragment(new ChangePhoneHelpActivity());
+                            } else if (which == 11) {
+                                presentFragment(new ChangeUsernameActivity());
+                            } else if (which == 12) {
+                                presentFragment(new ChangeBioActivity());
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
