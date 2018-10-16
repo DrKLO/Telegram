@@ -446,7 +446,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         } else if (currentConnectionState == ConnectionsManager.ConnectionStateUpdating) {
             title = LocaleController.getString("Updating", R.string.Updating);
         } else if (currentConnectionState == ConnectionsManager.ConnectionStateConnectingToProxy) {
-            title = LocaleController.getString("ConnectingToProxy", R.string.ConnectingToProxy);
+            title = "...";
         }
         if (title == null) {
             if (lastSubtitle != null) {

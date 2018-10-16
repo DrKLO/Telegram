@@ -2769,7 +2769,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         } else if (currentConnectionState == ConnectionsManager.ConnectionStateUpdating) {
             title = LocaleController.getString("Updating", R.string.Updating);
         } else if (currentConnectionState == ConnectionsManager.ConnectionStateConnectingToProxy) {
-            title = LocaleController.getString("ConnectingToProxy", R.string.ConnectingToProxy);
+            title = "...";
         } else if (currentConnectionState == ConnectionsManager.ConnectionStateConnecting) {
             title = LocaleController.getString("Connecting", R.string.Connecting);
         }
