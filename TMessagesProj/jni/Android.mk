@@ -1,5 +1,7 @@
 LOCAL_PATH := $(call my-dir)
 
+include $(CLEAR_VARS)
+
 LOCAL_MODULE    := avutil 
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
