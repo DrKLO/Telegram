@@ -8991,6 +8991,7 @@ public class MessagesController extends BaseController implements NotificationCe
         int checkPromoId = lastCheckPromoId;
         TLRPC.TL_help_getPromoData req = new TLRPC.TL_help_getPromoData();
         checkingPromoInfoRequestId = getConnectionsManager().sendRequest(req, (response, error) -> {
+            response = new TLRPC.TL_help_promoDataEmpty();
             if (checkPromoId != lastCheckPromoId) {
                 return;
             }

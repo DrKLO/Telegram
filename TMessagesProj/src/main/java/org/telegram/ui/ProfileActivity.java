@@ -8499,7 +8499,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         } else if (currentConnectionState == ConnectionsManager.ConnectionStateUpdating) {
             onlineTextOverride = LocaleController.getString("Updating", R.string.Updating);
         } else if (currentConnectionState == ConnectionsManager.ConnectionStateConnectingToProxy) {
-            onlineTextOverride = LocaleController.getString("ConnectingToProxy", R.string.ConnectingToProxy);
+            onlineTextOverride = "...";
         } else {
             onlineTextOverride = null;
         }
