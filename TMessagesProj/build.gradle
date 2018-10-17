@@ -35,7 +35,7 @@ android {
     compileSdkVersion 28
     buildToolsVersion '28.0.2'
 
-    defaultConfig.applicationId = "org.telegram.messenger"
+    defaultConfig.applicationId = "org.forkclient.messenger"
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
