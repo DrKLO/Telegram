@@ -24,6 +24,9 @@ import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
+import org.telegram.messenger.MessagesController;
+import android.content.SharedPreferences;
+
 public class AvatarDrawable extends Drawable {
 
     private TextPaint namePaint;
@@ -223,7 +226,14 @@ public class AvatarDrawable extends Drawable {
         Theme.avatar_backgroundPaint.setColor(color);
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
-        canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, Theme.avatar_backgroundPaint);
+        
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        final boolean squareAvatars = preferences.getBoolean("squareAvatars", true);
+        if (squareAvatars) {
+            canvas.drawRect(0f, 0f, size, size, Theme.avatar_backgroundPaint);
+        } else {
+            canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, Theme.avatar_backgroundPaint);
+        }
 
         if (savedMessages != 0 && Theme.avatar_savedDrawable != null) {
             int w = Theme.avatar_savedDrawable.getIntrinsicWidth();

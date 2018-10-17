@@ -27,6 +27,8 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 
+import android.content.SharedPreferences;
+
 public class ImageReceiver implements NotificationCenter.NotificationCenterDelegate {
 
     public interface ImageReceiverDelegate {
@@ -1071,7 +1073,11 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void setRoundRadius(int value) {
-        roundRadius = value;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        final boolean squareAvatars = preferences.getBoolean("squareAvatars", true);
+        if (!squareAvatars) {
+            roundRadius = value;
+        }
     }
 
     public void setCurrentAccount(int value) {
