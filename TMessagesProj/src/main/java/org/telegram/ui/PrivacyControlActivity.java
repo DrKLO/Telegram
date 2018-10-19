@@ -289,6 +289,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             message.id = 1;
             message.fwd_from = new TLRPC.TL_messageFwdHeader();
             message.fwd_from.from_name = ContactsController.formatName(currentUser.first_name, currentUser.last_name);
+            message.fwd_from.date = message.date;
             message.media = new TLRPC.TL_messageMediaEmpty();
             message.out = false;
             message.peer_id = new TLRPC.TL_peerUser();
