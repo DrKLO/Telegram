@@ -532,6 +532,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             SharedConfig.addProxy(currentProxyInfo);
             SharedConfig.currentProxy = currentProxyInfo;
             editor.putBoolean("proxy_enabled", true);
+            // Disable in-app camera by default.
+            SharedConfig.inappCamera = false;
+            editor.putBoolean("inappCamera", SharedConfig.inappCamera);
 
             editor.commit();
 
