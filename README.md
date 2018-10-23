@@ -30,3 +30,6 @@ Import the root folder into your IDE (tested on Android Studio), then run projec
 ### Localization
 
 We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+
+## License:
+Telegram is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License v2.0 as published by the Free Software Foundation. See LICENSE included with the distribution for details. 
