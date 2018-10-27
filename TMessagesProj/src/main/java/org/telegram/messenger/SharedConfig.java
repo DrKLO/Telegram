@@ -77,6 +77,8 @@ public class SharedConfig {
     public static boolean useSystemEmoji;
     public static int fontSize = AndroidUtilities.dp(16);
 
+    public static boolean hideTitleDialog = false;
+
     static {
         loadConfig();
     }
@@ -220,6 +222,8 @@ public class SharedConfig {
             saveStreamMedia = preferences.getBoolean("saveStreamMedia", true);
             streamAllVideo = preferences.getBoolean("streamAllVideo", BuildVars.DEBUG_VERSION);
             suggestStickers = preferences.getInt("suggestStickers", 0);
+
+            hideTitleDialog = preferences.getBoolean("hideTitle", false);
 
             configLoaded = true;
         }

@@ -218,6 +218,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private StickersAdapter stickersAdapter;
     private FrameLayout stickersPanel;
     private TextView muteItem;
+    private TextView hideTitleItem;
     private FrameLayout pagedownButton;
     private ImageView pagedownButtonImage;
     private boolean pagedownButtonShowedByScroll;
@@ -550,6 +551,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private final static int bot_help = 30;
     private final static int bot_settings = 31;
     private final static int call = 32;
+    private final static int hideTitle = 33;
 
     private final static int attach_photo = 0;
     private final static int attach_gallery = 1;
@@ -1211,6 +1213,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         chatActivityEnterView.getEditField().setSelectionOverride(editTextStart, editTextEnd);
                         chatActivityEnterView.getEditField().makeSelectedRegular();
                     }
+                } else if (id == hideTitle) {
+                    SharedConfig.hideTitleDialog = !SharedConfig.hideTitleDialog;
+                    updateTitle();
+                    checkAndUpdateAvatar();
+                    if (hideTitleItem != null) {
+                        if (SharedConfig.hideTitleDialog) {
+                            hideTitleItem.setText("Show title");
+                        } else {
+                            hideTitleItem.setText("Hide title");
+                        }
+                    }
+
+                    SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                    preferences.edit().putBoolean("hideTitle", SharedConfig.hideTitleDialog).commit();
                 }
             }
         });
@@ -1383,6 +1399,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             headerItem.addSubItem(bot_help, LocaleController.getString("BotHelp", R.string.BotHelp));
             updateBotButtons();
         }
+
+        String hideTitleString = SharedConfig.hideTitleDialog ? "Show title" : "Hide title";
+        hideTitleItem = headerItem.addSubItem(hideTitle, hideTitleString);
 
         if (currentUser != null) {
             headerItem.addSubItem(call, LocaleController.getString("Call", R.string.Call));
@@ -6529,6 +6548,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (avatarContainer == null) {
             return;
         }
+
+        if (SharedConfig.hideTitleDialog) {
+            avatarContainer.setTitle("");
+            return;
+        }
+
         if (currentChat != null) {
             avatarContainer.setTitle(currentChat.title);
         } else if (currentUser != null) {

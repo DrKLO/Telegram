@@ -382,6 +382,13 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             }
             avatarDrawable.setInfo(chat);
         }
+
+        if (org.telegram.messenger.SharedConfig.hideTitleDialog) {
+            avatarImageView.setVisibility(android.view.View.GONE);
+        } else {
+            avatarImageView.setVisibility(android.view.View.VISIBLE);
+        }
+
         if (avatarImageView != null) {
             avatarImageView.setImage(newPhoto, "50_50", avatarDrawable);
         }
