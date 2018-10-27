@@ -1334,15 +1334,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
 
         headerItem = menu.addItem(0, R.drawable.ic_ab_other);
-        if (currentUser != null) {
-            headerItem.addSubItem(call, LocaleController.getString("Call", R.string.Call));
-            TLRPC.TL_userFull userFull = MessagesController.getInstance(currentAccount).getUserFull(currentUser.id);
-            if (userFull != null && userFull.phone_calls_available) {
-                headerItem.showSubItem(call);
-            } else {
-                headerItem.hideSubItem(call);
-            }
-        }
+        
         editTextItem = menu.addItem(0, R.drawable.ic_ab_other);
         editTextItem.setTag(null);
         editTextItem.setVisibility(View.GONE);
@@ -1390,6 +1382,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             headerItem.addSubItem(bot_settings, LocaleController.getString("BotSettings", R.string.BotSettings));
             headerItem.addSubItem(bot_help, LocaleController.getString("BotHelp", R.string.BotHelp));
             updateBotButtons();
+        }
+
+        if (currentUser != null) {
+            headerItem.addSubItem(call, LocaleController.getString("Call", R.string.Call));
+            TLRPC.TL_userFull userFull = MessagesController.getInstance(currentAccount).getUserFull(currentUser.id);
+            if (userFull != null && userFull.phone_calls_available) {
+                headerItem.showSubItem(call);
+            } else {
+                headerItem.hideSubItem(call);
+            }
         }
 
         updateTitle();
