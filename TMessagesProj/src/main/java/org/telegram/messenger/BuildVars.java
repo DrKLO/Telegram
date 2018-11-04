@@ -21,8 +21,8 @@ public class BuildVars {
     public static String HOCKEY_APP_HASH = "your-hockeyapp-api-key-here";
     public static String HOCKEY_APP_HASH_DEBUG = "your-hockeyapp-api-key-here";
     public static boolean CHECK_UPDATES = true;
-    public static int BUILD_VERSION = 13582;
-    public static String BUILD_VERSION_STRING = "4.9.1.2";
+    public static int BUILD_VERSION = 13583;
+    public static String BUILD_VERSION_STRING = "4.9.1.3";
     public static String PLAYSTORE_APP_URL = "";
 
     static {
