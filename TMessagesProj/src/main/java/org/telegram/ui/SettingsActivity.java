@@ -340,6 +340,18 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         imageUpdater.clear();
     }
 
+    public boolean toggleGlobalMainSetting(String option, View view) {
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        boolean optionBool = preferences.getBoolean(option, true);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean(option, !optionBool);
+        editor.commit();
+        if (view instanceof TextCheckCell) {
+            ((TextCheckCell) view).setChecked(!optionBool);
+        }
+        return !optionBool;
+    }
+
     @Override
     public View createView(Context context) {
         actionBar.setBackgroundColor(Theme.getColor(Theme.key_avatar_backgroundActionBarBlue));
@@ -448,23 +460,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     });
                     showDialog(builder.create());
                 } else if (position == enableAnimationsRow) {
-                    SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                    boolean animations = preferences.getBoolean("view_animations", true);
-                    SharedPreferences.Editor editor = preferences.edit();
-                    editor.putBoolean("view_animations", !animations);
-                    editor.commit();
-                    if (view instanceof TextCheckCell) {
-                        ((TextCheckCell) view).setChecked(!animations);
-                    }
+                    toggleGlobalMainSetting("view_animations", view);
                 } else if (position == squareAvatarsRow) {
-                    SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                    boolean squareAvatars = preferences.getBoolean("squareAvatars", true);
-                    SharedPreferences.Editor editor = preferences.edit();
-                    editor.putBoolean("squareAvatars", !squareAvatars);
-                    editor.commit();
-                    if (view instanceof TextCheckCell) {
-                        ((TextCheckCell) view).setChecked(!squareAvatars);
-                    }
+                    toggleGlobalMainSetting("squareAvatars", view);
                 } else if (position == inappCameraRow) {
                     SharedConfig.toggleInappCamera();
                     if (view instanceof TextCheckCell) {
@@ -514,14 +512,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (position == clearLogsRow) {
                     FileLog.cleanupLogs();
                 } else if (position == sendByEnterRow) {
-                    SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                    boolean send = preferences.getBoolean("send_by_enter", false);
-                    SharedPreferences.Editor editor = preferences.edit();
-                    editor.putBoolean("send_by_enter", !send);
-                    editor.commit();
-                    if (view instanceof TextCheckCell) {
-                        ((TextCheckCell) view).setChecked(!send);
-                    }
+                    toggleGlobalMainSetting("send_by_enter", view);
                 } else if (position == raiseToSpeakRow) {
                     SharedConfig.toogleRaiseToSpeak();
                     if (view instanceof TextCheckCell) {
@@ -1359,7 +1350,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            return position == textSizeRow || position == squareAvatarsRow || position == inappCameraRow || position == enableAnimationsRow || position == notificationRow || position == backgroundRow || position == numberRow ||
+            boolean forkRows = position == squareAvatarsRow || position == inappCameraRow;
+            return forkRows || position == textSizeRow || position == enableAnimationsRow || position == notificationRow || position == backgroundRow || position == numberRow ||
                     position == askQuestionRow || position == sendLogsRow || position == sendByEnterRow || position == autoplayGifsRow || position == privacyRow ||
                     position == clearLogsRow || position == languageRow || position == usernameRow || position == bioRow ||
                     position == switchBackendButtonRow || position == telegramFaqRow || position == contactsSortRow || position == contactsReimportRow || position == saveToGalleryRow ||
