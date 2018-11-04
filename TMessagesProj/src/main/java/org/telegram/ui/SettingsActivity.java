@@ -163,6 +163,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int rowCount;
     private int squareAvatarsRow;
     private int inappCameraRow;
+    private int forkSectionRow;
 
     private final static int edit_name = 1;
     private final static int logout = 2;
@@ -281,6 +282,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         themeRow = rowCount++;
         languageRow = rowCount++;
         enableAnimationsRow = rowCount++;
+        forkSectionRow = rowCount++;
         squareAvatarsRow = rowCount++;
         inappCameraRow = rowCount++;
         messagesSectionRow = rowCount++;
@@ -1311,6 +1313,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         ((HeaderCell) holder.itemView).setText(LocaleController.getString("MessagesSettings", R.string.MessagesSettings));
                     } else if (position == numberSectionRow) {
                         ((HeaderCell) holder.itemView).setText(LocaleController.getString("Info", R.string.Info));
+                    } else if (position == forkSectionRow) {
+                        ((HeaderCell) holder.itemView).setText("Fork Settings");
                     }
                     break;
                 }
@@ -1444,7 +1448,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 5;
             } else if (position == numberRow || position == usernameRow || position == bioRow) {
                 return 6;
-            } else if (position == settingsSectionRow2 || position == messagesSectionRow2 || position == supportSectionRow2 || position == numberSectionRow) {
+            } else if (position == forkSectionRow || position == settingsSectionRow2 || position == messagesSectionRow2 || position == supportSectionRow2 || position == numberSectionRow) {
                 return 4;
             } else {
                 return 2;
