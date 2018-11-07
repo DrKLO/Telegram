@@ -27,7 +27,7 @@ public class OpenChatReceiver extends Activity {
             finish();
             return;
         }
-        Intent intent2 = new Intent(this, LaunchActivity.class);
+        Intent intent1 = new Intent(this, LaunchActivity.class);
         intent2.setAction(intent.getAction());
         intent2.putExtras(intent);
         startActivity(intent2);
