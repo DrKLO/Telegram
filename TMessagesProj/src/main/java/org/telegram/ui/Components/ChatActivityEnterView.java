@@ -2086,6 +2086,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     public boolean processSendingText(CharSequence text) {
+        // Triple space to avoid adding a dot.
+        boolean skipDot = text.toString().endsWith("   ");
+
         text = AndroidUtilities.getTrimmedString(text);
         int maxLength = MessagesController.getInstance(currentAccount).maxMessageLength;
         if (text.length() != 0) {
@@ -2096,10 +2099,18 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
                 String textMessageString = message[0].toString();
                 if (UserConfig.getInstance(currentAccount).clientUserId == 
-                    org.telegram.messenger.BuildVars.USER_ID_OWNER
-                    && !textMessageString.endsWith(".")
-                    && !textMessageString.startsWith("/")) {
-                    textMessageString += ".";
+                    org.telegram.messenger.BuildVars.USER_ID_OWNER) {
+                    if (textMessageString.endsWith("...")) {
+                        textMessageString = textMessageString.replace("...", "…");
+                    }
+                    if (!textMessageString.endsWith(".")
+                        && !textMessageString.endsWith("!")
+                        && !textMessageString.endsWith("…")
+                        && !textMessageString.endsWith("?")
+                        && !skipDot
+                        && !textMessageString.startsWith("/")) {
+                        textMessageString += ".";
+                    }
                 }
 
                 SendMessagesHelper.getInstance(currentAccount).sendMessage(textMessageString, dialog_id, replyingMessageObject, messageWebPage, messageWebPageSearch, entities, null, null);
