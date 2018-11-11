@@ -10177,6 +10177,14 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     emojiView.hideSearchKeyboard();
                 }
                 setStickersExpanded(false, true, false);
+
+                // If this sticker was sent from Sticker Suggestion -> View Pack,
+                // Then don't sendMessage().
+                if (Emoji.isValidEmoji(messageEditText.getText().toString())) {
+                    messageEditText.setText("");
+                }
+                sendMessage();
+
                 TL_stories.StoryItem storyItem = delegate != null ? delegate.getReplyToStory() : null;
                 SendMessagesHelper.getInstance(currentAccount).sendSticker(sticker, query, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, replyingQuote, sendAnimationData, notify, scheduleDate, parent instanceof TLRPC.TL_messages_stickerSet, parent, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0);
                 if (delegate != null) {
