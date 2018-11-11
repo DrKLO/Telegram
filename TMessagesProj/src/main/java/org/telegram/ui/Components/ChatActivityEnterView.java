@@ -3142,8 +3142,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 if (stickersExpanded) {
                     setStickersExpanded(false, true, false);
                 }
-                SendMessagesHelper.getInstance(currentAccount).sendSticker(gif, dialog_id, replyingMessageObject);
+                SendMessagesHelper.getInstance(currentAccount).sendGifWithCaption(gif, dialog_id, replyingMessageObject, messageEditText.getText().toString());
                 DataQuery.getInstance(currentAccount).addRecentGif(gif, (int) (System.currentTimeMillis() / 1000));
+                messageEditText.setText("");
                 if ((int) dialog_id == 0) {
                     MessagesController.getInstance(currentAccount).saveGif(gif);
                 }

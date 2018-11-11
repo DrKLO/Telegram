@@ -1032,7 +1032,15 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         performSendMessageRequest(req, newMsgObj, null);
     }
 
+    public void sendGifWithCaption(TLRPC.Document document, long peer, MessageObject replyingMessageObject, String caption) {
+        sendSticker(document, peer, replyingMessageObject, caption);
+    }
+
     public void sendSticker(TLRPC.Document document, long peer, MessageObject replyingMessageObject) {
+        sendSticker(document, peer, replyingMessageObject, null);
+    }
+
+    public void sendSticker(TLRPC.Document document, long peer, MessageObject replyingMessageObject, String caption) {
         if (document == null) {
             return;
         }
@@ -1081,7 +1089,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             document = newDocument;
         }
         if (document instanceof TLRPC.TL_document) {
-            sendMessage((TLRPC.TL_document) document, null, null, peer, replyingMessageObject, null, null, null, null, 0);
+            sendMessage((TLRPC.TL_document) document, null, null, peer, replyingMessageObject, caption, null, null, null, 0);
         }
     }
 
