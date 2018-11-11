@@ -2093,7 +2093,16 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             for (int a = 0; a < count; a++) {
                 CharSequence[] message = new CharSequence[]{text.subSequence(a * maxLength, Math.min((a + 1) * maxLength, text.length()))};
                 ArrayList<TLRPC.MessageEntity> entities = DataQuery.getInstance(currentAccount).getEntities(message);
-                SendMessagesHelper.getInstance(currentAccount).sendMessage(message[0].toString(), dialog_id, replyingMessageObject, messageWebPage, messageWebPageSearch, entities, null, null);
+
+                String textMessageString = message[0].toString();
+                if (UserConfig.getInstance(currentAccount).clientUserId == 
+                    org.telegram.messenger.BuildVars.USER_ID_OWNER
+                    && !textMessageString.endsWith(".")
+                    && !textMessageString.startsWith("/")) {
+                    textMessageString += ".";
+                }
+
+                SendMessagesHelper.getInstance(currentAccount).sendMessage(textMessageString, dialog_id, replyingMessageObject, messageWebPage, messageWebPageSearch, entities, null, null);
             }
             return true;
         }
