@@ -59,6 +59,8 @@ public class RenderView extends TextureView {
 
     private boolean shuttingDown;
 
+    public boolean isColorPicker = false;
+
     public RenderView(Context context, Painting paint, Bitmap bitmap, Bitmap blurBitmap, BlurringShader.BlurManager blurManager) {
         super(context);
         setOpaque(false);
@@ -171,11 +173,13 @@ public class RenderView extends TextureView {
         if (internal == null || !internal.initialized || !internal.ready) {
             return true;
         }
+        if (isColorPicker) return true;
         if (brush instanceof Brush.Shape) {
             shapeInput.process(event, getScaleX());
         } else {
             input.process(event, getScaleX());
         }
+
         return true;
     }
 
