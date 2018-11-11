@@ -261,6 +261,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         @Override
         public int compare(TLRPC.TL_dialog dialog1, TLRPC.TL_dialog dialog2) {
             boolean reverseOrder = mainPreferences.getBoolean("reverseOrderPins", false);
+            boolean unmutedPrimary = mainPreferences.getBoolean("unmutedOnTop", false);
+
             if (!dialog1.pinned && dialog2.pinned) {
                 return 1;
             } else if (dialog1.pinned && !dialog2.pinned) {
@@ -276,10 +278,37 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     return 0;
                 }
             }
+
             TLRPC.DraftMessage draftMessage = DataQuery.getInstance(currentAccount).getDraft(dialog1.id);
             int date1 = draftMessage != null && draftMessage.date >= dialog1.last_message_date ? draftMessage.date : dialog1.last_message_date;
             draftMessage = DataQuery.getInstance(currentAccount).getDraft(dialog2.id);
             int date2 = draftMessage != null && draftMessage.date >= dialog2.last_message_date ? draftMessage.date : dialog2.last_message_date;
+
+            if (unmutedPrimary) {
+                boolean mute1 = isDialogMuted(dialog1.id);
+                boolean mute2 = isDialogMuted(dialog2.id);
+                boolean unread1 = dialog1.unread_count > 0;
+                boolean unread2 = dialog2.unread_count > 0;
+
+                boolean newMention1 = unread1 && !mute1;
+                boolean newMention2 = unread2 && !mute2;
+
+                if (!newMention1 && newMention2) {
+                    return 1;
+                } else if (newMention1 && !newMention2) {
+                    return -1;
+                } else if (newMention1 && newMention2) {
+                    if (date1 < date2) {
+                        return 1;
+                    } else if (date1 > date2) {
+                        return -1;
+                    } else {
+                        return 0;
+                    }
+                }
+            }
+
+
             if (date1 < date2) {
                 return 1;
             } else if (date1 > date2) {
@@ -3545,6 +3574,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             }));
         }
+        sortDialogs(null);
     }
 
     public void forceResetDialogs() {
@@ -4363,6 +4393,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         if (updated) {
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.notificationsSettingsUpdated);
         }
+        sortDialogs(null);
     }
 
     private void applyDialogsNotificationsSettings(ArrayList<TLRPC.TL_dialog> dialogs) {
@@ -4406,6 +4437,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         if (editor != null) {
             editor.commit();
         }
+        sortDialogs(null);
     }
 
     public void reloadMentionsCountForChannels(final ArrayList<Integer> arrayList) {
@@ -8723,6 +8755,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 }
                             }
                         }
+                        sortDialogs(null);
                     } else if (baseUpdate instanceof TLRPC.TL_updateChannel) {
                         final TLRPC.TL_updateChannel update = (TLRPC.TL_updateChannel) baseUpdate;
                         TLRPC.TL_dialog dialog = dialogs_dict.get(-(long) update.channel_id);

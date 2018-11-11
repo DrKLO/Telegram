@@ -166,6 +166,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int forkSectionRow;
     private int syncPinsRow;
     private int reverseOrderPinsRow;
+    private int unmutedOnTopRow;
 
     private final static int edit_name = 1;
     private final static int logout = 2;
@@ -289,6 +290,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         inappCameraRow = rowCount++;
         syncPinsRow = rowCount++;
         reverseOrderPinsRow = rowCount++;
+        unmutedOnTopRow = rowCount++;
         messagesSectionRow = rowCount++;
         messagesSectionRow2 = rowCount++;
         customTabsRow = rowCount++;
@@ -472,6 +474,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     MessagesController.getInstance(currentAccount).loadPinnedDialogs(0, null);
                 } else if (position == reverseOrderPinsRow) {
                     toggleGlobalMainSetting("reverseOrderPins", view, false);
+                    MessagesController.getInstance(currentAccount).sortDialogs(null);
+                } else if (position == unmutedOnTopRow) {
+                    toggleGlobalMainSetting("unmutedOnTop", view, false);
                     MessagesController.getInstance(currentAccount).sortDialogs(null);
                 } else if (position == inappCameraRow) {
                     SharedConfig.toggleInappCamera();
@@ -1293,7 +1298,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (position == syncPinsRow) {
                         textCell.setTextAndCheck("Sync Pinned Dialogs", preferences.getBoolean("syncPins", true), false);
                     } else if (position == reverseOrderPinsRow) {
-                        textCell.setTextAndCheck("Reverse Pinned Dialogs Order", preferences.getBoolean("reverseOrderPins", true), false);
+                        textCell.setTextAndCheck("Reverse Pinned Dialogs Order", preferences.getBoolean("reverseOrderPins", false), false);
+                    } else if (position == unmutedOnTopRow) {
+                        textCell.setTextAndCheck("Unmuted Messages are Primary", preferences.getBoolean("unmutedOnTop", false), false);
                     } else if (position == sendByEnterRow) {
                         textCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), true);
                     } else if (position == saveToGalleryRow) {
@@ -1367,6 +1374,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             boolean forkRows = position == squareAvatarsRow 
             || position == inappCameraRow 
             || position == syncPinsRow
+            || position == unmutedOnTopRow
             || position == reverseOrderPinsRow;
             return forkRows || position == textSizeRow || position == enableAnimationsRow || position == notificationRow || position == backgroundRow || position == numberRow ||
                     position == askQuestionRow || position == sendLogsRow || position == sendByEnterRow || position == autoplayGifsRow || position == privacyRow ||
@@ -1454,6 +1462,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     || position == inappCameraRow 
                     || position == syncPinsRow 
                     || position == reverseOrderPinsRow
+                    || position == unmutedOnTopRow
                     || position == sendByEnterRow 
                     || position == saveToGalleryRow 
                     || position == autoplayGifsRow 
