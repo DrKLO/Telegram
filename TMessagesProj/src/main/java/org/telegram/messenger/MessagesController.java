@@ -260,15 +260,18 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private final Comparator<TLRPC.TL_dialog> dialogComparator = new Comparator<TLRPC.TL_dialog>() {
         @Override
         public int compare(TLRPC.TL_dialog dialog1, TLRPC.TL_dialog dialog2) {
+            boolean reverseOrder = mainPreferences.getBoolean("reverseOrderPins", false);
             if (!dialog1.pinned && dialog2.pinned) {
                 return 1;
             } else if (dialog1.pinned && !dialog2.pinned) {
                 return -1;
             } else if (dialog1.pinned && dialog2.pinned) {
                 if (dialog1.pinnedNum < dialog2.pinnedNum) {
-                    return 1;
-                } else if (dialog1.pinnedNum > dialog2.pinnedNum) {
+                    if (!reverseOrder) return 1;
                     return -1;
+                } else if (dialog1.pinnedNum > dialog2.pinnedNum) {
+                    if (!reverseOrder) return -1;
+                    return 1;
                 } else {
                     return 0;
                 }

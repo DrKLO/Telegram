@@ -165,6 +165,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int inappCameraRow;
     private int forkSectionRow;
     private int syncPinsRow;
+    private int reverseOrderPinsRow;
 
     private final static int edit_name = 1;
     private final static int logout = 2;
@@ -287,6 +288,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         squareAvatarsRow = rowCount++;
         inappCameraRow = rowCount++;
         syncPinsRow = rowCount++;
+        reverseOrderPinsRow = rowCount++;
         messagesSectionRow = rowCount++;
         messagesSectionRow2 = rowCount++;
         customTabsRow = rowCount++;
@@ -342,9 +344,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         imageUpdater.clear();
     }
 
-    public boolean toggleGlobalMainSetting(String option, View view) {
+    public boolean toggleGlobalMainSetting(String option, View view, boolean byDefault) {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        boolean optionBool = preferences.getBoolean(option, true);
+        boolean optionBool = preferences.getBoolean(option, byDefault);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean(option, !optionBool);
         editor.commit();
@@ -462,11 +464,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     });
                     showDialog(builder.create());
                 } else if (position == enableAnimationsRow) {
-                    toggleGlobalMainSetting("view_animations", view);
+                    toggleGlobalMainSetting("view_animations", view, true);
                 } else if (position == squareAvatarsRow) {
-                    toggleGlobalMainSetting("squareAvatars", view);
+                    toggleGlobalMainSetting("squareAvatars", view, true);
                 } else if (position == syncPinsRow) {
-                    toggleGlobalMainSetting("syncPins", view);
+                    toggleGlobalMainSetting("syncPins", view, true);
+                    MessagesController.getInstance(currentAccount).loadPinnedDialogs(0, null);
+                } else if (position == reverseOrderPinsRow) {
+                    toggleGlobalMainSetting("reverseOrderPins", view, false);
+                    MessagesController.getInstance(currentAccount).sortDialogs(null);
                 } else if (position == inappCameraRow) {
                     SharedConfig.toggleInappCamera();
                     if (view instanceof TextCheckCell) {
@@ -516,7 +522,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (position == clearLogsRow) {
                     FileLog.cleanupLogs();
                 } else if (position == sendByEnterRow) {
-                    toggleGlobalMainSetting("send_by_enter", view);
+                    toggleGlobalMainSetting("send_by_enter", view, true);
                 } else if (position == raiseToSpeakRow) {
                     SharedConfig.toogleRaiseToSpeak();
                     if (view instanceof TextCheckCell) {
@@ -1286,6 +1292,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         textCell.setTextAndCheck("Enable In-App Camera", preferences.getBoolean("inappCamera", true), false);
                     } else if (position == syncPinsRow) {
                         textCell.setTextAndCheck("Sync Pinned Dialogs", preferences.getBoolean("syncPins", true), false);
+                    } else if (position == reverseOrderPinsRow) {
+                        textCell.setTextAndCheck("Reverse Pinned Dialogs Order", preferences.getBoolean("reverseOrderPins", true), false);
                     } else if (position == sendByEnterRow) {
                         textCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), true);
                     } else if (position == saveToGalleryRow) {
@@ -1356,7 +1364,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            boolean forkRows = position == squareAvatarsRow || position == inappCameraRow || position == syncPinsRow;
+            boolean forkRows = position == squareAvatarsRow 
+            || position == inappCameraRow 
+            || position == syncPinsRow
+            || position == reverseOrderPinsRow;
             return forkRows || position == textSizeRow || position == enableAnimationsRow || position == notificationRow || position == backgroundRow || position == numberRow ||
                     position == askQuestionRow || position == sendLogsRow || position == sendByEnterRow || position == autoplayGifsRow || position == privacyRow ||
                     position == clearLogsRow || position == languageRow || position == usernameRow || position == bioRow ||
@@ -1438,7 +1449,17 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
             if (position == settingsSectionRow || position == supportSectionRow || position == messagesSectionRow || position == contactsSectionRow) {
                 return 1;
-            } else if (position == enableAnimationsRow || position == squareAvatarsRow || position == inappCameraRow || position == syncPinsRow || position == sendByEnterRow || position == saveToGalleryRow || position == autoplayGifsRow || position == raiseToSpeakRow || position == customTabsRow || position == directShareRow) {
+            } else if (position == enableAnimationsRow 
+                    || position == squareAvatarsRow 
+                    || position == inappCameraRow 
+                    || position == syncPinsRow 
+                    || position == reverseOrderPinsRow
+                    || position == sendByEnterRow 
+                    || position == saveToGalleryRow 
+                    || position == autoplayGifsRow 
+                    || position == raiseToSpeakRow 
+                    || position == customTabsRow 
+                    || position == directShareRow) {
                 return 3;
             } else if (position == notificationRow || position == themeRow || position == backgroundRow || position == askQuestionRow || position == sendLogsRow || position == privacyRow || position == clearLogsRow || position == switchBackendButtonRow || position == telegramFaqRow || position == contactsReimportRow || position == textSizeRow || position == languageRow || position == contactsSortRow || position == stickersRow || position == privacyPolicyRow || position == emojiRow || position == dataRow) {
                 return 2;
