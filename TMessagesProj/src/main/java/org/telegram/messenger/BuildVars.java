@@ -17,8 +17,8 @@ public class BuildVars {
     public static boolean DEBUG_PRIVATE_VERSION = false;
     public static boolean LOGS_ENABLED = false;
     public static boolean CHECK_UPDATES = true;
-    public static int BUILD_VERSION = 13583;
-    public static String BUILD_VERSION_STRING = "4.9.1.3";
+    public static int BUILD_VERSION = 13584;
+    public static String BUILD_VERSION_STRING = "4.9.1.4";
     public static String PLAYSTORE_APP_URL = "";
 
     // Private vars.
