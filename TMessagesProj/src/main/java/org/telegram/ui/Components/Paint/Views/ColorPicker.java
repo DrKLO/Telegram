@@ -40,6 +40,7 @@ public class ColorPicker extends FrameLayout {
     private OvershootInterpolator interpolator = new OvershootInterpolator(1.02f);
 
     private static final int[] COLORS = new int[]{
+            0x00000000,
             0xffea2739,
             0xffdb3ad2,
             0xff3051e3,
@@ -53,6 +54,7 @@ public class ColorPicker extends FrameLayout {
 
     private static final float[] LOCATIONS = new float[]{
             0.0f,
+            0.07f,
             0.14f,
             0.24f,
             0.39f,
@@ -188,6 +190,11 @@ public class ColorPicker extends FrameLayout {
         int b = Math.min(255, (int) (b1 + (b2 - b1) * factor));
 
         return Color.argb(255, r, g, b);
+    }
+
+    public void setSwatchPaintColor(int color) {
+        swatchPaint.setColor(color);
+        swatchStrokePaint.setColor(color);
     }
 
     public void setLocation(float value) {

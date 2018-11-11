@@ -130,6 +130,17 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
         addView(curtainView);
 
         renderView = new RenderView(context, new Painting(getPaintingSize()), bitmap, orientation);
+        renderView.setOnTouchListener(new OnTouchListener(){
+            @Override
+            public boolean onTouch(View v, MotionEvent event){
+                int x = (int)event.getX();
+                int y = (int)event.getY();
+                int pixel = bitmap.getPixel(x,y);
+                renderView.setColor(pixel);
+                colorPicker.setSwatchPaintColor(pixel);
+                return false;
+            }
+        });
         renderView.setDelegate(new RenderView.RenderViewDelegate() {
 
             @Override
