@@ -1033,6 +1033,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
     }
 
     public void sendGifWithCaption(TLRPC.Document document, long peer, MessageObject replyingMessageObject, String caption) {
+        if (caption.startsWith("@gif")) caption = "";
         sendSticker(document, peer, replyingMessageObject, caption);
     }
 
