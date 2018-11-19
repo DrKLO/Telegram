@@ -106,6 +106,8 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.StickersAlert;
 
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.Collections;
 
 public class DialogsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     
@@ -161,6 +163,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private boolean allowSwitchAccount;
 
     private DialogsActivityDelegate delegate;
+
+    public static boolean DIALOGS_HIDED = false;
 
     public interface DialogsActivityDelegate {
         void didSelectDialogs(DialogsActivity fragment, ArrayList<Long> dids, CharSequence message, boolean param);
@@ -386,8 +390,24 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             actionBar.setSupportsHolidayImage(true);
         }
         actionBar.setTitleActionRunnable(() -> {
-            hideFloatingButton(false);
-            listView.smoothScrollToPosition(0);
+            if (getParentActivity() == null) {
+                return;
+            }
+            DIALOGS_HIDED = !DIALOGS_HIDED;
+
+            int currentTypeToOpen = 0;
+            if (DIALOGS_HIDED) currentTypeToOpen = 4;
+            Bundle args = new Bundle();
+            args.putBoolean("onlySelect", false);
+            args.putInt("dialogsType", currentTypeToOpen);
+            DialogsActivity fragment = new DialogsActivity(args);
+            LaunchActivity launchActivity = (LaunchActivity) getParentActivity();
+            dialogsLoaded[currentAccount] = true;
+            launchActivity.presentFragment(fragment, true, true);
+            dialogsLoaded[currentAccount] = true;
+
+            // hideFloatingButton(false);
+            // listView.smoothScrollToPosition(0);
         });
 
         if (allowSwitchAccount && UserConfig.getActivatedAccountsCount() > 1) {
@@ -934,16 +954,25 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         }
                         final boolean isBot = user != null && user.bot;
 
+                        //Hide mode work.
+                        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                        Set<String> setStr = preferences.getStringSet("setOfDialogsToHide", (Set<String>)Collections.EMPTY_SET);
+                        String selectedDialogStr = String.valueOf(selectedDialog);
+                        final boolean isAlreadyHided = setStr.contains(selectedDialogStr);
+                        /////
+
                         builder.setItems(new CharSequence[]{
                                 dialog.pinned || MessagesController.getInstance(currentAccount).canPinDialog(lower_id == 0) ? (dialog.pinned ? LocaleController.getString("UnpinFromTop", R.string.UnpinFromTop) : LocaleController.getString("PinToTop", R.string.PinToTop)) : null,
                                 LocaleController.getString("ClearHistory", R.string.ClearHistory),
                                 hasUnread ? LocaleController.getString("MarkAsRead", R.string.MarkAsRead) : LocaleController.getString("MarkAsUnread", R.string.MarkAsUnread),
-                                isChat ? LocaleController.getString("DeleteChat", R.string.DeleteChat) : isBot ? LocaleController.getString("DeleteAndStop", R.string.DeleteAndStop) : LocaleController.getString("Delete", R.string.Delete)
+                                isChat ? LocaleController.getString("DeleteChat", R.string.DeleteChat) : isBot ? LocaleController.getString("DeleteAndStop", R.string.DeleteAndStop) : LocaleController.getString("Delete", R.string.Delete),
+                                isAlreadyHided ? "Remove from Hide Mode" : "Add to Hide Mode"
                         }, new int[]{
                                 dialog.pinned ? R.drawable.chats_unpin : R.drawable.chats_pin,
                                 R.drawable.chats_clear,
                                 hasUnread ? R.drawable.menu_read : R.drawable.menu_unread,
-                                isChat ? R.drawable.chats_leave : R.drawable.chats_delete
+                                isChat ? R.drawable.chats_leave : R.drawable.chats_delete,
+                                R.drawable.chats_clear
                         }, (d, which) -> {
                             if (which == 0) {
                                 if (MessagesController.getInstance(currentAccount).pinDialog(selectedDialog, !pinned, null, 0) && !pinned) {
@@ -957,6 +986,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 } else {
                                     MessagesController.getInstance(currentAccount).markDialogAsUnread(selectedDialog, null, 0);
                                 }
+                            } else if (which == 4) {
+                                if (isAlreadyHided) {
+                                    setStr.remove(selectedDialogStr);
+                                } else {
+                                    setStr.add(selectedDialogStr);
+                                }
+                                SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
+                                editor.putStringSet("setOfDialogsToHide", setStr);
+                                editor.commit();
                             } else {
                                 AlertDialog.Builder builder12 = new AlertDialog.Builder(getParentActivity());
                                 builder12.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -1853,6 +1891,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return MessagesController.getInstance(currentAccount).dialogsGroupsOnly;
         } else if (dialogsType == 3) {
             return MessagesController.getInstance(currentAccount).dialogsForward;
+        } else if (dialogsType == 4) {
+            return MessagesController.getInstance(currentAccount).dialogsHide;
         }
         return null;
     }

@@ -39,6 +39,7 @@ import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.ProfileActivity;
 
+import java.util.Set;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -65,6 +66,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public ArrayList<TLRPC.TL_dialog> dialogsForward = new ArrayList<>();
     public ArrayList<TLRPC.TL_dialog> dialogsServerOnly = new ArrayList<>();
     public ArrayList<TLRPC.TL_dialog> dialogsGroupsOnly = new ArrayList<>();
+    public ArrayList<TLRPC.TL_dialog> dialogsHide = new ArrayList<>();
     public int unreadUnmutedDialogs;
     public int nextDialogsCacheOffset;
     public ConcurrentHashMap<Long, Integer> dialogs_read_inbox_max = new ConcurrentHashMap<>(100, 1.0f, 2);
@@ -783,6 +785,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         unreadUnmutedDialogs = 0;
         joiningToChannels.clear();
         channelViewsToSend.clear();
+        dialogsHide.clear();
         dialogsServerOnly.clear();
         dialogsForward.clear();
         dialogsGroupsOnly.clear();
@@ -9346,6 +9349,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         dialogsServerOnly.clear();
         dialogsGroupsOnly.clear();
         dialogsForward.clear();
+        dialogsHide.clear();
         unreadUnmutedDialogs = 0;
         boolean selfAdded = false;
         int selfId = UserConfig.getInstance(currentAccount).getClientUserId();
@@ -9357,10 +9361,16 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 isLeftProxyChannel = false;
             }
         }
+        Set<String> setStr = mainPreferences.getStringSet("setOfDialogsToHide", (Set<String>)Collections.EMPTY_SET);
         for (int a = 0; a < dialogs.size(); a++) {
             TLRPC.TL_dialog d = dialogs.get(a);
             int high_id = (int) (d.id >> 32);
             int lower_id = (int) d.id;
+
+            if (setStr.contains(String.valueOf(d.id))) {
+                dialogsHide.add(d);
+            }
+
             if (lower_id == selfId) {
                 dialogsForward.add(0, d);
                 selfAdded = true;
