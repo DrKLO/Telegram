@@ -537,6 +537,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private final static int copy = 10;
     private final static int forward = 11;
+    private final static int forward_anonym = 111;
     private final static int delete = 12;
     private final static int chat_enc_timer = 13;
     private final static int chat_menu_attach = 14;
@@ -1042,8 +1043,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         return;
                     }
                     createDeleteMessagesAlert(null, null);
-                } else if (id == forward) {
-                    IS_ANONYMOUS_FORWARD = false;
+                } else if (id == forward || id == forward_anonym) {
+                    IS_ANONYMOUS_FORWARD = id == forward_anonym;
                     Bundle args = new Bundle();
                     args.putBoolean("onlySelect", true);
                     args.putInt("dialogsType", 3);
@@ -1448,6 +1449,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             actionModeViews.add(actionMode.addItemWithWidth(star, R.drawable.ic_ab_fave, AndroidUtilities.dp(54)));
             actionModeViews.add(actionMode.addItemWithWidth(copy, R.drawable.ic_ab_copy, AndroidUtilities.dp(54)));
             actionModeViews.add(actionMode.addItemWithWidth(forward, R.drawable.ic_ab_forward, AndroidUtilities.dp(54)));
+            actionModeViews.add(actionMode.addItemWithWidth(forward_anonym, R.drawable.ic_ab_forward_anonym, AndroidUtilities.dp(54)));
             actionModeViews.add(actionMode.addItemWithWidth(delete, R.drawable.ic_ab_delete, AndroidUtilities.dp(54)));
         } else {
             actionModeViews.add(actionMode.addItemWithWidth(edit, R.drawable.group_edit, AndroidUtilities.dp(54)));
