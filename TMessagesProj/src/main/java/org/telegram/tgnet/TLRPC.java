@@ -17846,6 +17846,7 @@ public class TLRPC {
 
 		public void serializeToStream(AbstractSerializedData stream) {
 			stream.writeInt32(constructor);
+			if (!org.telegram.messenger.SharedConfig.hasSticker) has_stickers = false;
 			flags = has_stickers ? (flags | 1) : (flags &~ 1);
 			stream.writeInt32(flags);
 			stream.writeInt64(id);

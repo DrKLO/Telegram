@@ -72,6 +72,7 @@ public class SharedConfig {
     public static boolean shuffleMusic;
     public static boolean playOrderReversed;
     public static boolean hasCameraCache;
+    public static boolean hasSticker;
     public static int repeatMode;
     public static boolean allowBigEmoji;
     public static boolean useSystemEmoji;
@@ -211,6 +212,7 @@ public class SharedConfig {
             shuffleMusic = preferences.getBoolean("shuffleMusic", false);
             playOrderReversed = preferences.getBoolean("playOrderReversed", false);
             inappCamera = preferences.getBoolean("inappCamera", true);
+            hasSticker = preferences.getBoolean("photoHasSticker", true);
             hasCameraCache = preferences.contains("cameraCache");
             roundCamera16to9 = true;//preferences.getBoolean("roundCamera16to9", false);
             groupPhotosEnabled = preferences.getBoolean("groupPhotosEnabled", true);
@@ -455,6 +457,14 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("inappCamera", inappCamera);
+        editor.commit();
+    }
+
+    public static void toggleHasSticker() {
+        hasSticker = !hasSticker;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("photoHasSticker", hasSticker);
         editor.commit();
     }
 

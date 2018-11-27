@@ -167,6 +167,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int syncPinsRow;
     private int reverseOrderPinsRow;
     private int unmutedOnTopRow;
+    private int photoHasStickerRow;
 
     private final static int edit_name = 1;
     private final static int logout = 2;
@@ -291,6 +292,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         syncPinsRow = rowCount++;
         reverseOrderPinsRow = rowCount++;
         unmutedOnTopRow = rowCount++;
+        photoHasStickerRow = rowCount++;
         messagesSectionRow = rowCount++;
         messagesSectionRow2 = rowCount++;
         customTabsRow = rowCount++;
@@ -478,6 +480,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (position == unmutedOnTopRow) {
                     toggleGlobalMainSetting("unmutedOnTop", view, false);
                     MessagesController.getInstance(currentAccount).sortDialogs(null);
+                } else if (position == photoHasStickerRow) {
+                    SharedConfig.toggleHasSticker();
+                    if (view instanceof TextCheckCell) {
+                        ((TextCheckCell) view).setChecked(SharedConfig.hasSticker);
+                    }
                 } else if (position == inappCameraRow) {
                     SharedConfig.toggleInappCamera();
                     if (view instanceof TextCheckCell) {
@@ -1301,6 +1308,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         textCell.setTextAndCheck("Reverse Pinned Dialogs Order", preferences.getBoolean("reverseOrderPins", false), false);
                     } else if (position == unmutedOnTopRow) {
                         textCell.setTextAndCheck("Unmuted Messages are Primary", preferences.getBoolean("unmutedOnTop", false), false);
+                    } else if (position == photoHasStickerRow) {
+                        textCell.setTextAndCheck("Send Sticker Info in Photo", preferences.getBoolean("photoHasSticker", false), false);
                     } else if (position == sendByEnterRow) {
                         textCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), true);
                     } else if (position == saveToGalleryRow) {
@@ -1375,6 +1384,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             || position == inappCameraRow 
             || position == syncPinsRow
             || position == unmutedOnTopRow
+            || position == photoHasStickerRow
             || position == reverseOrderPinsRow;
             return forkRows || position == textSizeRow || position == enableAnimationsRow || position == notificationRow || position == backgroundRow || position == numberRow ||
                     position == askQuestionRow || position == sendLogsRow || position == sendByEnterRow || position == autoplayGifsRow || position == privacyRow ||
@@ -1459,6 +1469,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 1;
             } else if (position == enableAnimationsRow 
                     || position == squareAvatarsRow 
+                    || position == photoHasStickerRow 
                     || position == inappCameraRow 
                     || position == syncPinsRow 
                     || position == reverseOrderPinsRow
