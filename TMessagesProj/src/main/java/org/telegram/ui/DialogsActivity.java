@@ -959,6 +959,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         Set<String> setStr = preferences.getStringSet("setOfDialogsToHide", (Set<String>)Collections.EMPTY_SET);
                         String selectedDialogStr = String.valueOf(selectedDialog);
                         final boolean isAlreadyHided = setStr.contains(selectedDialogStr);
+                        String removeHideMode = LocaleController.getString("RemoveFromHideMode", R.string.RemoveFromHideMode);
+                        String addHideMode = LocaleController.getString("AddToHideMode", R.string.AddToHideMode);
                         /////
 
                         builder.setItems(new CharSequence[]{
@@ -966,7 +968,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 LocaleController.getString("ClearHistory", R.string.ClearHistory),
                                 hasUnread ? LocaleController.getString("MarkAsRead", R.string.MarkAsRead) : LocaleController.getString("MarkAsUnread", R.string.MarkAsUnread),
                                 isChat ? LocaleController.getString("DeleteChat", R.string.DeleteChat) : isBot ? LocaleController.getString("DeleteAndStop", R.string.DeleteAndStop) : LocaleController.getString("Delete", R.string.Delete),
-                                isAlreadyHided ? "Remove from Hide Mode" : "Add to Hide Mode"
+                                isAlreadyHided ? removeHideMode : addHideMode
                         }, new int[]{
                                 dialog.pinned ? R.drawable.chats_unpin : R.drawable.chats_pin,
                                 R.drawable.chats_clear,

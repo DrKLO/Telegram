@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="AppName">Fork Client</string>
+    <string name="AppNameBeta">Fork Client</string>
+    <string name="LanguageName">Русский</string>
+    <string name="English">Русский</string>
+    <string name="LanguageNameInEnglish">Russian</string>
+    <string name="LanguageCode">ru</string>
+    <string name="ContinueOnThisLanguage">Continue in English</string>
+    <!--signin view-->
+    <!--FORK CLIENT-->
+    <string name="AnonymousForward">Переслать анонимно</string>
+    <string name="DateForward">Дата</string>
+    <string name="ShowTitle">Показать заголовок</string>
+    <string name="HideTitle">Скрыть заголовок</string>
+    <string name="RemoveFromHideMode">Убрать из Скрытого Режима</string>
+    <string name="AddToHideMode">Добавить в Скрытый Режим</string>
+    <!--fork settings view-->
+    <string name="ForkSettingsTitle">Настройки Fork Client</string>
+    <string name="SquareAvatars">Квадратные аватарки</string>
+    <string name="SquareAvatarsInfo">Требуется рестарт</string>
+    <string name="InAppCamera">Встроенная камера</string>
+    <string name="InAppCameraInfo">Во вложениях</string>
+    <string name="SyncPins">Синх. закреплённых диалогов</string>
+    <string name="SyncPinsInfo">В откл. режиме даёт безлимитное количество закреплённых диалогов</string>
+    <string name="ReverseOrderPins">Обратный порядок</string>
+    <string name="ReverseOrderPinsInfo">Закреплённых диалогов</string>
+    <string name="UnmutedOnTop">Сообщения с увед. находятся сверху</string>
+    <string name="UnmutedOnTopInfo">Сообщения будут под закреплёнными диалогами</string>
+    <string name="PhotoHasSticker">Отправлять инфо о стикере в фото</string>
+    <string name="PhotoHasStickerInfo">При использовании стикеров на фотографии</string>
+    
+</resources>

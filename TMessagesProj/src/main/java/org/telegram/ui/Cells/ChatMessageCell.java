@@ -6056,7 +6056,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
             // Time and date of forwarded messages.
             java.util.Date dateOfFwdMsg = new java.util.Date((long)messageObject.messageOwner.fwd_from.date * 1000); 
-            String timeOfFwdMsg = "Date: " + new java.text.SimpleDateFormat("dd.MM.yyyy' 'HH:mm:ss").format(dateOfFwdMsg);
+            String startString = LocaleController.getString("DateForward", R.string.DateForward);
+            String timeOfFwdMsg = startString + ": " + new java.text.SimpleDateFormat("dd.MM.yyyy' 'HH:mm:ss").format(dateOfFwdMsg);
 
             if (messageObject.messageOwner.fwd_from.channel_id != 0) {
                 currentForwardChannel = MessagesController.getInstance(currentAccount).getChat(messageObject.messageOwner.fwd_from.channel_id);

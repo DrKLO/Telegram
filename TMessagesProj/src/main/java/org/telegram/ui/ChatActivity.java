@@ -1223,9 +1223,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     checkAndUpdateAvatar();
                     if (hideTitleItem != null) {
                         if (SharedConfig.hideTitleDialog) {
-                            hideTitleItem.setText("Show title");
+                            hideTitleItem.setText(LocaleController.getString("ShowTitle", R.string.ShowTitle));
                         } else {
-                            hideTitleItem.setText("Hide title");
+                            hideTitleItem.setText(LocaleController.getString("HideTitle", R.string.HideTitle));
                         }
                     }
 
@@ -1404,7 +1404,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             updateBotButtons();
         }
 
-        String hideTitleString = SharedConfig.hideTitleDialog ? "Show title" : "Hide title";
+        String show = LocaleController.getString("ShowTitle", R.string.ShowTitle);
+        String hide = LocaleController.getString("HideTitle", R.string.HideTitle);
+        String hideTitleString = SharedConfig.hideTitleDialog ? show : hide;
         hideTitleItem = headerItem.addSubItem(hideTitle, hideTitleString);
 
         if (currentUser != null) {
@@ -10658,7 +10660,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (!selectedObject.needDrawBluredPreview() && !selectedObject.isLiveLocation()) {
                             items.add(LocaleController.getString("Forward", R.string.Forward));
                             options.add(2);
-                            items.add("Anonymous Forward");
+                            items.add(LocaleController.getString("AnonymousForward", R.string.AnonymousForward));
                             options.add(202);
                         }
                         if (allowUnpin) {

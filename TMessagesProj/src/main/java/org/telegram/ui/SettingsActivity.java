@@ -1299,17 +1299,29 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     if (position == enableAnimationsRow) {
                         textCell.setTextAndCheck(LocaleController.getString("EnableAnimations", R.string.EnableAnimations), preferences.getBoolean("view_animations", true), false);
                     } else if (position == squareAvatarsRow) {
-                        textCell.setTextAndCheck("Square Avatars (restart required)", preferences.getBoolean("squareAvatars", true), false);
+                        String t = LocaleController.getString("SquareAvatars", R.string.SquareAvatars);
+                        String info = LocaleController.getString("SquareAvatarsInfo", R.string.SquareAvatarsInfo);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("squareAvatars", true), false, false);
                     } else if (position == inappCameraRow) {
-                        textCell.setTextAndCheck("Enable In-App Camera", preferences.getBoolean("inappCamera", true), false);
+                        String t = LocaleController.getString("InAppCamera", R.string.InAppCamera);
+                        String info = LocaleController.getString("InAppCameraInfo", R.string.InAppCameraInfo);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("inappCamera", true), false, false);
                     } else if (position == syncPinsRow) {
-                        textCell.setTextAndCheck("Sync Pinned Dialogs", preferences.getBoolean("syncPins", true), false);
+                        String t = LocaleController.getString("SyncPins", R.string.SyncPins);
+                        String info = LocaleController.getString("SyncPinsInfo", R.string.SyncPinsInfo);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("syncPins", true), true, false);
                     } else if (position == reverseOrderPinsRow) {
-                        textCell.setTextAndCheck("Reverse Pinned Dialogs Order", preferences.getBoolean("reverseOrderPins", false), false);
+                        String t = LocaleController.getString("ReverseOrderPins", R.string.ReverseOrderPins);
+                        String info = LocaleController.getString("ReverseOrderPinsInfo", R.string.ReverseOrderPinsInfo);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("reverseOrderPins", false), true, false);
                     } else if (position == unmutedOnTopRow) {
-                        textCell.setTextAndCheck("Unmuted Messages are Primary", preferences.getBoolean("unmutedOnTop", false), false);
+                        String t = LocaleController.getString("UnmutedOnTop", R.string.UnmutedOnTop);
+                        String info = LocaleController.getString("UnmutedOnTopInfo", R.string.UnmutedOnTopInfo);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("unmutedOnTop", false), true, false);
                     } else if (position == photoHasStickerRow) {
-                        textCell.setTextAndCheck("Send Sticker Info in Photo", preferences.getBoolean("photoHasSticker", false), false);
+                        String t = LocaleController.getString("PhotoHasSticker", R.string.PhotoHasSticker);
+                        String info = LocaleController.getString("PhotoHasStickerInfo", R.string.PhotoHasStickerInfo);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("photoHasSticker", false), true, false);
                     } else if (position == sendByEnterRow) {
                         textCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), true);
                     } else if (position == saveToGalleryRow) {
@@ -1335,7 +1347,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (position == numberSectionRow) {
                         ((HeaderCell) holder.itemView).setText(LocaleController.getString("Info", R.string.Info));
                     } else if (position == forkSectionRow) {
-                        ((HeaderCell) holder.itemView).setText("Fork Settings");
+                        ((HeaderCell) holder.itemView).setText(LocaleController.getString("ForkSettingsTitle", R.string.ForkSettingsTitle));
                     }
                     break;
                 }
