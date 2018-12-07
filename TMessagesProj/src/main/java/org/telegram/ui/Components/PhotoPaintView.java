@@ -132,10 +132,27 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
         renderView = new RenderView(context, new Painting(getPaintingSize()), bitmap, orientation);
         renderView.setOnTouchListener(new OnTouchListener(){
             @Override
-            public boolean onTouch(View v, MotionEvent event){
+            public boolean onTouch(View v, MotionEvent event) {
+                if (!renderView.isColorPicker) return false;
                 int x = (int)event.getX();
                 int y = (int)event.getY();
-                int pixel = bitmap.getPixel(x,y);
+
+                if (x >= v.getWidth()) return false;
+                if (y >= v.getHeight()) return false;
+                if (x <= 0) return false;
+                if (y <= 0) return false;
+
+                int finalX;
+                int finalY;
+                if (!isSidewardOrientation()) {
+                    finalX = (int)((float)x / (float)v.getWidth() * bitmap.getWidth());
+                    finalY = (int)((float)y / (float)v.getHeight() * bitmap.getHeight());
+                } else {
+                    finalY = (int)((float)(v.getWidth() - x) / (float)v.getWidth() * bitmap.getHeight());
+                    finalX = (int)((float)y / (float)v.getHeight() * bitmap.getWidth());
+                }
+
+                int pixel = bitmap.getPixel(finalX, finalY);
                 renderView.setColor(pixel);
                 colorPicker.setSwatchPaintColor(pixel);
                 return false;
@@ -255,6 +272,12 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
             @Override
             public void onUndoPressed() {
                 undoStore.undo();
+            }
+
+            @Override
+            public boolean onColorPicker() {
+                renderView.isColorPicker = !renderView.isColorPicker;
+                return renderView.isColorPicker;
             }
         });
 
