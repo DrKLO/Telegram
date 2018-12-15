@@ -2400,7 +2400,7 @@ public class NotificationsController {
                     .setGroupSummary(true)
                     .setShowWhen(true)
                     .setWhen(((long) lastMessageObject.messageOwner.date) * 1000)
-                    .setColor(0xff2ca5e0);
+                    .setColor(0xff3A2E5C);
 
             long vibrationPattern[] = null;
             int importance = 0;
@@ -3025,7 +3025,7 @@ public class NotificationsController {
                     .setContentText(text.toString())
                     .setAutoCancel(true)
                     .setNumber(messageObjects.size())
-                    .setColor(0xff2ca5e0)
+                    .setColor(0xff3A2E5C)
                     .setGroupSummary(false)
                     .setWhen(date)
                     .setShowWhen(true)
