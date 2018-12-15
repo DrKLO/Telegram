@@ -104,6 +104,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private int scrollOffsetY;
     private int topBeforeSwitch;
 
+    private ImageView emptyCaptionButton;
+    private PorterDuffColorFilter emptyCaptionButtonFilter = new PorterDuffColorFilter(0xff51bdf3, PorterDuff.Mode.MULTIPLY);
+    private PorterDuffColorFilter emptyCaptionButtonFilterGrey = new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogIcon), PorterDuff.Mode.MULTIPLY);
+    private boolean heh = false;
 
     public static ShareAlert createShareAlert(final Context context, MessageObject messageObject, final String text, boolean publicChannel, final String copyLink, boolean fullScreen) {
         ArrayList<MessageObject> arrayList;
@@ -242,7 +246,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                             if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
                                 SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, true, null, null, null);
                             }
-                            SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key);
+                            for (MessageObject object : sendingMessageObjects) {
+                                SendMessagesHelper.getInstance(currentAccount).processForwardFromMyName(object, key);
+                            }
+                            // SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key);
                         }
                     } else if (sendingText != null) {
                         for (int a = 0; a < selectedDialogs.size(); a++) {
@@ -250,6 +257,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                             if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
                                 SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, true, null, null, null);
                             }
+                            // SendMessagesHelper.getInstance(currentAccount).processForwardFromMyName(sendingText, key, null, null, true, null, null, null);
                             SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingText, key, null, null, true, null, null, null);
                         }
                     }
@@ -280,7 +288,28 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogIcon), PorterDuff.Mode.MULTIPLY));
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setPadding(0, AndroidUtilities.dp(2), 0, 0);
-        frameLayout.addView(imageView, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+        frameLayout.addView(imageView, LayoutHelper.createFrame(48 * 2 + 5, 48, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+
+        ImageView emptyCaptionButton = new ImageView(context);
+        emptyCaptionButton.setImageResource(R.drawable.photo_paint_text);
+        emptyCaptionButton.setColorFilter(emptyCaptionButtonFilterGrey);
+        emptyCaptionButton.setScaleType(ImageView.ScaleType.CENTER);
+        emptyCaptionButton.setPadding(0, AndroidUtilities.dp(2), 0, 0);
+        frameLayout.addView(emptyCaptionButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+        SendMessagesHelper.IS_EMPTY_CAPTION = false;
+
+        emptyCaptionButton.setOnClickListener(v -> {
+            SendMessagesHelper.IS_EMPTY_CAPTION = !SendMessagesHelper.IS_EMPTY_CAPTION;
+            boolean p = SendMessagesHelper.IS_EMPTY_CAPTION;
+
+            PorterDuffColorFilter f = emptyCaptionButtonFilterGrey;
+            emptyCaptionButton.setImageResource(R.drawable.photo_paint_text);
+            if (p) {
+                f = emptyCaptionButtonFilter;
+                emptyCaptionButton.setImageResource(R.drawable.ic_ab_empty_text);
+            }
+            emptyCaptionButton.setColorFilter(f);
+        });
 
         nameTextView = new EditTextBoldCursor(context);
         nameTextView.setHint(LocaleController.getString("ShareSendTo", R.string.ShareSendTo));
@@ -296,7 +325,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         nameTextView.setCursorSize(AndroidUtilities.dp(20));
         nameTextView.setCursorWidth(1.5f);
         nameTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        frameLayout.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 48, 2, 96, 0));
+        frameLayout.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 60, 2, 96, 0));
         nameTextView.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
