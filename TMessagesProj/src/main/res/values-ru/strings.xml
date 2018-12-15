@@ -15,6 +15,7 @@
     <string name="HideTitle">Скрыть заголовок</string>
     <string name="RemoveFromHideMode">Убрать из Скрытого Режима</string>
     <string name="AddToHideMode">Добавить в Скрытый Режим</string>
+    <string name="PinOrderInfo">Здесь Вы можете изменить локальный порядок закреплённых диалогов.</string>
     <!--fork settings view-->
     <string name="ForkSettingsTitle">Настройки Fork Client</string>
     <string name="SquareAvatars">Квадратные аватарки</string>
@@ -29,5 +30,6 @@
     <string name="UnmutedOnTopInfo">Сообщения будут под закреплёнными диалогами</string>
     <string name="PhotoHasSticker">Отправлять инфо о стикере в фото</string>
     <string name="PhotoHasStickerInfo">При использовании стикеров на фотографии</string>
+    <string name="PinDialogsOrder">Порядок закреп. диалогов</string>
     
 </resources>

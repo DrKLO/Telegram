@@ -168,6 +168,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int reverseOrderPinsRow;
     private int unmutedOnTopRow;
     private int photoHasStickerRow;
+    private int pinOrderRow;
 
     private final static int edit_name = 1;
     private final static int logout = 2;
@@ -299,6 +300,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         if (Build.VERSION.SDK_INT >= 23) {
             directShareRow = rowCount++;
         }
+        pinOrderRow = rowCount++;
         stickersRow = rowCount++;
         //emojiRow = rowCount++;
         textSizeRow = rowCount++;
@@ -621,6 +623,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     presentFragment(new ChangePhoneHelpActivity());
                 } else if (position == stickersRow) {
                     presentFragment(new StickersActivity(DataQuery.TYPE_IMAGE));
+                } else if (position == pinOrderRow) {
+                    presentFragment(new PinsOrderActivity());
                 } else if (position == emojiRow) {
                     if (getParentActivity() == null) {
                         return;
@@ -1286,6 +1290,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (position == stickersRow) {
                         int count = DataQuery.getInstance(currentAccount).getUnreadStickerSets().size();
                         textCell.setTextAndValue(LocaleController.getString("StickersName", R.string.StickersName), count != 0 ? String.format("%d", count) : "", true);
+                    } else if (position == pinOrderRow) {
+                        textCell.setText(LocaleController.getString("PinDialogsOrder", R.string.PinDialogsOrder), true);
                     } else if (position == privacyPolicyRow) {
                         textCell.setText(LocaleController.getString("PrivacyPolicy", R.string.PrivacyPolicy), true);
                     } else if (position == emojiRow) {
@@ -1397,7 +1403,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             || position == syncPinsRow
             || position == unmutedOnTopRow
             || position == photoHasStickerRow
-            || position == reverseOrderPinsRow;
+            || position == reverseOrderPinsRow
+            || position == pinOrderRow;
             return forkRows || position == textSizeRow || position == enableAnimationsRow || position == notificationRow || position == backgroundRow || position == numberRow ||
                     position == askQuestionRow || position == sendLogsRow || position == sendByEnterRow || position == autoplayGifsRow || position == privacyRow ||
                     position == clearLogsRow || position == languageRow || position == usernameRow || position == bioRow ||
@@ -1493,7 +1500,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     || position == customTabsRow 
                     || position == directShareRow) {
                 return 3;
-            } else if (position == notificationRow || position == themeRow || position == backgroundRow || position == askQuestionRow || position == sendLogsRow || position == privacyRow || position == clearLogsRow || position == switchBackendButtonRow || position == telegramFaqRow || position == contactsReimportRow || position == textSizeRow || position == languageRow || position == contactsSortRow || position == stickersRow || position == privacyPolicyRow || position == emojiRow || position == dataRow) {
+            } else if (position == pinOrderRow 
+                || position == notificationRow || position == themeRow || position == backgroundRow || position == askQuestionRow || position == sendLogsRow || position == privacyRow || position == clearLogsRow || position == switchBackendButtonRow || position == telegramFaqRow || position == contactsReimportRow || position == textSizeRow || position == languageRow || position == contactsSortRow || position == stickersRow || position == privacyPolicyRow || position == emojiRow || position == dataRow) {
                 return 2;
             } else if (position == versionRow) {
                 return 5;
