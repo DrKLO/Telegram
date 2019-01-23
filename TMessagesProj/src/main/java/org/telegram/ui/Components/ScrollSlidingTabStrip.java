@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -23,6 +23,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -99,12 +101,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         ImageView imageView = new ImageView(getContext());
         imageView.setImageDrawable(drawable);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        tab.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                delegate.onPageSelected(position);
-            }
-        });
+        tab.setOnClickListener(v -> delegate.onPageSelected(position));
         tab.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         tab.setSelected(position == currentPosition);
@@ -128,12 +125,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         tab.setFocusable(true);
         tab.setImageDrawable(drawable);
         tab.setScaleType(ImageView.ScaleType.CENTER);
-        tab.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                delegate.onPageSelected(position);
-            }
-        });
+        tab.setOnClickListener(v -> delegate.onPageSelected(position));
         tabsContainer.addView(tab);
         tab.setSelected(position == currentPosition);
     }
@@ -142,12 +134,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         final int position = tabCount++;
         FrameLayout tab = new FrameLayout(getContext());
         tab.setFocusable(true);
-        tab.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                delegate.onPageSelected(position);
-            }
-        });
+        tab.setOnClickListener(v -> delegate.onPageSelected(position));
         tabsContainer.addView(tab);
         tab.setSelected(position == currentPosition);
         BackupImageView imageView = new BackupImageView(getContext());
@@ -160,23 +147,19 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         }
         avatarDrawable.setTextSize(AndroidUtilities.dp(14));
         avatarDrawable.setInfo(chat);
-        imageView.setImage(photo, "50_50", avatarDrawable);
+        imageView.setImage(photo, "50_50", avatarDrawable, chat);
 
         imageView.setAspectFit(true);
         tab.addView(imageView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));
     }
 
-    public void addStickerTab(TLRPC.Document sticker) {
+    public void addStickerTab(TLRPC.Document sticker, Object parentObject) {
         final int position = tabCount++;
         FrameLayout tab = new FrameLayout(getContext());
         tab.setTag(sticker);
+        tab.setTag(R.id.parent_tag, parentObject);
         tab.setFocusable(true);
-        tab.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                delegate.onPageSelected(position);
-            }
-        });
+        tab.setOnClickListener(v -> delegate.onPageSelected(position));
         tabsContainer.addView(tab);
         tab.setSelected(position == currentPosition);
         BackupImageView imageView = new BackupImageView(getContext());
@@ -225,12 +208,14 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         for (int a = start; a < end; a++) {
             View child = tabsContainer.getChildAt(a);
             Object object = child.getTag();
+            Object parentObject = child.getTag(R.id.parent_tag);
             if (!(object instanceof TLRPC.Document)) {
                 continue;
             }
             BackupImageView imageView = (BackupImageView) ((FrameLayout) child).getChildAt(0);
             TLRPC.Document sticker = (TLRPC.Document) object;
-            imageView.setImage(sticker.thumb.location, null, "webp", null);
+            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
+            imageView.setImage(thumb, null, "webp", null, parentObject);
         }
     }
 
@@ -252,6 +237,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                 continue;
             }
             Object object = child.getTag();
+            Object parentObject = child.getTag(R.id.parent_tag);
             if (!(object instanceof TLRPC.Document)) {
                 continue;
             }
@@ -260,9 +246,8 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                 imageView.setImageDrawable(null);
             } else {
                 TLRPC.Document sticker = (TLRPC.Document) object;
-                if (sticker.thumb != null) {
-                    imageView.setImage(sticker.thumb.location, null, "webp", null);
-                }
+                TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
+                imageView.setImage(thumb, null, "webp", null, parentObject);
             }
         }
     }

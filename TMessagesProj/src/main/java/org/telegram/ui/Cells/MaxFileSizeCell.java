@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
@@ -19,7 +19,6 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SeekBarView;
@@ -27,7 +26,7 @@ import org.telegram.ui.Components.SeekBarView;
 public class MaxFileSizeCell extends FrameLayout {
 
     private TextView textView;
-    private SimpleTextView sizeTextView;
+    private TextView sizeTextView;
     private SeekBarView seekBarView;
 
     private long maxSize;
@@ -44,13 +43,16 @@ public class MaxFileSizeCell extends FrameLayout {
         textView.setText(LocaleController.getString("AutodownloadSizeLimit", R.string.AutodownloadSizeLimit));
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         textView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 64 : 17, 13, LocaleController.isRTL ? 17 : 64, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 13, 21, 0));
 
-        sizeTextView = new SimpleTextView(context);
+        sizeTextView = new TextView(context);
         sizeTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText6));
-        sizeTextView.setTextSize(16);
+        sizeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        sizeTextView.setLines(1);
+        sizeTextView.setMaxLines(1);
+        sizeTextView.setSingleLine(true);
         sizeTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP);
-        addView(sizeTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 17 : 64, 13, LocaleController.isRTL ? 64 : 17, 0));
+        addView(sizeTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 21, 13, 21, 0));
 
         seekBarView = new SeekBarView(context) {
             @Override
@@ -62,23 +64,20 @@ public class MaxFileSizeCell extends FrameLayout {
             }
         };
         seekBarView.setReportChanges(true);
-        seekBarView.setDelegate(new SeekBarView.SeekBarViewDelegate() {
-            @Override
-            public void onSeekBarDrag(float progress) {
-                int size;
-                if (maxSize > 1024 * 1024 * 10) {
-                    int min = 1024 * 1024 * 100;
-                    if (progress <= 0.8f) {
-                        size = (int) (min * (progress / 0.8f));
-                    } else {
-                        size = (int) (min + (maxSize - min) * (progress - 0.8f) / 0.2f);
-                    }
+        seekBarView.setDelegate(progress -> {
+            int size;
+            if (maxSize > 1024 * 1024 * 10) {
+                int min = 1024 * 1024 * 100;
+                if (progress <= 0.8f) {
+                    size = (int) (min * (progress / 0.8f));
                 } else {
-                    size = (int) (maxSize * progress);
+                    size = (int) (min + (maxSize - min) * (progress - 0.8f) / 0.2f);
                 }
-                sizeTextView.setText(LocaleController.formatString("AutodownloadSizeLimitUpTo", R.string.AutodownloadSizeLimitUpTo, AndroidUtilities.formatFileSize(size)));
-                didChangedSizeValue(size);
+            } else {
+                size = (int) (maxSize * progress);
             }
+            sizeTextView.setText(LocaleController.formatString("AutodownloadSizeLimitUpTo", R.string.AutodownloadSizeLimitUpTo, AndroidUtilities.formatFileSize(size)));
+            didChangedSizeValue(size);
         });
         addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.TOP | Gravity.LEFT, 4, 40, 4, 0));
     }
@@ -90,6 +89,17 @@ public class MaxFileSizeCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80), MeasureSpec.EXACTLY));
+
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(80));
+
+        int availableWidth = getMeasuredWidth() - AndroidUtilities.dp(42);
+
+        sizeTextView.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(30), MeasureSpec.EXACTLY));
+        int width = Math.max(AndroidUtilities.dp(10), availableWidth - sizeTextView.getMeasuredWidth() - AndroidUtilities.dp(8));
+
+        textView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(30), MeasureSpec.EXACTLY));
+
+        seekBarView.measure(MeasureSpec.makeMeasureSpec(getMeasuredWidth() - AndroidUtilities.dp(8), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(30), MeasureSpec.EXACTLY));
     }
 
     public void setSize(long size, long max) {

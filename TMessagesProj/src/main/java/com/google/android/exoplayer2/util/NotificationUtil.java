@@ -24,6 +24,7 @@ import android.content.Intent;
 import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -31,7 +32,12 @@ import java.lang.annotation.RetentionPolicy;
 @SuppressLint("InlinedApi")
 public final class NotificationUtil {
 
-  /** Notification channel importance levels. */
+  /**
+   * Notification channel importance levels. One of {@link #IMPORTANCE_UNSPECIFIED}, {@link
+   * #IMPORTANCE_NONE}, {@link #IMPORTANCE_MIN}, {@link #IMPORTANCE_LOW}, {@link
+   * #IMPORTANCE_DEFAULT} or {@link #IMPORTANCE_HIGH}.
+   */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
     IMPORTANCE_UNSPECIFIED,

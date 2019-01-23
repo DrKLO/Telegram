@@ -59,7 +59,7 @@ void silk_find_pred_coefs_FLP(
         /**********/
         /* VOICED */
         /**********/
-        silk_assert( psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder >= psEncCtrl->pitchL[ 0 ] + LTP_ORDER / 2 );
+        celt_assert( psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder >= psEncCtrl->pitchL[ 0 ] + LTP_ORDER / 2 );
 
         /* LTP analysis */
         silk_find_LTP_FLP( XXLTP, xXLTP, res_pitch, psEncCtrl->pitchL, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr );

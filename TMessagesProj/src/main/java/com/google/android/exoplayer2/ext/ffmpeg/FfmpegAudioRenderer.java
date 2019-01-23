@@ -95,9 +95,7 @@ public final class FfmpegAudioRenderer extends SimpleDecoderAudioRenderer {
   protected int supportsFormatInternal(DrmSessionManager<ExoMediaCrypto> drmSessionManager,
       Format format) {
     Assertions.checkNotNull(format.sampleMimeType);
-    if (!MimeTypes.isAudio(format.sampleMimeType)) {
-      return FORMAT_UNSUPPORTED_TYPE;
-    } else if (!FfmpegLibrary.supportsFormat(format.sampleMimeType, format.pcmEncoding)
+    if (!FfmpegLibrary.supportsFormat(format.sampleMimeType, format.pcmEncoding)
         || !isOutputSupported(format)) {
       return FORMAT_UNSUPPORTED_SUBTYPE;
     } else if (!supportsFormatDrm(drmSessionManager, format.drmInitData)) {
@@ -145,12 +143,13 @@ public final class FfmpegAudioRenderer extends SimpleDecoderAudioRenderer {
   }
 
   private boolean isOutputSupported(Format inputFormat) {
-    return shouldUseFloatOutput(inputFormat) || supportsOutputEncoding(C.ENCODING_PCM_16BIT);
+    return shouldUseFloatOutput(inputFormat)
+        || supportsOutput(inputFormat.channelCount, C.ENCODING_PCM_16BIT);
   }
 
   private boolean shouldUseFloatOutput(Format inputFormat) {
     Assertions.checkNotNull(inputFormat.sampleMimeType);
-    if (!enableFloatOutput || !supportsOutputEncoding(C.ENCODING_PCM_FLOAT)) {
+    if (!enableFloatOutput || !supportsOutput(inputFormat.channelCount, C.ENCODING_PCM_FLOAT)) {
       return false;
     }
     switch (inputFormat.sampleMimeType) {

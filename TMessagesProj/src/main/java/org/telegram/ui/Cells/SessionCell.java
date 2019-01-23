@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x
+ * This is the source code of Telegram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
@@ -51,18 +51,17 @@ public class SessionCell extends FrameLayout {
         linearLayout.setOrientation(LinearLayout.HORIZONTAL);
         linearLayout.setWeightSum(1);
 
-
         if (type == 1) {
-            addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 11 : 45), 11, (LocaleController.isRTL ? 45 : 11), 0));
+            addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 15 : 49), 11, (LocaleController.isRTL ? 49 : 15), 0));
 
             avatarDrawable = new AvatarDrawable();
             avatarDrawable.setTextSize(AndroidUtilities.dp(10));
 
             imageView = new BackupImageView(context);
             imageView.setRoundRadius(AndroidUtilities.dp(10));
-            addView(imageView, LayoutHelper.createFrame(20, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 17), 13, (LocaleController.isRTL ? 17 : 0), 0));
+            addView(imageView, LayoutHelper.createFrame(20, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 21), 13, (LocaleController.isRTL ? 21 : 0), 0));
         } else {
-            addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 11 : 17), 11, (LocaleController.isRTL ? 17 : 11), 0));
+            addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 15 : 21), 11, (LocaleController.isRTL ? 21 : 15), 0));
         }
 
         nameTextView = new TextView(context);
@@ -95,7 +94,7 @@ public class SessionCell extends FrameLayout {
         detailTextView.setSingleLine(true);
         detailTextView.setEllipsize(TextUtils.TruncateAt.END);
         detailTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(detailTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 36, 17, 0));
+        addView(detailTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 36, 21, 0));
 
         detailExTextView = new TextView(context);
         detailExTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
@@ -105,7 +104,7 @@ public class SessionCell extends FrameLayout {
         detailExTextView.setSingleLine(true);
         detailExTextView.setEllipsize(TextUtils.TruncateAt.END);
         detailExTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(detailExTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 59, 17, 0));
+        addView(detailExTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 59, 21, 0));
     }
 
     @Override
@@ -144,6 +143,9 @@ public class SessionCell extends FrameLayout {
 
             stringBuilder = new StringBuilder();
             if (session.device_model.length() != 0) {
+                if (stringBuilder.length() != 0) {
+                    stringBuilder.append(", ");
+                }
                 stringBuilder.append(session.device_model);
             }
             if (session.system_version.length() != 0 || session.platform.length() != 0) {
@@ -161,7 +163,7 @@ public class SessionCell extends FrameLayout {
                 }
             }
 
-            if ((session.flags & 2) == 0) {
+            if (!session.official_app) {
                 if (stringBuilder.length() != 0) {
                     stringBuilder.append(", ");
                 }
@@ -186,7 +188,7 @@ public class SessionCell extends FrameLayout {
                 } else {
                     currentPhoto = null;
                 }
-                imageView.setImage(currentPhoto, "50_50", avatarDrawable);
+                imageView.setImage(currentPhoto, "50_50", avatarDrawable, user);
             } else {
                 name = "";
             }
@@ -232,7 +234,7 @@ public class SessionCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(getPaddingLeft(), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
+            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 }

@@ -42,10 +42,13 @@ import com.google.android.exoplayer2.source.dash.manifest.Period;
 import com.google.android.exoplayer2.source.dash.manifest.Representation;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.upstream.Allocator;
+import com.google.android.exoplayer2.upstream.LoadErrorHandlingPolicy;
 import com.google.android.exoplayer2.upstream.LoaderErrorThrower;
 import com.google.android.exoplayer2.upstream.TransferListener;
 import com.google.android.exoplayer2.util.MimeTypes;
+import com.google.android.exoplayer2.util.Util;
 import java.io.IOException;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
@@ -62,8 +65,8 @@ import java.util.List;
   /* package */ final int id;
   private final DashChunkSource.Factory chunkSourceFactory;
   private final @Nullable TransferListener transferListener;
-  private final int minLoadableRetryCount;
-  private final long elapsedRealtimeOffset;
+  private final LoadErrorHandlingPolicy loadErrorHandlingPolicy;
+  private final long elapsedRealtimeOffsetMs;
   private final LoaderErrorThrower manifestLoaderErrorThrower;
   private final Allocator allocator;
   private final TrackGroupArray trackGroups;
@@ -72,8 +75,8 @@ import java.util.List;
   private final PlayerEmsgHandler playerEmsgHandler;
   private final IdentityHashMap<ChunkSampleStream<DashChunkSource>, PlayerTrackEmsgHandler>
       trackEmsgHandlerBySampleStream;
+  private final EventDispatcher eventDispatcher;
 
-  private EventDispatcher eventDispatcher;
   private @Nullable Callback callback;
   private ChunkSampleStream<DashChunkSource>[] sampleStreams;
   private EventSampleStream[] eventSampleStreams;
@@ -89,9 +92,9 @@ import java.util.List;
       int periodIndex,
       DashChunkSource.Factory chunkSourceFactory,
       @Nullable TransferListener transferListener,
-      int minLoadableRetryCount,
+      LoadErrorHandlingPolicy loadErrorHandlingPolicy,
       EventDispatcher eventDispatcher,
-      long elapsedRealtimeOffset,
+      long elapsedRealtimeOffsetMs,
       LoaderErrorThrower manifestLoaderErrorThrower,
       Allocator allocator,
       CompositeSequenceableLoaderFactory compositeSequenceableLoaderFactory,
@@ -101,9 +104,9 @@ import java.util.List;
     this.periodIndex = periodIndex;
     this.chunkSourceFactory = chunkSourceFactory;
     this.transferListener = transferListener;
-    this.minLoadableRetryCount = minLoadableRetryCount;
+    this.loadErrorHandlingPolicy = loadErrorHandlingPolicy;
     this.eventDispatcher = eventDispatcher;
-    this.elapsedRealtimeOffset = elapsedRealtimeOffset;
+    this.elapsedRealtimeOffsetMs = elapsedRealtimeOffsetMs;
     this.manifestLoaderErrorThrower = manifestLoaderErrorThrower;
     this.allocator = allocator;
     this.compositeSequenceableLoaderFactory = compositeSequenceableLoaderFactory;
@@ -130,13 +133,6 @@ import java.util.List;
    */
   public void updateManifest(DashManifest manifest, int periodIndex) {
     this.manifest = manifest;
-    if (this.periodIndex != periodIndex) {
-      eventDispatcher =
-          eventDispatcher.withParameters(
-              /* windowIndex= */ 0,
-              eventDispatcher.mediaPeriodId.copyWithPeriodIndex(periodIndex),
-              manifest.getPeriod(periodIndex).startMs);
-    }
     this.periodIndex = periodIndex;
     playerEmsgHandler.updateManifest(manifest);
     if (sampleStreams != null) {
@@ -149,7 +145,10 @@ import java.util.List;
     for (EventSampleStream eventSampleStream : eventSampleStreams) {
       for (EventStream eventStream : eventStreams) {
         if (eventStream.id().equals(eventSampleStream.eventStreamId())) {
-          eventSampleStream.updateEventStream(eventStream, manifest.dynamic);
+          int lastPeriodIndex = manifest.getPeriodCount() - 1;
+          eventSampleStream.updateEventStream(
+              eventStream,
+              /* eventStreamAppendable= */ manifest.dynamic && periodIndex == lastPeriodIndex);
           break;
         }
       }
@@ -454,13 +453,22 @@ import java.util.List;
       if (adaptationSetSwitchingProperty == null) {
         groupedAdaptationSetIndices[groupCount++] = new int[] {i};
       } else {
-        String[] extraAdaptationSetIds = adaptationSetSwitchingProperty.value.split(",");
+        String[] extraAdaptationSetIds = Util.split(adaptationSetSwitchingProperty.value, ",");
         int[] adaptationSetIndices = new int[1 + extraAdaptationSetIds.length];
         adaptationSetIndices[0] = i;
+        int outputIndex = 1;
         for (int j = 0; j < extraAdaptationSetIds.length; j++) {
-          int extraIndex = idToIndexMap.get(Integer.parseInt(extraAdaptationSetIds[j]));
-          adaptationSetUsedFlags[extraIndex] = true;
-          adaptationSetIndices[1 + j] = extraIndex;
+          int extraIndex =
+              idToIndexMap.get(
+                  Integer.parseInt(extraAdaptationSetIds[j]), /* valueIfKeyNotFound= */ -1);
+          if (extraIndex != -1) {
+            adaptationSetUsedFlags[extraIndex] = true;
+            adaptationSetIndices[outputIndex] = extraIndex;
+            outputIndex++;
+          }
+        }
+        if (outputIndex < adaptationSetIndices.length) {
+          adaptationSetIndices = Arrays.copyOf(adaptationSetIndices, outputIndex);
         }
         groupedAdaptationSetIndices[groupCount++] = adaptationSetIndices;
       }
@@ -595,7 +603,7 @@ import java.util.List;
             trackGroupInfo.adaptationSetIndices,
             selection,
             trackGroupInfo.trackType,
-            elapsedRealtimeOffset,
+            elapsedRealtimeOffsetMs,
             enableEventMessageTrack,
             enableCea608Track,
             trackPlayerEmsgHandler,
@@ -609,7 +617,7 @@ import java.util.List;
             this,
             allocator,
             positionUs,
-            minLoadableRetryCount,
+            loadErrorHandlingPolicy,
             eventDispatcher);
     synchronized (this) {
       // The map is also accessed on the loading thread so synchronize access.
@@ -663,6 +671,7 @@ import java.util.List;
 
   private static final class TrackGroupInfo {
 
+    @Documented
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({CATEGORY_PRIMARY, CATEGORY_EMBEDDED, CATEGORY_MANIFEST_EVENTS})
     public @interface TrackGroupCategory {}

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -64,7 +64,6 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -511,47 +510,44 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? View.SCROLLBAR_POSITION_LEFT : View.SCROLLBAR_POSITION_RIGHT);
         listView.addItemDecoration(decoration = new GroupCreateDividerItemDecoration());
         frameLayout.addView(listView);
-        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                if (position == 0 && !searching) {
-                    try {
-                        Intent intent = new Intent(Intent.ACTION_SEND);
-                        intent.setType("text/plain");
-                        String text = ContactsController.getInstance(currentAccount).getInviteText(0);
-                        intent.putExtra(Intent.EXTRA_TEXT, text);
-                        getParentActivity().startActivityForResult(Intent.createChooser(intent, text), 500);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                    return;
+        listView.setOnItemClickListener((view, position) -> {
+            if (position == 0 && !searching) {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_SEND);
+                    intent.setType("text/plain");
+                    String text = ContactsController.getInstance(currentAccount).getInviteText(0);
+                    intent.putExtra(Intent.EXTRA_TEXT, text);
+                    getParentActivity().startActivityForResult(Intent.createChooser(intent, text), 500);
+                } catch (Exception e) {
+                    FileLog.e(e);
                 }
-                if (!(view instanceof InviteUserCell)) {
-                    return;
-                }
-                InviteUserCell cell = (InviteUserCell) view;
-                ContactsController.Contact contact = cell.getContact();
-                if (contact == null) {
-                    return;
-                }
-                boolean exists;
-                if (exists = selectedContacts.containsKey(contact.key)) {
-                    GroupCreateSpan span = selectedContacts.get(contact.key);
-                    spansContainer.removeSpan(span);
-                } else {
-                    GroupCreateSpan span = new GroupCreateSpan(editText.getContext(), contact);
-                    spansContainer.addSpan(span);
-                    span.setOnClickListener(InviteContactsActivity.this);
-                }
-                updateHint();
-                if (searching || searchWas) {
-                    AndroidUtilities.showKeyboard(editText);
-                } else {
-                    cell.setChecked(!exists, true);
-                }
-                if (editText.length() > 0) {
-                    editText.setText(null);
-                }
+                return;
+            }
+            if (!(view instanceof InviteUserCell)) {
+                return;
+            }
+            InviteUserCell cell = (InviteUserCell) view;
+            ContactsController.Contact contact = cell.getContact();
+            if (contact == null) {
+                return;
+            }
+            boolean exists;
+            if (exists = selectedContacts.containsKey(contact.key)) {
+                GroupCreateSpan span = selectedContacts.get(contact.key);
+                spansContainer.removeSpan(span);
+            } else {
+                GroupCreateSpan span = new GroupCreateSpan(editText.getContext(), contact);
+                spansContainer.addSpan(span);
+                span.setOnClickListener(InviteContactsActivity.this);
+            }
+            updateHint();
+            if (searching || searchWas) {
+                AndroidUtilities.showKeyboard(editText);
+            } else {
+                cell.setChecked(!exists, true);
+            }
+            if (editText.length() > 0) {
+                editText.setText(null);
             }
         });
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -577,31 +573,27 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         counterView.setBackgroundColor(Theme.getColor(Theme.key_contacts_inviteBackground));
         counterView.setVisibility(View.INVISIBLE);
         frameLayout.addView(counterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
-        counterView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    StringBuilder builder = new StringBuilder();
-                    int num = 0;
-                    for (int a = 0; a < allSpans.size(); a++) {
-                        ContactsController.Contact contact = allSpans.get(a).getContact();
-                        if (builder.length() != 0) {
-                            builder.append(';');
-                        }
-                        builder.append(contact.phones.get(0));
-                        if (a == 0 && allSpans.size() == 1) {
-                            num = contact.imported;
-                        }
+        counterView.setOnClickListener(v -> {
+            try {
+                StringBuilder builder = new StringBuilder();
+                int num = 0;
+                for (int a = 0; a < allSpans.size(); a++) {
+                    ContactsController.Contact contact = allSpans.get(a).getContact();
+                    if (builder.length() != 0) {
+                        builder.append(';');
                     }
-                    Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:" + builder.toString()));
-                    intent.putExtra("sms_body", ContactsController.getInstance(currentAccount).getInviteText(num));
-                    getParentActivity().startActivityForResult(intent, 500);
-                    MediaController.getInstance().startSmsObserver();
-                } catch (Exception e) {
-                    FileLog.e(e);
+                    builder.append(contact.phones.get(0));
+                    if (a == 0 && allSpans.size() == 1) {
+                        num = contact.imported;
+                    }
                 }
-                finishFragment();
+                Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:" + builder.toString()));
+                intent.putExtra("sms_body", ContactsController.getInstance(currentAccount).getInviteText(num));
+                getParentActivity().startActivityForResult(intent, 500);
+            } catch (Exception e) {
+                FileLog.e(e);
             }
+            finishFragment();
         });
 
         LinearLayout linearLayout = new LinearLayout(context);
@@ -697,16 +689,13 @@ public class InviteContactsActivity extends BaseFragment implements Notification
 
     private void fetchContacts() {
         phoneBookContacts = new ArrayList<>(ContactsController.getInstance(currentAccount).phoneBookContacts);
-        Collections.sort(phoneBookContacts, new Comparator<ContactsController.Contact>() {
-            @Override
-            public int compare(ContactsController.Contact o1, ContactsController.Contact o2) {
-                if (o1.imported > o2.imported) {
-                    return -1;
-                } else if (o1.imported < o2.imported) {
-                    return 1;
-                }
-                return 0;
+        Collections.sort(phoneBookContacts, (o1, o2) -> {
+            if (o1.imported > o2.imported) {
+                return -1;
+            } else if (o1.imported < o2.imported) {
+                return 1;
             }
+            return 0;
         });
         if (emptyView != null) {
             emptyView.showTextView();
@@ -826,57 +815,49 @@ public class InviteContactsActivity extends BaseFragment implements Notification
                             FileLog.e(e);
                         }
 
-                        AndroidUtilities.runOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Utilities.searchQueue.postRunnable(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        String search1 = query.trim().toLowerCase();
-                                        if (search1.length() == 0) {
-                                            updateSearchResults(new ArrayList<ContactsController.Contact>(), new ArrayList<CharSequence>());
-                                            return;
-                                        }
-                                        String search2 = LocaleController.getInstance().getTranslitString(search1);
-                                        if (search1.equals(search2) || search2.length() == 0) {
-                                            search2 = null;
-                                        }
-                                        String search[] = new String[1 + (search2 != null ? 1 : 0)];
-                                        search[0] = search1;
-                                        if (search2 != null) {
-                                            search[1] = search2;
-                                        }
-
-                                        ArrayList<ContactsController.Contact> resultArray = new ArrayList<>();
-                                        ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
-
-                                        for (int a = 0; a < phoneBookContacts.size(); a++) {
-                                            ContactsController.Contact contact = phoneBookContacts.get(a);
-
-                                            String name = ContactsController.formatName(contact.first_name, contact.last_name).toLowerCase();
-                                            String tName = LocaleController.getInstance().getTranslitString(name);
-                                            if (name.equals(tName)) {
-                                                tName = null;
-                                            }
-
-                                            int found = 0;
-                                            for (String q : search) {
-                                                if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
-                                                    found = 1;
-                                                }
-
-                                                if (found != 0) {
-                                                    resultArrayNames.add(AndroidUtilities.generateSearchName(contact.first_name, contact.last_name, q));
-                                                    resultArray.add(contact);
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        updateSearchResults(resultArray, resultArrayNames);
-                                    }
-                                });
+                        AndroidUtilities.runOnUIThread(() -> Utilities.searchQueue.postRunnable(() -> {
+                            String search1 = query.trim().toLowerCase();
+                            if (search1.length() == 0) {
+                                updateSearchResults(new ArrayList<>(), new ArrayList<>());
+                                return;
                             }
-                        });
+                            String search2 = LocaleController.getInstance().getTranslitString(search1);
+                            if (search1.equals(search2) || search2.length() == 0) {
+                                search2 = null;
+                            }
+                            String search[] = new String[1 + (search2 != null ? 1 : 0)];
+                            search[0] = search1;
+                            if (search2 != null) {
+                                search[1] = search2;
+                            }
+
+                            ArrayList<ContactsController.Contact> resultArray = new ArrayList<>();
+                            ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
+
+                            for (int a = 0; a < phoneBookContacts.size(); a++) {
+                                ContactsController.Contact contact = phoneBookContacts.get(a);
+
+                                String name = ContactsController.formatName(contact.first_name, contact.last_name).toLowerCase();
+                                String tName = LocaleController.getInstance().getTranslitString(name);
+                                if (name.equals(tName)) {
+                                    tName = null;
+                                }
+
+                                int found = 0;
+                                for (String q : search) {
+                                    if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
+                                        found = 1;
+                                    }
+
+                                    if (found != 0) {
+                                        resultArrayNames.add(AndroidUtilities.generateSearchName(contact.first_name, contact.last_name, q));
+                                        resultArray.add(contact);
+                                        break;
+                                    }
+                                }
+                            }
+                            updateSearchResults(resultArray, resultArrayNames);
+                        }));
 
                     }
                 }, 200, 300);
@@ -884,13 +865,10 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         }
 
         private void updateSearchResults(final ArrayList<ContactsController.Contact> users, final ArrayList<CharSequence> names) {
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    searchResult = users;
-                    searchResultNames = names;
-                    notifyDataSetChanged();
-                }
+            AndroidUtilities.runOnUIThread(() -> {
+                searchResult = users;
+                searchResultNames = names;
+                notifyDataSetChanged();
             });
         }
 
@@ -905,16 +883,13 @@ public class InviteContactsActivity extends BaseFragment implements Notification
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
-            @Override
-            public void didSetColor() {
-                if (listView != null) {
-                    int count = listView.getChildCount();
-                    for (int a = 0; a < count; a++) {
-                        View child = listView.getChildAt(a);
-                        if (child instanceof InviteUserCell) {
-                            ((InviteUserCell) child).update(0);
-                        }
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
+            if (listView != null) {
+                int count = listView.getChildCount();
+                for (int a = 0; a < count; a++) {
+                    View child = listView.getChildAt(a);
+                    if (child instanceof InviteUserCell) {
+                        ((InviteUserCell) child).update(0);
                     }
                 }
             }
@@ -953,9 +928,9 @@ public class InviteContactsActivity extends BaseFragment implements Notification
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{InviteUserCell.class}, new String[]{"textView"}, null, null, null, Theme.key_groupcreate_sectionText),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{InviteUserCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_groupcreate_checkbox),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{InviteUserCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_groupcreate_checkboxCheck),
-                new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{InviteUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_groupcreate_onlineText),
-                new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{InviteUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_groupcreate_offlineText),
-                new ThemeDescription(listView, 0, new Class[]{InviteUserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{InviteUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText),
+                new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{InviteUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText),
+                new ThemeDescription(listView, 0, new Class[]{InviteUserCell.class}, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
@@ -970,6 +945,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
                 new ThemeDescription(spansContainer, 0, new Class[]{GroupCreateSpan.class}, null, null, null, Theme.key_avatar_backgroundGroupCreateSpanBlue),
                 new ThemeDescription(spansContainer, 0, new Class[]{GroupCreateSpan.class}, null, null, null, Theme.key_groupcreate_spanBackground),
                 new ThemeDescription(spansContainer, 0, new Class[]{GroupCreateSpan.class}, null, null, null, Theme.key_groupcreate_spanText),
+                new ThemeDescription(spansContainer, 0, new Class[]{GroupCreateSpan.class}, null, null, null, Theme.key_groupcreate_spanDelete),
                 new ThemeDescription(spansContainer, 0, new Class[]{GroupCreateSpan.class}, null, null, null, Theme.key_avatar_backgroundBlue),
 
                 new ThemeDescription(infoTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_contacts_inviteText),

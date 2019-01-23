@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -26,11 +26,15 @@ import java.util.ArrayList;
 
 public class ChatBigEmptyView extends LinearLayout {
 
-    private TextView secretViewStatusTextView;
+    private TextView statusTextView;
     private ArrayList<TextView> textViews = new ArrayList<>();
     private ArrayList<ImageView> imageViews = new ArrayList<>();
 
-    public ChatBigEmptyView(Context context, boolean secretChat) {
+    public final static int EMPTY_VIEW_TYPE_SECRET = 0;
+    public final static int EMPTY_VIEW_TYPE_GROUP = 1;
+    public final static int EMPTY_VIEW_TYPE_SAVED = 2;
+
+    public ChatBigEmptyView(Context context, int type) {
         super(context);
 
         setBackgroundResource(R.drawable.system);
@@ -38,14 +42,22 @@ public class ChatBigEmptyView extends LinearLayout {
         setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
         setOrientation(LinearLayout.VERTICAL);
 
-        if (secretChat) {
-            secretViewStatusTextView = new TextView(context);
-            secretViewStatusTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            secretViewStatusTextView.setTextColor(Theme.getColor(Theme.key_chat_serviceText));
-            secretViewStatusTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-            secretViewStatusTextView.setMaxWidth(AndroidUtilities.dp(210));
-            textViews.add(secretViewStatusTextView);
-            addView(secretViewStatusTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
+        if (type == EMPTY_VIEW_TYPE_SECRET) {
+            statusTextView = new TextView(context);
+            statusTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            statusTextView.setTextColor(Theme.getColor(Theme.key_chat_serviceText));
+            statusTextView.setGravity(Gravity.CENTER_HORIZONTAL);
+            statusTextView.setMaxWidth(AndroidUtilities.dp(210));
+            textViews.add(statusTextView);
+            addView(statusTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
+        } else if (type == EMPTY_VIEW_TYPE_GROUP) {
+            statusTextView = new TextView(context);
+            statusTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            statusTextView.setTextColor(Theme.getColor(Theme.key_chat_serviceText));
+            statusTextView.setGravity(Gravity.CENTER_HORIZONTAL);
+            statusTextView.setMaxWidth(AndroidUtilities.dp(210));
+            textViews.add(statusTextView);
+            addView(statusTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
         } else {
             ImageView imageView = new ImageView(context);
             imageView.setImageResource(R.drawable.cloud_big);
@@ -53,8 +65,11 @@ public class ChatBigEmptyView extends LinearLayout {
         }
 
         TextView textView = new TextView(context);
-        if (secretChat) {
+        if (type == EMPTY_VIEW_TYPE_SECRET) {
             textView.setText(LocaleController.getString("EncryptedDescriptionTitle", R.string.EncryptedDescriptionTitle));
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        } else if (type == EMPTY_VIEW_TYPE_GROUP) {
+            textView.setText(LocaleController.getString("GroupEmptyTitle2", R.string.GroupEmptyTitle2));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         } else {
             textView.setText(LocaleController.getString("ChatYourSelfTitle", R.string.ChatYourSelfTitle));
@@ -65,7 +80,7 @@ public class ChatBigEmptyView extends LinearLayout {
         textView.setTextColor(Theme.getColor(Theme.key_chat_serviceText));
         textViews.add(textView);
         textView.setMaxWidth(AndroidUtilities.dp(260));
-        addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (secretChat ? (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) : Gravity.CENTER_HORIZONTAL) | Gravity.TOP, 0, 8, 0, secretChat ? 0 : 8));
+        addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (type != EMPTY_VIEW_TYPE_SAVED ? (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) : Gravity.CENTER_HORIZONTAL) | Gravity.TOP, 0, 8, 0, type != EMPTY_VIEW_TYPE_SAVED ? 0 : 8));
 
         for (int a = 0; a < 4; a++) {
             LinearLayout linearLayout = new LinearLayout(context);
@@ -74,7 +89,13 @@ public class ChatBigEmptyView extends LinearLayout {
 
             ImageView imageView = new ImageView(context);
             imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_serviceText), PorterDuff.Mode.MULTIPLY));
-            imageView.setImageResource(secretChat ? R.drawable.ic_lock_white : R.drawable.list_circle);
+            if (type == EMPTY_VIEW_TYPE_SECRET) {
+                imageView.setImageResource(R.drawable.ic_lock_white);
+            } else if (type == EMPTY_VIEW_TYPE_SAVED) {
+                imageView.setImageResource(R.drawable.list_circle);
+            } else {
+                imageView.setImageResource(R.drawable.groups_overview_check);
+            }
             imageViews.add(imageView);
 
             textView = new TextView(context);
@@ -86,47 +107,59 @@ public class ChatBigEmptyView extends LinearLayout {
 
             switch (a) {
                 case 0:
-                    if (secretChat) {
+                    if (type == EMPTY_VIEW_TYPE_SECRET) {
                         textView.setText(LocaleController.getString("EncryptedDescription1", R.string.EncryptedDescription1));
-                    } else {
+                    } else if (type == EMPTY_VIEW_TYPE_SAVED) {
                         textView.setText(LocaleController.getString("ChatYourSelfDescription1", R.string.ChatYourSelfDescription1));
+                    } else {
+                        textView.setText(LocaleController.getString("GroupDescription1", R.string.GroupDescription1));
                     }
                     break;
                 case 1:
-                    if (secretChat) {
+                    if (type == EMPTY_VIEW_TYPE_SECRET) {
                         textView.setText(LocaleController.getString("EncryptedDescription2", R.string.EncryptedDescription2));
-                    } else {
+                    } else if (type == EMPTY_VIEW_TYPE_SAVED) {
                         textView.setText(LocaleController.getString("ChatYourSelfDescription2", R.string.ChatYourSelfDescription2));
+                    } else {
+                        textView.setText(LocaleController.getString("GroupDescription2", R.string.GroupDescription2));
                     }
                     break;
                 case 2:
-                    if (secretChat) {
+                    if (type == EMPTY_VIEW_TYPE_SECRET) {
                         textView.setText(LocaleController.getString("EncryptedDescription3", R.string.EncryptedDescription3));
-                    } else {
+                    } else if (type == EMPTY_VIEW_TYPE_SAVED) {
                         textView.setText(LocaleController.getString("ChatYourSelfDescription3", R.string.ChatYourSelfDescription3));
+                    } else {
+                        textView.setText(LocaleController.getString("GroupDescription3", R.string.GroupDescription3));
                     }
                     break;
                 case 3:
-                    if (secretChat) {
+                    if (type == EMPTY_VIEW_TYPE_SECRET) {
                         textView.setText(LocaleController.getString("EncryptedDescription4", R.string.EncryptedDescription4));
-                    } else {
+                    } else if (type == EMPTY_VIEW_TYPE_SAVED) {
                         textView.setText(LocaleController.getString("ChatYourSelfDescription4", R.string.ChatYourSelfDescription4));
+                    } else {
+                        textView.setText(LocaleController.getString("GroupDescription4", R.string.GroupDescription4));
                     }
                     break;
             }
 
             if (LocaleController.isRTL) {
                 linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-                if (secretChat) {
+                if (type == EMPTY_VIEW_TYPE_SECRET) {
                     linearLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 8, 3, 0, 0));
-                } else {
+                } else if (type == EMPTY_VIEW_TYPE_SAVED) {
                     linearLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 8, 7, 0, 0));
+                } else {
+                    linearLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 8, 3, 0, 0));
                 }
             } else {
-                if (secretChat) {
+                if (type == EMPTY_VIEW_TYPE_SECRET) {
                     linearLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 4, 8, 0));
-                } else {
+                } else if (type == EMPTY_VIEW_TYPE_SAVED) {
                     linearLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 8, 8, 0));
+                } else {
+                    linearLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 4, 8, 0));
                 }
                 linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
             }
@@ -142,7 +175,7 @@ public class ChatBigEmptyView extends LinearLayout {
         }
     }
 
-    public void setSecretText(String text) {
-        secretViewStatusTextView.setText(text);
+    public void setStatusText(CharSequence text) {
+        statusTextView.setText(text);
     }
 }

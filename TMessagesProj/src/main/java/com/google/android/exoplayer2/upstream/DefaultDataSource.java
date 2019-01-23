@@ -18,11 +18,12 @@ package com.google.android.exoplayer2.upstream;
 import android.content.Context;
 import android.net.Uri;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -74,11 +75,75 @@ public final class DefaultDataSource implements DataSource {
    * Constructs a new instance, optionally configured to follow cross-protocol redirects.
    *
    * @param context A context.
-   * @param listener An optional listener.
-   * @param userAgent The User-Agent string that should be used when requesting remote data.
+   * @param userAgent The User-Agent to use when requesting remote data.
    * @param allowCrossProtocolRedirects Whether cross-protocol redirects (i.e. redirects from HTTP
    *     to HTTPS and vice versa) are enabled when fetching remote data.
    */
+  public DefaultDataSource(Context context, String userAgent, boolean allowCrossProtocolRedirects) {
+    this(
+        context,
+        userAgent,
+        DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
+        DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
+        allowCrossProtocolRedirects);
+  }
+
+  /**
+   * Constructs a new instance, optionally configured to follow cross-protocol redirects.
+   *
+   * @param context A context.
+   * @param userAgent The User-Agent to use when requesting remote data.
+   * @param connectTimeoutMillis The connection timeout that should be used when requesting remote
+   *     data, in milliseconds. A timeout of zero is interpreted as an infinite timeout.
+   * @param readTimeoutMillis The read timeout that should be used when requesting remote data, in
+   *     milliseconds. A timeout of zero is interpreted as an infinite timeout.
+   * @param allowCrossProtocolRedirects Whether cross-protocol redirects (i.e. redirects from HTTP
+   *     to HTTPS and vice versa) are enabled when fetching remote data.
+   */
+  public DefaultDataSource(
+      Context context,
+      String userAgent,
+      int connectTimeoutMillis,
+      int readTimeoutMillis,
+      boolean allowCrossProtocolRedirects) {
+    this(
+        context,
+        new DefaultHttpDataSource(
+            userAgent,
+            /* contentTypePredicate= */ null,
+            connectTimeoutMillis,
+            readTimeoutMillis,
+            allowCrossProtocolRedirects,
+            /* defaultRequestProperties= */ null));
+  }
+
+  /**
+   * Constructs a new instance that delegates to a provided {@link DataSource} for URI schemes other
+   * than file, asset and content.
+   *
+   * @param context A context.
+   * @param baseDataSource A {@link DataSource} to use for URI schemes other than file, asset and
+   *     content. This {@link DataSource} should normally support at least http(s).
+   */
+  public DefaultDataSource(Context context, DataSource baseDataSource) {
+    this.context = context.getApplicationContext();
+    this.baseDataSource = Assertions.checkNotNull(baseDataSource);
+    transferListeners = new ArrayList<>();
+  }
+
+  /**
+   * Constructs a new instance, optionally configured to follow cross-protocol redirects.
+   *
+   * @param context A context.
+   * @param listener An optional listener.
+   * @param userAgent The User-Agent to use when requesting remote data.
+   * @param allowCrossProtocolRedirects Whether cross-protocol redirects (i.e. redirects from HTTP
+   *     to HTTPS and vice versa) are enabled when fetching remote data.
+   * @deprecated Use {@link #DefaultDataSource(Context, String, boolean)} and {@link
+   *     #addTransferListener(TransferListener)}.
+   */
+  @Deprecated
+  @SuppressWarnings("deprecation")
   public DefaultDataSource(
       Context context,
       @Nullable TransferListener listener,
@@ -93,14 +158,18 @@ public final class DefaultDataSource implements DataSource {
    *
    * @param context A context.
    * @param listener An optional listener.
-   * @param userAgent The User-Agent string that should be used when requesting remote data.
+   * @param userAgent The User-Agent to use when requesting remote data.
    * @param connectTimeoutMillis The connection timeout that should be used when requesting remote
    *     data, in milliseconds. A timeout of zero is interpreted as an infinite timeout.
    * @param readTimeoutMillis The read timeout that should be used when requesting remote data, in
    *     milliseconds. A timeout of zero is interpreted as an infinite timeout.
    * @param allowCrossProtocolRedirects Whether cross-protocol redirects (i.e. redirects from HTTP
    *     to HTTPS and vice versa) are enabled when fetching remote data.
+   * @deprecated Use {@link #DefaultDataSource(Context, String, int, int, boolean)} and {@link
+   *     #addTransferListener(TransferListener)}.
    */
+  @Deprecated
+  @SuppressWarnings("deprecation")
   public DefaultDataSource(
       Context context,
       @Nullable TransferListener listener,
@@ -108,9 +177,17 @@ public final class DefaultDataSource implements DataSource {
       int connectTimeoutMillis,
       int readTimeoutMillis,
       boolean allowCrossProtocolRedirects) {
-    this(context, listener,
-        new DefaultHttpDataSource(userAgent, null, listener, connectTimeoutMillis,
-            readTimeoutMillis, allowCrossProtocolRedirects, null));
+    this(
+        context,
+        listener,
+        new DefaultHttpDataSource(
+            userAgent,
+            /* contentTypePredicate= */ null,
+            listener,
+            connectTimeoutMillis,
+            readTimeoutMillis,
+            allowCrossProtocolRedirects,
+            /* defaultRequestProperties= */ null));
   }
 
   /**
@@ -121,12 +198,13 @@ public final class DefaultDataSource implements DataSource {
    * @param listener An optional listener.
    * @param baseDataSource A {@link DataSource} to use for URI schemes other than file, asset and
    *     content. This {@link DataSource} should normally support at least http(s).
+   * @deprecated Use {@link #DefaultDataSource(Context, DataSource)} and {@link
+   *     #addTransferListener(TransferListener)}.
    */
+  @Deprecated
   public DefaultDataSource(
       Context context, @Nullable TransferListener listener, DataSource baseDataSource) {
-    this.context = context.getApplicationContext();
-    this.baseDataSource = Assertions.checkNotNull(baseDataSource);
-    transferListeners = new ArrayList<>();
+    this(context, baseDataSource);
     if (listener != null) {
       transferListeners.add(listener);
     }
@@ -150,7 +228,8 @@ public final class DefaultDataSource implements DataSource {
     // Choose the correct source for the scheme.
     String scheme = dataSpec.uri.getScheme();
     if (Util.isLocalFileUri(dataSpec.uri)) {
-      if (dataSpec.uri.getPath().startsWith("/android_asset/")) {
+      String uriPath = dataSpec.uri.getPath();
+      if (uriPath != null && uriPath.startsWith("/android_asset/")) {
         dataSource = getAssetDataSource();
       } else {
         dataSource = getFileDataSource();
@@ -184,9 +263,7 @@ public final class DefaultDataSource implements DataSource {
 
   @Override
   public Map<String, List<String>> getResponseHeaders() {
-    return dataSource == null
-        ? DataSource.super.getResponseHeaders()
-        : dataSource.getResponseHeaders();
+    return dataSource == null ? Collections.emptyMap() : dataSource.getResponseHeaders();
   }
 
   @Override

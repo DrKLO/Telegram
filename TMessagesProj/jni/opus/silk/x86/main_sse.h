@@ -86,7 +86,7 @@ extern void (*const SILK_VQ_WMAT_EC_IMPL[OPUS_ARCHMASK + 1])(
 #  define OVERRIDE_silk_NSQ
 
 void silk_NSQ_sse4_1(
-    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
     const opus_int32            x_Q3[],                                     /* I    Prefiltered input signal        */
@@ -113,7 +113,7 @@ void silk_NSQ_sse4_1(
 #else
 
 extern void (*const SILK_NSQ_IMPL[OPUS_ARCHMASK + 1])(
-    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
     const opus_int32            x_Q3[],                                     /* I    Prefiltered input signal        */
@@ -140,7 +140,7 @@ extern void (*const SILK_NSQ_IMPL[OPUS_ARCHMASK + 1])(
 #  define OVERRIDE_silk_NSQ_del_dec
 
 void silk_NSQ_del_dec_sse4_1(
-    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
     const opus_int32            x_Q3[],                                     /* I    Prefiltered input signal        */
@@ -167,7 +167,7 @@ void silk_NSQ_del_dec_sse4_1(
 #else
 
 extern void (*const SILK_NSQ_DEL_DEC_IMPL[OPUS_ARCHMASK + 1])(
-    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
     const opus_int32            x_Q3[],                                     /* I    Prefiltered input signal        */

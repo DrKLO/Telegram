@@ -14,21 +14,12 @@ import java.util.Iterator;
 
 public class VoIPServerConfig{
 
-	private static JSONObject config;
+	private static JSONObject config=new JSONObject();
 
 	public static void setConfig(String json){
 		try{
-			JSONObject obj=new JSONObject(json);
-			config=obj;
-			String[] keys=new String[obj.length()], values=new String[obj.length()];
-			Iterator<String> itrtr=obj.keys();
-			int i=0;
-			while(itrtr.hasNext()){
-				keys[i]=itrtr.next();
-				values[i]=obj.getString(keys[i]);
-				i++;
-			}
-			nativeSetConfig(keys, values);
+			config=new JSONObject(json);
+			nativeSetConfig(json);
 		}catch(JSONException x){
 			if (BuildVars.LOGS_ENABLED) {
 				FileLog.e("Error parsing VoIP config", x);
@@ -52,5 +43,5 @@ public class VoIPServerConfig{
 		return config.optBoolean(key, fallback);
 	}
 
-	private static native void nativeSetConfig(String[] keys, String[] values);
+	private static native void nativeSetConfig(String json);
 }

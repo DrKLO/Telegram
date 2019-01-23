@@ -1,20 +1,23 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -41,7 +44,7 @@ public class UserCell extends FrameLayout {
     private ImageView imageView;
     private CheckBox checkBox;
     private CheckBoxSquare checkBoxBig;
-    private ImageView adminImage;
+    private TextView adminTextView;
 
     private AvatarDrawable avatarDrawable;
     private TLObject currentObject;
@@ -60,6 +63,8 @@ public class UserCell extends FrameLayout {
     private int statusColor;
     private int statusOnlineColor;
 
+    private boolean needDivider;
+
     public UserCell(Context context, int padding, int checkbox, boolean admin) {
         super(context);
 
@@ -70,18 +75,19 @@ public class UserCell extends FrameLayout {
 
         avatarImageView = new BackupImageView(context);
         avatarImageView.setRoundRadius(AndroidUtilities.dp(24));
-        addView(avatarImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 7 + padding, 8, LocaleController.isRTL ? 7 + padding : 0, 0));
+        addView(avatarImageView, LayoutHelper.createFrame(46, 46, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 7 + padding, 6, LocaleController.isRTL ? 7 + padding : 0, 0));
 
         nameTextView = new SimpleTextView(context);
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        nameTextView.setTextSize(17);
+        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setTextSize(16);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) : (68 + padding), 11.5f, LocaleController.isRTL ? (68 + padding) : 28 + (checkbox == 2 ? 18 : 0), 0));
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) : (64 + padding), 10, LocaleController.isRTL ? (64 + padding) : 28 + (checkbox == 2 ? 18 : 0), 0));
 
         statusTextView = new SimpleTextView(context);
-        statusTextView.setTextSize(14);
+        statusTextView.setTextSize(15);
         statusTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : (68 + padding), 34.5f, LocaleController.isRTL ? (68 + padding) : 28, 0));
+        addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : (64 + padding), 32, LocaleController.isRTL ? (64 + padding) : 28, 0));
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
@@ -96,32 +102,62 @@ public class UserCell extends FrameLayout {
             checkBox = new CheckBox(context, R.drawable.round_check2);
             checkBox.setVisibility(INVISIBLE);
             checkBox.setColor(Theme.getColor(Theme.key_checkbox), Theme.getColor(Theme.key_checkboxCheck));
-            addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 38, LocaleController.isRTL ? 37 + padding : 0, 0));
+            addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 40, LocaleController.isRTL ? 37 + padding : 0, 0));
         }
 
         if (admin) {
-            adminImage = new ImageView(context);
-            adminImage.setImageResource(R.drawable.admin_star);
-            addView(adminImage, LayoutHelper.createFrame(16, 16, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 24 : 0, 13.5f, LocaleController.isRTL ? 0 : 24, 0));
+            adminTextView = new TextView(context);
+            adminTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon));
+            addView(adminTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 23 : 0, 15, LocaleController.isRTL ? 0 : 23, 0));
+        }
+    }
+
+    public void setAvatarPadding(int padding) {
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) avatarImageView.getLayoutParams();
+        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 7 + padding);
+        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 7 + padding : 0);
+        avatarImageView.setLayoutParams(layoutParams);
+
+        layoutParams = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
+        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 28 + (checkBoxBig != null ? 18 : 0) : (64 + padding));
+        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? (64 + padding) : 28 + (checkBoxBig != null ? 18 : 0));
+
+        layoutParams = (FrameLayout.LayoutParams) statusTextView.getLayoutParams();
+        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 28 : (64 + padding));
+        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? (64 + padding) : 28);
+
+        if (checkBox != null) {
+            layoutParams = (FrameLayout.LayoutParams) checkBox.getLayoutParams();
+            layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 37 + padding);
+            layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 37 + padding : 0);
         }
     }
 
     public void setIsAdmin(int value) {
-        if (adminImage == null) {
+        if (adminTextView == null) {
             return;
         }
-        adminImage.setVisibility(value != 0 ? VISIBLE : GONE);
-        nameTextView.setPadding(LocaleController.isRTL && value != 0 ? AndroidUtilities.dp(16) : 0, 0, !LocaleController.isRTL && value != 0 ? AndroidUtilities.dp(16) : 0, 0);
+        adminTextView.setVisibility(value != 0 ? VISIBLE : GONE);
         if (value == 1) {
-            setTag(Theme.key_profile_creatorIcon);
-            adminImage.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_profile_creatorIcon), PorterDuff.Mode.MULTIPLY));
+            adminTextView.setText(LocaleController.getString("ChannelCreator", R.string.ChannelCreator));
         } else if (value == 2) {
-            setTag(Theme.key_profile_adminIcon);
-            adminImage.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_profile_adminIcon), PorterDuff.Mode.MULTIPLY));
+            adminTextView.setText(LocaleController.getString("ChannelAdmin", R.string.ChannelAdmin));
+        }
+        if (value != 0) {
+            CharSequence text = adminTextView.getText();
+            int size = (int) Math.ceil(adminTextView.getPaint().measureText(text, 0, text.length()));
+            nameTextView.setPadding(LocaleController.isRTL ? size + AndroidUtilities.dp(6) : 0, 0, !LocaleController.isRTL ? size + AndroidUtilities.dp(6) : 0, 0);
+        } else {
+            nameTextView.setPadding(0, 0, 0, 0);
         }
     }
 
     public void setData(TLObject object, CharSequence name, CharSequence status, int resId) {
+        setData(object, name, status, resId, false);
+    }
+
+    public void setData(TLObject object, CharSequence name, CharSequence status, int resId, boolean divider) {
         if (object == null && name == null && status == null) {
             currrntStatus = null;
             currentName = null;
@@ -135,6 +171,8 @@ public class UserCell extends FrameLayout {
         currentName = name;
         currentObject = object;
         currentDrawable = resId;
+        needDivider = divider;
+        setWillNotDraw(!needDivider);
         update(0);
     }
 
@@ -168,7 +206,7 @@ public class UserCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(58) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
     }
 
     public void setStatusColors(int color, int onlineColor) {
@@ -264,7 +302,7 @@ public class UserCell extends FrameLayout {
         } else if (currentUser != null) {
             if (currentUser.bot) {
                 statusTextView.setTextColor(statusColor);
-                if (currentUser.bot_chat_history || adminImage != null && adminImage.getVisibility() == VISIBLE) {
+                if (currentUser.bot_chat_history || adminTextView != null && adminTextView.getVisibility() == VISIBLE) {
                     statusTextView.setText(LocaleController.getString("BotStatusRead", R.string.BotStatusRead));
                 } else {
                     statusTextView.setText(LocaleController.getString("BotStatusCantRead", R.string.BotStatusCantRead));
@@ -284,11 +322,18 @@ public class UserCell extends FrameLayout {
             imageView.setVisibility(currentDrawable == 0 ? GONE : VISIBLE);
             imageView.setImageResource(currentDrawable);
         }
-        avatarImageView.setImage(photo, "50_50", avatarDrawable);
+        avatarImageView.setImage(photo, "50_50", avatarDrawable, currentObject);
     }
 
     @Override
     public boolean hasOverlappingRendering() {
         return false;
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        if (needDivider) {
+            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(68), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(68) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+        }
     }
 }

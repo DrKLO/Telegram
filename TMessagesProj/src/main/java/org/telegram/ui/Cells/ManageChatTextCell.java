@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
@@ -83,12 +83,19 @@ public class ManageChatTextCell extends FrameLayout {
         textView.layout(viewLeft, viewTop, viewLeft + textView.getMeasuredWidth(), viewTop + textView.getMeasuredHeight());
 
         viewTop = AndroidUtilities.dp(9);
-        viewLeft = !LocaleController.isRTL ? AndroidUtilities.dp(16) : width - imageView.getMeasuredWidth() - AndroidUtilities.dp(16);
+        viewLeft = !LocaleController.isRTL ? AndroidUtilities.dp(21) : width - imageView.getMeasuredWidth() - AndroidUtilities.dp(21);
         imageView.layout(viewLeft, viewTop, viewLeft + imageView.getMeasuredWidth(), viewTop + imageView.getMeasuredHeight());
     }
 
     public void setTextColor(int color) {
         textView.setTextColor(color);
+    }
+
+    public void setColors(String icon, String text) {
+        textView.setTextColor(Theme.getColor(text));
+        textView.setTag(text);
+        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(icon), PorterDuff.Mode.MULTIPLY));
+        imageView.setTag(icon);
     }
 
     public void setText(String text, String value, int resId, boolean needDivider) {

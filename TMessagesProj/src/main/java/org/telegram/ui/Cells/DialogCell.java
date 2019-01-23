@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
@@ -28,7 +28,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.FileLog;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
@@ -71,6 +70,7 @@ public class DialogCell extends BaseCell {
     private int lastSendState;
     private boolean dialogMuted;
     private MessageObject message;
+    private boolean clearingDialog;
     private CharSequence lastMessageString;
     private int index;
     private int dialogsType;
@@ -79,15 +79,16 @@ public class DialogCell extends BaseCell {
     private ImageReceiver avatarImage = new ImageReceiver(this);
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
 
-    private TLRPC.User user = null;
-    private TLRPC.Chat chat = null;
-    private TLRPC.EncryptedChat encryptedChat = null;
-    private CharSequence lastPrintString = null;
+    private TLRPC.User user;
+    private TLRPC.Chat chat;
+    private TLRPC.EncryptedChat encryptedChat;
+    private CharSequence lastPrintString;
     private TLRPC.DraftMessage draftMessage;
 
     private GroupCreateCheckBox checkBox;
 
-    public boolean useSeparator = false;
+    public boolean useSeparator;
+    public boolean fullSeparator;
 
     private int nameLeft;
     private StaticLayout nameLayout;
@@ -443,7 +444,10 @@ public class DialogCell extends BaseCell {
                         messageString = Emoji.replaceEmoji(stringBuilder, Theme.dialogs_messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
                     }
                 } else {
-                    if (message == null) {
+                    if (clearingDialog) {
+                        currentMessagePaint = Theme.dialogs_messagePrintingPaint;
+                        messageString = LocaleController.getString("HistoryCleared", R.string.HistoryCleared);
+                    } else if (message == null) {
                         if (encryptedChat != null) {
                             currentMessagePaint = Theme.dialogs_messagePrintingPaint;
                             if (encryptedChat instanceof TLRPC.TL_encryptedChatRequested) {
@@ -483,7 +487,8 @@ public class DialogCell extends BaseCell {
                             showChecks = false;
                             drawTime = false;
                         } else if (message.messageOwner instanceof TLRPC.TL_messageService) {
-                            if (ChatObject.isChannel(chat) && message.messageOwner.action instanceof TLRPC.TL_messageActionHistoryClear) {
+                            if (ChatObject.isChannel(chat) && (message.messageOwner.action instanceof TLRPC.TL_messageActionHistoryClear ||
+                                    message.messageOwner.action instanceof TLRPC.TL_messageActionChannelMigrateFrom)) {
                                 messageString = "";
                                 showChecks = false;
                             } else {
@@ -582,7 +587,10 @@ public class DialogCell extends BaseCell {
                 drawMention = false;
                 drawError = false;
             } else {
-                if (unreadCount != 0 && (unreadCount != 1 || unreadCount != mentionCount || message == null || !message.messageOwner.mentioned)) {
+                if (clearingDialog) {
+                    drawCount = false;
+                    showChecks = false;
+                } else if (unreadCount != 0 && (unreadCount != 1 || unreadCount != mentionCount || message == null || !message.messageOwner.mentioned)) {
                     drawCount = true;
                     countString = String.format("%d", unreadCount);
                 } else if (markUnread) {
@@ -908,7 +916,9 @@ public class DialogCell extends BaseCell {
 
     public void checkCurrentDialogIndex() {
         if (index < getDialogsArray().size()) {
-            TLRPC.TL_dialog dialog = getDialogsArray().get(index);
+            ArrayList<TLRPC.TL_dialog> dialogsArray = getDialogsArray();
+            TLRPC.TL_dialog dialog = dialogsArray.get(index);
+            TLRPC.TL_dialog nextDialog = index + 1 < dialogsArray.size() ? dialogsArray.get(index + 1) : null;
             TLRPC.DraftMessage newDraftMessage = DataQuery.getInstance(currentAccount).getDraft(currentDialogId);
             MessageObject newMessageObject = MessagesController.getInstance(currentAccount).dialogMessage.get(dialog.id);
             if (currentDialogId != dialog.id ||
@@ -920,6 +930,7 @@ public class DialogCell extends BaseCell {
                     message != newMessageObject ||
                     message == null && newMessageObject != null || newDraftMessage != draftMessage || drawPin != dialog.pinned) {
                 currentDialogId = dialog.id;
+                fullSeparator = dialog.pinned && nextDialog != null && !nextDialog.pinned;
                 update(0);
             }
         }
@@ -940,11 +951,12 @@ public class DialogCell extends BaseCell {
             drawPin = customDialog.pinned;
             dialogMuted = customDialog.muted;
             avatarDrawable.setInfo(customDialog.id, customDialog.name, null, false);
-            avatarImage.setImage((TLObject) null, "50_50", avatarDrawable, null, 0);
+            avatarImage.setImage(null, "50_50", avatarDrawable, null, 0);
         } else {
             if (isDialogCell) {
                 TLRPC.TL_dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(currentDialogId);
                 if (dialog != null && mask == 0) {
+                    clearingDialog = MessagesController.getInstance(currentAccount).isClearingDialog(dialog.id);
                     message = MessagesController.getInstance(currentAccount).dialogMessage.get(dialog.id);
                     lastUnreadState = message != null && message.isUnread();
                     unreadCount = dialog.unread_count;
@@ -1018,6 +1030,7 @@ public class DialogCell extends BaseCell {
                 }
 
                 if (!continueUpdate) {
+                    invalidate();
                     return;
                 }
             }
@@ -1053,6 +1066,7 @@ public class DialogCell extends BaseCell {
             }
 
             TLRPC.FileLocation photo = null;
+            Object parentObject = null;
             if (user != null) {
                 avatarDrawable.setInfo(user);
                 if (UserObject.isUserSelf(user)) {
@@ -1060,13 +1074,15 @@ public class DialogCell extends BaseCell {
                 } else if (user.photo != null) {
                     photo = user.photo.photo_small;
                 }
+                parentObject = user;
             } else if (chat != null) {
                 if (chat.photo != null) {
                     photo = chat.photo.photo_small;
                 }
                 avatarDrawable.setInfo(chat);
+                parentObject = chat;
             }
-            avatarImage.setImage(photo, "50_50", avatarDrawable, null, 0);
+            avatarImage.setImage(photo, "50_50", avatarDrawable, null, parentObject, 0);
         }
         if (getMeasuredWidth() != 0 || getMeasuredHeight() != 0) {
             buildLayout();
@@ -1184,10 +1200,16 @@ public class DialogCell extends BaseCell {
         }
 
         if (useSeparator) {
-            if (LocaleController.isRTL) {
-                canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, Theme.dividerPaint);
+            int left;
+            if (fullSeparator) {
+                left = 0;
             } else {
-                canvas.drawLine(AndroidUtilities.dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+                left = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
+            }
+            if (LocaleController.isRTL) {
+                canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth() - left, getMeasuredHeight() - 1, Theme.dividerPaint);
+            } else {
+                canvas.drawLine(left, getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
             }
         }
 

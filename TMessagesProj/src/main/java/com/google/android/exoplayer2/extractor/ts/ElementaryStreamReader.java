@@ -43,9 +43,9 @@ public interface ElementaryStreamReader {
    * Called when a packet starts.
    *
    * @param pesTimeUs The timestamp associated with the packet.
-   * @param dataAlignmentIndicator The data alignment indicator associated with the packet.
+   * @param flags See {@link TsPayloadReader.Flags}.
    */
-  void packetStarted(long pesTimeUs, boolean dataAlignmentIndicator);
+  void packetStarted(long pesTimeUs, @TsPayloadReader.Flags int flags);
 
   /**
    * Consumes (possibly partial) data from the current packet.

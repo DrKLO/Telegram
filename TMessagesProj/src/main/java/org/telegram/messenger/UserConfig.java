@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.messenger;
@@ -56,6 +56,7 @@ public class UserConfig {
     public int dialogsLoadOffsetChannelId = 0;
     public long dialogsLoadOffsetAccess = 0;
     public boolean notificationsSettingsLoaded;
+    public boolean notificationsSignUpSettingsLoaded;
     public boolean syncContacts = true;
     public boolean suggestContacts = true;
     public boolean hasSecureData;
@@ -142,7 +143,8 @@ public class UserConfig {
                 editor.putBoolean("syncContacts", syncContacts);
                 editor.putBoolean("suggestContacts", suggestContacts);
                 editor.putBoolean("hasSecureData", hasSecureData);
-                editor.putBoolean("notificationsSettingsLoaded", notificationsSettingsLoaded);
+                editor.putBoolean("notificationsSettingsLoaded3", notificationsSettingsLoaded);
+                editor.putBoolean("notificationsSignUpSettingsLoaded", notificationsSignUpSettingsLoaded);
 
                 editor.putInt("3migrateOffsetId", migrateOffsetId);
                 if (migrateOffsetId != -1) {
@@ -288,7 +290,8 @@ public class UserConfig {
             syncContacts = preferences.getBoolean("syncContacts", true);
             suggestContacts = preferences.getBoolean("suggestContacts", true);
             hasSecureData = preferences.getBoolean("hasSecureData", false);
-            notificationsSettingsLoaded = preferences.getBoolean("notificationsSettingsLoaded", false);
+            notificationsSettingsLoaded = preferences.getBoolean("notificationsSettingsLoaded3", false);
+            notificationsSignUpSettingsLoaded = preferences.getBoolean("notificationsSignUpSettingsLoaded", false);
 
             try {
                 String terms = preferences.getString("terms", null);
@@ -328,12 +331,7 @@ public class UserConfig {
                         }
                         if (pendingAppUpdateBuildVersion != BuildVars.BUILD_VERSION || pendingAppUpdateInstallTime < updateTime) {
                             pendingAppUpdate = null;
-                            AndroidUtilities.runOnUIThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    saveConfig(false);
-                                }
-                            });
+                            AndroidUtilities.runOnUIThread(() -> saveConfig(false));
                         }
                     }
                 } catch (Exception e) {
@@ -422,6 +420,7 @@ public class UserConfig {
         lastBroadcastId = -1;
         blockedUsersLoaded = false;
         notificationsSettingsLoaded = false;
+        notificationsSignUpSettingsLoaded = false;
         migrateOffsetId = -1;
         migrateOffsetDate = -1;
         migrateOffsetUserId = -1;

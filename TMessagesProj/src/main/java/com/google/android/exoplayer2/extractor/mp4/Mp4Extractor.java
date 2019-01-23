@@ -35,6 +35,7 @@ import com.google.android.exoplayer2.util.NalUnitUtil;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
 import java.io.IOException;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayDeque;
@@ -50,27 +51,31 @@ public final class Mp4Extractor implements Extractor, SeekMap {
   public static final ExtractorsFactory FACTORY = () -> new Extractor[] {new Mp4Extractor()};
 
   /**
-   * Flags controlling the behavior of the extractor.
+   * Flags controlling the behavior of the extractor. Possible flag value is {@link
+   * #FLAG_WORKAROUND_IGNORE_EDIT_LISTS}.
    */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef(flag = true, value = {FLAG_WORKAROUND_IGNORE_EDIT_LISTS})
+  @IntDef(
+      flag = true,
+      value = {FLAG_WORKAROUND_IGNORE_EDIT_LISTS})
   public @interface Flags {}
   /**
    * Flag to ignore any edit lists in the stream.
    */
   public static final int FLAG_WORKAROUND_IGNORE_EDIT_LISTS = 1;
 
-  /**
-   * Parser states.
-   */
+  /** Parser states. */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({STATE_READING_ATOM_HEADER, STATE_READING_ATOM_PAYLOAD, STATE_READING_SAMPLE})
   private @interface State {}
+
   private static final int STATE_READING_ATOM_HEADER = 0;
   private static final int STATE_READING_ATOM_PAYLOAD = 1;
   private static final int STATE_READING_SAMPLE = 2;
 
-  // Brand stored in the ftyp atom for QuickTime media.
+  /** Brand stored in the ftyp atom for QuickTime media. */
   private static final int BRAND_QUICKTIME = Util.getIntegerCodeForString("qt  ");
 
   /**
@@ -372,26 +377,25 @@ public final class Mp4Extractor implements Extractor, SeekMap {
     long durationUs = C.TIME_UNSET;
     List<Mp4Track> tracks = new ArrayList<>();
 
-    Metadata metadata = null;
+    // Process metadata.
+    Metadata udtaMetadata = null;
     GaplessInfoHolder gaplessInfoHolder = new GaplessInfoHolder();
     Atom.LeafAtom udta = moov.getLeafAtomOfType(Atom.TYPE_udta);
     if (udta != null) {
-      metadata = AtomParsers.parseUdta(udta, isQuickTime);
-      if (metadata != null) {
-        gaplessInfoHolder.setFromMetadata(metadata);
+      udtaMetadata = AtomParsers.parseUdta(udta, isQuickTime);
+      if (udtaMetadata != null) {
+        gaplessInfoHolder.setFromMetadata(udtaMetadata);
       }
+    }
+    Metadata mdtaMetadata = null;
+    Atom.ContainerAtom meta = moov.getContainerAtomOfType(Atom.TYPE_meta);
+    if (meta != null) {
+      mdtaMetadata = AtomParsers.parseMdtaFromMeta(meta);
     }
 
     boolean ignoreEditLists = (flags & FLAG_WORKAROUND_IGNORE_EDIT_LISTS) != 0;
-    ArrayList<TrackSampleTable> trackSampleTables;
-    try {
-      trackSampleTables = getTrackSampleTables(moov, gaplessInfoHolder, ignoreEditLists);
-    } catch (AtomParsers.UnhandledEditListException e) {
-      // Discard gapless info as we aren't able to handle corresponding edits.
-      gaplessInfoHolder = new GaplessInfoHolder();
-      trackSampleTables =
-          getTrackSampleTables(moov, gaplessInfoHolder, /* ignoreEditLists= */ true);
-    }
+    ArrayList<TrackSampleTable> trackSampleTables =
+        getTrackSampleTables(moov, gaplessInfoHolder, ignoreEditLists);
 
     int trackCount = trackSampleTables.size();
     for (int i = 0; i < trackCount; i++) {
@@ -403,15 +407,9 @@ public final class Mp4Extractor implements Extractor, SeekMap {
       // Allow ten source samples per output sample, like the platform extractor.
       int maxInputSize = trackSampleTable.maximumSize + 3 * 10;
       Format format = track.format.copyWithMaxInputSize(maxInputSize);
-      if (track.type == C.TRACK_TYPE_AUDIO) {
-        if (gaplessInfoHolder.hasGaplessInfo()) {
-          format = format.copyWithGaplessInfo(gaplessInfoHolder.encoderDelay,
-              gaplessInfoHolder.encoderPadding);
-        }
-        if (metadata != null) {
-          format = format.copyWithMetadata(metadata);
-        }
-      }
+      format =
+          MetadataUtil.getFormatWithMetadata(
+              track.type, format, udtaMetadata, mdtaMetadata, gaplessInfoHolder);
       mp4Track.trackOutput.format(format);
 
       durationUs =
@@ -425,7 +423,7 @@ public final class Mp4Extractor implements Extractor, SeekMap {
     }
     this.firstVideoTrackIndex = firstVideoTrackIndex;
     this.durationUs = durationUs;
-    this.tracks = tracks.toArray(new Mp4Track[tracks.size()]);
+    this.tracks = tracks.toArray(new Mp4Track[0]);
     accumulatedSampleSizes = calculateAccumulatedSampleSizes(this.tracks);
 
     extractorOutput.endTracks();
@@ -718,24 +716,37 @@ public final class Mp4Extractor implements Extractor, SeekMap {
     return false;
   }
 
-  /**
-   * Returns whether the extractor should decode a leaf atom with type {@code atom}.
-   */
+  /** Returns whether the extractor should decode a leaf atom with type {@code atom}. */
   private static boolean shouldParseLeafAtom(int atom) {
-    return atom == Atom.TYPE_mdhd || atom == Atom.TYPE_mvhd || atom == Atom.TYPE_hdlr
-        || atom == Atom.TYPE_stsd || atom == Atom.TYPE_stts || atom == Atom.TYPE_stss
-        || atom == Atom.TYPE_ctts || atom == Atom.TYPE_elst || atom == Atom.TYPE_stsc
-        || atom == Atom.TYPE_stsz || atom == Atom.TYPE_stz2 || atom == Atom.TYPE_stco
-        || atom == Atom.TYPE_co64 || atom == Atom.TYPE_tkhd || atom == Atom.TYPE_ftyp
-        || atom == Atom.TYPE_udta;
+    return atom == Atom.TYPE_mdhd
+        || atom == Atom.TYPE_mvhd
+        || atom == Atom.TYPE_hdlr
+        || atom == Atom.TYPE_stsd
+        || atom == Atom.TYPE_stts
+        || atom == Atom.TYPE_stss
+        || atom == Atom.TYPE_ctts
+        || atom == Atom.TYPE_elst
+        || atom == Atom.TYPE_stsc
+        || atom == Atom.TYPE_stsz
+        || atom == Atom.TYPE_stz2
+        || atom == Atom.TYPE_stco
+        || atom == Atom.TYPE_co64
+        || atom == Atom.TYPE_tkhd
+        || atom == Atom.TYPE_ftyp
+        || atom == Atom.TYPE_udta
+        || atom == Atom.TYPE_keys
+        || atom == Atom.TYPE_ilst;
   }
 
-  /**
-   * Returns whether the extractor should decode a container atom with type {@code atom}.
-   */
+  /** Returns whether the extractor should decode a container atom with type {@code atom}. */
   private static boolean shouldParseContainerAtom(int atom) {
-    return atom == Atom.TYPE_moov || atom == Atom.TYPE_trak || atom == Atom.TYPE_mdia
-        || atom == Atom.TYPE_minf || atom == Atom.TYPE_stbl || atom == Atom.TYPE_edts;
+    return atom == Atom.TYPE_moov
+        || atom == Atom.TYPE_trak
+        || atom == Atom.TYPE_mdia
+        || atom == Atom.TYPE_minf
+        || atom == Atom.TYPE_stbl
+        || atom == Atom.TYPE_edts
+        || atom == Atom.TYPE_meta;
   }
 
   private static final class Mp4Track {

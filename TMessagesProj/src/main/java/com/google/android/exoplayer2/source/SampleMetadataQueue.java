@@ -57,6 +57,7 @@ import com.google.android.exoplayer2.util.Util;
 
   private long largestDiscardedTimestampUs;
   private long largestQueuedTimestampUs;
+  private boolean isLastSampleQueued;
   private boolean upstreamKeyframeRequired;
   private boolean upstreamFormatRequired;
   private Format upstreamFormat;
@@ -93,6 +94,7 @@ import com.google.android.exoplayer2.util.Util;
     upstreamKeyframeRequired = true;
     largestDiscardedTimestampUs = Long.MIN_VALUE;
     largestQueuedTimestampUs = Long.MIN_VALUE;
+    isLastSampleQueued = false;
     if (resetUpstreamFormat) {
       upstreamFormat = null;
       upstreamFormatRequired = true;
@@ -118,6 +120,7 @@ import com.google.android.exoplayer2.util.Util;
     Assertions.checkArgument(0 <= discardCount && discardCount <= (length - readPosition));
     length -= discardCount;
     largestQueuedTimestampUs = Math.max(largestDiscardedTimestampUs, getLargestTimestamp(length));
+    isLastSampleQueued = discardCount == 0 && isLastSampleQueued;
     if (length == 0) {
       return 0;
     } else {
@@ -186,6 +189,19 @@ import com.google.android.exoplayer2.util.Util;
     return largestQueuedTimestampUs;
   }
 
+  /**
+   * Returns whether the last sample of the stream has knowingly been queued. A return value of
+   * {@code false} means that the last sample had not been queued or that it's unknown whether the
+   * last sample has been queued.
+   *
+   * <p>Samples that were discarded by calling {@link #discardUpstreamSamples(int)} are not
+   * considered as having been queued. Samples that were dequeued from the front of the queue are
+   * considered as having been queued.
+   */
+  public synchronized boolean isLastSampleQueued() {
+    return isLastSampleQueued;
+  }
+
   /** Returns the timestamp of the first sample, or {@link Long#MIN_VALUE} if the queue is empty. */
   public synchronized long getFirstTimestampUs() {
     return length == 0 ? Long.MIN_VALUE : timesUs[relativeFirstIndex];
@@ -224,7 +240,7 @@ import com.google.android.exoplayer2.util.Util;
       boolean formatRequired, boolean loadingFinished, Format downstreamFormat,
       SampleExtrasHolder extrasHolder) {
     if (!hasNextSample()) {
-      if (loadingFinished) {
+      if (loadingFinished || isLastSampleQueued) {
         buffer.setFlags(C.BUFFER_FLAG_END_OF_STREAM);
         return C.RESULT_BUFFER_READ;
       } else if (upstreamFormat != null
@@ -388,7 +404,9 @@ import com.google.android.exoplayer2.util.Util;
       upstreamKeyframeRequired = false;
     }
     Assertions.checkState(!upstreamFormatRequired);
-    commitSampleTimestamp(timeUs);
+
+    isLastSampleQueued = (sampleFlags & C.BUFFER_FLAG_LAST_SAMPLE) != 0;
+    largestQueuedTimestampUs = Math.max(largestQueuedTimestampUs, timeUs);
 
     int relativeEndIndex = getRelativeIndex(length);
     timesUs[relativeEndIndex] = timeUs;
@@ -437,10 +455,6 @@ import com.google.android.exoplayer2.util.Util;
       length = capacity;
       capacity = newCapacity;
     }
-  }
-
-  public synchronized void commitSampleTimestamp(long timeUs) {
-    largestQueuedTimestampUs = Math.max(largestQueuedTimestampUs, timeUs);
   }
 
   /**

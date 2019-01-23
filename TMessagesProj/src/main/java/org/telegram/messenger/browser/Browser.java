@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.messenger.browser;
@@ -12,7 +12,6 @@ import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
 import android.graphics.BitmapFactory;
@@ -180,7 +179,7 @@ public class Browser {
             try {
                 String host = uri.getHost().toLowerCase();
                 if (host.equals("telegra.ph") || uri.toString().toLowerCase().contains("telegram.org/faq")) {
-                    final AlertDialog progressDialog[] = new AlertDialog[] {new AlertDialog(context, 1)};
+                    final AlertDialog progressDialog[] = new AlertDialog[] {new AlertDialog(context, 3)};
 
                     TLRPC.TL_messages_getWebPagePreview req = new TLRPC.TL_messages_getWebPagePreview();
                     req.message = uri.toString();
@@ -209,17 +208,7 @@ public class Browser {
                             return;
                         }
                         try {
-                            progressDialog[0].setMessage(LocaleController.getString("Loading", R.string.Loading));
-                            progressDialog[0].setCanceledOnTouchOutside(false);
-                            progressDialog[0].setCancelable(false);
-                            progressDialog[0].setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), (dialog, which) -> {
-                                ConnectionsManager.getInstance(UserConfig.selectedAccount).cancelRequest(reqId, true);
-                                try {
-                                    dialog.dismiss();
-                                } catch (Exception e) {
-                                    FileLog.e(e);
-                                }
-                            });
+                            progressDialog[0].setOnCancelListener(dialog -> ConnectionsManager.getInstance(UserConfig.selectedAccount).cancelRequest(reqId, true));
                             progressDialog[0].show();
                         } catch (Exception ignore) {
 
@@ -349,7 +338,7 @@ public class Browser {
                 }
                 return true;
             }
-        } else if ("telegram.me".equals(host) || "t.me".equals(host) || "telesco.pe".equals(host)) {
+        } else if ("telegram.me".equals(host) || "t.me".equals(host)) {
             String path = uri.getPath();
             if (path != null && path.length() > 1) {
                 path = path.substring(1).toLowerCase();

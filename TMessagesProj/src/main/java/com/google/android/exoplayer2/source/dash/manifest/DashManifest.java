@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.source.dash.manifest;
 
 import android.net.Uri;
+import android.support.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.offline.FilterableManifest;
 import com.google.android.exoplayer2.offline.StreamKey;
@@ -86,12 +87,56 @@ public class DashManifest implements FilterableManifest<DashManifest> {
    */
   public final Uri location;
 
+  /** The {@link ProgramInformation}, or null if not present. */
+  @Nullable public final ProgramInformation programInformation;
+
   private final List<Period> periods;
 
-  public DashManifest(long availabilityStartTimeMs, long durationMs, long minBufferTimeMs,
-      boolean dynamic, long minUpdatePeriodMs, long timeShiftBufferDepthMs,
-      long suggestedPresentationDelayMs, long publishTimeMs, UtcTimingElement utcTiming,
-      Uri location, List<Period> periods) {
+  /**
+   * @deprecated Use {@link #DashManifest(long, long, long, boolean, long, long, long, long,
+   *     ProgramInformation, UtcTimingElement, Uri, List)}.
+   */
+  @Deprecated
+  public DashManifest(
+      long availabilityStartTimeMs,
+      long durationMs,
+      long minBufferTimeMs,
+      boolean dynamic,
+      long minUpdatePeriodMs,
+      long timeShiftBufferDepthMs,
+      long suggestedPresentationDelayMs,
+      long publishTimeMs,
+      UtcTimingElement utcTiming,
+      Uri location,
+      List<Period> periods) {
+    this(
+        availabilityStartTimeMs,
+        durationMs,
+        minBufferTimeMs,
+        dynamic,
+        minUpdatePeriodMs,
+        timeShiftBufferDepthMs,
+        suggestedPresentationDelayMs,
+        publishTimeMs,
+        /* programInformation= */ null,
+        utcTiming,
+        location,
+        periods);
+  }
+
+  public DashManifest(
+      long availabilityStartTimeMs,
+      long durationMs,
+      long minBufferTimeMs,
+      boolean dynamic,
+      long minUpdatePeriodMs,
+      long timeShiftBufferDepthMs,
+      long suggestedPresentationDelayMs,
+      long publishTimeMs,
+      @Nullable ProgramInformation programInformation,
+      UtcTimingElement utcTiming,
+      Uri location,
+      List<Period> periods) {
     this.availabilityStartTimeMs = availabilityStartTimeMs;
     this.durationMs = durationMs;
     this.minBufferTimeMs = minBufferTimeMs;
@@ -100,6 +145,7 @@ public class DashManifest implements FilterableManifest<DashManifest> {
     this.timeShiftBufferDepthMs = timeShiftBufferDepthMs;
     this.suggestedPresentationDelayMs = suggestedPresentationDelayMs;
     this.publishTimeMs = publishTimeMs;
+    this.programInformation = programInformation;
     this.utcTiming = utcTiming;
     this.location = location;
     this.periods = periods == null ? Collections.emptyList() : periods;
@@ -148,9 +194,19 @@ public class DashManifest implements FilterableManifest<DashManifest> {
       }
     }
     long newDuration = durationMs != C.TIME_UNSET ? durationMs - shiftMs : C.TIME_UNSET;
-    return new DashManifest(availabilityStartTimeMs, newDuration, minBufferTimeMs, dynamic,
-        minUpdatePeriodMs, timeShiftBufferDepthMs, suggestedPresentationDelayMs, publishTimeMs,
-        utcTiming, location, copyPeriods);
+    return new DashManifest(
+        availabilityStartTimeMs,
+        newDuration,
+        minBufferTimeMs,
+        dynamic,
+        minUpdatePeriodMs,
+        timeShiftBufferDepthMs,
+        suggestedPresentationDelayMs,
+        publishTimeMs,
+        programInformation,
+        utcTiming,
+        location,
+        copyPeriods);
   }
 
   private static ArrayList<AdaptationSet> copyAdaptationSets(

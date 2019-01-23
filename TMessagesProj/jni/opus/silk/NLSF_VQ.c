@@ -46,7 +46,7 @@ void silk_NLSF_VQ(
     const opus_int16 *w_Q9_ptr;
     const opus_uint8 *cb_Q8_ptr;
 
-    silk_assert( ( LPC_order & 1 ) == 0 );
+    celt_assert( ( LPC_order & 1 ) == 0 );
 
     /* Loop over codebook */
     cb_Q8_ptr = pCB_Q8;

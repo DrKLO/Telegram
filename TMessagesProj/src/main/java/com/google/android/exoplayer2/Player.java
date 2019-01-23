@@ -22,13 +22,19 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
+import com.google.android.exoplayer2.C.VideoScalingMode;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.audio.AudioListener;
+import com.google.android.exoplayer2.audio.AuxEffectInfo;
+import com.google.android.exoplayer2.metadata.MetadataOutput;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.text.TextOutput;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.util.Util;
+import com.google.android.exoplayer2.video.VideoFrameMetadataListener;
 import com.google.android.exoplayer2.video.VideoListener;
+import com.google.android.exoplayer2.video.spherical.CameraMotionListener;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -85,14 +91,45 @@ public interface Player {
      * equivalent stream type using {@link Util#getStreamTypeForAudioUsage(int)}.
      *
      * @param audioAttributes The attributes to use for audio playback.
+     * @deprecated Use {@link AudioComponent#setAudioAttributes(AudioAttributes, boolean)}.
      */
+    @Deprecated
     void setAudioAttributes(AudioAttributes audioAttributes);
+
+    /**
+     * Sets the attributes for audio playback, used by the underlying audio track. If not set, the
+     * default audio attributes will be used. They are suitable for general media playback.
+     *
+     * <p>Setting the audio attributes during playback may introduce a short gap in audio output as
+     * the audio track is recreated. A new audio session id will also be generated.
+     *
+     * <p>If tunneling is enabled by the track selector, the specified audio attributes will be
+     * ignored, but they will take effect if audio is later played without tunneling.
+     *
+     * <p>If the device is running a build before platform API version 21, audio attributes cannot
+     * be set directly on the underlying audio track. In this case, the usage will be mapped onto an
+     * equivalent stream type using {@link Util#getStreamTypeForAudioUsage(int)}.
+     *
+     * <p>If audio focus should be handled, the {@link AudioAttributes#usage} must be {@link
+     * C#USAGE_MEDIA} or {@link C#USAGE_GAME}. Other usages will throw an {@link
+     * IllegalArgumentException}.
+     *
+     * @param audioAttributes The attributes to use for audio playback.
+     * @param handleAudioFocus True if the player should handle audio focus, false otherwise.
+     */
+    void setAudioAttributes(AudioAttributes audioAttributes, boolean handleAudioFocus);
 
     /** Returns the attributes for audio playback. */
     AudioAttributes getAudioAttributes();
 
     /** Returns the audio session identifier, or {@link C#AUDIO_SESSION_ID_UNSET} if not set. */
     int getAudioSessionId();
+
+    /** Sets information on an auxiliary audio effect to attach to the underlying audio track. */
+    void setAuxEffectInfo(AuxEffectInfo auxEffectInfo);
+
+    /** Detaches any previously attached auxiliary audio effect from the underlying audio track. */
+    void clearAuxEffectInfo();
 
     /**
      * Sets the audio volume, with 0 being silence and 1 being unity gain.
@@ -109,14 +146,14 @@ public interface Player {
   interface VideoComponent {
 
     /**
-     * Sets the video scaling mode.
+     * Sets the {@link VideoScalingMode}.
      *
-     * @param videoScalingMode The video scaling mode.
+     * @param videoScalingMode The {@link VideoScalingMode}.
      */
-    void setVideoScalingMode(@C.VideoScalingMode int videoScalingMode);
+    void setVideoScalingMode(@VideoScalingMode int videoScalingMode);
 
-    /** Returns the video scaling mode. */
-    @C.VideoScalingMode
+    /** Returns the {@link VideoScalingMode}. */
+    @VideoScalingMode
     int getVideoScalingMode();
 
     /**
@@ -134,10 +171,52 @@ public interface Player {
     void removeVideoListener(VideoListener listener);
 
     /**
+     * Sets a listener to receive video frame metadata events.
+     *
+     * <p>This method is intended to be called by the same component that sets the {@link Surface}
+     * onto which video will be rendered. If using ExoPlayer's standard UI components, this method
+     * should not be called directly from application code.
+     *
+     * @param listener The listener.
+     */
+    void setVideoFrameMetadataListener(VideoFrameMetadataListener listener);
+
+    /**
+     * Clears the listener which receives video frame metadata events if it matches the one passed.
+     * Else does nothing.
+     *
+     * @param listener The listener to clear.
+     */
+    void clearVideoFrameMetadataListener(VideoFrameMetadataListener listener);
+
+    /**
+     * Sets a listener of camera motion events.
+     *
+     * @param listener The listener.
+     */
+    void setCameraMotionListener(CameraMotionListener listener);
+
+    /**
+     * Clears the listener which receives camera motion events if it matches the one passed. Else
+     * does nothing.
+     *
+     * @param listener The listener to clear.
+     */
+    void clearCameraMotionListener(CameraMotionListener listener);
+
+    /**
      * Clears any {@link Surface}, {@link SurfaceHolder}, {@link SurfaceView} or {@link TextureView}
      * currently set on the player.
      */
     void clearVideoSurface();
+
+    /**
+     * Clears the {@link Surface} onto which video is being rendered if it matches the one passed.
+     * Else does nothing.
+     *
+     * @param surface The surface to clear.
+     */
+    void clearVideoSurface(Surface surface);
 
     /**
      * Sets the {@link Surface} onto which video will be rendered. The caller is responsible for
@@ -153,14 +232,6 @@ public interface Player {
      * @param surface The {@link Surface}.
      */
     void setVideoSurface(@Nullable Surface surface);
-
-    /**
-     * Clears the {@link Surface} onto which video is being rendered if it matches the one passed.
-     * Else does nothing.
-     *
-     * @param surface The surface to clear.
-     */
-    void clearVideoSurface(Surface surface);
 
     /**
      * Sets the {@link SurfaceHolder} that holds the {@link Surface} onto which video will be
@@ -229,6 +300,24 @@ public interface Player {
     void removeTextOutput(TextOutput listener);
   }
 
+  /** The metadata component of a {@link Player}. */
+  interface MetadataComponent {
+
+    /**
+     * Adds a {@link MetadataOutput} to receive metadata.
+     *
+     * @param output The output to register.
+     */
+    void addMetadataOutput(MetadataOutput output);
+
+    /**
+     * Removes a {@link MetadataOutput}.
+     *
+     * @param output The output to remove.
+     */
+    void removeMetadataOutput(MetadataOutput output);
+  }
+
   /**
    * Listener of changes in player state. All methods have no-op default implementations to allow
    * selective overrides.
@@ -248,7 +337,7 @@ public interface Player {
      * @param reason The {@link TimelineChangeReason} responsible for this timeline change.
      */
     default void onTimelineChanged(
-        Timeline timeline, Object manifest, @TimelineChangeReason int reason) {}
+        Timeline timeline, @Nullable Object manifest, @TimelineChangeReason int reason) {}
 
     /**
      * Called when the available or selected tracks change.
@@ -340,15 +429,16 @@ public interface Player {
   abstract class DefaultEventListener implements EventListener {
 
     @Override
-    public void onTimelineChanged(Timeline timeline, Object manifest,
-        @TimelineChangeReason int reason) {
+    @SuppressWarnings("deprecation")
+    public void onTimelineChanged(
+        Timeline timeline, @Nullable Object manifest, @TimelineChangeReason int reason) {
       // Call deprecated version. Otherwise, do nothing.
       onTimelineChanged(timeline, manifest);
     }
 
     /** @deprecated Use {@link EventListener#onTimelineChanged(Timeline, Object, int)} instead. */
     @Deprecated
-    public void onTimelineChanged(Timeline timeline, Object manifest) {
+    public void onTimelineChanged(Timeline timeline, @Nullable Object manifest) {
       // Do nothing.
     }
   }
@@ -373,11 +463,13 @@ public interface Player {
   int STATE_ENDED = 4;
 
   /**
-   * Repeat modes for playback.
+   * Repeat modes for playback. One of {@link #REPEAT_MODE_OFF}, {@link #REPEAT_MODE_ONE} or {@link
+   * #REPEAT_MODE_ALL}.
    */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({REPEAT_MODE_OFF, REPEAT_MODE_ONE, REPEAT_MODE_ALL})
-  public @interface RepeatMode {}
+  @interface RepeatMode {}
   /**
    * Normal playback without repetition.
    */
@@ -391,7 +483,12 @@ public interface Player {
    */
   int REPEAT_MODE_ALL = 2;
 
-  /** Reasons for position discontinuities. */
+  /**
+   * Reasons for position discontinuities. One of {@link #DISCONTINUITY_REASON_PERIOD_TRANSITION},
+   * {@link #DISCONTINUITY_REASON_SEEK}, {@link #DISCONTINUITY_REASON_SEEK_ADJUSTMENT}, {@link
+   * #DISCONTINUITY_REASON_AD_INSERTION} or {@link #DISCONTINUITY_REASON_INTERNAL}.
+   */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
     DISCONTINUITY_REASON_PERIOD_TRANSITION,
@@ -400,7 +497,7 @@ public interface Player {
     DISCONTINUITY_REASON_AD_INSERTION,
     DISCONTINUITY_REASON_INTERNAL
   })
-  public @interface DiscontinuityReason {}
+  @interface DiscontinuityReason {}
   /**
    * Automatic playback transition from one period in the timeline to the next. The period index may
    * be the same as it was before the discontinuity in case the current period is repeated.
@@ -419,12 +516,17 @@ public interface Player {
   int DISCONTINUITY_REASON_INTERNAL = 4;
 
   /**
-   * Reasons for timeline and/or manifest changes.
+   * Reasons for timeline and/or manifest changes. One of {@link #TIMELINE_CHANGE_REASON_PREPARED},
+   * {@link #TIMELINE_CHANGE_REASON_RESET} or {@link #TIMELINE_CHANGE_REASON_DYNAMIC}.
    */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef({TIMELINE_CHANGE_REASON_PREPARED, TIMELINE_CHANGE_REASON_RESET,
-      TIMELINE_CHANGE_REASON_DYNAMIC})
-  public @interface TimelineChangeReason {}
+  @IntDef({
+    TIMELINE_CHANGE_REASON_PREPARED,
+    TIMELINE_CHANGE_REASON_RESET,
+    TIMELINE_CHANGE_REASON_DYNAMIC
+  })
+  @interface TimelineChangeReason {}
   /**
    * Timeline and manifest changed as a result of a player initialization with new media.
    */
@@ -449,6 +551,18 @@ public interface Player {
   /** Returns the component of this player for text output, or null if text is not supported. */
   @Nullable
   TextComponent getTextComponent();
+
+  /**
+   * Returns the component of this player for metadata output, or null if metadata is not supported.
+   */
+  @Nullable
+  MetadataComponent getMetadataComponent();
+
+  /**
+   * Returns the {@link Looper} associated with the application thread that's used to access the
+   * player and on which player events are received.
+   */
+  Looper getApplicationLooper();
 
   /**
    * Register a listener to receive events from the player. The listener's methods will be called on
@@ -571,6 +685,32 @@ public interface Player {
   void seekTo(int windowIndex, long positionMs);
 
   /**
+   * Returns whether a previous window exists, which may depend on the current repeat mode and
+   * whether shuffle mode is enabled.
+   */
+  boolean hasPrevious();
+
+  /**
+   * Seeks to the default position of the previous window in the timeline, which may depend on the
+   * current repeat mode and whether shuffle mode is enabled. Does nothing if {@link #hasPrevious()}
+   * is {@code false}.
+   */
+  void previous();
+
+  /**
+   * Returns whether a next window exists, which may depend on the current repeat mode and whether
+   * shuffle mode is enabled.
+   */
+  boolean hasNext();
+
+  /**
+   * Seeks to the default position of the next window in the timeline, which may depend on the
+   * current repeat mode and whether shuffle mode is enabled. Does nothing if {@link #hasNext()} is
+   * {@code false}.
+   */
+  void next();
+
+  /**
    * Attempts to set the playback parameters. Passing {@code null} sets the parameters to the
    * default, {@link PlaybackParameters#DEFAULT}, which means there is no speed or pitch adjustment.
    * <p>
@@ -687,8 +827,8 @@ public interface Player {
   @Nullable Object getCurrentTag();
 
   /**
-   * Returns the duration of the current window in milliseconds, or {@link C#TIME_UNSET} if the
-   * duration is not known.
+   * Returns the duration of the current content window or ad in milliseconds, or {@link
+   * C#TIME_UNSET} if the duration is not known.
    */
   long getDuration();
 
@@ -745,6 +885,13 @@ public interface Player {
    * {@link C#INDEX_UNSET} otherwise.
    */
   int getCurrentAdIndexInAdGroup();
+
+  /**
+   * If {@link #isPlayingAd()} returns {@code true}, returns the duration of the current content
+   * window in milliseconds, or {@link C#TIME_UNSET} if the duration is not known. If there is no ad
+   * playing, the returned duration is the same as that returned by {@link #getDuration()}.
+   */
+  long getContentDuration();
 
   /**
    * If {@link #isPlayingAd()} returns {@code true}, returns the content position that will be

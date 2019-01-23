@@ -68,7 +68,8 @@ public final class SingleSampleMediaChunk extends BaseMediaChunk {
         trackSelectionData,
         startTimeUs,
         endTimeUs,
-        C.TIME_UNSET,
+        /* clippedStartTimeUs= */ C.TIME_UNSET,
+        /* clippedEndTimeUs= */ C.TIME_UNSET,
         chunkIndex);
     this.trackType = trackType;
     this.sampleFormat = sampleFormat;

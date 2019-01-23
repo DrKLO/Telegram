@@ -98,7 +98,7 @@ public:
 class TL_config : public TLObject {
 
 public:
-    static const uint32_t constructor = 0x3213dbba;
+    static const uint32_t constructor = 0xe6ca25f6;
 
     int32_t flags;
     int32_t date;
@@ -143,6 +143,7 @@ public:
     int32_t webfile_dc_id;
     std::string suggested_lang_code;
     int32_t lang_pack_version;
+    int32_t base_lang_pack_version;
 
     static TL_config *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
@@ -237,6 +238,7 @@ public:
     int64_t volume_id;
     int32_t local_id;
     int64_t secret;
+    std::unique_ptr<ByteArray> file_reference;
     std::unique_ptr<ByteArray> key;
     std::unique_ptr<ByteArray> iv;
 
@@ -246,7 +248,7 @@ public:
 class TL_fileLocation : public FileLocation {
 
 public:
-    static const uint32_t constructor = 0x53d69076;
+    static const uint32_t constructor = 0x91d11eb;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);

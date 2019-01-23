@@ -50,8 +50,10 @@ public class ContainerMediaChunk extends BaseMediaChunk {
    * @param trackSelectionData See {@link #trackSelectionData}.
    * @param startTimeUs The start time of the media contained by the chunk, in microseconds.
    * @param endTimeUs The end time of the media contained by the chunk, in microseconds.
-   * @param seekTimeUs The media time from which output will begin, or {@link C#TIME_UNSET} if the
-   *     whole chunk should be output.
+   * @param clippedStartTimeUs The time in the chunk from which output will begin, or {@link
+   *     C#TIME_UNSET} to output from the start of the chunk.
+   * @param clippedEndTimeUs The time in the chunk from which output will end, or {@link
+   *     C#TIME_UNSET} to output to the end of the chunk.
    * @param chunkIndex The index of the chunk, or {@link C#INDEX_UNSET} if it is not known.
    * @param chunkCount The number of chunks in the underlying media that are spanned by this
    *     instance. Normally equal to one, but may be larger if multiple chunks as defined by the
@@ -67,7 +69,8 @@ public class ContainerMediaChunk extends BaseMediaChunk {
       Object trackSelectionData,
       long startTimeUs,
       long endTimeUs,
-      long seekTimeUs,
+      long clippedStartTimeUs,
+      long clippedEndTimeUs,
       long chunkIndex,
       int chunkCount,
       long sampleOffsetUs,
@@ -80,7 +83,8 @@ public class ContainerMediaChunk extends BaseMediaChunk {
         trackSelectionData,
         startTimeUs,
         endTimeUs,
-        seekTimeUs,
+        clippedStartTimeUs,
+        clippedEndTimeUs,
         chunkIndex);
     this.chunkCount = chunkCount;
     this.sampleOffsetUs = sampleOffsetUs;
@@ -117,7 +121,11 @@ public class ContainerMediaChunk extends BaseMediaChunk {
         BaseMediaChunkOutput output = getOutput();
         output.setSampleOffsetUs(sampleOffsetUs);
         extractorWrapper.init(
-            output, seekTimeUs == C.TIME_UNSET ? 0 : (seekTimeUs - sampleOffsetUs));
+            output,
+            clippedStartTimeUs == C.TIME_UNSET
+                ? C.TIME_UNSET
+                : (clippedStartTimeUs - sampleOffsetUs),
+            clippedEndTimeUs == C.TIME_UNSET ? C.TIME_UNSET : (clippedEndTimeUs - sampleOffsetUs));
       }
       // Load and decode the sample data.
       try {

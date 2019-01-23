@@ -40,6 +40,7 @@ protected:
     virtual void onReceivedData(NativeByteBuffer *buffer) = 0;
     virtual void onDisconnected(int32_t reason, int32_t error) = 0;
     virtual void onConnected() = 0;
+    virtual bool hasPendingRequests() = 0;
 
     std::string overrideProxyUser = "";
     std::string overrideProxyPassword = "";

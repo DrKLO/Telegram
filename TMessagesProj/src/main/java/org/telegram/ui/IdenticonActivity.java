@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -88,14 +88,14 @@ public class IdenticonActivity extends BaseFragment implements NotificationCente
     @Override
     public boolean onFragmentCreate() {
         chat_id = getArguments().getInt("chat_id");
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
     }
 
     @Override
@@ -116,12 +116,7 @@ public class IdenticonActivity extends BaseFragment implements NotificationCente
         fragmentView = new FrameLayout(context);
         FrameLayout parentFrameLayout = (FrameLayout) fragmentView;
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
-        fragmentView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
+        fragmentView.setOnTouchListener((v, event) -> true);
 
         linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -247,7 +242,7 @@ public class IdenticonActivity extends BaseFragment implements NotificationCente
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.emojiDidLoaded) {
+        if (id == NotificationCenter.emojiDidLoad) {
             if (emojiTextView != null) {
                 emojiTextView.invalidate();
             }

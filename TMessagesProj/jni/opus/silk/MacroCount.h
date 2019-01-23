@@ -691,7 +691,7 @@ return(ret);
 
 
 #undef silk_LIMIT_32
-static OPUS_INLINE opus_int silk_LIMIT_32(opus_int32 a, opus_int32 limit1, opus_int32 limit2)
+static OPUS_INLINE opus_int32 silk_LIMIT_32(opus_int32 a, opus_int32 limit1, opus_int32 limit2)
 {
     opus_int32 ret;
     ops_count += 6;

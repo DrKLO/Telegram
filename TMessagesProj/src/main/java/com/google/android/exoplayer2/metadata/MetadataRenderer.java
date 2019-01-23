@@ -129,9 +129,12 @@ public final class MetadataRenderer extends BaseRenderer implements Callback {
           buffer.subsampleOffsetUs = formatHolder.format.subsampleOffsetUs;
           buffer.flip();
           int index = (pendingMetadataIndex + pendingMetadataCount) % MAX_PENDING_METADATA_COUNT;
-          pendingMetadata[index] = decoder.decode(buffer);
-          pendingMetadataTimestamps[index] = buffer.timeUs;
-          pendingMetadataCount++;
+          Metadata metadata = decoder.decode(buffer);
+          if (metadata != null) {
+            pendingMetadata[index] = metadata;
+            pendingMetadataTimestamps[index] = buffer.timeUs;
+            pendingMetadataCount++;
+          }
         }
       }
     }

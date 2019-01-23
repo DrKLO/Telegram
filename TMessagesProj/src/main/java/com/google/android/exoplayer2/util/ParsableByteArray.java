@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.util;
 
+import android.support.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -30,10 +31,10 @@ public final class ParsableByteArray {
   private int position;
   private int limit;
 
-  /**
-   * Creates a new instance that initially has no backing data.
-   */
-  public ParsableByteArray() {}
+  /** Creates a new instance that initially has no backing data. */
+  public ParsableByteArray() {
+    data = Util.EMPTY_BYTE_ARRAY;
+  }
 
   /**
    * Creates a new instance with {@code limit} bytes and sets the limit.
@@ -66,6 +67,12 @@ public final class ParsableByteArray {
     this.limit = limit;
   }
 
+  /** Sets the position and limit to zero. */
+  public void reset() {
+    position = 0;
+    limit = 0;
+  }
+
   /**
    * Resets the position to zero and the limit to the specified value. If the limit exceeds the
    * capacity, {@code data} is replaced with a new array of sufficient size.
@@ -74,6 +81,16 @@ public final class ParsableByteArray {
    */
   public void reset(int limit) {
     reset(capacity() < limit ? new byte[limit] : data, limit);
+  }
+
+  /**
+   * Updates the instance to wrap {@code data}, and resets the position to zero and the limit to
+   * {@code data.length}.
+   *
+   * @param data The array to wrap.
+   */
+  public void reset(byte[] data) {
+    reset(data, data.length);
   }
 
   /**
@@ -86,14 +103,6 @@ public final class ParsableByteArray {
     this.data = data;
     this.limit = limit;
     position = 0;
-  }
-
-  /**
-   * Sets the position and limit to zero.
-   */
-  public void reset() {
-    position = 0;
-    limit = 0;
   }
 
   /**
@@ -131,7 +140,7 @@ public final class ParsableByteArray {
    * Returns the capacity of the array, which may be larger than the limit.
    */
   public int capacity() {
-    return data == null ? 0 : data.length;
+    return data.length;
   }
 
   /**
@@ -481,7 +490,7 @@ public final class ParsableByteArray {
    * @return The string not including any terminating NUL byte, or null if the end of the data has
    *     already been reached.
    */
-  public String readNullTerminatedString() {
+  public @Nullable String readNullTerminatedString() {
     if (bytesLeft() == 0) {
       return null;
     }
@@ -499,15 +508,15 @@ public final class ParsableByteArray {
 
   /**
    * Reads a line of text.
-   * <p>
-   * A line is considered to be terminated by any one of a carriage return ('\r'), a line feed
+   *
+   * <p>A line is considered to be terminated by any one of a carriage return ('\r'), a line feed
    * ('\n'), or a carriage return followed immediately by a line feed ('\r\n'). The system's default
-   * charset (UTF-8) is used.
+   * charset (UTF-8) is used. This method discards leading UTF-8 byte order marks, if present.
    *
    * @return The line not including any line-termination characters, or null if the end of the data
    *     has already been reached.
    */
-  public String readLine() {
+  public @Nullable String readLine() {
     if (bytesLeft() == 0) {
       return null;
     }
@@ -517,7 +526,7 @@ public final class ParsableByteArray {
     }
     if (lineLimit - position >= 3 && data[position] == (byte) 0xEF
         && data[position + 1] == (byte) 0xBB && data[position + 2] == (byte) 0xBF) {
-      // There's a byte order mark at the start of the line. Discard it.
+      // There's a UTF-8 byte order mark at the start of the line. Discard it.
       position += 3;
     }
     String line = Util.fromUtf8Bytes(data, position, lineLimit - position);

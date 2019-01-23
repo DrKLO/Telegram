@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
+import static com.google.android.exoplayer2.extractor.ts.TsPayloadReader.FLAG_DATA_ALIGNMENT_INDICATOR;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.audio.Ac3Util;
 import com.google.android.exoplayer2.extractor.Extractor;
@@ -85,7 +87,7 @@ public final class Ac3Extractor implements Extractor {
     int headerPosition = startPosition;
     int validFramesCount = 0;
     while (true) {
-      input.peekFully(scratch.data, 0, 5);
+      input.peekFully(scratch.data, 0, 6);
       scratch.setPosition(0);
       int syncBytes = scratch.readUnsignedShort();
       if (syncBytes != AC3_SYNC_WORD) {
@@ -103,7 +105,7 @@ public final class Ac3Extractor implements Extractor {
         if (frameSize == C.LENGTH_UNSET) {
           return false;
         }
-        input.advancePeekPosition(frameSize - 5);
+        input.advancePeekPosition(frameSize - 6);
       }
     }
   }
@@ -140,7 +142,7 @@ public final class Ac3Extractor implements Extractor {
 
     if (!startedPacket) {
       // Pass data to the reader as though it's contained within a single infinitely long packet.
-      reader.packetStarted(firstSampleTimestampUs, true);
+      reader.packetStarted(firstSampleTimestampUs, FLAG_DATA_ALIGNMENT_INDICATOR);
       startedPacket = true;
     }
     // TODO: Make it possible for the reader to consume the dataSource directly, so that it becomes

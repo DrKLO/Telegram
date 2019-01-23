@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -123,38 +123,36 @@ public class EditTextCaption extends EditTextBoldCursor {
             end = getSelectionEnd();
         }
 
-        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                Editable editable = getText();
-                CharacterStyle spans[] = editable.getSpans(start, end, CharacterStyle.class);
-                if (spans != null && spans.length > 0) {
-                    for (int a = 0; a < spans.length; a++) {
-                        CharacterStyle oldSpan = spans[a];
-                        int spanStart = editable.getSpanStart(oldSpan);
-                        int spanEnd = editable.getSpanEnd(oldSpan);
-                        editable.removeSpan(oldSpan);
-                        if (spanStart < start) {
-                            editable.setSpan(oldSpan, spanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        }
-                        if (spanEnd > end) {
-                            editable.setSpan(oldSpan, end, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        }
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
+            Editable editable = getText();
+            CharacterStyle spans[] = editable.getSpans(start, end, CharacterStyle.class);
+            if (spans != null && spans.length > 0) {
+                for (int a = 0; a < spans.length; a++) {
+                    CharacterStyle oldSpan = spans[a];
+                    int spanStart = editable.getSpanStart(oldSpan);
+                    int spanEnd = editable.getSpanEnd(oldSpan);
+                    editable.removeSpan(oldSpan);
+                    if (spanStart < start) {
+                        editable.setSpan(oldSpan, spanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                    if (spanEnd > end) {
+                        editable.setSpan(oldSpan, end, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
                 }
+            }
+            try {
                 editable.setSpan(new URLSpanReplacement(editText.getText().toString()), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                if (delegate != null) {
-                    delegate.onSpansChanged();
-                }
+            } catch (Exception ingore) {
+
+            }
+            if (delegate != null) {
+                delegate.onSpansChanged();
             }
         });
         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-        builder.show().setOnShowListener(new DialogInterface.OnShowListener() {
-            @Override
-            public void onShow(DialogInterface dialog) {
-                editText.requestFocus();
-                AndroidUtilities.showKeyboard(editText);
-            }
+        builder.show().setOnShowListener(dialog -> {
+            editText.requestFocus();
+            AndroidUtilities.showKeyboard(editText);
         });
         if (editText != null) {
             ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) editText.getLayoutParams();

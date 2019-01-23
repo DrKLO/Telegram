@@ -18,11 +18,9 @@ package com.google.android.exoplayer2.source.smoothstreaming.manifest;
 import android.net.Uri;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.extractor.mp4.TrackEncryptionBox;
 import com.google.android.exoplayer2.offline.FilterableManifest;
 import com.google.android.exoplayer2.offline.StreamKey;
-import com.google.android.exoplayer2.source.chunk.BaseMediaChunkIterator;
-import com.google.android.exoplayer2.source.chunk.MediaChunkIterator;
-import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.UriUtil;
 import com.google.android.exoplayer2.util.Util;
@@ -44,49 +42,12 @@ public class SsManifest implements FilterableManifest<SsManifest> {
 
     public final UUID uuid;
     public final byte[] data;
+    public final TrackEncryptionBox[] trackEncryptionBoxes;
 
-    public ProtectionElement(UUID uuid, byte[] data) {
+    public ProtectionElement(UUID uuid, byte[] data, TrackEncryptionBox[] trackEncryptionBoxes) {
       this.uuid = uuid;
       this.data = data;
-    }
-  }
-
-  /** {@link MediaChunkIterator} wrapping a track of a {@link StreamElement}. */
-  public static final class StreamElementIterator extends BaseMediaChunkIterator {
-
-    private final StreamElement streamElement;
-    private final int trackIndex;
-
-    /**
-     * Creates iterator.
-     *
-     * @param streamElement The {@link StreamElement} to wrap.
-     * @param trackIndex The track index in the stream element.
-     * @param chunkIndex The chunk index at which the iterator will start.
-     */
-    public StreamElementIterator(StreamElement streamElement, int trackIndex, int chunkIndex) {
-      super(/* fromIndex= */ chunkIndex, /* toIndex= */ streamElement.chunkCount - 1);
-      this.streamElement = streamElement;
-      this.trackIndex = trackIndex;
-    }
-
-    @Override
-    public DataSpec getDataSpec() {
-      checkInBounds();
-      Uri uri = streamElement.buildRequestUri(trackIndex, (int) getCurrentIndex());
-      return new DataSpec(uri);
-    }
-
-    @Override
-    public long getChunkStartTimeUs() {
-      checkInBounds();
-      return streamElement.getStartTimeUs((int) getCurrentIndex());
-    }
-
-    @Override
-    public long getChunkEndTimeUs() {
-      long chunkStartTimeUs = getChunkStartTimeUs();
-      return chunkStartTimeUs + streamElement.getChunkDurationUs((int) getCurrentIndex());
+      this.trackEncryptionBoxes = trackEncryptionBoxes;
     }
   }
 

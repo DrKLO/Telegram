@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.ActionBar;
@@ -59,6 +59,7 @@ public class ActionBar extends FrameLayout {
     private boolean occupyStatusBar = Build.VERSION.SDK_INT >= 21;
     private boolean actionModeVisible;
     private boolean addToContainer = true;
+    private boolean clipContent;
     private boolean interceptTouches = true;
     private int extraHeight;
     private AnimatorSet actionModeAnimation;
@@ -74,7 +75,6 @@ public class ActionBar extends FrameLayout {
 
     private boolean allowOverlayTitle;
     private CharSequence lastTitle;
-    private CharSequence lastSubtitle;
     private Runnable lastRunnable;
     private boolean titleOverlayShown;
     private Runnable titleActionRunnable;
@@ -169,6 +169,11 @@ public class ActionBar extends FrameLayout {
 
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        boolean clip = clipContent && (child == titleTextView || child == subtitleTextView || child == actionMode || child == menu || child == backButtonImageView);
+        if (clip) {
+            canvas.save();
+            canvas.clipRect(0, -getTranslationY() + (occupyStatusBar ? AndroidUtilities.statusBarHeight : 0), getMeasuredWidth(), getMeasuredHeight());
+        }
         boolean result = super.drawChild(canvas, child, drawingTime);
         if (supportsHolidayImage && !titleOverlayShown && !LocaleController.isRTL && child == titleTextView) {
             Drawable drawable = Theme.getCurrentHolidayDrawable();
@@ -196,7 +201,18 @@ public class ActionBar extends FrameLayout {
                 }
             }
         }
+        if (clip) {
+            canvas.restore();
+        }
         return result;
+    }
+
+    @Override
+    public void setTranslationY(float translationY) {
+        super.setTranslationY(translationY);
+        if (clipContent) {
+            invalidate();
+        }
     }
 
     public void setBackButtonImage(int resource) {
@@ -226,12 +242,15 @@ public class ActionBar extends FrameLayout {
         return addToContainer;
     }
 
+    public void setClipContent(boolean value) {
+        clipContent = value;
+    }
+
     public void setSubtitle(CharSequence value) {
         if (value != null && subtitleTextView == null) {
             createSubtitleTextView();
         }
         if (subtitleTextView != null) {
-            lastSubtitle = value;
             subtitleTextView.setVisibility(!TextUtils.isEmpty(value) && !isSearchFieldVisible ? VISIBLE : GONE);
             subtitleTextView.setText(value);
         }
@@ -462,11 +481,13 @@ public class ActionBar extends FrameLayout {
             }
         });
         actionModeAnimation.start();
-        if (titleTextView != null) {
-            titleTextView.setVisibility(VISIBLE);
-        }
-        if (subtitleTextView != null && !TextUtils.isEmpty(subtitleTextView.getText())) {
-            subtitleTextView.setVisibility(VISIBLE);
+        if (!isSearchFieldVisible) {
+            if (titleTextView != null) {
+                titleTextView.setVisibility(VISIBLE);
+            }
+            if (subtitleTextView != null && !TextUtils.isEmpty(subtitleTextView.getText())) {
+                subtitleTextView.setVisibility(VISIBLE);
+            }
         }
         if (menu != null) {
             menu.setVisibility(VISIBLE);
@@ -553,11 +574,11 @@ public class ActionBar extends FrameLayout {
         menu.closeSearchField(closeKeyboard);
     }
 
-    public void openSearchField(String text) {
+    public void openSearchField(String text, boolean animated) {
         if (menu == null || text == null) {
             return;
         }
-        menu.openSearchField(!isSearchFieldVisible, text);
+        menu.openSearchField(!isSearchFieldVisible, text, animated);
     }
 
     @Override
@@ -604,12 +625,22 @@ public class ActionBar extends FrameLayout {
         if (titleTextView != null && titleTextView.getVisibility() != GONE || subtitleTextView != null && subtitleTextView.getVisibility() != GONE) {
             int availableWidth = width - (menu != null ? menu.getMeasuredWidth() : 0) - AndroidUtilities.dp(16) - textLeft - titleRightMargin;
 
+            if (titleTextView != null && titleTextView.getVisibility() != GONE && subtitleTextView != null && subtitleTextView.getVisibility() != GONE) {
+                titleTextView.setTextSize(AndroidUtilities.isTablet() ? 20 : 18);
+                subtitleTextView.setTextSize(AndroidUtilities.isTablet() ? 16 : 14);
+            } else {
+                if (titleTextView != null && titleTextView.getVisibility() != GONE) {
+                    titleTextView.setTextSize(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 18 : 20);
+                }
+                if (subtitleTextView != null && subtitleTextView.getVisibility() != GONE) {
+                    subtitleTextView.setTextSize(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 14 : 16);
+                }
+            }
+
             if (titleTextView != null && titleTextView.getVisibility() != GONE) {
-                titleTextView.setTextSize(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 18 : 20);
                 titleTextView.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(24), MeasureSpec.AT_MOST));
             }
             if (subtitleTextView != null && subtitleTextView.getVisibility() != GONE) {
-                subtitleTextView.setTextSize(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 14 : 16);
                 subtitleTextView.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.AT_MOST));
             }
         }
@@ -726,11 +757,11 @@ public class ActionBar extends FrameLayout {
         lastRunnable = titleActionRunnable = action;
     }
 
-    public void setTitleOverlayText(String title, String subtitle, Runnable action) {
+    public void setTitleOverlayText(String title, int titleId, Runnable action) {
         if (!allowOverlayTitle || parentFragment.parentLayout == null) {
             return;
         }
-        CharSequence textToSet = title != null ? title : lastTitle;
+        CharSequence textToSet = title != null ? LocaleController.getString(title, titleId) : lastTitle;
         if (textToSet != null && titleTextView == null) {
             createTitleTextView();
         }
@@ -742,14 +773,6 @@ public class ActionBar extends FrameLayout {
             }
             titleTextView.setVisibility(textToSet != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
             titleTextView.setText(textToSet);
-        }
-        textToSet = subtitle != null ? subtitle : lastSubtitle;
-        if (textToSet != null && subtitleTextView == null) {
-            createSubtitleTextView();
-        }
-        if (subtitleTextView != null) {
-            subtitleTextView.setVisibility(!TextUtils.isEmpty(textToSet) && !isSearchFieldVisible ? VISIBLE : GONE);
-            subtitleTextView.setText(textToSet);
         }
         titleActionRunnable = action != null ? action : lastRunnable;
     }

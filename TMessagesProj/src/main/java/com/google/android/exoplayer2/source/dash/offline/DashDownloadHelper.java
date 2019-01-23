@@ -19,88 +19,108 @@ import android.net.Uri;
 import android.support.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.RenderersFactory;
+import com.google.android.exoplayer2.drm.DrmSessionManager;
+import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
+import com.google.android.exoplayer2.offline.DownloadAction;
 import com.google.android.exoplayer2.offline.DownloadHelper;
 import com.google.android.exoplayer2.offline.StreamKey;
-import com.google.android.exoplayer2.offline.TrackKey;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.dash.manifest.AdaptationSet;
 import com.google.android.exoplayer2.source.dash.manifest.DashManifest;
 import com.google.android.exoplayer2.source.dash.manifest.DashManifestParser;
 import com.google.android.exoplayer2.source.dash.manifest.Representation;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.ParsingLoadable;
-import com.google.android.exoplayer2.util.Assertions;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 /** A {@link DownloadHelper} for DASH streams. */
-public final class DashDownloadHelper extends DownloadHelper {
+public final class DashDownloadHelper extends DownloadHelper<DashManifest> {
 
-  private final Uri uri;
   private final DataSource.Factory manifestDataSourceFactory;
 
-  private @MonotonicNonNull DashManifest manifest;
+  /**
+   * Creates a DASH download helper.
+   *
+   * <p>The helper uses {@link DownloadHelper#DEFAULT_TRACK_SELECTOR_PARAMETERS} for track selection
+   * and does not support drm protected content.
+   *
+   * @param uri A manifest {@link Uri}.
+   * @param manifestDataSourceFactory A {@link DataSource.Factory} used to load the manifest.
+   * @param renderersFactory The {@link RenderersFactory} creating the renderers for which tracks
+   *     are selected.
+   */
+  public DashDownloadHelper(
+      Uri uri, DataSource.Factory manifestDataSourceFactory, RenderersFactory renderersFactory) {
+    this(
+        uri,
+        manifestDataSourceFactory,
+        DownloadHelper.DEFAULT_TRACK_SELECTOR_PARAMETERS,
+        renderersFactory,
+        /* drmSessionManager= */ null);
+  }
 
-  public DashDownloadHelper(Uri uri, DataSource.Factory manifestDataSourceFactory) {
-    this.uri = uri;
+  /**
+   * Creates a DASH download helper.
+   *
+   * @param uri A manifest {@link Uri}.
+   * @param manifestDataSourceFactory A {@link DataSource.Factory} used to load the manifest.
+   * @param trackSelectorParameters {@link DefaultTrackSelector.Parameters} for selecting tracks for
+   *     downloading.
+   * @param renderersFactory The {@link RenderersFactory} creating the renderers for which tracks
+   *     are selected.
+   * @param drmSessionManager An optional {@link DrmSessionManager} used by the renderers created by
+   *     {@code renderersFactory}.
+   */
+  public DashDownloadHelper(
+      Uri uri,
+      DataSource.Factory manifestDataSourceFactory,
+      DefaultTrackSelector.Parameters trackSelectorParameters,
+      RenderersFactory renderersFactory,
+      @Nullable DrmSessionManager<FrameworkMediaCrypto> drmSessionManager) {
+    super(
+        DownloadAction.TYPE_DASH,
+        uri,
+        /* cacheKey= */ null,
+        trackSelectorParameters,
+        renderersFactory,
+        drmSessionManager);
     this.manifestDataSourceFactory = manifestDataSourceFactory;
   }
 
   @Override
-  protected void prepareInternal() throws IOException {
+  protected DashManifest loadManifest(Uri uri) throws IOException {
     DataSource dataSource = manifestDataSourceFactory.createDataSource();
-    manifest =
-        ParsingLoadable.load(dataSource, new DashManifestParser(), uri, C.DATA_TYPE_MANIFEST);
-  }
-
-  /** Returns the DASH manifest. Must not be called until after preparation completes. */
-  public DashManifest getManifest() {
-    Assertions.checkNotNull(manifest);
-    return manifest;
+    return ParsingLoadable.load(dataSource, new DashManifestParser(), uri, C.DATA_TYPE_MANIFEST);
   }
 
   @Override
-  public int getPeriodCount() {
-    Assertions.checkNotNull(manifest);
-    return manifest.getPeriodCount();
-  }
-
-  @Override
-  public TrackGroupArray getTrackGroups(int periodIndex) {
-    Assertions.checkNotNull(manifest);
-    List<AdaptationSet> adaptationSets = manifest.getPeriod(periodIndex).adaptationSets;
-    TrackGroup[] trackGroups = new TrackGroup[adaptationSets.size()];
-    for (int i = 0; i < trackGroups.length; i++) {
-      List<Representation> representations = adaptationSets.get(i).representations;
-      Format[] formats = new Format[representations.size()];
-      int representationsCount = representations.size();
-      for (int j = 0; j < representationsCount; j++) {
-        formats[j] = representations.get(j).format;
+  public TrackGroupArray[] getTrackGroupArrays(DashManifest manifest) {
+    int periodCount = manifest.getPeriodCount();
+    TrackGroupArray[] trackGroupArrays = new TrackGroupArray[periodCount];
+    for (int periodIndex = 0; periodIndex < periodCount; periodIndex++) {
+      List<AdaptationSet> adaptationSets = manifest.getPeriod(periodIndex).adaptationSets;
+      TrackGroup[] trackGroups = new TrackGroup[adaptationSets.size()];
+      for (int i = 0; i < trackGroups.length; i++) {
+        List<Representation> representations = adaptationSets.get(i).representations;
+        Format[] formats = new Format[representations.size()];
+        int representationsCount = representations.size();
+        for (int j = 0; j < representationsCount; j++) {
+          formats[j] = representations.get(j).format;
+        }
+        trackGroups[i] = new TrackGroup(formats);
       }
-      trackGroups[i] = new TrackGroup(formats);
+      trackGroupArrays[periodIndex] = new TrackGroupArray(trackGroups);
     }
-    return new TrackGroupArray(trackGroups);
+    return trackGroupArrays;
   }
 
   @Override
-  public DashDownloadAction getDownloadAction(@Nullable byte[] data, List<TrackKey> trackKeys) {
-    return DashDownloadAction.createDownloadAction(uri, data, toStreamKeys(trackKeys));
-  }
-
-  @Override
-  public DashDownloadAction getRemoveAction(@Nullable byte[] data) {
-    return DashDownloadAction.createRemoveAction(uri, data);
-  }
-
-  private static List<StreamKey> toStreamKeys(List<TrackKey> trackKeys) {
-    List<StreamKey> streamKeys = new ArrayList<>(trackKeys.size());
-    for (int i = 0; i < trackKeys.size(); i++) {
-      TrackKey trackKey = trackKeys.get(i);
-      streamKeys.add(new StreamKey(trackKey.periodIndex, trackKey.groupIndex, trackKey.trackIndex));
-    }
-    return streamKeys;
+  protected StreamKey toStreamKey(
+      int periodIndex, int trackGroupIndex, int trackIndexInTrackGroup) {
+    return new StreamKey(periodIndex, trackGroupIndex, trackIndexInTrackGroup);
   }
 }

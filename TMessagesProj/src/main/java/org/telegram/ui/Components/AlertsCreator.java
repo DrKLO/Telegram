@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -17,9 +17,13 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -27,6 +31,8 @@ import android.widget.Toast;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -50,7 +56,10 @@ import org.telegram.ui.CacheControlActivity;
 import org.telegram.ui.Cells.AccountSelectCell;
 import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.TextColorCell;
+import org.telegram.ui.LanguageSelectActivity;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.NotificationsCustomSettingsActivity;
+import org.telegram.ui.NotificationsSettingsActivity;
 import org.telegram.ui.ProfileNotificationsActivity;
 import org.telegram.ui.ReportOtherActivity;
 
@@ -79,7 +88,9 @@ public class AlertsCreator {
                 request instanceof TLRPC.TL_channels_inviteToChannel ||
                 request instanceof TLRPC.TL_messages_addChatUser ||
                 request instanceof TLRPC.TL_messages_startBot ||
-                request instanceof TLRPC.TL_channels_editBanned) {
+                request instanceof TLRPC.TL_channels_editBanned ||
+                request instanceof TLRPC.TL_messages_editChatDefaultBannedRights||
+                request instanceof TLRPC.TL_messages_editChatAdmin) {
             if (fragment != null) {
                 AlertsCreator.showAddUserAlert(error.text, fragment, (Boolean) args[0]);
             } else {
@@ -111,9 +122,12 @@ public class AlertsCreator {
                 request instanceof TLRPC.TL_messages_sendMedia ||
                 request instanceof TLRPC.TL_messages_sendBroadcast ||
                 request instanceof TLRPC.TL_messages_sendInlineBotResult ||
-                request instanceof TLRPC.TL_messages_forwardMessages) {
+                request instanceof TLRPC.TL_messages_forwardMessages ||
+                request instanceof TLRPC.TL_messages_sendMultiMedia) {
             if (error.text.equals("PEER_FLOOD")) {
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 0);
+            } else if (error.text.equals("USER_BANNED_IN_CHANNEL")) {
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 5);
             }
         } else if (request instanceof TLRPC.TL_messages_importChatInvite) {
             if (error.text.startsWith("FLOOD_WAIT")) {
@@ -264,6 +278,104 @@ public class AlertsCreator {
         return builder.show();
     }
 
+    public static AlertDialog.Builder createLanguageAlert(LaunchActivity activity, final TLRPC.TL_langPackLanguage language) {
+        if (language == null) {
+            return null;
+        }
+        language.lang_code = language.lang_code.replace('-', '_').toLowerCase();
+        language.plural_code = language.plural_code.replace('-', '_').toLowerCase();
+        if (language.base_lang_code != null) {
+            language.base_lang_code = language.base_lang_code.replace('-', '_').toLowerCase();
+        }
+
+        SpannableStringBuilder spanned;
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        LocaleController.LocaleInfo currentInfo = LocaleController.getInstance().getCurrentLocaleInfo();
+        String str;
+        if (currentInfo.shortName.equals(language.lang_code)) {
+            builder.setTitle(LocaleController.getString("Language", R.string.Language));
+            str = LocaleController.formatString("LanguageSame", R.string.LanguageSame, language.name);
+            builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
+            builder.setNeutralButton(LocaleController.getString("SETTINGS", R.string.SETTINGS), (dialog, which) -> activity.presentFragment(new LanguageSelectActivity()));
+        } else {
+            if (language.strings_count == 0) {
+                builder.setTitle(LocaleController.getString("LanguageUnknownTitle", R.string.LanguageUnknownTitle));
+                str = LocaleController.formatString("LanguageUnknownCustomAlert", R.string.LanguageUnknownCustomAlert, language.name);
+                builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
+            } else {
+                builder.setTitle(LocaleController.getString("LanguageTitle", R.string.LanguageTitle));
+                if (language.official) {
+                    str = LocaleController.formatString("LanguageAlert", R.string.LanguageAlert, language.name, (int) Math.ceil(language.translated_count / (float) language.strings_count * 100));
+                } else {
+                    str = LocaleController.formatString("LanguageCustomAlert", R.string.LanguageCustomAlert, language.name, (int) Math.ceil(language.translated_count / (float) language.strings_count * 100));
+                }
+                builder.setPositiveButton(LocaleController.getString("Change", R.string.Change), (dialogInterface, i) -> {
+                    String key;
+                    if (language.official) {
+                        key = "remote_" + language.lang_code;
+                    } else {
+                        key = "unofficial_" + language.lang_code;
+                    }
+                    LocaleController.LocaleInfo localeInfo = LocaleController.getInstance().getLanguageFromDict(key);
+                    if (localeInfo == null) {
+                        localeInfo = new LocaleController.LocaleInfo();
+                        localeInfo.name = language.native_name;
+                        localeInfo.nameEnglish = language.name;
+                        localeInfo.shortName = language.lang_code;
+                        localeInfo.baseLangCode = language.base_lang_code;
+                        localeInfo.pluralLangCode = language.plural_code;
+                        localeInfo.isRtl = language.rtl;
+                        if (language.official) {
+                            localeInfo.pathToFile = "remote";
+                        } else {
+                            localeInfo.pathToFile = "unofficial";
+                        }
+                    }
+                    LocaleController.getInstance().applyLanguage(localeInfo, true, false, false, true, UserConfig.selectedAccount);
+                    activity.rebuildAllFragments(true);
+                });
+                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+            }
+        }
+
+        spanned = new SpannableStringBuilder(AndroidUtilities.replaceTags(str));
+
+        int start = TextUtils.indexOf(spanned, '[');
+        int end;
+        if (start != -1) {
+            end = TextUtils.indexOf(spanned, ']', start + 1);
+            if (start != -1 && end != -1) {
+                spanned.delete(end, end + 1);
+                spanned.delete(start, start + 1);
+            }
+        } else {
+            end = -1;
+        }
+
+        if (start != -1 && end != -1) {
+            spanned.setSpan(new URLSpanNoUnderline(language.translations_url) {
+                @Override
+                public void onClick(View widget) {
+                    builder.getDismissRunnable().run();
+                    super.onClick(widget);
+                }
+            }, start, end - 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        final TextView message = new TextView(activity);
+        message.setText(spanned);
+        message.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        message.setLinkTextColor(Theme.getColor(Theme.key_dialogTextLink));
+        message.setHighlightColor(Theme.getColor(Theme.key_dialogLinkSelection));
+        message.setPadding(AndroidUtilities.dp(23), 0, AndroidUtilities.dp(23), 0);
+        message.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
+        message.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        builder.setView(message);
+
+        return builder;
+    }
+
     public static AlertDialog.Builder createSimpleAlert(Context context, final String text) {
         if (text == null) {
             return null;
@@ -285,47 +397,53 @@ public class AlertsCreator {
         return dialog;
     }
 
-    public static void showCustomNotificationsDialog(BaseFragment parentFragment, long did, int currentAccount, MessagesStorage.IntCallback callback) {
+    public static void showCustomNotificationsDialog(BaseFragment parentFragment, long did, int globalType, ArrayList<NotificationsSettingsActivity.NotificationException> exceptions, int currentAccount, MessagesStorage.IntCallback callback) {
+        showCustomNotificationsDialog(parentFragment, did, globalType, exceptions, currentAccount, callback, null);
+    }
+
+    public static void showCustomNotificationsDialog(BaseFragment parentFragment, long did, int globalType, ArrayList<NotificationsSettingsActivity.NotificationException> exceptions, int currentAccount, MessagesStorage.IntCallback callback, MessagesStorage.IntCallback resultCallback) {
         if (parentFragment == null || parentFragment.getParentActivity() == null) {
             return;
         }
         boolean enabled;
-        boolean defaultEnabled;
-        if ((int) did < 0) {
-            defaultEnabled = MessagesController.getNotificationsSettings(currentAccount).getBoolean("EnableGroup", true);
-        } else {
-            defaultEnabled = MessagesController.getNotificationsSettings(currentAccount).getBoolean("EnableAll", true);
-        }
+        boolean defaultEnabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(did);
 
         String[] descriptions = new String[]{
-                defaultEnabled ? LocaleController.getString("NotificationsDefaultOn", R.string.NotificationsDefaultOn) : LocaleController.getString("NotificationsDefaultOff", R.string.NotificationsDefaultOff),
                 LocaleController.getString("NotificationsTurnOn", R.string.NotificationsTurnOn),
                 LocaleController.formatString("MuteFor", R.string.MuteFor, LocaleController.formatPluralString("Hours", 1)),
                 LocaleController.formatString("MuteFor", R.string.MuteFor, LocaleController.formatPluralString("Days", 2)),
-                LocaleController.getString("NotificationsCustomize", R.string.NotificationsCustomize),
+                did == 0 && parentFragment instanceof NotificationsCustomSettingsActivity ? null : LocaleController.getString("NotificationsCustomize", R.string.NotificationsCustomize),
                 LocaleController.getString("NotificationsTurnOff", R.string.NotificationsTurnOff)
         };
 
         int[] icons = new int[]{
-                defaultEnabled ? R.drawable.notifications_s_on : R.drawable.notifications_s_off,
-                R.drawable.notifications_s_on,
-                R.drawable.notifications_s_1h,
-                R.drawable.notifications_s_2d,
-                R.drawable.notifications_s_custom,
-                R.drawable.notifications_s_off
+                R.drawable.notifications_on,
+                R.drawable.notifications_mute1h,
+                R.drawable.notifications_mute2d,
+                R.drawable.notifications_settings,
+                R.drawable.notifications_off
         };
 
         final LinearLayout linearLayout = new LinearLayout(parentFragment.getParentActivity());
         linearLayout.setOrientation(LinearLayout.VERTICAL);
+        AlertDialog.Builder builder = new AlertDialog.Builder(parentFragment.getParentActivity());
 
         for (int a = 0; a < descriptions.length; a++) {
+            if (descriptions[a] == null) {
+                continue;
+            }
             TextView textView = new TextView(parentFragment.getParentActivity());
-            textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            Drawable drawable = parentFragment.getParentActivity().getResources().getDrawable(icons[a]);
+            if (a == descriptions.length - 1) {
+                textView.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogRedIcon), PorterDuff.Mode.MULTIPLY));
+            } else {
+                textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogIcon), PorterDuff.Mode.MULTIPLY));
+            }
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             textView.setLines(1);
             textView.setMaxLines(1);
-            Drawable drawable = parentFragment.getParentActivity().getResources().getDrawable(icons[a]);
-            drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogIcon), PorterDuff.Mode.MULTIPLY));
             textView.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
             textView.setTag(a);
             textView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
@@ -337,62 +455,99 @@ public class AlertsCreator {
             linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP));
             textView.setOnClickListener(v -> {
                 int i = (Integer) v.getTag();
-                if (i == 0 || i == 1) {
-                    SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                    SharedPreferences.Editor editor = preferences.edit();
-                    if (i == 0) {
-                        editor.remove("notify2_" + did);
+                if (i == 0) {
+                    if (did != 0) {
+                        SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        if (defaultEnabled) {
+                            editor.remove("notify2_" + did);
+                        } else {
+                            editor.putInt("notify2_" + did, 0);
+                        }
+                        MessagesStorage.getInstance(currentAccount).setDialogFlags(did, 0);
+                        editor.commit();
+                        TLRPC.TL_dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(did);
+                        if (dialog != null) {
+                            dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
+                        }
+                        NotificationsController.getInstance(currentAccount).updateServerNotificationsSettings(did);
+                        if (resultCallback != null) {
+                            if (defaultEnabled) {
+                                resultCallback.run(0);
+                            } else {
+                                resultCallback.run(1);
+                            }
+                        }
                     } else {
-                        editor.putInt("notify2_" + did, 0);
+                        NotificationsController.getInstance(currentAccount).setGlobalNotificationsEnabled(globalType, 0);
                     }
-                    MessagesStorage.getInstance(currentAccount).setDialogFlags(did, 0);
-                    editor.commit();
-                    TLRPC.TL_dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(did);
-                    if (dialog != null) {
-                        dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
+                } else if (i == 3) {
+                    if (did != 0) {
+                        Bundle args = new Bundle();
+                        args.putLong("dialog_id", did);
+                        parentFragment.presentFragment(new ProfileNotificationsActivity(args));
+                    } else {
+                        parentFragment.presentFragment(new NotificationsCustomSettingsActivity(globalType, exceptions));
                     }
-                    NotificationsController.getInstance(currentAccount).updateServerNotificationsSettings(did);
-                } else if (i == 4) {
-                    Bundle args = new Bundle();
-                    args.putLong("dialog_id", did);
-                    parentFragment.presentFragment(new ProfileNotificationsActivity(args));
                 } else {
                     int untilTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
-                    if (i == 2) {
+                    if (i == 1) {
                         untilTime += 60 * 60;
-                    } else if (i == 3) {
+                    } else if (i == 2) {
                         untilTime += 60 * 60 * 48;
-                    } else if (i == 5) {
+                    } else if (i == 4) {
                         untilTime = Integer.MAX_VALUE;
                     }
-                    SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                    SharedPreferences.Editor editor = preferences.edit();
-                    long flags;
-                    if (i == 5) {
-                        editor.putInt("notify2_" + did, 2);
-                        flags = 1;
+
+                    if (did != 0) {
+                        SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        long flags;
+                        if (i == 4) {
+                            if (!defaultEnabled) {
+                                editor.remove("notify2_" + did);
+                                flags = 0;
+                            } else {
+                                editor.putInt("notify2_" + did, 2);
+                                flags = 1;
+                            }
+                        } else {
+                            editor.putInt("notify2_" + did, 3);
+                            editor.putInt("notifyuntil_" + did, untilTime);
+                            flags = ((long) untilTime << 32) | 1;
+                        }
+                        NotificationsController.getInstance(currentAccount).removeNotificationsForDialog(did);
+                        MessagesStorage.getInstance(currentAccount).setDialogFlags(did, flags);
+                        editor.commit();
+                        TLRPC.TL_dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(did);
+                        if (dialog != null) {
+                            dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
+                            if (i != 4 || defaultEnabled) {
+                                dialog.notify_settings.mute_until = untilTime;
+                            }
+                        }
+                        NotificationsController.getInstance(currentAccount).updateServerNotificationsSettings(did);
+                        if (resultCallback != null) {
+                            if (i == 4 && !defaultEnabled) {
+                                resultCallback.run(0);
+                            } else {
+                                resultCallback.run(1);
+                            }
+                        }
                     } else {
-                        editor.putInt("notify2_" + did, 3);
-                        editor.putInt("notifyuntil_" + did, untilTime);
-                        flags = ((long) untilTime << 32) | 1;
+                        if (i == 4) {
+                            NotificationsController.getInstance(currentAccount).setGlobalNotificationsEnabled(globalType, Integer.MAX_VALUE);
+                        } else {
+                            NotificationsController.getInstance(currentAccount).setGlobalNotificationsEnabled(globalType, untilTime);
+                        }
                     }
-                    NotificationsController.getInstance(currentAccount).removeNotificationsForDialog(did);
-                    MessagesStorage.getInstance(currentAccount).setDialogFlags(did, flags);
-                    editor.commit();
-                    TLRPC.TL_dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(did);
-                    if (dialog != null) {
-                        dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
-                        dialog.notify_settings.mute_until = untilTime;
-                    }
-                    NotificationsController.getInstance(currentAccount).updateServerNotificationsSettings(did);
                 }
                 if (callback != null) {
                     callback.run(i);
                 }
-                parentFragment.dismissCurrentDialig();
+                builder.getDismissRunnable().run();
             });
         }
-        AlertDialog.Builder builder = new AlertDialog.Builder(parentFragment.getParentActivity());
         builder.setTitle(LocaleController.getString("Notifications", R.string.Notifications));
         builder.setView(linearLayout);
         parentFragment.showDialog(builder.create());
@@ -413,7 +568,7 @@ public class AlertsCreator {
         arrayList.add(LocaleController.getString("MapPreviewProviderNobody", R.string.MapPreviewProviderNobody));
         AlertDialog.Builder builder = new AlertDialog.Builder(context)
                 .setTitle(LocaleController.getString("ChooseMapPreviewProvider", R.string.ChooseMapPreviewProvider))
-                .setItems(arrayList.toArray(new String[arrayList.size()]), (dialog, which) -> {
+                .setItems(arrayList.toArray(new String[0]), (dialog, which) -> {
                     SharedConfig.setSecretMapPreviewType(which);
                     if (onSelectRunnable != null) {
                         onSelectRunnable.run();
@@ -461,6 +616,118 @@ public class AlertsCreator {
                 }
             }
         }
+    }
+
+    public static void createClearOrDeleteDialogAlert(BaseFragment fragment, boolean clear, TLRPC.Chat chat, TLRPC.User user, boolean secret, Runnable onProcessRunnable) {
+        if (fragment == null || fragment.getParentActivity() == null || chat == null && user == null) {
+            return;
+        }
+        Context context = fragment.getParentActivity();
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+
+        FrameLayout frameLayout = new FrameLayout(context);
+        builder.setView(frameLayout);
+
+        AvatarDrawable avatarDrawable = new AvatarDrawable();
+        avatarDrawable.setTextSize(AndroidUtilities.dp(12));
+
+        BackupImageView imageView = new BackupImageView(context);
+        imageView.setRoundRadius(AndroidUtilities.dp(20));
+        frameLayout.addView(imageView, LayoutHelper.createFrame(40, 40, Gravity.LEFT | Gravity.TOP, 22, 5, 0, 0));
+
+        TextView textView = new TextView(context);
+        textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setLines(1);
+        textView.setMaxLines(1);
+        textView.setSingleLine(true);
+        textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        textView.setEllipsize(TextUtils.TruncateAt.END);
+        if (clear) {
+            textView.setText(LocaleController.getString("ClearHistory", R.string.ClearHistory));
+        } else {
+            textView.setText(LocaleController.getString("DeleteChatUser", R.string.DeleteChatUser));
+        }
+        frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 76, 11, 21, 0));
+
+        TextView messageTextView = new TextView(context);
+        messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+        frameLayout.addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 57, 24, 9));
+
+        TLRPC.FileLocation avatar = null;
+        if (user != null) {
+            avatarDrawable.setInfo(user);
+            if (user.photo != null && user.photo.photo_small != null && user.photo.photo_small.volume_id != 0 && user.photo.photo_small.local_id != 0) {
+                avatar = user.photo.photo_small;
+            }
+        } else if (chat != null) {
+            avatarDrawable.setInfo(chat);
+            if (chat.photo != null && chat.photo.photo_small != null && chat.photo.photo_small.volume_id != 0 && chat.photo.photo_small.local_id != 0) {
+                avatar = chat.photo.photo_small;
+            }
+        }
+        imageView.setImage(avatar, "50_50", avatarDrawable, user);
+
+        if (clear) {
+            if (user != null) {
+                if (secret) {
+                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithSecretUser", R.string.AreYouSureClearHistoryWithSecretUser, ContactsController.formatName(user.first_name, user.last_name))));
+                } else {
+                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithUser", R.string.AreYouSureClearHistoryWithUser, ContactsController.formatName(user.first_name, user.last_name))));
+                }
+            } else if (chat != null) {
+                if (!ChatObject.isChannel(chat) || chat.megagroup && TextUtils.isEmpty(chat.username)) {
+                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithChat", R.string.AreYouSureClearHistoryWithChat, chat.title)));
+                } else if (chat.megagroup) {
+                    messageTextView.setText(LocaleController.getString("AreYouSureClearHistoryGroup", R.string.AreYouSureClearHistoryGroup));
+                } else {
+                    messageTextView.setText(LocaleController.getString("AreYouSureClearHistoryChannel", R.string.AreYouSureClearHistoryChannel));
+                }
+            }
+        } else {
+            if (user != null) {
+                if (secret) {
+                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureDeleteThisChatWithSecretUser", R.string.AreYouSureDeleteThisChatWithSecretUser, ContactsController.formatName(user.first_name, user.last_name))));
+                } else {
+                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureDeleteThisChatWithUser", R.string.AreYouSureDeleteThisChatWithUser, ContactsController.formatName(user.first_name, user.last_name))));
+                }
+            } else if (ChatObject.isChannel(chat)) {
+                if (chat.megagroup) {
+                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("MegaLeaveAlertWithName", R.string.MegaLeaveAlertWithName, chat.title)));
+                } else {
+                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("ChannelLeaveAlertWithName", R.string.ChannelLeaveAlertWithName, chat.title)));
+                }
+            } else {
+                messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureDeleteAndExitName", R.string.AreYouSureDeleteAndExitName, chat.title)));
+            }
+        }
+        String actionText;
+        if (clear) {
+            actionText = LocaleController.getString("ClearHistory", R.string.ClearHistory);
+        } else {
+            if (ChatObject.isChannel(chat)) {
+                if (chat.megagroup) {
+                    actionText = LocaleController.getString("LeaveMegaMenu", R.string.LeaveMegaMenu);
+                } else {
+                    actionText = LocaleController.getString("LeaveChannelMenu", R.string.LeaveChannelMenu);
+                }
+            } else {
+                actionText = LocaleController.getString("DeleteChatUser", R.string.DeleteChatUser);
+            }
+        }
+        builder.setPositiveButton(actionText, (dialogInterface, i) -> {
+            if (onProcessRunnable != null) {
+                onProcessRunnable.run();
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+        AlertDialog alertDialog = builder.create();
+        fragment.showDialog(alertDialog);
+        TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
     }
 
     public interface DatePickerDelegate {
@@ -591,9 +858,9 @@ public class AlertsCreator {
         return builder.create();
     }
 
-    public static Dialog createReportAlert(final Context context, final long dialog_id, final int messageId, final BaseFragment parentFragment) {
+    public static void createReportAlert(final Context context, final long dialog_id, final int messageId, final BaseFragment parentFragment) {
         if (context == null || parentFragment == null) {
-            return null;
+            return;
         }
 
         BottomSheet.Builder builder = new BottomSheet.Builder(context);
@@ -601,50 +868,56 @@ public class AlertsCreator {
         CharSequence[] items = new CharSequence[]{
                 LocaleController.getString("ReportChatSpam", R.string.ReportChatSpam),
                 LocaleController.getString("ReportChatViolence", R.string.ReportChatViolence),
+                LocaleController.getString("ReportChatChild", R.string.ReportChatChild),
                 LocaleController.getString("ReportChatPornography", R.string.ReportChatPornography),
                 LocaleController.getString("ReportChatOther", R.string.ReportChatOther)
         };
         builder.setItems(items, (dialogInterface, i) -> {
-            if (i == 3) {
-                Bundle args = new Bundle();
-                args.putLong("dialog_id", dialog_id);
-                args.putLong("message_id", messageId);
-                parentFragment.presentFragment(new ReportOtherActivity(args));
-                return;
-            }
-            TLObject req;
-            TLRPC.InputPeer peer = MessagesController.getInstance(UserConfig.selectedAccount).getInputPeer((int) dialog_id);
-            if (messageId != 0) {
-                TLRPC.TL_messages_report request = new TLRPC.TL_messages_report();
-                request.peer = peer;
-                request.id.add(messageId);
-                if (i == 0) {
-                    request.reason = new TLRPC.TL_inputReportReasonSpam();
-                } else if (i == 1) {
-                    request.reason = new TLRPC.TL_inputReportReasonViolence();
-                } else if (i == 2) {
-                    request.reason = new TLRPC.TL_inputReportReasonPornography();
-                }
-                req = request;
-            } else {
-                TLRPC.TL_account_reportPeer request = new TLRPC.TL_account_reportPeer();
-                request.peer = peer;
-                if (i == 0) {
-                    request.reason = new TLRPC.TL_inputReportReasonSpam();
-                } else if (i == 1) {
-                    request.reason = new TLRPC.TL_inputReportReasonViolence();
-                } else if (i == 2) {
-                    request.reason = new TLRPC.TL_inputReportReasonPornography();
-                }
-                req = request;
-            }
-            ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, (response, error) -> {
+                    if (i == 4) {
+                        Bundle args = new Bundle();
+                        args.putLong("dialog_id", dialog_id);
+                        args.putLong("message_id", messageId);
+                        parentFragment.presentFragment(new ReportOtherActivity(args));
+                        return;
+                    }
+                    TLObject req;
+                    TLRPC.InputPeer peer = MessagesController.getInstance(UserConfig.selectedAccount).getInputPeer((int) dialog_id);
+                    if (messageId != 0) {
+                        TLRPC.TL_messages_report request = new TLRPC.TL_messages_report();
+                        request.peer = peer;
+                        request.id.add(messageId);
+                        if (i == 0) {
+                            request.reason = new TLRPC.TL_inputReportReasonSpam();
+                        } else if (i == 1) {
+                            request.reason = new TLRPC.TL_inputReportReasonViolence();
+                        } else if (i == 2) {
+                            request.reason = new TLRPC.TL_inputReportReasonChildAbuse();
+                        } else if (i == 3) {
+                            request.reason = new TLRPC.TL_inputReportReasonPornography();
+                        }
+                        req = request;
+                    } else {
+                        TLRPC.TL_account_reportPeer request = new TLRPC.TL_account_reportPeer();
+                        request.peer = peer;
+                        if (i == 0) {
+                            request.reason = new TLRPC.TL_inputReportReasonSpam();
+                        } else if (i == 1) {
+                            request.reason = new TLRPC.TL_inputReportReasonViolence();
+                        } else if (i == 2) {
+                            request.reason = new TLRPC.TL_inputReportReasonChildAbuse();
+                        } else if (i == 3) {
+                            request.reason = new TLRPC.TL_inputReportReasonPornography();
+                        }
+                        req = request;
+                    }
+                    ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, (response, error) -> {
 
-            });
-            Toast.makeText(context, LocaleController.getString("ReportChatSent", R.string.ReportChatSent), Toast.LENGTH_SHORT).show();
-        }
+                    });
+                    Toast.makeText(context, LocaleController.getString("ReportChatSent", R.string.ReportChatSent), Toast.LENGTH_SHORT).show();
+                }
         );
-        return builder.create();
+        BottomSheet sheet = builder.create();
+        parentFragment.showDialog(sheet);
     }
 
     private static String getFloodWaitString(String error) {
@@ -687,7 +960,16 @@ public class AlertsCreator {
             builder.setMessage(LocaleController.getString("ErrorSendRestrictedStickers", R.string.ErrorSendRestrictedStickers));
         } else if (result == 2) {
             builder.setMessage(LocaleController.getString("ErrorSendRestrictedMedia", R.string.ErrorSendRestrictedMedia));
+        } else if (result == 3) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedPolls", R.string.ErrorSendRestrictedPolls));
+        } else if (result == 4) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedStickersAll", R.string.ErrorSendRestrictedStickersAll));
+        } else if (result == 5) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedMediaAll", R.string.ErrorSendRestrictedMediaAll));
+        } else if (result == 6) {
+            builder.setMessage(LocaleController.getString("ErrorSendRestrictedPollsAll", R.string.ErrorSendRestrictedPollsAll));
         }
+
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
         fragment.showDialog(builder.create(), true, null);
     }
@@ -774,14 +1056,10 @@ public class AlertsCreator {
         fragment.showDialog(builder.create(), true, null);
     }
 
-    public static Dialog createColorSelectDialog(Activity parentActivity, final long dialog_id, final boolean globalGroup, final boolean globalAll, final Runnable onSelect) {
+    public static Dialog createColorSelectDialog(Activity parentActivity, final long dialog_id, final int globalType, final Runnable onSelect) {
         int currentColor;
         SharedPreferences preferences = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
-        if (globalGroup) {
-            currentColor = preferences.getInt("GroupLed", 0xff0000ff);
-        } else if (globalAll) {
-            currentColor = preferences.getInt("MessagesLed", 0xff0000ff);
-        } else {
+        if (dialog_id != 0) {
             if (preferences.contains("color_" + dialog_id)) {
                 currentColor = preferences.getInt("color_" + dialog_id, 0xff0000ff);
             } else {
@@ -791,6 +1069,12 @@ public class AlertsCreator {
                     currentColor = preferences.getInt("MessagesLed", 0xff0000ff);
                 }
             }
+        } else if (globalType == NotificationsController.TYPE_PRIVATE) {
+            currentColor = preferences.getInt("MessagesLed", 0xff0000ff);
+        } else if (globalType == NotificationsController.TYPE_GROUP) {
+            currentColor = preferences.getInt("GroupLed", 0xff0000ff);
+        } else {
+            currentColor = preferences.getInt("ChannelLed", 0xff0000ff);
         }
         final LinearLayout linearLayout = new LinearLayout(parentActivity);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -826,12 +1110,14 @@ public class AlertsCreator {
         builder.setPositiveButton(LocaleController.getString("Set", R.string.Set), (dialogInterface, which) -> {
             final SharedPreferences preferences1 = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
             SharedPreferences.Editor editor = preferences1.edit();
-            if (globalAll) {
+            if (dialog_id != 0) {
+                editor.putInt("color_" + dialog_id, selectedColor[0]);
+            } else if (globalType == NotificationsController.TYPE_PRIVATE) {
                 editor.putInt("MessagesLed", selectedColor[0]);
-            } else if (globalGroup) {
+            } else if (globalType == NotificationsController.TYPE_GROUP) {
                 editor.putInt("GroupLed", selectedColor[0]);
             } else {
-                editor.putInt("color_" + dialog_id, selectedColor[0]);
+                editor.putInt("ChannelLed", selectedColor[0]);
             }
             editor.commit();
             if (onSelect != null) {
@@ -841,19 +1127,21 @@ public class AlertsCreator {
         builder.setNeutralButton(LocaleController.getString("LedDisabled", R.string.LedDisabled), (dialog, which) -> {
             final SharedPreferences preferences12 = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
             SharedPreferences.Editor editor = preferences12.edit();
-            if (globalAll) {
+            if (dialog_id != 0) {
+                editor.putInt("color_" + dialog_id, 0);
+            } else if (globalType == NotificationsController.TYPE_PRIVATE) {
                 editor.putInt("MessagesLed", 0);
-            } else if (globalGroup) {
+            } else if (globalType == NotificationsController.TYPE_GROUP) {
                 editor.putInt("GroupLed", 0);
             } else {
-                editor.putInt("color_" + dialog_id, 0);
+                editor.putInt("ChannelLed", 0);
             }
             editor.commit();
             if (onSelect != null) {
                 onSelect.run();
             }
         });
-        if (!globalAll && !globalGroup) {
+        if (dialog_id != 0) {
             builder.setNegativeButton(LocaleController.getString("Default", R.string.Default), (dialog, which) -> {
                 final SharedPreferences preferences13 = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
                 SharedPreferences.Editor editor = preferences13.edit();
@@ -867,17 +1155,17 @@ public class AlertsCreator {
         return builder.create();
     }
 
-    public static Dialog createVibrationSelectDialog(Activity parentActivity, final BaseFragment parentFragment, final long dialog_id, final boolean globalGroup, final boolean globalAll, final Runnable onSelect) {
+    public static Dialog createVibrationSelectDialog(Activity parentActivity, final long dialog_id, final boolean globalGroup, final boolean globalAll, final Runnable onSelect) {
         String prefix;
         if (dialog_id != 0) {
             prefix = "vibrate_";
         } else {
             prefix = globalGroup ? "vibrate_group" : "vibrate_messages";
         }
-        return createVibrationSelectDialog(parentActivity, parentFragment, dialog_id, prefix, onSelect);
+        return createVibrationSelectDialog(parentActivity, dialog_id, prefix, onSelect);
     }
 
-    public static Dialog createVibrationSelectDialog(Activity parentActivity, final BaseFragment parentFragment, final long dialog_id, final String prefKeyPrefix, final Runnable onSelect) {
+    public static Dialog createVibrationSelectDialog(Activity parentActivity, final long dialog_id, final String prefKeyPrefix, final Runnable onSelect) {
         SharedPreferences preferences = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
         final int selected[] = new int[1];
         String descriptions[];
@@ -914,6 +1202,7 @@ public class AlertsCreator {
 
         final LinearLayout linearLayout = new LinearLayout(parentActivity);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
+        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
 
         for (int a = 0; a < descriptions.length; a++) {
             RadioColorCell cell = new RadioColorCell(parentActivity);
@@ -951,15 +1240,12 @@ public class AlertsCreator {
                     }
                 }
                 editor.commit();
-                if (parentFragment != null) {
-                    parentFragment.dismissCurrentDialig();
-                }
+                builder.getDismissRunnable().run();
                 if (onSelect != null) {
                     onSelect.run();
                 }
             });
         }
-        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
         builder.setTitle(LocaleController.getString("Vibrate", R.string.Vibrate));
         builder.setView(linearLayout);
         builder.setPositiveButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -1104,7 +1390,7 @@ public class AlertsCreator {
         return builder.create();
     }
 
-    public static Dialog createPrioritySelectDialog(Activity parentActivity, final BaseFragment parentFragment, final long dialog_id, final boolean globalGroup, final boolean globalAll, final Runnable onSelect) {
+    public static Dialog createPrioritySelectDialog(Activity parentActivity, final long dialog_id, final int globalType, final Runnable onSelect) {
         SharedPreferences preferences = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
         final int selected[] = new int[1];
         String descriptions[];
@@ -1129,10 +1415,14 @@ public class AlertsCreator {
                     LocaleController.getString("NotificationsPriorityUrgent", R.string.NotificationsPriorityUrgent)
             };
         } else {
-            if (globalAll) {
-                selected[0] = preferences.getInt("priority_messages", 1);
-            } else if (globalGroup) {
-                selected[0] = preferences.getInt("priority_group", 1);
+            if (dialog_id == 0) {
+                if (globalType == NotificationsController.TYPE_PRIVATE) {
+                    selected[0] = preferences.getInt("priority_messages", 1);
+                } else if (globalType == NotificationsController.TYPE_GROUP) {
+                    selected[0] = preferences.getInt("priority_group", 1);
+                } else if (globalType == NotificationsController.TYPE_CHANNEL) {
+                    selected[0] = preferences.getInt("priority_channel", 1);
+                }
             }
             if (selected[0] == 4) {
                 selected[0] = 0;
@@ -1153,6 +1443,7 @@ public class AlertsCreator {
 
         final LinearLayout linearLayout = new LinearLayout(parentActivity);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
+        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
 
         for (int a = 0; a < descriptions.length; a++) {
             RadioColorCell cell = new RadioColorCell(parentActivity);
@@ -1191,31 +1482,39 @@ public class AlertsCreator {
                     } else {
                         option = 1;
                     }
-                    editor.putInt(globalGroup ? "priority_group" : "priority_messages", option);
+                    if (globalType == NotificationsController.TYPE_PRIVATE) {
+                        editor.putInt("priority_messages", option);
+                        selected[0] = preferences.getInt("priority_messages", 1);
+                    } else if (globalType == NotificationsController.TYPE_GROUP) {
+                        editor.putInt("priority_group", option);
+                        selected[0] = preferences.getInt("priority_group", 1);
+                    } else if (globalType == NotificationsController.TYPE_CHANNEL) {
+                        editor.putInt("priority_channel", option);
+                        selected[0] = preferences.getInt("priority_channel", 1);
+                    }
                 }
                 editor.commit();
-                if (parentFragment != null) {
-                    parentFragment.dismissCurrentDialig();
-                }
+                builder.getDismissRunnable().run();
                 if (onSelect != null) {
                     onSelect.run();
                 }
             });
         }
-        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
         builder.setTitle(LocaleController.getString("NotificationsImportance", R.string.NotificationsImportance));
         builder.setView(linearLayout);
         builder.setPositiveButton(LocaleController.getString("Cancel", R.string.Cancel), null);
         return builder.create();
     }
 
-    public static Dialog createPopupSelectDialog(Activity parentActivity, final BaseFragment parentFragment, final boolean globalGroup, final boolean globalAll, final Runnable onSelect) {
+    public static Dialog createPopupSelectDialog(Activity parentActivity, final int globalType, final Runnable onSelect) {
         SharedPreferences preferences = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
         final int selected[] = new int[1];
-        if (globalAll) {
+        if (globalType == NotificationsController.TYPE_PRIVATE) {
             selected[0] = preferences.getInt("popupAll", 0);
-        } else if (globalGroup) {
+        } else if (globalType == NotificationsController.TYPE_GROUP) {
             selected[0] = preferences.getInt("popupGroup", 0);
+        } else {
+            selected[0] = preferences.getInt("popupChannel", 0);
         }
         String descriptions[] = new String[]{
                 LocaleController.getString("NoPopup", R.string.NoPopup),
@@ -1226,6 +1525,7 @@ public class AlertsCreator {
 
         final LinearLayout linearLayout = new LinearLayout(parentActivity);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
+        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
 
         for (int a = 0; a < descriptions.length; a++) {
             RadioColorCell cell = new RadioColorCell(parentActivity);
@@ -1239,24 +1539,27 @@ public class AlertsCreator {
 
                 final SharedPreferences preferences1 = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
                 SharedPreferences.Editor editor = preferences1.edit();
-                editor.putInt(globalGroup ? "popupGroup" : "popupAll", selected[0]);
-                editor.commit();
-                if (parentFragment != null) {
-                    parentFragment.dismissCurrentDialig();
+                if (globalType == NotificationsController.TYPE_PRIVATE) {
+                    editor.putInt("popupAll", selected[0]);
+                } else if (globalType == NotificationsController.TYPE_GROUP) {
+                    editor.putInt("popupGroup", selected[0]);
+                } else {
+                    editor.putInt("popupChannel", selected[0]);
                 }
+                editor.commit();
+                builder.getDismissRunnable().run();
                 if (onSelect != null) {
                     onSelect.run();
                 }
             });
         }
-        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
         builder.setTitle(LocaleController.getString("PopupNotification", R.string.PopupNotification));
         builder.setView(linearLayout);
         builder.setPositiveButton(LocaleController.getString("Cancel", R.string.Cancel), null);
         return builder.create();
     }
 
-    public static Dialog createSingleChoiceDialog(Activity parentActivity, final BaseFragment parentFragment, final String[] options, final String title, final int selected, final DialogInterface.OnClickListener listener) {
+    public static Dialog createSingleChoiceDialog(Activity parentActivity, final String[] options, final String title, final int selected, final DialogInterface.OnClickListener listener) {
         final LinearLayout linearLayout = new LinearLayout(parentActivity);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
@@ -1269,10 +1572,7 @@ public class AlertsCreator {
             linearLayout.addView(cell);
             cell.setOnClickListener(v -> {
                 int sel = (Integer) v.getTag();
-
-                if (parentFragment != null) {
-                    parentFragment.dismissCurrentDialig();
-                }
+                builder.getDismissRunnable().run();
                 listener.onClick(null, sel);
             });
         }
@@ -1369,7 +1669,7 @@ public class AlertsCreator {
                 cell.setAccount(a, false);
                 cell.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(14), 0);
                 cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-                linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+                linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
                 cell.setOnClickListener(v -> {
                     if (alertDialog[0] != null) {
                         alertDialog[0].setOnDismissListener(null);

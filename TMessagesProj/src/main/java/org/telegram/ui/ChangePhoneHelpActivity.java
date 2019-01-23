@@ -1,20 +1,18 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -66,12 +64,7 @@ public class ChangePhoneHelpActivity extends BaseFragment {
         });
 
         fragmentView = new RelativeLayout(context);
-        fragmentView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
+        fragmentView.setOnTouchListener((v, event) -> true);
 
         RelativeLayout relativeLayout = (RelativeLayout) fragmentView;
 
@@ -119,24 +112,16 @@ public class ChangePhoneHelpActivity extends BaseFragment {
         textView2.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10));
         linearLayout.addView(textView2, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 20, 46, 20, 0));
 
-        textView2.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (getParentActivity() == null) {
-                    return;
-                }
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                builder.setMessage(LocaleController.getString("PhoneNumberAlert", R.string.PhoneNumberAlert));
-                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        presentFragment(new ChangePhoneActivity(), true);
-                    }
-                });
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                showDialog(builder.create());
+        textView2.setOnClickListener(v -> {
+            if (getParentActivity() == null) {
+                return;
             }
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+            builder.setMessage(LocaleController.getString("PhoneNumberAlert", R.string.PhoneNumberAlert));
+            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> presentFragment(new ChangePhoneActivity(), true));
+            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+            showDialog(builder.create());
         });
 
         return fragmentView;

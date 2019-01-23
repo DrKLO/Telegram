@@ -75,7 +75,7 @@ static OPUS_INLINE void silk_noise_shape_quantizer(
 
 void silk_NSQ_c
 (
-    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
     const opus_int16            x16[],                                        /* I    Input                           */
@@ -143,7 +143,7 @@ void silk_NSQ_c
             if( ( k & ( 3 - silk_LSHIFT( LSF_interpolation_flag, 1 ) ) ) == 0 ) {
                 /* Rewhiten with new A coefs */
                 start_idx = psEncC->ltp_mem_length - lag - psEncC->predictLPCOrder - LTP_ORDER / 2;
-                silk_assert( start_idx > 0 );
+                celt_assert( start_idx > 0 );
 
                 silk_LPC_analysis_filter( &sLTP[ start_idx ], &NSQ->xq[ start_idx + k * psEncC->subfr_length ],
                     A_Q12, psEncC->ltp_mem_length - start_idx, psEncC->predictLPCOrder, psEncC->arch );
@@ -168,7 +168,6 @@ void silk_NSQ_c
     NSQ->lagPrev = pitchL[ psEncC->nb_subfr - 1 ];
 
     /* Save quantized speech and noise shaping signals */
-    /* DEBUG_STORE_DATA( enc.pcm, &NSQ->xq[ psEncC->ltp_mem_length ], psEncC->frame_length * sizeof( opus_int16 ) ) */
     silk_memmove( NSQ->xq,           &NSQ->xq[           psEncC->frame_length ], psEncC->ltp_mem_length * sizeof( opus_int16 ) );
     silk_memmove( NSQ->sLTP_shp_Q14, &NSQ->sLTP_shp_Q14[ psEncC->frame_length ], psEncC->ltp_mem_length * sizeof( opus_int32 ) );
     RESTORE_STACK;
@@ -248,7 +247,7 @@ void silk_noise_shape_quantizer(
         }
 
         /* Noise shape feedback */
-        silk_assert( ( shapingLPCOrder & 1 ) == 0 );   /* check that order is even */
+        celt_assert( ( shapingLPCOrder & 1 ) == 0 );   /* check that order is even */
         n_AR_Q12 = silk_NSQ_noise_shape_feedback_loop(&NSQ->sDiff_shp_Q14, NSQ->sAR2_Q14, AR_shp_Q13, shapingLPCOrder, arch);
 
         n_AR_Q12 = silk_SMLAWB( n_AR_Q12, NSQ->sLF_AR_shp_Q14, Tilt_Q14 );
@@ -256,7 +255,7 @@ void silk_noise_shape_quantizer(
         n_LF_Q12 = silk_SMULWB( NSQ->sLTP_shp_Q14[ NSQ->sLTP_shp_buf_idx - 1 ], LF_shp_Q14 );
         n_LF_Q12 = silk_SMLAWT( n_LF_Q12, NSQ->sLF_AR_shp_Q14, LF_shp_Q14 );
 
-        silk_assert( lag > 0 || signalType != TYPE_VOICED );
+        celt_assert( lag > 0 || signalType != TYPE_VOICED );
 
         /* Combine prediction and noise shaping signals */
         tmp1 = silk_SUB32( silk_LSHIFT32( LPC_pred_Q10, 2 ), n_AR_Q12 );        /* Q12 */

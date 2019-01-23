@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -122,6 +122,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow).mutate();
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
 
+        this.fullscreen = fullScreen;
         linkToCopy = copyLink;
         sendingMessageObjects = messages;
         searchAdapter = new ShareSearchAdapter(context);
@@ -173,7 +174,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 int height = MeasureSpec.getSize(heightMeasureSpec);
-                if (Build.VERSION.SDK_INT >= 21) {
+                if (Build.VERSION.SDK_INT >= 21 && !fullScreen) {
                     height -= AndroidUtilities.statusBarHeight;
                 }
                 int size = Math.max(searchAdapter.getItemCount(), listAdapter.getItemCount());

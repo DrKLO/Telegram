@@ -80,7 +80,7 @@ void silk_find_pred_coefs_FIX(
         /**********/
         /* VOICED */
         /**********/
-        silk_assert( psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder >= psEncCtrl->pitchL[ 0 ] + LTP_ORDER / 2 );
+        celt_assert( psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder >= psEncCtrl->pitchL[ 0 ] + LTP_ORDER / 2 );
 
         ALLOC( xXLTP_Q17, psEnc->sCmn.nb_subfr * LTP_ORDER, opus_int32 );
         ALLOC( XXLTP_Q17, psEnc->sCmn.nb_subfr * LTP_ORDER * LTP_ORDER, opus_int32 );

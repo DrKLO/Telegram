@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -22,7 +22,6 @@ import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -102,17 +101,17 @@ public class ProxySettingsActivity extends BaseFragment {
             textView.setSingleLine(true);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 23 + 48 : 17, 0, LocaleController.isRTL ? 17 : 23, 0));
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 23 + 48 : 21, 0, LocaleController.isRTL ? 21 : 23, 0));
 
             checkImage = new ImageView(context);
             checkImage.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addedIcon), PorterDuff.Mode.MULTIPLY));
             checkImage.setImageResource(R.drawable.sticker_added);
-            addView(checkImage, LayoutHelper.createFrame(19, 14, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 18, 0, 18, 0));
+            addView(checkImage, LayoutHelper.createFrame(19, 14, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
         }
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
         }
 
         public void setValue(String name, boolean checked, boolean divider) {
@@ -128,7 +127,7 @@ public class ProxySettingsActivity extends BaseFragment {
         @Override
         protected void onDraw(Canvas canvas) {
             if (needDivider) {
-                canvas.drawLine(getPaddingLeft(), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
+                canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
             }
         }
     }
@@ -234,13 +233,10 @@ public class ProxySettingsActivity extends BaseFragment {
             } else if (a == 1) {
                 typeCell[a].setValue(LocaleController.getString("UseProxyTelegram", R.string.UseProxyTelegram), a == currentType, false);
             }
-            linearLayout2.addView(typeCell[a], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
-            typeCell[a].setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    currentType = (Integer) view.getTag();
-                    updateUiForType();
-                }
+            linearLayout2.addView(typeCell[a], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
+            typeCell[a].setOnClickListener(view -> {
+                currentType = (Integer) view.getTag();
+                updateUiForType();
             });
         }
 
@@ -370,22 +366,19 @@ public class ProxySettingsActivity extends BaseFragment {
             inputFields[a].setPadding(0, 0, 0, 0);
             container.addView(inputFields[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 17, 0, 17, 0));
 
-            inputFields[a].setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_NEXT) {
-                        int num = (Integer) textView.getTag();
-                        if (num + 1 < inputFields.length) {
-                            num++;
-                            inputFields[num].requestFocus();
-                        }
-                        return true;
-                    } else if (i == EditorInfo.IME_ACTION_DONE) {
-                        finishFragment();
-                        return true;
+            inputFields[a].setOnEditorActionListener((textView, i, keyEvent) -> {
+                if (i == EditorInfo.IME_ACTION_NEXT) {
+                    int num = (Integer) textView.getTag();
+                    if (num + 1 < inputFields.length) {
+                        num++;
+                        inputFields[num].requestFocus();
                     }
-                    return false;
+                    return true;
+                } else if (i == EditorInfo.IME_ACTION_DONE) {
+                    finishFragment();
+                    return true;
                 }
+                return false;
             });
         }
 
@@ -399,60 +392,57 @@ public class ProxySettingsActivity extends BaseFragment {
         shareCell.setText(LocaleController.getString("ShareFile", R.string.ShareFile), false);
         shareCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
         linearLayout2.addView(shareCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        shareCell.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                StringBuilder params = new StringBuilder("");
-                String address = inputFields[FIELD_IP].getText().toString();
-                String password = inputFields[FIELD_PASSWORD].getText().toString();
-                String user = inputFields[FIELD_USER].getText().toString();
-                String port = inputFields[FIELD_PORT].getText().toString();
-                String secret = inputFields[FIELD_SECRET].getText().toString();
-                String url;
-                try {
-                    if (!TextUtils.isEmpty(address)) {
-                        params.append("server=").append(URLEncoder.encode(address, "UTF-8"));
+        shareCell.setOnClickListener(v -> {
+            StringBuilder params = new StringBuilder("");
+            String address = inputFields[FIELD_IP].getText().toString();
+            String password = inputFields[FIELD_PASSWORD].getText().toString();
+            String user = inputFields[FIELD_USER].getText().toString();
+            String port = inputFields[FIELD_PORT].getText().toString();
+            String secret = inputFields[FIELD_SECRET].getText().toString();
+            String url;
+            try {
+                if (!TextUtils.isEmpty(address)) {
+                    params.append("server=").append(URLEncoder.encode(address, "UTF-8"));
+                }
+                if (!TextUtils.isEmpty(port)) {
+                    if (params.length() != 0) {
+                        params.append("&");
                     }
-                    if (!TextUtils.isEmpty(port)) {
+                    params.append("port=").append(URLEncoder.encode(port, "UTF-8"));
+                }
+                if (currentType == 1) {
+                    url = "https://t.me/proxy?";
+                    if (params.length() != 0) {
+                        params.append("&");
+                    }
+                    params.append("secret=").append(URLEncoder.encode(secret, "UTF-8"));
+                } else {
+                    url = "https://t.me/socks?";
+                    if (!TextUtils.isEmpty(user)) {
                         if (params.length() != 0) {
                             params.append("&");
                         }
-                        params.append("port=").append(URLEncoder.encode(port, "UTF-8"));
+                        params.append("user=").append(URLEncoder.encode(user, "UTF-8"));
                     }
-                    if (currentType == 1) {
-                        url = "https://t.me/proxy?";
+                    if (!TextUtils.isEmpty(password)) {
                         if (params.length() != 0) {
                             params.append("&");
                         }
-                        params.append("secret=").append(URLEncoder.encode(secret, "UTF-8"));
-                    } else {
-                        url = "https://t.me/socks?";
-                        if (!TextUtils.isEmpty(user)) {
-                            if (params.length() != 0) {
-                                params.append("&");
-                            }
-                            params.append("user=").append(URLEncoder.encode(user, "UTF-8"));
-                        }
-                        if (!TextUtils.isEmpty(password)) {
-                            if (params.length() != 0) {
-                                params.append("&");
-                            }
-                            params.append("pass=").append(URLEncoder.encode(password, "UTF-8"));
-                        }
+                        params.append("pass=").append(URLEncoder.encode(password, "UTF-8"));
                     }
-                } catch (Exception ignore) {
-                    return;
                 }
-                if (params.length() == 0) {
-                    return;
-                }
-                Intent shareIntent = new Intent(Intent.ACTION_SEND);
-                shareIntent.setType("text/plain");
-                shareIntent.putExtra(Intent.EXTRA_TEXT, url + params.toString());
-                Intent chooserIntent = Intent.createChooser(shareIntent, LocaleController.getString("ShareLink", R.string.ShareLink));
-                chooserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                getParentActivity().startActivity(chooserIntent);
+            } catch (Exception ignore) {
+                return;
             }
+            if (params.length() == 0) {
+                return;
+            }
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(Intent.EXTRA_TEXT, url + params.toString());
+            Intent chooserIntent = Intent.createChooser(shareIntent, LocaleController.getString("ShareLink", R.string.ShareLink));
+            chooserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getParentActivity().startActivity(chooserIntent);
         });
 
         sectionCell[1] = new ShadowSectionCell(context);

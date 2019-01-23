@@ -84,7 +84,7 @@ public class WearDataLayerListenerService extends WearableListenerService {
 							final NotificationCenter.NotificationCenterDelegate listener = new NotificationCenter.NotificationCenterDelegate() {
 								@Override
 								public void didReceivedNotification(int id, int account, Object... args) {
-									if (id == NotificationCenter.FileDidLoaded) {
+									if (id == NotificationCenter.fileDidLoad) {
 										if (BuildVars.LOGS_ENABLED) {
 											FileLog.d("file loaded: " + args[0] + " " + args[0].getClass().getName());
 										}
@@ -103,8 +103,8 @@ public class WearDataLayerListenerService extends WearableListenerService {
 							AndroidUtilities.runOnUIThread(new Runnable() {
 								@Override
 								public void run() {
-									NotificationCenter.getInstance(currentAccount).addObserver(listener, NotificationCenter.FileDidLoaded);
-									FileLoader.getInstance(currentAccount).loadFile(user.photo.photo_small, null, 0, 1);
+									NotificationCenter.getInstance(currentAccount).addObserver(listener, NotificationCenter.fileDidLoad);
+									FileLoader.getInstance(currentAccount).loadFile(user.photo.photo_small, user, null, 0, 1, 1);
 								}
 							});
 							try {
@@ -114,7 +114,7 @@ public class WearDataLayerListenerService extends WearableListenerService {
 							AndroidUtilities.runOnUIThread(new Runnable() {
 								@Override
 								public void run() {
-									NotificationCenter.getInstance(currentAccount).removeObserver(listener, NotificationCenter.FileDidLoaded);
+									NotificationCenter.getInstance(currentAccount).removeObserver(listener, NotificationCenter.fileDidLoad);
 								}
 							});
 						}
@@ -143,7 +143,7 @@ public class WearDataLayerListenerService extends WearableListenerService {
 				final NotificationCenter.NotificationCenterDelegate listener = new NotificationCenter.NotificationCenterDelegate() {
 					@Override
 					public void didReceivedNotification(int id, int account, Object... args) {
-						if (id == NotificationCenter.didReceivedNewMessages) {
+						if (id == NotificationCenter.didReceiveNewMessages) {
 							long did = (Long) args[0];
 							if (did == 777000) {
 								ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[1];
@@ -167,17 +167,17 @@ public class WearDataLayerListenerService extends WearableListenerService {
 				AndroidUtilities.runOnUIThread(new Runnable() {
 					@Override
 					public void run() {
-						NotificationCenter.getInstance(currentAccount).addObserver(listener, NotificationCenter.didReceivedNewMessages);
+						NotificationCenter.getInstance(currentAccount).addObserver(listener, NotificationCenter.didReceiveNewMessages);
 					}
 				});
 				try {
-					barrier.await(15, TimeUnit.SECONDS);
+					barrier.await(30, TimeUnit.SECONDS);
 				} catch (Exception ignore) {
 				}
 				AndroidUtilities.runOnUIThread(new Runnable() {
 					@Override
 					public void run() {
-						NotificationCenter.getInstance(currentAccount).removeObserver(listener, NotificationCenter.didReceivedNewMessages);
+						NotificationCenter.getInstance(currentAccount).removeObserver(listener, NotificationCenter.didReceiveNewMessages);
 					}
 				});
 				DataOutputStream out = new DataOutputStream(ch.getOutputStream(apiClient).await().getOutputStream());

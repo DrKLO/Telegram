@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -36,6 +36,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
@@ -158,11 +159,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
             if (hasOverride) {
                 notificationsEnabled = true;
             } else {
-                if ((int) dialog_id < 0) {
-                    notificationsEnabled = preferences.getBoolean("EnableGroup", true);
-                } else {
-                    notificationsEnabled = preferences.getBoolean("EnableAll", true);
-                }
+                notificationsEnabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(dialog_id);
             }
         } else if (value == 1) {
             notificationsEnabled = true;
@@ -333,19 +330,19 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             FileLog.e(e);
                         }
                     } else if (position == vibrateRow) {
-                        showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), ProfileNotificationsActivity.this, dialog_id, false, false, () -> {
+                        showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), dialog_id, false, false, () -> {
                             if (adapter != null) {
                                 adapter.notifyItemChanged(vibrateRow);
                             }
                         }));
                     } else if (position == callsVibrateRow) {
-                        showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), ProfileNotificationsActivity.this, dialog_id, "calls_vibrate_", () -> {
+                        showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), dialog_id, "calls_vibrate_", () -> {
                             if (adapter != null) {
                                 adapter.notifyItemChanged(callsVibrateRow);
                             }
                         }));
                     } else if (position == priorityRow) {
-                        showDialog(AlertsCreator.createPrioritySelectDialog(getParentActivity(), ProfileNotificationsActivity.this, dialog_id, false, false, () -> {
+                        showDialog(AlertsCreator.createPrioritySelectDialog(getParentActivity(), dialog_id, -1, () -> {
                             if (adapter != null) {
                                 adapter.notifyItemChanged(priorityRow);
                             }
@@ -437,7 +434,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         if (getParentActivity() == null) {
                             return;
                         }
-                        showDialog(AlertsCreator.createColorSelectDialog(getParentActivity(), dialog_id, false, false, () -> {
+                        showDialog(AlertsCreator.createColorSelectDialog(getParentActivity(), dialog_id, -1, () -> {
                             if (adapter != null) {
                                 adapter.notifyItemChanged(colorRow);
                             }

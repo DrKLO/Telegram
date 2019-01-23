@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.messenger;
@@ -17,7 +17,6 @@ import android.net.ConnectivityManager;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 
 import java.lang.ref.WeakReference;
@@ -27,7 +26,7 @@ import java.util.HashMap;
 public class DownloadController implements NotificationCenter.NotificationCenterDelegate {
 
     public interface FileDownloadProgressListener {
-        void onFailedDownload(String fileName);
+        void onFailedDownload(String fileName, boolean canceled);
         void onSuccessDownload(String fileName);
         void onProgressDownload(String fileName, float progress);
         void onProgressUpload(String fileName, float progress, boolean isEncrypted);
@@ -66,10 +65,10 @@ public class DownloadController implements NotificationCenter.NotificationCenter
     private ArrayList<FileDownloadProgressListener> deleteLaterArray = new ArrayList<>();
     private int lastTag = 0;
 
+    private LongSparseArray<Long> typingTimes = new LongSparseArray<>();
+
     private int currentAccount;
     private static volatile DownloadController Instance[] = new DownloadController[UserConfig.MAX_ACCOUNT_COUNT];
-
-    private LongSparseArray<Long> typingTimes = new LongSparseArray<>();
 
     public static DownloadController getInstance(int num) {
         DownloadController localInstance = Instance[num];
@@ -114,16 +113,13 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         }
         globalAutodownloadEnabled = preferences.getBoolean("globalAutodownloadEnabled", true);
 
-        AndroidUtilities.runOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.FileDidFailedLoad);
-                NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.FileDidLoaded);
-                NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.FileLoadProgressChanged);
-                NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.FileUploadProgressChanged);
-                NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.httpFileDidLoaded);
-                NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.httpFileDidFailedLoad);
-            }
+        AndroidUtilities.runOnUIThread(() -> {
+            NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.fileDidFailedLoad);
+            NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.fileDidLoad);
+            NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.FileLoadProgressChanged);
+            NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.FileUploadProgressChanged);
+            NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.httpFileDidLoad);
+            NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.httpFileDidFailedLoad);
         });
 
         BroadcastReceiver networkStateReceiver = new BroadcastReceiver() {
@@ -171,15 +167,15 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         typingTimes.clear();
     }
 
-    protected int getAutodownloadMask() {
+    public int getAutodownloadMask() {
         if (!globalAutodownloadEnabled) {
             return 0;
         }
         int result = 0;
         int masksArray[];
-        if (ConnectionsManager.isConnectedToWiFi()) {
+        if (ApplicationLoader.isConnectedToWiFi()) {
             masksArray = wifiDownloadMask;
-        } else if (ConnectionsManager.isRoaming()) {
+        } else if (ApplicationLoader.isRoaming()) {
             masksArray = roamingDownloadMask;
         } else {
             masksArray = mobileDataDownloadMask;
@@ -256,7 +252,11 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         } else {
             for (int a = 0; a < photoDownloadQueue.size(); a++) {
                 DownloadObject downloadObject = photoDownloadQueue.get(a);
-                FileLoader.getInstance(currentAccount).cancelLoadFile((TLRPC.PhotoSize) downloadObject.object);
+                if (downloadObject.object instanceof TLRPC.PhotoSize) {
+                    FileLoader.getInstance(currentAccount).cancelLoadFile((TLRPC.PhotoSize) downloadObject.object);
+                } else if (downloadObject.object instanceof TLRPC.Document) {
+                    FileLoader.getInstance(currentAccount).cancelLoadFile((TLRPC.Document) downloadObject.object);
+                }
             }
             photoDownloadQueue.clear();
         }
@@ -367,7 +367,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
             return false;
         }
         int type;
-        if (MessageObject.isPhoto(message)) {
+        if (MessageObject.isPhoto(message) || MessageObject.isStickerMessage(message)) {
             type = AUTODOWNLOAD_MASK_PHOTO;
         } else if (MessageObject.isVoiceMessage(message)) {
             type = AUTODOWNLOAD_MASK_AUDIO;
@@ -405,10 +405,10 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         } else {
             index = 1;
         }
-        if (ConnectionsManager.isConnectedToWiFi()) {
+        if (ApplicationLoader.isConnectedToWiFi()) {
             mask = wifiDownloadMask[index];
             maxSize = wifiMaxFileSize[maskToIndex(type)];
-        } else if (ConnectionsManager.isRoaming()) {
+        } else if (ApplicationLoader.isRoaming()) {
             mask = roamingDownloadMask[index];
             maxSize = roamingMaxFileSize[maskToIndex(type)];
         } else {
@@ -422,13 +422,13 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         if (!globalAutodownloadEnabled) {
             return 0;
         }
-        if (ConnectionsManager.isConnectedToWiFi()) {
+        if (ApplicationLoader.isConnectedToWiFi()) {
             int mask = 0;
             for (int a = 0; a < 4; a++) {
                 mask |= wifiDownloadMask[a];
             }
             return mask;
-        } else if (ConnectionsManager.isRoaming()) {
+        } else if (ApplicationLoader.isRoaming()) {
             int mask = 0;
             for (int a = 0; a < 4; a++) {
                 mask |= roamingDownloadMask[a];
@@ -481,7 +481,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
                 FileLoader.getInstance(currentAccount).loadFile((TLRPC.PhotoSize) downloadObject.object, null, downloadObject.secret ? 2 : 0);
             } else if (downloadObject.object instanceof TLRPC.Document) {
                 TLRPC.Document document = (TLRPC.Document) downloadObject.object;
-                FileLoader.getInstance(currentAccount).loadFile(document, false, downloadObject.secret ? 2 : 0);
+                FileLoader.getInstance(currentAccount).loadFile(document, downloadObject.parent, 0, downloadObject.secret ? 2 : 0);
             } else {
                 added = false;
             }
@@ -634,24 +634,29 @@ public class DownloadController implements NotificationCenter.NotificationCenter
     @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.FileDidFailedLoad || id == NotificationCenter.httpFileDidFailedLoad) {
-            listenerInProgress = true;
+        if (id == NotificationCenter.fileDidFailedLoad || id == NotificationCenter.httpFileDidFailedLoad) {
             String fileName = (String) args[0];
+            Integer canceled = (Integer) args[1];
+            listenerInProgress = true;
             ArrayList<WeakReference<FileDownloadProgressListener>> arrayList = loadingFileObservers.get(fileName);
             if (arrayList != null) {
                 for (int a = 0, size = arrayList.size(); a < size; a++) {
                     WeakReference<FileDownloadProgressListener> reference = arrayList.get(a);
                     if (reference.get() != null) {
-                        reference.get().onFailedDownload(fileName);
-                        observersByTag.remove(reference.get().getObserverTag());
+                        reference.get().onFailedDownload(fileName, canceled == 1);
+                        if (canceled != 1) {
+                            observersByTag.remove(reference.get().getObserverTag());
+                        }
                     }
                 }
-                loadingFileObservers.remove(fileName);
+                if (canceled != 1) {
+                    loadingFileObservers.remove(fileName);
+                }
             }
             listenerInProgress = false;
             processLaterArrays();
-            checkDownloadFinished(fileName, (Integer) args[1]);
-        } else if (id == NotificationCenter.FileDidLoaded || id == NotificationCenter.httpFileDidLoaded) {
+            checkDownloadFinished(fileName, canceled);
+        } else if (id == NotificationCenter.fileDidLoad || id == NotificationCenter.httpFileDidLoad) {
             listenerInProgress = true;
             String fileName = (String) args[0];
             ArrayList<MessageObject> messageObjects = loadingFileMessagesObservers.get(fileName);

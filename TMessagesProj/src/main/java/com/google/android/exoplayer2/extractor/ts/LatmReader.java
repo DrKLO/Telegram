@@ -93,7 +93,7 @@ public final class LatmReader implements ElementaryStreamReader {
   }
 
   @Override
-  public void packetStarted(long pesTimeUs, boolean dataAlignmentIndicator) {
+  public void packetStarted(long pesTimeUs, @TsPayloadReader.Flags int flags) {
     timeUs = pesTimeUs;
   }
 
@@ -134,6 +134,8 @@ public final class LatmReader implements ElementaryStreamReader {
             state = STATE_FINDING_SYNC_1;
           }
           break;
+        default:
+          throw new IllegalStateException();
       }
     }
   }
@@ -250,6 +252,8 @@ public final class LatmReader implements ElementaryStreamReader {
       case 7:
         data.skipBits(1); // HVXCframeLengthTableIndex.
         break;
+      default:
+        throw new IllegalStateException();
     }
   }
 

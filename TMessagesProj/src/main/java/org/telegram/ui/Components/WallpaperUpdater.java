@@ -1,15 +1,17 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
@@ -24,40 +26,52 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.PhotoAlbumPickerActivity;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 
 public class WallpaperUpdater {
 
     private String currentPicturePath;
     private File picturePath = null;
     private Activity parentActivity;
+    private BaseFragment parentFragment;
     private WallpaperUpdaterDelegate delegate;
     private File currentWallpaperPath;
 
     public interface WallpaperUpdaterDelegate {
-        void didSelectWallpaper(File file, Bitmap bitmap);
+        void didSelectWallpaper(File file, Bitmap bitmap, boolean gallery);
         void needOpenColorPicker();
     }
 
-    public WallpaperUpdater(Activity activity, WallpaperUpdaterDelegate wallpaperUpdaterDelegate) {
+    public WallpaperUpdater(Activity activity, BaseFragment fragment, WallpaperUpdaterDelegate wallpaperUpdaterDelegate) {
         parentActivity = activity;
+        parentFragment = fragment;
         delegate = wallpaperUpdaterDelegate;
         currentWallpaperPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.random.nextInt() + ".jpg");
     }
 
     public void showAlert(final boolean fromTheme) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+        BottomSheet.Builder builder = new BottomSheet.Builder(parentActivity);
+        builder.setTitle(LocaleController.getString("ChoosePhoto", R.string.ChoosePhoto));
+
         CharSequence[] items;
+        int[] icons;
         if (fromTheme) {
-            items = new CharSequence[]{LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("SelectColor", R.string.SelectColor), LocaleController.getString("Default", R.string.Default), LocaleController.getString("Cancel", R.string.Cancel)};
+            items = new CharSequence[]{LocaleController.getString("ChooseTakePhoto", R.string.ChooseTakePhoto), LocaleController.getString("SelectFromGallery", R.string.SelectFromGallery), LocaleController.getString("SelectColor", R.string.SelectColor), LocaleController.getString("Default", R.string.Default)};
+            icons = null;
         } else {
-            items = new CharSequence[]{LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("Cancel", R.string.Cancel)};
+            items = new CharSequence[]{LocaleController.getString("ChooseTakePhoto", R.string.ChooseTakePhoto), LocaleController.getString("SelectFromGallery", R.string.SelectFromGallery)};
+            icons = new int[]{R.drawable.menu_camera, R.drawable.profile_photos};
         }
-        builder.setItems(items, (dialogInterface, i) -> {
+
+        builder.setItems(items, icons, (dialogInterface, i) -> {
             try {
                 if (i == 0) {
                     try {
@@ -78,14 +92,12 @@ public class WallpaperUpdater {
                         FileLog.e(e);
                     }
                 } else if (i == 1) {
-                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                    photoPickerIntent.setType("image/*");
-                    parentActivity.startActivityForResult(photoPickerIntent, 11);
+                    openGallery();
                 } else if (fromTheme) {
                     if (i == 2) {
                         delegate.needOpenColorPicker();
                     } else if (i == 3) {
-                        delegate.didSelectWallpaper(null, null);
+                        delegate.didSelectWallpaper(null, null, false);
                     }
                 }
             } catch (Exception e) {
@@ -93,6 +105,58 @@ public class WallpaperUpdater {
             }
         });
         builder.show();
+    }
+
+    public void openGallery() {
+        if (parentFragment != null) {
+            if (Build.VERSION.SDK_INT >= 23 && parentFragment.getParentActivity() != null) {
+                if (parentFragment.getParentActivity().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    parentFragment.getParentActivity().requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 4);
+                    return;
+                }
+            }
+            PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(2, false, false, null);
+            fragment.setAllowSearchImages(false);
+            fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
+                @Override
+                public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos) {
+                    WallpaperUpdater.this.didSelectPhotos(photos);
+                }
+
+                @Override
+                public void startPhotoSelectActivity() {
+                    try {
+                        Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+                        photoPickerIntent.setType("image/*");
+                        parentActivity.startActivityForResult(photoPickerIntent, 11);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                }
+            });
+            parentFragment.presentFragment(fragment);
+        } else {
+            Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+            photoPickerIntent.setType("image/*");
+            parentActivity.startActivityForResult(photoPickerIntent, 11);
+        }
+    }
+
+    private void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos) {
+        try {
+            if (!photos.isEmpty()) {
+                SendMessagesHelper.SendingMediaInfo info = photos.get(0);
+                if (info.path != null) {
+                    Point screenSize = AndroidUtilities.getRealScreenSize();
+                    Bitmap bitmap = ImageLoader.loadBitmap(info.path, null, screenSize.x, screenSize.y, true);
+                    FileOutputStream stream = new FileOutputStream(currentWallpaperPath);
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
+                    delegate.didSelectWallpaper(currentWallpaperPath, bitmap, true);
+                }
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
     }
 
     public void cleanup() {
@@ -121,7 +185,7 @@ public class WallpaperUpdater {
                     Bitmap bitmap = ImageLoader.loadBitmap(currentPicturePath, null, screenSize.x, screenSize.y, true);
                     stream = new FileOutputStream(currentWallpaperPath);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
-                    delegate.didSelectWallpaper(currentWallpaperPath, bitmap);
+                    delegate.didSelectWallpaper(currentWallpaperPath, bitmap, false);
                 } catch (Exception e) {
                     FileLog.e(e);
                 } finally {
@@ -143,7 +207,7 @@ public class WallpaperUpdater {
                     Bitmap bitmap = ImageLoader.loadBitmap(null, data.getData(), screenSize.x, screenSize.y, true);
                     FileOutputStream stream = new FileOutputStream(currentWallpaperPath);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
-                    delegate.didSelectWallpaper(currentWallpaperPath, bitmap);
+                    delegate.didSelectWallpaper(currentWallpaperPath, bitmap, false);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }

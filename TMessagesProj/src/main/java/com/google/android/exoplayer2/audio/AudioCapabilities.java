@@ -25,17 +25,15 @@ import android.media.AudioManager;
 import android.support.annotation.Nullable;
 import java.util.Arrays;
 
-/**
- * Represents the set of audio formats that a device is capable of playing.
- */
+/** Represents the set of audio formats that a device is capable of playing. */
 @TargetApi(21)
 public final class AudioCapabilities {
 
-  /**
-   * The minimum audio capabilities supported by all devices.
-   */
+  private static final int DEFAULT_MAX_CHANNEL_COUNT = 8;
+
+  /** The minimum audio capabilities supported by all devices. */
   public static final AudioCapabilities DEFAULT_AUDIO_CAPABILITIES =
-      new AudioCapabilities(new int[] {AudioFormat.ENCODING_PCM_16BIT}, 2);
+      new AudioCapabilities(new int[] {AudioFormat.ENCODING_PCM_16BIT}, DEFAULT_MAX_CHANNEL_COUNT);
 
   /**
    * Returns the current audio capabilities for the device.
@@ -54,8 +52,10 @@ public final class AudioCapabilities {
     if (intent == null || intent.getIntExtra(AudioManager.EXTRA_AUDIO_PLUG_STATE, 0) == 0) {
       return DEFAULT_AUDIO_CAPABILITIES;
     }
-    return new AudioCapabilities(intent.getIntArrayExtra(AudioManager.EXTRA_ENCODINGS),
-        intent.getIntExtra(AudioManager.EXTRA_MAX_CHANNEL_COUNT, 0));
+    return new AudioCapabilities(
+        intent.getIntArrayExtra(AudioManager.EXTRA_ENCODINGS),
+        intent.getIntExtra(
+            AudioManager.EXTRA_MAX_CHANNEL_COUNT, /* defaultValue= */ DEFAULT_MAX_CHANNEL_COUNT));
   }
 
   private final int[] supportedEncodings;
@@ -65,11 +65,15 @@ public final class AudioCapabilities {
    * Constructs new audio capabilities based on a set of supported encodings and a maximum channel
    * count.
    *
+   * <p>Applications should generally call {@link #getCapabilities(Context)} to obtain an instance
+   * based on the capabilities advertised by the platform, rather than calling this constructor.
+   *
    * @param supportedEncodings Supported audio encodings from {@link android.media.AudioFormat}'s
-   *     {@code ENCODING_*} constants.
+   *     {@code ENCODING_*} constants. Passing {@code null} indicates that no encodings are
+   *     supported.
    * @param maxChannelCount The maximum number of audio channels that can be played simultaneously.
    */
-  /* package */ AudioCapabilities(int[] supportedEncodings, int maxChannelCount) {
+  public AudioCapabilities(@Nullable int[] supportedEncodings, int maxChannelCount) {
     if (supportedEncodings != null) {
       this.supportedEncodings = Arrays.copyOf(supportedEncodings, supportedEncodings.length);
       Arrays.sort(this.supportedEncodings);

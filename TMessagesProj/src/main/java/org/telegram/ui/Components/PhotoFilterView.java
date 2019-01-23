@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x
+ * This is the source code of Telegram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -242,7 +242,7 @@ public class PhotoFilterView extends FrameLayout {
         public CurvesValue redCurve = new CurvesValue();
         public CurvesValue greenCurve = new CurvesValue();
         public CurvesValue blueCurve = new CurvesValue();
-        public ByteBuffer curveBuffer = null;
+        public ByteBuffer curveBuffer;
 
         public int activeType;
 
@@ -1217,7 +1217,7 @@ public class PhotoFilterView extends FrameLayout {
                 return false;
             }
 
-            if (currentBitmap != null) {
+            if (currentBitmap != null && !currentBitmap.isRecycled()) {
                 loadTexture(currentBitmap);
             }
 
@@ -1519,17 +1519,14 @@ public class PhotoFilterView extends FrameLayout {
             final CountDownLatch countDownLatch = new CountDownLatch(1);
             final Bitmap object[] = new Bitmap[1];
             try {
-                postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[1]);
-                        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[blured ? 0 : 1], 0);
-                        GLES20.glClear(0);
-                        object[0] = getRenderBufferBitmap();
-                        countDownLatch.countDown();
-                        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-                        GLES20.glClear(0);
-                    }
+                postRunnable(() -> {
+                    GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[1]);
+                    GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[blured ? 0 : 1], 0);
+                    GLES20.glClear(0);
+                    object[0] = getRenderBufferBitmap();
+                    countDownLatch.countDown();
+                    GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+                    GLES20.glClear(0);
                 });
                 countDownLatch.await();
             } catch (Exception e) {
@@ -1599,15 +1596,12 @@ public class PhotoFilterView extends FrameLayout {
         }
 
         public void shutdown() {
-            postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    finish();
-                    currentBitmap = null;
-                    Looper looper = Looper.myLooper();
-                    if (looper != null) {
-                        looper.quit();
-                    }
+            postRunnable(() -> {
+                finish();
+                currentBitmap = null;
+                Looper looper = Looper.myLooper();
+                if (looper != null) {
+                    looper.quit();
                 }
             });
         }
@@ -1628,19 +1622,16 @@ public class PhotoFilterView extends FrameLayout {
         }
 
         public void requestRender(final boolean updateBlur, final boolean force) {
-            postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    if (!needUpdateBlurTexture) {
-                        needUpdateBlurTexture = updateBlur;
-                    }
-                    long newTime = System.currentTimeMillis();
-                    if (force || Math.abs(lastRenderCallTime - newTime) > 30) {
-                        lastRenderCallTime = newTime;
-                        drawRunnable.run();
-                        //cancelRunnable(drawRunnable);
-                        //postRunnable(drawRunnable, 30);
-                    }
+            postRunnable(() -> {
+                if (!needUpdateBlurTexture) {
+                    needUpdateBlurTexture = updateBlur;
+                }
+                long newTime = System.currentTimeMillis();
+                if (force || Math.abs(lastRenderCallTime - newTime) > 30) {
+                    lastRenderCallTime = newTime;
+                    drawRunnable.run();
+                    //cancelRunnable(drawRunnable);
+                    //postRunnable(drawRunnable, 30);
                 }
             });
         }
@@ -1698,12 +1689,9 @@ public class PhotoFilterView extends FrameLayout {
                 if (eglThread != null) {
                     eglThread.setSurfaceTextureSize(width, height);
                     eglThread.requestRender(false, true);
-                    eglThread.postRunnable(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (eglThread != null) {
-                                eglThread.requestRender(false, true);
-                            }
+                    eglThread.postRunnable(() -> {
+                        if (eglThread != null) {
+                            eglThread.requestRender(false, true);
                         }
                     });
                 }
@@ -1727,26 +1715,20 @@ public class PhotoFilterView extends FrameLayout {
         blurControl = new PhotoFilterBlurControl(context);
         blurControl.setVisibility(INVISIBLE);
         addView(blurControl, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
-        blurControl.setDelegate(new PhotoFilterBlurControl.PhotoFilterLinearBlurControlDelegate() {
-            @Override
-            public void valueChanged(Point centerPoint, float falloff, float size, float angle) {
-                blurExcludeSize = size;
-                blurExcludePoint = centerPoint;
-                blurExcludeBlurSize = falloff;
-                blurAngle = angle;
-                if (eglThread != null) {
-                    eglThread.requestRender(false);
-                }
+        blurControl.setDelegate((centerPoint, falloff, size, angle) -> {
+            blurExcludeSize = size;
+            blurExcludePoint = centerPoint;
+            blurExcludeBlurSize = falloff;
+            blurAngle = angle;
+            if (eglThread != null) {
+                eglThread.requestRender(false);
             }
         });
 
         curvesControl = new PhotoFilterCurvesControl(context, curvesToolValue);
-        curvesControl.setDelegate(new PhotoFilterCurvesControl.PhotoFilterCurvesControlDelegate() {
-            @Override
-            public void valueChanged() {
-                if (eglThread != null) {
-                    eglThread.requestRender(false);
-                }
+        curvesControl.setDelegate(() -> {
+            if (eglThread != null) {
+                eglThread.requestRender(false);
             }
         });
         curvesControl.setVisibility(INVISIBLE);
@@ -1788,15 +1770,12 @@ public class PhotoFilterView extends FrameLayout {
         tuneItem.setColorFilter(new PorterDuffColorFilter(0xff6cc3ff, PorterDuff.Mode.MULTIPLY));
         tuneItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         linearLayout.addView(tuneItem, LayoutHelper.createLinear(56, 48));
-        tuneItem.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                selectedTool = 0;
-                tuneItem.setColorFilter(new PorterDuffColorFilter(0xff6cc3ff, PorterDuff.Mode.MULTIPLY));
-                blurItem.setColorFilter(null);
-                curveItem.setColorFilter(null);
-                switchMode();
-            }
+        tuneItem.setOnClickListener(v -> {
+            selectedTool = 0;
+            tuneItem.setColorFilter(new PorterDuffColorFilter(0xff6cc3ff, PorterDuff.Mode.MULTIPLY));
+            blurItem.setColorFilter(null);
+            curveItem.setColorFilter(null);
+            switchMode();
         });
 
         blurItem = new ImageView(context);
@@ -1804,15 +1783,12 @@ public class PhotoFilterView extends FrameLayout {
         blurItem.setImageResource(R.drawable.tool_blur);
         blurItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         linearLayout.addView(blurItem, LayoutHelper.createLinear(56, 48));
-        blurItem.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                selectedTool = 1;
-                tuneItem.setColorFilter(null);
-                blurItem.setColorFilter(new PorterDuffColorFilter(0xff6cc3ff, PorterDuff.Mode.MULTIPLY));
-                curveItem.setColorFilter(null);
-                switchMode();
-            }
+        blurItem.setOnClickListener(v -> {
+            selectedTool = 1;
+            tuneItem.setColorFilter(null);
+            blurItem.setColorFilter(new PorterDuffColorFilter(0xff6cc3ff, PorterDuff.Mode.MULTIPLY));
+            curveItem.setColorFilter(null);
+            switchMode();
         });
 
         curveItem = new ImageView(context);
@@ -1820,15 +1796,12 @@ public class PhotoFilterView extends FrameLayout {
         curveItem.setImageResource(R.drawable.tool_curve);
         curveItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         linearLayout.addView(curveItem, LayoutHelper.createLinear(56, 48));
-        curveItem.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                selectedTool = 2;
-                tuneItem.setColorFilter(null);
-                blurItem.setColorFilter(null);
-                curveItem.setColorFilter(new PorterDuffColorFilter(0xff6cc3ff, PorterDuff.Mode.MULTIPLY));
-                switchMode();
-            }
+        curveItem.setOnClickListener(v -> {
+            selectedTool = 2;
+            tuneItem.setColorFilter(null);
+            blurItem.setColorFilter(null);
+            curveItem.setColorFilter(new PorterDuffColorFilter(0xff6cc3ff, PorterDuff.Mode.MULTIPLY));
+            switchMode();
         });
 
         recyclerListView = new RecyclerListView(context);
@@ -1883,16 +1856,13 @@ public class PhotoFilterView extends FrameLayout {
             frameLayout1.addView(curveTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 38, 0, 0));
 
             curveTextViewContainer.addView(frameLayout1, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, a == 0 ? 0 : 30, 0, 0, 0));
-            frameLayout1.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    int num = (Integer) v.getTag();
-                    curvesToolValue.activeType = num;
-                    for (int a = 0; a < 4; a++) {
-                        curveRadioButton[a].setChecked(a == num, true);
-                    }
-                    curvesControl.invalidate();
+            frameLayout1.setOnClickListener(v -> {
+                int num = (Integer) v.getTag();
+                curvesToolValue.activeType = num;
+                for (int a1 = 0; a1 < 4; a1++) {
+                    curveRadioButton[a1].setChecked(a1 == num, true);
                 }
+                curvesControl.invalidate();
             });
         }
 
@@ -1906,15 +1876,12 @@ public class PhotoFilterView extends FrameLayout {
         blurOffButton.setGravity(Gravity.CENTER_HORIZONTAL);
         blurOffButton.setText(LocaleController.getString("BlurOff", R.string.BlurOff));
         blurLayout.addView(blurOffButton, LayoutHelper.createFrame(80, 60));
-        blurOffButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                blurType = 0;
-                updateSelectedBlurType();
-                blurControl.setVisibility(INVISIBLE);
-                if (eglThread != null) {
-                    eglThread.requestRender(false);
-                }
+        blurOffButton.setOnClickListener(v -> {
+            blurType = 0;
+            updateSelectedBlurType();
+            blurControl.setVisibility(INVISIBLE);
+            if (eglThread != null) {
+                eglThread.requestRender(false);
             }
         });
 
@@ -1924,16 +1891,13 @@ public class PhotoFilterView extends FrameLayout {
         blurRadialButton.setGravity(Gravity.CENTER_HORIZONTAL);
         blurRadialButton.setText(LocaleController.getString("BlurRadial", R.string.BlurRadial));
         blurLayout.addView(blurRadialButton, LayoutHelper.createFrame(80, 80, Gravity.LEFT | Gravity.TOP, 100, 0, 0, 0));
-        blurRadialButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                blurType = 1;
-                updateSelectedBlurType();
-                blurControl.setVisibility(VISIBLE);
-                blurControl.setType(1);
-                if (eglThread != null) {
-                    eglThread.requestRender(false);
-                }
+        blurRadialButton.setOnClickListener(v -> {
+            blurType = 1;
+            updateSelectedBlurType();
+            blurControl.setVisibility(VISIBLE);
+            blurControl.setType(1);
+            if (eglThread != null) {
+                eglThread.requestRender(false);
             }
         });
 
@@ -1943,16 +1907,13 @@ public class PhotoFilterView extends FrameLayout {
         blurLinearButton.setGravity(Gravity.CENTER_HORIZONTAL);
         blurLinearButton.setText(LocaleController.getString("BlurLinear", R.string.BlurLinear));
         blurLayout.addView(blurLinearButton, LayoutHelper.createFrame(80, 80, Gravity.LEFT | Gravity.TOP, 200, 0, 0, 0));
-        blurLinearButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                blurType = 2;
-                updateSelectedBlurType();
-                blurControl.setVisibility(VISIBLE);
-                blurControl.setType(0);
-                if (eglThread != null) {
-                    eglThread.requestRender(false);
-                }
+        blurLinearButton.setOnClickListener(v -> {
+            blurType = 2;
+            updateSelectedBlurType();
+            blurControl.setVisibility(VISIBLE);
+            blurControl.setType(0);
+            if (eglThread != null) {
+                eglThread.requestRender(false);
             }
         });
 
@@ -2273,52 +2234,46 @@ public class PhotoFilterView extends FrameLayout {
             if (i == 0) {
                 PhotoEditToolCell cell = new PhotoEditToolCell(mContext);
                 view = cell;
-                cell.setSeekBarDelegate(new PhotoEditorSeekBar.PhotoEditorSeekBarDelegate() {
-                    @Override
-                    public void onProgressChanged(int i, int progress) {
-                        if (i == enhanceTool) {
-                            enhanceValue = progress;
-                        } else if (i == highlightsTool) {
-                            highlightsValue = progress;
-                        } else if (i == contrastTool) {
-                            contrastValue = progress;
-                        } else if (i == exposureTool) {
-                            exposureValue = progress;
-                        } else if (i == warmthTool) {
-                            warmthValue = progress;
-                        } else if (i == saturationTool) {
-                            saturationValue = progress;
-                        } else if (i == vignetteTool) {
-                            vignetteValue = progress;
-                        } else if (i == shadowsTool) {
-                            shadowsValue = progress;
-                        } else if (i == grainTool) {
-                            grainValue = progress;
-                        } else if (i == sharpenTool) {
-                            sharpenValue = progress;
-                        }  else if (i == fadeTool) {
-                            fadeValue = progress;
-                        }
-                        if (eglThread != null) {
-                            eglThread.requestRender(true);
-                        }
+                cell.setSeekBarDelegate((i1, progress) -> {
+                    if (i1 == enhanceTool) {
+                        enhanceValue = progress;
+                    } else if (i1 == highlightsTool) {
+                        highlightsValue = progress;
+                    } else if (i1 == contrastTool) {
+                        contrastValue = progress;
+                    } else if (i1 == exposureTool) {
+                        exposureValue = progress;
+                    } else if (i1 == warmthTool) {
+                        warmthValue = progress;
+                    } else if (i1 == saturationTool) {
+                        saturationValue = progress;
+                    } else if (i1 == vignetteTool) {
+                        vignetteValue = progress;
+                    } else if (i1 == shadowsTool) {
+                        shadowsValue = progress;
+                    } else if (i1 == grainTool) {
+                        grainValue = progress;
+                    } else if (i1 == sharpenTool) {
+                        sharpenValue = progress;
+                    }  else if (i1 == fadeTool) {
+                        fadeValue = progress;
+                    }
+                    if (eglThread != null) {
+                        eglThread.requestRender(true);
                     }
                 });
             } else {
                 view = new PhotoEditRadioCell(mContext);
-                view.setOnClickListener(new OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        PhotoEditRadioCell cell = (PhotoEditRadioCell) v;
-                        Integer row = (Integer) cell.getTag();
-                        if (row == tintShadowsTool) {
-                            tintShadowsColor = cell.getCurrentColor();
-                        } else {
-                            tintHighlightsColor = cell.getCurrentColor();
-                        }
-                        if (eglThread != null) {
-                            eglThread.requestRender(false);
-                        }
+                view.setOnClickListener(v -> {
+                    PhotoEditRadioCell cell = (PhotoEditRadioCell) v;
+                    Integer row = (Integer) cell.getTag();
+                    if (row == tintShadowsTool) {
+                        tintShadowsColor = cell.getCurrentColor();
+                    } else {
+                        tintHighlightsColor = cell.getCurrentColor();
+                    }
+                    if (eglThread != null) {
+                        eglThread.requestRender(false);
                     }
                 });
             }

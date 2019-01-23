@@ -142,12 +142,12 @@ void silk_CNG(
         silk_CNG_exc( CNG_sig_Q14 + MAX_LPC_ORDER, psCNG->CNG_exc_buf_Q14, length, &psCNG->rand_seed );
 
         /* Convert CNG NLSF to filter representation */
-        silk_NLSF2A( A_Q12, psCNG->CNG_smth_NLSF_Q15, psDec->LPC_order );
+        silk_NLSF2A( A_Q12, psCNG->CNG_smth_NLSF_Q15, psDec->LPC_order, psDec->arch );
 
         /* Generate CNG signal, by synthesis filtering */
         silk_memcpy( CNG_sig_Q14, psCNG->CNG_synth_state, MAX_LPC_ORDER * sizeof( opus_int32 ) );
+        celt_assert( psDec->LPC_order == 10 || psDec->LPC_order == 16 );
         for( i = 0; i < length; i++ ) {
-            silk_assert( psDec->LPC_order == 10 || psDec->LPC_order == 16 );
             /* Avoids introducing a bias because silk_SMLAWB() always rounds to -inf */
             LPC_pred_Q10 = silk_RSHIFT( psDec->LPC_order, 1 );
             LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, CNG_sig_Q14[ MAX_LPC_ORDER + i -  1 ], A_Q12[ 0 ] );

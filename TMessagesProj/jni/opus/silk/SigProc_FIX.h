@@ -47,6 +47,11 @@ extern "C"
 #include "x86/SigProc_FIX_sse.h"
 #endif
 
+#if (defined(OPUS_ARM_ASM) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
+#include "arm/biquad_alt_arm.h"
+#include "arm/LPC_inv_pred_gain_arm.h"
+#endif
+
 /********************************************************************/
 /*                    SIGNAL PROCESSING FUNCTIONS                   */
 /********************************************************************/
@@ -96,14 +101,22 @@ void silk_resampler_down2_3(
  * slower than biquad() but uses more precise coefficients
  * can handle (slowly) varying coefficients
  */
-void silk_biquad_alt(
+void silk_biquad_alt_stride1(
     const opus_int16            *in,                /* I     input signal                                               */
     const opus_int32            *B_Q28,             /* I     MA coefficients [3]                                        */
     const opus_int32            *A_Q28,             /* I     AR coefficients [2]                                        */
     opus_int32                  *S,                 /* I/O   State vector [2]                                           */
     opus_int16                  *out,               /* O     output signal                                              */
-    const opus_int32            len,                /* I     signal length (must be even)                               */
-    opus_int                    stride              /* I     Operate on interleaved signal if > 1                       */
+    const opus_int32            len                 /* I     signal length (must be even)                               */
+);
+
+void silk_biquad_alt_stride2_c(
+    const opus_int16            *in,                /* I     input signal                                               */
+    const opus_int32            *B_Q28,             /* I     MA coefficients [3]                                        */
+    const opus_int32            *A_Q28,             /* I     AR coefficients [2]                                        */
+    opus_int32                  *S,                 /* I/O   State vector [4]                                           */
+    opus_int16                  *out,               /* O     output signal                                              */
+    const opus_int32            len                 /* I     signal length (must be even)                               */
 );
 
 /* Variable order MA prediction error filter. */
@@ -132,15 +145,9 @@ void silk_bwexpander_32(
 
 /* Compute inverse of LPC prediction gain, and                           */
 /* test if LPC coefficients are stable (all poles within unit circle)    */
-opus_int32 silk_LPC_inverse_pred_gain(              /* O   Returns inverse prediction gain in energy domain, Q30        */
+opus_int32 silk_LPC_inverse_pred_gain_c(            /* O   Returns inverse prediction gain in energy domain, Q30        */
     const opus_int16            *A_Q12,             /* I   Prediction coefficients, Q12 [order]                         */
     const opus_int              order               /* I   Prediction order                                             */
-);
-
-/* For input in Q24 domain */
-opus_int32 silk_LPC_inverse_pred_gain_Q24(          /* O    Returns inverse prediction gain in energy domain, Q30       */
-    const opus_int32            *A_Q24,             /* I    Prediction coefficients [order]                             */
-    const opus_int              order               /* I    Prediction order                                            */
 );
 
 /* Split signal in two decimated bands using first-order allpass filters */
@@ -151,6 +158,14 @@ void silk_ana_filt_bank_1(
     opus_int16                  *outH,              /* O    High band [N/2]                                             */
     const opus_int32            N                   /* I    Number of input samples                                     */
 );
+
+#if !defined(OVERRIDE_silk_biquad_alt_stride2)
+#define silk_biquad_alt_stride2(in, B_Q28, A_Q28, S, out, len, arch) ((void)(arch), silk_biquad_alt_stride2_c(in, B_Q28, A_Q28, S, out, len))
+#endif
+
+#if !defined(OVERRIDE_silk_LPC_inverse_pred_gain)
+#define silk_LPC_inverse_pred_gain(A_Q12, order, arch)     ((void)(arch), silk_LPC_inverse_pred_gain_c(A_Q12, order))
+#endif
 
 /********************************************************************/
 /*                        SCALAR FUNCTIONS                          */
@@ -271,7 +286,8 @@ void silk_A2NLSF(
 void silk_NLSF2A(
     opus_int16                  *a_Q12,             /* O    monic whitening filter coefficients in Q12,  [ d ]          */
     const opus_int16            *NLSF,              /* I    normalized line spectral frequencies in Q15, [ d ]          */
-    const opus_int              d                   /* I    filter order (should be even)                               */
+    const opus_int              d,                  /* I    filter order (should be even)                               */
+    int                         arch                /* I    Run-time architecture                                       */
 );
 
 /* Convert int32 coefficients to int16 coefs and make sure there's no wrap-around */
@@ -580,7 +596,9 @@ static OPUS_INLINE opus_int64 silk_max_64(opus_int64 a, opus_int64 b)
 /* Make sure to store the result as the seed for the next call (also in between     */
 /* frames), otherwise result won't be random at all. When only using some of the    */
 /* bits, take the most significant bits by right-shifting.                          */
-#define silk_RAND(seed)                     (silk_MLA_ovflw(907633515, (seed), 196314165))
+#define RAND_MULTIPLIER                     196314165
+#define RAND_INCREMENT                      907633515
+#define silk_RAND(seed)                     (silk_MLA_ovflw((RAND_INCREMENT), (seed), (RAND_MULTIPLIER)))
 
 /*  Add some multiplication functions that can be easily mapped to ARM. */
 

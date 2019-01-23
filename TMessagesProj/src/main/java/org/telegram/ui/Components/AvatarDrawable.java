@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -35,7 +35,6 @@ public class AvatarDrawable extends Drawable {
     private boolean isProfile;
     private boolean drawBrodcast;
     private int savedMessages;
-    private boolean drawPhoto;
     private StringBuilder stringBuilder = new StringBuilder(5);
 
     public AvatarDrawable() {
@@ -86,23 +85,23 @@ public class AvatarDrawable extends Drawable {
     }
 
     public static int getButtonColorForId(int id) {
-        return Theme.getColor(Theme.keys_avatar_actionBarSelector[getColorIndex(id)]);
+        return Theme.getColor(Theme.key_avatar_actionBarSelectorBlue);
     }
 
     public static int getIconColorForId(int id) {
-        return Theme.getColor(Theme.keys_avatar_actionBarIcon[getColorIndex(id)]);
+        return Theme.getColor(Theme.key_avatar_actionBarIconBlue);
     }
 
     public static int getProfileColorForId(int id) {
-        return Theme.getColor(Theme.keys_avatar_backgroundInProfile[getColorIndex(id)]);
+        return Theme.getColor(Theme.keys_avatar_background[getColorIndex(id)]);
     }
 
     public static int getProfileTextColorForId(int id) {
-        return Theme.getColor(Theme.keys_avatar_subtitleInProfile[getColorIndex(id)]);
+        return Theme.getColor(Theme.key_avatar_subtitleInProfileBlue);
     }
 
     public static int getProfileBackColorForId(int id) {
-        return Theme.getColor(Theme.keys_avatar_backgroundActionBar[getColorIndex(id)]);
+        return Theme.getColor(Theme.key_avatar_backgroundActionBarBlue);
     }
 
     public static int getNameColorForId(int id) {
@@ -208,10 +207,6 @@ public class AvatarDrawable extends Drawable {
         }
     }
 
-    public void setDrawPhoto(boolean value) {
-        drawPhoto = value;
-    }
-
     @Override
     public void draw(Canvas canvas) {
         Rect bounds = getBounds();
@@ -245,11 +240,6 @@ public class AvatarDrawable extends Drawable {
             if (textLayout != null) {
                 canvas.translate((size - textWidth) / 2 - textLeft, (size - textHeight) / 2);
                 textLayout.draw(canvas);
-            } else if (drawPhoto && Theme.avatar_photoDrawable != null) {
-                int x = (size - Theme.avatar_photoDrawable.getIntrinsicWidth()) / 2;
-                int y = (size - Theme.avatar_photoDrawable.getIntrinsicHeight()) / 2;
-                Theme.avatar_photoDrawable.setBounds(x, y, x + Theme.avatar_photoDrawable.getIntrinsicWidth(), y + Theme.avatar_photoDrawable.getIntrinsicHeight());
-                Theme.avatar_photoDrawable.draw(canvas);
             }
         }
         canvas.restore();

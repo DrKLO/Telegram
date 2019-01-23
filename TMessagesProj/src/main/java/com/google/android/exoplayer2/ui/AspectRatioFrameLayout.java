@@ -21,6 +21,7 @@ import android.support.annotation.IntDef;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.FrameLayout;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -46,7 +47,12 @@ public class AspectRatioFrameLayout extends FrameLayout {
   }
 
   // LINT.IfChange
-  /** Resize modes for {@link AspectRatioFrameLayout}. */
+  /**
+   * Resize modes for {@link AspectRatioFrameLayout}. One of {@link #RESIZE_MODE_FIT}, {@link
+   * #RESIZE_MODE_FIXED_WIDTH}, {@link #RESIZE_MODE_FIXED_HEIGHT}, {@link #RESIZE_MODE_FILL} or
+   * {@link #RESIZE_MODE_ZOOM}.
+   */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
     RESIZE_MODE_FIT,
@@ -128,17 +134,15 @@ public class AspectRatioFrameLayout extends FrameLayout {
     this.aspectRatioListener = listener;
   }
 
-  /**
-   * Returns the resize mode.
-   */
+  /** Returns the {@link ResizeMode}. */
   public @ResizeMode int getResizeMode() {
     return resizeMode;
   }
 
   /**
-   * Sets the resize mode.
+   * Sets the {@link ResizeMode}
    *
-   * @param resizeMode The resize mode.
+   * @param resizeMode The {@link ResizeMode}.
    */
   public void setResizeMode(@ResizeMode int resizeMode) {
     if (this.resizeMode != resizeMode) {

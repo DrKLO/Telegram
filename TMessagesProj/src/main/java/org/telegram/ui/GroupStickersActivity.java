@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -119,9 +119,9 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
         DataQuery.getInstance(currentAccount).checkStickers(DataQuery.TYPE_IMAGE);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoaded);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoaded);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
         updateRows();
         return true;
     }
@@ -129,9 +129,9 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.stickersDidLoaded);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoaded);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.groupStickersDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.stickersDidLoad);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoad);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.groupStickersDidLoad);
     }
 
     @Override
@@ -161,8 +161,11 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         ActionBarMenu menu = actionBar.createMenu();
         doneItem = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
         progressView = new ContextProgressView(context, 1);
-        doneItem.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        progressView.setAlpha(0.0f);
+        progressView.setScaleX(0.1f);
+        progressView.setScaleY(0.1f);
         progressView.setVisibility(View.INVISIBLE);
+        doneItem.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         nameContainer = new LinearLayout(context) {
             @Override
@@ -363,11 +366,11 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.stickersDidLoaded) {
+        if (id == NotificationCenter.stickersDidLoad) {
             if ((Integer) args[0] == DataQuery.TYPE_IMAGE) {
                 updateRows();
             }
-        } else if (id == NotificationCenter.chatInfoDidLoaded) {
+        } else if (id == NotificationCenter.chatInfoDidLoad) {
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
             if (chatFull.id == chatId) {
                 if (info == null && chatFull.stickerset != null) {
@@ -376,7 +379,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                 info = chatFull;
                 updateRows();
             }
-        } else if (id == NotificationCenter.groupStickersDidLoaded) {
+        } else if (id == NotificationCenter.groupStickersDidLoad) {
             long setId = (Long) args[0];
             if (info != null && info.stickerset != null && info.stickerset.id == id) {
                 updateRows();
@@ -526,7 +529,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                                 info.flags = info.flags &~ 256;
                             }
                             MessagesStorage.getInstance(currentAccount).updateChatInfo(info, false);
-                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoaded, info, 0, true, null);
+                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, true, null);
                             finishFragment();
                         } else {
                             Toast.makeText(getParentActivity(), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text, Toast.LENGTH_SHORT).show();

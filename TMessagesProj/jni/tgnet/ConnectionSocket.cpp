@@ -68,7 +68,7 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
 
     if (proxyAddress != nullptr && !proxyAddress->empty()) {
         if ((socketFd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-            DEBUG_E("connection(%p) can't create proxy socket", this);
+            if (LOGS_ENABLED) DEBUG_E("connection(%p) can't create proxy socket", this);
             closeSocket(1, -1);
             return;
         }
@@ -82,7 +82,7 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
         bool continueCheckAddress;
         if (inet_pton(AF_INET, proxyAddress->c_str(), &socketAddress.sin_addr.s_addr) != 1) {
             continueCheckAddress = true;
-            DEBUG_D("connection(%p) not ipv4 address %s", this, proxyAddress->c_str());
+            if (LOGS_ENABLED) DEBUG_D("connection(%p) not ipv4 address %s", this, proxyAddress->c_str());
         } else {
             ipv6 = false;
             continueCheckAddress = false;
@@ -90,7 +90,7 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
         if (continueCheckAddress) {
             if (inet_pton(AF_INET6, proxyAddress->c_str(), &socketAddress6.sin6_addr.s6_addr) != 1) {
                 continueCheckAddress = true;
-                DEBUG_D("connection(%p) not ipv6 address %s", this, proxyAddress->c_str());
+                if (LOGS_ENABLED) DEBUG_D("connection(%p) not ipv6 address %s", this, proxyAddress->c_str());
             } else {
                 ipv6 = true;
                 continueCheckAddress = false;
@@ -99,25 +99,25 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
                 std::string host = ConnectionsManager::getInstance(instanceNum).delegate->getHostByName(*proxyAddress, instanceNum);
                 if (host.empty() || inet_pton(AF_INET, host.c_str(), &socketAddress.sin_addr.s_addr) != 1) {
                     continueCheckAddress = true;
-                    DEBUG_E("connection(%p) can't resolve host %s address via delegate", this, proxyAddress->c_str());
+                    if (LOGS_ENABLED) DEBUG_E("connection(%p) can't resolve host %s address via delegate", this, proxyAddress->c_str());
                 } else {
                     continueCheckAddress = false;
-                    DEBUG_D("connection(%p) resolved host %s address %x via delegate", this, proxyAddress->c_str(), socketAddress.sin_addr.s_addr);
+                    if (LOGS_ENABLED) DEBUG_D("connection(%p) resolved host %s address %x via delegate", this, proxyAddress->c_str(), socketAddress.sin_addr.s_addr);
                 }
                 if (continueCheckAddress) {
                     struct hostent *he;
                     if ((he = gethostbyname(proxyAddress->c_str())) == nullptr) {
-                        DEBUG_E("connection(%p) can't resolve host %s address", this, proxyAddress->c_str());
+                        if (LOGS_ENABLED) DEBUG_E("connection(%p) can't resolve host %s address", this, proxyAddress->c_str());
                         closeSocket(1, -1);
                         return;
                     }
                     struct in_addr **addr_list = (struct in_addr **) he->h_addr_list;
                     if (addr_list[0] != nullptr) {
                         socketAddress.sin_addr.s_addr = addr_list[0]->s_addr;
-                        DEBUG_D("connection(%p) resolved host %s address %x", this, proxyAddress->c_str(), addr_list[0]->s_addr);
+                        if (LOGS_ENABLED) DEBUG_D("connection(%p) resolved host %s address %x", this, proxyAddress->c_str(), addr_list[0]->s_addr);
                         ipv6 = false;
                     } else {
-                        DEBUG_E("connection(%p) can't resolve host %s address", this, proxyAddress->c_str());
+                        if (LOGS_ENABLED) DEBUG_E("connection(%p) can't resolve host %s address", this, proxyAddress->c_str());
                         closeSocket(1, -1);
                         return;
                     }
@@ -127,7 +127,7 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
     } else {
         proxyAuthState = 0;
         if ((socketFd = socket(ipv6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0)) < 0) {
-            DEBUG_E("connection(%p) can't create socket", this);
+            if (LOGS_ENABLED) DEBUG_E("connection(%p) can't create socket", this);
             closeSocket(1, -1);
             return;
         }
@@ -135,7 +135,7 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
             socketAddress6.sin6_family = AF_INET6;
             socketAddress6.sin6_port = htons(port);
             if (inet_pton(AF_INET6, address.c_str(), &socketAddress6.sin6_addr.s6_addr) != 1) {
-                DEBUG_E("connection(%p) bad ipv6 %s", this, address.c_str());
+                if (LOGS_ENABLED) DEBUG_E("connection(%p) bad ipv6 %s", this, address.c_str());
                 closeSocket(1, -1);
                 return;
             }
@@ -143,7 +143,7 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
             socketAddress.sin_family = AF_INET;
             socketAddress.sin_port = htons(port);
             if (inet_pton(AF_INET, address.c_str(), &socketAddress.sin_addr.s_addr) != 1) {
-                DEBUG_E("connection(%p) bad ipv4 %s", this, address.c_str());
+                if (LOGS_ENABLED) DEBUG_E("connection(%p) bad ipv4 %s", this, address.c_str());
                 closeSocket(1, -1);
                 return;
             }
@@ -152,11 +152,11 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
 
     int yes = 1;
     if (setsockopt(socketFd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(int))) {
-        DEBUG_E("connection(%p) set TCP_NODELAY failed", this);
+        if (LOGS_ENABLED) DEBUG_E("connection(%p) set TCP_NODELAY failed", this);
     }
 
     if (fcntl(socketFd, F_SETFL, O_NONBLOCK) == -1) {
-        DEBUG_E("connection(%p) set O_NONBLOCK failed", this);
+        if (LOGS_ENABLED) DEBUG_E("connection(%p) set O_NONBLOCK failed", this);
         closeSocket(1, -1);
         return;
     }
@@ -167,7 +167,7 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
         eventMask.events = EPOLLOUT | EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLET;
         eventMask.data.ptr = eventObject;
         if (epoll_ctl(epolFd, EPOLL_CTL_ADD, socketFd, &eventMask) != 0) {
-            DEBUG_E("connection(%p) epoll_ctl, adding socket failed", this);
+            if (LOGS_ENABLED) DEBUG_E("connection(%p) epoll_ctl, adding socket failed", this);
             closeSocket(1, -1);
         }
     }
@@ -182,7 +182,7 @@ int32_t ConnectionSocket::checkSocketError(int32_t *error) {
     socklen_t len = sizeof(int);
     ret = getsockopt(socketFd, SOL_SOCKET, SO_ERROR, &code, &len);
     if (ret != 0 || code != 0) {
-        DEBUG_E("socket error 0x%x code 0x%x", ret, code);
+        if (LOGS_ENABLED) DEBUG_E("socket error 0x%x code 0x%x", ret, code);
     }
     *error = code;
     return (ret || code) != 0;
@@ -194,7 +194,7 @@ void ConnectionSocket::closeSocket(int32_t reason, int32_t error) {
     if (socketFd >= 0) {
         epoll_ctl(ConnectionsManager::getInstance(instanceNum).epolFd, EPOLL_CTL_DEL, socketFd, NULL);
         if (close(socketFd) != 0) {
-            DEBUG_E("connection(%p) unable to close socket", this);
+            if (LOGS_ENABLED) DEBUG_E("connection(%p) unable to close socket", this);
         }
         socketFd = -1;
     }
@@ -218,7 +218,7 @@ void ConnectionSocket::onEvent(uint32_t events) {
                 readCount = recv(socketFd, buffer->bytes(), READ_BUFFER_SIZE, 0);
                 if (readCount < 0) {
                     closeSocket(1, -1);
-                    DEBUG_E("connection(%p) recv failed", this);
+                    if (LOGS_ENABLED) DEBUG_E("connection(%p) recv failed", this);
                     return;
                 }
                 if (readCount > 0) {
@@ -229,9 +229,9 @@ void ConnectionSocket::onEvent(uint32_t events) {
                             uint8_t auth_method = buffer->bytes()[1];
                             if (auth_method == 0xff) {
                                 closeSocket(1, -1);
-                                DEBUG_E("connection(%p) unsupported proxy auth method", this);
+                                if (LOGS_ENABLED) DEBUG_E("connection(%p) unsupported proxy auth method", this);
                             } else if (auth_method == 0x02) {
-                                DEBUG_D("connection(%p) proxy auth required", this);
+                                if (LOGS_ENABLED) DEBUG_D("connection(%p) proxy auth required", this);
                                 proxyAuthState = 3;
                             } else if (auth_method == 0x00) {
                                 proxyAuthState = 5;
@@ -239,36 +239,36 @@ void ConnectionSocket::onEvent(uint32_t events) {
                             adjustWriteOp();
                         } else {
                             closeSocket(1, -1);
-                            DEBUG_E("connection(%p) invalid proxy response on state 2", this);
+                            if (LOGS_ENABLED) DEBUG_E("connection(%p) invalid proxy response on state 2", this);
                         }
                     } else if (proxyAuthState == 4) {
                         if (readCount == 2) {
                             uint8_t auth_method = buffer->bytes()[1];
                             if (auth_method != 0x00) {
                                 closeSocket(1, -1);
-                                DEBUG_E("connection(%p) auth invalid", this);
+                                if (LOGS_ENABLED) DEBUG_E("connection(%p) auth invalid", this);
                             } else {
                                 proxyAuthState = 5;
                             }
                             adjustWriteOp();
                         } else {
                             closeSocket(1, -1);
-                            DEBUG_E("connection(%p) invalid proxy response on state 4", this);
+                            if (LOGS_ENABLED) DEBUG_E("connection(%p) invalid proxy response on state 4", this);
                         }
                     } else if (proxyAuthState == 6) {
                         if (readCount > 2) {
                             uint8_t status = buffer->bytes()[1];
                             if (status == 0x00) {
-                                DEBUG_D("connection(%p) connected via proxy", this);
+                                if (LOGS_ENABLED) DEBUG_D("connection(%p) connected via proxy", this);
                                 proxyAuthState = 0;
                                 adjustWriteOp();
                             } else {
                                 closeSocket(1, -1);
-                                DEBUG_E("connection(%p) invalid proxy status on state 6, 0x%x", this, status);
+                                if (LOGS_ENABLED) DEBUG_E("connection(%p) invalid proxy status on state 6, 0x%x", this, status);
                             }
                         } else {
                             closeSocket(1, -1);
-                            DEBUG_E("connection(%p) invalid proxy response on state 6", this);
+                            if (LOGS_ENABLED) DEBUG_E("connection(%p) invalid proxy response on state 6", this);
                         }
                     } else if (proxyAuthState == 0) {
                         if (ConnectionsManager::getInstance(instanceNum).delegate != nullptr) {
@@ -298,7 +298,7 @@ void ConnectionSocket::onEvent(uint32_t events) {
                     buffer[2] = 0x00;
                     buffer[3] = 0x02;
                     if (send(socketFd, buffer, 4, 0) < 0) {
-                        DEBUG_E("connection(%p) send failed", this);
+                        if (LOGS_ENABLED) DEBUG_E("connection(%p) send failed", this);
                         closeSocket(1, -1);
                         return;
                     }
@@ -322,7 +322,7 @@ void ConnectionSocket::onEvent(uint32_t events) {
                     memcpy(&buffer[3 + len1], proxyPassword->c_str(), len2);
                     proxyAuthState = 4;
                     if (send(socketFd, buffer, 3 + len1 + len2, 0) < 0) {
-                        DEBUG_E("connection(%p) send failed", this);
+                        if (LOGS_ENABLED) DEBUG_E("connection(%p) send failed", this);
                         closeSocket(1, -1);
                         return;
                     }
@@ -337,7 +337,7 @@ void ConnectionSocket::onEvent(uint32_t events) {
                     memcpy(&buffer[4 + (isIpv6 ? 16 : 4)], &networkPort, sizeof(uint16_t));
                     proxyAuthState = 6;
                     if (send(socketFd, buffer, 4 + (isIpv6 ? 16 : 4) + 2, 0) < 0) {
-                        DEBUG_E("connection(%p) send failed", this);
+                        if (LOGS_ENABLED) DEBUG_E("connection(%p) send failed", this);
                         closeSocket(1, -1);
                         return;
                     }
@@ -346,6 +346,7 @@ void ConnectionSocket::onEvent(uint32_t events) {
             } else {
                 if (!onConnectedSent) {
                     lastEventTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMonotonicMillis();
+                    if (LOGS_ENABLED) DEBUG_D("connection(%p) reset last event time, on connect", this);
                     onConnected();
                     onConnectedSent = true;
                 }
@@ -358,7 +359,7 @@ void ConnectionSocket::onEvent(uint32_t events) {
                 if (remaining) {
                     ssize_t sentLength;
                     if ((sentLength = send(socketFd, buffer->bytes(), remaining, 0)) < 0) {
-                        DEBUG_E("connection(%p) send failed", this);
+                        if (LOGS_ENABLED) DEBUG_E("connection(%p) send failed", this);
                         closeSocket(1, -1);
                         return;
                     } else {
@@ -373,16 +374,16 @@ void ConnectionSocket::onEvent(uint32_t events) {
         }
     }
     if (events & EPOLLHUP) {
-        DEBUG_E("socket event has EPOLLHUP");
+        if (LOGS_ENABLED) DEBUG_E("socket event has EPOLLHUP");
         closeSocket(1, -1);
         return;
     } else if (events & EPOLLRDHUP) {
-        DEBUG_E("socket event has EPOLLRDHUP");
+        if (LOGS_ENABLED) DEBUG_E("socket event has EPOLLRDHUP");
         closeSocket(1, -1);
         return;
     }
     if (events & EPOLLERR) {
-        DEBUG_E("connection(%p) epoll error", this);
+        if (LOGS_ENABLED) DEBUG_E("connection(%p) epoll error", this);
         return;
     }
 }
@@ -406,7 +407,7 @@ void ConnectionSocket::adjustWriteOp() {
     }
     eventMask.data.ptr = eventObject;
     if (epoll_ctl(ConnectionsManager::getInstance(instanceNum).epolFd, EPOLL_CTL_MOD, socketFd, &eventMask) != 0) {
-        DEBUG_E("connection(%p) epoll_ctl, modify socket failed", this);
+        if (LOGS_ENABLED) DEBUG_E("connection(%p) epoll_ctl, modify socket failed", this);
         closeSocket(1, -1);
     }
 }
@@ -414,6 +415,7 @@ void ConnectionSocket::adjustWriteOp() {
 void ConnectionSocket::setTimeout(time_t time) {
     timeout = time;
     lastEventTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMonotonicMillis();
+    if (LOGS_ENABLED) DEBUG_D("connection(%p) set current timeout = %lld", this, (long long) timeout);
 }
 
 time_t ConnectionSocket::getTimeout() {
@@ -422,7 +424,12 @@ time_t ConnectionSocket::getTimeout() {
 
 void ConnectionSocket::checkTimeout(int64_t now) {
     if (timeout != 0 && (now - lastEventTime) > (int64_t) timeout * 1000) {
-        closeSocket(2, 0);
+        if (!onConnectedSent || hasPendingRequests()) {
+            closeSocket(2, 0);
+        } else {
+            lastEventTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMonotonicMillis();
+            if (LOGS_ENABLED) DEBUG_D("connection(%p) reset last event time, no requests", this);
+        }
     }
 }
 

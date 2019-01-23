@@ -16,19 +16,21 @@
 package com.google.android.exoplayer2.extractor.mp4;
 
 import android.support.annotation.Nullable;
-import android.util.Log;
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.extractor.GaplessInfoHolder;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.id3.ApicFrame;
 import com.google.android.exoplayer2.metadata.id3.CommentFrame;
 import com.google.android.exoplayer2.metadata.id3.Id3Frame;
 import com.google.android.exoplayer2.metadata.id3.InternalFrame;
 import com.google.android.exoplayer2.metadata.id3.TextInformationFrame;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
+import java.nio.ByteBuffer;
 
-/**
- * Parses metadata items stored in ilst atoms.
- */
+/** Utilities for handling metadata in MP4. */
 /* package */ final class MetadataUtil {
 
   private static final String TAG = "MetadataUtil";
@@ -103,24 +105,73 @@ import com.google.android.exoplayer2.util.Util;
 
   private static final String LANGUAGE_UNDEFINED = "und";
 
+  private static final int TYPE_TOP_BYTE_COPYRIGHT = 0xA9;
+  private static final int TYPE_TOP_BYTE_REPLACEMENT = 0xFD; // Truncated value of \uFFFD.
+
+  private static final String MDTA_KEY_ANDROID_CAPTURE_FPS = "com.android.capture.fps";
+  private static final int MDTA_TYPE_INDICATOR_FLOAT = 23;
+
   private MetadataUtil() {}
 
   /**
-   * Parses a single ilst element from a {@link ParsableByteArray}. The element is read starting
-   * from the current position of the {@link ParsableByteArray}, and the position is advanced by the
-   * size of the element. The position is advanced even if the element's type is unrecognized.
+   * Returns a {@link Format} that is the same as the input format but includes information from the
+   * specified sources of metadata.
+   */
+  public static Format getFormatWithMetadata(
+      int trackType,
+      Format format,
+      @Nullable Metadata udtaMetadata,
+      @Nullable Metadata mdtaMetadata,
+      GaplessInfoHolder gaplessInfoHolder) {
+    if (trackType == C.TRACK_TYPE_AUDIO) {
+      if (gaplessInfoHolder.hasGaplessInfo()) {
+        format =
+            format.copyWithGaplessInfo(
+                gaplessInfoHolder.encoderDelay, gaplessInfoHolder.encoderPadding);
+      }
+      // We assume all udta metadata is associated with the audio track.
+      if (udtaMetadata != null) {
+        format = format.copyWithMetadata(udtaMetadata);
+      }
+    } else if (trackType == C.TRACK_TYPE_VIDEO && mdtaMetadata != null) {
+      // Populate only metadata keys that are known to be specific to video.
+      for (int i = 0; i < mdtaMetadata.length(); i++) {
+        Metadata.Entry entry = mdtaMetadata.get(i);
+        if (entry instanceof MdtaMetadataEntry) {
+          MdtaMetadataEntry mdtaMetadataEntry = (MdtaMetadataEntry) entry;
+          if (MDTA_KEY_ANDROID_CAPTURE_FPS.equals(mdtaMetadataEntry.key)
+              && mdtaMetadataEntry.typeIndicator == MDTA_TYPE_INDICATOR_FLOAT) {
+            try {
+              float fps = ByteBuffer.wrap(mdtaMetadataEntry.value).asFloatBuffer().get();
+              format = format.copyWithFrameRate(fps);
+              format = format.copyWithMetadata(new Metadata(mdtaMetadataEntry));
+            } catch (NumberFormatException e) {
+              Log.w(TAG, "Ignoring invalid framerate");
+            }
+          }
+        }
+      }
+    }
+    return format;
+  }
+
+  /**
+   * Parses a single userdata ilst element from a {@link ParsableByteArray}. The element is read
+   * starting from the current position of the {@link ParsableByteArray}, and the position is
+   * advanced by the size of the element. The position is advanced even if the element's type is
+   * unrecognized.
    *
    * @param ilst Holds the data to be parsed.
    * @return The parsed element, or null if the element's type was not recognized.
    */
-  public static @Nullable Metadata.Entry parseIlstElement(ParsableByteArray ilst) {
+  @Nullable
+  public static Metadata.Entry parseIlstElement(ParsableByteArray ilst) {
     int position = ilst.getPosition();
     int endPosition = position + ilst.readInt();
     int type = ilst.readInt();
     int typeTopByte = (type >> 24) & 0xFF;
     try {
-      if (typeTopByte == '\u00A9' /* Copyright char */
-          || typeTopByte == '\uFFFD' /* Replacement char */) {
+      if (typeTopByte == TYPE_TOP_BYTE_COPYRIGHT || typeTopByte == TYPE_TOP_BYTE_REPLACEMENT) {
         int shortType = type & 0x00FFFFFF;
         if (shortType == SHORT_TYPE_COMMENT) {
           return parseCommentAttribute(type, ilst);
@@ -185,7 +236,36 @@ import com.google.android.exoplayer2.util.Util;
     }
   }
 
-  private static @Nullable TextInformationFrame parseTextAttribute(
+  /**
+   * Parses an 'mdta' metadata entry starting at the current position in an ilst box.
+   *
+   * @param ilst The ilst box.
+   * @param endPosition The end position of the entry in the ilst box.
+   * @param key The mdta metadata entry key for the entry.
+   * @return The parsed element, or null if the entry wasn't recognized.
+   */
+  @Nullable
+  public static MdtaMetadataEntry parseMdtaMetadataEntryFromIlst(
+      ParsableByteArray ilst, int endPosition, String key) {
+    int atomPosition;
+    while ((atomPosition = ilst.getPosition()) < endPosition) {
+      int atomSize = ilst.readInt();
+      int atomType = ilst.readInt();
+      if (atomType == Atom.TYPE_data) {
+        int typeIndicator = ilst.readInt();
+        int localeIndicator = ilst.readInt();
+        int dataSize = atomSize - 16;
+        byte[] value = new byte[dataSize];
+        ilst.readBytes(value, 0, dataSize);
+        return new MdtaMetadataEntry(key, value, localeIndicator, typeIndicator);
+      }
+      ilst.setPosition(atomPosition + atomSize);
+    }
+    return null;
+  }
+
+  @Nullable
+  private static TextInformationFrame parseTextAttribute(
       int type, String id, ParsableByteArray data) {
     int atomSize = data.readInt();
     int atomType = data.readInt();
@@ -198,7 +278,8 @@ import com.google.android.exoplayer2.util.Util;
     return null;
   }
 
-  private static @Nullable CommentFrame parseCommentAttribute(int type, ParsableByteArray data) {
+  @Nullable
+  private static CommentFrame parseCommentAttribute(int type, ParsableByteArray data) {
     int atomSize = data.readInt();
     int atomType = data.readInt();
     if (atomType == Atom.TYPE_data) {
@@ -210,7 +291,8 @@ import com.google.android.exoplayer2.util.Util;
     return null;
   }
 
-  private static @Nullable Id3Frame parseUint8Attribute(
+  @Nullable
+  private static Id3Frame parseUint8Attribute(
       int type,
       String id,
       ParsableByteArray data,
@@ -229,7 +311,8 @@ import com.google.android.exoplayer2.util.Util;
     return null;
   }
 
-  private static @Nullable TextInformationFrame parseIndexAndCountAttribute(
+  @Nullable
+  private static TextInformationFrame parseIndexAndCountAttribute(
       int type, String attributeName, ParsableByteArray data) {
     int atomSize = data.readInt();
     int atomType = data.readInt();
@@ -249,8 +332,8 @@ import com.google.android.exoplayer2.util.Util;
     return null;
   }
 
-  private static @Nullable TextInformationFrame parseStandardGenreAttribute(
-      ParsableByteArray data) {
+  @Nullable
+  private static TextInformationFrame parseStandardGenreAttribute(ParsableByteArray data) {
     int genreCode = parseUint8AttributeValue(data);
     String genreString = (0 < genreCode && genreCode <= STANDARD_GENRES.length)
         ? STANDARD_GENRES[genreCode - 1] : null;
@@ -261,7 +344,8 @@ import com.google.android.exoplayer2.util.Util;
     return null;
   }
 
-  private static @Nullable ApicFrame parseCoverArt(ParsableByteArray data) {
+  @Nullable
+  private static ApicFrame parseCoverArt(ParsableByteArray data) {
     int atomSize = data.readInt();
     int atomType = data.readInt();
     if (atomType == Atom.TYPE_data) {
@@ -285,8 +369,8 @@ import com.google.android.exoplayer2.util.Util;
     return null;
   }
 
-  private static @Nullable Id3Frame parseInternalAttribute(
-      ParsableByteArray data, int endPosition) {
+  @Nullable
+  private static Id3Frame parseInternalAttribute(ParsableByteArray data, int endPosition) {
     String domain = null;
     String name = null;
     int dataAtomPosition = -1;

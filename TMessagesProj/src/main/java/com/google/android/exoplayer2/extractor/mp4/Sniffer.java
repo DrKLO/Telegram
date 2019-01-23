@@ -27,9 +27,7 @@ import java.io.IOException;
  */
 /* package */ final class Sniffer {
 
-  /**
-   * The maximum number of bytes to peek when sniffing.
-   */
+  /** The maximum number of bytes to peek when sniffing. */
   private static final int SEARCH_LENGTH = 4 * 1024;
 
   private static final int[] COMPATIBLE_BRANDS = new int[] {
@@ -109,15 +107,19 @@ import java.io.IOException;
         headerSize = Atom.LONG_HEADER_SIZE;
         input.peekFully(buffer.data, Atom.HEADER_SIZE, Atom.LONG_HEADER_SIZE - Atom.HEADER_SIZE);
         buffer.setLimit(Atom.LONG_HEADER_SIZE);
-        atomSize = buffer.readUnsignedLongToLong();
+        atomSize = buffer.readLong();
       } else if (atomSize == Atom.EXTENDS_TO_END_SIZE) {
         // The atom extends to the end of the file.
-        long endPosition = input.getLength();
-        if (endPosition != C.LENGTH_UNSET) {
-          atomSize = endPosition - input.getPosition() + headerSize;
+        long fileEndPosition = input.getLength();
+        if (fileEndPosition != C.LENGTH_UNSET) {
+          atomSize = fileEndPosition - input.getPeekPosition() + headerSize;
         }
       }
 
+      if (inputLength != C.LENGTH_UNSET && bytesSearched + atomSize > inputLength) {
+        // The file is invalid because the atom extends past the end of the file.
+        return false;
+      }
       if (atomSize < headerSize) {
         // The file is invalid because the atom size is too small for its header.
         return false;
@@ -125,6 +127,13 @@ import java.io.IOException;
       bytesSearched += headerSize;
 
       if (atomType == Atom.TYPE_moov) {
+        // We have seen the moov atom. We increase the search size to make sure we don't miss an
+        // mvex atom because the moov's size exceeds the search length.
+        bytesToSearch += (int) atomSize;
+        if (inputLength != C.LENGTH_UNSET && bytesToSearch > inputLength) {
+          // Make sure we don't exceed the file size.
+          bytesToSearch = (int) inputLength;
+        }
         // Check for an mvex atom inside the moov atom to identify whether the file is fragmented.
         continue;
       }

@@ -1,15 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.text.Editable;
 import android.text.InputType;
@@ -24,7 +23,6 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -41,8 +39,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -143,12 +139,7 @@ public class ChangeUsernameActivity extends BaseFragment {
         fragmentView = new LinearLayout(context);
         LinearLayout linearLayout = (LinearLayout) fragmentView;
         linearLayout.setOrientation(LinearLayout.VERTICAL);
-        fragmentView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
+        fragmentView.setOnTouchListener((v, event) -> true);
 
         firstNameField = new EditTextBoldCursor(context);
         firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
@@ -166,15 +157,12 @@ public class ChangeUsernameActivity extends BaseFragment {
         firstNameField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         firstNameField.setCursorSize(AndroidUtilities.dp(20));
         firstNameField.setCursorWidth(1.5f);
-        firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
-                    doneButton.performClick();
-                    return true;
-                }
-                return false;
+        firstNameField.setOnEditorActionListener((textView, i, keyEvent) -> {
+            if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
+                doneButton.performClick();
+                return true;
             }
+            return false;
         });
         firstNameField.addTextChangedListener(new TextWatcher() {
             @Override
@@ -333,36 +321,25 @@ public class ChangeUsernameActivity extends BaseFragment {
             checkTextView.setTag(Theme.key_windowBackgroundWhiteGrayText8);
             checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText8));
             lastCheckName = name;
-            checkRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    TLRPC.TL_account_checkUsername req = new TLRPC.TL_account_checkUsername();
-                    req.username = name;
-                    checkReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                        @Override
-                        public void run(final TLObject response, final TLRPC.TL_error error) {
-                            AndroidUtilities.runOnUIThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    checkReqId = 0;
-                                    if (lastCheckName != null && lastCheckName.equals(name)) {
-                                        if (error == null && response instanceof TLRPC.TL_boolTrue) {
-                                            checkTextView.setText(LocaleController.formatString("UsernameAvailable", R.string.UsernameAvailable, name));
-                                            checkTextView.setTag(Theme.key_windowBackgroundWhiteGreenText);
-                                            checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGreenText));
-                                            lastNameAvailable = true;
-                                        } else {
-                                            checkTextView.setText(LocaleController.getString("UsernameInUse", R.string.UsernameInUse));
-                                            checkTextView.setTag(Theme.key_windowBackgroundWhiteRedText4);
-                                            checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
-                                            lastNameAvailable = false;
-                                        }
-                                    }
-                                }
-                            });
+            checkRunnable = () -> {
+                TLRPC.TL_account_checkUsername req = new TLRPC.TL_account_checkUsername();
+                req.username = name;
+                checkReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    checkReqId = 0;
+                    if (lastCheckName != null && lastCheckName.equals(name)) {
+                        if (error == null && response instanceof TLRPC.TL_boolTrue) {
+                            checkTextView.setText(LocaleController.formatString("UsernameAvailable", R.string.UsernameAvailable, name));
+                            checkTextView.setTag(Theme.key_windowBackgroundWhiteGreenText);
+                            checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGreenText));
+                            lastNameAvailable = true;
+                        } else {
+                            checkTextView.setText(LocaleController.getString("UsernameInUse", R.string.UsernameInUse));
+                            checkTextView.setTag(Theme.key_windowBackgroundWhiteRedText4);
+                            checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
+                            lastNameAvailable = false;
                         }
-                    }, ConnectionsManager.RequestFlagFailOnServerErrors);
-                }
+                    }
+                }), ConnectionsManager.RequestFlagFailOnServerErrors);
             };
             AndroidUtilities.runOnUIThread(checkRunnable, 300);
         }
@@ -387,64 +364,42 @@ public class ChangeUsernameActivity extends BaseFragment {
             return;
         }
 
-        final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 1);
-        progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
-        progressDialog.setCanceledOnTouchOutside(false);
-        progressDialog.setCancelable(false);
+        final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
 
         final TLRPC.TL_account_updateUsername req = new TLRPC.TL_account_updateUsername();
         req.username = newName;
 
         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
-        final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(TLObject response, final TLRPC.TL_error error) {
-                if (error == null) {
-                    final TLRPC.User user = (TLRPC.User)response;
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                progressDialog.dismiss();
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
-                            ArrayList<TLRPC.User> users = new ArrayList<>();
-                            users.add(user);
-                            MessagesController.getInstance(currentAccount).putUsers(users, false);
-                            MessagesStorage.getInstance(currentAccount).putUsersAndChats(users, null, false, true);
-                            UserConfig.getInstance(currentAccount).saveConfig(true);
-                            finishFragment();
-                        }
-                    });
-                } else {
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                progressDialog.dismiss();
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
-                            AlertsCreator.processError(currentAccount, error, ChangeUsernameActivity.this, req);
-                        }
-                    });
-                }
+        final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+            if (error == null) {
+                final TLRPC.User user1 = (TLRPC.User)response;
+                AndroidUtilities.runOnUIThread(() -> {
+                    try {
+                        progressDialog.dismiss();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    ArrayList<TLRPC.User> users = new ArrayList<>();
+                    users.add(user1);
+                    MessagesController.getInstance(currentAccount).putUsers(users, false);
+                    MessagesStorage.getInstance(currentAccount).putUsersAndChats(users, null, false, true);
+                    UserConfig.getInstance(currentAccount).saveConfig(true);
+                    finishFragment();
+                });
+            } else {
+                AndroidUtilities.runOnUIThread(() -> {
+                    try {
+                        progressDialog.dismiss();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    AlertsCreator.processError(currentAccount, error, ChangeUsernameActivity.this, req);
+                });
             }
         }, ConnectionsManager.RequestFlagFailOnServerErrors);
         ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
 
-        progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
-                try {
-                    dialog.dismiss();
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-            }
-        });
+        progressDialog.setOnCancelListener(dialog -> ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true));
         progressDialog.show();
     }
 

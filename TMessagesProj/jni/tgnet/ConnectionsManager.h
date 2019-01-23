@@ -66,6 +66,7 @@ public:
     void init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, int32_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType);
     void setProxySettings(std::string address, uint16_t port, std::string username, std::string password, std::string secret);
     void setLangCode(std::string langCode);
+    void setSystemLangCode(std::string langCode);
     void updateDcSettings(uint32_t datacenterId, bool workaround);
     void setPushConnectionEnabled(bool value);
     void applyDnsConfig(NativeByteBuffer *buffer, std::string phone);
@@ -113,6 +114,7 @@ private:
     void onConnectionConnected(Connection *connection);
     void onConnectionQuickAckReceived(Connection *connection, int32_t ack);
     void onConnectionDataReceived(Connection *connection, NativeByteBuffer *data, uint32_t length);
+    bool hasPendingRequestsForConnection(Connection *connection);
     void attachConnection(ConnectionSocket *connection);
     void detachConnection(ConnectionSocket *connection);
     TLObject *TLdeserialize(TLObject *request, uint32_t bytes, NativeByteBuffer *data);
@@ -126,7 +128,7 @@ private:
     void checkProxyInternal(ProxyCheckInfo *proxyCheckInfo);
 
     int32_t instanceNum = 0;
-    uint32_t configVersion = 3;
+    uint32_t configVersion = 4;
     Config *config = nullptr;
 
     std::list<EventObject *> events;
@@ -136,6 +138,7 @@ private:
     int32_t pingTime;
     bool testBackend = false;
     bool clientBlocked = true;
+    std::string lastInitSystemLangcode = "";
     std::atomic<uint32_t> lastRequestToken{50000000};
     uint32_t currentDatacenterId = 0;
     uint32_t movingToDatacenterId = DEFAULT_DATACENTER_ID;
@@ -144,6 +147,7 @@ private:
     bool registeringForPush = false;
     int64_t lastPushPingTime = 0;
     bool sendingPushPing = false;
+    bool sendingPing = false;
     bool updatingDcSettings = false;
     bool updatingDcSettingsWorkaround = false;
     int32_t disconnectTimeoutAmount = 0;

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
@@ -13,6 +13,9 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -20,14 +23,15 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
@@ -43,6 +47,10 @@ public class SharedPhotoVideoCell extends FrameLayout {
     private SharedPhotoVideoCellDelegate delegate;
     private int itemsCount;
     private boolean isFirst;
+    private boolean ignoreLayout;
+    private Paint backgroundPaint = new Paint();
+
+    private int currentAccount = UserConfig.selectedAccount;
 
     public interface SharedPhotoVideoCellDelegate {
         void didClickItem(SharedPhotoVideoCell cell, int index, MessageObject messageObject, int a);
@@ -59,8 +67,12 @@ public class SharedPhotoVideoCell extends FrameLayout {
         private FrameLayout container;
         private AnimatorSet animator;
 
+        private MessageObject currentMessageObject;
+
         public PhotoVideoView(Context context) {
             super(context);
+
+            setWillNotDraw(false);
 
             container = new FrameLayout(context);
             addView(container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -70,19 +82,29 @@ public class SharedPhotoVideoCell extends FrameLayout {
             imageView.getImageReceiver().setShouldGenerateQualityThumb(true);
             container.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-            videoInfoContainer = new FrameLayout(context);
-            videoInfoContainer.setBackgroundResource(R.drawable.phototime);
-            videoInfoContainer.setPadding(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(3), 0);
-            container.addView(videoInfoContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 16, Gravity.BOTTOM | Gravity.LEFT));
+            videoInfoContainer = new FrameLayout(context) {
+
+                private RectF rect = new RectF();
+
+                @Override
+                protected void onDraw(Canvas canvas) {
+                    rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                    canvas.drawRoundRect(rect, AndroidUtilities.dp(4), AndroidUtilities.dp(4), Theme.chat_timeBackgroundPaint);
+                }
+            };
+            videoInfoContainer.setWillNotDraw(false);
+            videoInfoContainer.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), 0);
+            container.addView(videoInfoContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 17, Gravity.BOTTOM | Gravity.LEFT, 4, 0, 0, 4));
 
             ImageView imageView1 = new ImageView(context);
-            imageView1.setImageResource(R.drawable.ic_video);
+            imageView1.setImageResource(R.drawable.play_mini_video);
             videoInfoContainer.addView(imageView1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
             videoTextView = new TextView(context);
             videoTextView.setTextColor(0xffffffff);
+            videoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-            videoInfoContainer.addView(videoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 18, -0.7f, 0, 0));
+            videoInfoContainer.addView(videoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 13, -0.7f, 0, 0));
 
             selector = new View(context);
             selector.setBackgroundDrawable(Theme.getSelectorDrawable(false));
@@ -112,9 +134,6 @@ public class SharedPhotoVideoCell extends FrameLayout {
                 animator = null;
             }
             if (animated) {
-                if (checked) {
-                    setBackgroundColor(0xfff5f5f5);
-                }
                 animator = new AnimatorSet();
                 animator.playTogether(ObjectAnimator.ofFloat(container, "scaleX", checked ? 0.85f : 1.0f),
                         ObjectAnimator.ofFloat(container, "scaleY", checked ? 0.85f : 1.0f));
@@ -139,9 +158,42 @@ public class SharedPhotoVideoCell extends FrameLayout {
                 });
                 animator.start();
             } else {
-                setBackgroundColor(checked ? 0xfff5f5f5 : 0);
                 container.setScaleX(checked ? 0.85f : 1.0f);
                 container.setScaleY(checked ? 0.85f : 1.0f);
+            }
+        }
+
+        public void setMessageObject(MessageObject messageObject) {
+            currentMessageObject = messageObject;
+            imageView.getImageReceiver().setVisible(!PhotoViewer.isShowingImage(messageObject), false);
+            if (messageObject.isVideo()) {
+                videoInfoContainer.setVisibility(VISIBLE);
+                int duration = messageObject.getDuration();
+                int minutes = duration / 60;
+                int seconds = duration - minutes * 60;
+                videoTextView.setText(String.format("%d:%02d", minutes, seconds));
+                TLRPC.Document document = messageObject.getDocument();
+                TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+                if (thumb != null) {
+                    imageView.setImage(null, null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, thumb, "b", null, 0, messageObject);
+                } else {
+                    imageView.setImageResource(R.drawable.photo_placeholder_in);
+                }
+            } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageObject.messageOwner.media.photo != null && !messageObject.photoThumbs.isEmpty()) {
+                videoInfoContainer.setVisibility(INVISIBLE);
+                TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 320);
+                TLRPC.PhotoSize currentPhotoObjectThumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 80);
+                if (messageObject.mediaExists || DownloadController.getInstance(currentAccount).canDownloadMedia(messageObject)) {
+                    if (currentPhotoObject == currentPhotoObjectThumb) {
+                        currentPhotoObjectThumb = null;
+                    }
+                    imageView.getImageReceiver().setImage(currentPhotoObject, "100_100", currentPhotoObjectThumb, "b", currentPhotoObject.size, null, messageObject, messageObject.shouldEncryptPhotoOrVideo() ? 2 : 0);
+                } else {
+                    imageView.setImage(null, null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, currentPhotoObjectThumb, "b", null, 0, messageObject);
+                }
+            } else {
+                videoInfoContainer.setVisibility(INVISIBLE);
+                imageView.setImageResource(R.drawable.photo_placeholder_in);
             }
         }
 
@@ -153,11 +205,19 @@ public class SharedPhotoVideoCell extends FrameLayout {
                 animator = null;
             }
         }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (checkBox.isChecked() || !imageView.getImageReceiver().hasBitmapImage() || imageView.getImageReceiver().getCurrentAlpha() != 1.0f || PhotoViewer.isShowingImage(currentMessageObject)) {
+                canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
+            }
+        }
     }
 
     public SharedPhotoVideoCell(Context context) {
         super(context);
 
+        backgroundPaint.setColor(Theme.getColor(Theme.key_sharedMedia_photoPlaceholder));
         messageObjects = new MessageObject[6];
         photoVideoViews = new PhotoVideoView[6];
         indeces = new int[6];
@@ -166,24 +226,18 @@ public class SharedPhotoVideoCell extends FrameLayout {
             addView(photoVideoViews[a]);
             photoVideoViews[a].setVisibility(INVISIBLE);
             photoVideoViews[a].setTag(a);
-            photoVideoViews[a].setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (delegate != null) {
-                        int a = (Integer) v.getTag();
-                        delegate.didClickItem(SharedPhotoVideoCell.this, indeces[a], messageObjects[a], a);
-                    }
+            photoVideoViews[a].setOnClickListener(v -> {
+                if (delegate != null) {
+                    int a1 = (Integer) v.getTag();
+                    delegate.didClickItem(SharedPhotoVideoCell.this, indeces[a1], messageObjects[a1], a1);
                 }
             });
-            photoVideoViews[a].setOnLongClickListener(new OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View v) {
-                    if (delegate != null) {
-                        int a = (Integer) v.getTag();
-                        return delegate.didLongClickItem(SharedPhotoVideoCell.this, indeces[a], messageObjects[a], a);
-                    }
-                    return false;
+            photoVideoViews[a].setOnLongClickListener(v -> {
+                if (delegate != null) {
+                    int a12 = (Integer) v.getTag();
+                    return delegate.didLongClickItem(SharedPhotoVideoCell.this, indeces[a12], messageObjects[a12], a12);
                 }
+                return false;
             });
         }
     }
@@ -234,37 +288,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
 
         if (messageObject != null) {
             photoVideoViews[a].setVisibility(VISIBLE);
-
-            PhotoVideoView photoVideoView = photoVideoViews[a];
-            photoVideoView.imageView.getImageReceiver().setParentMessageObject(messageObject);
-            photoVideoView.imageView.getImageReceiver().setVisible(!PhotoViewer.isShowingImage(messageObject), false);
-            if (messageObject.isVideo()) {
-                photoVideoView.videoInfoContainer.setVisibility(VISIBLE);
-                int duration = 0;
-                for (int b = 0; b < messageObject.getDocument().attributes.size(); b++) {
-                    TLRPC.DocumentAttribute attribute = messageObject.getDocument().attributes.get(b);
-                    if (attribute instanceof TLRPC.TL_documentAttributeVideo) {
-                        duration = attribute.duration;
-                        break;
-                    }
-                }
-                int minutes = duration / 60;
-                int seconds = duration - minutes * 60;
-                photoVideoView.videoTextView.setText(String.format("%d:%02d", minutes, seconds));
-                if (messageObject.getDocument().thumb != null) {
-                    TLRPC.FileLocation location = messageObject.getDocument().thumb.location;
-                    photoVideoView.imageView.setImage(null, null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, location, "b", null, 0);
-                } else {
-                    photoVideoView.imageView.setImageResource(R.drawable.photo_placeholder_in);
-                }
-            } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageObject.messageOwner.media.photo != null && !messageObject.photoThumbs.isEmpty()) {
-                photoVideoView.videoInfoContainer.setVisibility(INVISIBLE);
-                TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 80);
-                photoVideoView.imageView.setImage(null, null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, photoSize.location, "b", null, 0);
-            } else {
-                photoVideoView.videoInfoContainer.setVisibility(INVISIBLE);
-                photoVideoView.imageView.setImageResource(R.drawable.photo_placeholder_in);
-            }
+            photoVideoViews[a].setMessageObject(messageObject);
         } else {
             photoVideoViews[a].clearAnimation();
             photoVideoViews[a].setVisibility(INVISIBLE);
@@ -273,24 +297,42 @@ public class SharedPhotoVideoCell extends FrameLayout {
     }
 
     @Override
+    public void requestLayout() {
+        if (ignoreLayout) {
+            return;
+        }
+        super.requestLayout();
+    }
+
+    @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int itemWidth;
         if (AndroidUtilities.isTablet()) {
-            itemWidth = (AndroidUtilities.dp(490) - ((itemsCount + 1) * AndroidUtilities.dp(4))) / itemsCount;
+            itemWidth = (AndroidUtilities.dp(490) - (itemsCount - 1) * AndroidUtilities.dp(2)) / itemsCount;
         } else {
-            itemWidth = (AndroidUtilities.displaySize.x - ((itemsCount + 1) * AndroidUtilities.dp(4))) / itemsCount;
+            itemWidth = (AndroidUtilities.displaySize.x - (itemsCount - 1) * AndroidUtilities.dp(2)) / itemsCount;
         }
 
+        ignoreLayout = true;
         for (int a = 0; a < itemsCount; a++) {
             LayoutParams layoutParams = (LayoutParams) photoVideoViews[a].getLayoutParams();
-            layoutParams.topMargin = isFirst ? 0 : AndroidUtilities.dp(4);
-            layoutParams.leftMargin = (itemWidth + AndroidUtilities.dp(4)) * a + AndroidUtilities.dp(4);
-            layoutParams.width = itemWidth;
+            layoutParams.topMargin = isFirst ? 0 : AndroidUtilities.dp(2);
+            layoutParams.leftMargin = (itemWidth + AndroidUtilities.dp(2)) * a;
+            if (a == itemsCount - 1) {
+                if (AndroidUtilities.isTablet()) {
+                    layoutParams.width = AndroidUtilities.dp(490) - (itemsCount - 1) * (AndroidUtilities.dp(2) + itemWidth);
+                } else {
+                    layoutParams.width = AndroidUtilities.displaySize.x - (itemsCount - 1) * (AndroidUtilities.dp(2) + itemWidth);
+                }
+            } else {
+                layoutParams.width = itemWidth;
+            }
             layoutParams.height = itemWidth;
             layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             photoVideoViews[a].setLayoutParams(layoutParams);
         }
+        ignoreLayout = false;
 
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec((isFirst ? 0 : AndroidUtilities.dp(4)) + itemWidth, MeasureSpec.EXACTLY));
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec((isFirst ? 0 : AndroidUtilities.dp(2)) + itemWidth, MeasureSpec.EXACTLY));
     }
 }

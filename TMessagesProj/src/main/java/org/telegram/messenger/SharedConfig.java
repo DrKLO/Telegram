@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.messenger;
@@ -69,6 +69,7 @@ public class SharedConfig {
     public static boolean streamMedia = true;
     public static boolean streamAllVideo = false;
     public static boolean saveStreamMedia = true;
+    public static boolean sortContactsByName;
     public static boolean shuffleMusic;
     public static boolean playOrderReversed;
     public static boolean hasCameraCache;
@@ -144,6 +145,7 @@ public class SharedConfig {
                 editor.putInt("lastLocalId", lastLocalId);
                 editor.putString("passportConfigJson", passportConfigJson);
                 editor.putInt("passportConfigHash", passportConfigHash);
+                editor.putBoolean("sortContactsByName", sortContactsByName);
                 editor.commit();
             } catch (Exception e) {
                 FileLog.e(e);
@@ -220,6 +222,7 @@ public class SharedConfig {
             saveStreamMedia = preferences.getBoolean("saveStreamMedia", true);
             streamAllVideo = preferences.getBoolean("streamAllVideo", BuildVars.DEBUG_VERSION);
             suggestStickers = preferences.getInt("suggestStickers", 0);
+            sortContactsByName = preferences.getBoolean("sortContactsByName", false);
 
             configLoaded = true;
         }
@@ -427,6 +430,14 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("streamMedia", streamMedia);
+        editor.commit();
+    }
+
+    public static void toggleSortContactsByName() {
+        sortContactsByName = !sortContactsByName;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("sortContactsByName", sortContactsByName);
         editor.commit();
     }
 

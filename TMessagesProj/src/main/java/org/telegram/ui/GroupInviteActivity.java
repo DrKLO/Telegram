@@ -1,15 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x
+ * This is the source code of Telegram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.view.Gravity;
 import android.view.View;
@@ -28,8 +27,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -70,7 +67,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
 
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
         MessagesController.getInstance(currentAccount).loadFullChat(chat_id, classGuid, true);
         loading = true;
 
@@ -87,7 +84,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
 
     @Override
     public void onFragmentDestroy() {
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoad);
     }
 
     @Override
@@ -120,49 +117,41 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
         listView.setVerticalScrollBarEnabled(false);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         listView.setAdapter(listAdapter);
-        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                if (getParentActivity() == null) {
+        listView.setOnItemClickListener((view, position) -> {
+            if (getParentActivity() == null) {
+                return;
+            }
+            if (position == copyLinkRow || position == linkRow) {
+                if (invite == null) {
                     return;
                 }
-                if (position == copyLinkRow || position == linkRow) {
-                    if (invite == null) {
-                        return;
-                    }
-                    try {
-                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", invite.link);
-                        clipboard.setPrimaryClip(clip);
-                        Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                } else if (position == shareLinkRow) {
-                    if (invite == null) {
-                        return;
-                    }
-                    try {
-                        Intent intent = new Intent(Intent.ACTION_SEND);
-                        intent.setType("text/plain");
-                        intent.putExtra(Intent.EXTRA_TEXT, invite.link);
-                        getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink)), 500);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                } else if (position == revokeLinkRow) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setMessage(LocaleController.getString("RevokeAlert", R.string.RevokeAlert));
-                    builder.setTitle(LocaleController.getString("RevokeLink", R.string.RevokeLink));
-                    builder.setPositiveButton(LocaleController.getString("RevokeButton", R.string.RevokeButton), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            generateLink(true);
-                        }
-                    });
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showDialog(builder.create());
+                try {
+                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                    android.content.ClipData clip = android.content.ClipData.newPlainText("label", invite.link);
+                    clipboard.setPrimaryClip(clip);
+                    Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    FileLog.e(e);
                 }
+            } else if (position == shareLinkRow) {
+                if (invite == null) {
+                    return;
+                }
+                try {
+                    Intent intent = new Intent(Intent.ACTION_SEND);
+                    intent.setType("text/plain");
+                    intent.putExtra(Intent.EXTRA_TEXT, invite.link);
+                    getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink)), 500);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            } else if (position == revokeLinkRow) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setMessage(LocaleController.getString("RevokeAlert", R.string.RevokeAlert));
+                builder.setTitle(LocaleController.getString("RevokeLink", R.string.RevokeLink));
+                builder.setPositiveButton(LocaleController.getString("RevokeButton", R.string.RevokeButton), (dialogInterface, i) -> generateLink(true));
+                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                showDialog(builder.create());
             }
         });
 
@@ -171,7 +160,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.chatInfoDidLoaded) {
+        if (id == NotificationCenter.chatInfoDidLoad) {
             TLRPC.ChatFull info = (TLRPC.ChatFull) args[0];
             int guid = (int) args[1];
             if (info.id == chat_id && guid == classGuid) {
@@ -198,41 +187,25 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
 
     private void generateLink(final boolean newRequest) {
         loading = true;
-        TLObject request;
-        if (ChatObject.isChannel(chat_id, currentAccount)) {
-            TLRPC.TL_channels_exportInvite req = new TLRPC.TL_channels_exportInvite();
-            req.channel = MessagesController.getInstance(currentAccount).getInputChannel(chat_id);
-            request = req;
-        } else {
-            TLRPC.TL_messages_exportChatInvite req = new TLRPC.TL_messages_exportChatInvite();
-            req.chat_id = chat_id;
-            request = req;
-        }
-        final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(request, new RequestDelegate() {
-            @Override
-            public void run(final TLObject response, final TLRPC.TL_error error) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (error == null) {
-                            invite = (TLRPC.ExportedChatInvite) response;
-                            if (newRequest) {
-                                if (getParentActivity() == null) {
-                                    return;
-                                }
-                                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                                builder.setMessage(LocaleController.getString("RevokeAlertNewLink", R.string.RevokeAlertNewLink));
-                                builder.setTitle(LocaleController.getString("RevokeLink", R.string.RevokeLink));
-                                builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
-                                showDialog(builder.create());
-                            }
-                        }
-                        loading = false;
-                        listAdapter.notifyDataSetChanged();
+        TLRPC.TL_messages_exportChatInvite req = new TLRPC.TL_messages_exportChatInvite();
+        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(-chat_id);
+        final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (error == null) {
+                invite = (TLRPC.ExportedChatInvite) response;
+                if (newRequest) {
+                    if (getParentActivity() == null) {
+                        return;
                     }
-                });
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setMessage(LocaleController.getString("RevokeAlertNewLink", R.string.RevokeAlertNewLink));
+                    builder.setTitle(LocaleController.getString("RevokeLink", R.string.RevokeLink));
+                    builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
+                    showDialog(builder.create());
+                }
             }
-        });
+            loading = false;
+            listAdapter.notifyDataSetChanged();
+        }));
         ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();

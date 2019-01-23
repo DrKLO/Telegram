@@ -3,14 +3,13 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.messenger;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 
@@ -500,8 +499,13 @@ public class SecretChatHelper {
                 newMsg.media.document.size = file.size;
                 newMsg.media.document.key = decryptedMessage.media.key;
                 newMsg.media.document.iv = decryptedMessage.media.iv;
-                newMsg.media.document.thumb = document.thumb;
+                newMsg.media.document.thumbs = document.thumbs;
                 newMsg.media.document.dc_id = file.dc_id;
+                if (newMsg.media.document.thumbs.isEmpty()) {
+                    TLRPC.PhotoSize thumb = new TLRPC.TL_photoSizeEmpty();
+                    thumb.type = "s";
+                    newMsg.media.document.thumbs.add(thumb);
+                }
 
                 if (newMsg.attachPath != null && newMsg.attachPath.startsWith(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE).getAbsolutePath())) {
                     File cacheFile = new File(newMsg.attachPath);
@@ -851,6 +855,7 @@ public class SecretChatHelper {
                     newMessage.media.flags |= 3;
                     newMessage.message = decryptedMessage.media.caption != null ? decryptedMessage.media.caption : "";
                     newMessage.media.photo = new TLRPC.TL_photo();
+                    newMessage.media.photo.file_reference = new byte[0];
                     newMessage.media.photo.date = newMessage.date;
                     byte[] thumb = ((TLRPC.TL_decryptedMessageMediaPhoto) decryptedMessage.media).thumb;
                     if (thumb != null && thumb.length != 0 && thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
@@ -900,18 +905,20 @@ public class SecretChatHelper {
                         newMessage.media.document.mime_type = "video/mp4";
                     }
                     byte[] thumb = ((TLRPC.TL_decryptedMessageMediaVideo) decryptedMessage.media).thumb;
+                    TLRPC.PhotoSize photoSize;
                     if (thumb != null && thumb.length != 0 && thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
-                        newMessage.media.document.thumb = new TLRPC.TL_photoCachedSize();
-                        newMessage.media.document.thumb.bytes = thumb;
-                        newMessage.media.document.thumb.w = decryptedMessage.media.thumb_w;
-                        newMessage.media.document.thumb.h = decryptedMessage.media.thumb_h;
-                        newMessage.media.document.thumb.type = "s";
-                        newMessage.media.document.thumb.location = new TLRPC.TL_fileLocationUnavailable();
+                        photoSize = new TLRPC.TL_photoCachedSize();
+                        photoSize.bytes = thumb;
+                        photoSize.w = decryptedMessage.media.thumb_w;
+                        photoSize.h = decryptedMessage.media.thumb_h;
+                        photoSize.type = "s";
+                        photoSize.location = new TLRPC.TL_fileLocationUnavailable();
                     } else {
-                        newMessage.media.document.thumb = new TLRPC.TL_photoSizeEmpty();
-                        newMessage.media.document.thumb.type = "s";
+                        photoSize = new TLRPC.TL_photoSizeEmpty();
+                        photoSize.type = "s";
                     }
-
+                    newMessage.media.document.thumbs.add(photoSize);
+                    newMessage.media.document.flags |= 1;
                     TLRPC.TL_documentAttributeVideo attributeVideo = new TLRPC.TL_documentAttributeVideo();
                     attributeVideo.w = decryptedMessage.media.w;
                     attributeVideo.h = decryptedMessage.media.h;
@@ -951,17 +958,20 @@ public class SecretChatHelper {
                         newMessage.media.document.mime_type = "";
                     }
                     byte[] thumb = ((TLRPC.TL_decryptedMessageMediaDocument) decryptedMessage.media).thumb;
+                    TLRPC.PhotoSize photoSize;
                     if (thumb != null && thumb.length != 0 && thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
-                        newMessage.media.document.thumb = new TLRPC.TL_photoCachedSize();
-                        newMessage.media.document.thumb.bytes = thumb;
-                        newMessage.media.document.thumb.w = decryptedMessage.media.thumb_w;
-                        newMessage.media.document.thumb.h = decryptedMessage.media.thumb_h;
-                        newMessage.media.document.thumb.type = "s";
-                        newMessage.media.document.thumb.location = new TLRPC.TL_fileLocationUnavailable();
+                        photoSize = new TLRPC.TL_photoCachedSize();
+                        photoSize.bytes = thumb;
+                        photoSize.w = decryptedMessage.media.thumb_w;
+                        photoSize.h = decryptedMessage.media.thumb_h;
+                        photoSize.type = "s";
+                        photoSize.location = new TLRPC.TL_fileLocationUnavailable();
                     } else {
-                        newMessage.media.document.thumb = new TLRPC.TL_photoSizeEmpty();
-                        newMessage.media.document.thumb.type = "s";
+                        photoSize = new TLRPC.TL_photoSizeEmpty();
+                        photoSize.type = "s";
                     }
+                    newMessage.media.document.thumbs.add(photoSize);
+                    newMessage.media.document.flags |= 1;
                     newMessage.media.document.dc_id = file.dc_id;
                     if (MessageObject.isVoiceMessage(newMessage) || MessageObject.isRoundVideoMessage(newMessage)) {
                         newMessage.media_unread = true;
@@ -973,12 +983,14 @@ public class SecretChatHelper {
                     newMessage.media.document = new TLRPC.TL_document();
                     newMessage.media.document.id = decryptedMessage.media.id;
                     newMessage.media.document.access_hash = decryptedMessage.media.access_hash;
+                    newMessage.media.document.file_reference = new byte[0];
                     newMessage.media.document.date = decryptedMessage.media.date;
                     newMessage.media.document.attributes = decryptedMessage.media.attributes;
                     newMessage.media.document.mime_type = decryptedMessage.media.mime_type;
                     newMessage.media.document.dc_id = decryptedMessage.media.dc_id;
                     newMessage.media.document.size = decryptedMessage.media.size;
-                    newMessage.media.document.thumb = ((TLRPC.TL_decryptedMessageMediaExternalDocument) decryptedMessage.media).thumb;
+                    newMessage.media.document.thumbs.add(((TLRPC.TL_decryptedMessageMediaExternalDocument) decryptedMessage.media).thumb);
+                    newMessage.media.document.flags |= 1;
                     if (newMessage.media.document.mime_type == null) {
                         newMessage.media.document.mime_type = "";
                     }
@@ -997,8 +1009,6 @@ public class SecretChatHelper {
                     newMessage.media.document.size = file.size;
                     newMessage.media.document.dc_id = file.dc_id;
                     newMessage.media.document.mime_type = decryptedMessage.media.mime_type;
-                    newMessage.media.document.thumb = new TLRPC.TL_photoSizeEmpty();
-                    newMessage.media.document.thumb.type = "s";
                     newMessage.message = decryptedMessage.media.caption != null ? decryptedMessage.media.caption : "";
                     if (newMessage.media.document.mime_type == null) {
                         newMessage.media.document.mime_type = "audio/ogg";
@@ -1009,6 +1019,11 @@ public class SecretChatHelper {
                     newMessage.media.document.attributes.add(attributeAudio);
                     if (newMessage.ttl != 0) {
                         newMessage.ttl = Math.max(decryptedMessage.media.duration + 1, newMessage.ttl);
+                    }
+                    if (newMessage.media.document.thumbs.isEmpty()) {
+                        TLRPC.PhotoSize thumb = new TLRPC.TL_photoSizeEmpty();
+                        thumb.type = "s";
+                        newMessage.media.document.thumbs.add(thumb);
                     }
                 } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaVenue) {
                     newMessage.media = new TLRPC.TL_messageMediaVenue();
@@ -1789,10 +1804,7 @@ public class SecretChatHelper {
             return;
         }
         startingSecretChat = true;
-        final AlertDialog progressDialog = new AlertDialog(context, 1);
-        progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
-        progressDialog.setCanceledOnTouchOutside(false);
-        progressDialog.setCancelable(false);
+        final AlertDialog progressDialog = new AlertDialog(context, 3);
         TLRPC.TL_messages_getDhConfig req = new TLRPC.TL_messages_getDhConfig();
         req.random_length = 256;
         req.version = MessagesStorage.getInstance(currentAccount).getLastSecretVersion();
@@ -1903,14 +1915,7 @@ public class SecretChatHelper {
                 });
             }
         }, ConnectionsManager.RequestFlagFailOnServerErrors);
-        progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), (dialog, which) -> {
-            ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
-            try {
-                dialog.dismiss();
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        });
+        progressDialog.setOnCancelListener(dialog -> ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true));
         try {
             progressDialog.show();
         } catch (Exception e) {

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.messenger;
@@ -22,8 +22,6 @@ import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 
 import java.util.ArrayList;
@@ -114,14 +112,11 @@ public class LocationController implements NotificationCenter.NotificationCenter
     public LocationController(final int instance) {
         currentAccount = instance;
         locationManager = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
-        AndroidUtilities.runOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                LocationController locationController = getInstance(currentAccount);
-                NotificationCenter.getInstance(currentAccount).addObserver(locationController, NotificationCenter.didReceivedNewMessages);
-                NotificationCenter.getInstance(currentAccount).addObserver(locationController, NotificationCenter.messagesDeleted);
-                NotificationCenter.getInstance(currentAccount).addObserver(locationController, NotificationCenter.replaceMessagesObjects);
-            }
+        AndroidUtilities.runOnUIThread(() -> {
+            LocationController locationController = getInstance(currentAccount);
+            NotificationCenter.getInstance(currentAccount).addObserver(locationController, NotificationCenter.didReceiveNewMessages);
+            NotificationCenter.getInstance(currentAccount).addObserver(locationController, NotificationCenter.messagesDeleted);
+            NotificationCenter.getInstance(currentAccount).addObserver(locationController, NotificationCenter.replaceMessagesObjects);
         });
         loadSharingLocations();
     }
@@ -129,7 +124,7 @@ public class LocationController implements NotificationCenter.NotificationCenter
     @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.didReceivedNewMessages) {
+        if (id == NotificationCenter.didReceiveNewMessages) {
             long did = (Long) args[0];
             if (!isSharingLocation(did)) {
                 return;
@@ -238,52 +233,47 @@ public class LocationController implements NotificationCenter.NotificationCenter
             TLRPC.TL_messages_editMessage req = new TLRPC.TL_messages_editMessage();
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer((int) info.did);
             req.id = info.mid;
-            req.stop_geo_live = false;
-            req.flags |= 8192;
-            req.geo_point = new TLRPC.TL_inputGeoPoint();
-            req.geo_point.lat = AndroidUtilities.fixLocationCoord(lastKnownLocation.getLatitude());
-            req.geo_point._long = AndroidUtilities.fixLocationCoord(lastKnownLocation.getLongitude());
+            req.flags |= 16384;
+            req.media = new TLRPC.TL_inputMediaGeoLive();
+            req.media.stopped = false;
+            req.media.geo_point = new TLRPC.TL_inputGeoPoint();
+            req.media.geo_point.lat = AndroidUtilities.fixLocationCoord(lastKnownLocation.getLatitude());
+            req.media.geo_point._long = AndroidUtilities.fixLocationCoord(lastKnownLocation.getLongitude());
             final int[] reqId = new int[1];
-            reqId[0] = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                @Override
-                public void run(TLObject response, TLRPC.TL_error error) {
-                    if (error != null) {
-                        if (error.text.equals("MESSAGE_ID_INVALID")) {
-                            sharingLocations.remove(info);
-                            sharingLocationsMap.remove(info.did);
-                            saveSharingLocation(info, 1);
-                            requests.delete(reqId[0]);
-                            AndroidUtilities.runOnUIThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    sharingLocationsUI.remove(info);
-                                    sharingLocationsMapUI.remove(info.did);
-                                    if (sharingLocationsUI.isEmpty()) {
-                                        stopService();
-                                    }
-                                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsChanged);
-                                }
-                            });
-                        }
-                        return;
+            reqId[0] = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                if (error != null) {
+                    if (error.text.equals("MESSAGE_ID_INVALID")) {
+                        sharingLocations.remove(info);
+                        sharingLocationsMap.remove(info.did);
+                        saveSharingLocation(info, 1);
+                        requests.delete(reqId[0]);
+                        AndroidUtilities.runOnUIThread(() -> {
+                            sharingLocationsUI.remove(info);
+                            sharingLocationsMapUI.remove(info.did);
+                            if (sharingLocationsUI.isEmpty()) {
+                                stopService();
+                            }
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsChanged);
+                        });
                     }
-                    TLRPC.Updates updates = (TLRPC.Updates) response;
-                    boolean updated = false;
-                    for (int a = 0; a < updates.updates.size(); a++) {
-                        TLRPC.Update update = updates.updates.get(a);
-                        if (update instanceof TLRPC.TL_updateEditMessage) {
-                            updated = true;
-                            info.messageObject.messageOwner = ((TLRPC.TL_updateEditMessage) update).message;
-                        } else if (update instanceof TLRPC.TL_updateEditChannelMessage) {
-                            updated = true;
-                            info.messageObject.messageOwner = ((TLRPC.TL_updateEditChannelMessage) update).message;
-                        }
-                    }
-                    if (updated) {
-                        saveSharingLocation(info, 0);
-                    }
-                    MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+                    return;
                 }
+                TLRPC.Updates updates = (TLRPC.Updates) response;
+                boolean updated = false;
+                for (int a1 = 0; a1 < updates.updates.size(); a1++) {
+                    TLRPC.Update update = updates.updates.get(a1);
+                    if (update instanceof TLRPC.TL_updateEditMessage) {
+                        updated = true;
+                        info.messageObject.messageOwner = ((TLRPC.TL_updateEditMessage) update).message;
+                    } else if (update instanceof TLRPC.TL_updateEditChannelMessage) {
+                        updated = true;
+                        info.messageObject.messageOwner = ((TLRPC.TL_updateEditChannelMessage) update).message;
+                    }
+                }
+                if (updated) {
+                    saveSharingLocation(info, 0);
+                }
+                MessagesController.getInstance(currentAccount).processUpdates(updates, false);
             });
             requests.put(reqId[0], 0);
         }
@@ -302,16 +292,13 @@ public class LocationController implements NotificationCenter.NotificationCenter
                 sharingLocations.remove(a);
                 sharingLocationsMap.remove(info.did);
                 saveSharingLocation(info, 1);
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        sharingLocationsUI.remove(info);
-                        sharingLocationsMapUI.remove(info.did);
-                        if (sharingLocationsUI.isEmpty()) {
-                            stopService();
-                        }
-                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsChanged);
+                AndroidUtilities.runOnUIThread(() -> {
+                    sharingLocationsUI.remove(info);
+                    sharingLocationsMapUI.remove(info.did);
+                    if (sharingLocationsUI.isEmpty()) {
+                        stopService();
                     }
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsChanged);
                 });
                 a--;
             }
@@ -337,15 +324,12 @@ public class LocationController implements NotificationCenter.NotificationCenter
         locationsCache.clear();
         cacheRequests.clear();
         stopService();
-        Utilities.stageQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                requests.clear();
-                sharingLocationsMap.clear();
-                sharingLocations.clear();
-                lastKnownLocation = null;
-                stop(true);
-            }
+        Utilities.stageQueue.postRunnable(() -> {
+            requests.clear();
+            sharingLocationsMap.clear();
+            sharingLocations.clear();
+            lastKnownLocation = null;
+            stop(true);
         });
     }
 
@@ -364,17 +348,14 @@ public class LocationController implements NotificationCenter.NotificationCenter
         sharingLocations.add(info);
         saveSharingLocation(info, 0);
         lastLocationSendTime = System.currentTimeMillis() - BACKGROUD_UPDATE_TIME + 5000;
-        AndroidUtilities.runOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                if (old != null) {
-                    sharingLocationsUI.remove(old);
-                }
-                sharingLocationsUI.add(info);
-                sharingLocationsMapUI.put(info.did, info);
-                startService();
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsChanged);
+        AndroidUtilities.runOnUIThread(() -> {
+            if (old != null) {
+                sharingLocationsUI.remove(old);
             }
+            sharingLocationsUI.add(info);
+            sharingLocationsMapUI.put(info.did, info);
+            startService();
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsChanged);
         });
     }
 
@@ -387,170 +368,149 @@ public class LocationController implements NotificationCenter.NotificationCenter
     }
 
     private void loadSharingLocations() {
-        MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                final ArrayList<SharingLocationInfo> result = new ArrayList<>();
-                final ArrayList<TLRPC.User> users = new ArrayList<>();
-                final ArrayList<TLRPC.Chat> chats = new ArrayList<>();
-                try {
-                    ArrayList<Integer> usersToLoad = new ArrayList<>();
-                    ArrayList<Integer> chatsToLoad = new ArrayList<>();
-                    SQLiteCursor cursor = MessagesStorage.getInstance(currentAccount).getDatabase().queryFinalized("SELECT uid, mid, date, period, message FROM sharing_locations WHERE 1");
-                    while (cursor.next()) {
-                        SharingLocationInfo info = new SharingLocationInfo();
-                        info.did = cursor.longValue(0);
-                        info.mid = cursor.intValue(1);
-                        info.stopTime = cursor.intValue(2);
-                        info.period = cursor.intValue(3);
-                        NativeByteBuffer data = cursor.byteBufferValue(4);
-                        if (data != null) {
-                            info.messageObject = new MessageObject(currentAccount, TLRPC.Message.TLdeserialize(data, data.readInt32(false), false), false);
-                            MessagesStorage.addUsersAndChatsFromMessage(info.messageObject.messageOwner, usersToLoad, chatsToLoad);
-                            data.reuse();
-                        }
-                        result.add(info);
-                        int lower_id = (int) info.did;
-                        int high_id = (int) (info.did >> 32);
-                        if (lower_id != 0) {
-                            if (lower_id < 0) {
-                                if (!chatsToLoad.contains(-lower_id)) {
-                                    chatsToLoad.add(-lower_id);
-                                }
-                            } else {
-                                if (!usersToLoad.contains(lower_id)) {
-                                    usersToLoad.add(lower_id);
-                                }
+        MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
+            final ArrayList<SharingLocationInfo> result = new ArrayList<>();
+            final ArrayList<TLRPC.User> users = new ArrayList<>();
+            final ArrayList<TLRPC.Chat> chats = new ArrayList<>();
+            try {
+                ArrayList<Integer> usersToLoad = new ArrayList<>();
+                ArrayList<Integer> chatsToLoad = new ArrayList<>();
+                SQLiteCursor cursor = MessagesStorage.getInstance(currentAccount).getDatabase().queryFinalized("SELECT uid, mid, date, period, message FROM sharing_locations WHERE 1");
+                while (cursor.next()) {
+                    SharingLocationInfo info = new SharingLocationInfo();
+                    info.did = cursor.longValue(0);
+                    info.mid = cursor.intValue(1);
+                    info.stopTime = cursor.intValue(2);
+                    info.period = cursor.intValue(3);
+                    NativeByteBuffer data = cursor.byteBufferValue(4);
+                    if (data != null) {
+                        info.messageObject = new MessageObject(currentAccount, TLRPC.Message.TLdeserialize(data, data.readInt32(false), false), false);
+                        MessagesStorage.addUsersAndChatsFromMessage(info.messageObject.messageOwner, usersToLoad, chatsToLoad);
+                        data.reuse();
+                    }
+                    result.add(info);
+                    int lower_id = (int) info.did;
+                    int high_id = (int) (info.did >> 32);
+                    if (lower_id != 0) {
+                        if (lower_id < 0) {
+                            if (!chatsToLoad.contains(-lower_id)) {
+                                chatsToLoad.add(-lower_id);
                             }
                         } else {
-                            /*if (!encryptedChatIds.contains(high_id)) {
-                                encryptedChatIds.add(high_id);
-                            }*/
+                            if (!usersToLoad.contains(lower_id)) {
+                                usersToLoad.add(lower_id);
+                            }
                         }
+                    } else {
+                        /*if (!encryptedChatIds.contains(high_id)) {
+                            encryptedChatIds.add(high_id);
+                        }*/
                     }
-                    cursor.dispose();
-                    if (!chatsToLoad.isEmpty()) {
-                        MessagesStorage.getInstance(currentAccount).getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
-                    }
-                    if (!usersToLoad.isEmpty()) {
-                        MessagesStorage.getInstance(currentAccount).getUsersInternal(TextUtils.join(",", usersToLoad), users);
-                    }
-                } catch (Exception e) {
-                    FileLog.e(e);
                 }
-                if (!result.isEmpty()) {
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            MessagesController.getInstance(currentAccount).putUsers(users, true);
-                            MessagesController.getInstance(currentAccount).putChats(chats, true);
-                            Utilities.stageQueue.postRunnable(new Runnable() {
-                                @Override
-                                public void run() {
-                                    sharingLocations.addAll(result);
-                                    for (int a = 0; a < sharingLocations.size(); a++) {
-                                        SharingLocationInfo info = sharingLocations.get(a);
-                                        sharingLocationsMap.put(info.did, info);
-                                    }
-                                    AndroidUtilities.runOnUIThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            sharingLocationsUI.addAll(result);
-                                            for (int a = 0; a < result.size(); a++) {
-                                                SharingLocationInfo info = result.get(a);
-                                                sharingLocationsMapUI.put(info.did, info);
-                                            }
-                                            startService();
-                                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsChanged);
-                                        }
-                                    });
-                                }
-                            });
+                cursor.dispose();
+                if (!chatsToLoad.isEmpty()) {
+                    MessagesStorage.getInstance(currentAccount).getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
+                }
+                if (!usersToLoad.isEmpty()) {
+                    MessagesStorage.getInstance(currentAccount).getUsersInternal(TextUtils.join(",", usersToLoad), users);
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            if (!result.isEmpty()) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    MessagesController.getInstance(currentAccount).putUsers(users, true);
+                    MessagesController.getInstance(currentAccount).putChats(chats, true);
+                    Utilities.stageQueue.postRunnable(() -> {
+                        sharingLocations.addAll(result);
+                        for (int a = 0; a < sharingLocations.size(); a++) {
+                            SharingLocationInfo info = sharingLocations.get(a);
+                            sharingLocationsMap.put(info.did, info);
                         }
+                        AndroidUtilities.runOnUIThread(() -> {
+                            sharingLocationsUI.addAll(result);
+                            for (int a = 0; a < result.size(); a++) {
+                                SharingLocationInfo info = result.get(a);
+                                sharingLocationsMapUI.put(info.did, info);
+                            }
+                            startService();
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsChanged);
+                        });
                     });
-                }
+                });
             }
         });
     }
 
     private void saveSharingLocation(final SharingLocationInfo info, final int remove) {
-        MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    if (remove == 2) {
-                        MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("DELETE FROM sharing_locations WHERE 1").stepThis().dispose();
-                    } else if (remove == 1) {
-                        if (info == null) {
-                            return;
-                        }
-                        MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("DELETE FROM sharing_locations WHERE uid = " + info.did).stepThis().dispose();
-                    } else {
-                        if (info == null) {
-                            return;
-                        }
-                        SQLitePreparedStatement state = MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("REPLACE INTO sharing_locations VALUES(?, ?, ?, ?, ?)");
-                        state.requery();
-
-                        NativeByteBuffer data = new NativeByteBuffer(info.messageObject.messageOwner.getObjectSize());
-                        info.messageObject.messageOwner.serializeToStream(data);
-
-                        state.bindLong(1, info.did);
-                        state.bindInteger(2, info.mid);
-                        state.bindInteger(3, info.stopTime);
-                        state.bindInteger(4, info.period);
-                        state.bindByteBuffer(5, data);
-
-                        state.step();
-                        state.dispose();
-                        data.reuse();
+        MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
+            try {
+                if (remove == 2) {
+                    MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("DELETE FROM sharing_locations WHERE 1").stepThis().dispose();
+                } else if (remove == 1) {
+                    if (info == null) {
+                        return;
                     }
-                } catch (Exception e) {
-                    FileLog.e(e);
+                    MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("DELETE FROM sharing_locations WHERE uid = " + info.did).stepThis().dispose();
+                } else {
+                    if (info == null) {
+                        return;
+                    }
+                    SQLitePreparedStatement state = MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("REPLACE INTO sharing_locations VALUES(?, ?, ?, ?, ?)");
+                    state.requery();
+
+                    NativeByteBuffer data = new NativeByteBuffer(info.messageObject.messageOwner.getObjectSize());
+                    info.messageObject.messageOwner.serializeToStream(data);
+
+                    state.bindLong(1, info.did);
+                    state.bindInteger(2, info.mid);
+                    state.bindInteger(3, info.stopTime);
+                    state.bindInteger(4, info.period);
+                    state.bindByteBuffer(5, data);
+
+                    state.step();
+                    state.dispose();
+                    data.reuse();
                 }
+            } catch (Exception e) {
+                FileLog.e(e);
             }
         });
     }
 
     public void removeSharingLocation(final long did) {
-        Utilities.stageQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                final SharingLocationInfo info = sharingLocationsMap.get(did);
-                sharingLocationsMap.remove(did);
-                if (info != null) {
-                    TLRPC.TL_messages_editMessage req = new TLRPC.TL_messages_editMessage();
-                    req.peer = MessagesController.getInstance(currentAccount).getInputPeer((int) info.did);
-                    req.id = info.mid;
-                    req.stop_geo_live = true;
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                        @Override
-                        public void run(TLObject response, TLRPC.TL_error error) {
-                            if (error != null) {
-                                return;
-                            }
-                            MessagesController.getInstance(currentAccount).processUpdates((TLRPC.Updates) response, false);
-                        }
-                    });
-                    sharingLocations.remove(info);
-                    saveSharingLocation(info, 1);
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            sharingLocationsUI.remove(info);
-                            sharingLocationsMapUI.remove(info.did);
-                            if (sharingLocationsUI.isEmpty()) {
-                                stopService();
-                            }
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsChanged);
-                        }
-                    });
-                    if (sharingLocations.isEmpty()) {
-                        stop(true);
+        Utilities.stageQueue.postRunnable(() -> {
+            final SharingLocationInfo info = sharingLocationsMap.get(did);
+            sharingLocationsMap.remove(did);
+            if (info != null) {
+                TLRPC.TL_messages_editMessage req = new TLRPC.TL_messages_editMessage();
+                req.peer = MessagesController.getInstance(currentAccount).getInputPeer((int) info.did);
+                req.id = info.mid;
+                req.flags |= 16384;
+                req.media = new TLRPC.TL_inputMediaGeoLive();
+                req.media.stopped = true;
+                req.media.geo_point = new TLRPC.TL_inputGeoPointEmpty();
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                    if (error != null) {
+                        return;
                     }
+                    MessagesController.getInstance(currentAccount).processUpdates((TLRPC.Updates) response, false);
+                });
+                sharingLocations.remove(info);
+                saveSharingLocation(info, 1);
+                AndroidUtilities.runOnUIThread(() -> {
+                    sharingLocationsUI.remove(info);
+                    sharingLocationsMapUI.remove(info.did);
+                    if (sharingLocationsUI.isEmpty()) {
+                        stopService();
+                    }
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsChanged);
+                });
+                if (sharingLocations.isEmpty()) {
+                    stop(true);
                 }
-
             }
+
         });
     }
 
@@ -571,39 +531,33 @@ public class LocationController implements NotificationCenter.NotificationCenter
     }
 
     public void removeAllLocationSharings() {
-        Utilities.stageQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                for (int a = 0; a < sharingLocations.size(); a++) {
-                    SharingLocationInfo info = sharingLocations.get(a);
-                    TLRPC.TL_messages_editMessage req = new TLRPC.TL_messages_editMessage();
-                    req.peer = MessagesController.getInstance(currentAccount).getInputPeer((int) info.did);
-                    req.id = info.mid;
-                    req.stop_geo_live = true;
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                        @Override
-                        public void run(TLObject response, TLRPC.TL_error error) {
-                            if (error != null) {
-                                return;
-                            }
-                            MessagesController.getInstance(currentAccount).processUpdates((TLRPC.Updates) response, false);
-                        }
-                    });
-                }
-                sharingLocations.clear();
-                sharingLocationsMap.clear();
-                saveSharingLocation(null, 2);
-                stop(true);
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        sharingLocationsUI.clear();
-                        sharingLocationsMapUI.clear();
-                        stopService();
-                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsChanged);
+        Utilities.stageQueue.postRunnable(() -> {
+            for (int a = 0; a < sharingLocations.size(); a++) {
+                SharingLocationInfo info = sharingLocations.get(a);
+                TLRPC.TL_messages_editMessage req = new TLRPC.TL_messages_editMessage();
+                req.peer = MessagesController.getInstance(currentAccount).getInputPeer((int) info.did);
+                req.id = info.mid;
+                req.flags |= 16384;
+                req.media = new TLRPC.TL_inputMediaGeoLive();
+                req.media.stopped = true;
+                req.media.geo_point = new TLRPC.TL_inputGeoPointEmpty();
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                    if (error != null) {
+                        return;
                     }
+                    MessagesController.getInstance(currentAccount).processUpdates((TLRPC.Updates) response, false);
                 });
             }
+            sharingLocations.clear();
+            sharingLocationsMap.clear();
+            saveSharingLocation(null, 2);
+            stop(true);
+            AndroidUtilities.runOnUIThread(() -> {
+                sharingLocationsUI.clear();
+                sharingLocationsMapUI.clear();
+                stopService();
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsChanged);
+            });
         });
     }
 
@@ -672,31 +626,25 @@ public class LocationController implements NotificationCenter.NotificationCenter
         TLRPC.TL_messages_getRecentLocations req = new TLRPC.TL_messages_getRecentLocations();
         req.peer = MessagesController.getInstance(currentAccount).getInputPeer((int) did);
         req.limit = 100;
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(final TLObject response, TLRPC.TL_error error) {
-                if (error != null) {
-                    return;
-                }
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        cacheRequests.delete(did);
-                        TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
-                        for (int a = 0; a < res.messages.size(); a++) {
-                            if (!(res.messages.get(a).media instanceof TLRPC.TL_messageMediaGeoLive)) {
-                                res.messages.remove(a);
-                                a--;
-                            }
-                        }
-                        MessagesStorage.getInstance(currentAccount).putUsersAndChats(res.users, res.chats, true, true);
-                        MessagesController.getInstance(currentAccount).putUsers(res.users, false);
-                        MessagesController.getInstance(currentAccount).putChats(res.chats, false);
-                        locationsCache.put(did, res.messages);
-                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsCacheChanged, did, currentAccount);
-                    }
-                });
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+            if (error != null) {
+                return;
             }
+            AndroidUtilities.runOnUIThread(() -> {
+                cacheRequests.delete(did);
+                TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
+                for (int a = 0; a < res.messages.size(); a++) {
+                    if (!(res.messages.get(a).media instanceof TLRPC.TL_messageMediaGeoLive)) {
+                        res.messages.remove(a);
+                        a--;
+                    }
+                }
+                MessagesStorage.getInstance(currentAccount).putUsersAndChats(res.users, res.chats, true, true);
+                MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                MessagesController.getInstance(currentAccount).putChats(res.chats, false);
+                locationsCache.put(did, res.messages);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsCacheChanged, did, currentAccount);
+            });
         });
     }
 

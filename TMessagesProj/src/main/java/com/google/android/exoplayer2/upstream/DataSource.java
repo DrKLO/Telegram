@@ -44,9 +44,7 @@ public interface DataSource {
    *
    * @param transferListener A {@link TransferListener}.
    */
-  default void addTransferListener(TransferListener transferListener) {
-    // TODO: Make non-default once all DataSources implement this method.
-  }
+  void addTransferListener(TransferListener transferListener);
 
   /**
    * Opens the source to read the specified data.
@@ -66,11 +64,11 @@ public interface DataSource {
   long open(DataSpec dataSpec) throws IOException;
 
   /**
-   * Reads up to {@code length} bytes of data and stores them into {@code buffer}, starting at
+   * Reads up to {@code readLength} bytes of data and stores them into {@code buffer}, starting at
    * index {@code offset}.
-   * <p>
-   * If {@code length} is zero then 0 is returned. Otherwise, if no data is available because the
-   * end of the opened range has been reached, then {@link C#RESULT_END_OF_INPUT} is returned.
+   *
+   * <p>If {@code readLength} is zero then 0 is returned. Otherwise, if no data is available because
+   * the end of the opened range has been reached, then {@link C#RESULT_END_OF_INPUT} is returned.
    * Otherwise, the call will block until at least one byte of data has been read and the number of
    * bytes read is returned.
    *

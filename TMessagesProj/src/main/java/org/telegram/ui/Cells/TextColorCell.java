@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
@@ -13,6 +13,7 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.support.annotation.Keep;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -51,9 +52,10 @@ public class TextColorCell extends FrameLayout {
         textView.setMaxLines(1);
         textView.setSingleLine(true);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 0, 17, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 0, 21, 0));
     }
 
+    @Keep
     @Override
     public void setAlpha(float value) {
         alpha = value;
@@ -67,7 +69,7 @@ public class TextColorCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
     }
 
     public void setTextAndColor(String text, int color, boolean divider) {
@@ -79,6 +81,7 @@ public class TextColorCell extends FrameLayout {
     }
 
     public void setEnabled(boolean value, ArrayList<Animator> animators) {
+        super.setEnabled(value);
         if (animators != null) {
             animators.add(ObjectAnimator.ofFloat(textView, "alpha", value ? 1.0f : 0.5f));
             animators.add(ObjectAnimator.ofFloat(this, "alpha", value ? 1.0f : 0.5f));
@@ -91,12 +94,12 @@ public class TextColorCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(getPaddingLeft(), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
+            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
         }
         if (currentColor != 0) {
             colorPaint.setColor(currentColor);
             colorPaint.setAlpha((int) (255 * alpha));
-            canvas.drawCircle(LocaleController.isRTL ? AndroidUtilities.dp(29) : getMeasuredWidth() - AndroidUtilities.dp(29), getMeasuredHeight() / 2, AndroidUtilities.dp(10), colorPaint);
+            canvas.drawCircle(LocaleController.isRTL ? AndroidUtilities.dp(33) : getMeasuredWidth() - AndroidUtilities.dp(33), getMeasuredHeight() / 2, AndroidUtilities.dp(10), colorPaint);
         }
     }
 }

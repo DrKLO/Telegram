@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.messenger;
@@ -12,7 +12,6 @@ import android.util.SparseArray;
 
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
-import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 
@@ -26,7 +25,7 @@ import java.util.concurrent.CountDownLatch;
 
 public class FileLoadOperation {
 
-    private static class RequestInfo {
+    protected static class RequestInfo {
         private int requestToken;
         private int offset;
         private TLRPC.TL_upload_file response;
@@ -74,7 +73,7 @@ public class FileLoadOperation {
     private WebFile webFile;
     private volatile int state = stateIdle;
     private volatile boolean paused;
-    private volatile int downloadedBytes;
+    private int downloadedBytes;
     private int totalBytesCount;
     private int bytesCountPadding;
     private int streamStartOffset;
@@ -89,6 +88,8 @@ public class FileLoadOperation {
     private boolean encryptFile;
     private boolean allowDisordererFileSave;
 
+    private Object parentObject;
+
     private SparseArray<TLRPC.TL_fileHash> cdnHashes;
 
     private byte[] encryptKey;
@@ -100,6 +101,7 @@ public class FileLoadOperation {
     private byte[] cdnToken;
     private int cdnDatacenterId;
     private boolean reuploadingCdn;
+    protected boolean requestingReference;
     private RandomAccessFile fileReadStream;
     private byte[] cdnCheckBytes;
     private boolean requestingCdnOffsets;
@@ -119,6 +121,7 @@ public class FileLoadOperation {
     private File storePath;
     private File tempPath;
     private boolean isForceRequest;
+    private int priority;
 
     private int currentType;
 
@@ -128,7 +131,8 @@ public class FileLoadOperation {
         void didChangedLoadProgress(FileLoadOperation operation, float progress);
     }
 
-    public FileLoadOperation(TLRPC.FileLocation photoLocation, String extension, int size) {
+    public FileLoadOperation(TLRPC.FileLocation photoLocation, Object parent, String extension, int size) {
+        parentObject = parent;
         if (photoLocation instanceof TLRPC.TL_fileEncryptedLocation) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
             location.id = photoLocation.volume_id;
@@ -144,6 +148,10 @@ public class FileLoadOperation {
             location.volume_id = photoLocation.volume_id;
             location.secret = photoLocation.secret;
             location.local_id = photoLocation.local_id;
+            location.file_reference = photoLocation.file_reference;
+            if (location.file_reference == null) {
+                location.file_reference = new byte[0];
+            }
             initialDatacenterId = datacenterId = photoLocation.dc_id;
             allowDisordererFileSave = true;
         }
@@ -153,7 +161,7 @@ public class FileLoadOperation {
     }
 
     public FileLoadOperation(SecureDocument secureDocument) {
-        location = new TLRPC.TL_inputDocumentFileLocation();
+        location = new TLRPC.TL_inputSecureFileLocation();
         location.id = secureDocument.secureFile.id;
         location.access_hash = secureDocument.secureFile.access_hash;
         datacenterId = secureDocument.secureFile.dc_id;
@@ -183,8 +191,9 @@ public class FileLoadOperation {
         ext = ImageLoader.getHttpUrlExtension(webDocument.url, defaultExt);
     }
 
-    public FileLoadOperation(TLRPC.Document documentLocation) {
+    public FileLoadOperation(TLRPC.Document documentLocation, Object parent) {
         try {
+            parentObject = parent;
             if (documentLocation instanceof TLRPC.TL_documentEncrypted) {
                 location = new TLRPC.TL_inputEncryptedFileLocation();
                 location.id = documentLocation.id;
@@ -197,6 +206,10 @@ public class FileLoadOperation {
                 location = new TLRPC.TL_inputDocumentFileLocation();
                 location.id = documentLocation.id;
                 location.access_hash = documentLocation.access_hash;
+                location.file_reference = documentLocation.file_reference;
+                if (location.file_reference == null) {
+                    location.file_reference = new byte[0];
+                }
                 initialDatacenterId = datacenterId = documentLocation.dc_id;
                 allowDisordererFileSave = true;
             }
@@ -262,6 +275,14 @@ public class FileLoadOperation {
 
     public boolean isForceRequest() {
         return isForceRequest;
+    }
+
+    public void setPriority(int value) {
+        priority = value;
+    }
+
+    public int getPriority() {
+        return priority;
     }
 
     public void setPaths(int instance, File store, File temp) {
@@ -369,16 +390,13 @@ public class FileLoadOperation {
     protected File getCurrentFile() {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         final File result[] = new File[1];
-        Utilities.stageQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                if (state == stateFinished) {
-                    result[0] = cacheFileFinal;
-                } else {
-                    result[0] = cacheFileTemp;
-                }
-                countDownLatch.countDown();
+        Utilities.stageQueue.postRunnable(() -> {
+            if (state == stateFinished) {
+                result[0] = cacheFileFinal;
+            } else {
+                result[0] = cacheFileTemp;
             }
+            countDownLatch.countDown();
         });
         try {
             countDownLatch.await();
@@ -430,12 +448,9 @@ public class FileLoadOperation {
     protected int getDownloadedLengthFromOffset(final int offset, final int length) {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         final int result[] = new int[1];
-        Utilities.stageQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                result[0] = getDownloadedLengthFromOffsetInternal(notLoadedBytesRanges, offset, length);
-                countDownLatch.countDown();
-            }
+        Utilities.stageQueue.postRunnable(() -> {
+            result[0] = getDownloadedLengthFromOffsetInternal(notLoadedBytesRanges, offset, length);
+            countDownLatch.countDown();
         });
         try {
             countDownLatch.await();
@@ -454,14 +469,11 @@ public class FileLoadOperation {
     }
 
     protected void removeStreamListener(final FileStreamLoadOperation operation) {
-        Utilities.stageQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                if (streamListeners == null) {
-                    return;
-                }
-                streamListeners.remove(operation);
+        Utilities.stageQueue.postRunnable(() -> {
+            if (streamListeners == null) {
+                return;
             }
+            streamListeners.remove(operation);
         });
     }
 
@@ -476,12 +488,7 @@ public class FileLoadOperation {
         if (state != stateDownloading) {
             return;
         }
-        Utilities.stageQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                paused = true;
-            }
-        });
+        Utilities.stageQueue.postRunnable(() -> paused = true);
     }
 
     public boolean start() {
@@ -497,27 +504,19 @@ public class FileLoadOperation {
         final boolean wasPaused = paused;
         paused = false;
         if (stream != null) {
-            Utilities.stageQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    if (streamListeners == null) {
-                        streamListeners = new ArrayList<>();
-                    }
-                    streamStartOffset = streamOffset / currentDownloadChunkSize * currentDownloadChunkSize;
-                    streamListeners.add(stream);
-                    if (alreadyStarted) {
-                        //clearOperaion(null);
-                        startDownloadRequest();
-                    }
+            Utilities.stageQueue.postRunnable(() -> {
+                if (streamListeners == null) {
+                    streamListeners = new ArrayList<>();
                 }
-            });
-        } else if (wasPaused && alreadyStarted) {
-            Utilities.stageQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
+                streamStartOffset = streamOffset / currentDownloadChunkSize * currentDownloadChunkSize;
+                streamListeners.add(stream);
+                if (alreadyStarted) {
+                    //clearOperaion(null);
                     startDownloadRequest();
                 }
             });
+        } else if (wasPaused && alreadyStarted) {
+            Utilities.stageQueue.postRunnable(this::startDownloadRequest);
         }
         if (alreadyStarted) {
             return wasPaused;
@@ -732,18 +731,15 @@ public class FileLoadOperation {
                 return false;
             }
             started = true;
-            Utilities.stageQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    if (totalBytesCount != 0 && downloadedBytes == totalBytesCount) {
-                        try {
-                            onFinishLoadingFile(false);
-                        } catch (Exception e) {
-                            onFail(true, 0);
-                        }
-                    } else {
-                        startDownloadRequest();
+            Utilities.stageQueue.postRunnable(() -> {
+                if (totalBytesCount != 0 && downloadedBytes == totalBytesCount) {
+                    try {
+                        onFinishLoadingFile(false);
+                    } catch (Exception e) {
+                        onFail(true, 0);
                     }
+                } else {
+                    startDownloadRequest();
                 }
             });
         } else {
@@ -762,22 +758,19 @@ public class FileLoadOperation {
     }
 
     public void cancel() {
-        Utilities.stageQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                if (state == stateFinished || state == stateFailed) {
-                    return;
-                }
-                if (requestInfos != null) {
-                    for (int a = 0; a < requestInfos.size(); a++) {
-                        RequestInfo requestInfo = requestInfos.get(a);
-                        if (requestInfo.requestToken != 0) {
-                            ConnectionsManager.getInstance(currentAccount).cancelRequest(requestInfo.requestToken, true);
-                        }
+        Utilities.stageQueue.postRunnable(() -> {
+            if (state == stateFinished || state == stateFailed) {
+                return;
+            }
+            if (requestInfos != null) {
+                for (int a = 0; a < requestInfos.size(); a++) {
+                    RequestInfo requestInfo = requestInfos.get(a);
+                    if (requestInfo.requestToken != 0) {
+                        ConnectionsManager.getInstance(currentAccount).cancelRequest(requestInfo.requestToken, true);
                     }
                 }
-                onFail(false, 1);
             }
+            onFail(false, 1);
         });
     }
 
@@ -871,14 +864,11 @@ public class FileLoadOperation {
                 renameRetryCount++;
                 if (renameRetryCount < 3) {
                     state = stateDownloading;
-                    Utilities.stageQueue.postRunnable(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                onFinishLoadingFile(increment);
-                            } catch (Exception e) {
-                                onFail(false, 0);
-                            }
+                    Utilities.stageQueue.postRunnable(() -> {
+                        try {
+                            onFinishLoadingFile(increment);
+                        } catch (Exception e) {
+                            onFail(false, 0);
                         }
                     }, 200);
                     return;
@@ -892,13 +882,13 @@ public class FileLoadOperation {
         delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal);
         if (increment) {
             if (currentType == ConnectionsManager.FileTypeAudio) {
-                StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ConnectionsManager.getCurrentNetworkType(), StatsController.TYPE_AUDIOS, 1);
+                StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_AUDIOS, 1);
             } else if (currentType == ConnectionsManager.FileTypeVideo) {
-                StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ConnectionsManager.getCurrentNetworkType(), StatsController.TYPE_VIDEOS, 1);
+                StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_VIDEOS, 1);
             } else if (currentType == ConnectionsManager.FileTypePhoto) {
-                StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ConnectionsManager.getCurrentNetworkType(), StatsController.TYPE_PHOTOS, 1);
+                StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_PHOTOS, 1);
             } else if (currentType == ConnectionsManager.FileTypeFile) {
-                StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ConnectionsManager.getCurrentNetworkType(), StatsController.TYPE_FILES, 1);
+                StatsController.getInstance(currentAccount).incrementReceivedItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_FILES, 1);
             }
         }
     }
@@ -922,49 +912,49 @@ public class FileLoadOperation {
         TLRPC.TL_upload_getCdnFileHashes req = new TLRPC.TL_upload_getCdnFileHashes();
         req.file_token = cdnToken;
         req.offset = offset;
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-                if (error != null) {
-                    onFail(false, 0);
-                } else {
-                    requestingCdnOffsets = false;
-                    TLRPC.Vector vector = (TLRPC.Vector) response;
-                    if (!vector.objects.isEmpty()) {
-                        if (cdnHashes == null) {
-                            cdnHashes = new SparseArray<>();
-                        }
-                        for (int a = 0; a < vector.objects.size(); a++) {
-                            TLRPC.TL_fileHash hash = (TLRPC.TL_fileHash) vector.objects.get(a);
-                            cdnHashes.put(hash.offset, hash);
-                        }
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+            if (error != null) {
+                onFail(false, 0);
+            } else {
+                requestingCdnOffsets = false;
+                TLRPC.Vector vector = (TLRPC.Vector) response;
+                if (!vector.objects.isEmpty()) {
+                    if (cdnHashes == null) {
+                        cdnHashes = new SparseArray<>();
                     }
-                    for (int a = 0; a < delayedRequestInfos.size(); a++) {
-                        RequestInfo delayedRequestInfo = delayedRequestInfos.get(a);
-                        if (notLoadedBytesRanges != null || downloadedBytes == delayedRequestInfo.offset) {
-                            delayedRequestInfos.remove(a);
-                            if (!processRequestResult(delayedRequestInfo, null)) {
-                                if (delayedRequestInfo.response != null) {
-                                    delayedRequestInfo.response.disableFree = false;
-                                    delayedRequestInfo.response.freeResources();
-                                } else if (delayedRequestInfo.responseWeb != null) {
-                                    delayedRequestInfo.responseWeb.disableFree = false;
-                                    delayedRequestInfo.responseWeb.freeResources();
-                                } else if (delayedRequestInfo.responseCdn != null) {
-                                    delayedRequestInfo.responseCdn.disableFree = false;
-                                    delayedRequestInfo.responseCdn.freeResources();
-                                }
+                    for (int a = 0; a < vector.objects.size(); a++) {
+                        TLRPC.TL_fileHash hash = (TLRPC.TL_fileHash) vector.objects.get(a);
+                        cdnHashes.put(hash.offset, hash);
+                    }
+                }
+                for (int a = 0; a < delayedRequestInfos.size(); a++) {
+                    RequestInfo delayedRequestInfo = delayedRequestInfos.get(a);
+                    if (notLoadedBytesRanges != null || downloadedBytes == delayedRequestInfo.offset) {
+                        delayedRequestInfos.remove(a);
+                        if (!processRequestResult(delayedRequestInfo, null)) {
+                            if (delayedRequestInfo.response != null) {
+                                delayedRequestInfo.response.disableFree = false;
+                                delayedRequestInfo.response.freeResources();
+                            } else if (delayedRequestInfo.responseWeb != null) {
+                                delayedRequestInfo.responseWeb.disableFree = false;
+                                delayedRequestInfo.responseWeb.freeResources();
+                            } else if (delayedRequestInfo.responseCdn != null) {
+                                delayedRequestInfo.responseCdn.disableFree = false;
+                                delayedRequestInfo.responseCdn.freeResources();
                             }
-                            break;
                         }
+                        break;
                     }
                 }
             }
         }, null, null, 0, datacenterId, ConnectionsManager.ConnectionTypeGeneric, true);
     }
 
-    private boolean processRequestResult(RequestInfo requestInfo, TLRPC.TL_error error) {
+    protected boolean processRequestResult(RequestInfo requestInfo, TLRPC.TL_error error) {
         if (state != stateDownloading) {
+            if (BuildVars.DEBUG_VERSION) {
+                FileLog.d("trying to write to finished file " + cacheFileFinal + " offset " + requestInfo.offset);
+            }
             return false;
         }
         requestInfos.remove(requestInfo);
@@ -1032,6 +1022,9 @@ public class FileLoadOperation {
                 }
                 if (notLoadedBytesRanges != null) {
                     fileOutputStream.seek(requestInfo.offset);
+                    if (BuildVars.DEBUG_VERSION) {
+                        FileLog.d("save file part " + cacheFileFinal + " offset " + requestInfo.offset);
+                    }
                 }
                 FileChannel channel = fileOutputStream.getChannel();
                 channel.write(bytes.buffer);
@@ -1150,9 +1143,9 @@ public class FileLoadOperation {
             } else {
                 if (BuildVars.LOGS_ENABLED) {
                     if (location != null) {
-                        FileLog.e("" + location + " id = " + location.id + " local_id = " + location.local_id + " access_hash = " + location.access_hash + " volume_id = " + location.volume_id + " secret = " + location.secret);
+                        FileLog.e(error.text + " " + location + " id = " + location.id + " local_id = " + location.local_id + " access_hash = " + location.access_hash + " volume_id = " + location.volume_id + " secret = " + location.secret);
                     } else if (webLocation != null) {
-                        FileLog.e("" + webLocation + " id = " + getFileName());
+                        FileLog.e(error.text + " " + webLocation + " id = " + getFileName());
                     }
                 }
                 onFail(false, 0);
@@ -1161,16 +1154,11 @@ public class FileLoadOperation {
         return false;
     }
 
-    private void onFail(boolean thread, final int reason) {
+    protected void onFail(boolean thread, final int reason) {
         cleanup();
         state = stateFailed;
         if (thread) {
-            Utilities.stageQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    delegate.didFailedLoadingFile(FileLoadOperation.this, reason);
-                }
-            });
+            Utilities.stageQueue.postRunnable(() -> delegate.didFailedLoadingFile(FileLoadOperation.this, reason));
         } else {
             delegate.didFailedLoadingFile(FileLoadOperation.this, reason);
         }
@@ -1212,7 +1200,22 @@ public class FileLoadOperation {
         }
     }
 
-    private void startDownloadRequest() {
+    private void requestReference(RequestInfo requestInfo) {
+        if (requestingReference) {
+            return;
+        }
+        clearOperaion(requestInfo);
+        requestingReference = true;
+        if (parentObject instanceof MessageObject) {
+            MessageObject messageObject = (MessageObject) parentObject;
+            if (messageObject.getId() < 0 && messageObject.messageOwner.media.webpage != null) {
+                parentObject = messageObject.messageOwner.media.webpage;
+            }
+        }
+        FileRefController.getInstance(currentAccount).requestReference(parentObject, location, this, requestInfo);
+    }
+
+    protected void startDownloadRequest() {
         if (paused || state != stateDownloading || requestInfos.size() + delayedRequestInfos.size() >= currentMaxDownloadRequests) {
             return;
         }
@@ -1291,111 +1294,108 @@ public class FileLoadOperation {
             final RequestInfo requestInfo = new RequestInfo();
             requestInfos.add(requestInfo);
             requestInfo.offset = downloadOffset;
-            requestInfo.requestToken = ConnectionsManager.getInstance(currentAccount).sendRequest(request, new RequestDelegate() {
-                @Override
-                public void run(TLObject response, TLRPC.TL_error error) {
-                    if (!requestInfos.contains(requestInfo)) {
+            requestInfo.requestToken = ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> {
+                if (!requestInfos.contains(requestInfo)) {
+                    return;
+                }
+                if (error != null) {
+                    if (FileRefController.isFileRefError(error.text)) {
+                        requestReference(requestInfo);
                         return;
-                    }
-                    if (error != null) {
-                        if (request instanceof TLRPC.TL_upload_getCdnFile) {
-                            if (error.text.equals("FILE_TOKEN_INVALID")) {
-                                isCdn = false;
-                                clearOperaion(requestInfo);
-                                startDownloadRequest();
-                                return;
-                            }
-                        }
-                    }
-                    if (response instanceof TLRPC.TL_upload_fileCdnRedirect) {
-                        TLRPC.TL_upload_fileCdnRedirect res = (TLRPC.TL_upload_fileCdnRedirect) response;
-                        if (!res.file_hashes.isEmpty()) {
-                            if (cdnHashes == null) {
-                                cdnHashes = new SparseArray<>();
-                            }
-                            for (int a = 0; a < res.file_hashes.size(); a++) {
-                                TLRPC.TL_fileHash hash = res.file_hashes.get(a);
-                                cdnHashes.put(hash.offset, hash);
-                            }
-                        }
-                        if (res.encryption_iv == null || res.encryption_key == null || res.encryption_iv.length != 16 || res.encryption_key.length != 32) {
-                            error = new TLRPC.TL_error();
-                            error.text = "bad redirect response";
-                            error.code = 400;
-                            processRequestResult(requestInfo, error);
-                        } else {
-                            isCdn = true;
-                            if (notCheckedCdnRanges == null) {
-                                notCheckedCdnRanges = new ArrayList<>();
-                                notCheckedCdnRanges.add(new Range(0, maxCdnParts));
-                            }
-                            cdnDatacenterId = res.dc_id;
-                            cdnIv = res.encryption_iv;
-                            cdnKey = res.encryption_key;
-                            cdnToken = res.file_token;
+                    } else if (request instanceof TLRPC.TL_upload_getCdnFile) {
+                        if (error.text.equals("FILE_TOKEN_INVALID")) {
+                            isCdn = false;
                             clearOperaion(requestInfo);
                             startDownloadRequest();
+                            return;
                         }
-                    } else if (response instanceof TLRPC.TL_upload_cdnFileReuploadNeeded) {
-                        if (!reuploadingCdn) {
-                            clearOperaion(requestInfo);
-                            reuploadingCdn = true;
-                            TLRPC.TL_upload_cdnFileReuploadNeeded res = (TLRPC.TL_upload_cdnFileReuploadNeeded) response;
-                            TLRPC.TL_upload_reuploadCdnFile req = new TLRPC.TL_upload_reuploadCdnFile();
-                            req.file_token = cdnToken;
-                            req.request_token = res.request_token;
-                            ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                                @Override
-                                public void run(TLObject response, TLRPC.TL_error error) {
-                                    reuploadingCdn = false;
-                                    if (error == null) {
-                                        TLRPC.Vector vector = (TLRPC.Vector) response;
-                                        if (!vector.objects.isEmpty()) {
-                                            if (cdnHashes == null) {
-                                                cdnHashes = new SparseArray<>();
-                                            }
-                                            for (int a = 0; a < vector.objects.size(); a++) {
-                                                TLRPC.TL_fileHash hash = (TLRPC.TL_fileHash) vector.objects.get(a);
-                                                cdnHashes.put(hash.offset, hash);
-                                            }
-                                        }
-                                        startDownloadRequest();
-                                    } else {
-                                        if (error.text.equals("FILE_TOKEN_INVALID") || error.text.equals("REQUEST_TOKEN_INVALID")) {
-                                            isCdn = false;
-                                            clearOperaion(requestInfo);
-                                            startDownloadRequest();
-                                        } else {
-                                            onFail(false, 0);
-                                        }
+                    }
+                }
+                if (response instanceof TLRPC.TL_upload_fileCdnRedirect) {
+                    TLRPC.TL_upload_fileCdnRedirect res = (TLRPC.TL_upload_fileCdnRedirect) response;
+                    if (!res.file_hashes.isEmpty()) {
+                        if (cdnHashes == null) {
+                            cdnHashes = new SparseArray<>();
+                        }
+                        for (int a1 = 0; a1 < res.file_hashes.size(); a1++) {
+                            TLRPC.TL_fileHash hash = res.file_hashes.get(a1);
+                            cdnHashes.put(hash.offset, hash);
+                        }
+                    }
+                    if (res.encryption_iv == null || res.encryption_key == null || res.encryption_iv.length != 16 || res.encryption_key.length != 32) {
+                        error = new TLRPC.TL_error();
+                        error.text = "bad redirect response";
+                        error.code = 400;
+                        processRequestResult(requestInfo, error);
+                    } else {
+                        isCdn = true;
+                        if (notCheckedCdnRanges == null) {
+                            notCheckedCdnRanges = new ArrayList<>();
+                            notCheckedCdnRanges.add(new Range(0, maxCdnParts));
+                        }
+                        cdnDatacenterId = res.dc_id;
+                        cdnIv = res.encryption_iv;
+                        cdnKey = res.encryption_key;
+                        cdnToken = res.file_token;
+                        clearOperaion(requestInfo);
+                        startDownloadRequest();
+                    }
+                } else if (response instanceof TLRPC.TL_upload_cdnFileReuploadNeeded) {
+                    if (!reuploadingCdn) {
+                        clearOperaion(requestInfo);
+                        reuploadingCdn = true;
+                        TLRPC.TL_upload_cdnFileReuploadNeeded res = (TLRPC.TL_upload_cdnFileReuploadNeeded) response;
+                        TLRPC.TL_upload_reuploadCdnFile req = new TLRPC.TL_upload_reuploadCdnFile();
+                        req.file_token = cdnToken;
+                        req.request_token = res.request_token;
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response1, error1) -> {
+                            reuploadingCdn = false;
+                            if (error1 == null) {
+                                TLRPC.Vector vector = (TLRPC.Vector) response1;
+                                if (!vector.objects.isEmpty()) {
+                                    if (cdnHashes == null) {
+                                        cdnHashes = new SparseArray<>();
+                                    }
+                                    for (int a1 = 0; a1 < vector.objects.size(); a1++) {
+                                        TLRPC.TL_fileHash hash = (TLRPC.TL_fileHash) vector.objects.get(a1);
+                                        cdnHashes.put(hash.offset, hash);
                                     }
                                 }
-                            }, null, null, 0, datacenterId, ConnectionsManager.ConnectionTypeGeneric, true);
+                                startDownloadRequest();
+                            } else {
+                                if (error1.text.equals("FILE_TOKEN_INVALID") || error1.text.equals("REQUEST_TOKEN_INVALID")) {
+                                    isCdn = false;
+                                    clearOperaion(requestInfo);
+                                    startDownloadRequest();
+                                } else {
+                                    onFail(false, 0);
+                                }
+                            }
+                        }, null, null, 0, datacenterId, ConnectionsManager.ConnectionTypeGeneric, true);
+                    }
+                } else {
+                    if (response instanceof TLRPC.TL_upload_file) {
+                        requestInfo.response = (TLRPC.TL_upload_file) response;
+                    } else if (response instanceof TLRPC.TL_upload_webFile) {
+                        requestInfo.responseWeb = (TLRPC.TL_upload_webFile) response;
+                        if (totalBytesCount == 0 && requestInfo.responseWeb.size != 0) {
+                            totalBytesCount = requestInfo.responseWeb.size;
                         }
                     } else {
-                        if (response instanceof TLRPC.TL_upload_file) {
-                            requestInfo.response = (TLRPC.TL_upload_file) response;
-                        } else if (response instanceof TLRPC.TL_upload_webFile) {
-                            requestInfo.responseWeb = (TLRPC.TL_upload_webFile) response;
-                            if (totalBytesCount == 0 && requestInfo.responseWeb.size != 0) {
-                                totalBytesCount = requestInfo.responseWeb.size;
-                            }
-                        } else {
-                            requestInfo.responseCdn = (TLRPC.TL_upload_cdnFile) response;
-                        }
-                        if (response != null) {
-                            if (currentType == ConnectionsManager.FileTypeAudio) {
-                                StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_AUDIOS, response.getObjectSize() + 4);
-                            } else if (currentType == ConnectionsManager.FileTypeVideo) {
-                                StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_VIDEOS, response.getObjectSize() + 4);
-                            } else if (currentType == ConnectionsManager.FileTypePhoto) {
-                                StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_PHOTOS, response.getObjectSize() + 4);
-                            } else if (currentType == ConnectionsManager.FileTypeFile) {
-                                StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_FILES, response.getObjectSize() + 4);
-                            }
-                        }
-                        processRequestResult(requestInfo, error);
+                        requestInfo.responseCdn = (TLRPC.TL_upload_cdnFile) response;
                     }
+                    if (response != null) {
+                        if (currentType == ConnectionsManager.FileTypeAudio) {
+                            StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_AUDIOS, response.getObjectSize() + 4);
+                        } else if (currentType == ConnectionsManager.FileTypeVideo) {
+                            StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_VIDEOS, response.getObjectSize() + 4);
+                        } else if (currentType == ConnectionsManager.FileTypePhoto) {
+                            StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_PHOTOS, response.getObjectSize() + 4);
+                        } else if (currentType == ConnectionsManager.FileTypeFile) {
+                            StatsController.getInstance(currentAccount).incrementReceivedBytesCount(response.networkType, StatsController.TYPE_FILES, response.getObjectSize() + 4);
+                        }
+                    }
+                    processRequestResult(requestInfo, error);
                 }
             }, null, null, flags, isCdn ? cdnDatacenterId : datacenterId, connectionType, isLast);
             requestsCount++;

@@ -22,7 +22,7 @@ public:
     void setSessionId(int64_t id);
     int64_t getSessionId();
     uint32_t generateMessageSeqNo(bool increment);
-    bool isMessageIdProcessed(int64_t messageId);
+    int32_t isMessageIdProcessed(int64_t messageId);
     void addProcessedMessageId(int64_t messageId);
     bool hasMessagesToConfirm();
     void addMessageToConfirm(int64_t messageId);

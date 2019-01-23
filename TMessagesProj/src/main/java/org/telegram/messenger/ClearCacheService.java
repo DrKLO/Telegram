@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.messenger;
@@ -30,29 +30,25 @@ public class ClearCacheService extends IntentService {
         if (keepMedia == 2) {
             return;
         }
-        Utilities.globalQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-
-                int days;
-                if (keepMedia == 0) {
-                    days = 7;
-                } else if (keepMedia == 1) {
-                    days = 30;
-                } else {
-                    days = 3;
+        Utilities.globalQueue.postRunnable(() -> {
+            int days;
+            if (keepMedia == 0) {
+                days = 7;
+            } else if (keepMedia == 1) {
+                days = 30;
+            } else {
+                days = 3;
+            }
+            long currentTime = System.currentTimeMillis() / 1000 - 60 * 60 * 24 * days;
+            final SparseArray<File> paths = ImageLoader.getInstance().createMediaPaths();
+            for (int a = 0; a < paths.size(); a++) {
+                if (paths.keyAt(a) == FileLoader.MEDIA_DIR_CACHE) {
+                    continue;
                 }
-                long currentTime = System.currentTimeMillis() / 1000 - 60 * 60 * 24 * days;
-                final SparseArray<File> paths = ImageLoader.getInstance().createMediaPaths();
-                for (int a = 0; a < paths.size(); a++) {
-                    if (paths.keyAt(a) == FileLoader.MEDIA_DIR_CACHE) {
-                        continue;
-                    }
-                    try {
-                        Utilities.clearDir(paths.valueAt(a).getAbsolutePath(), 0, currentTime);
-                    } catch (Throwable e) {
-                        FileLog.e(e);
-                    }
+                try {
+                    Utilities.clearDir(paths.valueAt(a).getAbsolutePath(), 0, currentTime);
+                } catch (Throwable e) {
+                    FileLog.e(e);
                 }
             }
         });

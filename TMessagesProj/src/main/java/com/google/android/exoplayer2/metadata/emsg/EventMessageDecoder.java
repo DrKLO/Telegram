@@ -19,6 +19,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.MetadataDecoder;
 import com.google.android.exoplayer2.metadata.MetadataInputBuffer;
+import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
 import java.nio.ByteBuffer;
@@ -32,14 +33,15 @@ import java.util.Arrays;
  */
 public final class EventMessageDecoder implements MetadataDecoder {
 
+  @SuppressWarnings("ByteBufferBackingArray")
   @Override
   public Metadata decode(MetadataInputBuffer inputBuffer) {
     ByteBuffer buffer = inputBuffer.data;
     byte[] data = buffer.array();
     int size = buffer.limit();
     ParsableByteArray emsgData = new ParsableByteArray(data, size);
-    String schemeIdUri = emsgData.readNullTerminatedString();
-    String value = emsgData.readNullTerminatedString();
+    String schemeIdUri = Assertions.checkNotNull(emsgData.readNullTerminatedString());
+    String value = Assertions.checkNotNull(emsgData.readNullTerminatedString());
     long timescale = emsgData.readUnsignedInt();
     long presentationTimeUs = Util.scaleLargeTimestamp(emsgData.readUnsignedInt(),
         C.MICROS_PER_SECOND, timescale);

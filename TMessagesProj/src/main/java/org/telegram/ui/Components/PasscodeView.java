@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x
+ * This is the source code of Telegram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -14,8 +14,6 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Rect;
@@ -35,10 +33,8 @@ import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
@@ -48,7 +44,6 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
@@ -506,15 +501,12 @@ public class PasscodeView extends FrameLayout {
         layoutParams.rightMargin = AndroidUtilities.dp(70);
         layoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
         passwordEditText.setLayoutParams(layoutParams);
-        passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_DONE) {
-                    processDone(false);
-                    return true;
-                }
-                return false;
+        passwordEditText.setOnEditorActionListener((textView, i, keyEvent) -> {
+            if (i == EditorInfo.IME_ACTION_DONE) {
+                processDone(false);
+                return true;
             }
+            return false;
         });
         passwordEditText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -563,12 +555,7 @@ public class PasscodeView extends FrameLayout {
         layoutParams.rightMargin = AndroidUtilities.dp(10);
         layoutParams.gravity = Gravity.BOTTOM | Gravity.RIGHT;
         checkImage.setLayoutParams(layoutParams);
-        checkImage.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                processDone(false);
-            }
-        });
+        checkImage.setOnClickListener(v -> processDone(false));
 
         FrameLayout lineFrameLayout = new FrameLayout(context);
         lineFrameLayout.setBackgroundColor(0x26ffffff);
@@ -663,57 +650,51 @@ public class PasscodeView extends FrameLayout {
             frameLayout.setBackgroundResource(R.drawable.bar_selector_lock);
             frameLayout.setTag(a);
             if (a == 10) {
-                frameLayout.setOnLongClickListener(new OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v) {
-                        passwordEditText.setText("");
-                        passwordEditText2.eraseAllCharacters(true);
-                        return true;
-                    }
+                frameLayout.setOnLongClickListener(v -> {
+                    passwordEditText.setText("");
+                    passwordEditText2.eraseAllCharacters(true);
+                    return true;
                 });
             }
-            frameLayout.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    int tag = (Integer) v.getTag();
-                    switch (tag) {
-                        case 0:
-                            passwordEditText2.appendCharacter("0");
-                            break;
-                        case 1:
-                            passwordEditText2.appendCharacter("1");
-                            break;
-                        case 2:
-                            passwordEditText2.appendCharacter("2");
-                            break;
-                        case 3:
-                            passwordEditText2.appendCharacter("3");
-                            break;
-                        case 4:
-                            passwordEditText2.appendCharacter("4");
-                            break;
-                        case 5:
-                            passwordEditText2.appendCharacter("5");
-                            break;
-                        case 6:
-                            passwordEditText2.appendCharacter("6");
-                            break;
-                        case 7:
-                            passwordEditText2.appendCharacter("7");
-                            break;
-                        case 8:
-                            passwordEditText2.appendCharacter("8");
-                            break;
-                        case 9:
-                            passwordEditText2.appendCharacter("9");
-                            break;
-                        case 10:
-                            passwordEditText2.eraseLastCharacter();
-                            break;
-                    }
-                    if (passwordEditText2.length() == 4) {
-                        processDone(false);
-                    }
+            frameLayout.setOnClickListener(v -> {
+                int tag = (Integer) v.getTag();
+                switch (tag) {
+                    case 0:
+                        passwordEditText2.appendCharacter("0");
+                        break;
+                    case 1:
+                        passwordEditText2.appendCharacter("1");
+                        break;
+                    case 2:
+                        passwordEditText2.appendCharacter("2");
+                        break;
+                    case 3:
+                        passwordEditText2.appendCharacter("3");
+                        break;
+                    case 4:
+                        passwordEditText2.appendCharacter("4");
+                        break;
+                    case 5:
+                        passwordEditText2.appendCharacter("5");
+                        break;
+                    case 6:
+                        passwordEditText2.appendCharacter("6");
+                        break;
+                    case 7:
+                        passwordEditText2.appendCharacter("7");
+                        break;
+                    case 8:
+                        passwordEditText2.appendCharacter("8");
+                        break;
+                    case 9:
+                        passwordEditText2.appendCharacter("9");
+                        break;
+                    case 10:
+                        passwordEditText2.eraseLastCharacter();
+                        break;
+                }
+                if (passwordEditText2.length() == 4) {
+                    processDone(false);
                 }
             });
             numberFrameLayouts.add(frameLayout);
@@ -866,13 +847,10 @@ public class PasscodeView extends FrameLayout {
                     passwordEditText.requestFocus();
                     AndroidUtilities.showKeyboard(passwordEditText);
                 }
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (retryTextView.getVisibility() != VISIBLE && passwordEditText != null) {
-                            passwordEditText.requestFocus();
-                            AndroidUtilities.showKeyboard(passwordEditText);
-                        }
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (retryTextView.getVisibility() != VISIBLE && passwordEditText != null) {
+                        passwordEditText.requestFocus();
+                        AndroidUtilities.showKeyboard(passwordEditText);
                     }
                 }, 200);
             }
@@ -951,14 +929,11 @@ public class PasscodeView extends FrameLayout {
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                     builder.setView(relativeLayout);
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                        @Override
-                        public void onDismiss(DialogInterface dialog) {
-                            if (cancellationSignal != null) {
-                                selfCancelled = true;
-                                cancellationSignal.cancel();
-                                cancellationSignal = null;
-                            }
+                    builder.setOnDismissListener(dialog -> {
+                        if (cancellationSignal != null) {
+                            selfCancelled = true;
+                            cancellationSignal.cancel();
+                            cancellationSignal = null;
                         }
                     });
                     if (fingerprintDialog != null) {
@@ -977,7 +952,7 @@ public class PasscodeView extends FrameLayout {
                     fingerprintManager.authenticate(null, 0, cancellationSignal, new FingerprintManagerCompat.AuthenticationCallback() {
                         @Override
                         public void onAuthenticationError(int errMsgId, CharSequence errString) {
-                            if (!selfCancelled) {
+                            if (!selfCancelled && errMsgId != 5) {
                                 showFingerprintError(errString);
                             }
                         }
@@ -1041,9 +1016,8 @@ public class PasscodeView extends FrameLayout {
             backgroundDrawable = Theme.getCachedWallpaper();
             backgroundFrameLayout.setBackgroundColor(0xbf000000);
         } else {
-            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-            int selectedBackground = preferences.getInt("selectedBackground", 1000001);
-            if (selectedBackground == 1000001) {
+            long selectedBackground = Theme.getSelectedBackgroundId();
+            if (selectedBackground == Theme.DEFAULT_BACKGROUND_ID) {
                 backgroundFrameLayout.setBackgroundColor(0xff517c9e);
             } else {
                 backgroundDrawable = Theme.getCachedWallpaper();
@@ -1080,12 +1054,7 @@ public class PasscodeView extends FrameLayout {
         passwordEditText.setText("");
         passwordEditText2.eraseAllCharacters(false);
 
-        setOnTouchListener(new OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
+        setOnTouchListener((v, event) -> true);
     }
 
     private void showFingerprintError(CharSequence error) {

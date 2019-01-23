@@ -70,7 +70,7 @@ NativeByteBuffer *BuffersStorage::getFreeBuffer(uint32_t size) {
         }
         if (buffer == nullptr) {
             buffer = new NativeByteBuffer(byteCount);
-            DEBUG_D("create new %u buffer", byteCount);
+            if (LOGS_ENABLED) DEBUG_D("create new %u buffer", byteCount);
         }
     }
     if (buffer != nullptr) {
@@ -111,7 +111,7 @@ void BuffersStorage::reuseFreeBuffer(NativeByteBuffer *buffer) {
         if (arrayToReuse->size() < maxCount) {
             arrayToReuse->push_back(buffer);
         } else {
-            DEBUG_D("too more %d buffers", capacity);
+            if (LOGS_ENABLED) DEBUG_D("too more %d buffers", capacity);
             delete buffer;
         }
         if (isThreadSafe) {

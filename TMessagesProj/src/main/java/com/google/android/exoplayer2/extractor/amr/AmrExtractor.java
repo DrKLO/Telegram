@@ -32,6 +32,7 @@ import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.Util;
 import java.io.EOFException;
 import java.io.IOException;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Arrays;
@@ -45,16 +46,13 @@ import java.util.Arrays;
 public final class AmrExtractor implements Extractor {
 
   /** Factory for {@link AmrExtractor} instances. */
-  public static final ExtractorsFactory FACTORY =
-      new ExtractorsFactory() {
+  public static final ExtractorsFactory FACTORY = () -> new Extractor[] {new AmrExtractor()};
 
-        @Override
-        public Extractor[] createExtractors() {
-          return new Extractor[] {new AmrExtractor()};
-        }
-      };
-
-  /** Flags controlling the behavior of the extractor. */
+  /**
+   * Flags controlling the behavior of the extractor. Possible flag value is {@link
+   * #FLAG_ENABLE_CONSTANT_BITRATE_SEEKING}.
+   */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef(
       flag = true,

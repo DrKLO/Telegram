@@ -28,11 +28,13 @@ import com.google.android.exoplayer2.source.dash.DashUtil;
 import com.google.android.exoplayer2.source.dash.DashWrappingSegmentIndex;
 import com.google.android.exoplayer2.source.dash.manifest.AdaptationSet;
 import com.google.android.exoplayer2.source.dash.manifest.DashManifest;
+import com.google.android.exoplayer2.source.dash.manifest.DashManifestParser;
 import com.google.android.exoplayer2.source.dash.manifest.Period;
 import com.google.android.exoplayer2.source.dash.manifest.RangedUri;
 import com.google.android.exoplayer2.source.dash.manifest.Representation;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
+import com.google.android.exoplayer2.upstream.ParsingLoadable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,8 +75,9 @@ public final class DashDownloader extends SegmentDownloader<DashManifest> {
   }
 
   @Override
-  protected DashManifest getManifest(DataSource dataSource, Uri uri) throws IOException {
-    return DashUtil.loadManifest(dataSource, uri);
+  protected DashManifest getManifest(DataSource dataSource, DataSpec dataSpec) throws IOException {
+    return ParsingLoadable.load(
+        dataSource, new DashManifestParser(), dataSpec, C.DATA_TYPE_MANIFEST);
   }
 
   @Override
@@ -121,8 +124,7 @@ public final class DashDownloader extends SegmentDownloader<DashManifest> {
         if (!allowIncompleteList) {
           throw e;
         }
-        // Loading failed, but generating an incomplete segment list is allowed. Advance to the next
-        // representation.
+        // Generating an incomplete segment list is allowed. Advance to the next representation.
         continue;
       }
 

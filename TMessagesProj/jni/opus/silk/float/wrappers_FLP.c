@@ -54,13 +54,14 @@ void silk_A2NLSF_FLP(
 void silk_NLSF2A_FLP(
     silk_float                      *pAR,                               /* O    LPC coefficients [ LPC_order ]              */
     const opus_int16                *NLSF_Q15,                          /* I    NLSF vector      [ LPC_order ]              */
-    const opus_int                  LPC_order                           /* I    LPC order                                   */
+    const opus_int                  LPC_order,                          /* I    LPC order                                   */
+    int                             arch                                /* I    Run-time architecture                       */
 )
 {
     opus_int   i;
     opus_int16 a_fix_Q12[ MAX_LPC_ORDER ];
 
-    silk_NLSF2A( a_fix_Q12, NLSF_Q15, LPC_order );
+    silk_NLSF2A( a_fix_Q12, NLSF_Q15, LPC_order, arch );
 
     for( i = 0; i < LPC_order; i++ ) {
         pAR[ i ] = ( silk_float )a_fix_Q12[ i ] * ( 1.0f / 4096.0f );

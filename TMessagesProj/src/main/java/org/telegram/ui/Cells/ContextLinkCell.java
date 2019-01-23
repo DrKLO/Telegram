@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
@@ -11,7 +11,6 @@ package org.telegram.ui.Cells;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextUtils;
@@ -36,8 +35,9 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.WebFile;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.LetterDrawable;
-import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.MediaActionDrawable;
+import org.telegram.ui.Components.RadialProgress2;
 import org.telegram.ui.PhotoViewer;
 
 import java.io.File;
@@ -64,6 +64,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
     private boolean drawLinkImageView;
     private LetterDrawable letterDrawable;
     private int currentAccount = UserConfig.selectedAccount;
+    private Object parentObject;
 
     private boolean needDivider;
     private boolean buttonPressed;
@@ -87,7 +88,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
 
     private int TAG;
     private int buttonState;
-    private RadialProgress radialProgress;
+    private RadialProgress2 radialProgress;
 
     private long lastUpdateTime;
     private boolean scaled;
@@ -101,7 +102,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
 
         linkImageView = new ImageReceiver(this);
         letterDrawable = new LetterDrawable();
-        radialProgress = new RadialProgress(this);
+        radialProgress = new RadialProgress2(this);
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
     }
 
@@ -130,8 +131,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
         String urlLocation = null;
 
         if (documentAttach != null) {
-            photoThumbs = new ArrayList<>();
-            photoThumbs.add(documentAttach.thumb);
+            photoThumbs = new ArrayList<>(documentAttach.thumbs);
         } else if (inlineResult != null && inlineResult.photo != null) {
             photoThumbs = new ArrayList<>(inlineResult.photo.sizes);
         }
@@ -173,13 +173,13 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
         String ext = null;
         if (documentAttach != null) {
             if (MessageObject.isGifDocument(documentAttach)) {
-                currentPhotoObject = documentAttach.thumb;
+                currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(documentAttach.thumbs, 90);
             } else if (MessageObject.isStickerDocument(documentAttach)) {
-                currentPhotoObject = documentAttach.thumb;
+                currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(documentAttach.thumbs, 90);
                 ext = "webp";
             } else {
                 if (documentAttachType != DOCUMENT_ATTACH_TYPE_MUSIC && documentAttachType != DOCUMENT_ATTACH_TYPE_AUDIO) {
-                    currentPhotoObject = documentAttach.thumb;
+                    currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(documentAttach.thumbs, 90);
                 }
             }
         } else if (inlineResult != null && inlineResult.photo != null) {
@@ -274,15 +274,15 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
 
             if (documentAttachType == DOCUMENT_ATTACH_TYPE_GIF) {
                 if (documentAttach != null) {
-                    linkImageView.setImage(documentAttach, null, currentPhotoObject != null ? currentPhotoObject.location : null, currentPhotoFilter, documentAttach.size, ext, 0);
+                    linkImageView.setImage(documentAttach, null, currentPhotoObject, currentPhotoFilter, documentAttach.size, ext, parentObject, 0);
                 } else {
-                    linkImageView.setImage(webFile, urlLocation, null, null, currentPhotoObject != null ? currentPhotoObject.location : null, currentPhotoFilter, -1, ext, 1);
+                    linkImageView.setImage(webFile, urlLocation, null, null, currentPhotoObject, currentPhotoFilter, -1, ext, parentObject, 1);
                 }
             } else {
                 if (currentPhotoObject != null) {
-                    linkImageView.setImage(currentPhotoObject.location, currentPhotoFilter, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, currentPhotoFilterThumb, currentPhotoObject.size, ext, 0);
+                    linkImageView.setImage(currentPhotoObject, currentPhotoFilter, currentPhotoObjectThumb, currentPhotoFilterThumb, currentPhotoObject.size, ext, parentObject, 0);
                 } else {
-                    linkImageView.setImage(webFile, urlLocation, currentPhotoFilter, null, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, currentPhotoFilterThumb, -1, ext, 1);
+                    linkImageView.setImage(webFile, urlLocation, currentPhotoFilter, null, currentPhotoObjectThumb, currentPhotoFilterThumb, -1, ext, parentObject, 1);
                 }
             }
             drawLinkImageView = true;
@@ -298,6 +298,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
             int x = (width - AndroidUtilities.dp(24)) / 2;
             int y = (height - AndroidUtilities.dp(24)) / 2;
             radialProgress.setProgressRect(x, y, x + AndroidUtilities.dp(24), y + AndroidUtilities.dp(24));
+            radialProgress.setCircleRadius(AndroidUtilities.dp(12));
             linkImageView.setImageCoords(0, 0, width, height);
         } else {
             int height = 0;
@@ -318,6 +319,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
             letterDrawable.setBounds(x, AndroidUtilities.dp(8), x + maxPhotoWidth, AndroidUtilities.dp(60));
             linkImageView.setImageCoords(x, AndroidUtilities.dp(8), maxPhotoWidth, maxPhotoWidth);
             if (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC) {
+                radialProgress.setCircleRadius(AndroidUtilities.dp(24));
                 radialProgress.setProgressRect(x + AndroidUtilities.dp(4), AndroidUtilities.dp(12), x + AndroidUtilities.dp(48), AndroidUtilities.dp(56));
             }
         }
@@ -356,6 +358,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
             message.media = new TLRPC.TL_messageMediaDocument();
             message.media.flags |= 3;
             message.media.document = new TLRPC.TL_document();
+            message.media.document.file_reference = new byte[0];
             message.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
 
             if (documentAttach != null) {
@@ -368,8 +371,6 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
                 message.media.document.date = message.date;
                 message.media.document.mime_type = "audio/" + ext;
                 message.media.document.size = 0;
-                message.media.document.thumb = new TLRPC.TL_photoSizeEmpty();
-                message.media.document.thumb.type = "s";
                 message.media.document.dc_id = 0;
 
                 TLRPC.TL_documentAttributeAudio attributeAudio = new TLRPC.TL_documentAttributeAudio();
@@ -396,7 +397,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
     public void setLink(TLRPC.BotInlineResult contextResult, boolean media, boolean divider, boolean shadow) {
         needDivider = divider;
         needShadow = shadow;
-        inlineResult = contextResult;
+        parentObject = inlineResult = contextResult;
         if (inlineResult != null && inlineResult.document != null) {
             documentAttach = inlineResult.document;
         } else {
@@ -405,18 +406,19 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
         mediaWebpage = media;
         setAttachType();
         requestLayout();
-        updateButtonState(false);
+        updateButtonState(false, false);
     }
 
     public void setGif(TLRPC.Document document, boolean divider) {
         needDivider = divider;
         needShadow = false;
         inlineResult = null;
+        parentObject = "gif";
         documentAttach = document;
         mediaWebpage = true;
         setAttachType();
         requestLayout();
-        updateButtonState(false);
+        updateButtonState(false, false);
     }
 
     public boolean isSticker() {
@@ -455,7 +457,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
         super.onAttachedToWindow();
         if (drawLinkImageView) {
             if (linkImageView.onAttachedToWindow()) {
-                updateButtonState(false);
+                updateButtonState(false, false);
             }
         }
     }
@@ -479,9 +481,9 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 if (area) {
                     buttonPressed = true;
+                    radialProgress.setPressed(buttonPressed, false);
                     invalidate();
                     result = true;
-                    radialProgress.swapBackground(getDrawableForCurrentState());
                 }
             } else if (buttonPressed) {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -498,7 +500,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
                         invalidate();
                     }
                 }
-                radialProgress.swapBackground(getDrawableForCurrentState());
+                radialProgress.setPressed(buttonPressed, false);
             }
         } else {
             if (inlineResult != null && inlineResult.content != null && !TextUtils.isEmpty(inlineResult.content.url)) {
@@ -536,25 +538,25 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
             if (buttonState == 0) {
                 if (MediaController.getInstance().playMessage(currentMessageObject)) {
                     buttonState = 1;
-                    radialProgress.setBackground(getDrawableForCurrentState(), false, false);
+                    radialProgress.setIcon(getIconForCurrentState(), false, true);
                     invalidate();
                 }
             } else if (buttonState == 1) {
                 boolean result = MediaController.getInstance().pauseMessage(currentMessageObject);
                 if (result) {
                     buttonState = 0;
-                    radialProgress.setBackground(getDrawableForCurrentState(), false, false);
+                    radialProgress.setIcon(getIconForCurrentState(), false, true);
                     invalidate();
                 }
             } else if (buttonState == 2) {
                 radialProgress.setProgress(0, false);
                 if (documentAttach != null) {
-                    FileLoader.getInstance(currentAccount).loadFile(documentAttach, true, 0);
+                    FileLoader.getInstance(currentAccount).loadFile(documentAttach, inlineResult, 1, 0);
                 } else if (inlineResult.content instanceof TLRPC.TL_webDocument) {
-                    FileLoader.getInstance(currentAccount).loadFile(WebFile.createWithWebDocument(inlineResult.content), true, 1);
+                    FileLoader.getInstance(currentAccount).loadFile(WebFile.createWithWebDocument(inlineResult.content), 1, 1);
                 }
                 buttonState = 4;
-                radialProgress.setBackground(getDrawableForCurrentState(), true, false);
+                radialProgress.setIcon(getIconForCurrentState(), false, true);
                 invalidate();
             } else if (buttonState == 4) {
                 if (documentAttach != null) {
@@ -563,7 +565,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
                     FileLoader.getInstance(currentAccount).cancelLoadFile(WebFile.createWithWebDocument(inlineResult.content));
                 }
                 buttonState = 2;
-                radialProgress.setBackground(getDrawableForCurrentState(), false, false);
+                radialProgress.setIcon(getIconForCurrentState(), false, true);
                 invalidate();
             }
         }
@@ -679,18 +681,23 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
         }
     }
 
-    private Drawable getDrawableForCurrentState() {
+    private int getIconForCurrentState() {
         if (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC) {
-            if (buttonState == -1) {
-                return null;
+            radialProgress.setColors(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
+            if (buttonState == 1) {
+                return MediaActionDrawable.ICON_PAUSE;
+            } else if (buttonState == 2) {
+                return MediaActionDrawable.ICON_DOWNLOAD;
+            } else if (buttonState == 4) {
+                return MediaActionDrawable.ICON_CANCEL;
             }
-            radialProgress.setAlphaForPrevious(false);
-            return Theme.chat_fileStatesDrawable[buttonState + 5][buttonPressed ? 1 : 0];
+            return MediaActionDrawable.ICON_PLAY;
         }
-        return buttonState == 1 ? Theme.chat_photoStatesDrawables[5][0] : null;
+        radialProgress.setColors(Theme.key_chat_mediaLoaderPhoto, Theme.key_chat_mediaLoaderPhotoSelected, Theme.key_chat_mediaLoaderPhotoIcon, Theme.key_chat_mediaLoaderPhotoIconSelected);
+        return buttonState == 1 ? MediaActionDrawable.ICON_EMPTY : MediaActionDrawable.ICON_NONE;
     }
 
-    public void updateButtonState(boolean animated) {
+    public void updateButtonState(boolean ifSame, boolean animated) {
         String fileName = null;
         File cacheFile = null;
         if (documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC || documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO) {
@@ -724,7 +731,6 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
         }
 
         if (TextUtils.isEmpty(fileName)) {
-            radialProgress.setBackground(null, false, false);
             return;
         }
         if (!cacheFile.exists()) {
@@ -738,8 +744,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
                 }
                 if (!isLoading) {
                     buttonState = 2;
-                    radialProgress.setProgress(0, animated);
-                    radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
+                    radialProgress.setIcon(getIconForCurrentState(), ifSame, animated);
                 } else {
                     buttonState = 4;
                     Float progress = ImageLoader.getInstance().getFileProgress(fileName);
@@ -748,14 +753,14 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
                     } else {
                         radialProgress.setProgress(0, animated);
                     }
-                    radialProgress.setBackground(getDrawableForCurrentState(), true, animated);
+                    radialProgress.setIcon(getIconForCurrentState(), ifSame, animated);
                 }
             } else {
                 buttonState = 1;
                 Float progress = ImageLoader.getInstance().getFileProgress(fileName);
                 float setProgress = progress != null ? progress : 0;
                 radialProgress.setProgress(setProgress, false);
-                radialProgress.setBackground(getDrawableForCurrentState(), true, animated);
+                radialProgress.setIcon(getIconForCurrentState(), ifSame, animated);
             }
             invalidate();
         } else {
@@ -767,10 +772,11 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
                 } else {
                     buttonState = 1;
                 }
+                radialProgress.setProgress(1, animated);
             } else {
                 buttonState = -1;
             }
-            radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
+            radialProgress.setIcon(getIconForCurrentState(), ifSame, animated);
             invalidate();
         }
     }
@@ -784,14 +790,14 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
     }
 
     @Override
-    public void onFailedDownload(String fileName) {
-        updateButtonState(false);
+    public void onFailedDownload(String fileName, boolean canceled) {
+        updateButtonState(true, canceled);
     }
 
     @Override
     public void onSuccessDownload(String fileName) {
         radialProgress.setProgress(1, true);
-        updateButtonState(true);
+        updateButtonState(false, true);
     }
 
     @Override
@@ -799,11 +805,11 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
         radialProgress.setProgress(progress, true);
         if (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC) {
             if (buttonState != 4) {
-                updateButtonState(false);
+                updateButtonState(false, true);
             }
         } else {
             if (buttonState != 1) {
-                updateButtonState(false);
+                updateButtonState(false, true);
             }
         }
     }

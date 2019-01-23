@@ -56,23 +56,40 @@
 
 #define CELT_SIG_SCALE 32768.f
 
-#define celt_fatal(str) _celt_fatal(str, __FILE__, __LINE__);
-#ifdef ENABLE_ASSERTIONS
+#define CELT_FATAL(str) celt_fatal(str, __FILE__, __LINE__);
+
+#if defined(ENABLE_ASSERTIONS) || defined(ENABLE_HARDENING)
+#ifdef __GNUC__
+__attribute__((noreturn))
+#endif
+void celt_fatal(const char *str, const char *file, int line);
+
+#if defined(CELT_C) && !defined(OVERRIDE_celt_fatal)
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef __GNUC__
 __attribute__((noreturn))
 #endif
-static OPUS_INLINE void _celt_fatal(const char *str, const char *file, int line)
+void celt_fatal(const char *str, const char *file, int line)
 {
    fprintf (stderr, "Fatal (internal) error in %s, line %d: %s\n", file, line, str);
    abort();
 }
-#define celt_assert(cond) {if (!(cond)) {celt_fatal("assertion failed: " #cond);}}
-#define celt_assert2(cond, message) {if (!(cond)) {celt_fatal("assertion failed: " #cond "\n" message);}}
+#endif
+
+#define celt_assert(cond) {if (!(cond)) {CELT_FATAL("assertion failed: " #cond);}}
+#define celt_assert2(cond, message) {if (!(cond)) {CELT_FATAL("assertion failed: " #cond "\n" message);}}
+#define MUST_SUCCEED(call) celt_assert((call) == OPUS_OK)
 #else
 #define celt_assert(cond)
 #define celt_assert2(cond, message)
+#define MUST_SUCCEED(call) do {if((call) != OPUS_OK) {RESTORE_STACK; return OPUS_INTERNAL_ERROR;} } while (0)
+#endif
+
+#if defined(ENABLE_ASSERTIONS)
+#define celt_sig_assert(cond) {if (!(cond)) {CELT_FATAL("signal assertion failed: " #cond);}}
+#else
+#define celt_sig_assert(cond)
 #endif
 
 #define IMUL32(a,b) ((a)*(b))
@@ -101,10 +118,13 @@ static OPUS_INLINE void _celt_fatal(const char *str, const char *file, int line)
 
 typedef opus_int16 opus_val16;
 typedef opus_int32 opus_val32;
+typedef opus_int64 opus_val64;
 
 typedef opus_val32 celt_sig;
 typedef opus_val16 celt_norm;
 typedef opus_val32 celt_ener;
+
+#define celt_isnan(x) 0
 
 #define Q15ONE 32767
 
@@ -158,6 +178,7 @@ static OPUS_INLINE opus_int16 SAT16(opus_int32 x) {
 
 typedef float opus_val16;
 typedef float opus_val32;
+typedef float opus_val64;
 
 typedef float celt_sig;
 typedef float celt_norm;
@@ -258,9 +279,9 @@ static OPUS_INLINE int celt_isnan(float x)
 
 #ifndef GLOBAL_STACK_SIZE
 #ifdef FIXED_POINT
-#define GLOBAL_STACK_SIZE 100000
+#define GLOBAL_STACK_SIZE 120000
 #else
-#define GLOBAL_STACK_SIZE 100000
+#define GLOBAL_STACK_SIZE 120000
 #endif
 #endif
 

@@ -32,6 +32,7 @@ import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.TimestampAdjuster;
 import com.google.android.exoplayer2.util.Util;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,8 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 /* package */ final class HlsMediaChunk extends MediaChunk {
 
-
-  private static final String PRIV_TIMESTAMP_FRAME_OWNER =
+  public static final String PRIV_TIMESTAMP_FRAME_OWNER =
       "com.apple.streaming.transportStreamTimestamp";
 
   private static final AtomicInteger uidSource = new AtomicInteger();
@@ -73,15 +73,13 @@ import java.util.concurrent.atomic.AtomicInteger;
   private final List<Format> muxedCaptionFormats;
   private final DrmInitData drmInitData;
   private final Extractor previousExtractor;
+  private final Id3Decoder id3Decoder;
+  private final ParsableByteArray id3Data;
 
   private Extractor extractor;
-  private boolean isPackedAudioExtractor;
-  private Id3Decoder id3Decoder;
-  private ParsableByteArray id3Data;
   private HlsSampleStreamWrapper output;
   private int initSegmentBytesLoaded;
   private int nextLoadPosition;
-  private boolean id3TimestampPeeked;
   private boolean initLoadCompleted;
   private volatile boolean loadCanceled;
   private boolean loadCompleted;
@@ -154,10 +152,12 @@ import java.util.concurrent.atomic.AtomicInteger;
     if (previousChunk != null) {
       id3Decoder = previousChunk.id3Decoder;
       id3Data = previousChunk.id3Data;
-      shouldSpliceIn = previousChunk.hlsUrl != hlsUrl;
+      shouldSpliceIn = previousChunk.hlsUrl != hlsUrl || !previousChunk.loadCompleted;
       previousExtractor = previousChunk.discontinuitySequenceNumber != discontinuitySequenceNumber
           || shouldSpliceIn ? null : previousChunk.extractor;
     } else {
+      id3Decoder = new Id3Decoder();
+      id3Data = new ParsableByteArray(Id3Decoder.ID3_HEADER_LENGTH);
       shouldSpliceIn = false;
     }
     this.previousExtractor = previousExtractor;
@@ -244,12 +244,6 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
     try {
       ExtractorInput input = prepareExtraction(dataSource, loadDataSpec);
-      if (isPackedAudioExtractor && !id3TimestampPeeked) {
-        long id3Timestamp = peekId3PrivTimestamp(input);
-        id3TimestampPeeked = true;
-        output.setSampleOffsetUs(id3Timestamp != C.TIME_UNSET
-            ? timestampAdjuster.adjustTsTimestamp(id3Timestamp) : startTimeUs);
-      }
       if (skipLoadedBytes) {
         input.skipFully(nextLoadPosition);
       }
@@ -267,10 +261,16 @@ import java.util.concurrent.atomic.AtomicInteger;
   }
 
   private DefaultExtractorInput prepareExtraction(DataSource dataSource, DataSpec dataSpec)
-      throws IOException {
+      throws IOException, InterruptedException {
     long bytesToRead = dataSource.open(dataSpec);
 
+    DefaultExtractorInput extractorInput =
+        new DefaultExtractorInput(dataSource, dataSpec.absoluteStreamPosition, bytesToRead);
+
     if (extractor == null) {
+      long id3Timestamp = peekId3PrivTimestamp(extractorInput);
+      extractorInput.resetPeekPosition();
+
       Pair<Extractor, Boolean> extractorData =
           extractorFactory.createExtractor(
               previousExtractor,
@@ -279,22 +279,26 @@ import java.util.concurrent.atomic.AtomicInteger;
               muxedCaptionFormats,
               drmInitData,
               timestampAdjuster,
-              dataSource.getResponseHeaders());
+              dataSource.getResponseHeaders(),
+              extractorInput);
       extractor = extractorData.first;
-      isPackedAudioExtractor = extractorData.second;
       boolean reusingExtractor = extractor == previousExtractor;
-      initLoadCompleted = reusingExtractor && initDataSpec != null;
-      if (isPackedAudioExtractor && id3Data == null) {
-        id3Decoder = new Id3Decoder();
-        id3Data = new ParsableByteArray(Id3Decoder.ID3_HEADER_LENGTH);
+      boolean isPackedAudioExtractor = extractorData.second;
+      if (isPackedAudioExtractor) {
+        output.setSampleOffsetUs(
+            id3Timestamp != C.TIME_UNSET
+                ? timestampAdjuster.adjustTsTimestamp(id3Timestamp)
+                : startTimeUs);
       }
+      initLoadCompleted = reusingExtractor && initDataSpec != null;
+
       output.init(uid, shouldSpliceIn, reusingExtractor);
       if (!reusingExtractor) {
         extractor.init(output);
       }
     }
 
-    return new DefaultExtractorInput(dataSource, dataSpec.absoluteStreamPosition, bytesToRead);
+    return extractorInput;
   }
 
   /**
@@ -309,7 +313,10 @@ import java.util.concurrent.atomic.AtomicInteger;
    */
   private long peekId3PrivTimestamp(ExtractorInput input) throws IOException, InterruptedException {
     input.resetPeekPosition();
-    if (!input.peekFully(id3Data.data, 0, Id3Decoder.ID3_HEADER_LENGTH, true)) {
+    try {
+      input.peekFully(id3Data.data, 0, Id3Decoder.ID3_HEADER_LENGTH);
+    } catch (EOFException e) {
+      // The input isn't long enough for there to be any ID3 data.
       return C.TIME_UNSET;
     }
     id3Data.reset(Id3Decoder.ID3_HEADER_LENGTH);
@@ -325,9 +332,7 @@ import java.util.concurrent.atomic.AtomicInteger;
       id3Data.reset(requiredCapacity);
       System.arraycopy(data, 0, id3Data.data, 0, Id3Decoder.ID3_HEADER_LENGTH);
     }
-    if (!input.peekFully(id3Data.data, Id3Decoder.ID3_HEADER_LENGTH, id3Size, true)) {
-      return C.TIME_UNSET;
-    }
+    input.peekFully(id3Data.data, Id3Decoder.ID3_HEADER_LENGTH, id3Size);
     Metadata metadata = id3Decoder.decode(id3Data.data, id3Size);
     if (metadata == null) {
       return C.TIME_UNSET;

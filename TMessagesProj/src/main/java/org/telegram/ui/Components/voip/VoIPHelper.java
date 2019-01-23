@@ -12,9 +12,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -46,6 +48,7 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.VoIPActivity;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
 
@@ -218,6 +221,7 @@ public class VoIPHelper{
 
 	public static void showRateAlert(final Context context, final Runnable onDismiss, final long callID, final long accessHash, final int account){
 		final File log=getLogFile(callID);
+		final int[] page={0};
 		LinearLayout alertView=new LinearLayout(context);
 		alertView.setOrientation(LinearLayout.VERTICAL);
 
@@ -234,8 +238,56 @@ public class VoIPHelper{
 		final BetterRatingView bar = new BetterRatingView(context);
 		alertView.addView(bar, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 0));
 
+		final LinearLayout problemsWrap=new LinearLayout(context);
+		problemsWrap.setOrientation(LinearLayout.VERTICAL);
+
+		View.OnClickListener problemCheckboxClickListener=new View.OnClickListener(){
+			@Override
+			public void onClick(View v){
+				CheckBoxCell check=(CheckBoxCell)v;
+				check.setChecked(!check.isChecked(), true);
+			}
+		};
+
+		final String[] problems={"echo", "noise", "interruptions", "distorted_speech", "silent_local", "silent_remote", "dropped"};
+		for(int i=0;i<problems.length;i++){
+			CheckBoxCell check=new CheckBoxCell(context, 1);
+			check.setClipToPadding(false);
+			check.setTag(problems[i]);
+			String label=null;
+			switch(i){
+				case 0:
+					label=LocaleController.getString("RateCallEcho", R.string.RateCallEcho);
+					break;
+				case 1:
+					label=LocaleController.getString("RateCallNoise", R.string.RateCallNoise);
+					break;
+				case 2:
+					label=LocaleController.getString("RateCallInterruptions", R.string.RateCallInterruptions);
+					break;
+				case 3:
+					label=LocaleController.getString("RateCallDistorted", R.string.RateCallDistorted);
+					break;
+				case 4:
+					label=LocaleController.getString("RateCallSilentLocal", R.string.RateCallSilentLocal);
+					break;
+				case 5:
+					label=LocaleController.getString("RateCallSilentRemote", R.string.RateCallSilentRemote);
+					break;
+				case 6:
+					label=LocaleController.getString("RateCallDropped", R.string.RateCallDropped);
+					break;
+			}
+			check.setText(label, null, false, false);
+			check.setOnClickListener(problemCheckboxClickListener);
+			check.setTag(problems[i]);
+			problemsWrap.addView(check);
+		}
+		alertView.addView(problemsWrap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, -8, 0, -8, 0));
+		problemsWrap.setVisibility(View.GONE);
+
 		final EditText commentBox = new EditText(context);
-		commentBox.setHint(LocaleController.getString("CallReportHint", R.string.CallReportHint));
+		commentBox.setHint(LocaleController.getString("VoipFeedbackCommentHint", R.string.VoipFeedbackCommentHint));
 		commentBox.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
 		commentBox.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
 		commentBox.setHintTextColor(Theme.getColor(Theme.key_dialogTextHint));
@@ -279,29 +331,6 @@ public class VoIPHelper{
 				.setPositiveButton(LocaleController.getString("Send", R.string.Send), new DialogInterface.OnClickListener(){
 					@Override
 					public void onClick(DialogInterface dialog, int which){
-						final int currentAccount = UserConfig.selectedAccount;
-						final TLRPC.TL_phone_setCallRating req = new TLRPC.TL_phone_setCallRating();
-						req.rating = bar.getRating();
-						if (req.rating < 5)
-							req.comment = commentBox.getText().toString();
-						else
-							req.comment="";
-						req.peer = new TLRPC.TL_inputPhoneCall();
-						req.peer.access_hash = accessHash;
-						req.peer.id = callID;
-						ConnectionsManager.getInstance(account).sendRequest(req, new RequestDelegate() {
-							@Override
-							public void run(TLObject response, TLRPC.TL_error error) {
-								if (response instanceof TLRPC.TL_updates) {
-									TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
-									MessagesController.getInstance(currentAccount).processUpdates(updates, false);
-									if(includeLogs[0] && log.exists() && req.rating<4){
-										SendMessagesHelper.prepareSendingDocument(log.getAbsolutePath(), log.getAbsolutePath(), null, "text/plain", VOIP_SUPPORT_ID, null, null, null);
-										Toast.makeText(context, LocaleController.getString("CallReportSent", R.string.CallReportSent), Toast.LENGTH_LONG).show();
-									}
-								}
-							}
-						});
 						//SendMessagesHelper.getInstance(currentAccount).sendMessage(commentBox.getText().toString(), VOIP_SUPPORT_ID, null, null, true, null, null, null);
 					}
 				})
@@ -325,13 +354,8 @@ public class VoIPHelper{
 				}
 			});
 		}
-		alert.setOnShowListener(new DialogInterface.OnShowListener(){
-			@Override
-			public void onShow(DialogInterface dialog){
-				AndroidUtilities.hideKeyboard(alert.getWindow().getDecorView());
-			}
-		});
 		alert.show();
+		alert.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 
 		final View btn = alert.getButton(DialogInterface.BUTTON_POSITIVE);
 		btn.setEnabled(false);
@@ -339,14 +363,67 @@ public class VoIPHelper{
 			@Override
 			public void onRatingChanged(int rating) {
 				btn.setEnabled(rating > 0);
-				commentBox.setHint(rating<4 ? LocaleController.getString("CallReportHint", R.string.CallReportHint) : LocaleController.getString("VoipFeedbackCommentHint", R.string.VoipFeedbackCommentHint));
+				/*commentBox.setHint(rating<4 ? LocaleController.getString("CallReportHint", R.string.CallReportHint) : LocaleController.getString("VoipFeedbackCommentHint", R.string.VoipFeedbackCommentHint));
 				commentBox.setVisibility(rating < 5 && rating > 0 ? View.VISIBLE : View.GONE);
 				if (commentBox.getVisibility() == View.GONE) {
 					((InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(commentBox.getWindowToken(), 0);
 				}
-				if(log.exists()){
-					checkbox.setVisibility(rating<4 ? View.VISIBLE : View.GONE);
-					logsText.setVisibility(rating<4 ? View.VISIBLE : View.GONE);
+				*/
+				((TextView)btn).setText((rating<4 ? LocaleController.getString("Next", R.string.Next) : LocaleController.getString("Send", R.string.Send)).toUpperCase());
+			}
+		});
+		btn.setOnClickListener(new View.OnClickListener(){
+			@Override
+			public void onClick(View v){
+				int rating=bar.getRating();
+				if(rating>=4 || page[0]==1){
+					final int currentAccount=UserConfig.selectedAccount;
+					final TLRPC.TL_phone_setCallRating req=new TLRPC.TL_phone_setCallRating();
+					req.rating=bar.getRating();
+					ArrayList<String> problemTags=new ArrayList<>();
+					for(int i=0;i<problemsWrap.getChildCount();i++){
+						CheckBoxCell check=(CheckBoxCell) problemsWrap.getChildAt(i);
+						if(check.isChecked())
+							problemTags.add("#"+check.getTag());
+					}
+
+					if(req.rating<5)
+						req.comment=commentBox.getText().toString();
+					else
+						req.comment="";
+					if(!problemTags.isEmpty() && !includeLogs[0]){
+						req.comment+=" "+TextUtils.join(" ", problemTags);
+					}
+					req.peer=new TLRPC.TL_inputPhoneCall();
+					req.peer.access_hash=accessHash;
+					req.peer.id=callID;
+					ConnectionsManager.getInstance(account).sendRequest(req, new RequestDelegate(){
+						@Override
+						public void run(TLObject response, TLRPC.TL_error error){
+							if(response instanceof TLRPC.TL_updates){
+								TLRPC.TL_updates updates=(TLRPC.TL_updates) response;
+								MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+							}
+							if(includeLogs[0] && log.exists() && req.rating<4){
+								SendMessagesHelper.prepareSendingDocument(log.getAbsolutePath(), log.getAbsolutePath(), null, TextUtils.join(" ", problemTags), "text/plain", VOIP_SUPPORT_ID, null, null, null);
+								Toast.makeText(context, LocaleController.getString("CallReportSent", R.string.CallReportSent), Toast.LENGTH_LONG).show();
+							}
+						}
+					});
+					alert.dismiss();
+				}else{
+					page[0]=1;
+					bar.setVisibility(View.GONE);
+					//text.setText(LocaleController.getString("CallReportHint", R.string.CallReportHint));
+					text.setVisibility(View.GONE);
+					alert.setTitle(LocaleController.getString("CallReportHint", R.string.CallReportHint));
+					commentBox.setVisibility(View.VISIBLE);
+					if(log.exists()){
+						checkbox.setVisibility(View.VISIBLE);
+						logsText.setVisibility(View.VISIBLE);
+					}
+					problemsWrap.setVisibility(View.VISIBLE);
+					((TextView)btn).setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
 				}
 			}
 		});
@@ -356,24 +433,15 @@ public class VoIPHelper{
 		if(BuildVars.DEBUG_VERSION){
 			File debugLogsDir=new File(ApplicationLoader.applicationContext.getExternalFilesDir(null), "logs");
 			String[] logs=debugLogsDir.list();
-			for(String log:logs){
-				if(log.endsWith("voip"+callID+".txt")){
-					return new File(debugLogsDir, log);
+			if(logs!=null){
+				for(String log : logs){
+					if(log.endsWith("voip"+callID+".txt")){
+						return new File(debugLogsDir, log);
+					}
 				}
 			}
 		}
 		return new File(getLogsDir(), callID+".log");
-	}
-
-	public static void upgradeP2pSetting(int account){
-		SharedPreferences prefs=MessagesController.getMainSettings(account);
-		if(prefs.contains("calls_p2p")){
-			SharedPreferences.Editor e=prefs.edit();
-			if(!prefs.getBoolean("calls_p2p", true)){
-				e.putInt("calls_p2p_new", 2);
-			}
-			e.remove("calls_p2p").commit();
-		}
 	}
 
 	public static void showCallDebugSettings(final Context context){

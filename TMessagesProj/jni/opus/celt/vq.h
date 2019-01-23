@@ -45,6 +45,8 @@
 #include "mips/vq_mipsr1.h"
 #endif
 
+void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread);
+
 opus_val16 op_pvq_search_c(celt_norm *X, int *iy, int K, int N, int arch);
 
 #if !defined(OVERRIDE_OP_PVQ_SEARCH)

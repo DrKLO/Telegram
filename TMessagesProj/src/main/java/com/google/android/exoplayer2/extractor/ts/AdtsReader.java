@@ -15,7 +15,6 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
-import android.util.Log;
 import android.util.Pair;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
@@ -25,6 +24,7 @@ import com.google.android.exoplayer2.extractor.ExtractorOutput;
 import com.google.android.exoplayer2.extractor.TrackOutput;
 import com.google.android.exoplayer2.extractor.ts.TsPayloadReader.TrackIdGenerator;
 import com.google.android.exoplayer2.util.CodecSpecificDataUtil;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.ParsableBitArray;
 import com.google.android.exoplayer2.util.ParsableByteArray;
@@ -39,9 +39,10 @@ public final class AdtsReader implements ElementaryStreamReader {
   private static final String TAG = "AdtsReader";
 
   private static final int STATE_FINDING_SAMPLE = 0;
-  private static final int STATE_READING_ID3_HEADER = 1;
-  private static final int STATE_READING_ADTS_HEADER = 2;
-  private static final int STATE_READING_SAMPLE = 3;
+  private static final int STATE_CHECKING_ADTS_HEADER = 1;
+  private static final int STATE_READING_ID3_HEADER = 2;
+  private static final int STATE_READING_ADTS_HEADER = 3;
+  private static final int STATE_READING_SAMPLE = 4;
 
   private static final int HEADER_SIZE = 5;
   private static final int CRC_SIZE = 2;
@@ -56,6 +57,7 @@ public final class AdtsReader implements ElementaryStreamReader {
   private static final int ID3_HEADER_SIZE = 10;
   private static final int ID3_SIZE_OFFSET = 6;
   private static final byte[] ID3_IDENTIFIER = {'I', 'D', '3'};
+  private static final int VERSION_UNSET = -1;
 
   private final boolean exposeId3;
   private final ParsableBitArray adtsScratch;
@@ -72,6 +74,13 @@ public final class AdtsReader implements ElementaryStreamReader {
   private int matchState;
 
   private boolean hasCrc;
+  private boolean foundFirstFrame;
+
+  // Used to verifies sync words
+  private int firstFrameVersion;
+  private int firstFrameSampleRateIndex;
+
+  private int currentFrameVersion;
 
   // Used when parsing the header.
   private boolean hasOutputFormat;
@@ -99,13 +108,21 @@ public final class AdtsReader implements ElementaryStreamReader {
     adtsScratch = new ParsableBitArray(new byte[HEADER_SIZE + CRC_SIZE]);
     id3HeaderBuffer = new ParsableByteArray(Arrays.copyOf(ID3_IDENTIFIER, ID3_HEADER_SIZE));
     setFindingSampleState();
+    firstFrameVersion = VERSION_UNSET;
+    firstFrameSampleRateIndex = C.INDEX_UNSET;
+    sampleDurationUs = C.TIME_UNSET;
     this.exposeId3 = exposeId3;
     this.language = language;
   }
 
+  /** Returns whether an integer matches an ADTS SYNC word. */
+  public static boolean isAdtsSyncWord(int candidateSyncWord) {
+    return (candidateSyncWord & 0xFFF6) == 0xFFF0;
+  }
+
   @Override
   public void seek() {
-    setFindingSampleState();
+    resetSync();
   }
 
   @Override
@@ -124,7 +141,7 @@ public final class AdtsReader implements ElementaryStreamReader {
   }
 
   @Override
-  public void packetStarted(long pesTimeUs, boolean dataAlignmentIndicator) {
+  public void packetStarted(long pesTimeUs, @TsPayloadReader.Flags int flags) {
     timeUs = pesTimeUs;
   }
 
@@ -140,6 +157,9 @@ public final class AdtsReader implements ElementaryStreamReader {
             parseId3Header();
           }
           break;
+        case STATE_CHECKING_ADTS_HEADER:
+          checkAdtsHeader(data);
+          break;
         case STATE_READING_ADTS_HEADER:
           int targetLength = hasCrc ? HEADER_SIZE + CRC_SIZE : HEADER_SIZE;
           if (continueRead(data, adtsScratch.data, targetLength)) {
@@ -149,6 +169,8 @@ public final class AdtsReader implements ElementaryStreamReader {
         case STATE_READING_SAMPLE:
           readSample(data);
           break;
+        default:
+          throw new IllegalStateException();
       }
     }
   }
@@ -156,6 +178,19 @@ public final class AdtsReader implements ElementaryStreamReader {
   @Override
   public void packetFinished() {
     // Do nothing.
+  }
+
+  /**
+   * Returns the duration in microseconds per sample, or {@link C#TIME_UNSET} if the sample duration
+   * is not available.
+   */
+  public long getSampleDurationUs() {
+    return sampleDurationUs;
+  }
+
+  private void resetSync() {
+    foundFirstFrame = false;
+    setFindingSampleState();
   }
 
   /**
@@ -219,6 +254,12 @@ public final class AdtsReader implements ElementaryStreamReader {
     bytesRead = 0;
   }
 
+  /** Sets the state to STATE_CHECKING_ADTS_HEADER. */
+  private void setCheckingAdtsHeaderState() {
+    state = STATE_CHECKING_ADTS_HEADER;
+    bytesRead = 0;
+  }
+
   /**
    * Locates the next sample start, advancing the position to the byte that immediately follows
    * identifier. If a sample was not located, the position is advanced to the limit.
@@ -231,12 +272,21 @@ public final class AdtsReader implements ElementaryStreamReader {
     int endOffset = pesBuffer.limit();
     while (position < endOffset) {
       int data = adtsData[position++] & 0xFF;
-      if (matchState == MATCH_STATE_FF && data >= 0xF0 && data != 0xFF) {
-        hasCrc = (data & 0x1) == 0;
-        setReadingAdtsHeaderState();
-        pesBuffer.setPosition(position);
-        return;
+      if (matchState == MATCH_STATE_FF && isAdtsSyncBytes((byte) 0xFF, (byte) data)) {
+        if (foundFirstFrame
+            || checkSyncPositionValid(pesBuffer, /* syncPositionCandidate= */ position - 2)) {
+          currentFrameVersion = (data & 0x8) >> 3;
+          hasCrc = (data & 0x1) == 0;
+          if (!foundFirstFrame) {
+            setCheckingAdtsHeaderState();
+          } else {
+            setReadingAdtsHeaderState();
+          }
+          pesBuffer.setPosition(position);
+          return;
+        }
       }
+
       switch (matchState | data) {
         case MATCH_STATE_START | 0xFF:
           matchState = MATCH_STATE_FF;
@@ -262,6 +312,117 @@ public final class AdtsReader implements ElementaryStreamReader {
       }
     }
     pesBuffer.setPosition(position);
+  }
+
+  /**
+   * Peeks the Adts header of the current frame and checks if it is valid. If the header is valid,
+   * transition to {@link #STATE_READING_ADTS_HEADER}; else, transition to {@link
+   * #STATE_FINDING_SAMPLE}.
+   */
+  private void checkAdtsHeader(ParsableByteArray buffer) {
+    if (buffer.bytesLeft() == 0) {
+      // Not enough data to check yet, defer this check.
+      return;
+    }
+    // Peek the next byte of buffer into scratch array.
+    adtsScratch.data[0] = buffer.data[buffer.getPosition()];
+
+    adtsScratch.setPosition(2);
+    int currentFrameSampleRateIndex = adtsScratch.readBits(4);
+    if (firstFrameSampleRateIndex != C.INDEX_UNSET
+        && currentFrameSampleRateIndex != firstFrameSampleRateIndex) {
+      // Invalid header.
+      resetSync();
+      return;
+    }
+
+    if (!foundFirstFrame) {
+      foundFirstFrame = true;
+      firstFrameVersion = currentFrameVersion;
+      firstFrameSampleRateIndex = currentFrameSampleRateIndex;
+    }
+    setReadingAdtsHeaderState();
+  }
+
+  /**
+   * Returns whether the given syncPositionCandidate is a real SYNC word.
+   *
+   * <p>SYNC word pattern can occur within AAC data, so we perform a few checks to make sure this is
+   * really a SYNC word. This includes:
+   *
+   * <ul>
+   *   <li>Checking if MPEG version of this frame matches the first detected version.
+   *   <li>Checking if the sample rate index of this frame matches the first detected sample rate
+   *       index.
+   *   <li>Checking if the bytes immediately after the current package also match a SYNC-word.
+   * </ul>
+   *
+   * If the buffer runs out of data for any check, optimistically skip that check, because
+   * AdtsReader consumes each buffer as a whole. We will still run a header validity check later.
+   */
+  private boolean checkSyncPositionValid(ParsableByteArray pesBuffer, int syncPositionCandidate) {
+    // The SYNC word contains 2 bytes, and the first byte may be in the previously consumed buffer.
+    // Hence the second byte of the SYNC word may be byte 0 of this buffer, and
+    // syncPositionCandidate (which indicates position of the first byte of the SYNC word) may be
+    // -1.
+    // Since the first byte of the SYNC word is always FF, which does not contain any informational
+    // bits, we set the byte position to be the second byte in the SYNC word to ensure it's always
+    // within this buffer.
+    pesBuffer.setPosition(syncPositionCandidate + 1);
+    if (!tryRead(pesBuffer, adtsScratch.data, 1)) {
+      return false;
+    }
+
+    adtsScratch.setPosition(4);
+    int currentFrameVersion = adtsScratch.readBits(1);
+    if (firstFrameVersion != VERSION_UNSET && currentFrameVersion != firstFrameVersion) {
+      return false;
+    }
+
+    if (firstFrameSampleRateIndex != C.INDEX_UNSET) {
+      if (!tryRead(pesBuffer, adtsScratch.data, 1)) {
+        return true;
+      }
+      adtsScratch.setPosition(2);
+      int currentFrameSampleRateIndex = adtsScratch.readBits(4);
+      if (currentFrameSampleRateIndex != firstFrameSampleRateIndex) {
+        return false;
+      }
+      pesBuffer.setPosition(syncPositionCandidate + 2);
+    }
+
+    // Optionally check the byte after this frame matches SYNC word.
+
+    if (!tryRead(pesBuffer, adtsScratch.data, 4)) {
+      return true;
+    }
+    adtsScratch.setPosition(14);
+    int frameSize = adtsScratch.readBits(13);
+    if (frameSize <= 6) {
+      // Not a frame.
+      return false;
+    }
+    int nextSyncPosition = syncPositionCandidate + frameSize;
+    if (nextSyncPosition + 1 >= pesBuffer.limit()) {
+      return true;
+    }
+    return (isAdtsSyncBytes(pesBuffer.data[nextSyncPosition], pesBuffer.data[nextSyncPosition + 1])
+        && (firstFrameVersion == VERSION_UNSET
+            || ((pesBuffer.data[nextSyncPosition + 1] & 0x8) >> 3) == currentFrameVersion));
+  }
+
+  private boolean isAdtsSyncBytes(byte firstByte, byte secondByte) {
+    int syncWord = (firstByte & 0xFF) << 8 | (secondByte & 0xFF);
+    return isAdtsSyncWord(syncWord);
+  }
+
+  /** Reads {@code targetLength} bytes into target, and returns whether the read succeeded. */
+  private boolean tryRead(ParsableByteArray source, byte[] target, int targetLength) {
+    if (source.bytesLeft() < targetLength) {
+      return false;
+    }
+    source.readBytes(target, /* offset= */ 0, targetLength);
+    return true;
   }
 
   /**
@@ -296,12 +457,12 @@ public final class AdtsReader implements ElementaryStreamReader {
         audioObjectType = 2;
       }
 
-      int sampleRateIndex = adtsScratch.readBits(4);
-      adtsScratch.skipBits(1);
+      adtsScratch.skipBits(5);
       int channelConfig = adtsScratch.readBits(3);
 
-      byte[] audioSpecificConfig = CodecSpecificDataUtil.buildAacAudioSpecificConfig(
-          audioObjectType, sampleRateIndex, channelConfig);
+      byte[] audioSpecificConfig =
+          CodecSpecificDataUtil.buildAacAudioSpecificConfig(
+              audioObjectType, firstFrameSampleRateIndex, channelConfig);
       Pair<Integer, Integer> audioParams = CodecSpecificDataUtil.parseAacAudioSpecificConfig(
           audioSpecificConfig);
 

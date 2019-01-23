@@ -73,7 +73,6 @@ struct OpusCustomEncoder {
    int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
    int loss_rate;
    int lsb_depth;
-   int variable_duration;
    int lfe;
    int disable_inv;
    int arch;
@@ -363,6 +362,12 @@ static int transient_analysis(const opus_val32 * OPUS_RESTRICT in, int len, int 
       /* Compute harmonic mean discarding the unreliable boundaries
          The data is smooth, so we only take 1/4th of the samples */
       unmask=0;
+      /* We should never see NaNs here. If we find any, then something really bad happened and we better abort
+         before it does any damage later on. If these asserts are disabled (no hardening), then the table
+         lookup a few lines below (id = ...) is likely to crash dur to an out-of-bounds read. DO NOT FIX
+         that crash on NaN since it could result in a worse issue later on. */
+      celt_assert(!celt_isnan(tmp[0]));
+      celt_assert(!celt_isnan(norm));
       for (i=12;i<len2-5;i+=4)
       {
          int id;
@@ -578,7 +583,7 @@ static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM, opus_val16 bias
 
 static int tf_analysis(const CELTMode *m, int len, int isTransient,
       int *tf_res, int lambda, celt_norm *X, int N0, int LM,
-      opus_val16 tf_estimate, int tf_chan)
+      opus_val16 tf_estimate, int tf_chan, int *importance)
 {
    int i;
    VARDECL(int, metric);
@@ -661,22 +666,22 @@ static int tf_analysis(const CELTMode *m, int len, int isTransient,
          biasing the decision */
       if (narrow && (metric[i]==0 || metric[i]==-2*LM))
          metric[i]-=1;
-      /*printf("%d ", metric[i]);*/
+      /*printf("%d ", metric[i]/2 + (!isTransient)*LM);*/
    }
    /*printf("\n");*/
    /* Search for the optimal tf resolution, including tf_select */
    tf_select = 0;
    for (sel=0;sel<2;sel++)
    {
-      cost0 = 0;
-      cost1 = isTransient ? 0 : lambda;
+      cost0 = importance[0]*abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*sel+0]);
+      cost1 = importance[0]*abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*sel+1]) + (isTransient ? 0 : lambda);
       for (i=1;i<len;i++)
       {
          int curr0, curr1;
          curr0 = IMIN(cost0, cost1 + lambda);
          curr1 = IMIN(cost0 + lambda, cost1);
-         cost0 = curr0 + abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*sel+0]);
-         cost1 = curr1 + abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*sel+1]);
+         cost0 = curr0 + importance[i]*abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*sel+0]);
+         cost1 = curr1 + importance[i]*abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*sel+1]);
       }
       cost0 = IMIN(cost0, cost1);
       selcost[sel]=cost0;
@@ -685,8 +690,8 @@ static int tf_analysis(const CELTMode *m, int len, int isTransient,
     * If tests confirm it's useful for non-transients, we could allow it. */
    if (selcost[1]<selcost[0] && isTransient)
       tf_select=1;
-   cost0 = 0;
-   cost1 = isTransient ? 0 : lambda;
+   cost0 = importance[0]*abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*tf_select+0]);
+   cost1 = importance[0]*abs(metric[0]-2*tf_select_table[LM][4*isTransient+2*tf_select+1]) + (isTransient ? 0 : lambda);
    /* Viterbi forward pass */
    for (i=1;i<len;i++)
    {
@@ -714,8 +719,8 @@ static int tf_analysis(const CELTMode *m, int len, int isTransient,
          curr1 = from1;
          path1[i]= 1;
       }
-      cost0 = curr0 + abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*tf_select+0]);
-      cost1 = curr1 + abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*tf_select+1]);
+      cost0 = curr0 + importance[i]*abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*tf_select+0]);
+      cost1 = curr1 + importance[i]*abs(metric[i]-2*tf_select_table[LM][4*isTransient+2*tf_select+1]);
    }
    tf_res[len-1] = cost0 < cost1 ? 0 : 1;
    /* Viterbi backward pass to check the decisions */
@@ -781,7 +786,7 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       const opus_val16 *bandLogE, int end, int LM, int C, int N0,
       AnalysisInfo *analysis, opus_val16 *stereo_saving, opus_val16 tf_estimate,
-      int intensity, opus_val16 surround_trim, int arch)
+      int intensity, opus_val16 surround_trim, opus_int32 equiv_rate, int arch)
 {
    int i;
    opus_val32 diff=0;
@@ -789,6 +794,14 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    int trim_index;
    opus_val16 trim = QCONST16(5.f, 8);
    opus_val16 logXC, logXC2;
+   /* At low bitrate, reducing the trim seems to help. At higher bitrates, it's less
+      clear what's best, so we're keeping it as it was before, at least for now. */
+   if (equiv_rate < 64000) {
+      trim = QCONST16(4.f, 8);
+   } else if (equiv_rate < 80000) {
+      opus_int32 frac = (equiv_rate-64000) >> 10;
+      trim = QCONST16(4.f, 8) + QCONST16(1.f/16.f, 8)*frac;
+   }
    if (C==2)
    {
       opus_val16 sum = 0; /* Q10 */
@@ -836,7 +849,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    } while (++c<C);
    diff /= C*(end-1);
    /*printf("%f\n", diff);*/
-   trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), SHR16(diff+QCONST16(1.f, DB_SHIFT),DB_SHIFT-8)/6 ));
+   trim -= MAX32(-QCONST16(2.f, 8), MIN32(QCONST16(2.f, 8), SHR32(diff+QCONST16(1.f, DB_SHIFT),DB_SHIFT-8)/6 ));
    trim -= SHR16(surround_trim, DB_SHIFT-8);
    trim -= 2*SHR16(tf_estimate, 14-8);
 #ifndef DISABLE_FLOAT_API
@@ -957,7 +970,8 @@ static opus_val16 median_of_3(const opus_val16 *x)
 static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16 *bandLogE2,
       int nbEBands, int start, int end, int C, int *offsets, int lsb_depth, const opus_int16 *logN,
       int isTransient, int vbr, int constrained_vbr, const opus_int16 *eBands, int LM,
-      int effectiveBytes, opus_int32 *tot_boost_, int lfe, opus_val16 *surround_dynalloc)
+      int effectiveBytes, opus_int32 *tot_boost_, int lfe, opus_val16 *surround_dynalloc,
+      AnalysisInfo *analysis, int *importance, int *spread_weight)
 {
    int i, c;
    opus_int32 tot_boost=0;
@@ -983,6 +997,42 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
       for (i=0;i<end;i++)
          maxDepth = MAX16(maxDepth, bandLogE[c*nbEBands+i]-noise_floor[i]);
    } while (++c<C);
+   {
+      /* Compute a really simple masking model to avoid taking into account completely masked
+         bands when computing the spreading decision. */
+      VARDECL(opus_val16, mask);
+      VARDECL(opus_val16, sig);
+      ALLOC(mask, nbEBands, opus_val16);
+      ALLOC(sig, nbEBands, opus_val16);
+      for (i=0;i<end;i++)
+         mask[i] = bandLogE[i]-noise_floor[i];
+      if (C==2)
+      {
+         for (i=0;i<end;i++)
+            mask[i] = MAX16(mask[i], bandLogE[nbEBands+i]-noise_floor[i]);
+      }
+      OPUS_COPY(sig, mask, end);
+      for (i=1;i<end;i++)
+         mask[i] = MAX16(mask[i], mask[i-1] - QCONST16(2.f, DB_SHIFT));
+      for (i=end-2;i>=0;i--)
+         mask[i] = MAX16(mask[i], mask[i+1] - QCONST16(3.f, DB_SHIFT));
+      for (i=0;i<end;i++)
+      {
+         /* Compute SMR: Mask is never more than 72 dB below the peak and never below the noise floor.*/
+         opus_val16 smr = sig[i]-MAX16(MAX16(0, maxDepth-QCONST16(12.f, DB_SHIFT)), mask[i]);
+         /* Clamp SMR to make sure we're not shifting by something negative or too large. */
+#ifdef FIXED_POINT
+         /* FIXME: Use PSHR16() instead */
+         int shift = -PSHR32(MAX16(-QCONST16(5.f, DB_SHIFT), MIN16(0, smr)), DB_SHIFT);
+#else
+         int shift = IMIN(5, IMAX(0, -(int)floor(.5f + smr)));
+#endif
+         spread_weight[i] = 32 >> shift;
+      }
+      /*for (i=0;i<end;i++)
+         printf("%d ", spread_weight[i]);
+      printf("\n");*/
+   }
    /* Make sure that dynamic allocation can't make us bust the budget */
    if (effectiveBytes > 50 && LM>=1 && !lfe)
    {
@@ -1039,6 +1089,14 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
       }
       for (i=start;i<end;i++)
          follower[i] = MAX16(follower[i], surround_dynalloc[i]);
+      for (i=start;i<end;i++)
+      {
+#ifdef FIXED_POINT
+         importance[i] = PSHR32(13*celt_exp2(MIN16(follower[i], QCONST16(4.f, DB_SHIFT))), 16);
+#else
+         importance[i] = (int)floor(.5f+13*celt_exp2(MIN16(follower[i], QCONST16(4.f, DB_SHIFT))));
+#endif
+      }
       /* For non-transient CBR/CVBR frames, halve the dynalloc contribution */
       if ((!vbr || constrained_vbr)&&!isTransient)
       {
@@ -1047,14 +1105,26 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
       }
       for (i=start;i<end;i++)
       {
-         int width;
-         int boost;
-         int boost_bits;
-
          if (i<8)
             follower[i] *= 2;
          if (i>=12)
             follower[i] = HALF16(follower[i]);
+      }
+#ifdef DISABLE_FLOAT_API
+      (void)analysis;
+#else
+      if (analysis->valid)
+      {
+         for (i=start;i<IMIN(LEAK_BANDS, end);i++)
+            follower[i] = follower[i] +  QCONST16(1.f/64.f, DB_SHIFT)*analysis->leak_boost[i];
+      }
+#endif
+      for (i=start;i<end;i++)
+      {
+         int width;
+         int boost;
+         int boost_bits;
+
          follower[i] = MIN16(follower[i], QCONST16(4, DB_SHIFT));
 
          width = C*(eBands[i+1]-eBands[i])<<LM;
@@ -1069,11 +1139,11 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
             boost = (int)SHR32(EXTEND32(follower[i])*width/6,DB_SHIFT);
             boost_bits = boost*6<<BITRES;
          }
-         /* For CBR and non-transient CVBR frames, limit dynalloc to 1/4 of the bits */
+         /* For CBR and non-transient CVBR frames, limit dynalloc to 2/3 of the bits */
          if ((!vbr || (constrained_vbr&&!isTransient))
-               && (tot_boost+boost_bits)>>BITRES>>3 > effectiveBytes/4)
+               && (tot_boost+boost_bits)>>BITRES>>3 > 2*effectiveBytes/3)
          {
-            opus_int32 cap = ((effectiveBytes/4)<<BITRES<<3);
+            opus_int32 cap = ((2*effectiveBytes/3)<<BITRES<<3);
             offsets[i] = cap-tot_boost;
             tot_boost = cap;
             break;
@@ -1082,6 +1152,9 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
             tot_boost += boost_bits;
          }
       }
+   } else {
+      for (i=start;i<end;i++)
+         importance[i] = 13;
    }
    *tot_boost_ = tot_boost;
    RESTORE_STACK;
@@ -1090,7 +1163,7 @@ static opus_val16 dynalloc_analysis(const opus_val16 *bandLogE, const opus_val16
 
 
 static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem, int CC, int N,
-      int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, int nbAvailableBytes)
+      int prefilter_tapset, int *pitch, opus_val16 *gain, int *qgain, int enabled, int nbAvailableBytes, AnalysisInfo *analysis)
 {
    int c;
    VARDECL(celt_sig, _pre);
@@ -1146,7 +1219,12 @@ static int run_prefilter(CELTEncoder *st, celt_sig *in, celt_sig *prefilter_mem,
       gain1 = 0;
       pitch_index = COMBFILTER_MINPERIOD;
    }
-
+#ifndef DISABLE_FLOAT_API
+   if (analysis->valid)
+      gain1 = (opus_val16)(gain1 * analysis->max_pitch_ratio);
+#else
+   (void)analysis;
+#endif
    /* Gain threshold for enabling the prefilter/postfilter */
    pf_threshold = QCONST16(.2f,15);
 
@@ -1220,7 +1298,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       int LM, opus_int32 bitrate, int lastCodedBands, int C, int intensity,
       int constrained_vbr, opus_val16 stereo_saving, int tot_boost,
       opus_val16 tf_estimate, int pitch_change, opus_val16 maxDepth,
-      int variable_duration, int lfe, int has_surround_mask, opus_val16 surround_masking,
+      int lfe, int has_surround_mask, opus_val16 surround_masking,
       opus_val16 temporal_vbr)
 {
    /* The target rate in 8th bits per frame */
@@ -1262,10 +1340,9 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
                       SHR32(MULT16_16(stereo_saving-QCONST16(0.1f,8),(coded_stereo_dof<<BITRES)),8));
    }
    /* Boost the rate according to dynalloc (minus the dynalloc average for calibration). */
-   target += tot_boost-(16<<LM);
+   target += tot_boost-(19<<LM);
    /* Apply transient boost, compensating for average boost. */
-   tf_calibration = variable_duration==OPUS_FRAMESIZE_VARIABLE ?
-                    QCONST16(0.02f,14) : QCONST16(0.04f,14);
+   tf_calibration = QCONST16(0.044f,14);
    target += (opus_int32)SHL32(MULT16_32_Q15(tf_estimate-tf_calibration, target),1);
 
 #ifndef DISABLE_FLOAT_API
@@ -1276,7 +1353,7 @@ static int compute_vbr(const CELTMode *mode, AnalysisInfo *analysis, opus_int32 
       float tonal;
 
       /* Tonality boost (compensating for the average). */
-      tonal = MAX16(0.f,analysis->tonality-.15f)-0.09f;
+      tonal = MAX16(0.f,analysis->tonality-.15f)-0.12f;
       tonal_target = target + (opus_int32)((coded_bins<<BITRES)*1.2f*tonal);
       if (pitch_change)
          tonal_target +=  (opus_int32)((coded_bins<<BITRES)*.8f);
@@ -1344,6 +1421,8 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    VARDECL(int, pulses);
    VARDECL(int, cap);
    VARDECL(int, offsets);
+   VARDECL(int, importance);
+   VARDECL(int, spread_weight);
    VARDECL(int, fine_priority);
    VARDECL(int, tf_res);
    VARDECL(unsigned char, collapse_masks);
@@ -1396,6 +1475,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    opus_int32 equiv_rate;
    int hybrid;
    int weak_transient = 0;
+   int enable_tf_analysis;
    VARDECL(opus_val16, surround_dynalloc);
    ALLOC_STACK;
 
@@ -1436,7 +1516,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       tell0_frac=tell=1;
       nbFilledBytes=0;
    } else {
-      tell0_frac=tell=ec_tell_frac(enc);
+      tell0_frac=ec_tell_frac(enc);
       tell=ec_tell(enc);
       nbFilledBytes=(tell+4)>>3;
    }
@@ -1582,10 +1662,10 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       int enabled;
       int qg;
       enabled = ((st->lfe&&nbAvailableBytes>3) || nbAvailableBytes>12*C) && !hybrid && !silence && !st->disable_pf
-            && st->complexity >= 5 && !(st->consec_transient && LM!=3 && st->variable_duration==OPUS_FRAMESIZE_VARIABLE);
+            && st->complexity >= 5;
 
       prefilter_tapset = st->tapset_decision;
-      pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes);
+      pf_on = run_prefilter(st, in, prefilter_mem, CC, N, prefilter_tapset, &pitch_index, &gain1, &qg, enabled, nbAvailableBytes, &st->analysis);
       if ((gain1 > QCONST16(.4f,15) || st->prefilter_gain > QCONST16(.4f,15)) && (!st->analysis.valid || st->analysis.tonality > .3)
             && (pitch_index > 1.26*st->prefilter_period || pitch_index < .79*st->prefilter_period))
          pitch_change = 1;
@@ -1615,7 +1695,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       /* Reduces the likelihood of energy instability on fricatives at low bitrate
          in hybrid mode. It seems like we still want to have real transients on vowels
          though (small SILK quantization offset value). */
-      int allow_weak_transients = hybrid && effectiveBytes<15 && st->silk_info.offset >= 100;
+      int allow_weak_transients = hybrid && effectiveBytes<15 && st->silk_info.signalType != 2;
       isTransient = transient_analysis(in, N+overlap, CC,
             &tf_estimate, &tf_chan, allow_weak_transients, &weak_transient);
    }
@@ -1637,16 +1717,19 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    if (secondMdct)
    {
       compute_mdcts(mode, 0, in, freq, C, CC, LM, st->upsample, st->arch);
-      compute_band_energies(mode, freq, bandE, effEnd, C, LM);
+      compute_band_energies(mode, freq, bandE, effEnd, C, LM, st->arch);
       amp2Log2(mode, effEnd, end, bandE, bandLogE2, C);
       for (i=0;i<C*nbEBands;i++)
          bandLogE2[i] += HALF16(SHL16(LM, DB_SHIFT));
    }
 
    compute_mdcts(mode, shortBlocks, in, freq, C, CC, LM, st->upsample, st->arch);
+   /* This should catch any NaN in the CELT input. Since we're not supposed to see any (they're filtered
+      at the Opus layer), just abort. */
+   celt_assert(!celt_isnan(freq[0]) && (C==1 || !celt_isnan(freq[N])));
    if (CC==2&&C==1)
       tf_chan = 0;
-   compute_band_energies(mode, freq, bandE, effEnd, C, LM);
+   compute_band_energies(mode, freq, bandE, effEnd, C, LM, st->arch);
 
    if (st->lfe)
    {
@@ -1770,7 +1853,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          isTransient = 1;
          shortBlocks = M;
          compute_mdcts(mode, shortBlocks, in, freq, C, CC, LM, st->upsample, st->arch);
-         compute_band_energies(mode, freq, bandE, effEnd, C, LM);
+         compute_band_energies(mode, freq, bandE, effEnd, C, LM, st->arch);
          amp2Log2(mode, effEnd, end, bandE, bandLogE, C);
          /* Compensate for the scaling of short vs long mdcts */
          for (i=0;i<C*nbEBands;i++)
@@ -1787,13 +1870,23 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
    /* Band normalisation */
    normalise_bands(mode, freq, X, bandE, effEnd, C, M);
 
+   enable_tf_analysis = effectiveBytes>=15*C && !hybrid && st->complexity>=2 && !st->lfe;
+
+   ALLOC(offsets, nbEBands, int);
+   ALLOC(importance, nbEBands, int);
+   ALLOC(spread_weight, nbEBands, int);
+
+   maxDepth = dynalloc_analysis(bandLogE, bandLogE2, nbEBands, start, end, C, offsets,
+         st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
+         eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc, &st->analysis, importance, spread_weight);
+
    ALLOC(tf_res, nbEBands, int);
    /* Disable variable tf resolution for hybrid and at very low bitrate */
-   if (effectiveBytes>=15*C && !hybrid && st->complexity>=2 && !st->lfe)
+   if (enable_tf_analysis)
    {
       int lambda;
-      lambda = IMAX(5, 1280/effectiveBytes + 2);
-      tf_select = tf_analysis(mode, effEnd, isTransient, tf_res, lambda, X, N, LM, tf_estimate, tf_chan);
+      lambda = IMAX(80, 20480/effectiveBytes + 2);
+      tf_select = tf_analysis(mode, effEnd, isTransient, tf_res, lambda, X, N, LM, tf_estimate, tf_chan, importance);
       for (i=effEnd;i<end;i++)
          tf_res[i] = tf_res[effEnd-1];
    } else if (hybrid && weak_transient)
@@ -1804,7 +1897,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       for (i=0;i<end;i++)
          tf_res[i] = 1;
       tf_select=0;
-   } else if (hybrid && effectiveBytes<15)
+   } else if (hybrid && effectiveBytes<15 && st->silk_info.signalType != 2)
    {
       /* For low bitrate hybrid, we force temporal resolution to 5 ms rather than 2.5 ms. */
       for (i=0;i<end;i++)
@@ -1875,7 +1968,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
          {
             st->spread_decision = spreading_decision(mode, X,
                   &st->tonal_average, st->spread_decision, &st->hf_average,
-                  &st->tapset_decision, pf_on&&!shortBlocks, effEnd, C, M);
+                  &st->tapset_decision, pf_on&&!shortBlocks, effEnd, C, M, spread_weight);
          }
          /*printf("%d %d\n", st->tapset_decision, st->spread_decision);*/
          /*printf("%f %d %f %d\n\n", st->analysis.tonality, st->spread_decision, st->analysis.tonality_slope, st->tapset_decision);*/
@@ -1883,11 +1976,6 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       ec_enc_icdf(enc, st->spread_decision, spread_icdf, 5);
    }
 
-   ALLOC(offsets, nbEBands, int);
-
-   maxDepth = dynalloc_analysis(bandLogE, bandLogE2, nbEBands, start, end, C, offsets,
-         st->lsb_depth, mode->logN, isTransient, st->vbr, st->constrained_vbr,
-         eBands, LM, effectiveBytes, &tot_boost, st->lfe, surround_dynalloc);
    /* For LFE, everything interesting is in the first band */
    if (st->lfe)
       offsets[0] = IMIN(8, effectiveBytes/3);
@@ -1956,7 +2044,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
       } else {
          alloc_trim = alloc_trim_analysis(mode, X, bandLogE,
             end, LM, C, N, &st->analysis, &st->stereo_saving, tf_estimate,
-            st->intensity, surround_trim, st->arch);
+            st->intensity, surround_trim, equiv_rate, st->arch);
       }
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
@@ -1990,7 +2078,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         target = compute_vbr(mode, &st->analysis, base_target, LM, equiv_rate,
            st->lastCodedBands, C, st->intensity, st->constrained_vbr,
            st->stereo_saving, tot_boost, tf_estimate, pitch_change, maxDepth,
-           st->variable_duration, st->lfe, st->energy_mask!=NULL, surround_masking,
+           st->lfe, st->energy_mask!=NULL, surround_masking,
            temporal_vbr);
      } else {
         target = base_target;
@@ -1999,7 +2087,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
         if (st->silk_info.offset > 100) target -= 18 << BITRES >> (3-LM);
         /* Boosting bitrate on transients and vowels with significant temporal
            spikes. */
-        target += MULT16_16_Q14(tf_estimate-QCONST16(.25f,14), (50<<BITRES));
+        target += (opus_int32)MULT16_16_Q14(tf_estimate-QCONST16(.25f,14), (50<<BITRES));
         /* If we have a strong transient, let's make sure it has enough bits to code
            the first two bands, so that it can use folding rather than noise. */
         if (tf_estimate > QCONST16(.7f,14))
@@ -2103,7 +2191,7 @@ int celt_encode_with_ec(CELTEncoder * OPUS_RESTRICT st, const opus_val16 * pcm, 
 #endif
    if (st->lfe)
       signalBandwidth = 1;
-   codedBands = compute_allocation(mode, start, end, offsets, cap,
+   codedBands = clt_compute_allocation(mode, start, end, offsets, cap,
          alloc_trim, &st->intensity, &dual_stereo, bits, &balance, pulses,
          fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands, signalBandwidth);
    if (st->lastCodedBands)
@@ -2407,12 +2495,6 @@ int opus_custom_encoder_ctl(CELTEncoder * OPUS_RESTRICT st, int request, ...)
       {
           opus_int32 *value = va_arg(ap, opus_int32*);
           *value=st->lsb_depth;
-      }
-      break;
-      case OPUS_SET_EXPERT_FRAME_DURATION_REQUEST:
-      {
-          opus_int32 value = va_arg(ap, opus_int32);
-          st->variable_duration = value;
       }
       break;
       case OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST:

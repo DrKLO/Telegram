@@ -111,7 +111,7 @@ public final class PriorityTaskManager {
   public void remove(int priority) {
     synchronized (lock) {
       queue.remove(priority);
-      highestPriority = queue.isEmpty() ? Integer.MIN_VALUE : queue.peek();
+      highestPriority = queue.isEmpty() ? Integer.MIN_VALUE : Util.castNonNull(queue.peek());
       lock.notifyAll();
     }
   }

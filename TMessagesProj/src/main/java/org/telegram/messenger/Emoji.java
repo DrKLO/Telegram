@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.messenger;
@@ -150,7 +150,7 @@ public class Emoji {
             }
             Bitmap bitmap = null;
             try {
-                InputStream is = ApplicationLoader.applicationContext.getAssets().open("emoji/" + String.format(Locale.US, "v12_emoji%.01fx_%d_%d.png", scale, page, page2));
+                InputStream is = ApplicationLoader.applicationContext.getAssets().open("emoji/" + String.format(Locale.US, "v13_emoji%.01fx_%d_%d.png", scale, page, page2));
                 BitmapFactory.Options opts = new BitmapFactory.Options();
                 opts.inJustDecodeBounds = false;
                 opts.inSampleSize = imageResize;
@@ -163,7 +163,7 @@ public class Emoji {
             final Bitmap finalBitmap = bitmap;
             AndroidUtilities.runOnUIThread(() -> {
                 emojiBmp[page][page2] = finalBitmap;
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.emojiDidLoaded);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.emojiDidLoad);
             });
         } catch (Throwable x) {
             if (BuildVars.LOGS_ENABLED) {
@@ -364,9 +364,6 @@ public class Emoji {
         if (SharedConfig.useSystemEmoji || cs == null || cs.length() == 0) {
             return cs;
         }
-        //String str = "\"\uD83D\uDC68\uD83C\uDFFB\u200D\uD83C\uDFA4\""
-        //SpannableStringLight.isFieldsAvailable();
-        //SpannableStringLight s = new SpannableStringLight(cs.toString());
         Spannable s;
         if (!createNew && cs instanceof Spannable) {
             s = (Spannable) cs;

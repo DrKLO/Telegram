@@ -20,6 +20,7 @@ import com.google.android.exoplayer2.upstream.DataSink;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.upstream.cache.Cache.CacheException;
 import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ReusableBufferedOutputStream;
 import com.google.android.exoplayer2.util.Util;
 import java.io.File;
@@ -30,22 +31,28 @@ import java.io.OutputStream;
 /**
  * Writes data into a cache.
  *
- * <p>If the {@link DataSpec} object used with {@link #open(DataSpec)} method call has the {@code
- * length} field set to {@link C#LENGTH_UNSET} but {@link
- * DataSpec#FLAG_ALLOW_CACHING_UNKNOWN_LENGTH} isn't set then {@link #write(byte[], int, int)} calls
- * are ignored.
+ * <p>If the {@link DataSpec} passed to {@link #open(DataSpec)} has the {@code length} field set to
+ * {@link C#LENGTH_UNSET} and {@link DataSpec#FLAG_DONT_CACHE_IF_LENGTH_UNKNOWN} set, then {@link
+ * #write(byte[], int, int)} calls are ignored.
  */
 public final class CacheDataSink implements DataSink {
 
+  /** Default {@code fragmentSize} recommended for caching use cases. */
+  public static final long DEFAULT_FRAGMENT_SIZE = 5 * 1024 * 1024;
   /** Default buffer size in bytes. */
-  public static final int DEFAULT_BUFFER_SIZE = 20480;
+  public static final int DEFAULT_BUFFER_SIZE = 20 * 1024;
+
+  private static final long MIN_RECOMMENDED_FRAGMENT_SIZE = 2 * 1024 * 1024;
+  private static final String TAG = "CacheDataSink";
 
   private final Cache cache;
-  private final long maxCacheFileSize;
+  private final long fragmentSize;
   private final int bufferSize;
-  private final boolean syncFileDescriptor;
 
+  private boolean syncFileDescriptor;
+  private boolean respectCacheFragmentationFlag;
   private DataSpec dataSpec;
+  private long dataSpecFragmentSize;
   private File file;
   private OutputStream outputStream;
   private FileOutputStream underlyingFileOutputStream;
@@ -65,67 +72,84 @@ public final class CacheDataSink implements DataSink {
   }
 
   /**
-   * Constructs a CacheDataSink using the {@link #DEFAULT_BUFFER_SIZE}.
+   * Constructs an instance using {@link #DEFAULT_BUFFER_SIZE}.
    *
    * @param cache The cache into which data should be written.
-   * @param maxCacheFileSize The maximum size of a cache file, in bytes. If the sink is opened for
-   *    a {@link DataSpec} whose size exceeds this value, then the data will be fragmented into
-   *    multiple cache files.
+   * @param fragmentSize For requests that should be fragmented into multiple cache files, this is
+   *     the maximum size of a cache file in bytes. If set to {@link C#LENGTH_UNSET} then no
+   *     fragmentation will occur. Using a small value allows for finer-grained cache eviction
+   *     policies, at the cost of increased overhead both on the cache implementation and the file
+   *     system. Values under {@code (2 * 1024 * 1024)} are not recommended.
    */
-  public CacheDataSink(Cache cache, long maxCacheFileSize) {
-    this(cache, maxCacheFileSize, DEFAULT_BUFFER_SIZE, true);
-  }
-
-  /**
-   * Constructs a CacheDataSink using the {@link #DEFAULT_BUFFER_SIZE}.
-   *
-   * @param cache The cache into which data should be written.
-   * @param maxCacheFileSize The maximum size of a cache file, in bytes. If the sink is opened for a
-   *     {@link DataSpec} whose size exceeds this value, then the data will be fragmented into
-   *     multiple cache files.
-   * @param syncFileDescriptor Whether file descriptors are sync'd when closing output streams.
-   */
-  public CacheDataSink(Cache cache, long maxCacheFileSize, boolean syncFileDescriptor) {
-    this(cache, maxCacheFileSize, DEFAULT_BUFFER_SIZE, syncFileDescriptor);
+  public CacheDataSink(Cache cache, long fragmentSize) {
+    this(cache, fragmentSize, DEFAULT_BUFFER_SIZE);
   }
 
   /**
    * @param cache The cache into which data should be written.
-   * @param maxCacheFileSize The maximum size of a cache file, in bytes. If the sink is opened for a
-   *     {@link DataSpec} whose size exceeds this value, then the data will be fragmented into
-   *     multiple cache files.
+   * @param fragmentSize For requests that should be fragmented into multiple cache files, this is
+   *     the maximum size of a cache file in bytes. If set to {@link C#LENGTH_UNSET} then no
+   *     fragmentation will occur. Using a small value allows for finer-grained cache eviction
+   *     policies, at the cost of increased overhead both on the cache implementation and the file
+   *     system. Values under {@code (2 * 1024 * 1024)} are not recommended.
    * @param bufferSize The buffer size in bytes for writing to a cache file. A zero or negative
    *     value disables buffering.
    */
-  public CacheDataSink(Cache cache, long maxCacheFileSize, int bufferSize) {
-    this(cache, maxCacheFileSize, bufferSize, true);
-  }
-
-  /**
-   * @param cache The cache into which data should be written.
-   * @param maxCacheFileSize The maximum size of a cache file, in bytes. If the sink is opened for a
-   *     {@link DataSpec} whose size exceeds this value, then the data will be fragmented into
-   *     multiple cache files.
-   * @param bufferSize The buffer size in bytes for writing to a cache file. A zero or negative
-   *     value disables buffering.
-   * @param syncFileDescriptor Whether file descriptors are sync'd when closing output streams.
-   */
-  public CacheDataSink(
-      Cache cache, long maxCacheFileSize, int bufferSize, boolean syncFileDescriptor) {
+  public CacheDataSink(Cache cache, long fragmentSize, int bufferSize) {
+    Assertions.checkState(
+        fragmentSize > 0 || fragmentSize == C.LENGTH_UNSET,
+        "fragmentSize must be positive or C.LENGTH_UNSET.");
+    if (fragmentSize != C.LENGTH_UNSET && fragmentSize < MIN_RECOMMENDED_FRAGMENT_SIZE) {
+      Log.w(
+          TAG,
+          "fragmentSize is below the minimum recommended value of "
+              + MIN_RECOMMENDED_FRAGMENT_SIZE
+              + ". This may cause poor cache performance.");
+    }
     this.cache = Assertions.checkNotNull(cache);
-    this.maxCacheFileSize = maxCacheFileSize;
+    this.fragmentSize = fragmentSize == C.LENGTH_UNSET ? Long.MAX_VALUE : fragmentSize;
     this.bufferSize = bufferSize;
+    syncFileDescriptor = true;
+  }
+
+  /**
+   * Sets whether file descriptors are synced when closing output streams.
+   *
+   * <p>This method is experimental, and will be renamed or removed in a future release.
+   *
+   * @param syncFileDescriptor Whether file descriptors are synced when closing output streams.
+   */
+  public void experimental_setSyncFileDescriptor(boolean syncFileDescriptor) {
     this.syncFileDescriptor = syncFileDescriptor;
+  }
+
+  /**
+   * Sets whether this instance respects the {@link DataSpec#FLAG_ALLOW_CACHE_FRAGMENTATION} flag.
+   * If set to {@code false} requests will always be fragmented. If set to {@code true} requests
+   * will be fragmented only if the flag is set.
+   *
+   * <p>This method is experimental, and will be renamed or removed in a future release.
+   *
+   * @param respectCacheFragmentationFlag Whether to respect the {@link
+   *     DataSpec#FLAG_ALLOW_CACHE_FRAGMENTATION} flag.
+   */
+  public void experimental_setRespectCacheFragmentationFlag(boolean respectCacheFragmentationFlag) {
+    this.respectCacheFragmentationFlag = respectCacheFragmentationFlag;
   }
 
   @Override
   public void open(DataSpec dataSpec) throws CacheDataSinkException {
     if (dataSpec.length == C.LENGTH_UNSET
-        && !dataSpec.isFlagSet(DataSpec.FLAG_ALLOW_CACHING_UNKNOWN_LENGTH)) {
+        && dataSpec.isFlagSet(DataSpec.FLAG_DONT_CACHE_IF_LENGTH_UNKNOWN)) {
       this.dataSpec = null;
       return;
     }
     this.dataSpec = dataSpec;
+    this.dataSpecFragmentSize =
+        !respectCacheFragmentationFlag
+                || dataSpec.isFlagSet(DataSpec.FLAG_ALLOW_CACHE_FRAGMENTATION)
+            ? fragmentSize
+            : Long.MAX_VALUE;
     dataSpecBytesWritten = 0;
     try {
       openNextOutputStream();
@@ -142,12 +166,12 @@ public final class CacheDataSink implements DataSink {
     try {
       int bytesWritten = 0;
       while (bytesWritten < length) {
-        if (outputStreamBytesWritten == maxCacheFileSize) {
+        if (outputStreamBytesWritten == dataSpecFragmentSize) {
           closeCurrentOutputStream();
           openNextOutputStream();
         }
-        int bytesToWrite = (int) Math.min(length - bytesWritten,
-            maxCacheFileSize - outputStreamBytesWritten);
+        int bytesToWrite =
+            (int) Math.min(length - bytesWritten, dataSpecFragmentSize - outputStreamBytesWritten);
         outputStream.write(buffer, offset + bytesWritten, bytesToWrite);
         bytesWritten += bytesToWrite;
         outputStreamBytesWritten += bytesToWrite;
@@ -171,10 +195,13 @@ public final class CacheDataSink implements DataSink {
   }
 
   private void openNextOutputStream() throws IOException {
-    long maxLength = dataSpec.length == C.LENGTH_UNSET ? maxCacheFileSize
-        : Math.min(dataSpec.length - dataSpecBytesWritten, maxCacheFileSize);
-    file = cache.startFile(dataSpec.key, dataSpec.absoluteStreamPosition + dataSpecBytesWritten,
-        maxLength);
+    long length =
+        dataSpec.length == C.LENGTH_UNSET
+            ? C.LENGTH_UNSET
+            : Math.min(dataSpec.length - dataSpecBytesWritten, dataSpecFragmentSize);
+    file =
+        cache.startFile(
+            dataSpec.key, dataSpec.absoluteStreamPosition + dataSpecBytesWritten, length);
     underlyingFileOutputStream = new FileOutputStream(file);
     if (bufferSize > 0) {
       if (bufferedOutputStream == null) {
@@ -209,7 +236,7 @@ public final class CacheDataSink implements DataSink {
       File fileToCommit = file;
       file = null;
       if (success) {
-        cache.commitFile(fileToCommit);
+        cache.commitFile(fileToCommit, outputStreamBytesWritten);
       } else {
         fileToCommit.delete();
       }

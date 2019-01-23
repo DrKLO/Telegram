@@ -51,6 +51,14 @@
 #include "celt_lpc.h"
 #include "vq.h"
 
+/* The maximum pitch lag to allow in the pitch-based PLC. It's possible to save
+   CPU time in the PLC pitch search by making this smaller than MAX_PERIOD. The
+   current value corresponds to a pitch of 66.67 Hz. */
+#define PLC_PITCH_LAG_MAX (720)
+/* The minimum pitch lag to allow in the pitch-based PLC. This corresponds to a
+   pitch of 480 Hz. */
+#define PLC_PITCH_LAG_MIN (100)
+
 #if defined(SMALL_FOOTPRINT) && defined(FIXED_POINT)
 #define NORM_ALIASING_HACK
 #endif
@@ -100,6 +108,38 @@ struct OpusCustomDecoder {
    /* opus_val16 oldLogE2[], Size = 2*mode->nbEBands */
    /* opus_val16 backgroundLogE[], Size = 2*mode->nbEBands */
 };
+
+#if defined(ENABLE_HARDENING) || defined(ENABLE_ASSERTIONS)
+/* Make basic checks on the CELT state to ensure we don't end
+   up writing all over memory. */
+void validate_celt_decoder(CELTDecoder *st)
+{
+#ifndef CUSTOM_MODES
+   celt_assert(st->mode == opus_custom_mode_create(48000, 960, NULL));
+   celt_assert(st->overlap == 120);
+#endif
+   celt_assert(st->channels == 1 || st->channels == 2);
+   celt_assert(st->stream_channels == 1 || st->stream_channels == 2);
+   celt_assert(st->downsample > 0);
+   celt_assert(st->start == 0 || st->start == 17);
+   celt_assert(st->start < st->end);
+   celt_assert(st->end <= 21);
+#ifdef OPUS_ARCHMASK
+   celt_assert(st->arch >= 0);
+   celt_assert(st->arch <= OPUS_ARCHMASK);
+#endif
+   celt_assert(st->last_pitch_index <= PLC_PITCH_LAG_MAX);
+   celt_assert(st->last_pitch_index >= PLC_PITCH_LAG_MIN || st->last_pitch_index == 0);
+   celt_assert(st->postfilter_period < MAX_PERIOD);
+   celt_assert(st->postfilter_period >= COMBFILTER_MINPERIOD || st->postfilter_period == 0);
+   celt_assert(st->postfilter_period_old < MAX_PERIOD);
+   celt_assert(st->postfilter_period_old >= COMBFILTER_MINPERIOD || st->postfilter_period_old == 0);
+   celt_assert(st->postfilter_tapset <= 2);
+   celt_assert(st->postfilter_tapset >= 0);
+   celt_assert(st->postfilter_tapset_old <= 2);
+   celt_assert(st->postfilter_tapset_old >= 0);
+}
+#endif
 
 int celt_decoder_get_size(int channels)
 {
@@ -164,7 +204,7 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_decoder_init(CELTDecoder *st, const CELTMod
    st->start = 0;
    st->end = st->mode->effEBands;
    st->signalling = 1;
-#ifdef ENABLE_UPDATE_DRAFT
+#ifndef DISABLE_UPDATE_DRAFT
    st->disable_inv = channels == 1;
 #else
    st->disable_inv = 0;
@@ -437,14 +477,6 @@ static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, 
    }
 }
 
-/* The maximum pitch lag to allow in the pitch-based PLC. It's possible to save
-   CPU time in the PLC pitch search by making this smaller than MAX_PERIOD. The
-   current value corresponds to a pitch of 66.67 Hz. */
-#define PLC_PITCH_LAG_MAX (720)
-/* The minimum pitch lag to allow in the pitch-based PLC. This corresponds to a
-   pitch of 480 Hz. */
-#define PLC_PITCH_LAG_MIN (100)
-
 static int celt_plc_pitch_search(celt_sig *decode_mem[2], int C, int arch)
 {
    int pitch_index;
@@ -554,12 +586,15 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
 
       celt_synthesis(mode, X, out_syn, oldBandE, start, effEnd, C, C, 0, LM, st->downsample, 0, st->arch);
    } else {
+      int exc_length;
       /* Pitch-based PLC */
       const opus_val16 *window;
+      opus_val16 *exc;
       opus_val16 fade = Q15ONE;
       int pitch_index;
       VARDECL(opus_val32, etmp);
-      VARDECL(opus_val16, exc);
+      VARDECL(opus_val16, _exc);
+      VARDECL(opus_val16, fir_tmp);
 
       if (loss_count == 0)
       {
@@ -569,8 +604,14 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
          fade = QCONST16(.8f,15);
       }
 
+      /* We want the excitation for 2 pitch periods in order to look for a
+         decaying signal, but we can't get more than MAX_PERIOD. */
+      exc_length = IMIN(2*pitch_index, MAX_PERIOD);
+
       ALLOC(etmp, overlap, opus_val32);
-      ALLOC(exc, MAX_PERIOD, opus_val16);
+      ALLOC(_exc, MAX_PERIOD+LPC_ORDER, opus_val16);
+      ALLOC(fir_tmp, exc_length, opus_val16);
+      exc = _exc+LPC_ORDER;
       window = mode->window;
       c=0; do {
          opus_val16 decay;
@@ -579,13 +620,11 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
          celt_sig *buf;
          int extrapolation_offset;
          int extrapolation_len;
-         int exc_length;
          int j;
 
          buf = decode_mem[c];
-         for (i=0;i<MAX_PERIOD;i++) {
-            exc[i] = ROUND16(buf[DECODE_BUFFER_SIZE-MAX_PERIOD+i], SIG_SHIFT);
-         }
+         for (i=0;i<MAX_PERIOD+LPC_ORDER;i++)
+            exc[i-LPC_ORDER] = ROUND16(buf[DECODE_BUFFER_SIZE-MAX_PERIOD-LPC_ORDER+i], SIG_SHIFT);
 
          if (loss_count == 0)
          {
@@ -629,21 +668,14 @@ static void celt_decode_lost(CELTDecoder * OPUS_RESTRICT st, int N, int LM)
          }
 #endif
          }
-         /* We want the excitation for 2 pitch periods in order to look for a
-            decaying signal, but we can't get more than MAX_PERIOD. */
-         exc_length = IMIN(2*pitch_index, MAX_PERIOD);
          /* Initialize the LPC history with the samples just before the start
             of the region for which we're computing the excitation. */
          {
-            opus_val16 lpc_mem[LPC_ORDER];
-            for (i=0;i<LPC_ORDER;i++)
-            {
-               lpc_mem[i] =
-                     ROUND16(buf[DECODE_BUFFER_SIZE-exc_length-1-i], SIG_SHIFT);
-            }
-            /* Compute the excitation for exc_length samples before the loss. */
+            /* Compute the excitation for exc_length samples before the loss. We need the copy
+               because celt_fir() cannot filter in-place. */
             celt_fir(exc+MAX_PERIOD-exc_length, lpc+c*LPC_ORDER,
-                  exc+MAX_PERIOD-exc_length, exc_length, LPC_ORDER, lpc_mem, st->arch);
+                  fir_tmp, exc_length, LPC_ORDER, st->arch);
+            OPUS_COPY(exc+MAX_PERIOD-exc_length, fir_tmp, exc_length);
          }
 
          /* Check if the waveform is decaying, and if so how fast.
@@ -832,6 +864,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    const opus_int16 *eBands;
    ALLOC_STACK;
 
+   VALIDATE_CELT_DECODER(st);
    mode = st->mode;
    nbEBands = mode->nbEBands;
    overlap = mode->overlap;
@@ -1026,7 +1059,7 @@ int celt_decode_with_ec(CELTDecoder * OPUS_RESTRICT st, const unsigned char *dat
    ALLOC(pulses, nbEBands, int);
    ALLOC(fine_priority, nbEBands, int);
 
-   codedBands = compute_allocation(mode, start, end, offsets, cap,
+   codedBands = clt_compute_allocation(mode, start, end, offsets, cap,
          alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
          fine_quant, fine_priority, C, LM, dec, 0, 0, 0);
 

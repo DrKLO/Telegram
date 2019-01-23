@@ -1,5 +1,5 @@
 /* Copyright (c) 2008-2011 Octasic Inc.
-   Written by Jean-Marc Valin */
+                 2012-2017 Jean-Marc Valin */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -29,42 +29,13 @@
 #include "config.h"
 #endif
 
+#include <math.h>
 #include "opus_types.h"
 #include "opus_defines.h"
-
-#include <math.h>
-#include "mlp.h"
 #include "arch.h"
 #include "tansig_table.h"
-#define MAX_NEURONS 100
+#include "mlp.h"
 
-#if 0
-static OPUS_INLINE opus_val16 tansig_approx(opus_val32 _x) /* Q19 */
-{
-    int i;
-    opus_val16 xx; /* Q11 */
-    /*double x, y;*/
-    opus_val16 dy, yy; /* Q14 */
-    /*x = 1.9073e-06*_x;*/
-    if (_x>=QCONST32(8,19))
-        return QCONST32(1.,14);
-    if (_x<=-QCONST32(8,19))
-        return -QCONST32(1.,14);
-    xx = EXTRACT16(SHR32(_x, 8));
-    /*i = lrint(25*x);*/
-    i = SHR32(ADD32(1024,MULT16_16(25, xx)),11);
-    /*x -= .04*i;*/
-    xx -= EXTRACT16(SHR32(MULT16_16(20972,i),8));
-    /*x = xx*(1./2048);*/
-    /*y = tansig_table[250+i];*/
-    yy = tansig_table[250+i];
-    /*y = yy*(1./16384);*/
-    dy = 16384-MULT16_16_Q14(yy,yy);
-    yy = yy + MULT16_16_Q14(MULT16_16_Q11(xx,dy),(16384 - MULT16_16_Q11(yy,xx)));
-    return yy;
-}
-#else
-/*extern const float tansig_table[501];*/
 static OPUS_INLINE float tansig_approx(float x)
 {
     int i;
@@ -92,54 +63,79 @@ static OPUS_INLINE float tansig_approx(float x)
     y = y + x*dy*(1 - y*x);
     return sign*y;
 }
-#endif
 
-#if 0
-void mlp_process(const MLP *m, const opus_val16 *in, opus_val16 *out)
+static OPUS_INLINE float sigmoid_approx(float x)
 {
-    int j;
-    opus_val16 hidden[MAX_NEURONS];
-    const opus_val16 *W = m->weights;
-    /* Copy to tmp_in */
-    for (j=0;j<m->topo[1];j++)
-    {
-        int k;
-        opus_val32 sum = SHL32(EXTEND32(*W++),8);
-        for (k=0;k<m->topo[0];k++)
-            sum = MAC16_16(sum, in[k],*W++);
-        hidden[j] = tansig_approx(sum);
-    }
-    for (j=0;j<m->topo[2];j++)
-    {
-        int k;
-        opus_val32 sum = SHL32(EXTEND32(*W++),14);
-        for (k=0;k<m->topo[1];k++)
-            sum = MAC16_16(sum, hidden[k], *W++);
-        out[j] = tansig_approx(EXTRACT16(PSHR32(sum,17)));
-    }
+   return .5f + .5f*tansig_approx(.5f*x);
 }
-#else
-void mlp_process(const MLP *m, const float *in, float *out)
+
+void compute_dense(const DenseLayer *layer, float *output, const float *input)
 {
-    int j;
-    float hidden[MAX_NEURONS];
-    const float *W = m->weights;
-    /* Copy to tmp_in */
-    for (j=0;j<m->topo[1];j++)
-    {
-        int k;
-        float sum = *W++;
-        for (k=0;k<m->topo[0];k++)
-            sum = sum + in[k]**W++;
-        hidden[j] = tansig_approx(sum);
-    }
-    for (j=0;j<m->topo[2];j++)
-    {
-        int k;
-        float sum = *W++;
-        for (k=0;k<m->topo[1];k++)
-            sum = sum + hidden[k]**W++;
-        out[j] = tansig_approx(sum);
-    }
+   int i, j;
+   int N, M;
+   int stride;
+   M = layer->nb_inputs;
+   N = layer->nb_neurons;
+   stride = N;
+   for (i=0;i<N;i++)
+   {
+      /* Compute update gate. */
+      float sum = layer->bias[i];
+      for (j=0;j<M;j++)
+         sum += layer->input_weights[j*stride + i]*input[j];
+      output[i] = WEIGHTS_SCALE*sum;
+   }
+   if (layer->sigmoid) {
+      for (i=0;i<N;i++)
+         output[i] = sigmoid_approx(output[i]);
+   } else {
+      for (i=0;i<N;i++)
+         output[i] = tansig_approx(output[i]);
+   }
 }
-#endif
+
+void compute_gru(const GRULayer *gru, float *state, const float *input)
+{
+   int i, j;
+   int N, M;
+   int stride;
+   float z[MAX_NEURONS];
+   float r[MAX_NEURONS];
+   float h[MAX_NEURONS];
+   M = gru->nb_inputs;
+   N = gru->nb_neurons;
+   stride = 3*N;
+   for (i=0;i<N;i++)
+   {
+      /* Compute update gate. */
+      float sum = gru->bias[i];
+      for (j=0;j<M;j++)
+         sum += gru->input_weights[j*stride + i]*input[j];
+      for (j=0;j<N;j++)
+         sum += gru->recurrent_weights[j*stride + i]*state[j];
+      z[i] = sigmoid_approx(WEIGHTS_SCALE*sum);
+   }
+   for (i=0;i<N;i++)
+   {
+      /* Compute reset gate. */
+      float sum = gru->bias[N + i];
+      for (j=0;j<M;j++)
+         sum += gru->input_weights[N + j*stride + i]*input[j];
+      for (j=0;j<N;j++)
+         sum += gru->recurrent_weights[N + j*stride + i]*state[j];
+      r[i] = sigmoid_approx(WEIGHTS_SCALE*sum);
+   }
+   for (i=0;i<N;i++)
+   {
+      /* Compute output. */
+      float sum = gru->bias[2*N + i];
+      for (j=0;j<M;j++)
+         sum += gru->input_weights[2*N + j*stride + i]*input[j];
+      for (j=0;j<N;j++)
+         sum += gru->recurrent_weights[2*N + j*stride + i]*state[j]*r[j];
+      h[i] = z[i]*state[i] + (1-z[i])*tansig_approx(WEIGHTS_SCALE*sum);
+   }
+   for (i=0;i<N;i++)
+      state[i] = h[i];
+}
+

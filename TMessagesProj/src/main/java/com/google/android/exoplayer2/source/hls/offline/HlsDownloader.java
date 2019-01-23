@@ -71,35 +71,37 @@ public final class HlsDownloader extends SegmentDownloader<HlsPlaylist> {
   }
 
   @Override
-  protected HlsPlaylist getManifest(DataSource dataSource, Uri uri) throws IOException {
-    return loadManifest(dataSource, uri);
+  protected HlsPlaylist getManifest(DataSource dataSource, DataSpec dataSpec) throws IOException {
+    return loadManifest(dataSource, dataSpec);
   }
 
   @Override
   protected List<Segment> getSegments(
       DataSource dataSource, HlsPlaylist playlist, boolean allowIncompleteList) throws IOException {
-    ArrayList<Uri> mediaPlaylistUris = new ArrayList<>();
+    String baseUri = playlist.baseUri;
+
+    ArrayList<DataSpec> mediaPlaylistDataSpecs = new ArrayList<>();
     if (playlist instanceof HlsMasterPlaylist) {
       HlsMasterPlaylist masterPlaylist = (HlsMasterPlaylist) playlist;
-      addResolvedUris(masterPlaylist.baseUri, masterPlaylist.variants, mediaPlaylistUris);
-      addResolvedUris(masterPlaylist.baseUri, masterPlaylist.audios, mediaPlaylistUris);
-      addResolvedUris(masterPlaylist.baseUri, masterPlaylist.subtitles, mediaPlaylistUris);
+      addMediaPlaylistDataSpecs(baseUri, masterPlaylist.variants, mediaPlaylistDataSpecs);
+      addMediaPlaylistDataSpecs(baseUri, masterPlaylist.audios, mediaPlaylistDataSpecs);
+      addMediaPlaylistDataSpecs(baseUri, masterPlaylist.subtitles, mediaPlaylistDataSpecs);
     } else {
-      mediaPlaylistUris.add(Uri.parse(playlist.baseUri));
+      mediaPlaylistDataSpecs.add(SegmentDownloader.getCompressibleDataSpec(Uri.parse(baseUri)));
     }
-    ArrayList<Segment> segments = new ArrayList<>();
 
+    ArrayList<Segment> segments = new ArrayList<>();
     HashSet<Uri> seenEncryptionKeyUris = new HashSet<>();
-    for (Uri mediaPlaylistUri : mediaPlaylistUris) {
+    for (DataSpec mediaPlaylistDataSpec : mediaPlaylistDataSpecs) {
+      segments.add(new Segment(/* startTimeUs= */ 0, mediaPlaylistDataSpec));
       HlsMediaPlaylist mediaPlaylist;
       try {
-        mediaPlaylist = (HlsMediaPlaylist) loadManifest(dataSource, mediaPlaylistUri);
-        segments.add(new Segment(mediaPlaylist.startTimeUs, new DataSpec(mediaPlaylistUri)));
+        mediaPlaylist = (HlsMediaPlaylist) loadManifest(dataSource, mediaPlaylistDataSpec);
       } catch (IOException e) {
         if (!allowIncompleteList) {
           throw e;
         }
-        segments.add(new Segment(0, new DataSpec(mediaPlaylistUri)));
+        // Generating an incomplete segment list is allowed. Advance to the next media playlist.
         continue;
       }
       HlsMediaPlaylist.Segment lastInitSegment = null;
@@ -109,39 +111,43 @@ public final class HlsDownloader extends SegmentDownloader<HlsPlaylist> {
         HlsMediaPlaylist.Segment initSegment = segment.initializationSegment;
         if (initSegment != null && initSegment != lastInitSegment) {
           lastInitSegment = initSegment;
-          addSegment(segments, mediaPlaylist, initSegment, seenEncryptionKeyUris);
+          addSegment(mediaPlaylist, initSegment, seenEncryptionKeyUris, segments);
         }
-        addSegment(segments, mediaPlaylist, segment, seenEncryptionKeyUris);
+        addSegment(mediaPlaylist, segment, seenEncryptionKeyUris, segments);
       }
     }
     return segments;
   }
 
-  private static HlsPlaylist loadManifest(DataSource dataSource, Uri uri) throws IOException {
-    return ParsingLoadable.load(dataSource, new HlsPlaylistParser(), uri, C.DATA_TYPE_MANIFEST);
+  private void addMediaPlaylistDataSpecs(String baseUri, List<HlsUrl> urls, List<DataSpec> out) {
+    for (int i = 0; i < urls.size(); i++) {
+      Uri playlistUri = UriUtil.resolveToUri(baseUri, urls.get(i).url);
+      out.add(SegmentDownloader.getCompressibleDataSpec(playlistUri));
+    }
   }
 
-  private static void addSegment(
-      ArrayList<Segment> segments,
+  private static HlsPlaylist loadManifest(DataSource dataSource, DataSpec dataSpec)
+      throws IOException {
+    return ParsingLoadable.load(
+        dataSource, new HlsPlaylistParser(), dataSpec, C.DATA_TYPE_MANIFEST);
+  }
+
+  private void addSegment(
       HlsMediaPlaylist mediaPlaylist,
-      HlsMediaPlaylist.Segment hlsSegment,
-      HashSet<Uri> seenEncryptionKeyUris) {
-    long startTimeUs = mediaPlaylist.startTimeUs + hlsSegment.relativeStartTimeUs;
-    if (hlsSegment.fullSegmentEncryptionKeyUri != null) {
-      Uri keyUri = UriUtil.resolveToUri(mediaPlaylist.baseUri,
-          hlsSegment.fullSegmentEncryptionKeyUri);
+      HlsMediaPlaylist.Segment segment,
+      HashSet<Uri> seenEncryptionKeyUris,
+      ArrayList<Segment> out) {
+    String baseUri = mediaPlaylist.baseUri;
+    long startTimeUs = mediaPlaylist.startTimeUs + segment.relativeStartTimeUs;
+    if (segment.fullSegmentEncryptionKeyUri != null) {
+      Uri keyUri = UriUtil.resolveToUri(baseUri, segment.fullSegmentEncryptionKeyUri);
       if (seenEncryptionKeyUris.add(keyUri)) {
-        segments.add(new Segment(startTimeUs, new DataSpec(keyUri)));
+        out.add(new Segment(startTimeUs, SegmentDownloader.getCompressibleDataSpec(keyUri)));
       }
     }
-    Uri resolvedUri = UriUtil.resolveToUri(mediaPlaylist.baseUri, hlsSegment.url);
-    segments.add(new Segment(startTimeUs,
-        new DataSpec(resolvedUri, hlsSegment.byterangeOffset, hlsSegment.byterangeLength, null)));
-  }
-
-  private static void addResolvedUris(String baseUri, List<HlsUrl> urls, List<Uri> out) {
-    for (int i = 0; i < urls.size(); i++) {
-      out.add(UriUtil.resolveToUri(baseUri, urls.get(i).url));
-    }
+    Uri segmentUri = UriUtil.resolveToUri(baseUri, segment.url);
+    DataSpec dataSpec =
+        new DataSpec(segmentUri, segment.byterangeOffset, segment.byterangeLength, /* key= */ null);
+    out.add(new Segment(startTimeUs, dataSpec));
   }
 }

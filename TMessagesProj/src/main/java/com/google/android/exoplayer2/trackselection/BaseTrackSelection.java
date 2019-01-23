@@ -22,6 +22,7 @@ import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.chunk.MediaChunk;
 import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.Util;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -160,7 +161,10 @@ public abstract class BaseTrackSelection implements TrackSelection {
     if (!canBlacklist) {
       return false;
     }
-    blacklistUntilTimes[index] = Math.max(blacklistUntilTimes[index], nowMs + blacklistDurationMs);
+    blacklistUntilTimes[index] =
+        Math.max(
+            blacklistUntilTimes[index],
+            Util.addWithOverflowDefault(nowMs, blacklistDurationMs, Long.MAX_VALUE));
     return true;
   }
 
@@ -186,7 +190,7 @@ public abstract class BaseTrackSelection implements TrackSelection {
 
   // Track groups are compared by identity not value, as distinct groups may have the same value.
   @Override
-  @SuppressWarnings("ReferenceEquality")
+  @SuppressWarnings({"ReferenceEquality", "EqualsGetClass"})
   public boolean equals(@Nullable Object obj) {
     if (this == obj) {
       return true;

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -107,7 +107,7 @@ public class GroupCreateSpan extends View {
         if (user != null && user.photo != null) {
             photo = user.photo.photo_small;
         }
-        imageReceiver.setImage(photo, null, "50_50", avatarDrawable, null, null, 0, null, 1);
+        imageReceiver.setImage(photo, null, "50_50", avatarDrawable, null, null, 0, null, user, 1);
         updateColors();
     }
 
@@ -115,6 +115,7 @@ public class GroupCreateSpan extends View {
         int color = Theme.getColor(Theme.key_avatar_backgroundGroupCreateSpanBlue);
         int back = Theme.getColor(Theme.key_groupcreate_spanBackground);
         int text = Theme.getColor(Theme.key_groupcreate_spanText);
+        int delete = Theme.getColor(Theme.key_groupcreate_spanDelete);
         colors[0] = Color.red(back);
         colors[1] = Color.red(color);
         colors[2] = Color.green(back);
@@ -124,7 +125,7 @@ public class GroupCreateSpan extends View {
         colors[6] = Color.alpha(back);
         colors[7] = Color.alpha(color);
         textPaint.setColor(text);
-        deleteDrawable.setColorFilter(new PorterDuffColorFilter(text, PorterDuff.Mode.MULTIPLY));
+        deleteDrawable.setColorFilter(new PorterDuffColorFilter(delete, PorterDuff.Mode.MULTIPLY));
         backPaint.setColor(back);
         avatarDrawable.setColor(AvatarDrawable.getColorForId(5));
     }

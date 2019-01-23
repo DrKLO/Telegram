@@ -23,10 +23,8 @@ import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * This class stores span metadata in filename.
- */
-/*package*/ final class SimpleCacheSpan extends CacheSpan {
+/** This class stores span metadata in filename. */
+/* package */ final class SimpleCacheSpan extends CacheSpan {
 
   private static final String SUFFIX = ".v3.exo";
   private static final Pattern CACHE_FILE_PATTERN_V1 = Pattern.compile(
@@ -84,16 +82,22 @@ import java.util.regex.Pattern;
     return new SimpleCacheSpan(key, position, length, C.TIME_UNSET, null);
   }
 
+  /*
+   * Note: {@code fileLength} is equivalent to {@code file.length()}, but passing it as an explicit
+   * argument can reduce the number of calls to this method if the calling code already knows the
+   * file length. This is preferable because calling {@code file.length()} can be expensive. See:
+   * https://github.com/google/ExoPlayer/issues/4253#issuecomment-451593889.
+   */
   /**
    * Creates a cache span from an underlying cache file. Upgrades the file if necessary.
    *
    * @param file The cache file.
-   * @param index Cached content index.
+   * @param length The length of the cache file in bytes.
    * @return The span, or null if the file name is not correctly formatted, or if the id is not
    *     present in the content index.
    */
   @Nullable
-  public static SimpleCacheSpan createCacheEntry(File file, CachedContentIndex index) {
+  public static SimpleCacheSpan createCacheEntry(File file, long length, CachedContentIndex index) {
     String name = file.getName();
     if (!name.endsWith(SUFFIX)) {
       file = upgradeFile(file, index);
@@ -107,11 +111,12 @@ import java.util.regex.Pattern;
     if (!matcher.matches()) {
       return null;
     }
-    long length = file.length();
     int id = Integer.parseInt(matcher.group(1));
     String key = index.getKeyForId(id);
-    return key == null ? null : new SimpleCacheSpan(key, Long.parseLong(matcher.group(2)), length,
-        Long.parseLong(matcher.group(3)), file);
+    return key == null
+        ? null
+        : new SimpleCacheSpan(
+            key, Long.parseLong(matcher.group(2)), length, Long.parseLong(matcher.group(3)), file);
   }
 
   /**

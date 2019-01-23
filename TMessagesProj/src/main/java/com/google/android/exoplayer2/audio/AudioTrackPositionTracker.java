@@ -25,6 +25,7 @@ import android.support.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Method;
@@ -97,6 +98,7 @@ import java.lang.reflect.Method;
   }
 
   /** {@link AudioTrack} playback states. */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({PLAYSTATE_STOPPED, PLAYSTATE_PAUSED, PLAYSTATE_PLAYING})
   private @interface PlayState {}

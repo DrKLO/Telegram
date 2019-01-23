@@ -36,6 +36,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "debug.h"
 #include "entenc.h"
 
+#if ((defined(OPUS_ARM_ASM) && defined(FIXED_POINT)) \
+   || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
+#include "fixed/arm/warped_autocorrelation_FIX_arm.h"
+#endif
+
 #ifndef FORCE_CPP_BUILD
 #ifdef __cplusplus
 extern "C"
@@ -46,6 +51,9 @@ extern "C"
 #define silk_encoder_state_Fxx      silk_encoder_state_FIX
 #define silk_encode_do_VAD_Fxx      silk_encode_do_VAD_FIX
 #define silk_encode_frame_Fxx       silk_encode_frame_FIX
+
+#define QC  10
+#define QS  13
 
 /*********************/
 /* Encoder Functions */
@@ -58,7 +66,8 @@ void silk_HP_variable_cutoff(
 
 /* Encoder main function */
 void silk_encode_do_VAD_FIX(
-    silk_encoder_state_FIX          *psEnc                                  /* I/O  Pointer to Silk FIX encoder state                                           */
+    silk_encoder_state_FIX          *psEnc,                                 /* I/O  Pointer to Silk FIX encoder state                                           */
+    opus_int                        activity                                /* I    Decision of Opus voice activity detector                                    */
 );
 
 /* Encoder main function */
@@ -99,7 +108,7 @@ void silk_noise_shape_analysis_FIX(
 );
 
 /* Autocorrelations for a warped frequency axis */
-void silk_warped_autocorrelation_FIX(
+void silk_warped_autocorrelation_FIX_c(
           opus_int32                *corr,                                  /* O    Result [order + 1]                                                          */
           opus_int                  *scale,                                 /* O    Scaling of the correlation vector                                           */
     const opus_int16                *input,                                 /* I    Input data to correlate                                                     */
@@ -107,6 +116,11 @@ void silk_warped_autocorrelation_FIX(
     const opus_int                  length,                                 /* I    Length of input                                                             */
     const opus_int                  order                                   /* I    Correlation order (even)                                                    */
 );
+
+#if !defined(OVERRIDE_silk_warped_autocorrelation_FIX)
+#define silk_warped_autocorrelation_FIX(corr, scale, input, warping_Q16, length, order, arch) \
+        ((void)(arch), silk_warped_autocorrelation_FIX_c(corr, scale, input, warping_Q16, length, order))
+#endif
 
 /* Calculation of LTP state scaling */
 void silk_LTP_scale_ctrl_FIX(

@@ -38,6 +38,9 @@ public interface Downloader {
   /** Returns the total number of downloaded bytes. */
   long getDownloadedBytes();
 
+  /** Returns the total size of the media, or {@link C#LENGTH_UNSET} if unknown. */
+  long getTotalBytes();
+
   /**
    * Returns the estimated download percentage, or {@link C#PERCENTAGE_UNSET} if no estimate is
    * available.

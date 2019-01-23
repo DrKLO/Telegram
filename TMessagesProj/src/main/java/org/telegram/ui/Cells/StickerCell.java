@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
@@ -19,6 +19,7 @@ import android.view.animation.AccelerateInterpolator;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -57,9 +58,12 @@ public class StickerCell extends FrameLayout {
         super.setPressed(pressed);
     }
 
-    public void setSticker(TLRPC.Document document, int side) {
-        if (document != null && document.thumb != null) {
-            imageView.setImage(document.thumb.location, null, "webp", null);
+    public void setSticker(TLRPC.Document document, Object parentObject, int side) {
+        if (document != null) {
+            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+            if (thumb != null) {
+                imageView.setImage(thumb, null, "webp", null, parentObject);
+            }
         }
         sticker = document;
         if (side == -1) {

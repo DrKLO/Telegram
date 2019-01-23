@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -57,7 +57,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 
 import java.io.FileNotFoundException;
@@ -511,7 +510,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             }
         } catch (Throwable e) {
             if (e instanceof SocketTimeoutException) {
-                if (ConnectionsManager.isNetworkOnline()) {
+                if (ApplicationLoader.isNetworkOnline()) {
                     canRetry = false;
                 }
             } else if (e instanceof UnknownHostException) {
@@ -2068,7 +2067,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         return inFullscreen;
     }
 
-    public boolean loadVideo(String url, TLRPC.Photo thumb, String originalUrl, boolean autoplay) {
+    public boolean loadVideo(String url, TLRPC.Photo thumb, Object parentObject, String originalUrl, boolean autoplay) {
         String youtubeId = null;
         String vimeoId = null;
         String coubId = null;
@@ -2204,7 +2203,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         if (thumb != null) {
             TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(thumb.sizes, 80, true);
             if (photoSize != null) {
-                controlsView.imageReceiver.setImage(null, null, thumb != null ? photoSize.location : null, thumb != null ? "80_80_b" : null, 0, null, 1);
+                controlsView.imageReceiver.setImage(null, null, thumb, "80_80_b", 0, null, parentObject, 1);
                 drawImage = true;
             }
         } else {

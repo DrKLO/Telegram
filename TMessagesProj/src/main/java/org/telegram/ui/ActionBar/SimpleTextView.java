@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.ActionBar;
@@ -37,6 +37,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
     private int rightDrawableTopPadding;
 
     private int offsetX;
+    private int offsetY;
     private int textWidth;
     private int textHeight;
     private boolean wasLayout;
@@ -100,6 +101,13 @@ public class SimpleTextView extends View implements Drawable.Callback {
         if (layout.getLineCount() > 0) {
             textWidth = (int) Math.ceil(layout.getLineWidth(0));
             textHeight = layout.getLineBottom(0);
+
+            if ((gravity & Gravity.VERTICAL_GRAVITY_MASK) == Gravity.CENTER_VERTICAL) {
+                offsetY = (getMeasuredHeight() - textHeight) / 2;
+            } else {
+                offsetY = 0;
+            }
+
             if ((gravity & Gravity.HORIZONTAL_GRAVITY_MASK) == Gravity.LEFT) {
                 offsetX = -(int) layout.getLineLeft(0);
             } else if (layout.getLineLeft(0) == 0) {
@@ -217,16 +225,17 @@ public class SimpleTextView extends View implements Drawable.Callback {
         }
     }
 
-    public void setText(CharSequence value) {
-        setText(value, false);
+    public boolean setText(CharSequence value) {
+        return setText(value, false);
     }
 
-    public void setText(CharSequence value, boolean force) {
+    public boolean setText(CharSequence value, boolean force) {
         if (text == null && value == null || !force && text != null && value != null && text.equals(value)) {
-            return;
+            return false;
         }
         text = value;
         recreateLayoutMaybe();
+        return true;
     }
 
     public void setDrawablePadding(int value) {
@@ -240,7 +249,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
     }
 
     private boolean recreateLayoutMaybe() {
-        if (wasLayout) {
+        if (wasLayout && getMeasuredHeight() != 0) {
             return createLayout(getMeasuredWidth());
         } else {
             requestLayout();
@@ -297,12 +306,12 @@ public class SimpleTextView extends View implements Drawable.Callback {
             rightDrawable.draw(canvas);
         }
         if (layout != null) {
-            if (offsetX + textOffsetX != 0) {
+            if (offsetX + textOffsetX != 0 || offsetY != 0) {
                 canvas.save();
-                canvas.translate(offsetX + textOffsetX, 0);
+                canvas.translate(offsetX + textOffsetX, offsetY);
             }
             layout.draw(canvas);
-            if (offsetX + textOffsetX != 0) {
+            if (offsetX + textOffsetX != 0 || offsetY != 0) {
                 canvas.restore();
             }
         }

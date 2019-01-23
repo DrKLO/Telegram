@@ -74,16 +74,19 @@ public final class RawResourceDataSource extends BaseDataSource {
    * @param context A context.
    */
   public RawResourceDataSource(Context context) {
-    this(context, null);
+    super(/* isNetwork= */ false);
+    this.resources = context.getResources();
   }
 
   /**
    * @param context A context.
    * @param listener An optional listener.
+   * @deprecated Use {@link #RawResourceDataSource(Context)} and {@link
+   *     #addTransferListener(TransferListener)}.
    */
+  @Deprecated
   public RawResourceDataSource(Context context, @Nullable TransferListener listener) {
-    super(/* isNetwork= */ false);
-    this.resources = context.getResources();
+    this(context);
     if (listener != null) {
       addTransferListener(listener);
     }
@@ -168,6 +171,7 @@ public final class RawResourceDataSource extends BaseDataSource {
     return uri;
   }
 
+  @SuppressWarnings("Finally")
   @Override
   public void close() throws RawResourceDataSourceException {
     uri = null;

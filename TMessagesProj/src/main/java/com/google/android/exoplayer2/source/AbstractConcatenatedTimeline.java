@@ -30,6 +30,37 @@ import com.google.android.exoplayer2.Timeline;
   private final boolean isAtomic;
 
   /**
+   * Returns UID of child timeline from a concatenated period UID.
+   *
+   * @param concatenatedUid UID of a period in a concatenated timeline.
+   * @return UID of the child timeline this period belongs to.
+   */
+  public static Object getChildTimelineUidFromConcatenatedUid(Object concatenatedUid) {
+    return ((Pair<?, ?>) concatenatedUid).first;
+  }
+
+  /**
+   * Returns UID of the period in the child timeline from a concatenated period UID.
+   *
+   * @param concatenatedUid UID of a period in a concatenated timeline.
+   * @return UID of the period in the child timeline.
+   */
+  public static Object getChildPeriodUidFromConcatenatedUid(Object concatenatedUid) {
+    return ((Pair<?, ?>) concatenatedUid).second;
+  }
+
+  /**
+   * Returns concatenated UID for a period in a child timeline.
+   *
+   * @param childTimelineUid UID of the child timeline this period belongs to.
+   * @param childPeriodUid UID of the period in the child timeline.
+   * @return UID of the period in the concatenated timeline.
+   */
+  public static Object getConcatenatedUid(Object childTimelineUid, Object childPeriodUid) {
+    return Pair.create(childTimelineUid, childPeriodUid);
+  }
+
+  /**
    * Sets up a concatenated timeline with a shuffle order of child timelines.
    *
    * @param isAtomic Whether the child timelines shall be treated as atomic, i.e., treated as a
@@ -170,9 +201,8 @@ import com.google.android.exoplayer2.Timeline;
 
   @Override
   public final Period getPeriodByUid(Object uid, Period period) {
-    Pair<?, ?> childUidAndPeriodUid = (Pair<?, ?>) uid;
-    Object childUid = childUidAndPeriodUid.first;
-    Object periodUid = childUidAndPeriodUid.second;
+    Object childUid = getChildTimelineUidFromConcatenatedUid(uid);
+    Object periodUid = getChildPeriodUidFromConcatenatedUid(uid);
     int childIndex = getChildIndexByChildUid(childUid);
     int firstWindowIndexInChild = getFirstWindowIndexByChildIndex(childIndex);
     getTimelineByChildIndex(childIndex).getPeriodByUid(periodUid, period);
@@ -190,7 +220,7 @@ import com.google.android.exoplayer2.Timeline;
         setIds);
     period.windowIndex += firstWindowIndexInChild;
     if (setIds) {
-      period.uid = Pair.create(getChildUidByChildIndex(childIndex), period.uid);
+      period.uid = getConcatenatedUid(getChildUidByChildIndex(childIndex), period.uid);
     }
     return period;
   }
@@ -200,9 +230,8 @@ import com.google.android.exoplayer2.Timeline;
     if (!(uid instanceof Pair)) {
       return C.INDEX_UNSET;
     }
-    Pair<?, ?> childUidAndPeriodUid = (Pair<?, ?>) uid;
-    Object childUid = childUidAndPeriodUid.first;
-    Object periodUid = childUidAndPeriodUid.second;
+    Object childUid = getChildTimelineUidFromConcatenatedUid(uid);
+    Object periodUid = getChildPeriodUidFromConcatenatedUid(uid);
     int childIndex = getChildIndexByChildUid(childUid);
     if (childIndex == C.INDEX_UNSET) {
       return C.INDEX_UNSET;
@@ -218,7 +247,7 @@ import com.google.android.exoplayer2.Timeline;
     int firstPeriodIndexInChild = getFirstPeriodIndexByChildIndex(childIndex);
     Object periodUidInChild =
         getTimelineByChildIndex(childIndex).getUidOfPeriod(periodIndex - firstPeriodIndexInChild);
-    return Pair.create(getChildUidByChildIndex(childIndex), periodUidInChild);
+    return getConcatenatedUid(getChildUidByChildIndex(childIndex), periodUidInChild);
   }
 
   /**

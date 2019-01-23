@@ -457,7 +457,7 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, opus_val16 *ol
          /* It would be better to express this invariant as a
             test on C at function entry, but that isn't enough
             to make the static analyzer happy. */
-         celt_assert(c<2);
+         celt_sig_assert(c<2);
          tell = ec_tell(dec);
          if(budget-tell>=15)
          {

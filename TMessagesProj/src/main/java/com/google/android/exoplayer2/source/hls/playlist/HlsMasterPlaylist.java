@@ -21,9 +21,23 @@ import com.google.android.exoplayer2.util.MimeTypes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /** Represents an HLS master playlist. */
 public final class HlsMasterPlaylist extends HlsPlaylist {
+
+  /** Represents an empty master playlist, from which no attributes can be inherited. */
+  public static final HlsMasterPlaylist EMPTY =
+      new HlsMasterPlaylist(
+          /* baseUri= */ "",
+          /* tags= */ Collections.emptyList(),
+          /* variants= */ Collections.emptyList(),
+          /* audios= */ Collections.emptyList(),
+          /* subtitles= */ Collections.emptyList(),
+          /* muxedAudioFormat= */ null,
+          /* muxedCaptionFormats= */ Collections.emptyList(),
+          /* hasIndependentSegments= */ false,
+          /* variableDefinitions= */ Collections.emptyMap());
 
   public static final int GROUP_INDEX_VARIANT = 0;
   public static final int GROUP_INDEX_AUDIO = 1;
@@ -98,6 +112,8 @@ public final class HlsMasterPlaylist extends HlsPlaylist {
    * captions information.
    */
   public final List<Format> muxedCaptionFormats;
+  /** Contains variable definitions, as defined by the #EXT-X-DEFINE tag. */
+  public final Map<String, String> variableDefinitions;
 
   /**
    * @param baseUri See {@link #baseUri}.
@@ -108,6 +124,7 @@ public final class HlsMasterPlaylist extends HlsPlaylist {
    * @param muxedAudioFormat See {@link #muxedAudioFormat}.
    * @param muxedCaptionFormats See {@link #muxedCaptionFormats}.
    * @param hasIndependentSegments See {@link #hasIndependentSegments}.
+   * @param variableDefinitions See {@link #variableDefinitions}.
    */
   public HlsMasterPlaylist(
       String baseUri,
@@ -117,7 +134,8 @@ public final class HlsMasterPlaylist extends HlsPlaylist {
       List<HlsUrl> subtitles,
       Format muxedAudioFormat,
       List<Format> muxedCaptionFormats,
-      boolean hasIndependentSegments) {
+      boolean hasIndependentSegments,
+      Map<String, String> variableDefinitions) {
     super(baseUri, tags, hasIndependentSegments);
     this.variants = Collections.unmodifiableList(variants);
     this.audios = Collections.unmodifiableList(audios);
@@ -125,6 +143,7 @@ public final class HlsMasterPlaylist extends HlsPlaylist {
     this.muxedAudioFormat = muxedAudioFormat;
     this.muxedCaptionFormats = muxedCaptionFormats != null
         ? Collections.unmodifiableList(muxedCaptionFormats) : null;
+    this.variableDefinitions = Collections.unmodifiableMap(variableDefinitions);
   }
 
   @Override
@@ -137,7 +156,8 @@ public final class HlsMasterPlaylist extends HlsPlaylist {
         copyRenditionsList(subtitles, GROUP_INDEX_SUBTITLE, streamKeys),
         muxedAudioFormat,
         muxedCaptionFormats,
-        hasIndependentSegments);
+        hasIndependentSegments,
+        variableDefinitions);
   }
 
   /**
@@ -157,7 +177,8 @@ public final class HlsMasterPlaylist extends HlsPlaylist {
         emptyList,
         /* muxedAudioFormat= */ null,
         /* muxedCaptionFormats= */ null,
-        /* hasIndependentSegments= */ false);
+        /* hasIndependentSegments= */ false,
+        /* variableDefinitions= */ Collections.emptyMap());
   }
 
   private static List<HlsUrl> copyRenditionsList(

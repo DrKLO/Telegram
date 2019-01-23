@@ -36,12 +36,15 @@
 #include "entdec.h"
 #include "rate.h"
 
+opus_int16 bitexact_cos(opus_int16 x);
+int bitexact_log2tan(int isin,int icos);
+
 /** Compute the amplitude (sqrt energy) in each of the bands
  * @param m Mode data
  * @param X Spectrum
  * @param bandE Square root of the energy for each band (returned)
  */
-void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bandE, int end, int C, int LM);
+void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bandE, int end, int C, int LM, int arch);
 
 /*void compute_noise_energies(const CELTMode *m, const celt_sig *X, const opus_val16 *tonality, celt_ener *bandE);*/
 
@@ -69,7 +72,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * OPUS_RESTRICT X,
 
 int spreading_decision(const CELTMode *m, const celt_norm *X, int *average,
       int last_decision, int *hf_average, int *tapset_decision, int update_hf,
-      int end, int C, int M);
+      int end, int C, int M, const int *spread_weight);
 
 #ifdef MEASURE_NORM_MSE
 void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, float *bandE0, int M, int N, int C);

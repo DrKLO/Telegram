@@ -25,7 +25,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.PersistableBundle;
 import android.support.annotation.RequiresPermission;
-import android.util.Log;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
 
 /**
@@ -34,6 +34,7 @@ import com.google.android.exoplayer2.util.Util;
  *
  * <pre>{@literal
  * <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+ * <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
  *
  * <service android:name="com.google.android.exoplayer2.util.scheduler.PlatformScheduler$PlatformSchedulerService"
  *     android:permission="android.permission.BIND_JOB_SERVICE"
@@ -129,7 +130,7 @@ public final class PlatformScheduler implements Scheduler {
     PersistableBundle extras = new PersistableBundle();
     extras.putString(KEY_SERVICE_ACTION, serviceAction);
     extras.putString(KEY_SERVICE_PACKAGE, servicePackage);
-    extras.putInt(KEY_REQUIREMENTS, requirements.getRequirementsData());
+    extras.putInt(KEY_REQUIREMENTS, requirements.getRequirements());
     builder.setExtras(extras);
 
     return builder.build();

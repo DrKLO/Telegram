@@ -1,27 +1,22 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
 
 import android.animation.Animator;
-import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -33,13 +28,13 @@ import java.util.ArrayList;
 
 public class EditTextSettingsCell extends FrameLayout {
 
-    private EditText textView;
+    private EditTextBoldCursor textView;
     private boolean needDivider;
 
     public EditTextSettingsCell(Context context) {
         super(context);
 
-        textView = new EditText(context);
+        textView = new EditTextBoldCursor(context);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -50,22 +45,32 @@ public class EditTextSettingsCell extends FrameLayout {
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         textView.setBackgroundDrawable(null);
         textView.setPadding(0, 0, 0, 0);
-        textView.setInputType(textView.getInputType() |EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 0, 17, 0));
+        textView.setInputType(textView.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 0, 21, 0));
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(48) + (needDivider ? 1 : 0));
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(50) + (needDivider ? 1 : 0));
 
-        int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(34);
-        int width = availableWidth / 2;
-		width = availableWidth;
-        textView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+        int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(42);
+        textView.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
     }
 
-    public TextView getTextView() {
+    public EditTextBoldCursor getTextView() {
         return textView;
+    }
+
+    public void addTextWatcher(TextWatcher watcher) {
+        textView.addTextChangedListener(watcher);
+    }
+
+    public String getText() {
+        return textView.getText().toString();
+    }
+
+    public int length() {
+        return textView.length();
     }
 
     public void setTextColor(int color) {
@@ -78,10 +83,10 @@ public class EditTextSettingsCell extends FrameLayout {
         setWillNotDraw(!divider);
     }
 
-    public void setTextAndHint(String text, String hint, boolean divider){
+    public void setTextAndHint(String text, String hint, boolean divider) {
         textView.setText(text);
         textView.setHint(hint);
-        needDivider=divider;
+        needDivider = divider;
         setWillNotDraw(!divider);
     }
 
@@ -92,7 +97,7 @@ public class EditTextSettingsCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(getPaddingLeft(), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
+            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 }

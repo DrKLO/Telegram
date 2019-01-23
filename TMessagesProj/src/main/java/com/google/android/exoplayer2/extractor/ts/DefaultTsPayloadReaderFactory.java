@@ -22,6 +22,7 @@ import com.google.android.exoplayer2.extractor.ts.TsPayloadReader.EsInfo;
 import com.google.android.exoplayer2.text.cea.Cea708InitializationData;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.ParsableByteArray;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
@@ -34,18 +35,56 @@ import java.util.List;
 public final class DefaultTsPayloadReaderFactory implements TsPayloadReader.Factory {
 
   /**
-   * Flags controlling elementary stream readers' behavior.
+   * Flags controlling elementary stream readers' behavior. Possible flag values are {@link
+   * #FLAG_ALLOW_NON_IDR_KEYFRAMES}, {@link #FLAG_IGNORE_AAC_STREAM}, {@link
+   * #FLAG_IGNORE_H264_STREAM}, {@link #FLAG_DETECT_ACCESS_UNITS}, {@link
+   * #FLAG_IGNORE_SPLICE_INFO_STREAM} and {@link #FLAG_OVERRIDE_CAPTION_DESCRIPTORS}.
    */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef(flag = true, value = {FLAG_ALLOW_NON_IDR_KEYFRAMES, FLAG_IGNORE_AAC_STREAM,
-      FLAG_IGNORE_H264_STREAM, FLAG_DETECT_ACCESS_UNITS, FLAG_IGNORE_SPLICE_INFO_STREAM,
-      FLAG_OVERRIDE_CAPTION_DESCRIPTORS})
+  @IntDef(
+      flag = true,
+      value = {
+        FLAG_ALLOW_NON_IDR_KEYFRAMES,
+        FLAG_IGNORE_AAC_STREAM,
+        FLAG_IGNORE_H264_STREAM,
+        FLAG_DETECT_ACCESS_UNITS,
+        FLAG_IGNORE_SPLICE_INFO_STREAM,
+        FLAG_OVERRIDE_CAPTION_DESCRIPTORS
+      })
   public @interface Flags {}
+
+  /**
+   * When extracting H.264 samples, whether to treat samples consisting of non-IDR I slices as
+   * synchronization samples (key-frames).
+   */
   public static final int FLAG_ALLOW_NON_IDR_KEYFRAMES = 1;
+  /**
+   * Prevents the creation of {@link AdtsReader} and {@link LatmReader} instances. This flag should
+   * be enabled if the transport stream contains no packets for an AAC elementary stream that is
+   * declared in the PMT.
+   */
   public static final int FLAG_IGNORE_AAC_STREAM = 1 << 1;
+  /**
+   * Prevents the creation of {@link H264Reader} instances. This flag should be enabled if the
+   * transport stream contains no packets for an H.264 elementary stream that is declared in the
+   * PMT.
+   */
   public static final int FLAG_IGNORE_H264_STREAM = 1 << 2;
+  /**
+   * When extracting H.264 samples, whether to split the input stream into access units (samples)
+   * based on slice headers. This flag should be disabled if the stream contains access unit
+   * delimiters (AUDs).
+   */
   public static final int FLAG_DETECT_ACCESS_UNITS = 1 << 3;
+  /** Prevents the creation of {@link SpliceInfoSectionReader} instances. */
   public static final int FLAG_IGNORE_SPLICE_INFO_STREAM = 1 << 4;
+  /**
+   * Whether the list of {@code closedCaptionFormats} passed to {@link
+   * DefaultTsPayloadReaderFactory#DefaultTsPayloadReaderFactory(int, List)} should be used in spite
+   * of any closed captions service descriptors. If this flag is disabled, {@code
+   * closedCaptionFormats} will be ignored if the PMT contains closed captions service descriptors.
+   */
   public static final int FLAG_OVERRIDE_CAPTION_DESCRIPTORS = 1 << 5;
 
   private static final int DESCRIPTOR_TAG_CAPTION_SERVICE = 0x86;

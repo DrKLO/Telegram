@@ -40,12 +40,12 @@ import javax.crypto.spec.SecretKeySpec;
 /**
  * A {@link DataSource} that decrypts data read from an upstream source, encrypted with AES-128 with
  * a 128-bit key and PKCS7 padding.
- * <p>
- * Note that this {@link DataSource} does not support being opened from arbitrary offsets. It is
+ *
+ * <p>Note that this {@link DataSource} does not support being opened from arbitrary offsets. It is
  * designed specifically for reading whole files as defined in an HLS media playlist. For this
  * reason the implementation is private to the HLS package.
  */
-/* package */ final class Aes128DataSource implements DataSource {
+/* package */ class Aes128DataSource implements DataSource {
 
   private final DataSource upstream;
   private final byte[] encryptionKey;
@@ -65,15 +65,15 @@ import javax.crypto.spec.SecretKeySpec;
   }
 
   @Override
-  public void addTransferListener(TransferListener transferListener) {
+  public final void addTransferListener(TransferListener transferListener) {
     upstream.addTransferListener(transferListener);
   }
 
   @Override
-  public long open(DataSpec dataSpec) throws IOException {
+  public final long open(DataSpec dataSpec) throws IOException {
     Cipher cipher;
     try {
-      cipher = Cipher.getInstance("AES/CBC/PKCS7Padding");
+      cipher = getCipherInstance();
     } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
       throw new RuntimeException(e);
     }
@@ -95,7 +95,7 @@ import javax.crypto.spec.SecretKeySpec;
   }
 
   @Override
-  public int read(byte[] buffer, int offset, int readLength) throws IOException {
+  public final int read(byte[] buffer, int offset, int readLength) throws IOException {
     Assertions.checkNotNull(cipherInputStream);
     int bytesRead = cipherInputStream.read(buffer, offset, readLength);
     if (bytesRead < 0) {
@@ -105,12 +105,12 @@ import javax.crypto.spec.SecretKeySpec;
   }
 
   @Override
-  public @Nullable Uri getUri() {
+  public final @Nullable Uri getUri() {
     return upstream.getUri();
   }
 
   @Override
-  public Map<String, List<String>> getResponseHeaders() {
+  public final Map<String, List<String>> getResponseHeaders() {
     return upstream.getResponseHeaders();
   }
 
@@ -120,5 +120,9 @@ import javax.crypto.spec.SecretKeySpec;
       cipherInputStream = null;
       upstream.close();
     }
+  }
+
+  protected Cipher getCipherInstance() throws NoSuchPaddingException, NoSuchAlgorithmException {
+    return Cipher.getInstance("AES/CBC/PKCS7Padding");
   }
 }

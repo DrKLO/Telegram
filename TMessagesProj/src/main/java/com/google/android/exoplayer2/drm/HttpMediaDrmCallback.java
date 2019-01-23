@@ -111,17 +111,12 @@ public final class HttpMediaDrmCallback implements MediaDrmCallback {
   public byte[] executeProvisionRequest(UUID uuid, ProvisionRequest request) throws IOException {
     String url =
         request.getDefaultUrl() + "&signedRequest=" + Util.fromUtf8Bytes(request.getData());
-    return executePost(dataSourceFactory, url, new byte[0], null);
+    return executePost(dataSourceFactory, url, Util.EMPTY_BYTE_ARRAY, null);
   }
 
   @Override
-  public byte[] executeKeyRequest(
-      UUID uuid, KeyRequest request, @Nullable String mediaProvidedLicenseServerUrl)
-      throws Exception {
-    String url = request.getDefaultUrl();
-    if (TextUtils.isEmpty(url)) {
-      url = mediaProvidedLicenseServerUrl;
-    }
+  public byte[] executeKeyRequest(UUID uuid, KeyRequest request) throws Exception {
+    String url = request.getLicenseServerUrl();
     if (forceDefaultLicenseUrl || TextUtils.isEmpty(url)) {
       url = defaultLicenseUrl;
     }
@@ -141,8 +136,12 @@ public final class HttpMediaDrmCallback implements MediaDrmCallback {
     return executePost(dataSourceFactory, url, request.getData(), requestProperties);
   }
 
-  private static byte[] executePost(HttpDataSource.Factory dataSourceFactory, String url,
-      byte[] data, Map<String, String> requestProperties) throws IOException {
+  private static byte[] executePost(
+      HttpDataSource.Factory dataSourceFactory,
+      String url,
+      byte[] data,
+      @Nullable Map<String, String> requestProperties)
+      throws IOException {
     HttpDataSource dataSource = dataSourceFactory.createDataSource();
     if (requestProperties != null) {
       for (Map.Entry<String, String> requestProperty : requestProperties.entrySet()) {
@@ -170,17 +169,18 @@ public final class HttpMediaDrmCallback implements MediaDrmCallback {
         boolean manuallyRedirect =
             (e.responseCode == 307 || e.responseCode == 308)
                 && manualRedirectCount++ < MAX_MANUAL_REDIRECTS;
-        url = manuallyRedirect ? getRedirectUrl(e) : null;
-        if (url == null) {
+        String redirectUrl = manuallyRedirect ? getRedirectUrl(e) : null;
+        if (redirectUrl == null) {
           throw e;
         }
+        url = redirectUrl;
       } finally {
         Util.closeQuietly(inputStream);
       }
     }
   }
 
-  private static String getRedirectUrl(InvalidResponseCodeException exception) {
+  private static @Nullable String getRedirectUrl(InvalidResponseCodeException exception) {
     Map<String, List<String>> headerFields = exception.headerFields;
     if (headerFields != null) {
       List<String> locationHeaders = headerFields.get("Location");

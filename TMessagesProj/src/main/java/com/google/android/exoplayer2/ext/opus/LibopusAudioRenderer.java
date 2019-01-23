@@ -77,7 +77,7 @@ public final class LibopusAudioRenderer extends SimpleDecoderAudioRenderer {
       Format format) {
     if (!MimeTypes.AUDIO_OPUS.equalsIgnoreCase(format.sampleMimeType)) {
       return FORMAT_UNSUPPORTED_TYPE;
-    } else if (!supportsOutputEncoding(C.ENCODING_PCM_16BIT)) {
+    } else if (!supportsOutput(format.channelCount, C.ENCODING_PCM_16BIT)) {
       return FORMAT_UNSUPPORTED_SUBTYPE;
     } else if (!supportsFormatDrm(drmSessionManager, format.drmInitData)) {
       return FORMAT_UNSUPPORTED_DRM;

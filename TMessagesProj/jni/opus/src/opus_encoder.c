@@ -123,38 +123,38 @@ struct OpusEncoder {
    middle (memoriless) threshold. The second column is the hysteresis
    (difference with the middle) */
 static const opus_int32 mono_voice_bandwidth_thresholds[8] = {
-        10000, 1000, /* NB<->MB */
-        11000, 1000, /* MB<->WB */
+         9000,  700, /* NB<->MB */
+         9000,  700, /* MB<->WB */
         13500, 1000, /* WB<->SWB */
         14000, 2000, /* SWB<->FB */
 };
 static const opus_int32 mono_music_bandwidth_thresholds[8] = {
-        10000, 1000, /* NB<->MB */
-        11000, 1000, /* MB<->WB */
-        13500, 1000, /* WB<->SWB */
-        14000, 2000, /* SWB<->FB */
+         9000,  700, /* NB<->MB */
+         9000,  700, /* MB<->WB */
+        11000, 1000, /* WB<->SWB */
+        12000, 2000, /* SWB<->FB */
 };
 static const opus_int32 stereo_voice_bandwidth_thresholds[8] = {
-        10000, 1000, /* NB<->MB */
-        11000, 1000, /* MB<->WB */
+         9000,  700, /* NB<->MB */
+         9000,  700, /* MB<->WB */
         13500, 1000, /* WB<->SWB */
         14000, 2000, /* SWB<->FB */
 };
 static const opus_int32 stereo_music_bandwidth_thresholds[8] = {
-        10000, 1000, /* NB<->MB */
-        11000, 1000, /* MB<->WB */
-        13500, 1000, /* WB<->SWB */
-        14000, 2000, /* SWB<->FB */
+         9000,  700, /* NB<->MB */
+         9000,  700, /* MB<->WB */
+        11000, 1000, /* WB<->SWB */
+        12000, 2000, /* SWB<->FB */
 };
 /* Threshold bit-rates for switching between mono and stereo */
-static const opus_int32 stereo_voice_threshold = 24000;
-static const opus_int32 stereo_music_threshold = 24000;
+static const opus_int32 stereo_voice_threshold = 19000;
+static const opus_int32 stereo_music_threshold = 17000;
 
 /* Threshold bit-rate for switching between SILK/hybrid and CELT-only */
 static const opus_int32 mode_thresholds[2][2] = {
       /* voice */ /* music */
-      {  64000,      16000}, /* mono */
-      {  36000,      16000}, /* stereo */
+      {  64000,      10000}, /* mono */
+      {  44000,      10000}, /* stereo */
 };
 
 static const opus_int32 fec_thresholds[] = {
@@ -263,7 +263,8 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
 
 #ifndef DISABLE_FLOAT_API
-    tonality_analysis_init(&st->analysis);
+    tonality_analysis_init(&st->analysis, st->Fs);
+    st->analysis.application = st->application;
 #endif
 
     return OPUS_OK;
@@ -341,10 +342,11 @@ static void silk_biquad_float(
 }
 #endif
 
-static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *out, opus_val32 *hp_mem, int len, int channels, opus_int32 Fs)
+static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *out, opus_val32 *hp_mem, int len, int channels, opus_int32 Fs, int arch)
 {
    opus_int32 B_Q28[ 3 ], A_Q28[ 2 ];
    opus_int32 Fc_Q19, r_Q28, r_Q22;
+   (void)arch;
 
    silk_assert( cutoff_Hz <= silk_int32_MAX / SILK_FIX_CONST( 1.5 * 3.14159 / 1000, 19 ) );
    Fc_Q19 = silk_DIV32_16( silk_SMULBB( SILK_FIX_CONST( 1.5 * 3.14159 / 1000, 19 ), cutoff_Hz ), Fs/1000 );
@@ -364,9 +366,10 @@ static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
    A_Q28[ 1 ] = silk_SMULWW( r_Q22, r_Q22 );
 
 #ifdef FIXED_POINT
-   silk_biquad_alt( in, B_Q28, A_Q28, hp_mem, out, len, channels );
-   if( channels == 2 ) {
-       silk_biquad_alt( in+1, B_Q28, A_Q28, hp_mem+2, out+1, len, channels );
+   if( channels == 1 ) {
+      silk_biquad_alt_stride1( in, B_Q28, A_Q28, hp_mem, out, len );
+   } else {
+      silk_biquad_alt_stride2( in, B_Q28, A_Q28, hp_mem, out, len, arch );
    }
 #else
    silk_biquad_float( in, B_Q28, A_Q28, hp_mem, out, len, channels );
@@ -382,20 +385,16 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
    int c, i;
    int shift;
 
-   /* Approximates -round(log2(4.*cutoff_Hz/Fs)) */
-   shift=celt_ilog2(Fs/(cutoff_Hz*3));
+   /* Approximates -round(log2(6.3*cutoff_Hz/Fs)) */
+   shift=celt_ilog2(Fs/(cutoff_Hz*4));
    for (c=0;c<channels;c++)
    {
       for (i=0;i<len;i++)
       {
-         opus_val32 x, tmp, y;
+         opus_val32 x, y;
          x = SHL32(EXTEND32(in[channels*i+c]), 14);
-         /* First stage */
-         tmp = x-hp_mem[2*c];
+         y = x-hp_mem[2*c];
          hp_mem[2*c] = hp_mem[2*c] + PSHR32(x - hp_mem[2*c], shift);
-         /* Second stage */
-         y = tmp - hp_mem[2*c+1];
-         hp_mem[2*c+1] = hp_mem[2*c+1] + PSHR32(tmp - hp_mem[2*c+1], shift);
          out[channels*i+c] = EXTRACT16(SATURATE(PSHR32(y, 14), 32767));
       }
    }
@@ -406,55 +405,39 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
 {
    int i;
    float coef, coef2;
-   coef = 4.0f*cutoff_Hz/Fs;
+   coef = 6.3f*cutoff_Hz/Fs;
    coef2 = 1-coef;
    if (channels==2)
    {
-      float m0, m1, m2, m3;
+      float m0, m2;
       m0 = hp_mem[0];
-      m1 = hp_mem[1];
       m2 = hp_mem[2];
-      m3 = hp_mem[3];
       for (i=0;i<len;i++)
       {
-         opus_val32 x0, x1, tmp0, tmp1, y0, y1;
+         opus_val32 x0, x1, out0, out1;
          x0 = in[2*i+0];
          x1 = in[2*i+1];
-         /* First stage */
-         tmp0 = x0-m0;
-         tmp1 = x1-m2;
+         out0 = x0-m0;
+         out1 = x1-m2;
          m0 = coef*x0 + VERY_SMALL + coef2*m0;
          m2 = coef*x1 + VERY_SMALL + coef2*m2;
-         /* Second stage */
-         y0 = tmp0 - m1;
-         y1 = tmp1 - m3;
-         m1 = coef*tmp0 + VERY_SMALL + coef2*m1;
-         m3 = coef*tmp1 + VERY_SMALL + coef2*m3;
-         out[2*i+0] = y0;
-         out[2*i+1] = y1;
+         out[2*i+0] = out0;
+         out[2*i+1] = out1;
       }
       hp_mem[0] = m0;
-      hp_mem[1] = m1;
       hp_mem[2] = m2;
-      hp_mem[3] = m3;
    } else {
-      float m0, m1;
+      float m0;
       m0 = hp_mem[0];
-      m1 = hp_mem[1];
       for (i=0;i<len;i++)
       {
-         opus_val32 x, tmp, y;
+         opus_val32 x, y;
          x = in[i];
-         /* First stage */
-         tmp = x-m0;
+         y = x-m0;
          m0 = coef*x + VERY_SMALL + coef2*m0;
-         /* Second stage */
-         y = tmp - m1;
-         m1 = coef*tmp + VERY_SMALL + coef2*m1;
          out[i] = y;
       }
       hp_mem[0] = m0;
-      hp_mem[1] = m1;
    }
 }
 #endif
@@ -572,287 +555,57 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
 }
 
 #ifndef DISABLE_FLOAT_API
-/* Don't use more than 60 ms for the frame size analysis */
-#define MAX_DYNAMIC_FRAMESIZE 24
-/* Estimates how much the bitrate will be boosted based on the sub-frame energy */
-static float transient_boost(const float *E, const float *E_1, int LM, int maxM)
-{
-   int i;
-   int M;
-   float sumE=0, sumE_1=0;
-   float metric;
-
-   M = IMIN(maxM, (1<<LM)+1);
-   for (i=0;i<M;i++)
-   {
-      sumE += E[i];
-      sumE_1 += E_1[i];
-   }
-   metric = sumE*sumE_1/(M*M);
-   /*if (LM==3)
-      printf("%f\n", metric);*/
-   /*return metric>10 ? 1 : 0;*/
-   /*return MAX16(0,1-exp(-.25*(metric-2.)));*/
-   return MIN16(1,(float)sqrt(MAX16(0,.05f*(metric-2))));
-}
-
-/* Viterbi decoding trying to find the best frame size combination using look-ahead
-
-   State numbering:
-    0: unused
-    1:  2.5 ms
-    2:  5 ms (#1)
-    3:  5 ms (#2)
-    4: 10 ms (#1)
-    5: 10 ms (#2)
-    6: 10 ms (#3)
-    7: 10 ms (#4)
-    8: 20 ms (#1)
-    9: 20 ms (#2)
-   10: 20 ms (#3)
-   11: 20 ms (#4)
-   12: 20 ms (#5)
-   13: 20 ms (#6)
-   14: 20 ms (#7)
-   15: 20 ms (#8)
-*/
-static int transient_viterbi(const float *E, const float *E_1, int N, int frame_cost, int rate)
-{
-   int i;
-   float cost[MAX_DYNAMIC_FRAMESIZE][16];
-   int states[MAX_DYNAMIC_FRAMESIZE][16];
-   float best_cost;
-   int best_state;
-   float factor;
-   /* Take into account that we damp VBR in the 32 kb/s to 64 kb/s range. */
-   if (rate<80)
-      factor=0;
-   else if (rate>160)
-      factor=1;
-   else
-      factor = (rate-80.f)/80.f;
-   /* Makes variable framesize less aggressive at lower bitrates, but I can't
-      find any valid theoretical justification for this (other than it seems
-      to help) */
-   for (i=0;i<16;i++)
-   {
-      /* Impossible state */
-      states[0][i] = -1;
-      cost[0][i] = 1e10;
-   }
-   for (i=0;i<4;i++)
-   {
-      cost[0][1<<i] = (frame_cost + rate*(1<<i))*(1+factor*transient_boost(E, E_1, i, N+1));
-      states[0][1<<i] = i;
-   }
-   for (i=1;i<N;i++)
-   {
-      int j;
-
-      /* Follow continuations */
-      for (j=2;j<16;j++)
-      {
-         cost[i][j] = cost[i-1][j-1];
-         states[i][j] = j-1;
-      }
-
-      /* New frames */
-      for(j=0;j<4;j++)
-      {
-         int k;
-         float min_cost;
-         float curr_cost;
-         states[i][1<<j] = 1;
-         min_cost = cost[i-1][1];
-         for(k=1;k<4;k++)
-         {
-            float tmp = cost[i-1][(1<<(k+1))-1];
-            if (tmp < min_cost)
-            {
-               states[i][1<<j] = (1<<(k+1))-1;
-               min_cost = tmp;
-            }
-         }
-         curr_cost = (frame_cost + rate*(1<<j))*(1+factor*transient_boost(E+i, E_1+i, j, N-i+1));
-         cost[i][1<<j] = min_cost;
-         /* If part of the frame is outside the analysis window, only count part of the cost */
-         if (N-i < (1<<j))
-            cost[i][1<<j] += curr_cost*(float)(N-i)/(1<<j);
-         else
-            cost[i][1<<j] += curr_cost;
-      }
-   }
-
-   best_state=1;
-   best_cost = cost[N-1][1];
-   /* Find best end state (doesn't force a frame to end at N-1) */
-   for (i=2;i<16;i++)
-   {
-      if (cost[N-1][i]<best_cost)
-      {
-         best_cost = cost[N-1][i];
-         best_state = i;
-      }
-   }
-
-   /* Follow transitions back */
-   for (i=N-1;i>=0;i--)
-   {
-      /*printf("%d ", best_state);*/
-      best_state = states[i][best_state];
-   }
-   /*printf("%d\n", best_state);*/
-   return best_state;
-}
-
-static int optimize_framesize(const void *x, int len, int C, opus_int32 Fs,
-                int bitrate, opus_val16 tonality, float *mem, int buffering,
-                downmix_func downmix)
-{
-   int N;
-   int i;
-   float e[MAX_DYNAMIC_FRAMESIZE+4];
-   float e_1[MAX_DYNAMIC_FRAMESIZE+3];
-   opus_val32 memx;
-   int bestLM=0;
-   int subframe;
-   int pos;
-   int offset;
-   VARDECL(opus_val32, sub);
-
-   subframe = Fs/400;
-   ALLOC(sub, subframe, opus_val32);
-   e[0]=mem[0];
-   e_1[0]=1.f/(EPSILON+mem[0]);
-   if (buffering)
-   {
-      /* Consider the CELT delay when not in restricted-lowdelay */
-      /* We assume the buffering is between 2.5 and 5 ms */
-      offset = 2*subframe - buffering;
-      celt_assert(offset>=0 && offset <= subframe);
-      len -= offset;
-      e[1]=mem[1];
-      e_1[1]=1.f/(EPSILON+mem[1]);
-      e[2]=mem[2];
-      e_1[2]=1.f/(EPSILON+mem[2]);
-      pos = 3;
-   } else {
-      pos=1;
-      offset=0;
-   }
-   N=IMIN(len/subframe, MAX_DYNAMIC_FRAMESIZE);
-   /* Just silencing a warning, it's really initialized later */
-   memx = 0;
-   for (i=0;i<N;i++)
-   {
-      float tmp;
-      opus_val32 tmpx;
-      int j;
-      tmp=EPSILON;
-
-      downmix(x, sub, subframe, i*subframe+offset, 0, -2, C);
-      if (i==0)
-         memx = sub[0];
-      for (j=0;j<subframe;j++)
-      {
-         tmpx = sub[j];
-         tmp += (tmpx-memx)*(float)(tmpx-memx);
-         memx = tmpx;
-      }
-      e[i+pos] = tmp;
-      e_1[i+pos] = 1.f/tmp;
-   }
-   /* Hack to get 20 ms working with APPLICATION_AUDIO
-      The real problem is that the corresponding memory needs to use 1.5 ms
-      from this frame and 1 ms from the next frame */
-   e[i+pos] = e[i+pos-1];
-   if (buffering)
-      N=IMIN(MAX_DYNAMIC_FRAMESIZE, N+2);
-   bestLM = transient_viterbi(e, e_1, N, (int)((1.f+.5f*tonality)*(60*C+40)), bitrate/400);
-   mem[0] = e[1<<bestLM];
-   if (buffering)
-   {
-      mem[1] = e[(1<<bestLM)+1];
-      mem[2] = e[(1<<bestLM)+2];
-   }
-   return bestLM;
-}
-
-#endif
-
-#ifndef DISABLE_FLOAT_API
 #ifdef FIXED_POINT
 #define PCM2VAL(x) FLOAT2INT16(x)
 #else
 #define PCM2VAL(x) SCALEIN(x)
 #endif
-void downmix_float(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
+
+void downmix_float(const void *_x, opus_val32 *y, int subframe, int offset, int c1, int c2, int C)
 {
    const float *x;
-   opus_val32 scale;
    int j;
+
    x = (const float *)_x;
    for (j=0;j<subframe;j++)
-      sub[j] = PCM2VAL(x[(j+offset)*C+c1]);
+      y[j] = PCM2VAL(x[(j+offset)*C+c1]);
    if (c2>-1)
    {
       for (j=0;j<subframe;j++)
-         sub[j] += PCM2VAL(x[(j+offset)*C+c2]);
+         y[j] += PCM2VAL(x[(j+offset)*C+c2]);
    } else if (c2==-2)
    {
       int c;
       for (c=1;c<C;c++)
       {
          for (j=0;j<subframe;j++)
-            sub[j] += PCM2VAL(x[(j+offset)*C+c]);
+            y[j] += PCM2VAL(x[(j+offset)*C+c]);
       }
    }
-#ifdef FIXED_POINT
-   scale = (1<<SIG_SHIFT);
-#else
-   scale = 1.f;
-#endif
-   if (c2==-2)
-      scale /= C;
-   else if (c2>-1)
-      scale /= 2;
-   for (j=0;j<subframe;j++)
-      sub[j] *= scale;
 }
 #endif
 
-void downmix_int(const void *_x, opus_val32 *sub, int subframe, int offset, int c1, int c2, int C)
+void downmix_int(const void *_x, opus_val32 *y, int subframe, int offset, int c1, int c2, int C)
 {
    const opus_int16 *x;
-   opus_val32 scale;
    int j;
+
    x = (const opus_int16 *)_x;
    for (j=0;j<subframe;j++)
-      sub[j] = x[(j+offset)*C+c1];
+      y[j] = x[(j+offset)*C+c1];
    if (c2>-1)
    {
       for (j=0;j<subframe;j++)
-         sub[j] += x[(j+offset)*C+c2];
+         y[j] += x[(j+offset)*C+c2];
    } else if (c2==-2)
    {
       int c;
       for (c=1;c<C;c++)
       {
          for (j=0;j<subframe;j++)
-            sub[j] += x[(j+offset)*C+c];
+            y[j] += x[(j+offset)*C+c];
       }
    }
-#ifdef FIXED_POINT
-   scale = (1<<SIG_SHIFT);
-#else
-   scale = 1.f/32768;
-#endif
-   if (c2==-2)
-      scale /= C;
-   else if (c2>-1)
-      scale /= 2;
-   for (j=0;j<subframe;j++)
-      sub[j] *= scale;
 }
 
 opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_int32 Fs)
@@ -862,8 +615,6 @@ opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_
       return -1;
    if (variable_duration == OPUS_FRAMESIZE_ARG)
       new_size = frame_size;
-   else if (variable_duration == OPUS_FRAMESIZE_VARIABLE)
-      new_size = Fs/50;
    else if (variable_duration >= OPUS_FRAMESIZE_2_5_MS && variable_duration <= OPUS_FRAMESIZE_120_MS)
    {
       if (variable_duration <= OPUS_FRAMESIZE_40_MS)
@@ -880,39 +631,6 @@ opus_int32 frame_size_select(opus_int32 frame_size, int variable_duration, opus_
         50*new_size!=4*Fs &&  50*new_size!=5*Fs &&  50*new_size!=6*Fs)
       return -1;
    return new_size;
-}
-
-opus_int32 compute_frame_size(const void *analysis_pcm, int frame_size,
-      int variable_duration, int C, opus_int32 Fs, int bitrate_bps,
-      int delay_compensation, downmix_func downmix
-#ifndef DISABLE_FLOAT_API
-      , float *subframe_mem
-#endif
-      )
-{
-#ifndef DISABLE_FLOAT_API
-   if (variable_duration == OPUS_FRAMESIZE_VARIABLE && frame_size >= Fs/200)
-   {
-      int LM = 3;
-      LM = optimize_framesize(analysis_pcm, frame_size, C, Fs, bitrate_bps,
-            0, subframe_mem, delay_compensation, downmix);
-      while ((Fs/400<<LM)>frame_size)
-         LM--;
-      frame_size = (Fs/400<<LM);
-   } else
-#else
-   (void)analysis_pcm;
-   (void)C;
-   (void)bitrate_bps;
-   (void)delay_compensation;
-   (void)downmix;
-#endif
-   {
-      frame_size = frame_size_select(frame_size, variable_duration, Fs);
-   }
-   if (frame_size<0)
-      return -1;
-   return frame_size;
 }
 
 opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int32 Fs, StereoWidthState *mem)
@@ -961,6 +679,12 @@ opus_val16 compute_stereo_width(const opus_val16 *pcm, int frame_size, opus_int3
       xy += SHR32(pxy, 10);
       yy += SHR32(pyy, 10);
    }
+#ifndef FIXED_POINT
+   if (!(xx < 1e9f) || celt_isnan(xx) || !(yy < 1e9f) || celt_isnan(yy))
+   {
+      xy = xx = yy = 0;
+   }
+#endif
    mem->XX += MULT16_32_Q15(short_alpha, xx-mem->XX);
    mem->XY += MULT16_32_Q15(short_alpha, xy-mem->XY);
    mem->YY += MULT16_32_Q15(short_alpha, yy-mem->YY);
@@ -1024,7 +748,7 @@ static int decide_fec(int useInBandFEC, int PacketLoss_perc, int last_fec, int m
    return 0;
 }
 
-static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, int vbr, int fec) {
+static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, int vbr, int fec, int channels) {
    int entry;
    int i;
    int N;
@@ -1041,6 +765,8 @@ static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, 
       {32000, 22000, 22000, 28000, 28000},
       {64000, 38000, 38000, 50000, 50000}
    };
+   /* Do the allocation per-channel. */
+   rate /= channels;
    entry = 1 + frame20ms + 2*fec;
    N = sizeof(rate_table)/sizeof(rate_table[0]);
    for (i=1;i<N;i++)
@@ -1067,6 +793,10 @@ static int compute_silk_rate_for_hybrid(int rate, int bandwidth, int frame20ms, 
    }
    if (bandwidth==OPUS_BANDWIDTH_SUPERWIDEBAND)
       silk_rate += 300;
+   silk_rate *= channels;
+   /* Small adjustment for stereo (calibrated for 32 kb/s, haven't tried other bitrates). */
+   if (channels == 2 && rate >= 12000)
+      silk_rate -= 1000;
    return silk_rate;
 }
 
@@ -1078,7 +808,8 @@ static opus_int32 compute_equiv_rate(opus_int32 bitrate, int channels,
    opus_int32 equiv;
    equiv = bitrate;
    /* Take into account overhead from smaller frames. */
-   equiv -= (40*channels+20)*(frame_rate - 50);
+   if (frame_rate > 50)
+      equiv -= (40*channels+20)*(frame_rate - 50);
    /* CBR is about a 8% penalty for both SILK and CELT. */
    if (!vbr)
       equiv -= equiv/12;
@@ -1110,7 +841,9 @@ static int is_digital_silence(const opus_val16* pcm, int frame_size, int channel
 {
    int silence = 0;
    opus_val32 sample_max = 0;
-
+#ifdef MLP_TRAINING
+   return 0;
+#endif
    sample_max = celt_maxabs16(pcm, frame_size*channels);
 
 #ifdef FIXED_POINT
@@ -1169,21 +902,20 @@ static int decide_dtx_mode(float activity_probability,    /* probability that cu
                            int arch
                           )
 {
-   int is_noise;
    opus_val32 noise_energy;
-   int is_sufficiently_quiet;
 
    if (!is_silence)
    {
-      is_noise = activity_probability < DTX_ACTIVITY_THRESHOLD;
-      if (is_noise)
+      if (activity_probability < DTX_ACTIVITY_THRESHOLD)  /* is noise */
       {
          noise_energy = compute_frame_energy(pcm, frame_size, channels, arch);
-         is_sufficiently_quiet = peak_signal_energy >= (PSEUDO_SNR_THRESHOLD * noise_energy);
+
+         /* but is sufficiently quiet */
+         is_silence = peak_signal_energy >= (PSEUDO_SNR_THRESHOLD * noise_energy);
       }
    }
 
-   if (is_silence || (is_noise && is_sufficiently_quiet))
+   if (is_silence)
    {
       /* The number of consecutive DTX frames should be within the allowed bounds */
       (*nb_no_activity_frames)++;
@@ -1303,6 +1035,34 @@ static opus_int32 encode_multiframe_packet(OpusEncoder *st,
    return ret;
 }
 
+static int compute_redundancy_bytes(opus_int32 max_data_bytes, opus_int32 bitrate_bps, int frame_rate, int channels)
+{
+   int redundancy_bytes_cap;
+   int redundancy_bytes;
+   opus_int32 redundancy_rate;
+   int base_bits;
+   opus_int32 available_bits;
+   base_bits = (40*channels+20);
+
+   /* Equivalent rate for 5 ms frames. */
+   redundancy_rate = bitrate_bps + base_bits*(200 - frame_rate);
+   /* For VBR, further increase the bitrate if we can afford it. It's pretty short
+      and we'll avoid artefacts. */
+   redundancy_rate = 3*redundancy_rate/2;
+   redundancy_bytes = redundancy_rate/1600;
+
+   /* Compute the max rate we can use given CBR or VBR with cap. */
+   available_bits = max_data_bytes*8 - 2*base_bits;
+   redundancy_bytes_cap = (available_bits*240/(240+48000/frame_rate) + base_bits)/8;
+   redundancy_bytes = IMIN(redundancy_bytes, redundancy_bytes_cap);
+   /* It we can't get enough bits for redundancy to be worth it, rely on the decoder PLC. */
+   if (redundancy_bytes > 4 + 8*channels)
+      redundancy_bytes = IMIN(257, redundancy_bytes);
+   else
+      redundancy_bytes = 0;
+   return redundancy_bytes;
+}
+
 opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes, int lsb_depth,
                 const void *analysis_pcm, opus_int32 analysis_size, int c1, int c2,
@@ -1349,12 +1109,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     max_data_bytes = IMIN(1276, out_data_bytes);
 
     st->rangeFinal = 0;
-    if ((!st->variable_duration && 400*frame_size != st->Fs && 200*frame_size != st->Fs && 100*frame_size != st->Fs &&
-         50*frame_size != st->Fs && 25*frame_size != st->Fs && 50*frame_size != 3*st->Fs && 50*frame_size != 4*st->Fs &&
-         50*frame_size != 5*st->Fs && 50*frame_size != 6*st->Fs)
-         || (400*frame_size < st->Fs)
-         || max_data_bytes<=0
-         )
+    if (frame_size <= 0 || max_data_bytes <= 0)
     {
        RESTORE_STACK;
        return OPUS_BAD_ARG;
@@ -1380,9 +1135,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 #ifndef DISABLE_FLOAT_API
     analysis_info.valid = 0;
 #ifdef FIXED_POINT
-    if (st->silk_mode.complexity >= 10 && st->Fs==48000)
+    if (st->silk_mode.complexity >= 10 && st->Fs>=16000)
 #else
-    if (st->silk_mode.complexity >= 7 && st->Fs==48000)
+    if (st->silk_mode.complexity >= 7 && st->Fs>=16000)
 #endif
     {
        if (is_digital_silence(pcm, frame_size, st->channels, lsb_depth))
@@ -1398,12 +1153,16 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
        /* Track the peak signal energy */
        if (!is_silence && analysis_info.activity_probability > DTX_ACTIVITY_THRESHOLD)
-          st->peak_signal_energy = MAX32(MULT16_32_Q15(QCONST16(0.999, 15), st->peak_signal_energy),
+          st->peak_signal_energy = MAX32(MULT16_32_Q15(QCONST16(0.999f, 15), st->peak_signal_energy),
                 compute_frame_energy(pcm, frame_size, st->channels, st->arch));
     }
 #else
     (void)analysis_pcm;
     (void)analysis_size;
+    (void)c1;
+    (void)c2;
+    (void)analysis_channels;
+    (void)downmix;
 #endif
 
 #ifndef DISABLE_FLOAT_API
@@ -1417,7 +1176,16 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     {
        int analysis_bandwidth;
        if (st->signal_type == OPUS_AUTO)
-          st->voice_ratio = (int)floor(.5+100*(1-analysis_info.music_prob));
+       {
+          float prob;
+          if (st->prev_mode == 0)
+             prob = analysis_info.music_prob;
+          else if (st->prev_mode == MODE_CELT_ONLY)
+             prob = analysis_info.music_prob_max;
+          else
+             prob = analysis_info.music_prob_min;
+          st->voice_ratio = (int)floor(.5+100*(1-prob));
+       }
 
        analysis_bandwidth = analysis_info.bandwidth;
        if (analysis_bandwidth<=12)
@@ -1719,6 +1487,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             if (equiv_rate >= threshold)
                 break;
         } while (--bandwidth>OPUS_BANDWIDTH_NARROWBAND);
+        /* We don't use mediumband anymore, except when explicitly requested or during
+           mode transitions. */
+        if (bandwidth == OPUS_BANDWIDTH_MEDIUMBAND)
+           bandwidth = OPUS_BANDWIDTH_WIDEBAND;
         st->bandwidth = st->auto_bandwidth = bandwidth;
         /* Prevents any transition to SWB/FB until the SILK layer has fully
            switched to WB mode and turned the variable LP filter off */
@@ -1801,7 +1573,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        {
          if (frame_size == 2*st->Fs/25)  /* 80 ms -> 2x 40 ms */
            enc_frame_size = st->Fs/25;
-         if (frame_size == 3*st->Fs/25)  /* 120 ms -> 2x 60 ms */
+         else if (frame_size == 3*st->Fs/25)  /* 120 ms -> 2x 60 ms */
            enc_frame_size = 3*st->Fs/50;
          else                            /* 100 ms -> 5x 20 ms */
            enc_frame_size = st->Fs/50;
@@ -1832,7 +1604,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        redundancy = 1;
        celt_to_silk = 1;
        st->silk_bw_switch = 0;
-       prefill=1;
+       /* Do a prefill without reseting the sampling rate control. */
+       prefill=2;
     }
 
     /* If we decided to go with CELT, make sure redundancy is off, no matter what
@@ -1842,11 +1615,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     if (redundancy)
     {
-       /* Fair share of the max size allowed */
-       redundancy_bytes = IMIN(257, max_data_bytes*(opus_int32)(st->Fs/200)/(frame_size+st->Fs/200));
-       /* For VBR, target the actual bitrate (subject to the limit above) */
-       if (st->use_vbr)
-          redundancy_bytes = IMIN(redundancy_bytes, st->bitrate_bps/1600);
+       redundancy_bytes = compute_redundancy_bytes(max_data_bytes, st->bitrate_bps, frame_rate, st->stream_channels);
+       if (redundancy_bytes == 0)
+          redundancy = 0;
     }
 
     /* printf("%d %d %d %d\n", st->bitrate_bps, st->stream_channels, st->mode, curr_bandwidth); */
@@ -1872,7 +1643,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
 
     if (st->application == OPUS_APPLICATION_VOIP)
     {
-       hp_cutoff(pcm, cutoff_Hz, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
+       hp_cutoff(pcm, cutoff_Hz, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs, st->arch);
     } else {
        dc_reject(pcm, 3, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
     }
@@ -1897,6 +1668,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     if (st->mode != MODE_CELT_ONLY)
     {
         opus_int32 total_bitRate, celt_rate;
+        opus_int activity;
 #ifdef FIXED_POINT
        const opus_int16 *pcm_silk;
 #else
@@ -1904,12 +1676,21 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        ALLOC(pcm_silk, st->channels*frame_size, opus_int16);
 #endif
 
+        activity = VAD_NO_DECISION;
+#ifndef DISABLE_FLOAT_API
+        if( analysis_info.valid ) {
+            /* Inform SILK about the Opus VAD decision */
+            activity = ( analysis_info.activity_probability >= DTX_ACTIVITY_THRESHOLD );
+        }
+#endif
+
         /* Distribute bits between SILK and CELT */
         total_bitRate = 8 * bytes_target * frame_rate;
         if( st->mode == MODE_HYBRID ) {
             /* Base rate for SILK */
             st->silk_mode.bitRate = compute_silk_rate_for_hybrid(total_bitRate,
-                  curr_bandwidth, st->Fs == 50 * frame_size, st->use_vbr, st->silk_mode.LBRR_coded);
+                  curr_bandwidth, st->Fs == 50 * frame_size, st->use_vbr, st->silk_mode.LBRR_coded,
+                  st->stream_channels);
             if (!st->energy_masking)
             {
                /* Increasingly attenuate high band when it gets allocated fewer bits */
@@ -1971,7 +1752,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         } else if (curr_bandwidth == OPUS_BANDWIDTH_MEDIUMBAND) {
             st->silk_mode.desiredInternalSampleRate = 12000;
         } else {
-            silk_assert( st->mode == MODE_HYBRID || curr_bandwidth == OPUS_BANDWIDTH_WIDEBAND );
+            celt_assert( st->mode == MODE_HYBRID || curr_bandwidth == OPUS_BANDWIDTH_WIDEBAND );
             st->silk_mode.desiredInternalSampleRate = 16000;
         }
         if( st->mode == MODE_HYBRID ) {
@@ -2024,7 +1805,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
            {
               /* Compute SILK bitrate corresponding to the max total bits available */
               opus_int32 maxBitRate = compute_silk_rate_for_hybrid(st->silk_mode.maxBits*st->Fs / frame_size,
-                    curr_bandwidth, st->Fs == 50 * frame_size, st->use_vbr, st->silk_mode.LBRR_coded);
+                    curr_bandwidth, st->Fs == 50 * frame_size, st->use_vbr, st->silk_mode.LBRR_coded,
+                    st->stream_channels);
               st->silk_mode.maxBits = maxBitRate * frame_size / st->Fs;
            }
         }
@@ -2049,7 +1831,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
             for (i=0;i<st->encoder_buffer*st->channels;i++)
                 pcm_silk[i] = FLOAT2INT16(st->delay_buffer[i]);
 #endif
-            silk_Encode( silk_enc, &st->silk_mode, pcm_silk, st->encoder_buffer, NULL, &zero, 1 );
+            silk_Encode( silk_enc, &st->silk_mode, pcm_silk, st->encoder_buffer, NULL, &zero, prefill, activity );
+            /* Prevent a second switch in the real encode call. */
+            st->silk_mode.opusCanSwitch = 0;
         }
 
 #ifdef FIXED_POINT
@@ -2058,7 +1842,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         for (i=0;i<frame_size*st->channels;i++)
             pcm_silk[i] = FLOAT2INT16(pcm_buf[total_buffer*st->channels + i]);
 #endif
-        ret = silk_Encode( silk_enc, &st->silk_mode, pcm_silk, frame_size, &enc, &nBytes, 0 );
+        ret = silk_Encode( silk_enc, &st->silk_mode, pcm_silk, frame_size, &enc, &nBytes, 0, activity );
         if( ret ) {
             /*fprintf (stderr, "SILK encode error: %d\n", ret);*/
             /* Handle error */
@@ -2076,7 +1860,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                curr_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
             }
         } else {
-            silk_assert( st->silk_mode.internalSampleRate == 16000 );
+            celt_assert( st->silk_mode.internalSampleRate == 16000 );
         }
 
         st->silk_mode.opusCanSwitch = st->silk_mode.switchReady && !st->nonfinal_frame;
@@ -2092,7 +1876,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         /* FIXME: How do we allocate the redundancy for CBR? */
         if (st->silk_mode.opusCanSwitch)
         {
-           redundancy = 1;
+           redundancy_bytes = compute_redundancy_bytes(max_data_bytes, st->bitrate_bps, frame_rate, st->stream_channels);
+           redundancy = (redundancy_bytes != 0);
            celt_to_silk = 0;
            st->silk_bw_switch = 1;
         }
@@ -2140,18 +1925,9 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
         } else {
             if (st->use_vbr)
             {
-                opus_int32 bonus=0;
-#ifndef DISABLE_FLOAT_API
-                if (st->variable_duration==OPUS_FRAMESIZE_VARIABLE && frame_size != st->Fs/50)
-                {
-                   bonus = (60*st->stream_channels+40)*(st->Fs/frame_size-50);
-                   if (analysis_info.valid)
-                      bonus = (opus_int32)(bonus*(1.f+.5f*analysis_info.tonality));
-                }
-#endif
                 celt_encoder_ctl(celt_enc, OPUS_SET_VBR(1));
                 celt_encoder_ctl(celt_enc, OPUS_SET_VBR_CONSTRAINT(st->vbr_constraint));
-                celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(st->bitrate_bps+bonus));
+                celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(st->bitrate_bps));
             }
         }
     }
@@ -2179,7 +1955,14 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
     }
     st->prev_HB_gain = HB_gain;
     if (st->mode != MODE_HYBRID || st->stream_channels==1)
-       st->silk_mode.stereoWidth_Q14 = IMIN((1<<14),2*IMAX(0,equiv_rate-24000));
+    {
+       if (equiv_rate > 32000)
+          st->silk_mode.stereoWidth_Q14 = 16384;
+       else if (equiv_rate < 16000)
+          st->silk_mode.stereoWidth_Q14 = 0;
+       else
+          st->silk_mode.stereoWidth_Q14 = 16384 - 2048*(opus_int32)(32000-equiv_rate)/(equiv_rate-14000);
+    }
     if( !st->energy_masking && st->channels == 2 ) {
         /* Apply stereo width reduction (at low bitrates) */
         if( st->hybrid_stereo_width_Q14 < (1 << 14) || st->silk_mode.stereoWidth_Q14 < (1 << 14) ) {
@@ -2213,13 +1996,12 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
                /* Reserve the 8 bits needed for the redundancy length,
                   and at least a few bits for CELT if possible */
                max_redundancy = (max_data_bytes-1)-((ec_tell(&enc)+8+3+7)>>3);
-               max_redundancy = IMIN(max_redundancy, redundancy_bytes);
             }
             else
                max_redundancy = (max_data_bytes-1)-((ec_tell(&enc)+7)>>3);
             /* Target the same bit-rate for redundancy as for the rest,
                up to a max of 257 bytes */
-            redundancy_bytes = IMIN(max_redundancy, st->bitrate_bps/1600);
+            redundancy_bytes = IMIN(max_redundancy, redundancy_bytes);
             redundancy_bytes = IMIN(257, IMAX(2, redundancy_bytes));
             if (st->mode == MODE_HYBRID)
                 ec_enc_uint(&enc, redundancy_bytes-2, 256);
@@ -2254,8 +2036,6 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_val16 *pcm, int frame_
        info.signalType = st->silk_mode.signalType;
        info.offset = st->silk_mode.offset;
        celt_encoder_ctl(celt_enc, CELT_SET_SILK_INFO(&info));
-    } else {
-       celt_encoder_ctl(celt_enc, CELT_SET_SILK_INFO((SILKInfo*)NULL));
     }
 
     /* 5 ms redundant frame for CELT->SILK */
@@ -2420,18 +2200,15 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_fra
 {
    int i, ret;
    int frame_size;
-   int delay_compensation;
    VARDECL(opus_int16, in);
    ALLOC_STACK;
 
-   if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
-      delay_compensation = 0;
-   else
-      delay_compensation = st->delay_compensation;
-   frame_size = compute_frame_size(pcm, analysis_frame_size,
-         st->variable_duration, st->channels, st->Fs, st->bitrate_bps,
-         delay_compensation, downmix_float, st->analysis.subframe_mem);
-
+   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   if (frame_size <= 0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
    ALLOC(in, frame_size*st->channels, opus_int16);
 
    for (i=0;i<frame_size*st->channels;i++)
@@ -2447,18 +2224,7 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
                 unsigned char *data, opus_int32 out_data_bytes)
 {
    int frame_size;
-   int delay_compensation;
-   if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
-      delay_compensation = 0;
-   else
-      delay_compensation = st->delay_compensation;
-   frame_size = compute_frame_size(pcm, analysis_frame_size,
-         st->variable_duration, st->channels, st->Fs, st->bitrate_bps,
-         delay_compensation, downmix_int
-#ifndef DISABLE_FLOAT_API
-         , st->analysis.subframe_mem
-#endif
-         );
+   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
    return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 16,
                              pcm, analysis_frame_size, 0, -2, st->channels, downmix_int, 0);
 }
@@ -2469,18 +2235,15 @@ opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int analysis_fram
 {
    int i, ret;
    int frame_size;
-   int delay_compensation;
    VARDECL(float, in);
    ALLOC_STACK;
 
-   if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
-      delay_compensation = 0;
-   else
-      delay_compensation = st->delay_compensation;
-   frame_size = compute_frame_size(pcm, analysis_frame_size,
-         st->variable_duration, st->channels, st->Fs, st->bitrate_bps,
-         delay_compensation, downmix_int, st->analysis.subframe_mem);
-
+   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
+   if (frame_size <= 0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
    ALLOC(in, frame_size*st->channels, float);
 
    for (i=0;i<frame_size*st->channels;i++)
@@ -2494,14 +2257,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const float *pcm, int analysis_fra
                       unsigned char *data, opus_int32 out_data_bytes)
 {
    int frame_size;
-   int delay_compensation;
-   if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
-      delay_compensation = 0;
-   else
-      delay_compensation = st->delay_compensation;
-   frame_size = compute_frame_size(pcm, analysis_frame_size,
-         st->variable_duration, st->channels, st->Fs, st->bitrate_bps,
-         delay_compensation, downmix_float, st->analysis.subframe_mem);
+   frame_size = frame_size_select(analysis_frame_size, st->variable_duration, st->Fs);
    return opus_encode_native(st, pcm, frame_size, data, out_data_bytes, 24,
                              pcm, analysis_frame_size, 0, -2, st->channels, downmix_float, 1);
 }
@@ -2532,6 +2288,9 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                break;
             }
             st->application = value;
+#ifndef DISABLE_FLOAT_API
+            st->analysis.application = value;
+#endif
         }
         break;
         case OPUS_GET_APPLICATION_REQUEST:
@@ -2865,8 +2624,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                 value != OPUS_FRAMESIZE_5_MS   && value != OPUS_FRAMESIZE_10_MS  &&
                 value != OPUS_FRAMESIZE_20_MS  && value != OPUS_FRAMESIZE_40_MS  &&
                 value != OPUS_FRAMESIZE_60_MS  && value != OPUS_FRAMESIZE_80_MS  &&
-                value != OPUS_FRAMESIZE_100_MS && value != OPUS_FRAMESIZE_120_MS &&
-                value != OPUS_FRAMESIZE_VARIABLE)
+                value != OPUS_FRAMESIZE_100_MS && value != OPUS_FRAMESIZE_120_MS)
             {
                goto bad_arg;
             }

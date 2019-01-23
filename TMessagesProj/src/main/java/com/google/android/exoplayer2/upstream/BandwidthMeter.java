@@ -29,30 +29,33 @@ public interface BandwidthMeter {
   interface EventListener {
 
     /**
-     * Called periodically to indicate that bytes have been transferred.
+     * Called periodically to indicate that bytes have been transferred or the estimated bitrate has
+     * changed.
      *
      * <p>Note: The estimated bitrate is typically derived from more information than just {@code
      * bytes} and {@code elapsedMs}.
      *
-     * @param elapsedMs The time taken to transfer the bytes, in milliseconds.
-     * @param bytes The number of bytes transferred.
-     * @param bitrate The estimated bitrate in bits/sec.
+     * @param elapsedMs The time taken to transfer {@code bytesTransferred}, in milliseconds. This
+     *     is at most the elapsed time since the last callback, but may be less if there were
+     *     periods during which data was not being transferred.
+     * @param bytesTransferred The number of bytes transferred since the last callback.
+     * @param bitrateEstimate The estimated bitrate in bits/sec.
      */
-    void onBandwidthSample(int elapsedMs, long bytes, long bitrate);
+    void onBandwidthSample(int elapsedMs, long bytesTransferred, long bitrateEstimate);
   }
 
-  /** Returns the estimated bandwidth in bits/sec. */
+  /** Returns the estimated bitrate. */
   long getBitrateEstimate();
 
   /**
    * Returns the {@link TransferListener} that this instance uses to gather bandwidth information
-   * from data transfers. May be null, if no transfer listener is used.
+   * from data transfers. May be null if the implementation does not listen to data transfers.
    */
   @Nullable
   TransferListener getTransferListener();
 
   /**
-   * Adds an {@link EventListener} to be informed of bandwidth samples.
+   * Adds an {@link EventListener}.
    *
    * @param eventHandler A handler for events.
    * @param eventListener A listener of events.
