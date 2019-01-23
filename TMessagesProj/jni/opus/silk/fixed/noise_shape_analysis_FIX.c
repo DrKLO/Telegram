@@ -262,7 +262,7 @@ void silk_noise_shape_analysis_FIX(
 
         if( psEnc->sCmn.warping_Q16 > 0 ) {
             /* Calculate warped auto correlation */
-            silk_warped_autocorrelation_FIX( auto_corr, &scale, x_windowed, warping_Q16, psEnc->sCmn.shapeWinLength, psEnc->sCmn.shapingLPCOrder );
+            silk_warped_autocorrelation_FIX( auto_corr, &scale, x_windowed, warping_Q16, psEnc->sCmn.shapeWinLength, psEnc->sCmn.shapingLPCOrder, arch );
         } else {
             /* Calculate regular auto correlation */
             silk_autocorr( auto_corr, &scale, x_windowed, psEnc->sCmn.shapeWinLength, psEnc->sCmn.shapingLPCOrder + 1, arch );

@@ -8,6 +8,7 @@
         <item name="android:colorBackground">@android:color/white</item>
         <item name="android:windowBackground">@android:color/white</item>
         <item name="android:windowContentOverlay">@null</item>
+        <item name="android:textViewStyle">@style/MyTextViewStyle</item>
     </style>
 
     <style name="Theme.TMessages" parent="@android:style/Theme.Holo.Light">
@@ -21,6 +22,7 @@
         <item name="android:listViewStyle">@style/Theme.TMessages.ListView</item>
         <item name="android:listChoiceBackgroundIndicator">@drawable/list_selector_ex</item>
         <item name="android:actionBarItemBackground">@drawable/bar_selector_style</item>
+        <item name="android:textViewStyle">@style/MyTextViewStyle</item>
     </style>
 
     <style name="Theme.TMessages.PopupNotification" parent="Theme.TMessages">
@@ -51,6 +53,12 @@
         <item name="android:colorBackgroundCacheHint">@null</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBar">false</item>
+    </style>
+
+    <!-- TextView -->
+
+    <style name="MyTextViewStyle" parent="android:Widget.Holo.Light.TextView">
+        <item name="android:hyphenationFrequency">none</item>
     </style>
 
     <!-- POPUP -->

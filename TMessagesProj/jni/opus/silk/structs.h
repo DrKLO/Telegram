@@ -78,6 +78,7 @@ typedef struct {
     opus_int32                   In_LP_State[ 2 ];           /* Low pass filter state */
     opus_int32                   transition_frame_no;        /* Counter which is mapped to a cut-off frequency */
     opus_int                     mode;                       /* Operating mode, <0: switch down, >0: switch up; 0: do nothing           */
+    opus_int32                   saved_fs_kHz;               /* If non-zero, holds the last sampling rate before a bandwidth switching reset. */
 } silk_LP_state;
 
 /* Structure containing NLSF codebook */
@@ -301,6 +302,7 @@ typedef struct {
     /* Stuff used for PLC */
     opus_int                    lossCnt;
     opus_int                    prevSignalType;
+    int                         arch;
 
     silk_PLC_struct sPLC;
 

@@ -1,16 +1,15 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
 
 import android.app.Activity;
 import android.app.Dialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -79,14 +78,11 @@ public class ShareActivity extends Activity {
         try {
             visibleDialog = ShareAlert.createShareAlert(this, messageObject, null, false, link, false);
             visibleDialog.setCanceledOnTouchOutside(true);
-            visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                @Override
-                public void onDismiss(DialogInterface dialog) {
-                    if (!isFinishing()) {
-                        finish();
-                    }
-                    visibleDialog = null;
+            visibleDialog.setOnDismissListener(dialog -> {
+                if (!isFinishing()) {
+                    finish();
                 }
+                visibleDialog = null;
             });
             visibleDialog.show();
         } catch (Exception e) {

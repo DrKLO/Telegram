@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Adapters;
@@ -29,6 +29,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.FileLog;
@@ -107,7 +108,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = new HintDialogCell(mContext);
-            view.setLayoutParams(new RecyclerView.LayoutParams(AndroidUtilities.dp(80), AndroidUtilities.dp(100)));
+            view.setLayoutParams(new RecyclerView.LayoutParams(AndroidUtilities.dp(80), AndroidUtilities.dp(86)));
             return new RecyclerListView.Holder(view);
         }
 
@@ -138,7 +139,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             cell.setTag(did);
             String name = "";
             if (user != null) {
-                name = ContactsController.formatName(user.first_name, user.last_name);
+                name = UserObject.getFirstName(user);
             } else if (chat != null) {
                 name = chat.title;
             }
@@ -220,7 +221,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         final TLRPC.TL_messages_searchGlobal req = new TLRPC.TL_messages_searchGlobal();
         req.limit = 20;
         req.q = query;
-        if (lastMessagesSearchString != null && query.equals(lastMessagesSearchString) && !searchResultMessages.isEmpty()) {
+        if (query.equals(lastMessagesSearchString) && !searchResultMessages.isEmpty()) {
             MessageObject lastMessage = searchResultMessages.get(searchResultMessages.size() - 1);
             req.offset_id = lastMessage.getId();
             req.offset_date = lastMessage.messageOwner.date;
@@ -801,7 +802,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public void searchDialogs(final String query) {
-        if (query != null && lastSearchText != null && query.equals(lastSearchText)) {
+        if (query != null && query.equals(lastSearchText)) {
             return;
         }
         lastSearchText = query;
@@ -813,14 +814,14 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        if (query == null || query.length() == 0) {
+        if (TextUtils.isEmpty(query)) {
             searchAdapterHelper.unloadRecentHashtags();
             searchResult.clear();
             searchResultNames.clear();
             searchResultHashtags.clear();
             searchAdapterHelper.mergeResults(null);
             if (needMessagesSearch != 2) {
-                searchAdapterHelper.queryServerSearch(null, true, true, true, true, 0, false);
+                searchAdapterHelper.queryServerSearch(null, true, true, true, true, 0, 0);
             }
             searchMessagesInternal(null);
             notifyDataSetChanged();
@@ -862,7 +863,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     searchDialogsInternal(query, searchId);
                     AndroidUtilities.runOnUIThread(() -> {
                         if (needMessagesSearch != 2) {
-                            searchAdapterHelper.queryServerSearch(query, true, true, true, true, 0, false);
+                            searchAdapterHelper.queryServerSearch(query, true, true, true, true, 0, 0);
                         }
                         searchMessagesInternal(query);
                     });
@@ -1032,7 +1033,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 innerListView = horizontalListView;
         }
         if (viewType == 5) {
-            view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(100)));
+            view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(86)));
         } else {
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
         }
@@ -1158,12 +1159,12 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 if (isRecentSearchDisplayed()) {
                     int offset = (!DataQuery.getInstance(currentAccount).hints.isEmpty() ? 2 : 0);
                     if (position < offset) {
-                        cell.setText(LocaleController.getString("ChatHints", R.string.ChatHints).toUpperCase());
+                        cell.setText(LocaleController.getString("ChatHints", R.string.ChatHints));
                     } else {
-                        cell.setText(LocaleController.getString("Recent", R.string.Recent).toUpperCase());
+                        cell.setText(LocaleController.getString("Recent", R.string.Recent));
                     }
                 } else if (!searchResultHashtags.isEmpty()) {
-                    cell.setText(LocaleController.getString("Hashtags", R.string.Hashtags).toUpperCase());
+                    cell.setText(LocaleController.getString("Hashtags", R.string.Hashtags));
                 } else if (!searchAdapterHelper.getGlobalSearch().isEmpty() && position == searchResult.size() + searchAdapterHelper.getLocalServerSearch().size()) {
                     cell.setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
                 } else {

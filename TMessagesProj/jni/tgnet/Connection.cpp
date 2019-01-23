@@ -52,7 +52,7 @@ void Connection::suspendConnection(bool idle) {
     if (connectionState == TcpConnectionStageIdle || connectionState == TcpConnectionStageSuspended) {
         return;
     }
-    DEBUG_D("connection(%p, account%u, dc%u, type %d) suspend", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType);
+    if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) suspend", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType);
     connectionState = idle ? TcpConnectionStageIdle : TcpConnectionStageSuspended;
     dropConnection();
     ConnectionsManager::getInstance(currentDatacenter->instanceNum).onConnectionClosed(this, 0);
@@ -70,6 +70,17 @@ void Connection::onReceivedData(NativeByteBuffer *buffer) {
     AES_ctr128_encrypt(buffer->bytes(), buffer->bytes(), buffer->limit(), &decryptKey, decryptIv, decryptCount, &decryptNum);
     
     failedConnectionCount = 0;
+
+    if (connectionType == ConnectionTypeGeneric || connectionType == ConnectionTypeTemp || connectionType == ConnectionTypeGenericMedia) {
+        receivedDataAmount += buffer->limit();
+        if (receivedDataAmount >= 512 * 1024) {
+            if (currentTimeout > 4) {
+                currentTimeout -= 2;
+                setTimeout(currentTimeout);
+            }
+            receivedDataAmount = 0;
+        }
+    }
 
     NativeByteBuffer *parseLaterBuffer = nullptr;
     if (restOfTheData != nullptr) {
@@ -102,6 +113,7 @@ void Connection::onReceivedData(NativeByteBuffer *buffer) {
                 parseLaterBuffer = buffer->hasRemaining() ? buffer : nullptr;
                 buffer = restOfTheData;
             } else {
+                if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received packet size less(%u) then message size(%u)", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, restOfTheData->position(), lastPacketLength);
                 return;
             }
         }
@@ -123,8 +135,10 @@ void Connection::onReceivedData(NativeByteBuffer *buffer) {
                 } else {
                     setTimeout(25);
                 }
-            } else {
+            } else if (connectionType == ConnectionTypeDownload) {
                 setTimeout(25);
+            } else {
+                setTimeout(currentTimeout);
             }
         }
         hasSomeDataSinceLastConnect = true;
@@ -206,17 +220,17 @@ void Connection::onReceivedData(NativeByteBuffer *buffer) {
         }
 
         if (currentProtocolType != ProtocolTypeDD && currentPacketLength % 4 != 0 || currentPacketLength > 2 * 1024 * 1024) {
-            DEBUG_D("connection(%p, account%u, dc%u, type %d) received invalid packet length", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType);
+            if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received invalid packet length", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType);
             reconnect();
             return;
         }
 
         if (currentPacketLength < buffer->remaining()) {
-            DEBUG_D("connection(%p, account%u, dc%u, type %d) received message len %u but packet larger %u", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, currentPacketLength, buffer->remaining());
+            if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received message len %u but packet larger %u", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, currentPacketLength, buffer->remaining());
         } else if (currentPacketLength == buffer->remaining()) {
-            DEBUG_D("connection(%p, account%u, dc%u, type %d) received message len %u equal to packet size", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, currentPacketLength);
+            if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received message len %u equal to packet size", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, currentPacketLength);
         } else {
-            DEBUG_D("connection(%p, account%u, dc%u, type %d) received packet size less(%u) then message size(%u)", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, buffer->remaining(), currentPacketLength);
+            if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received packet size less(%u) then message size(%u)", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, buffer->remaining(), currentPacketLength);
 
             NativeByteBuffer *reuseLater = nullptr;
 
@@ -324,7 +338,7 @@ void Connection::connect() {
 
     reconnectTimer->stop();
 
-    DEBUG_D("connection(%p, account%u, dc%u, type %d) connecting (%s:%hu)", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, hostAddress.c_str(), hostPort);
+    if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) connecting (%s:%hu)", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, hostAddress.c_str(), hostPort);
     firstPacketSent = false;
     if (restOfTheData != nullptr) {
         restOfTheData->reuse();
@@ -406,7 +420,7 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
 
     if (isDisconnected()) {
         buff->reuse();
-        DEBUG_D("connection(%p, account%u, dc%u, type %d) disconnected, don't send data", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType);
+        if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) disconnected, don't send data", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType);
         return;
     }
 
@@ -530,7 +544,7 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
         }
         encryptKeyWithSecret(temp, useSecret);
         if (AES_set_encrypt_key(temp, 256, &encryptKey) < 0) {
-            DEBUG_E("unable to set encryptKey");
+            if (LOGS_ENABLED) DEBUG_E("unable to set encryptKey");
             exit(1);
         }
         memcpy(encryptIv, temp + 32, 16);
@@ -540,7 +554,7 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
         }
         encryptKeyWithSecret(temp, useSecret);
         if (AES_set_encrypt_key(temp, 256, &decryptKey) < 0) {
-            DEBUG_E("unable to set decryptKey");
+            if (LOGS_ENABLED) DEBUG_E("unable to set decryptKey");
             exit(1);
         }
         memcpy(decryptIv, temp + 32, 16);
@@ -631,14 +645,20 @@ inline void Connection::encryptKeyWithSecret(uint8_t *bytes, uint8_t secretType)
 
 void Connection::onDisconnected(int32_t reason, int32_t error) {
     reconnectTimer->stop();
-    DEBUG_D("connection(%p, account%u, dc%u, type %d) disconnected with reason %d", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, reason);
-    bool switchToNextPort = wasConnected && !hasSomeDataSinceLastConnect && reason == 2 || forceNextPort;
+    if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) disconnected with reason %d", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, reason);
+    bool switchToNextPort = reason == 2 && wasConnected && (!hasSomeDataSinceLastConnect || currentDatacenter->isCustomPort(currentAddressFlags)) || forceNextPort;
+    if (connectionType == ConnectionTypeGeneric || connectionType == ConnectionTypeTemp || connectionType == ConnectionTypeGenericMedia) {
+        if (wasConnected && reason == 2 && currentTimeout < 16) {
+            currentTimeout += 2;
+        }
+    }
     firstPacketSent = false;
     if (restOfTheData != nullptr) {
         restOfTheData->reuse();
         restOfTheData = nullptr;
     }
     lastPacketLength = 0;
+    receivedDataAmount = 0;
     wasConnected = false;
     if (connectionState != TcpConnectionStageSuspended && connectionState != TcpConnectionStageIdle) {
         connectionState = TcpConnectionStageIdle;
@@ -677,7 +697,7 @@ void Connection::onDisconnected(int32_t reason, int32_t error) {
         } else {
             waitForReconnectTimer = false;
             if (connectionType == ConnectionTypeGenericMedia && currentDatacenter->isHandshaking(true) || connectionType == ConnectionTypeGeneric && (currentDatacenter->isHandshaking(false) || datacenterId == ConnectionsManager::getInstance(currentDatacenter->instanceNum).currentDatacenterId || datacenterId == ConnectionsManager::getInstance(currentDatacenter->instanceNum).movingToDatacenterId)) {
-                DEBUG_D("connection(%p, account%u, dc%u, type %d) reconnect %s:%hu", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, hostAddress.c_str(), hostPort);
+                if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) reconnect %s:%hu", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, hostAddress.c_str(), hostPort);
                 reconnectTimer->setTimeout(1000, false);
                 reconnectTimer->start();
             }
@@ -690,8 +710,12 @@ void Connection::onConnected() {
     connectionState = TcpConnectionStageConnected;
     connectionToken = lastConnectionToken++;
     wasConnected = true;
-    DEBUG_D("connection(%p, account%u, dc%u, type %d) connected to %s:%hu", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, hostAddress.c_str(), hostPort);
+    if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) connected to %s:%hu", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, hostAddress.c_str(), hostPort);
     ConnectionsManager::getInstance(currentDatacenter->instanceNum).onConnectionConnected(this);
+}
+
+bool Connection::hasPendingRequests() {
+    return ConnectionsManager::getInstance(currentDatacenter->instanceNum).hasPendingRequestsForConnection(this);
 }
 
 Datacenter *Connection::getDatacenter() {

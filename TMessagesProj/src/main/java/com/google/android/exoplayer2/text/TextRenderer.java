@@ -29,6 +29,7 @@ import com.google.android.exoplayer2.FormatHolder;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.Util;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Collections;
@@ -49,9 +50,13 @@ public final class TextRenderer extends BaseRenderer implements Callback {
   @Deprecated
   public interface Output extends TextOutput {}
 
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef({REPLACEMENT_STATE_NONE, REPLACEMENT_STATE_SIGNAL_END_OF_STREAM,
-      REPLACEMENT_STATE_WAIT_END_OF_STREAM})
+  @IntDef({
+    REPLACEMENT_STATE_NONE,
+    REPLACEMENT_STATE_SIGNAL_END_OF_STREAM,
+    REPLACEMENT_STATE_WAIT_END_OF_STREAM
+  })
   private @interface ReplacementState {}
   /**
    * The decoder does not need to be replaced.

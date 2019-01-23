@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.LayoutHelper;
@@ -31,6 +32,7 @@ public class StickerView extends EntityView {
     }
 
     private TLRPC.Document sticker;
+    private Object parentObject;
     private int anchor = -1;
     private boolean mirrored = false;
     private Size baseSize;
@@ -38,17 +40,18 @@ public class StickerView extends EntityView {
     private FrameLayoutDrawer containerView;
     private ImageReceiver centerImage = new ImageReceiver();
 
-    public StickerView(Context context, Point position, Size baseSize, TLRPC.Document sticker) {
-        this(context, position, 0.0f, 1.0f, baseSize, sticker);
+    public StickerView(Context context, Point position, Size baseSize, TLRPC.Document sticker, Object parentObject) {
+        this(context, position, 0.0f, 1.0f, baseSize, sticker, parentObject);
     }
 
-    public StickerView(Context context, Point position, float angle, float scale, Size baseSize, TLRPC.Document sticker) {
+    public StickerView(Context context, Point position, float angle, float scale, Size baseSize, TLRPC.Document sticker, Object parentObject) {
         super(context, position);
         setRotation(angle);
         setScale(scale);
 
         this.sticker = sticker;
         this.baseSize = baseSize;
+        this.parentObject = parentObject;
 
         for (int a = 0; a < sticker.attributes.size(); a++) {
             TLRPC.DocumentAttribute attribute = sticker.attributes.get(a);
@@ -65,13 +68,14 @@ public class StickerView extends EntityView {
         centerImage.setAspectFit(true);
         centerImage.setInvalidateAll(true);
         centerImage.setParentView(containerView);
-        centerImage.setImage(sticker, null, sticker.thumb.location, null, "webp", 1);
+        TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
+        centerImage.setImage(sticker, null, thumb, null, "webp", parentObject, 1);
 
         updatePosition();
     }
 
     public StickerView(Context context, StickerView stickerView, Point position) {
-        this(context, position, stickerView.getRotation(), stickerView.getScale(), stickerView.baseSize, stickerView.sticker);
+        this(context, position, stickerView.getRotation(), stickerView.getScale(), stickerView.baseSize, stickerView.sticker, stickerView.parentObject);
         if (stickerView.mirrored) {
             mirror();
         }

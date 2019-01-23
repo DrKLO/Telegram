@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.extractor.ogg;
 
+import android.support.annotation.VisibleForTesting;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.util.Assertions;
@@ -51,11 +52,11 @@ import java.util.Arrays;
    * can resume properly from an error while reading a continued packet spanned across multiple
    * pages.
    *
-   * @param input the {@link ExtractorInput} to read data from.
-   * @return {@code true} if the read was successful. {@code false} if the end of the input was
-   *    encountered having read no data.
-   * @throws IOException thrown if reading from the input fails.
-   * @throws InterruptedException thrown if interrupted while reading from input.
+   * @param input The {@link ExtractorInput} to read data from.
+   * @return {@code true} if the read was successful. The read fails if the end of the input is
+   *     encountered without reading data.
+   * @throws IOException If reading from the input fails.
+   * @throws InterruptedException If the thread is interrupted.
    */
   public boolean populate(ExtractorInput input) throws IOException, InterruptedException {
     Assertions.checkState(input != null);
@@ -103,14 +104,14 @@ import java.util.Arrays;
   /**
    * An OGG Packet may span multiple pages. Returns the {@link OggPageHeader} of the last page read,
    * or an empty header if the packet has yet to be populated.
-   * <p>
-   * Note that the returned {@link OggPageHeader} is mutable and may be updated during subsequent
+   *
+   * <p>Note that the returned {@link OggPageHeader} is mutable and may be updated during subsequent
    * calls to {@link #populate(ExtractorInput)}.
    *
    * @return the {@code PageHeader} of the last page read or an empty header if the packet has yet
    *     to be populated.
    */
-  //@VisibleForTesting
+  @VisibleForTesting
   public OggPageHeader getPageHeader() {
     return pageHeader;
   }

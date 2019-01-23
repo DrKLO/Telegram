@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.messenger.secretmedia;
@@ -12,7 +12,7 @@ import android.net.Uri;
 import android.support.annotation.Nullable;
 
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.BaseDataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.upstream.TransferListener;
 
@@ -24,7 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-public final class EncryptedFileDataSource implements DataSource {
+public final class EncryptedFileDataSource extends BaseDataSource {
 
     public static class EncryptedFileDataSourceException extends IOException {
 
@@ -34,12 +34,8 @@ public final class EncryptedFileDataSource implements DataSource {
 
     }
 
-    private final TransferListener listener;
-
     private RandomAccessFile file;
     private Uri uri;
-    private @Nullable
-    DataSpec dataSpec;
     private long bytesRemaining;
     private boolean opened;
     private byte[] key = new byte[32];
@@ -47,17 +43,20 @@ public final class EncryptedFileDataSource implements DataSource {
     private int fileOffset;
 
     public EncryptedFileDataSource() {
-        this(null);
+        super(/* isNetwork= */ false);
     }
 
-    public EncryptedFileDataSource(TransferListener listener) {
-        this.listener = listener;
+    @Deprecated
+    public EncryptedFileDataSource(@Nullable TransferListener listener) {
+        this();
+        if (listener != null) {
+            addTransferListener(listener);
+        }
     }
 
     @Override
     public long open(DataSpec dataSpec) throws EncryptedFileDataSourceException {
         try {
-            this.dataSpec = dataSpec;
             uri = dataSpec.uri;
             File path = new File(dataSpec.uri.getPath());
             String name = path.getName();
@@ -79,9 +78,7 @@ public final class EncryptedFileDataSource implements DataSource {
         }
 
         opened = true;
-        if (listener != null) {
-            listener.onTransferStart(this, dataSpec, false);
-        }
+        transferStarted(dataSpec);
 
         return bytesRemaining;
     }
@@ -104,9 +101,7 @@ public final class EncryptedFileDataSource implements DataSource {
 
             if (bytesRead > 0) {
                 bytesRemaining -= bytesRead;
-                if (listener != null) {
-                    listener.onBytesTransferred(this, dataSpec, false, bytesRead);
-                }
+                bytesTransferred(bytesRead);
             }
 
             return bytesRead;
@@ -132,9 +127,7 @@ public final class EncryptedFileDataSource implements DataSource {
             file = null;
             if (opened) {
                 opened = false;
-                if (listener != null) {
-                    listener.onTransferEnd(this, dataSpec, false);
-                }
+                transferEnded();
             }
         }
     }

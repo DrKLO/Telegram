@@ -120,7 +120,7 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
             }
             if (appUpdate.document instanceof TLRPC.TL_document) {
                 if (!openApkInstall((Activity) getContext(), appUpdate.document)) {
-                    FileLoader.getInstance(accountNum).loadFile(appUpdate.document, true, 1);
+                    FileLoader.getInstance(accountNum).loadFile(appUpdate.document, "update", 2, 1);
                     showProgress(true);
                 }
             } else if (appUpdate.url != null) {
@@ -168,21 +168,21 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
     public void setVisibility(int visibility) {
         super.setVisibility(visibility);
         if (visibility == GONE) {
-            NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.FileDidLoaded);
-            NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.FileDidFailedLoad);
+            NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.fileDidLoad);
+            NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.fileDidFailedLoad);
             NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.FileLoadProgressChanged);
         }
     }
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.FileDidLoaded) {
+        if (id == NotificationCenter.fileDidLoad) {
             String location = (String) args[0];
             if (fileName != null && fileName.equals(location)) {
                 showProgress(false);
                 openApkInstall((Activity) getContext(), appUpdate.document);
             }
-        } else if (id == NotificationCenter.FileDidFailedLoad) {
+        } else if (id == NotificationCenter.fileDidFailedLoad) {
             String location = (String) args[0];
             if (fileName != null && fileName.equals(location)) {
                 showProgress(false);
@@ -309,8 +309,8 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         } else {
             acceptTextView.setText(LocaleController.getString("Update", R.string.Update).toUpperCase());
         }
-        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.FileDidLoaded);
-        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.FileDidFailedLoad);
+        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileDidLoad);
+        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileDidFailedLoad);
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.FileLoadProgressChanged);
     }
 }

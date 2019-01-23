@@ -15,12 +15,16 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
+import android.support.annotation.IntDef;
 import android.util.SparseArray;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.extractor.ExtractorOutput;
 import com.google.android.exoplayer2.extractor.TrackOutput;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.TimestampAdjuster;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.Collections;
 import java.util.List;
 
@@ -175,6 +179,29 @@ public interface TsPayloadReader {
   }
 
   /**
+   * Contextual flags indicating the presence of indicators in the TS packet or PES packet headers.
+   */
+  @Documented
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef(
+      flag = true,
+      value = {
+        FLAG_PAYLOAD_UNIT_START_INDICATOR,
+        FLAG_RANDOM_ACCESS_INDICATOR,
+        FLAG_DATA_ALIGNMENT_INDICATOR
+      })
+  @interface Flags {}
+
+  /** Indicates the presence of the payload_unit_start_indicator in the TS packet header. */
+  int FLAG_PAYLOAD_UNIT_START_INDICATOR = 1;
+  /**
+   * Indicates the presence of the random_access_indicator in the TS packet header adaptation field.
+   */
+  int FLAG_RANDOM_ACCESS_INDICATOR = 1 << 1;
+  /** Indicates the presence of the data_alignment_indicator in the PES header. */
+  int FLAG_DATA_ALIGNMENT_INDICATOR = 1 << 2;
+
+  /**
    * Initializes the payload reader.
    *
    * @param timestampAdjuster A timestamp adjuster for offsetting and scaling sample timestamps.
@@ -187,10 +214,10 @@ public interface TsPayloadReader {
 
   /**
    * Notifies the reader that a seek has occurred.
-   * <p>
-   * Following a call to this method, the data passed to the next invocation of
-   * {@link #consume(ParsableByteArray, boolean)} will not be a continuation of the data that was
-   * previously passed. Hence the reader should reset any internal state.
+   *
+   * <p>Following a call to this method, the data passed to the next invocation of {@link #consume}
+   * will not be a continuation of the data that was previously passed. Hence the reader should
+   * reset any internal state.
    */
   void seek();
 
@@ -198,9 +225,8 @@ public interface TsPayloadReader {
    * Consumes the payload of a TS packet.
    *
    * @param data The TS packet. The position will be set to the start of the payload.
-   * @param payloadUnitStartIndicator Whether payloadUnitStartIndicator was set on the TS packet.
+   * @param flags See {@link Flags}.
    * @throws ParserException If the payload could not be parsed.
    */
-  void consume(ParsableByteArray data, boolean payloadUnitStartIndicator) throws ParserException;
-
+  void consume(ParsableByteArray data, @Flags int flags) throws ParserException;
 }

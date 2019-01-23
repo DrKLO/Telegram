@@ -20,6 +20,9 @@ import com.google.android.exoplayer2.Player;
 /** Listener of {@link DefaultDrmSessionManager} events. */
 public interface DefaultDrmSessionEventListener {
 
+  /** Called each time a drm session is acquired. */
+  default void onDrmSessionAcquired() {}
+
   /** Called each time keys are loaded. */
   void onDrmKeysLoaded();
 
@@ -42,4 +45,7 @@ public interface DefaultDrmSessionEventListener {
 
   /** Called each time offline keys are removed. */
   void onDrmKeysRemoved();
+
+  /** Called each time a drm session is released. */
+  default void onDrmSessionReleased() {}
 }

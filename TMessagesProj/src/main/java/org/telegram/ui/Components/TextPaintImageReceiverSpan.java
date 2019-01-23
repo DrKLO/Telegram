@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 4.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -9,11 +9,13 @@
 package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.text.style.ReplacementSpan;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.tgnet.TLRPC;
 
@@ -21,32 +23,47 @@ import java.util.Locale;
 
 public class TextPaintImageReceiverSpan extends ReplacementSpan {
 
-    public static final int ALIGN_BOTTOM = 0;
-    public static final int ALIGN_BASELINE = 1;
-
-    protected final int mVerticalAlignment;
-
     private ImageReceiver imageReceiver;
     private int width;
     private int height;
+    private boolean alignTop;
 
-    public TextPaintImageReceiverSpan(View parentView, TLRPC.Document document, int w, int h) {
-        mVerticalAlignment = ALIGN_BASELINE;
-        String filter = String.format(Locale.US, "%d_%d", w, h);
-        width = AndroidUtilities.dp(w);
-        height = AndroidUtilities.dp(h);
+    public TextPaintImageReceiverSpan(View parentView, TLRPC.Document document, Object parentObject, int w, int h, boolean top, boolean invert) {
+        String filter = String.format(Locale.US, "%d_%d_i", w, h);
+        width = w;
+        height = h;
         imageReceiver = new ImageReceiver(parentView);
-        imageReceiver.setImage(document, filter, document.thumb != null ? document.thumb.location : null, filter, -1, null, 1);
+        imageReceiver.setInvalidateAll(true);
+        if (invert) {
+            imageReceiver.setDelegate((imageReceiver, set, thumb) -> {
+                if (!imageReceiver.canInvertBitmap()) {
+                    return;
+                }
+                float[] NEGATIVE = {
+                        -1.0f, 0, 0, 0, 255,
+                        0, -1.0f, 0, 0, 255,
+                        0, 0, -1.0f, 0, 255,
+                        0, 0, 0, 1.0f, 0
+                };
+                imageReceiver.setColorFilter(new ColorMatrixColorFilter(NEGATIVE));
+            });
+        }
+        TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+        imageReceiver.setImage(document, filter, thumb, filter, -1, null, parentObject, 1);
+        alignTop = top;
     }
 
     @Override
     public int getSize(Paint paint, CharSequence text, int start, int end, Paint.FontMetricsInt fm) {
         if (fm != null) {
-            fm.ascent = -height;
-            fm.descent = 0;
-
-            fm.top = fm.ascent;
-            fm.bottom = 0;
+            if (alignTop) {
+                int h = fm.descent - fm.ascent - AndroidUtilities.dp(4);
+                fm.bottom = fm.descent = height - h;
+                fm.top = fm.ascent = 0 - h;
+            } else {
+                fm.top = fm.ascent = (-height / 2) - AndroidUtilities.dp(4);
+                fm.bottom = fm.descent = height - (height / 2) - AndroidUtilities.dp(4);
+            }
         }
         return width;
     }
@@ -54,11 +71,12 @@ public class TextPaintImageReceiverSpan extends ReplacementSpan {
     @Override
     public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
         canvas.save();
-        int transY = bottom - height;
-        if (mVerticalAlignment == ALIGN_BASELINE) {
-            transY -= paint.getFontMetricsInt().descent;
+        if (alignTop) {
+            imageReceiver.setImageCoords((int) x, top - 1, width, height);
+        } else {
+            int h = (bottom - AndroidUtilities.dp(4)) - top;
+            imageReceiver.setImageCoords((int) x, top + (h - height) / 2, width, height);
         }
-        imageReceiver.setImageCoords((int) x, transY, width, height);
         imageReceiver.draw(canvas);
         canvas.restore();
     }

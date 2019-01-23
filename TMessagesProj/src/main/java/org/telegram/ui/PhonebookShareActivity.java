@@ -322,115 +322,103 @@ public class PhonebookShareActivity extends BaseFragment {
         listView.setAdapter(new ListAdapter(context));
         listView.setItemAnimator(null);
         listView.setLayoutAnimation(null);
-        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, final int position) {
-                final AndroidUtilities.VcardItem item;
-                if (position >= phoneStartRow && position < phoneEndRow) {
-                    item = phones.get(position - phoneStartRow);
-                } else if (position >= vcardStartRow && position < vcardEndRow) {
-                    item = other.get(position - vcardStartRow);
-                } else {
-                    item = null;
-                }
-                if (item == null) {
-                    return;
-                }
-                if (isImport) {
-                    if (item.type == 0) {
-                        try {
-                            Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + item.getValue(false)));
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            getParentActivity().startActivityForResult(intent, 500);
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                    } else if (item.type == 1) {
-                        Browser.openUrl(getParentActivity(), "mailto:"  + item.getValue(false));
-                    } else if (item.type == 3) {
-                        String url = item.getValue(false);
-                        if (!url.startsWith("http")) {
-                            url = "http://" + url;
-                        }
-                        Browser.openUrl(getParentActivity(), url);
-                    } else {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setItems(new CharSequence[]{LocaleController.getString("Copy", R.string.Copy)}, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                if (i == 0) {
-                                    try {
-                                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", item.getValue(false));
-                                        clipboard.setPrimaryClip(clip);
-                                        Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
-                                    } catch (Exception e) {
-                                        FileLog.e(e);
-                                    }
-                                }
-                            }
-                        });
-                        showDialog(builder.create());
-                    }
-                } else {
-                    item.checked = !item.checked;
-                    if (position >= phoneStartRow && position < phoneEndRow) {
-                        boolean hasChecked = false;
-                        for (int a = 0; a < phones.size(); a++) {
-                            if (phones.get(a).checked) {
-                                hasChecked = true;
-                                break;
-                            }
-                        }
-                        bottomLayout.setEnabled(hasChecked);
-                        shareTextView.setAlpha(hasChecked ? 1.0f : 0.5f);
-                    }
-                    TextCheckBoxCell cell = (TextCheckBoxCell) view;
-                    cell.setChecked(item.checked);
-                }
+        listView.setOnItemClickListener((view, position) -> {
+            final AndroidUtilities.VcardItem item;
+            if (position >= phoneStartRow && position < phoneEndRow) {
+                item = phones.get(position - phoneStartRow);
+            } else if (position >= vcardStartRow && position < vcardEndRow) {
+                item = other.get(position - vcardStartRow);
+            } else {
+                item = null;
             }
-        });
-        listView.setOnItemLongClickListener(new RecyclerListView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemClick(View view, int position) {
-                final AndroidUtilities.VcardItem item;
-                if (position >= phoneStartRow && position < phoneEndRow) {
-                    item = phones.get(position - phoneStartRow);
-                } else if (position >= vcardStartRow && position < vcardEndRow) {
-                    item = other.get(position - vcardStartRow);
+            if (item == null) {
+                return;
+            }
+            if (isImport) {
+                if (item.type == 0) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + item.getValue(false)));
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        getParentActivity().startActivityForResult(intent, 500);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                } else if (item.type == 1) {
+                    Browser.openUrl(getParentActivity(), "mailto:"  + item.getValue(false));
+                } else if (item.type == 3) {
+                    String url = item.getValue(false);
+                    if (!url.startsWith("http")) {
+                        url = "http://" + url;
+                    }
+                    Browser.openUrl(getParentActivity(), url);
                 } else {
-                    item = null;
-                }
-                if (item == null) {
-                    return false;
-                }
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setItems(new CharSequence[]{LocaleController.getString("Copy", R.string.Copy)}, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setItems(new CharSequence[]{LocaleController.getString("Copy", R.string.Copy)}, (dialogInterface, i) -> {
                         if (i == 0) {
                             try {
                                 android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
                                 android.content.ClipData clip = android.content.ClipData.newPlainText("label", item.getValue(false));
                                 clipboard.setPrimaryClip(clip);
-                                if (item.type == 0) {
-                                    Toast.makeText(getParentActivity(), LocaleController.getString("PhoneCopied", R.string.PhoneCopied), Toast.LENGTH_SHORT).show();
-                                } else if (item.type == 1) {
-                                    Toast.makeText(getParentActivity(), LocaleController.getString("EmailCopied", R.string.EmailCopied), Toast.LENGTH_SHORT).show();
-                                } else if (item.type == 3) {
-                                    Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
-                                } else {
-                                    Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
-                                }
+                                Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
                             } catch (Exception e) {
                                 FileLog.e(e);
                             }
                         }
+                    });
+                    showDialog(builder.create());
+                }
+            } else {
+                item.checked = !item.checked;
+                if (position >= phoneStartRow && position < phoneEndRow) {
+                    boolean hasChecked = false;
+                    for (int a = 0; a < phones.size(); a++) {
+                        if (phones.get(a).checked) {
+                            hasChecked = true;
+                            break;
+                        }
                     }
-                });
-                showDialog(builder.create());
-                return true;
+                    bottomLayout.setEnabled(hasChecked);
+                    shareTextView.setAlpha(hasChecked ? 1.0f : 0.5f);
+                }
+                TextCheckBoxCell cell = (TextCheckBoxCell) view;
+                cell.setChecked(item.checked);
             }
+        });
+        listView.setOnItemLongClickListener((view, position) -> {
+            final AndroidUtilities.VcardItem item;
+            if (position >= phoneStartRow && position < phoneEndRow) {
+                item = phones.get(position - phoneStartRow);
+            } else if (position >= vcardStartRow && position < vcardEndRow) {
+                item = other.get(position - vcardStartRow);
+            } else {
+                item = null;
+            }
+            if (item == null) {
+                return false;
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setItems(new CharSequence[]{LocaleController.getString("Copy", R.string.Copy)}, (dialogInterface, i) -> {
+                if (i == 0) {
+                    try {
+                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", item.getValue(false));
+                        clipboard.setPrimaryClip(clip);
+                        if (item.type == 0) {
+                            Toast.makeText(getParentActivity(), LocaleController.getString("PhoneCopied", R.string.PhoneCopied), Toast.LENGTH_SHORT).show();
+                        } else if (item.type == 1) {
+                            Toast.makeText(getParentActivity(), LocaleController.getString("EmailCopied", R.string.EmailCopied), Toast.LENGTH_SHORT).show();
+                        } else if (item.type == 3) {
+                            Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                }
+            });
+            showDialog(builder.create());
+            return true;
         });
 
         frameLayout.addView(actionBar);
@@ -488,298 +476,295 @@ public class PhonebookShareActivity extends BaseFragment {
         bottomLayout = new FrameLayout(context);
         bottomLayout.setBackgroundDrawable(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_passport_authorizeBackground), Theme.getColor(Theme.key_passport_authorizeBackgroundSelected)));
         frameLayout.addView(bottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM));
-        bottomLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (isImport) {
-                    if (getParentActivity() == null) {
-                        return;
+        bottomLayout.setOnClickListener(v -> {
+            if (isImport) {
+                if (getParentActivity() == null) {
+                    return;
+                }
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle(LocaleController.getString("AddContactTitle", R.string.AddContactTitle));
+                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setItems(new CharSequence[]{
+                        LocaleController.getString("CreateNewContact", R.string.CreateNewContact),
+                        LocaleController.getString("AddToExistingContact", R.string.AddToExistingContact)
+                }, new DialogInterface.OnClickListener() {
+
+                    private void fillRowWithType(String type, ContentValues row) {
+                        if (type.startsWith("X-")) {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_CUSTOM);
+                            row.put(ContactsContract.CommonDataKinds.Phone.LABEL, type.substring(2));
+                        } else if ("PREF".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MAIN);
+                        } else if ("HOME".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_HOME);
+                        } else if ("MOBILE".equalsIgnoreCase(type) || "CELL".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE);
+                        } else if ("OTHER".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_OTHER);
+                        } else if ("WORK".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_WORK);
+                        } else if ("RADIO".equalsIgnoreCase(type) || "VOICE".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_RADIO);
+                        } else if ("PAGER".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_PAGER);
+                        } else if ("CALLBACK".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_CALLBACK);
+                        } else if ("CAR".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_CAR);
+                        } else if ("ASSISTANT".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_ASSISTANT);
+                        } else if ("MMS".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MMS);
+                        } else if (type.startsWith("FAX")) {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_FAX_WORK);
+                        } else {
+                            row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_CUSTOM);
+                            row.put(ContactsContract.CommonDataKinds.Phone.LABEL, type);
+                        }
                     }
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("AddContactTitle", R.string.AddContactTitle));
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    builder.setItems(new CharSequence[]{
-                            LocaleController.getString("CreateNewContact", R.string.CreateNewContact),
-                            LocaleController.getString("AddToExistingContact", R.string.AddToExistingContact)
-                    }, new DialogInterface.OnClickListener() {
 
-                        private void fillRowWithType(String type, ContentValues row) {
-                            if (type.startsWith("X-")) {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_CUSTOM);
-                                row.put(ContactsContract.CommonDataKinds.Phone.LABEL, type.substring(2));
-                            } else if ("PREF".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MAIN);
-                            } else if ("HOME".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_HOME);
-                            } else if ("MOBILE".equalsIgnoreCase(type) || "CELL".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE);
-                            } else if ("OTHER".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_OTHER);
-                            } else if ("WORK".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_WORK);
-                            } else if ("RADIO".equalsIgnoreCase(type) || "VOICE".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_RADIO);
-                            } else if ("PAGER".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_PAGER);
-                            } else if ("CALLBACK".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_CALLBACK);
-                            } else if ("CAR".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_CAR);
-                            } else if ("ASSISTANT".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_ASSISTANT);
-                            } else if ("MMS".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MMS);
-                            } else if (type.startsWith("FAX")) {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_FAX_WORK);
-                            } else {
-                                row.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_CUSTOM);
-                                row.put(ContactsContract.CommonDataKinds.Phone.LABEL, type);
-                            }
+                    private void fillUrlRowWithType(String type, ContentValues row) {
+                        if (type.startsWith("X-")) {
+                            row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_CUSTOM);
+                            row.put(ContactsContract.CommonDataKinds.Website.LABEL, type.substring(2));
+                        } else if ("HOMEPAGE".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_HOMEPAGE);
+                        } else if ("BLOG".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_BLOG);
+                        } else if ("PROFILE".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_PROFILE);
+                        } else if ("HOME".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_HOME);
+                        } else if ("WORK".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_WORK);
+                        } else if ("FTP".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_FTP);
+                        } else if ("OTHER".equalsIgnoreCase(type)) {
+                            row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_OTHER);
+                        } else {
+                            row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_CUSTOM);
+                            row.put(ContactsContract.CommonDataKinds.Website.LABEL, type);
+                        }
+                    }
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        Intent intent = null;
+                        if (which == 0) {
+                            intent = new Intent(ContactsContract.Intents.Insert.ACTION);
+                            intent.setType(ContactsContract.RawContacts.CONTENT_TYPE);
+                        } else if (which == 1) {
+                            intent = new Intent(Intent.ACTION_INSERT_OR_EDIT);
+                            intent.setType(ContactsContract.Contacts.CONTENT_ITEM_TYPE);
                         }
 
-                        private void fillUrlRowWithType(String type, ContentValues row) {
-                            if (type.startsWith("X-")) {
-                                row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_CUSTOM);
-                                row.put(ContactsContract.CommonDataKinds.Website.LABEL, type.substring(2));
-                            } else if ("HOMEPAGE".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_HOMEPAGE);
-                            } else if ("BLOG".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_BLOG);
-                            } else if ("PROFILE".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_PROFILE);
-                            } else if ("HOME".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_HOME);
-                            } else if ("WORK".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_WORK);
-                            } else if ("FTP".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_FTP);
-                            } else if ("OTHER".equalsIgnoreCase(type)) {
-                                row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_OTHER);
-                            } else {
-                                row.put(ContactsContract.CommonDataKinds.Website.TYPE, ContactsContract.CommonDataKinds.Website.TYPE_CUSTOM);
-                                row.put(ContactsContract.CommonDataKinds.Website.LABEL, type);
-                            }
+                        intent.putExtra(ContactsContract.Intents.Insert.NAME, ContactsController.formatName(currentUser.first_name, currentUser.last_name));
+
+                        ArrayList<ContentValues> data = new ArrayList<>();
+
+                        for (int a = 0; a < phones.size(); a++) {
+                            AndroidUtilities.VcardItem item = phones.get(a);
+
+                            ContentValues row = new ContentValues();
+                            row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE);
+                            row.put(ContactsContract.CommonDataKinds.Phone.NUMBER, item.getValue(false));
+
+                            String type = item.getRawType(false);
+                            fillRowWithType(type, row);
+                            data.add(row);
                         }
 
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            if (getParentActivity() == null) {
-                                return;
-                            }
-                            Intent intent = null;
-                            if (which == 0) {
-                                intent = new Intent(ContactsContract.Intents.Insert.ACTION);
-                                intent.setType(ContactsContract.RawContacts.CONTENT_TYPE);
-                            } else if (which == 1) {
-                                intent = new Intent(Intent.ACTION_INSERT_OR_EDIT);
-                                intent.setType(ContactsContract.Contacts.CONTENT_ITEM_TYPE);
-                            }
+                        boolean orgAdded = false;
+                        for (int a = 0; a < other.size(); a++) {
+                            AndroidUtilities.VcardItem item = other.get(a);
 
-                            intent.putExtra(ContactsContract.Intents.Insert.NAME, ContactsController.formatName(currentUser.first_name, currentUser.last_name));
-
-                            ArrayList<ContentValues> data = new ArrayList<>();
-
-                            for (int a = 0; a < phones.size(); a++) {
-                                AndroidUtilities.VcardItem item = phones.get(a);
-
+                            if (item.type == 1) {
                                 ContentValues row = new ContentValues();
-                                row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE);
-                                row.put(ContactsContract.CommonDataKinds.Phone.NUMBER, item.getValue(false));
-
+                                row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE);
+                                row.put(ContactsContract.CommonDataKinds.Email.ADDRESS, item.getValue(false));
                                 String type = item.getRawType(false);
                                 fillRowWithType(type, row);
                                 data.add(row);
-                            }
+                            } else if (item.type == 3) {
+                                ContentValues row = new ContentValues();
+                                row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE);
+                                row.put(ContactsContract.CommonDataKinds.Website.URL, item.getValue(false));
+                                String type = item.getRawType(false);
+                                fillUrlRowWithType(type, row);
+                                data.add(row);
+                            } else if (item.type == 4) {
+                                ContentValues row = new ContentValues();
+                                row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE);
+                                row.put(ContactsContract.CommonDataKinds.Note.NOTE, item.getValue(false));
+                                data.add(row);
+                            } else if (item.type == 5) {
+                                ContentValues row = new ContentValues();
+                                row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Event.CONTENT_ITEM_TYPE);
+                                row.put(ContactsContract.CommonDataKinds.Event.START_DATE, item.getValue(false));
+                                row.put(ContactsContract.CommonDataKinds.Event.TYPE, ContactsContract.CommonDataKinds.Event.TYPE_BIRTHDAY);
+                                data.add(row);
+                            } else if (item.type == 2) {
+                                ContentValues row = new ContentValues();
+                                row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE);
+                                String args[] = item.getRawValue();
+                                if (args.length > 0) {
+                                    row.put(ContactsContract.CommonDataKinds.StructuredPostal.POBOX, args[0]);
+                                }
+                                if (args.length > 1) {
+                                    row.put(ContactsContract.CommonDataKinds.StructuredPostal.NEIGHBORHOOD, args[1]);
+                                }
+                                if (args.length > 2) {
+                                    row.put(ContactsContract.CommonDataKinds.StructuredPostal.STREET, args[2]);
+                                }
+                                if (args.length > 3) {
+                                    row.put(ContactsContract.CommonDataKinds.StructuredPostal.CITY, args[3]);
+                                }
+                                if (args.length > 4) {
+                                    row.put(ContactsContract.CommonDataKinds.StructuredPostal.REGION, args[4]);
+                                }
+                                if (args.length > 5) {
+                                    row.put(ContactsContract.CommonDataKinds.StructuredPostal.POSTCODE, args[5]);
+                                }
+                                if (args.length > 6) {
+                                    row.put(ContactsContract.CommonDataKinds.StructuredPostal.COUNTRY, args[6]);
+                                }
 
-                            boolean orgAdded = false;
-                            for (int a = 0; a < other.size(); a++) {
-                                AndroidUtilities.VcardItem item = other.get(a);
-
-                                if (item.type == 1) {
-                                    ContentValues row = new ContentValues();
-                                    row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE);
-                                    row.put(ContactsContract.CommonDataKinds.Email.ADDRESS, item.getValue(false));
-                                    String type = item.getRawType(false);
-                                    fillRowWithType(type, row);
-                                    data.add(row);
-                                } else if (item.type == 3) {
-                                    ContentValues row = new ContentValues();
-                                    row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE);
-                                    row.put(ContactsContract.CommonDataKinds.Website.URL, item.getValue(false));
-                                    String type = item.getRawType(false);
-                                    fillUrlRowWithType(type, row);
-                                    data.add(row);
-                                } else if (item.type == 4) {
-                                    ContentValues row = new ContentValues();
-                                    row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE);
-                                    row.put(ContactsContract.CommonDataKinds.Note.NOTE, item.getValue(false));
-                                    data.add(row);
-                                } else if (item.type == 5) {
-                                    ContentValues row = new ContentValues();
-                                    row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Event.CONTENT_ITEM_TYPE);
-                                    row.put(ContactsContract.CommonDataKinds.Event.START_DATE, item.getValue(false));
-                                    row.put(ContactsContract.CommonDataKinds.Event.TYPE, ContactsContract.CommonDataKinds.Event.TYPE_BIRTHDAY);
-                                    data.add(row);
-                                } else if (item.type == 2) {
-                                    ContentValues row = new ContentValues();
-                                    row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE);
-                                    String args[] = item.getRawValue();
-                                    if (args.length > 0) {
-                                        row.put(ContactsContract.CommonDataKinds.StructuredPostal.POBOX, args[0]);
-                                    }
-                                    if (args.length > 1) {
-                                        row.put(ContactsContract.CommonDataKinds.StructuredPostal.NEIGHBORHOOD, args[1]);
-                                    }
-                                    if (args.length > 2) {
-                                        row.put(ContactsContract.CommonDataKinds.StructuredPostal.STREET, args[2]);
-                                    }
-                                    if (args.length > 3) {
-                                        row.put(ContactsContract.CommonDataKinds.StructuredPostal.CITY, args[3]);
-                                    }
-                                    if (args.length > 4) {
-                                        row.put(ContactsContract.CommonDataKinds.StructuredPostal.REGION, args[4]);
-                                    }
-                                    if (args.length > 5) {
-                                        row.put(ContactsContract.CommonDataKinds.StructuredPostal.POSTCODE, args[5]);
-                                    }
-                                    if (args.length > 6) {
-                                        row.put(ContactsContract.CommonDataKinds.StructuredPostal.COUNTRY, args[6]);
-                                    }
-
-                                    String type = item.getRawType(false);
-                                    if ("HOME".equalsIgnoreCase(type)) {
-                                        row.put(ContactsContract.CommonDataKinds.StructuredPostal.TYPE, ContactsContract.CommonDataKinds.StructuredPostal.TYPE_HOME);
-                                    } else if ("WORK".equalsIgnoreCase(type)) {
-                                        row.put(ContactsContract.CommonDataKinds.StructuredPostal.TYPE, ContactsContract.CommonDataKinds.StructuredPostal.TYPE_WORK);
-                                    } else if ("OTHER".equalsIgnoreCase(type)) {
-                                        row.put(ContactsContract.CommonDataKinds.StructuredPostal.TYPE, ContactsContract.CommonDataKinds.StructuredPostal.TYPE_OTHER);
-                                    }
-                                    data.add(row);
-                                } else if (item.type == 20) {
-                                    ContentValues row = new ContentValues();
-                                    row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Im.CONTENT_ITEM_TYPE);
-                                    String imType = item.getRawType(true);
-                                    String type = item.getRawType(false);
-                                    row.put(ContactsContract.CommonDataKinds.Im.DATA, item.getValue(false));
-                                    if ("AIM".equalsIgnoreCase(imType)) {
-                                        row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_AIM);
-                                    } else if ("MSN".equalsIgnoreCase(imType)) {
-                                        row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_MSN);
-                                    } else if ("YAHOO".equalsIgnoreCase(imType)) {
-                                        row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_YAHOO);
-                                    } else if ("SKYPE".equalsIgnoreCase(imType)) {
-                                        row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_SKYPE);
-                                    } else if ("QQ".equalsIgnoreCase(imType)) {
-                                        row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_QQ);
-                                    } else if ("GOOGLE-TALK".equalsIgnoreCase(imType)) {
-                                        row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_GOOGLE_TALK);
-                                    } else if ("ICQ".equalsIgnoreCase(imType)) {
-                                        row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_ICQ);
-                                    } else if ("JABBER".equalsIgnoreCase(imType)) {
-                                        row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_JABBER);
-                                    } else if ("NETMEETING".equalsIgnoreCase(imType)) {
-                                        row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_NETMEETING);
-                                    } else {
-                                        row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_CUSTOM);
-                                        row.put(ContactsContract.CommonDataKinds.Im.CUSTOM_PROTOCOL, item.getRawType(true));
-                                    }
-                                    if ("HOME".equalsIgnoreCase(type)) {
-                                        row.put(ContactsContract.CommonDataKinds.Im.TYPE, ContactsContract.CommonDataKinds.Im.TYPE_HOME);
-                                    } else if ("WORK".equalsIgnoreCase(type)) {
-                                        row.put(ContactsContract.CommonDataKinds.Im.TYPE, ContactsContract.CommonDataKinds.Im.TYPE_WORK);
-                                    } else if ("OTHER".equalsIgnoreCase(type)) {
-                                        row.put(ContactsContract.CommonDataKinds.Im.TYPE, ContactsContract.CommonDataKinds.Im.TYPE_OTHER);
-                                    }
-                                    data.add(row);
-                                } else if (item.type == 6) {
-                                    if (orgAdded) {
+                                String type = item.getRawType(false);
+                                if ("HOME".equalsIgnoreCase(type)) {
+                                    row.put(ContactsContract.CommonDataKinds.StructuredPostal.TYPE, ContactsContract.CommonDataKinds.StructuredPostal.TYPE_HOME);
+                                } else if ("WORK".equalsIgnoreCase(type)) {
+                                    row.put(ContactsContract.CommonDataKinds.StructuredPostal.TYPE, ContactsContract.CommonDataKinds.StructuredPostal.TYPE_WORK);
+                                } else if ("OTHER".equalsIgnoreCase(type)) {
+                                    row.put(ContactsContract.CommonDataKinds.StructuredPostal.TYPE, ContactsContract.CommonDataKinds.StructuredPostal.TYPE_OTHER);
+                                }
+                                data.add(row);
+                            } else if (item.type == 20) {
+                                ContentValues row = new ContentValues();
+                                row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Im.CONTENT_ITEM_TYPE);
+                                String imType = item.getRawType(true);
+                                String type = item.getRawType(false);
+                                row.put(ContactsContract.CommonDataKinds.Im.DATA, item.getValue(false));
+                                if ("AIM".equalsIgnoreCase(imType)) {
+                                    row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_AIM);
+                                } else if ("MSN".equalsIgnoreCase(imType)) {
+                                    row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_MSN);
+                                } else if ("YAHOO".equalsIgnoreCase(imType)) {
+                                    row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_YAHOO);
+                                } else if ("SKYPE".equalsIgnoreCase(imType)) {
+                                    row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_SKYPE);
+                                } else if ("QQ".equalsIgnoreCase(imType)) {
+                                    row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_QQ);
+                                } else if ("GOOGLE-TALK".equalsIgnoreCase(imType)) {
+                                    row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_GOOGLE_TALK);
+                                } else if ("ICQ".equalsIgnoreCase(imType)) {
+                                    row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_ICQ);
+                                } else if ("JABBER".equalsIgnoreCase(imType)) {
+                                    row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_JABBER);
+                                } else if ("NETMEETING".equalsIgnoreCase(imType)) {
+                                    row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_NETMEETING);
+                                } else {
+                                    row.put(ContactsContract.CommonDataKinds.Im.PROTOCOL, ContactsContract.CommonDataKinds.Im.PROTOCOL_CUSTOM);
+                                    row.put(ContactsContract.CommonDataKinds.Im.CUSTOM_PROTOCOL, item.getRawType(true));
+                                }
+                                if ("HOME".equalsIgnoreCase(type)) {
+                                    row.put(ContactsContract.CommonDataKinds.Im.TYPE, ContactsContract.CommonDataKinds.Im.TYPE_HOME);
+                                } else if ("WORK".equalsIgnoreCase(type)) {
+                                    row.put(ContactsContract.CommonDataKinds.Im.TYPE, ContactsContract.CommonDataKinds.Im.TYPE_WORK);
+                                } else if ("OTHER".equalsIgnoreCase(type)) {
+                                    row.put(ContactsContract.CommonDataKinds.Im.TYPE, ContactsContract.CommonDataKinds.Im.TYPE_OTHER);
+                                }
+                                data.add(row);
+                            } else if (item.type == 6) {
+                                if (orgAdded) {
+                                    continue;
+                                }
+                                orgAdded = true;
+                                ContentValues row = new ContentValues();
+                                row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE);
+                                for (int b = a; b < other.size(); b++) {
+                                    AndroidUtilities.VcardItem orgItem = other.get(b);
+                                    if (orgItem.type != 6) {
                                         continue;
                                     }
-                                    orgAdded = true;
-                                    ContentValues row = new ContentValues();
-                                    row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE);
-                                    for (int b = a; b < other.size(); b++) {
-                                        AndroidUtilities.VcardItem orgItem = other.get(b);
-                                        if (orgItem.type != 6) {
+                                    String type = orgItem.getRawType(true);
+                                    if ("ORG".equalsIgnoreCase(type)) {
+                                        String[] value = orgItem.getRawValue();
+                                        if (value.length == 0) {
                                             continue;
                                         }
-                                        String type = orgItem.getRawType(true);
-                                        if ("ORG".equalsIgnoreCase(type)) {
-                                            String[] value = orgItem.getRawValue();
-                                            if (value.length == 0) {
-                                                continue;
-                                            }
-                                            if (value.length >= 1) {
-                                                row.put(ContactsContract.CommonDataKinds.Organization.COMPANY, value[0]);
-                                            }
-                                            if (value.length >= 2) {
-                                                row.put(ContactsContract.CommonDataKinds.Organization.DEPARTMENT, value[1]);
-                                            }
-                                        } else if ("TITLE".equalsIgnoreCase(type)) {
-                                            row.put(ContactsContract.CommonDataKinds.Organization.TITLE, orgItem.getValue(false));
-                                        } else if ("ROLE".equalsIgnoreCase(type)) {
-                                            row.put(ContactsContract.CommonDataKinds.Organization.TITLE, orgItem.getValue(false));
+                                        if (value.length >= 1) {
+                                            row.put(ContactsContract.CommonDataKinds.Organization.COMPANY, value[0]);
                                         }
-
-                                        String orgType = orgItem.getRawType(true);
-                                        if ("WORK".equalsIgnoreCase(orgType)) {
-                                            row.put(ContactsContract.CommonDataKinds.Organization.TYPE, ContactsContract.CommonDataKinds.Organization.TYPE_WORK);
-                                        } else if ("OTHER".equalsIgnoreCase(orgType)) {
-                                            row.put(ContactsContract.CommonDataKinds.Organization.TYPE, ContactsContract.CommonDataKinds.Organization.TYPE_OTHER);
+                                        if (value.length >= 2) {
+                                            row.put(ContactsContract.CommonDataKinds.Organization.DEPARTMENT, value[1]);
                                         }
+                                    } else if ("TITLE".equalsIgnoreCase(type)) {
+                                        row.put(ContactsContract.CommonDataKinds.Organization.TITLE, orgItem.getValue(false));
+                                    } else if ("ROLE".equalsIgnoreCase(type)) {
+                                        row.put(ContactsContract.CommonDataKinds.Organization.TITLE, orgItem.getValue(false));
                                     }
-                                    data.add(row);
+
+                                    String orgType = orgItem.getRawType(true);
+                                    if ("WORK".equalsIgnoreCase(orgType)) {
+                                        row.put(ContactsContract.CommonDataKinds.Organization.TYPE, ContactsContract.CommonDataKinds.Organization.TYPE_WORK);
+                                    } else if ("OTHER".equalsIgnoreCase(orgType)) {
+                                        row.put(ContactsContract.CommonDataKinds.Organization.TYPE, ContactsContract.CommonDataKinds.Organization.TYPE_OTHER);
+                                    }
                                 }
-                            }
-
-                            intent.putExtra("finishActivityOnSaveCompleted", true);
-                            intent.putParcelableArrayListExtra(ContactsContract.Intents.Insert.DATA, data);
-
-                            try {
-                                getParentActivity().startActivity(intent);
-                                finishFragment();
-                            } catch (Exception e) {
-                                FileLog.e(e);
+                                data.add(row);
                             }
                         }
-                    });
-                    builder.show();
+
+                        intent.putExtra("finishActivityOnSaveCompleted", true);
+                        intent.putParcelableArrayListExtra(ContactsContract.Intents.Insert.DATA, data);
+
+                        try {
+                            getParentActivity().startActivity(intent);
+                            finishFragment();
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    }
+                });
+                builder.show();
+            } else {
+                StringBuilder builder;
+                if (currentUser.restriction_reason != null) {
+                    builder = new StringBuilder(currentUser.restriction_reason);
                 } else {
-                    StringBuilder builder;
-                    if (currentUser.restriction_reason != null) {
-                        builder = new StringBuilder(currentUser.restriction_reason);
-                    } else {
-                        builder = new StringBuilder(String.format(Locale.US, "BEGIN:VCARD\nVERSION:3.0\nFN:%1$s\nEND:VCARD", ContactsController.formatName(currentUser.first_name, currentUser.last_name)));
-                    }
-                    int idx = builder.lastIndexOf("END:VCARD");
-                    if (idx >= 0) {
-                        currentUser.phone = null;
-                        for (int a = phones.size() - 1; a >= 0; a--) {
-                            AndroidUtilities.VcardItem item = phones.get(a);
-                            if (!item.checked) {
-                                continue;
-                            }
-                            if (currentUser.phone == null) {
-                                currentUser.phone = item.getValue(false);
-                            }
-                            for (int b = 0; b < item.vcardData.size(); b++) {
-                                builder.insert(idx, item.vcardData.get(b) + "\n");
-                            }
-                        }
-                        for (int a = other.size() - 1; a >= 0; a--) {
-                            AndroidUtilities.VcardItem item = other.get(a);
-                            if (!item.checked) {
-                                continue;
-                            }
-                            for (int b = item.vcardData.size() - 1; b >= 0; b--) {
-                                builder.insert(idx, item.vcardData.get(b) + "\n");
-                            }
-                        }
-                        currentUser.restriction_reason = builder.toString();
-                    }
-                    delegate.didSelectContact(currentUser);
-                    finishFragment();
+                    builder = new StringBuilder(String.format(Locale.US, "BEGIN:VCARD\nVERSION:3.0\nFN:%1$s\nEND:VCARD", ContactsController.formatName(currentUser.first_name, currentUser.last_name)));
                 }
+                int idx = builder.lastIndexOf("END:VCARD");
+                if (idx >= 0) {
+                    currentUser.phone = null;
+                    for (int a = phones.size() - 1; a >= 0; a--) {
+                        AndroidUtilities.VcardItem item = phones.get(a);
+                        if (!item.checked) {
+                            continue;
+                        }
+                        if (currentUser.phone == null) {
+                            currentUser.phone = item.getValue(false);
+                        }
+                        for (int b = 0; b < item.vcardData.size(); b++) {
+                            builder.insert(idx, item.vcardData.get(b) + "\n");
+                        }
+                    }
+                    for (int a = other.size() - 1; a >= 0; a--) {
+                        AndroidUtilities.VcardItem item = other.get(a);
+                        if (!item.checked) {
+                            continue;
+                        }
+                        for (int b = item.vcardData.size() - 1; b >= 0; b--) {
+                            builder.insert(idx, item.vcardData.get(b) + "\n");
+                        }
+                    }
+                    currentUser.restriction_reason = builder.toString();
+                }
+                delegate.didSelectContact(currentUser);
+                finishFragment();
             }
         });
 
@@ -809,7 +794,7 @@ public class PhonebookShareActivity extends BaseFragment {
         if (currentUser.photo != null) {
             photo = currentUser.photo.photo_small;
         }
-        avatarImage.setImage(photo, "50_50", avatarDrawable);
+        avatarImage.setImage(photo, "50_50", avatarDrawable, currentUser);
         nameTextView.setText(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
 
         return fragmentView;
@@ -947,7 +932,7 @@ public class PhonebookShareActivity extends BaseFragment {
                 case 2:
                     view = new DividerCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                    view.setPadding(AndroidUtilities.dp(72), 0, 0, 0);
+                    view.setPadding(AndroidUtilities.dp(72), AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
                     break;
                 case 3:
                     view = new ShadowSectionCell(mContext);

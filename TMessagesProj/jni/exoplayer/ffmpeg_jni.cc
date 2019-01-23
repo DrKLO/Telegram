@@ -27,6 +27,7 @@ extern "C" {
 #endif
 #include <libavcodec/avcodec.h>
 #include <libavresample/avresample.h>
+#include <libavutil/channel_layout.h>
 #include <libavutil/error.h>
 #include <libavutil/opt.h>
 }
@@ -36,19 +37,35 @@ extern "C" {
                    __VA_ARGS__))
 
 #define DECODER_FUNC(RETURN_TYPE, NAME, ...) \
-  JNIEXPORT RETURN_TYPE Java_com_google_android_exoplayer2_ext_ffmpeg_FfmpegDecoder_##NAME(JNIEnv* env, jobject thiz, ##__VA_ARGS__)
+  extern "C" { \
+  JNIEXPORT RETURN_TYPE \
+    Java_com_google_android_exoplayer2_ext_ffmpeg_FfmpegDecoder_ ## NAME \
+      (JNIEnv* env, jobject thiz, ##__VA_ARGS__);\
+  } \
+  JNIEXPORT RETURN_TYPE \
+    Java_com_google_android_exoplayer2_ext_ffmpeg_FfmpegDecoder_ ## NAME \
+      (JNIEnv* env, jobject thiz, ##__VA_ARGS__)\
 
 #define LIBRARY_FUNC(RETURN_TYPE, NAME, ...) \
-  JNIEXPORT RETURN_TYPE Java_com_google_android_exoplayer2_ext_ffmpeg_FfmpegLibrary_##NAME(JNIEnv* env, jobject thiz, ##__VA_ARGS__)
+  extern "C" { \
+  JNIEXPORT RETURN_TYPE \
+    Java_com_google_android_exoplayer2_ext_ffmpeg_FfmpegLibrary_ ## NAME \
+      (JNIEnv* env, jobject thiz, ##__VA_ARGS__);\
+  } \
+  JNIEXPORT RETURN_TYPE \
+    Java_com_google_android_exoplayer2_ext_ffmpeg_FfmpegLibrary_ ## NAME \
+      (JNIEnv* env, jobject thiz, ##__VA_ARGS__)\
 
 #define ERROR_STRING_BUFFER_LENGTH 256
-
-extern "C" {
 
 // Output format corresponding to AudioFormat.ENCODING_PCM_16BIT.
 static const AVSampleFormat OUTPUT_FORMAT_PCM_16BIT = AV_SAMPLE_FMT_S16;
 // Output format corresponding to AudioFormat.ENCODING_PCM_FLOAT.
 static const AVSampleFormat OUTPUT_FORMAT_PCM_FLOAT = AV_SAMPLE_FMT_FLT;
+
+// Error codes matching FfmpegDecoder.java.
+static const int DECODER_ERROR_INVALID_DATA = -1;
+static const int DECODER_ERROR_OTHER = -2;
 
 /**
  * Returns the AVCodec with the specified name, or NULL if it is not available.
@@ -66,7 +83,7 @@ AVCodecContext *createContext(JNIEnv *env, AVCodec *codec, jbyteArray extraData,
 
 /**
  * Decodes the packet into the output buffer, returning the number of bytes
- * written, or a negative value in the case of an error.
+ * written, or a negative DECODER_ERROR constant value in the case of an error.
  */
 int decodePacket(AVCodecContext *context, AVPacket *packet,
                  uint8_t *outputBuffer, int outputSize);
@@ -101,7 +118,7 @@ DECODER_FUNC(jlong, ffmpegInitialize, jstring codecName, jbyteArray extraData,
 }
 
 DECODER_FUNC(jint, ffmpegDecode, jlong context, jobject inputData,
-             jint inputSize, jobject outputData, jint outputSize) {
+    jint inputSize, jobject outputData, jint outputSize) {
   if (!context) {
     LOGE("Context must be non-NULL.");
     return -1;
@@ -162,10 +179,10 @@ DECODER_FUNC(jlong, ffmpegReset, jlong jContext, jbyteArray extraData) {
       return 0L;
     }
     jboolean outputFloat =
-            (jboolean)(context->request_sample_fmt == OUTPUT_FORMAT_PCM_FLOAT);
+        (jboolean)(context->request_sample_fmt == OUTPUT_FORMAT_PCM_FLOAT);
     return (jlong)createContext(env, codec, extraData, outputFloat,
-            /* rawSampleRate= */ -1,
-            /* rawChannelCount= */ -1);
+                                /* rawSampleRate= */ -1,
+                                /* rawChannelCount= */ -1);
   }
 
   avcodec_flush_buffers(context);
@@ -197,12 +214,12 @@ AVCodecContext *createContext(JNIEnv *env, AVCodec *codec, jbyteArray extraData,
     return NULL;
   }
   context->request_sample_fmt =
-          outputFloat ? OUTPUT_FORMAT_PCM_FLOAT : OUTPUT_FORMAT_PCM_16BIT;
+      outputFloat ? OUTPUT_FORMAT_PCM_FLOAT : OUTPUT_FORMAT_PCM_16BIT;
   if (extraData) {
     jsize size = env->GetArrayLength(extraData);
     context->extradata_size = size;
     context->extradata =
-            (uint8_t *) av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
+        (uint8_t *) av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!context->extradata) {
       LOGE("Failed to allocate extradata.");
       releaseContext(context);
@@ -216,6 +233,7 @@ AVCodecContext *createContext(JNIEnv *env, AVCodec *codec, jbyteArray extraData,
     context->channels = rawChannelCount;
     context->channel_layout = av_get_default_channel_layout(rawChannelCount);
   }
+  context->err_recognition = AV_EF_IGNORE_ERR;
   int result = avcodec_open2(context, codec, NULL);
   if (result < 0) {
     logError("avcodec_open2", result);
@@ -232,7 +250,8 @@ int decodePacket(AVCodecContext *context, AVPacket *packet,
   result = avcodec_send_packet(context, packet);
   if (result) {
     logError("avcodec_send_packet", result);
-    return result;
+    return result == AVERROR_INVALIDDATA ? DECODER_ERROR_INVALID_DATA
+                                         : DECODER_ERROR_OTHER;
   }
 
   // Dequeue output data until it runs out.
@@ -273,7 +292,7 @@ int decodePacket(AVCodecContext *context, AVPacket *packet,
       av_opt_set_int(resampleContext, "in_sample_fmt", sampleFormat, 0);
       // The output format is always the requested format.
       av_opt_set_int(resampleContext, "out_sample_fmt",
-                     context->request_sample_fmt, 0);
+          context->request_sample_fmt, 0);
       result = avresample_open(resampleContext);
       if (result < 0) {
         logError("avresample_open", result);
@@ -329,7 +348,5 @@ void releaseContext(AVCodecContext *context) {
     context->opaque = NULL;
   }
   avcodec_free_context(&context);
-}
-
 }
 

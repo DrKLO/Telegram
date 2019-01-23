@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -293,10 +293,6 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
                     return true;
                 }
             }
-            final AlertDialog progressDialog = new AlertDialog(this, 1);
-            progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
-            progressDialog.setCanceledOnTouchOutside(false);
-            progressDialog.setCancelable(false);
 
             final int bot_id = intent.getIntExtra("bot_id", 0);
             final String nonce = intent.getStringExtra("nonce");
@@ -305,12 +301,16 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
             req.bot_id = bot_id;
             req.scope = intent.getStringExtra("scope");
             req.public_key = intent.getStringExtra("public_key");
-            final int[] requestId = {0};
 
             if (bot_id == 0 || TextUtils.isEmpty(payload) && TextUtils.isEmpty(nonce) || TextUtils.isEmpty(req.scope) || TextUtils.isEmpty(req.public_key)) {
                 finish();
                 return false;
             }
+
+            final int[] requestId = {0};
+
+            final AlertDialog progressDialog = new AlertDialog(this, 3);
+            progressDialog.setOnCancelListener(dialog -> ConnectionsManager.getInstance(intentAccount).cancelRequest(requestId[0], true));
 
             progressDialog.show();
             requestId[0] = ConnectionsManager.getInstance(intentAccount).sendRequest(req, (response, error) -> {

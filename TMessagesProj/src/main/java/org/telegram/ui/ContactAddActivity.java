@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -16,8 +16,6 @@ import android.text.InputType;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
@@ -103,7 +101,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                         SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                         preferences.edit().putInt("spam3_" + user_id, 1).commit();
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.peerSettingsDidLoaded, (long) user_id);
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.peerSettingsDidLoad, (long) user_id);
                     }
                 }
             }
@@ -117,12 +115,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
         ((ScrollView) fragmentView).addView(linearLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT));
-        linearLayout.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
+        linearLayout.setOnTouchListener((v, event) -> true);
 
         FrameLayout frameLayout = new FrameLayout(context);
         linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 24, 24, 0));
@@ -168,16 +161,13 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         firstNameField.setCursorSize(AndroidUtilities.dp(20));
         firstNameField.setCursorWidth(1.5f);
         linearLayout.addView(firstNameField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 24, 24, 24, 0));
-        firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_NEXT) {
-                    lastNameField.requestFocus();
-                    lastNameField.setSelection(lastNameField.length());
-                    return true;
-                }
-                return false;
+        firstNameField.setOnEditorActionListener((textView, i, keyEvent) -> {
+            if (i == EditorInfo.IME_ACTION_NEXT) {
+                lastNameField.requestFocus();
+                lastNameField.setSelection(lastNameField.length());
+                return true;
             }
+            return false;
         });
 
         lastNameField = new EditTextBoldCursor(context);
@@ -196,15 +186,12 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         lastNameField.setCursorSize(AndroidUtilities.dp(20));
         lastNameField.setCursorWidth(1.5f);
         linearLayout.addView(lastNameField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 24, 16, 24, 0));
-        lastNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_DONE) {
-                    doneButton.performClick();
-                    return true;
-                }
-                return false;
+        lastNameField.setOnEditorActionListener((textView, i, keyEvent) -> {
+            if (i == EditorInfo.IME_ACTION_DONE) {
+                doneButton.performClick();
+                return true;
             }
+            return false;
         });
 
         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(user_id);
@@ -237,7 +224,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         if (user.photo != null) {
             photo = user.photo.photo_small;
         }
-        avatarImage.setImage(photo, "50_50", avatarDrawable = new AvatarDrawable(user));
+        avatarImage.setImage(photo, "50_50", avatarDrawable = new AvatarDrawable(user), user);
     }
 
     public void didReceivedNotification(int id, int account, Object... args) {
@@ -271,17 +258,14 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
-            @Override
-            public void didSetColor() {
-                if (avatarImage != null) {
-                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(user_id);
-                    if (user == null) {
-                        return;
-                    }
-                    avatarDrawable.setInfo(user);
-                    avatarImage.invalidate();
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
+            if (avatarImage != null) {
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(user_id);
+                if (user == null) {
+                    return;
                 }
+                avatarDrawable.setInfo(user);
+                avatarImage.invalidate();
             }
         };
         return new ThemeDescription[]{
@@ -304,7 +288,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                 new ThemeDescription(lastNameField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField),
                 new ThemeDescription(lastNameField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated),
 
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),

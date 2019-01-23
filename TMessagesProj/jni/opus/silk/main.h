@@ -42,6 +42,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "x86/main_sse.h"
 #endif
 
+#if (defined(OPUS_ARM_ASM) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR))
+#include "arm/NSQ_del_dec_arm.h"
+#endif
+
 /* Convert Left/Right stereo signal to adaptive Mid/Side representation */
 void silk_stereo_LR_to_MS(
     stereo_enc_state            *state,                         /* I/O  State                                       */
@@ -243,7 +247,7 @@ void silk_VQ_WMat_EC_c(
 /************************************/
 
 void silk_NSQ_c(
-    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
     const opus_int16            x16[],                                      /* I    Input                           */
@@ -269,7 +273,7 @@ void silk_NSQ_c(
 
 /* Noise shaping using delayed decision */
 void silk_NSQ_del_dec_c(
-    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
     const opus_int16            x16[],                                      /* I    Input                           */

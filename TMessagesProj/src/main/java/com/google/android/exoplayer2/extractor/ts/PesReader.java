@@ -15,10 +15,10 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
-import android.util.Log;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.extractor.ExtractorOutput;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ParsableBitArray;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.TimestampAdjuster;
@@ -78,9 +78,8 @@ public final class PesReader implements TsPayloadReader {
   }
 
   @Override
-  public final void consume(ParsableByteArray data, boolean payloadUnitStartIndicator)
-      throws ParserException {
-    if (payloadUnitStartIndicator) {
+  public final void consume(ParsableByteArray data, @Flags int flags) throws ParserException {
+    if ((flags & FLAG_PAYLOAD_UNIT_START_INDICATOR) != 0) {
       switch (state) {
         case STATE_FINDING_HEADER:
         case STATE_READING_HEADER:
@@ -100,6 +99,8 @@ public final class PesReader implements TsPayloadReader {
           // Either way, notify the reader that it has now finished.
           reader.packetFinished();
           break;
+        default:
+          throw new IllegalStateException();
       }
       setState(STATE_READING_HEADER);
     }
@@ -120,7 +121,8 @@ public final class PesReader implements TsPayloadReader {
           if (continueRead(data, pesScratch.data, readLength)
               && continueRead(data, null, extendedHeaderLength)) {
             parseHeaderExtension();
-            reader.packetStarted(timeUs, dataAlignmentIndicator);
+            flags |= dataAlignmentIndicator ? FLAG_DATA_ALIGNMENT_INDICATOR : 0;
+            reader.packetStarted(timeUs, flags);
             setState(STATE_READING_BODY);
           }
           break;
@@ -140,6 +142,8 @@ public final class PesReader implements TsPayloadReader {
             }
           }
           break;
+        default:
+          throw new IllegalStateException();
       }
     }
   }

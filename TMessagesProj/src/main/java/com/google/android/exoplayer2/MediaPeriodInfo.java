@@ -15,8 +15,10 @@
  */
 package com.google.android.exoplayer2;
 
+import android.support.annotation.Nullable;
 import com.google.android.exoplayer2.source.MediaPeriod;
 import com.google.android.exoplayer2.source.MediaSource.MediaPeriodId;
+import com.google.android.exoplayer2.util.Util;
 
 /** Stores the information required to load and play a {@link MediaPeriod}. */
 /* package */ final class MediaPeriodInfo {
@@ -32,8 +34,8 @@ import com.google.android.exoplayer2.source.MediaSource.MediaPeriodId;
   public final long contentPositionUs;
   /**
    * The duration of the media period, like {@link MediaPeriodId#endPositionUs} but with {@link
-   * C#TIME_END_OF_SOURCE} resolved to the timeline period duration. May be {@link C#TIME_UNSET} if
-   * the end position is not known.
+   * C#TIME_END_OF_SOURCE} and {@link C#TIME_UNSET} resolved to the timeline period duration if
+   * known.
    */
   public final long durationUs;
   /**
@@ -62,20 +64,6 @@ import com.google.android.exoplayer2.source.MediaSource.MediaPeriodId;
     this.isFinal = isFinal;
   }
 
-  /**
-   * Returns a copy of this instance with the period identifier's period index set to the specified
-   * value.
-   */
-  public MediaPeriodInfo copyWithPeriodIndex(int periodIndex) {
-    return new MediaPeriodInfo(
-        id.copyWithPeriodIndex(periodIndex),
-        startPositionUs,
-        contentPositionUs,
-        durationUs,
-        isLastInTimelinePeriod,
-        isFinal);
-  }
-
   /** Returns a copy of this instance with the start position set to the specified value. */
   public MediaPeriodInfo copyWithStartPositionUs(long startPositionUs) {
     return new MediaPeriodInfo(
@@ -85,5 +73,34 @@ import com.google.android.exoplayer2.source.MediaSource.MediaPeriodId;
         durationUs,
         isLastInTimelinePeriod,
         isFinal);
+  }
+
+  @Override
+  public boolean equals(@Nullable Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    MediaPeriodInfo that = (MediaPeriodInfo) o;
+    return startPositionUs == that.startPositionUs
+        && contentPositionUs == that.contentPositionUs
+        && durationUs == that.durationUs
+        && isLastInTimelinePeriod == that.isLastInTimelinePeriod
+        && isFinal == that.isFinal
+        && Util.areEqual(id, that.id);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = 17;
+    result = 31 * result + id.hashCode();
+    result = 31 * result + (int) startPositionUs;
+    result = 31 * result + (int) contentPositionUs;
+    result = 31 * result + (int) durationUs;
+    result = 31 * result + (isLastInTimelinePeriod ? 1 : 0);
+    result = 31 * result + (isFinal ? 1 : 0);
+    return result;
   }
 }

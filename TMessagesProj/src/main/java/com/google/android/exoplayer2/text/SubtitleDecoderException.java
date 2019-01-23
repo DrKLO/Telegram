@@ -27,6 +27,11 @@ public class SubtitleDecoderException extends Exception {
     super(message);
   }
 
+  /** @param cause The cause of this exception. */
+  public SubtitleDecoderException(Exception cause) {
+    super(cause);
+  }
+
   /**
    * @param message The detail message for this exception.
    * @param cause The cause of this exception.

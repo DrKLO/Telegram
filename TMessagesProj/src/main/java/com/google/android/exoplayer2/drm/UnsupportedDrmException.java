@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.drm;
 
 import android.support.annotation.IntDef;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -25,8 +26,10 @@ import java.lang.annotation.RetentionPolicy;
 public final class UnsupportedDrmException extends Exception {
 
   /**
-   * The reason for the exception.
+   * The reason for the exception. One of {@link #REASON_UNSUPPORTED_SCHEME} or {@link
+   * #REASON_INSTANTIATION_ERROR}.
    */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({REASON_UNSUPPORTED_SCHEME, REASON_INSTANTIATION_ERROR})
   public @interface Reason {}

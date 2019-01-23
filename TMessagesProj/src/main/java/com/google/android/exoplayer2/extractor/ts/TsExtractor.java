@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
+import static com.google.android.exoplayer2.extractor.ts.TsPayloadReader.FLAG_PAYLOAD_UNIT_START_INDICATOR;
+
 import android.support.annotation.IntDef;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
@@ -38,6 +40,7 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.TimestampAdjuster;
 import com.google.android.exoplayer2.util.Util;
 import java.io.IOException;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
@@ -54,8 +57,10 @@ public final class TsExtractor implements Extractor {
   public static final ExtractorsFactory FACTORY = () -> new Extractor[] {new TsExtractor()};
 
   /**
-   * Modes for the extractor.
+   * Modes for the extractor. One of {@link #MODE_MULTI_PMT}, {@link #MODE_SINGLE_PMT} or {@link
+   * #MODE_HLS}.
    */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({MODE_MULTI_PMT, MODE_SINGLE_PMT, MODE_HLS})
   public @interface Mode {}
@@ -113,6 +118,7 @@ public final class TsExtractor implements Extractor {
   private final TsDurationReader durationReader;
 
   // Accessed only by the loading thread.
+  private TsBinarySearchSeeker tsBinarySearchSeeker;
   private ExtractorOutput output;
   private int remainingPmts;
   private boolean tracksEnded;
@@ -208,7 +214,23 @@ public final class TsExtractor implements Extractor {
     Assertions.checkState(mode != MODE_HLS);
     int timestampAdjustersCount = timestampAdjusters.size();
     for (int i = 0; i < timestampAdjustersCount; i++) {
-      timestampAdjusters.get(i).reset();
+      TimestampAdjuster timestampAdjuster = timestampAdjusters.get(i);
+      boolean hasNotEncounteredFirstTimestamp =
+          timestampAdjuster.getTimestampOffsetUs() == C.TIME_UNSET;
+      if (hasNotEncounteredFirstTimestamp
+          || (timestampAdjuster.getTimestampOffsetUs() != 0
+              && timestampAdjuster.getFirstSampleTimestampUs() != timeUs)) {
+        // - If a track in the TS stream has not encountered any sample, it's going to treat the
+        // first sample encountered as timestamp 0, which is incorrect. So we have to set the first
+        // sample timestamp for that track manually.
+        // - If the timestamp adjuster has its timestamp set manually before, and now we seek to a
+        // different position, we need to set the first sample timestamp manually again.
+        timestampAdjuster.reset();
+        timestampAdjuster.setFirstSampleTimestampUs(timeUs);
+      }
+    }
+    if (timeUs != 0 && tsBinarySearchSeeker != null) {
+      tsBinarySearchSeeker.setSeekTargetUs(timeUs);
     }
     tsPacketBuffer.reset();
     continuityCounters.clear();
@@ -226,12 +248,13 @@ public final class TsExtractor implements Extractor {
   @Override
   public @ReadResult int read(ExtractorInput input, PositionHolder seekPosition)
       throws IOException, InterruptedException {
+    long inputLength = input.getLength();
     if (tracksEnded) {
-      boolean canReadDuration = input.getLength() != C.LENGTH_UNSET && mode != MODE_HLS;
+      boolean canReadDuration = inputLength != C.LENGTH_UNSET && mode != MODE_HLS;
       if (canReadDuration && !durationReader.isDurationReadFinished()) {
         return durationReader.readDuration(input, seekPosition, pcrPid);
       }
-      maybeOutputSeekMap();
+      maybeOutputSeekMap(inputLength);
 
       if (pendingSeekToStart) {
         pendingSeekToStart = false;
@@ -240,6 +263,11 @@ public final class TsExtractor implements Extractor {
           seekPosition.position = 0;
           return RESULT_SEEK;
         }
+      }
+
+      if (tsBinarySearchSeeker != null && tsBinarySearchSeeker.isSeeking()) {
+        return tsBinarySearchSeeker.handlePendingSeek(
+            input, seekPosition, /* outputFrameHolder= */ null);
       }
     }
 
@@ -253,6 +281,8 @@ public final class TsExtractor implements Extractor {
       return RESULT_CONTINUE;
     }
 
+    @TsPayloadReader.Flags int packetHeaderFlags = 0;
+
     // Note: See ISO/IEC 13818-1, section 2.4.3.2 for details of the header format.
     int tsPacketHeader = tsPacketBuffer.readInt();
     if ((tsPacketHeader & 0x800000) != 0) { // transport_error_indicator
@@ -260,7 +290,7 @@ public final class TsExtractor implements Extractor {
       tsPacketBuffer.setPosition(endOfPacket);
       return RESULT_CONTINUE;
     }
-    boolean payloadUnitStartIndicator = (tsPacketHeader & 0x400000) != 0;
+    packetHeaderFlags |= (tsPacketHeader & 0x400000) != 0 ? FLAG_PAYLOAD_UNIT_START_INDICATOR : 0;
     // Ignoring transport_priority (tsPacketHeader & 0x200000)
     int pid = (tsPacketHeader & 0x1FFF00) >> 8;
     // Ignoring transport_scrambling_control (tsPacketHeader & 0xC0)
@@ -291,20 +321,26 @@ public final class TsExtractor implements Extractor {
     // Skip the adaptation field.
     if (adaptationFieldExists) {
       int adaptationFieldLength = tsPacketBuffer.readUnsignedByte();
-      tsPacketBuffer.skipBytes(adaptationFieldLength);
+      int adaptationFieldFlags = tsPacketBuffer.readUnsignedByte();
+
+      packetHeaderFlags |=
+          (adaptationFieldFlags & 0x40) != 0 // random_access_indicator.
+              ? TsPayloadReader.FLAG_RANDOM_ACCESS_INDICATOR
+              : 0;
+      tsPacketBuffer.skipBytes(adaptationFieldLength - 1 /* flags */);
     }
 
     // Read the payload.
     boolean wereTracksEnded = tracksEnded;
     if (shouldConsumePacketPayload(pid)) {
       tsPacketBuffer.setLimit(endOfPacket);
-      payloadReader.consume(tsPacketBuffer, payloadUnitStartIndicator);
+      payloadReader.consume(tsPacketBuffer, packetHeaderFlags);
       tsPacketBuffer.setLimit(limit);
     }
-    if (mode != MODE_HLS && !wereTracksEnded && tracksEnded) {
-      // We have read all tracks from all PMTs in this stream. Now seek to the beginning and read
-      // again to make sure we output all media, including any contained in packets prior to those
-      // containing the track information.
+    if (mode != MODE_HLS && !wereTracksEnded && tracksEnded && inputLength != C.LENGTH_UNSET) {
+      // We have read all tracks from all PMTs in this non-live stream. Now seek to the beginning
+      // and read again to make sure we output all media, including any contained in packets prior
+      // to those containing the track information.
       pendingSeekToStart = true;
     }
 
@@ -314,10 +350,20 @@ public final class TsExtractor implements Extractor {
 
   // Internals.
 
-  private void maybeOutputSeekMap() {
+  private void maybeOutputSeekMap(long inputLength) {
     if (!hasOutputSeekMap) {
       hasOutputSeekMap = true;
-      output.seekMap(new SeekMap.Unseekable(durationReader.getDurationUs()));
+      if (durationReader.getDurationUs() != C.TIME_UNSET) {
+        tsBinarySearchSeeker =
+            new TsBinarySearchSeeker(
+                durationReader.getPcrTimestampAdjuster(),
+                durationReader.getDurationUs(),
+                inputLength,
+                pcrPid);
+        output.seekMap(tsBinarySearchSeeker.getSeekMap());
+      } else {
+        output.seekMap(new SeekMap.Unseekable(durationReader.getDurationUs()));
+      }
     }
   }
 
@@ -353,7 +399,7 @@ public final class TsExtractor implements Extractor {
   private int findEndOfFirstTsPacketInBuffer() throws ParserException {
     int searchStart = tsPacketBuffer.getPosition();
     int limit = tsPacketBuffer.limit();
-    int syncBytePosition = findSyncBytePosition(tsPacketBuffer.data, searchStart, limit);
+    int syncBytePosition = TsUtil.findSyncBytePosition(tsPacketBuffer.data, searchStart, limit);
     // Discard all bytes before the sync byte.
     // If sync byte is not found, this means discard the whole buffer.
     tsPacketBuffer.setPosition(syncBytePosition);
@@ -368,18 +414,6 @@ public final class TsExtractor implements Extractor {
       bytesSinceLastSync = 0;
     }
     return endOfPacket;
-  }
-
-  /**
-   * Returns the position of the first TS_SYNC_BYTE within the range [startPosition, limitPosition)
-   * from the provided data array, or returns limitPosition if sync byte could not be found.
-   */
-  private static int findSyncBytePosition(byte[] data, int startPosition, int limitPosition) {
-    int position = startPosition;
-    while (position < limitPosition && data[position] != TS_SYNC_BYTE) {
-      position++;
-    }
-    return position;
   }
 
   private boolean shouldConsumePacketPayload(int packetPid) {
@@ -522,7 +556,7 @@ public final class TsExtractor implements Extractor {
       if (mode == MODE_HLS && id3Reader == null) {
         // Setup an ID3 track regardless of whether there's a corresponding entry, in case one
         // appears intermittently during playback. See [Internal: b/20261500].
-        EsInfo dummyEsInfo = new EsInfo(TS_STREAM_TYPE_ID3, null, null, new byte[0]);
+        EsInfo dummyEsInfo = new EsInfo(TS_STREAM_TYPE_ID3, null, null, Util.EMPTY_BYTE_ARRAY);
         id3Reader = payloadReaderFactory.createPayloadReader(TS_STREAM_TYPE_ID3, dummyEsInfo);
         id3Reader.init(timestampAdjuster, output,
             new TrackIdGenerator(programNumber, TS_STREAM_TYPE_ID3, MAX_PID_PLUS_ONE));

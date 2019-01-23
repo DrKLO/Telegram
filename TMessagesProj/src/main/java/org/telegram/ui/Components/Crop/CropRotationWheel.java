@@ -9,7 +9,6 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.view.Gravity;
 import android.view.MotionEvent;
-import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -37,7 +36,6 @@ public class CropRotationWheel extends FrameLayout {
     private Paint bluePaint;
 
     private ImageView aspectRatioButton;
-    private ImageView rotation90Button;
     private TextView degreesLabel;
 
     protected float rotation;
@@ -67,24 +65,19 @@ public class CropRotationWheel extends FrameLayout {
         aspectRatioButton.setImageResource(R.drawable.tool_cropfix);
         aspectRatioButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         aspectRatioButton.setScaleType(ImageView.ScaleType.CENTER);
-        aspectRatioButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (rotationListener != null)
-                    rotationListener.aspectRatioPressed();
-            }
+        aspectRatioButton.setOnClickListener(v -> {
+            if (rotationListener != null)
+                rotationListener.aspectRatioPressed();
         });
         addView(aspectRatioButton, LayoutHelper.createFrame(70, 64, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
-        rotation90Button = new ImageView(context);
+        ImageView rotation90Button = new ImageView(context);
         rotation90Button.setImageResource(R.drawable.tool_rotate);
         rotation90Button.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         rotation90Button.setScaleType(ImageView.ScaleType.CENTER);
-        rotation90Button.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (rotationListener != null)
-                    rotationListener.rotate90Pressed();
+        rotation90Button.setOnClickListener(v -> {
+            if (rotationListener != null) {
+                rotationListener.rotate90Pressed();
             }
         });
         addView(rotation90Button, LayoutHelper.createFrame(70, 64, Gravity.RIGHT | Gravity.CENTER_VERTICAL));

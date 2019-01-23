@@ -20,7 +20,6 @@ import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -67,8 +66,7 @@ import java.util.List;
   }
 
   @Override
-  protected boolean readHeaders(ParsableByteArray packet, long position, SetupData setupData)
-      throws IOException, InterruptedException {
+  protected boolean readHeaders(ParsableByteArray packet, long position, SetupData setupData) {
     if (!headerRead) {
       byte[] metadata = Arrays.copyOf(packet.data, packet.limit());
       int channelCount = metadata[9] & 0xFF;

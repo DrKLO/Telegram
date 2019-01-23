@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -15,7 +15,6 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -38,7 +37,6 @@ import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -266,15 +264,12 @@ public class ThemeEditorView {
                             ignoreTextChange = false;
                         }
                     });
-                    colorEditText[a].setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                        @Override
-                        public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                            if (i == EditorInfo.IME_ACTION_DONE) {
-                                AndroidUtilities.hideKeyboard(textView);
-                                return true;
-                            }
-                            return false;
+                    colorEditText[a].setOnEditorActionListener((textView, i, keyEvent) -> {
+                        if (i == EditorInfo.IME_ACTION_DONE) {
+                            AndroidUtilities.hideKeyboard(textView);
+                            return true;
                         }
+                        return false;
                     });
                 }
             }
@@ -581,24 +576,21 @@ public class ThemeEditorView {
             listView.setGlowColor(0xfff5f6f7);
             listView.setItemAnimator(null);
             listView.setLayoutAnimation(null);
-            listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
-                @Override
-                public void onItemClick(View view, int position) {
-                    currentThemeDesription = listAdapter.getItem(position);
-                    currentThemeDesriptionPosition = position;
-                    for (int a = 0; a < currentThemeDesription.size(); a++) {
-                        ThemeDescription description = currentThemeDesription.get(a);
-                        if (description.getCurrentKey().equals(Theme.key_chat_wallpaper)) {
-                            wallpaperUpdater.showAlert(true);
-                            return;
-                        }
-                        description.startEditing();
-                        if (a == 0) {
-                            colorPicker.setColor(description.getCurrentColor());
-                        }
+            listView.setOnItemClickListener((view, position) -> {
+                currentThemeDesription = listAdapter.getItem(position);
+                currentThemeDesriptionPosition = position;
+                for (int a = 0; a < currentThemeDesription.size(); a++) {
+                    ThemeDescription description = currentThemeDesription.get(a);
+                    if (description.getCurrentKey().equals(Theme.key_chat_wallpaper)) {
+                        wallpaperUpdater.showAlert(true);
+                        return;
                     }
-                    setColorPickerVisible(true);
+                    description.startEditing();
+                    if (a == 0) {
+                        colorPicker.setColor(description.getCurrentColor());
+                    }
                 }
+                setColorPickerVisible(true);
             });
             listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
                 @Override
@@ -628,12 +620,7 @@ public class ThemeEditorView {
             closeButton.setText(LocaleController.getString("CloseEditor", R.string.CloseEditor).toUpperCase());
             closeButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             bottomSaveLayout.addView(closeButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-            closeButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    dismiss();
-                }
-            });
+            closeButton.setOnClickListener(v -> dismiss());
 
             TextView saveButton = new TextView(context);
             saveButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -644,14 +631,11 @@ public class ThemeEditorView {
             saveButton.setText(LocaleController.getString("SaveTheme", R.string.SaveTheme).toUpperCase());
             saveButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             bottomSaveLayout.addView(saveButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
-            saveButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Theme.saveCurrentTheme(currentThemeName, true);
-                    setOnDismissListener(null);
-                    dismiss();
-                    close();
-                }
+            saveButton.setOnClickListener(v -> {
+                Theme.saveCurrentTheme(currentThemeName, true);
+                setOnDismissListener(null);
+                dismiss();
+                close();
             });
 
             bottomLayout = new FrameLayout(context);
@@ -668,14 +652,11 @@ public class ThemeEditorView {
             cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
             cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             bottomLayout.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-            cancelButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    for (int a = 0; a < currentThemeDesription.size(); a++) {
-                        currentThemeDesription.get(a).setPreviousColor();
-                    }
-                    setColorPickerVisible(false);
+            cancelButton.setOnClickListener(v -> {
+                for (int a = 0; a < currentThemeDesription.size(); a++) {
+                    currentThemeDesription.get(a).setPreviousColor();
                 }
+                setColorPickerVisible(false);
             });
 
             LinearLayout linearLayout = new LinearLayout(context);
@@ -691,14 +672,11 @@ public class ThemeEditorView {
             defaultButtom.setText(LocaleController.getString("Default", R.string.Default).toUpperCase());
             defaultButtom.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             linearLayout.addView(defaultButtom, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-            defaultButtom.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    for (int a = 0; a < currentThemeDesription.size(); a++) {
-                        currentThemeDesription.get(a).setDefaultColor();
-                    }
-                    setColorPickerVisible(false);
+            defaultButtom.setOnClickListener(v -> {
+                for (int a = 0; a < currentThemeDesription.size(); a++) {
+                    currentThemeDesription.get(a).setDefaultColor();
                 }
+                setColorPickerVisible(false);
             });
 
             saveButton = new TextView(context);
@@ -710,12 +688,7 @@ public class ThemeEditorView {
             saveButton.setText(LocaleController.getString("Save", R.string.Save).toUpperCase());
             saveButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             linearLayout.addView(saveButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-            saveButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    setColorPickerVisible(false);
-                }
-            });
+            saveButton.setOnClickListener(v -> setColorPickerVisible(false));
         }
 
         private void setColorPickerVisible(boolean visible) {
@@ -952,18 +925,12 @@ public class ThemeEditorView {
                                     ThemeDescription[] items = fragment.getThemeDescriptions();
                                     if (items != null) {
                                         editorAlert = new EditorAlert(parentActivity, items);
-                                        editorAlert.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                            @Override
-                                            public void onDismiss(DialogInterface dialog) {
+                                        editorAlert.setOnDismissListener(dialog -> {
 
-                                            }
                                         });
-                                        editorAlert.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                            @Override
-                                            public void onDismiss(DialogInterface dialog) {
-                                                editorAlert = null;
-                                                show();
-                                            }
+                                        editorAlert.setOnDismissListener(dialog -> {
+                                            editorAlert = null;
+                                            show();
                                         });
                                         editorAlert.show();
                                         hide();
@@ -1036,9 +1003,9 @@ public class ThemeEditorView {
             FileLog.e(e);
             return;
         }
-        wallpaperUpdater = new WallpaperUpdater(activity, new WallpaperUpdater.WallpaperUpdaterDelegate() {
+        wallpaperUpdater = new WallpaperUpdater(activity, null, new WallpaperUpdater.WallpaperUpdaterDelegate() {
             @Override
-            public void didSelectWallpaper(File file, Bitmap bitmap) {
+            public void didSelectWallpaper(File file, Bitmap bitmap, boolean gallery) {
                 Theme.setThemeWallpaper(themeName, bitmap, file);
             }
 

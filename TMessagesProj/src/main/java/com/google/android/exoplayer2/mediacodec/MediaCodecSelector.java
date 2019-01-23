@@ -17,7 +17,6 @@ package com.google.android.exoplayer2.mediacodec;
 
 import android.media.MediaCodec;
 import android.support.annotation.Nullable;
-import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.mediacodec.MediaCodecUtil.DecoderQueryException;
 import java.util.Collections;
 import java.util.List;
@@ -34,10 +33,10 @@ public interface MediaCodecSelector {
   MediaCodecSelector DEFAULT =
       new MediaCodecSelector() {
         @Override
-        public List<MediaCodecInfo> getDecoderInfos(Format format, boolean requiresSecureDecoder)
+        public List<MediaCodecInfo> getDecoderInfos(String mimeType, boolean requiresSecureDecoder)
             throws DecoderQueryException {
           List<MediaCodecInfo> decoderInfos =
-              MediaCodecUtil.getDecoderInfos(format.sampleMimeType, requiresSecureDecoder);
+              MediaCodecUtil.getDecoderInfos(mimeType, requiresSecureDecoder);
           return decoderInfos.isEmpty()
               ? Collections.emptyList()
               : Collections.singletonList(decoderInfos.get(0));
@@ -60,9 +59,9 @@ public interface MediaCodecSelector {
   MediaCodecSelector DEFAULT_WITH_FALLBACK =
       new MediaCodecSelector() {
         @Override
-        public List<MediaCodecInfo> getDecoderInfos(Format format, boolean requiresSecureDecoder)
+        public List<MediaCodecInfo> getDecoderInfos(String mimeType, boolean requiresSecureDecoder)
             throws DecoderQueryException {
-          return MediaCodecUtil.getDecoderInfos(format.sampleMimeType, requiresSecureDecoder);
+          return MediaCodecUtil.getDecoderInfos(mimeType, requiresSecureDecoder);
         }
 
         @Override
@@ -72,14 +71,14 @@ public interface MediaCodecSelector {
       };
 
   /**
-   * Returns a list of decoders that can decode media in the specified format, in priority order.
+   * Returns a list of decoders that can decode media in the specified MIME type, in priority order.
    *
-   * @param format The format for which a decoder is required.
+   * @param mimeType The MIME type for which a decoder is required.
    * @param requiresSecureDecoder Whether a secure decoder is required.
    * @return A list of {@link MediaCodecInfo}s corresponding to decoders. May be empty.
    * @throws DecoderQueryException Thrown if there was an error querying decoders.
    */
-  List<MediaCodecInfo> getDecoderInfos(Format format, boolean requiresSecureDecoder)
+  List<MediaCodecInfo> getDecoderInfos(String mimeType, boolean requiresSecureDecoder)
       throws DecoderQueryException;
 
   /**

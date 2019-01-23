@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -18,18 +18,18 @@ import org.telegram.messenger.AndroidUtilities;
 
 public class LineProgressView extends View {
 
-    private long lastUpdateTime = 0;
-    private float currentProgress = 0;
-    private float animationProgressStart = 0;
-    private long currentProgressTime = 0;
-    private float animatedProgressValue = 0;
+    private long lastUpdateTime;
+    private float currentProgress;
+    private float animationProgressStart;
+    private long currentProgressTime;
+    private float animatedProgressValue;
     private float animatedAlphaValue = 1.0f;
 
     private int backColor;
     private int progressColor;
 
-    private static DecelerateInterpolator decelerateInterpolator = null;
-    private static Paint progressPaint = null;
+    private static DecelerateInterpolator decelerateInterpolator;
+    private static Paint progressPaint;
 
     public LineProgressView(Context context) {
         super(context);
@@ -93,6 +93,10 @@ public class LineProgressView extends View {
 
         lastUpdateTime = System.currentTimeMillis();
         invalidate();
+    }
+
+    public float getCurrentProgress() {
+        return currentProgress;
     }
 
     public void onDraw(Canvas canvas) {

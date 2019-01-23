@@ -120,7 +120,7 @@ public abstract class Timeline {
   public static final class Window {
 
     /** A tag for the window. Not necessarily unique. */
-    public @Nullable Object tag;
+    @Nullable public Object tag;
 
     /**
      * The start time of the presentation to which this window belongs in milliseconds since the
@@ -139,9 +139,12 @@ public abstract class Timeline {
      */
     public boolean isSeekable;
 
-    /**
-     * Whether this window may change when the timeline is updated.
-     */
+    // TODO: Split this to better describe which parts of the window might change. For example it
+    // should be possible to individually determine whether the start and end positions of the
+    // window may change relative to the underlying periods. For an example of where it's useful to
+    // know that the end position is fixed whilst the start position may still change, see:
+    // https://github.com/google/ExoPlayer/issues/4780.
+    /** Whether this window may change when the timeline is updated. */
     public boolean isDynamic;
 
     /**
@@ -264,14 +267,15 @@ public abstract class Timeline {
   public static final class Period {
 
     /**
-     * An identifier for the period. Not necessarily unique.
+     * An identifier for the period. Not necessarily unique. May be null if the ids of the period
+     * are not required.
      */
-    public Object id;
+    @Nullable public Object id;
 
     /**
-     * A unique identifier for the period.
+     * A unique identifier for the period. May be null if the ids of the period are not required.
      */
-    public Object uid;
+    @Nullable public Object uid;
 
     /**
      * The index of the window to which this period belongs.
@@ -286,11 +290,18 @@ public abstract class Timeline {
     private long positionInWindowUs;
     private AdPlaybackState adPlaybackState;
 
+    /** Creates a new instance with no ad playback state. */
+    public Period() {
+      adPlaybackState = AdPlaybackState.NONE;
+    }
+
     /**
      * Sets the data held by this period.
      *
-     * @param id An identifier for the period. Not necessarily unique.
-     * @param uid A unique identifier for the period.
+     * @param id An identifier for the period. Not necessarily unique. May be null if the ids of the
+     *     period are not required.
+     * @param uid A unique identifier for the period. May be null if the ids of the period are not
+     *     required.
      * @param windowIndex The index of the window to which this period belongs.
      * @param durationUs The duration of this period in microseconds, or {@link C#TIME_UNSET} if
      *     unknown.
@@ -299,7 +310,11 @@ public abstract class Timeline {
      *     period is not within the window.
      * @return This period, for convenience.
      */
-    public Period set(Object id, Object uid, int windowIndex, long durationUs,
+    public Period set(
+        @Nullable Object id,
+        @Nullable Object uid,
+        int windowIndex,
+        long durationUs,
         long positionInWindowUs) {
       return set(id, uid, windowIndex, durationUs, positionInWindowUs, AdPlaybackState.NONE);
     }
@@ -307,8 +322,10 @@ public abstract class Timeline {
     /**
      * Sets the data held by this period.
      *
-     * @param id An identifier for the period. Not necessarily unique.
-     * @param uid A unique identifier for the period.
+     * @param id An identifier for the period. Not necessarily unique. May be null if the ids of the
+     *     period are not required.
+     * @param uid A unique identifier for the period. May be null if the ids of the period are not
+     *     required.
      * @param windowIndex The index of the window to which this period belongs.
      * @param durationUs The duration of this period in microseconds, or {@link C#TIME_UNSET} if
      *     unknown.
@@ -320,8 +337,8 @@ public abstract class Timeline {
      * @return This period, for convenience.
      */
     public Period set(
-        Object id,
-        Object uid,
+        @Nullable Object id,
+        @Nullable Object uid,
         int windowIndex,
         long durationUs,
         long positionInWindowUs,
@@ -441,7 +458,7 @@ public abstract class Timeline {
      * @return The index of the ad group, or {@link C#INDEX_UNSET}.
      */
     public int getAdGroupIndexAfterPositionUs(long positionUs) {
-      return adPlaybackState.getAdGroupIndexAfterPositionUs(positionUs);
+      return adPlaybackState.getAdGroupIndexAfterPositionUs(positionUs, durationUs);
     }
 
     /**
@@ -702,13 +719,15 @@ public abstract class Timeline {
    * Calls {@link #getPeriodPosition(Window, Period, int, long, long)} with a zero default position
    * projection.
    */
-  public final Pair<Integer, Long> getPeriodPosition(Window window, Period period, int windowIndex,
-      long windowPositionUs) {
-    return getPeriodPosition(window, period, windowIndex, windowPositionUs, 0);
+  public final Pair<Object, Long> getPeriodPosition(
+      Window window, Period period, int windowIndex, long windowPositionUs) {
+    return Assertions.checkNotNull(
+        getPeriodPosition(
+            window, period, windowIndex, windowPositionUs, /* defaultPositionProjectionUs= */ 0));
   }
 
   /**
-   * Converts (windowIndex, windowPositionUs) to the corresponding (periodIndex, periodPositionUs).
+   * Converts (windowIndex, windowPositionUs) to the corresponding (periodUid, periodPositionUs).
    *
    * @param window A {@link Window} that may be overwritten.
    * @param period A {@link Period} that may be overwritten.
@@ -717,12 +736,17 @@ public abstract class Timeline {
    *     start position.
    * @param defaultPositionProjectionUs If {@code windowPositionUs} is {@link C#TIME_UNSET}, the
    *     duration into the future by which the window's position should be projected.
-   * @return The corresponding (periodIndex, periodPositionUs), or null if {@code #windowPositionUs}
+   * @return The corresponding (periodUid, periodPositionUs), or null if {@code #windowPositionUs}
    *     is {@link C#TIME_UNSET}, {@code defaultPositionProjectionUs} is non-zero, and the window's
    *     position could not be projected by {@code defaultPositionProjectionUs}.
    */
-  public final Pair<Integer, Long> getPeriodPosition(Window window, Period period, int windowIndex,
-      long windowPositionUs, long defaultPositionProjectionUs) {
+  @Nullable
+  public final Pair<Object, Long> getPeriodPosition(
+      Window window,
+      Period period,
+      int windowIndex,
+      long windowPositionUs,
+      long defaultPositionProjectionUs) {
     Assertions.checkIndex(windowIndex, 0, getWindowCount());
     getWindow(windowIndex, window, false, defaultPositionProjectionUs);
     if (windowPositionUs == C.TIME_UNSET) {
@@ -733,13 +757,13 @@ public abstract class Timeline {
     }
     int periodIndex = window.firstPeriodIndex;
     long periodPositionUs = window.getPositionInFirstPeriodUs() + windowPositionUs;
-    long periodDurationUs = getPeriod(periodIndex, period).getDurationUs();
+    long periodDurationUs = getPeriod(periodIndex, period, /* setIds= */ true).getDurationUs();
     while (periodDurationUs != C.TIME_UNSET && periodPositionUs >= periodDurationUs
         && periodIndex < window.lastPeriodIndex) {
       periodPositionUs -= periodDurationUs;
-      periodDurationUs = getPeriod(++periodIndex, period).getDurationUs();
+      periodDurationUs = getPeriod(++periodIndex, period, /* setIds= */ true).getDurationUs();
     }
-    return Pair.create(periodIndex, periodPositionUs);
+    return Pair.create(Assertions.checkNotNull(period.uid), periodPositionUs);
   }
 
   /**
@@ -754,8 +778,8 @@ public abstract class Timeline {
   }
 
   /**
-   * Populates a {@link Period} with data for the period at the specified index. Does not populate
-   * {@link Period#id} and {@link Period#uid}.
+   * Populates a {@link Period} with data for the period at the specified index. {@link Period#id}
+   * and {@link Period#uid} will be set to null.
    *
    * @param periodIndex The index of the period.
    * @param period The {@link Period} to populate. Must not be null.

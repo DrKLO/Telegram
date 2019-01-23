@@ -64,6 +64,10 @@ public final class DefaultContentMetadata implements ContentMetadata {
 
   private final Map<String, byte[]> metadata;
 
+  public DefaultContentMetadata() {
+    this(Collections.emptyMap());
+  }
+
   private DefaultContentMetadata(Map<String, byte[]> metadata) {
     this.metadata = Collections.unmodifiableMap(metadata);
   }
@@ -74,7 +78,7 @@ public final class DefaultContentMetadata implements ContentMetadata {
    */
   public DefaultContentMetadata copyWithMutationsApplied(ContentMetadataMutations mutations) {
     Map<String, byte[]> mutatedMetadata = applyMutations(metadata, mutations);
-    if (isMetadataEqual(mutatedMetadata)) {
+    if (isMetadataEqual(metadata, mutatedMetadata)) {
       return this;
     }
     return new DefaultContentMetadata(mutatedMetadata);
@@ -97,7 +101,8 @@ public final class DefaultContentMetadata implements ContentMetadata {
   }
 
   @Override
-  public final byte[] get(String name, byte[] defaultValue) {
+  @Nullable
+  public final byte[] get(String name, @Nullable byte[] defaultValue) {
     if (metadata.containsKey(name)) {
       byte[] bytes = metadata.get(name);
       return Arrays.copyOf(bytes, bytes.length);
@@ -107,7 +112,8 @@ public final class DefaultContentMetadata implements ContentMetadata {
   }
 
   @Override
-  public final String get(String name, String defaultValue) {
+  @Nullable
+  public final String get(String name, @Nullable String defaultValue) {
     if (metadata.containsKey(name)) {
       byte[] bytes = metadata.get(name);
       return new String(bytes, Charset.forName(C.UTF8_NAME));
@@ -139,21 +145,7 @@ public final class DefaultContentMetadata implements ContentMetadata {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    return isMetadataEqual(((DefaultContentMetadata) o).metadata);
-  }
-
-  private boolean isMetadataEqual(Map<String, byte[]> otherMetadata) {
-    if (metadata.size() != otherMetadata.size()) {
-      return false;
-    }
-    for (Entry<String, byte[]> entry : metadata.entrySet()) {
-      byte[] value = entry.getValue();
-      byte[] otherValue = otherMetadata.get(entry.getKey());
-      if (!Arrays.equals(value, otherValue)) {
-        return false;
-      }
-    }
-    return true;
+    return isMetadataEqual(metadata, ((DefaultContentMetadata) o).metadata);
   }
 
   @Override
@@ -166,6 +158,20 @@ public final class DefaultContentMetadata implements ContentMetadata {
       hashCode = result;
     }
     return hashCode;
+  }
+
+  private static boolean isMetadataEqual(Map<String, byte[]> first, Map<String, byte[]> second) {
+    if (first.size() != second.size()) {
+      return false;
+    }
+    for (Entry<String, byte[]> entry : first.entrySet()) {
+      byte[] value = entry.getValue();
+      byte[] otherValue = second.get(entry.getKey());
+      if (!Arrays.equals(value, otherValue)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private static Map<String, byte[]> applyMutations(
@@ -188,9 +194,12 @@ public final class DefaultContentMetadata implements ContentMetadata {
       byte[] bytes = getBytes(value);
       if (bytes.length > MAX_VALUE_LENGTH) {
         throw new IllegalArgumentException(
-            String.format(
-                "The size of %s (%d) is greater than maximum allowed: %d",
-                name, bytes.length, MAX_VALUE_LENGTH));
+            "The size of "
+                + name
+                + " ("
+                + bytes.length
+                + ") is greater than maximum allowed: "
+                + MAX_VALUE_LENGTH);
       }
       metadata.put(name, bytes);
     }

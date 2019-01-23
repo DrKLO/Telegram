@@ -18,153 +18,153 @@ package com.google.android.exoplayer2.offline;
 import android.net.Uri;
 import android.support.annotation.Nullable;
 import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.Util;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 /** Contains the necessary parameters for a download or remove action. */
-public abstract class DownloadAction {
+public final class DownloadAction {
 
-  /** Used to deserialize {@link DownloadAction}s. */
-  public abstract static class Deserializer {
+  /** Type for progressive downloads. */
+  public static final String TYPE_PROGRESSIVE = "progressive";
+  /** Type for DASH downloads. */
+  public static final String TYPE_DASH = "dash";
+  /** Type for HLS downloads. */
+  public static final String TYPE_HLS = "hls";
+  /** Type for SmoothStreaming downloads. */
+  public static final String TYPE_SS = "ss";
 
-    public final String type;
-    public final int version;
+  private static final int VERSION = 2;
 
-    public Deserializer(String type, int version) {
-      this.type = type;
-      this.version = version;
-    }
-
-    /**
-     * Deserializes an action from the {@code input}.
-     *
-     * @param version The version of the serialized action.
-     * @param input The stream from which to read the action.
-     * @see DownloadAction#writeToStream(DataOutputStream)
-     */
-    public abstract DownloadAction readFromStream(int version, DataInputStream input)
-        throws IOException;
-  }
-
-  private static @Nullable Deserializer[] defaultDeserializers;
-
-  /** Returns available default {@link Deserializer}s. */
-  public static synchronized Deserializer[] getDefaultDeserializers() {
-    if (defaultDeserializers != null) {
-      return defaultDeserializers;
-    }
-    Deserializer[] deserializers = new Deserializer[4];
-    int count = 0;
-    deserializers[count++] = ProgressiveDownloadAction.DESERIALIZER;
-    Class<?> clazz;
-    // Full class names used for constructor args so the LINT rule triggers if any of them move.
-    try {
-      // LINT.IfChange
-      clazz = Class.forName("com.google.android.exoplayer2.source.dash.offline.DashDownloadAction");
-      // LINT.ThenChange(../../../../../../../../../dash/proguard-rules.txt)
-      deserializers[count++] = getDeserializer(clazz);
-    } catch (Exception e) {
-      // Do nothing.
-    }
-    try {
-      // LINT.IfChange
-      clazz = Class.forName("com.google.android.exoplayer2.source.hls.offline.HlsDownloadAction");
-      // LINT.ThenChange(../../../../../../../../../hls/proguard-rules.txt)
-      deserializers[count++] = getDeserializer(clazz);
-    } catch (Exception e) {
-      // Do nothing.
-    }
-    try {
-      // LINT.IfChange
-      clazz =
-          Class.forName(
-              "com.google.android.exoplayer2.source.smoothstreaming.offline.SsDownloadAction");
-      // LINT.ThenChange(../../../../../../../../../smoothstreaming/proguard-rules.txt)
-      deserializers[count++] = getDeserializer(clazz);
-    } catch (Exception e) {
-      // Do nothing.
-    }
-    defaultDeserializers = Arrays.copyOf(Assertions.checkNotNull(deserializers), count);
-    return defaultDeserializers;
+  /**
+   * Deserializes an action from the {@code data}.
+   *
+   * @param data The action data to deserialize.
+   * @return The deserialized action.
+   * @throws IOException If the data could not be deserialized.
+   */
+  public static DownloadAction fromByteArray(byte[] data) throws IOException {
+    ByteArrayInputStream input = new ByteArrayInputStream(data);
+    return deserializeFromStream(input);
   }
 
   /**
-   * Deserializes one action that was serialized with {@link #serializeToStream(DownloadAction,
-   * OutputStream)} from the {@code input}, using the {@link Deserializer}s that supports the
-   * action's type.
+   * Deserializes one action that was serialized with {@link #serializeToStream(OutputStream)} from
+   * the {@code input}.
    *
    * <p>The caller is responsible for closing the given {@link InputStream}.
    *
-   * @param deserializers {@link Deserializer}s for supported actions.
-   * @param input The stream from which to read the action.
+   * @param input The stream from which to read.
    * @return The deserialized action.
-   * @throws IOException If there is an IO error reading from {@code input}, or if the action type
-   *     isn't supported by any of the {@code deserializers}.
+   * @throws IOException If there is an IO error reading from {@code input}, or if the data could
+   *     not be deserialized.
    */
-  public static DownloadAction deserializeFromStream(
-      Deserializer[] deserializers, InputStream input) throws IOException {
-    // Don't close the stream as it closes the underlying stream too.
-    DataInputStream dataInputStream = new DataInputStream(input);
-    String type = dataInputStream.readUTF();
-    int version = dataInputStream.readInt();
-    for (Deserializer deserializer : deserializers) {
-      if (type.equals(deserializer.type) && deserializer.version >= version) {
-        return deserializer.readFromStream(version, dataInputStream);
-      }
-    }
-    throw new DownloadException("No deserializer found for:" + type + ", " + version);
+  public static DownloadAction deserializeFromStream(InputStream input) throws IOException {
+    return readFromStream(new DataInputStream(input));
   }
 
-  /** Serializes {@code action} type and data into the {@code output}. */
-  public static void serializeToStream(DownloadAction action, OutputStream output)
-      throws IOException {
-    // Don't close the stream as it closes the underlying stream too.
-    DataOutputStream dataOutputStream = new DataOutputStream(output);
-    dataOutputStream.writeUTF(action.type);
-    dataOutputStream.writeInt(action.version);
-    action.writeToStream(dataOutputStream);
-    dataOutputStream.flush();
+  /**
+   * Creates a DASH download action.
+   *
+   * @param type The type of the action.
+   * @param uri The URI of the media to be downloaded.
+   * @param keys Keys of streams to be downloaded. If empty, all streams will be downloaded.
+   * @param customCacheKey A custom key for cache indexing, or null.
+   * @param data Optional custom data for this action. If {@code null} an empty array will be used.
+   */
+  public static DownloadAction createDownloadAction(
+      String type,
+      Uri uri,
+      List<StreamKey> keys,
+      @Nullable String customCacheKey,
+      @Nullable byte[] data) {
+    return new DownloadAction(type, uri, /* isRemoveAction= */ false, keys, customCacheKey, data);
   }
 
+  /**
+   * Creates a DASH remove action.
+   *
+   * @param type The type of the action.
+   * @param uri The URI of the media to be removed.
+   * @param customCacheKey A custom key for cache indexing, or null.
+   */
+  public static DownloadAction createRemoveAction(
+      String type, Uri uri, @Nullable String customCacheKey) {
+    return new DownloadAction(
+        type,
+        uri,
+        /* isRemoveAction= */ true,
+        Collections.emptyList(),
+        customCacheKey,
+        /* data= */ null);
+  }
+
+  /** The unique content id. */
+  public final String id;
   /** The type of the action. */
   public final String type;
-  /** The action version. */
-  public final int version;
   /** The uri being downloaded or removed. */
   public final Uri uri;
   /** Whether this is a remove action. If false, this is a download action. */
   public final boolean isRemoveAction;
+  /**
+   * Keys of streams to be downloaded. If empty, all streams will be downloaded. Empty if this
+   * action is a remove action.
+   */
+  public final List<StreamKey> keys;
+  /** A custom key for cache indexing, or null. */
+  @Nullable public final String customCacheKey;
   /** Custom data for this action. May be empty. */
   public final byte[] data;
 
   /**
    * @param type The type of the action.
-   * @param version The action version.
    * @param uri The uri being downloaded or removed.
    * @param isRemoveAction Whether this is a remove action. If false, this is a download action.
-   * @param data Optional custom data for this action.
+   * @param keys Keys of streams to be downloaded. If empty, all streams will be downloaded. Empty
+   *     if this action is a remove action.
+   * @param customCacheKey A custom key for cache indexing, or null.
+   * @param data Custom data for this action. Null if this action is a remove action.
    */
-  protected DownloadAction(
-      String type, int version, Uri uri, boolean isRemoveAction, @Nullable byte[] data) {
+  private DownloadAction(
+      String type,
+      Uri uri,
+      boolean isRemoveAction,
+      List<StreamKey> keys,
+      @Nullable String customCacheKey,
+      @Nullable byte[] data) {
+    this.id = customCacheKey != null ? customCacheKey : uri.toString();
     this.type = type;
-    this.version = version;
     this.uri = uri;
     this.isRemoveAction = isRemoveAction;
-    this.data = data != null ? data : new byte[0];
+    this.customCacheKey = customCacheKey;
+    if (isRemoveAction) {
+      Assertions.checkArgument(keys.isEmpty());
+      Assertions.checkArgument(data == null);
+      this.keys = Collections.emptyList();
+      this.data = Util.EMPTY_BYTE_ARRAY;
+    } else {
+      ArrayList<StreamKey> mutableKeys = new ArrayList<>(keys);
+      Collections.sort(mutableKeys);
+      this.keys = Collections.unmodifiableList(mutableKeys);
+      this.data = data != null ? Arrays.copyOf(data, data.length) : Util.EMPTY_BYTE_ARRAY;
+    }
   }
 
   /** Serializes itself into a byte array. */
-  public final byte[] toByteArray() {
+  public byte[] toByteArray() {
     ByteArrayOutputStream output = new ByteArrayOutputStream();
     try {
-      serializeToStream(this, output);
+      serializeToStream(output);
     } catch (IOException e) {
       // ByteArrayOutputStream shouldn't throw IOException.
       throw new IllegalStateException();
@@ -174,45 +174,128 @@ public abstract class DownloadAction {
 
   /** Returns whether this is an action for the same media as the {@code other}. */
   public boolean isSameMedia(DownloadAction other) {
-    return uri.equals(other.uri);
+    return id.equals(other.id);
   }
 
-  /** Returns keys of tracks to be downloaded. */
+  /** Returns keys of streams to be downloaded. */
   public List<StreamKey> getKeys() {
-    return Collections.emptyList();
+    return keys;
   }
-
-  /** Serializes itself into the {@code output}. */
-  protected abstract void writeToStream(DataOutputStream output) throws IOException;
-
-  /** Creates a {@link Downloader} with the given parameters. */
-  public abstract Downloader createDownloader(
-      DownloaderConstructorHelper downloaderConstructorHelper);
 
   @Override
   public boolean equals(@Nullable Object o) {
-    if (o == null || getClass() != o.getClass()) {
+    if (!(o instanceof DownloadAction)) {
       return false;
     }
     DownloadAction that = (DownloadAction) o;
-    return type.equals(that.type)
-        && version == that.version
+    return id.equals(that.id)
+        && type.equals(that.type)
         && uri.equals(that.uri)
         && isRemoveAction == that.isRemoveAction
+        && keys.equals(that.keys)
+        && Util.areEqual(customCacheKey, that.customCacheKey)
         && Arrays.equals(data, that.data);
   }
 
   @Override
-  public int hashCode() {
-    int result = uri.hashCode();
+  public final int hashCode() {
+    int result = type.hashCode();
+    result = 31 * result + id.hashCode();
+    result = 31 * result + uri.hashCode();
     result = 31 * result + (isRemoveAction ? 1 : 0);
+    result = 31 * result + keys.hashCode();
+    result = 31 * result + (customCacheKey != null ? customCacheKey.hashCode() : 0);
     result = 31 * result + Arrays.hashCode(data);
     return result;
   }
 
-  private static Deserializer getDeserializer(Class<?> clazz)
-      throws NoSuchFieldException, IllegalAccessException {
-    Object value = clazz.getDeclaredField("DESERIALIZER").get(null);
-    return (Deserializer) Assertions.checkNotNull(value);
+  // Serialization.
+
+  /**
+   * Serializes this action into an {@link OutputStream}.
+   *
+   * @param output The stream to write to.
+   */
+  public final void serializeToStream(OutputStream output) throws IOException {
+    // Don't close the stream as it closes the underlying stream too.
+    DataOutputStream dataOutputStream = new DataOutputStream(output);
+    dataOutputStream.writeUTF(type);
+    dataOutputStream.writeInt(VERSION);
+    dataOutputStream.writeUTF(uri.toString());
+    dataOutputStream.writeBoolean(isRemoveAction);
+    dataOutputStream.writeInt(data.length);
+    dataOutputStream.write(data);
+    dataOutputStream.writeInt(keys.size());
+    for (int i = 0; i < keys.size(); i++) {
+      StreamKey key = keys.get(i);
+      dataOutputStream.writeInt(key.periodIndex);
+      dataOutputStream.writeInt(key.groupIndex);
+      dataOutputStream.writeInt(key.trackIndex);
+    }
+    dataOutputStream.writeBoolean(customCacheKey != null);
+    if (customCacheKey != null) {
+      dataOutputStream.writeUTF(customCacheKey);
+    }
+    dataOutputStream.flush();
+  }
+
+  private static DownloadAction readFromStream(DataInputStream input) throws IOException {
+    String type = input.readUTF();
+    int version = input.readInt();
+
+    Uri uri = Uri.parse(input.readUTF());
+    boolean isRemoveAction = input.readBoolean();
+
+    int dataLength = input.readInt();
+    byte[] data;
+    if (dataLength != 0) {
+      data = new byte[dataLength];
+      input.readFully(data);
+      if (isRemoveAction) {
+        // Remove actions are no longer permitted to have data.
+        data = null;
+      }
+    } else {
+      data = null;
+    }
+
+    // Serialized version 0 progressive actions did not contain keys.
+    boolean isLegacyProgressive = version == 0 && TYPE_PROGRESSIVE.equals(type);
+    List<StreamKey> keys = new ArrayList<>();
+    if (!isLegacyProgressive) {
+      int keyCount = input.readInt();
+      for (int i = 0; i < keyCount; i++) {
+        keys.add(readKey(type, version, input));
+      }
+    }
+
+    // Serialized version 0 and 1 DASH/HLS/SS actions did not contain a custom cache key.
+    boolean isLegacySegmented =
+        version < 2 && (TYPE_DASH.equals(type) || TYPE_HLS.equals(type) || TYPE_SS.equals(type));
+    String customCacheKey = null;
+    if (!isLegacySegmented) {
+      customCacheKey = input.readBoolean() ? input.readUTF() : null;
+    }
+
+    return new DownloadAction(type, uri, isRemoveAction, keys, customCacheKey, data);
+  }
+
+  private static StreamKey readKey(String type, int version, DataInputStream input)
+      throws IOException {
+    int periodIndex;
+    int groupIndex;
+    int trackIndex;
+
+    // Serialized version 0 HLS/SS actions did not contain a period index.
+    if ((TYPE_HLS.equals(type) || TYPE_SS.equals(type)) && version == 0) {
+      periodIndex = 0;
+      groupIndex = input.readInt();
+      trackIndex = input.readInt();
+    } else {
+      periodIndex = input.readInt();
+      groupIndex = input.readInt();
+      trackIndex = input.readInt();
+    }
+    return new StreamKey(periodIndex, groupIndex, trackIndex);
   }
 }

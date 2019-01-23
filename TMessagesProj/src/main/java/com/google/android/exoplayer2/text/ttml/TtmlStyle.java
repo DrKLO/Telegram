@@ -19,6 +19,7 @@ import android.graphics.Typeface;
 import android.support.annotation.IntDef;
 import android.text.Layout;
 import com.google.android.exoplayer2.util.Assertions;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -29,25 +30,32 @@ import java.lang.annotation.RetentionPolicy;
 
   public static final int UNSPECIFIED = -1;
 
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef(flag = true, value = {UNSPECIFIED, STYLE_NORMAL, STYLE_BOLD, STYLE_ITALIC,
-      STYLE_BOLD_ITALIC})
+  @IntDef(
+      flag = true,
+      value = {UNSPECIFIED, STYLE_NORMAL, STYLE_BOLD, STYLE_ITALIC, STYLE_BOLD_ITALIC})
   public @interface StyleFlags {}
+
   public static final int STYLE_NORMAL = Typeface.NORMAL;
   public static final int STYLE_BOLD = Typeface.BOLD;
   public static final int STYLE_ITALIC = Typeface.ITALIC;
   public static final int STYLE_BOLD_ITALIC = Typeface.BOLD_ITALIC;
 
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({UNSPECIFIED, FONT_SIZE_UNIT_PIXEL, FONT_SIZE_UNIT_EM, FONT_SIZE_UNIT_PERCENT})
   public @interface FontSizeUnit {}
+
   public static final int FONT_SIZE_UNIT_PIXEL = 1;
   public static final int FONT_SIZE_UNIT_EM = 2;
   public static final int FONT_SIZE_UNIT_PERCENT = 3;
 
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({UNSPECIFIED, OFF, ON})
   private @interface OptionalBoolean {}
+
   private static final int OFF = 0;
   private static final int ON = 1;
 

@@ -25,6 +25,7 @@ import com.google.android.exoplayer2.extractor.TrackOutput;
 import com.google.android.exoplayer2.extractor.ts.TsPayloadReader.TrackIdGenerator;
 import com.google.android.exoplayer2.util.ParsableBitArray;
 import com.google.android.exoplayer2.util.ParsableByteArray;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -33,9 +34,11 @@ import java.lang.annotation.RetentionPolicy;
  */
 public final class Ac3Reader implements ElementaryStreamReader {
 
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({STATE_FINDING_SYNC, STATE_READING_HEADER, STATE_READING_SAMPLE})
   private @interface State {}
+
   private static final int STATE_FINDING_SYNC = 0;
   private static final int STATE_READING_HEADER = 1;
   private static final int STATE_READING_SAMPLE = 2;
@@ -97,7 +100,7 @@ public final class Ac3Reader implements ElementaryStreamReader {
   }
 
   @Override
-  public void packetStarted(long pesTimeUs, boolean dataAlignmentIndicator) {
+  public void packetStarted(long pesTimeUs, @TsPayloadReader.Flags int flags) {
     timeUs = pesTimeUs;
   }
 

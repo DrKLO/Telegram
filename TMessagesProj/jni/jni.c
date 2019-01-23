@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include "image.h"
+#include "libtgvoip/client/android/tg_voip_jni.h"
 
 int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env);
 
@@ -28,6 +29,8 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     if (registerNativeTgNetFunctions(vm, env) != JNI_TRUE) {
         return -1;
     }
+
+    tgvoipRegisterNatives(env);
     
 	return JNI_VERSION_1_6;
 }

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
@@ -15,11 +15,11 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
-import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -36,7 +36,7 @@ public class ArchivedStickerSetCell extends FrameLayout {
     private Switch checkBox;
     private TLRPC.StickerSetCovered stickersSet;
     private Rect rect = new Rect();
-    private CompoundButton.OnCheckedChangeListener onCheckedChangeListener;
+    private Switch.OnCheckedChangeListener onCheckedChangeListener;
 
     public ArchivedStickerSetCell(Context context, boolean needCheckBox) {
         super(context);
@@ -66,10 +66,8 @@ public class ArchivedStickerSetCell extends FrameLayout {
 
         if (needCheckBox) {
             checkBox = new Switch(context);
-            checkBox.setDuplicateParentStateEnabled(false);
-            checkBox.setFocusable(false);
-            checkBox.setFocusableInTouchMode(false);
-            addView(checkBox, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 14, 0, 14, 0));
+            checkBox.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
+            addView(checkBox, LayoutHelper.createFrame(37, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
         }
     }
 
@@ -98,23 +96,25 @@ public class ArchivedStickerSetCell extends FrameLayout {
         textView.setText(stickersSet.set.title);
 
         valueTextView.setText(LocaleController.formatPluralString("Stickers", set.set.count));
-        if (set.cover != null && set.cover.thumb != null && set.cover.thumb.location != null) {
-            imageView.setImage(set.cover.thumb.location, null, "webp", null);
-        } else if (!set.covers.isEmpty()) {
-            imageView.setImage(set.covers.get(0).thumb.location, null, "webp", null);
+        TLRPC.PhotoSize thumb = set.cover != null ? FileLoader.getClosestPhotoSizeWithSize(set.cover.thumbs, 90) : null;
+        if (thumb != null && thumb.location != null) {
+            imageView.setImage(thumb, null, "webp", null, set);
+        } else {
+            thumb = !set.covers.isEmpty() ? FileLoader.getClosestPhotoSizeWithSize(set.covers.get(0).thumbs, 90) : null;
+            if (thumb != null) {
+                imageView.setImage(thumb, null, "webp", null, set);
+            }
         }
     }
 
-    public void setOnCheckClick(CompoundButton.OnCheckedChangeListener listener) {
+    public void setOnCheckClick(Switch.OnCheckedChangeListener listener) {
         checkBox.setOnCheckedChangeListener(onCheckedChangeListener = listener);
-        checkBox.setOnClickListener(v -> {
-
-        });
+        checkBox.setOnClickListener(v -> checkBox.setChecked(!checkBox.isChecked(), true));
     }
 
     public void setChecked(boolean checked) {
         checkBox.setOnCheckedChangeListener(null);
-        checkBox.setChecked(checked);
+        checkBox.setChecked(checked, true);
         checkBox.setOnCheckedChangeListener(onCheckedChangeListener);
     }
 

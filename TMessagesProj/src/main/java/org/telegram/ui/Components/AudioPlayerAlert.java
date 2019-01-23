@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -124,7 +124,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private int searchOpenPosition = -1;
     private int searchOpenOffset;
 
-    private boolean hasNoCover;
+    private int hasNoCover;
     private Drawable noCoverDrawable;
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
@@ -164,9 +164,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidReset);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidStarted);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidStart);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.musicDidLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.musicDidLoad);
 
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow).mutate();
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_background), PorterDuff.Mode.MULTIPLY));
@@ -388,7 +388,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
             @Override
             protected void onDraw(Canvas canvas) {
-                if (hasNoCover) {
+                if (hasNoCover == 1 || hasNoCover == 2 && (!getImageReceiver().hasBitmapImage() || getImageReceiver().getCurrentAlpha() != 1.0f)) {
                     rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
                     canvas.drawRoundRect(rect, getRoundRadius(), getRoundRadius(), paint);
                     float plusScale = thumbMaxScale / getScaleX() / 3;
@@ -397,7 +397,8 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     int y = (int) (rect.centerY() - s / 2);
                     noCoverDrawable.setBounds(x, y, x + s, y + s);
                     noCoverDrawable.draw(canvas);
-                } else {
+                }
+                if (hasNoCover != 1) {
                     super.onDraw(canvas);
                 }
             }
@@ -495,6 +496,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
         timeTextView = new SimpleTextView(context);
         timeTextView.setTextSize(12);
+        timeTextView.setText("0:00");
         timeTextView.setTextColor(Theme.getColor(Theme.key_player_time));
         playerLayout.addView(timeTextView, LayoutHelper.createFrame(100, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 20, 92, 0, 0));
 
@@ -914,7 +916,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.messagePlayingDidStarted || id == NotificationCenter.messagePlayingPlayStateChanged || id == NotificationCenter.messagePlayingDidReset) {
+        if (id == NotificationCenter.messagePlayingDidStart || id == NotificationCenter.messagePlayingPlayStateChanged || id == NotificationCenter.messagePlayingDidReset) {
             updateTitle(id == NotificationCenter.messagePlayingDidReset && (Boolean) args[1]);
             if (id == NotificationCenter.messagePlayingDidReset || id == NotificationCenter.messagePlayingPlayStateChanged) {
                 int count = listView.getChildCount();
@@ -924,11 +926,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                         AudioPlayerCell cell = (AudioPlayerCell) view;
                         MessageObject messageObject = cell.getMessageObject();
                         if (messageObject != null && (messageObject.isVoice() || messageObject.isMusic())) {
-                            cell.updateButtonState(false);
+                            cell.updateButtonState(false, true);
                         }
                     }
                 }
-            } else if (id == NotificationCenter.messagePlayingDidStarted) {
+            } else if (id == NotificationCenter.messagePlayingDidStart) {
                 MessageObject messageObject = (MessageObject) args[0];
                 if (messageObject.eventId != 0) {
                     return;
@@ -940,7 +942,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                         AudioPlayerCell cell = (AudioPlayerCell) view;
                         MessageObject messageObject1 = cell.getMessageObject();
                         if (messageObject1 != null && (messageObject1.isVoice() || messageObject1.isMusic())) {
-                            cell.updateButtonState(false);
+                            cell.updateButtonState(false, true);
                         }
                     }
                 }
@@ -950,7 +952,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             if (messageObject != null && messageObject.isMusic()) {
                 updateProgress(messageObject);
             }
-        } else if (id == NotificationCenter.musicDidLoaded) {
+        } else if (id == NotificationCenter.musicDidLoad) {
             playlist = MediaController.getInstance().getPlaylist();
             listAdapter.notifyDataSetChanged();
         }
@@ -1019,9 +1021,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         super.dismiss();
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidReset);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidStarted);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidStart);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.musicDidLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.musicDidLoad);
         DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
     }
 
@@ -1035,7 +1037,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     }
 
     @Override
-    public void onFailedDownload(String fileName) {
+    public void onFailedDownload(String fileName, boolean canceled) {
 
     }
 
@@ -1170,14 +1172,21 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             actionBar.setTitle(title);
             actionBar.setSubtitle(author);
 
+            String loadTitle = author + " " + title;
             AudioInfo audioInfo = MediaController.getInstance().getAudioInfo();
             if (audioInfo != null && audioInfo.getCover() != null) {
-                hasNoCover = false;
+                hasNoCover = 0;
                 placeholderImageView.setImageBitmap(audioInfo.getCover());
             } else {
-                hasNoCover = true;
+                String artworkUrl = messageObject.getArtworkUrl(false);
+                if (!TextUtils.isEmpty(artworkUrl)) {
+                    placeholderImageView.setImage(artworkUrl, null, null);
+                    hasNoCover = 2;
+                } else {
+                    placeholderImageView.setImageDrawable(null);
+                    hasNoCover = 1;
+                }
                 placeholderImageView.invalidate();
-                placeholderImageView.setImageDrawable(null);
             }
 
             if (durationTextView != null) {

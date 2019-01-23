@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -71,7 +71,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
         if (currentMessageObject != messageObject) {
             currentAccount = messageObject.currentAccount;
             seekBar.setColors(Theme.getColor(Theme.key_chat_inAudioSeekbar), Theme.getColor(Theme.key_chat_inAudioSeekbar), Theme.getColor(Theme.key_chat_inAudioSeekbarFill), Theme.getColor(Theme.key_chat_inAudioSeekbarFill), Theme.getColor(Theme.key_chat_inAudioSeekbarSelected));
-            progressView.setProgressColors(0xffd9e2eb, 0xff86c5f8); //TODO
+            progressView.setProgressColors(0xffd9e2eb, 0xff86c5f8);
 
             currentMessageObject = messageObject;
             wasLayout = false;
@@ -225,7 +225,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
                 invalidate();
             }
         } else if (buttonState == 2) {
-            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), true, 0);
+            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
             buttonState = 4;
             invalidate();
         } else if (buttonState == 3) {
@@ -266,7 +266,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
 
     public void downloadAudioIfNeed() {
         if (buttonState == 2) {
-            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), true, 0);
+            FileLoader.getInstance(currentAccount).loadFile(currentMessageObject.getDocument(), currentMessageObject, 1, 0);
             buttonState = 3;
             invalidate();
         }
@@ -303,7 +303,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
     }
 
     @Override
-    public void onFailedDownload(String fileName) {
+    public void onFailedDownload(String fileName, boolean canceled) {
         updateButtonState();
     }
 

@@ -17,7 +17,7 @@ package com.google.android.exoplayer2.extractor.mp4;
 
 import static com.google.android.exoplayer2.util.MimeTypes.getMimeTypeFromMp4ObjectType;
 
-import android.util.Log;
+import android.support.annotation.Nullable;
 import android.util.Pair;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
@@ -28,6 +28,7 @@ import com.google.android.exoplayer2.extractor.GaplessInfoHolder;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.CodecSpecificDataUtil;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
@@ -38,13 +39,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Utility methods for parsing MP4 format atom payloads according to ISO 14496-12.
- */
+/** Utility methods for parsing MP4 format atom payloads according to ISO 14496-12. */
+@SuppressWarnings({"ConstantField", "ConstantCaseForConstants"})
 /* package */ final class AtomParsers {
-
-  /** Thrown if an edit list couldn't be applied. */
-  public static final class UnhandledEditListException extends ParserException {}
 
   private static final String TAG = "AtomParsers";
 
@@ -55,12 +52,16 @@ import java.util.List;
   private static final int TYPE_subt = Util.getIntegerCodeForString("subt");
   private static final int TYPE_clcp = Util.getIntegerCodeForString("clcp");
   private static final int TYPE_meta = Util.getIntegerCodeForString("meta");
+  private static final int TYPE_mdta = Util.getIntegerCodeForString("mdta");
 
   /**
    * The threshold number of samples to trim from the start/end of an audio track when applying an
    * edit below which gapless info can be used (rather than removing samples from the sample table).
    */
   private static final int MAX_GAPLESS_TRIM_SIZE_SAMPLES = 3;
+
+  /** The magic signature for an Opus Identification header, as defined in RFC-7845. */
+  private static final byte[] opusMagic = Util.getUtf8Bytes("OpusHead");
 
   /**
    * Parses a trak atom (defined in 14496-12).
@@ -78,7 +79,7 @@ import java.util.List;
       DrmInitData drmInitData, boolean ignoreEditLists, boolean isQuickTime)
       throws ParserException {
     Atom.ContainerAtom mdia = trak.getContainerAtomOfType(Atom.TYPE_mdia);
-    int trackType = parseHdlr(mdia.getLeafAtomOfType(Atom.TYPE_hdlr).data);
+    int trackType = getTrackTypeForHdlr(parseHdlr(mdia.getLeafAtomOfType(Atom.TYPE_hdlr).data));
     if (trackType == C.TRACK_TYPE_UNKNOWN) {
       return null;
     }
@@ -120,7 +121,6 @@ import java.util.List;
    * @param stblAtom stbl (sample table) atom to decode.
    * @param gaplessInfoHolder Holder to populate with gapless playback information.
    * @return Sample table described by the stbl atom.
-   * @throws UnhandledEditListException Thrown if the edit list can't be applied.
    * @throws ParserException Thrown if the stbl atom can't be parsed.
    */
   public static TrackSampleTable parseStbl(
@@ -226,10 +226,19 @@ import java.util.List;
 
       for (int i = 0; i < sampleCount; i++) {
         // Advance to the next chunk if necessary.
-        while (remainingSamplesInChunk == 0) {
-          Assertions.checkState(chunkIterator.moveNext());
+        boolean chunkDataComplete = true;
+        while (remainingSamplesInChunk == 0 && (chunkDataComplete = chunkIterator.moveNext())) {
           offset = chunkIterator.offset;
           remainingSamplesInChunk = chunkIterator.numSamples;
+        }
+        if (!chunkDataComplete) {
+          Log.w(TAG, "Unexpected end of chunk data");
+          sampleCount = i;
+          offsets = Arrays.copyOf(offsets, sampleCount);
+          sizes = Arrays.copyOf(sizes, sampleCount);
+          timestamps = Arrays.copyOf(timestamps, sampleCount);
+          flags = Arrays.copyOf(flags, sampleCount);
+          break;
         }
 
         // Add on the timestamp offset if ctts is present.
@@ -284,23 +293,38 @@ import java.util.List;
       }
       duration = timestampTimeUnits + timestampOffset;
 
-      Assertions.checkArgument(remainingSamplesAtTimestampOffset == 0);
-      // Remove trailing ctts entries with 0-valued sample counts.
+      // If the stbl's child boxes are not consistent the container is malformed, but the stream may
+      // still be playable.
+      boolean isCttsValid = true;
       while (remainingTimestampOffsetChanges > 0) {
-        Assertions.checkArgument(ctts.readUnsignedIntToInt() == 0);
+        if (ctts.readUnsignedIntToInt() != 0) {
+          isCttsValid = false;
+          break;
+        }
         ctts.readInt(); // Ignore offset.
         remainingTimestampOffsetChanges--;
       }
-
-      // If the stbl's child boxes are not consistent the container is malformed, but the stream may
-      // still be playable.
-      if (remainingSynchronizationSamples != 0 || remainingSamplesAtTimestampDelta != 0
-          || remainingSamplesInChunk != 0 || remainingTimestampDeltaChanges != 0) {
-        Log.w(TAG, "Inconsistent stbl box for track " + track.id
-            + ": remainingSynchronizationSamples " + remainingSynchronizationSamples
-            + ", remainingSamplesAtTimestampDelta " + remainingSamplesAtTimestampDelta
-            + ", remainingSamplesInChunk " + remainingSamplesInChunk
-            + ", remainingTimestampDeltaChanges " + remainingTimestampDeltaChanges);
+      if (remainingSynchronizationSamples != 0
+          || remainingSamplesAtTimestampDelta != 0
+          || remainingSamplesInChunk != 0
+          || remainingTimestampDeltaChanges != 0
+          || remainingSamplesAtTimestampOffset != 0
+          || !isCttsValid) {
+        Log.w(
+            TAG,
+            "Inconsistent stbl box for track "
+                + track.id
+                + ": remainingSynchronizationSamples "
+                + remainingSynchronizationSamples
+                + ", remainingSamplesAtTimestampDelta "
+                + remainingSamplesAtTimestampDelta
+                + ", remainingSamplesInChunk "
+                + remainingSamplesInChunk
+                + ", remainingTimestampDeltaChanges "
+                + remainingTimestampDeltaChanges
+                + ", remainingSamplesAtTimestampOffset "
+                + remainingSamplesAtTimestampOffset
+                + (!isCttsValid ? ", ctts invalid" : ""));
       }
     } else {
       long[] chunkOffsetsBytes = new long[chunkIterator.length];
@@ -354,8 +378,11 @@ import java.util.List;
           gaplessInfoHolder.encoderDelay = (int) encoderDelay;
           gaplessInfoHolder.encoderPadding = (int) encoderPadding;
           Util.scaleLargeTimestampsInPlace(timestamps, C.MICROS_PER_SECOND, track.timescale);
+          long editedDurationUs =
+              Util.scaleLargeTimestamp(
+                  track.editListDurations[0], C.MICROS_PER_SECOND, track.movieTimescale);
           return new TrackSampleTable(
-              track, offsets, sizes, maximumSize, timestamps, flags, durationUs);
+              track, offsets, sizes, maximumSize, timestamps, flags, editedDurationUs);
         }
       }
     }
@@ -383,19 +410,29 @@ import java.util.List;
     int editedSampleCount = 0;
     int nextSampleIndex = 0;
     boolean copyMetadata = false;
+    int[] startIndices = new int[track.editListDurations.length];
+    int[] endIndices = new int[track.editListDurations.length];
     for (int i = 0; i < track.editListDurations.length; i++) {
       long editMediaTime = track.editListMediaTimes[i];
       if (editMediaTime != -1) {
         long editDuration =
             Util.scaleLargeTimestamp(
                 track.editListDurations[i], track.timescale, track.movieTimescale);
-        int startIndex = Util.binarySearchCeil(timestamps, editMediaTime, true, true);
-        int endIndex =
+        startIndices[i] = Util.binarySearchCeil(timestamps, editMediaTime, true, true);
+        endIndices[i] =
             Util.binarySearchCeil(
                 timestamps, editMediaTime + editDuration, omitClippedSample, false);
-        editedSampleCount += endIndex - startIndex;
-        copyMetadata |= nextSampleIndex != startIndex;
-        nextSampleIndex = endIndex;
+        while (startIndices[i] < endIndices[i]
+            && (flags[startIndices[i]] & C.BUFFER_FLAG_KEY_FRAME) == 0) {
+          // Applying the edit correctly would require prerolling from the previous sync sample. In
+          // the current implementation we advance to the next sync sample instead. Only other
+          // tracks (i.e. audio) will be rendered until the time of the first sync sample.
+          // See https://github.com/google/ExoPlayer/issues/1659.
+          startIndices[i]++;
+        }
+        editedSampleCount += endIndices[i] - startIndices[i];
+        copyMetadata |= nextSampleIndex != startIndices[i];
+        nextSampleIndex = endIndices[i];
       }
     }
     copyMetadata |= editedSampleCount != sampleCount;
@@ -410,39 +447,29 @@ import java.util.List;
     int sampleIndex = 0;
     for (int i = 0; i < track.editListDurations.length; i++) {
       long editMediaTime = track.editListMediaTimes[i];
-      long editDuration = track.editListDurations[i];
-      if (editMediaTime != -1) {
-        long endMediaTime =
-            editMediaTime
-                + Util.scaleLargeTimestamp(editDuration, track.timescale, track.movieTimescale);
-        int startIndex = Util.binarySearchCeil(timestamps, editMediaTime, true, true);
-        int endIndex = Util.binarySearchCeil(timestamps, endMediaTime, omitClippedSample, false);
-        if (copyMetadata) {
-          int count = endIndex - startIndex;
-          System.arraycopy(offsets, startIndex, editedOffsets, sampleIndex, count);
-          System.arraycopy(sizes, startIndex, editedSizes, sampleIndex, count);
-          System.arraycopy(flags, startIndex, editedFlags, sampleIndex, count);
-        }
-        if (startIndex < endIndex && (editedFlags[sampleIndex] & C.BUFFER_FLAG_KEY_FRAME) == 0) {
-          // Applying the edit list would require prerolling from a sync sample.
-          Log.w(TAG, "Ignoring edit list: edit does not start with a sync sample.");
-          throw new UnhandledEditListException();
-        }
-        for (int j = startIndex; j < endIndex; j++) {
-          long ptsUs = Util.scaleLargeTimestamp(pts, C.MICROS_PER_SECOND, track.movieTimescale);
-          long timeInSegmentUs =
-              Util.scaleLargeTimestamp(
-                  timestamps[j] - editMediaTime, C.MICROS_PER_SECOND, track.timescale);
-          editedTimestamps[sampleIndex] = ptsUs + timeInSegmentUs;
-          if (copyMetadata && editedSizes[sampleIndex] > editedMaximumSize) {
-            editedMaximumSize = sizes[j];
-          }
-          sampleIndex++;
-        }
+      int startIndex = startIndices[i];
+      int endIndex = endIndices[i];
+      if (copyMetadata) {
+        int count = endIndex - startIndex;
+        System.arraycopy(offsets, startIndex, editedOffsets, sampleIndex, count);
+        System.arraycopy(sizes, startIndex, editedSizes, sampleIndex, count);
+        System.arraycopy(flags, startIndex, editedFlags, sampleIndex, count);
       }
-      pts += editDuration;
+      for (int j = startIndex; j < endIndex; j++) {
+        long ptsUs = Util.scaleLargeTimestamp(pts, C.MICROS_PER_SECOND, track.movieTimescale);
+        long timeInSegmentUs =
+            Util.scaleLargeTimestamp(
+                timestamps[j] - editMediaTime, C.MICROS_PER_SECOND, track.timescale);
+        editedTimestamps[sampleIndex] = ptsUs + timeInSegmentUs;
+        if (copyMetadata && editedSizes[sampleIndex] > editedMaximumSize) {
+          editedMaximumSize = sizes[j];
+        }
+        sampleIndex++;
+      }
+      pts += track.editListDurations[i];
     }
-    long editedDurationUs = Util.scaleLargeTimestamp(pts, C.MICROS_PER_SECOND, track.timescale);
+    long editedDurationUs =
+        Util.scaleLargeTimestamp(pts, C.MICROS_PER_SECOND, track.movieTimescale);
     return new TrackSampleTable(
         track,
         editedOffsets,
@@ -460,6 +487,7 @@ import java.util.List;
    * @param isQuickTime True for QuickTime media. False otherwise.
    * @return Parsed metadata, or null.
    */
+  @Nullable
   public static Metadata parseUdta(Atom.LeafAtom udtaAtom, boolean isQuickTime) {
     if (isQuickTime) {
       // Meta boxes are regular boxes rather than full boxes in QuickTime. For now, don't try and
@@ -474,14 +502,69 @@ import java.util.List;
       int atomType = udtaData.readInt();
       if (atomType == Atom.TYPE_meta) {
         udtaData.setPosition(atomPosition);
-        return parseMetaAtom(udtaData, atomPosition + atomSize);
+        return parseUdtaMeta(udtaData, atomPosition + atomSize);
       }
-      udtaData.skipBytes(atomSize - Atom.HEADER_SIZE);
+      udtaData.setPosition(atomPosition + atomSize);
     }
     return null;
   }
 
-  private static Metadata parseMetaAtom(ParsableByteArray meta, int limit) {
+  /**
+   * Parses a metadata meta atom if it contains metadata with handler 'mdta'.
+   *
+   * @param meta The metadata atom to decode.
+   * @return Parsed metadata, or null.
+   */
+  @Nullable
+  public static Metadata parseMdtaFromMeta(Atom.ContainerAtom meta) {
+    Atom.LeafAtom hdlrAtom = meta.getLeafAtomOfType(Atom.TYPE_hdlr);
+    Atom.LeafAtom keysAtom = meta.getLeafAtomOfType(Atom.TYPE_keys);
+    Atom.LeafAtom ilstAtom = meta.getLeafAtomOfType(Atom.TYPE_ilst);
+    if (hdlrAtom == null
+        || keysAtom == null
+        || ilstAtom == null
+        || AtomParsers.parseHdlr(hdlrAtom.data) != TYPE_mdta) {
+      // There isn't enough information to parse the metadata, or the handler type is unexpected.
+      return null;
+    }
+
+    // Parse metadata keys.
+    ParsableByteArray keys = keysAtom.data;
+    keys.setPosition(Atom.FULL_HEADER_SIZE);
+    int entryCount = keys.readInt();
+    String[] keyNames = new String[entryCount];
+    for (int i = 0; i < entryCount; i++) {
+      int entrySize = keys.readInt();
+      keys.skipBytes(4); // keyNamespace
+      int keySize = entrySize - 8;
+      keyNames[i] = keys.readString(keySize);
+    }
+
+    // Parse metadata items.
+    ParsableByteArray ilst = ilstAtom.data;
+    ilst.setPosition(Atom.HEADER_SIZE);
+    ArrayList<Metadata.Entry> entries = new ArrayList<>();
+    while (ilst.bytesLeft() > Atom.HEADER_SIZE) {
+      int atomPosition = ilst.getPosition();
+      int atomSize = ilst.readInt();
+      int keyIndex = ilst.readInt() - 1;
+      if (keyIndex >= 0 && keyIndex < keyNames.length) {
+        String key = keyNames[keyIndex];
+        Metadata.Entry entry =
+            MetadataUtil.parseMdtaMetadataEntryFromIlst(ilst, atomPosition + atomSize, key);
+        if (entry != null) {
+          entries.add(entry);
+        }
+      } else {
+        Log.w(TAG, "Skipped metadata with unknown key index: " + keyIndex);
+      }
+      ilst.setPosition(atomPosition + atomSize);
+    }
+    return entries.isEmpty() ? null : new Metadata(entries);
+  }
+
+  @Nullable
+  private static Metadata parseUdtaMeta(ParsableByteArray meta, int limit) {
     meta.skipBytes(Atom.FULL_HEADER_SIZE);
     while (meta.getPosition() < limit) {
       int atomPosition = meta.getPosition();
@@ -491,11 +574,12 @@ import java.util.List;
         meta.setPosition(atomPosition);
         return parseIlst(meta, atomPosition + atomSize);
       }
-      meta.skipBytes(atomSize - Atom.HEADER_SIZE);
+      meta.setPosition(atomPosition + atomSize);
     }
     return null;
   }
 
+  @Nullable
   private static Metadata parseIlst(ParsableByteArray ilst, int limit) {
     ilst.skipBytes(Atom.HEADER_SIZE);
     ArrayList<Metadata.Entry> entries = new ArrayList<>();
@@ -585,19 +669,22 @@ import java.util.List;
    * Parses an hdlr atom.
    *
    * @param hdlr The hdlr atom to decode.
-   * @return The track type.
+   * @return The handler value.
    */
   private static int parseHdlr(ParsableByteArray hdlr) {
     hdlr.setPosition(Atom.FULL_HEADER_SIZE + 4);
-    int trackType = hdlr.readInt();
-    if (trackType == TYPE_soun) {
+    return hdlr.readInt();
+  }
+
+  /** Returns the track type for a given handler value. */
+  private static int getTrackTypeForHdlr(int hdlr) {
+    if (hdlr == TYPE_soun) {
       return C.TRACK_TYPE_AUDIO;
-    } else if (trackType == TYPE_vide) {
+    } else if (hdlr == TYPE_vide) {
       return C.TRACK_TYPE_VIDEO;
-    } else if (trackType == TYPE_text || trackType == TYPE_sbtl || trackType == TYPE_subt
-        || trackType == TYPE_clcp) {
+    } else if (hdlr == TYPE_text || hdlr == TYPE_sbtl || hdlr == TYPE_subt || hdlr == TYPE_clcp) {
       return C.TRACK_TYPE_TEXT;
-    } else if (trackType == TYPE_meta) {
+    } else if (hdlr == TYPE_meta) {
       return C.TRACK_TYPE_METADATA;
     } else {
       return C.TRACK_TYPE_UNKNOWN;
@@ -619,9 +706,11 @@ import java.util.List;
     long timescale = mdhd.readUnsignedInt();
     mdhd.skipBytes(version == 0 ? 4 : 8);
     int languageCode = mdhd.readUnsignedShort();
-    String language = "" + (char) (((languageCode >> 10) & 0x1F) + 0x60)
-        + (char) (((languageCode >> 5) & 0x1F) + 0x60)
-        + (char) (((languageCode) & 0x1F) + 0x60);
+    String language =
+        ""
+            + (char) (((languageCode >> 10) & 0x1F) + 0x60)
+            + (char) (((languageCode >> 5) & 0x1F) + 0x60)
+            + (char) ((languageCode & 0x1F) + 0x60);
     return Pair.create(timescale, language);
   }
 
@@ -653,13 +742,24 @@ import java.util.List;
           || childAtomType == Atom.TYPE_vp09) {
         parseVideoSampleEntry(stsd, childAtomType, childStartPosition, childAtomSize, trackId,
             rotationDegrees, drmInitData, out, i);
-      } else if (childAtomType == Atom.TYPE_mp4a || childAtomType == Atom.TYPE_enca
-          || childAtomType == Atom.TYPE_ac_3 || childAtomType == Atom.TYPE_ec_3
-          || childAtomType == Atom.TYPE_dtsc || childAtomType == Atom.TYPE_dtse
-          || childAtomType == Atom.TYPE_dtsh || childAtomType == Atom.TYPE_dtsl
-          || childAtomType == Atom.TYPE_samr || childAtomType == Atom.TYPE_sawb
-          || childAtomType == Atom.TYPE_lpcm || childAtomType == Atom.TYPE_sowt
-          || childAtomType == Atom.TYPE__mp3 || childAtomType == Atom.TYPE_alac) {
+      } else if (childAtomType == Atom.TYPE_mp4a
+          || childAtomType == Atom.TYPE_enca
+          || childAtomType == Atom.TYPE_ac_3
+          || childAtomType == Atom.TYPE_ec_3
+          || childAtomType == Atom.TYPE_dtsc
+          || childAtomType == Atom.TYPE_dtse
+          || childAtomType == Atom.TYPE_dtsh
+          || childAtomType == Atom.TYPE_dtsl
+          || childAtomType == Atom.TYPE_samr
+          || childAtomType == Atom.TYPE_sawb
+          || childAtomType == Atom.TYPE_lpcm
+          || childAtomType == Atom.TYPE_sowt
+          || childAtomType == Atom.TYPE__mp3
+          || childAtomType == Atom.TYPE_alac
+          || childAtomType == Atom.TYPE_alaw
+          || childAtomType == Atom.TYPE_ulaw
+          || childAtomType == Atom.TYPE_Opus
+          || childAtomType == Atom.TYPE_fLaC) {
         parseAudioSampleEntry(stsd, childAtomType, childStartPosition, childAtomSize, trackId,
             language, isQuickTime, drmInitData, out, i);
       } else if (childAtomType == Atom.TYPE_TTML || childAtomType == Atom.TYPE_tx3g
@@ -952,6 +1052,14 @@ import java.util.List;
       mimeType = MimeTypes.AUDIO_MPEG;
     } else if (atomType == Atom.TYPE_alac) {
       mimeType = MimeTypes.AUDIO_ALAC;
+    } else if (atomType == Atom.TYPE_alaw) {
+      mimeType = MimeTypes.AUDIO_ALAW;
+    } else if (atomType == Atom.TYPE_ulaw) {
+      mimeType = MimeTypes.AUDIO_MLAW;
+    } else if (atomType == Atom.TYPE_Opus) {
+      mimeType = MimeTypes.AUDIO_OPUS;
+    } else if (atomType == Atom.TYPE_fLaC) {
+      mimeType = MimeTypes.AUDIO_FLAC;
     }
 
     byte[] initializationData = null;
@@ -992,7 +1100,20 @@ import java.util.List;
       } else if (childAtomType == Atom.TYPE_alac) {
         initializationData = new byte[childAtomSize];
         parent.setPosition(childPosition);
-        parent.readBytes(initializationData, 0, childAtomSize);
+        parent.readBytes(initializationData, /* offset= */ 0, childAtomSize);
+      } else if (childAtomType == Atom.TYPE_dOps) {
+        // Build an Opus Identification Header (defined in RFC-7845) by concatenating the Opus Magic
+        // Signature and the body of the dOps atom.
+        int childAtomBodySize = childAtomSize - Atom.HEADER_SIZE;
+        initializationData = new byte[opusMagic.length + childAtomBodySize];
+        System.arraycopy(opusMagic, 0, initializationData, 0, opusMagic.length);
+        parent.setPosition(childPosition + Atom.HEADER_SIZE);
+        parent.readBytes(initializationData, opusMagic.length, childAtomBodySize);
+      } else if (childAtomSize == Atom.TYPE_dfLa) {
+        int childAtomBodySize = childAtomSize - Atom.FULL_HEADER_SIZE;
+        initializationData = new byte[childAtomBodySize];
+        parent.setPosition(childPosition + Atom.FULL_HEADER_SIZE);
+        parent.readBytes(initializationData, /* offset= */ 0, childAtomBodySize);
       }
       childPosition += childAtomSize;
     }

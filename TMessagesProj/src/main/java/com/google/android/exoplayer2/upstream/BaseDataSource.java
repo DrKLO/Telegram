@@ -15,8 +15,9 @@
  */
 package com.google.android.exoplayer2.upstream;
 
+import static com.google.android.exoplayer2.util.Util.castNonNull;
+
 import android.support.annotation.Nullable;
-import com.google.android.exoplayer2.util.Assertions;
 import java.util.ArrayList;
 
 /**
@@ -31,6 +32,7 @@ public abstract class BaseDataSource implements DataSource {
   private final boolean isNetwork;
   private final ArrayList<TransferListener> listeners;
 
+  private int listenerCount;
   private @Nullable DataSpec dataSpec;
 
   /**
@@ -45,7 +47,10 @@ public abstract class BaseDataSource implements DataSource {
 
   @Override
   public final void addTransferListener(TransferListener transferListener) {
-    listeners.add(transferListener);
+    if (!listeners.contains(transferListener)) {
+      listeners.add(transferListener);
+      listenerCount++;
+    }
   }
 
   /**
@@ -54,7 +59,7 @@ public abstract class BaseDataSource implements DataSource {
    * @param dataSpec {@link DataSpec} describing the data for initializing transfer.
    */
   protected final void transferInitializing(DataSpec dataSpec) {
-    for (int i = 0; i < listeners.size(); i++) {
+    for (int i = 0; i < listenerCount; i++) {
       listeners.get(i).onTransferInitializing(/* source= */ this, dataSpec, isNetwork);
     }
   }
@@ -66,7 +71,7 @@ public abstract class BaseDataSource implements DataSource {
    */
   protected final void transferStarted(DataSpec dataSpec) {
     this.dataSpec = dataSpec;
-    for (int i = 0; i < listeners.size(); i++) {
+    for (int i = 0; i < listenerCount; i++) {
       listeners.get(i).onTransferStart(/* source= */ this, dataSpec, isNetwork);
     }
   }
@@ -78,8 +83,8 @@ public abstract class BaseDataSource implements DataSource {
    *     (or if the first call, since the transfer was started).
    */
   protected final void bytesTransferred(int bytesTransferred) {
-    DataSpec dataSpec = Assertions.checkNotNull(this.dataSpec);
-    for (int i = 0; i < listeners.size(); i++) {
+    DataSpec dataSpec = castNonNull(this.dataSpec);
+    for (int i = 0; i < listenerCount; i++) {
       listeners
           .get(i)
           .onBytesTransferred(/* source= */ this, dataSpec, isNetwork, bytesTransferred);
@@ -88,8 +93,8 @@ public abstract class BaseDataSource implements DataSource {
 
   /** Notifies listeners that a transfer ended. */
   protected final void transferEnded() {
-    DataSpec dataSpec = Assertions.checkNotNull(this.dataSpec);
-    for (int i = 0; i < listeners.size(); i++) {
+    DataSpec dataSpec = castNonNull(this.dataSpec);
+    for (int i = 0; i < listenerCount; i++) {
       listeners.get(i).onTransferEnd(/* source= */ this, dataSpec, isNetwork);
     }
     this.dataSpec = null;

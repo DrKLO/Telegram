@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2;
 
+import android.support.annotation.CheckResult;
 import android.support.annotation.Nullable;
 import com.google.android.exoplayer2.source.MediaSource.MediaPeriodId;
 import com.google.android.exoplayer2.source.TrackGroupArray;
@@ -29,7 +30,8 @@ import com.google.android.exoplayer2.trackselection.TrackSelectorResult;
    * Dummy media period id used while the timeline is empty and no period id is specified. This id
    * is used when playback infos are created with {@link #createDummy(long, TrackSelectorResult)}.
    */
-  public static final MediaPeriodId DUMMY_MEDIA_PERIOD_ID = new MediaPeriodId(/* periodIndex= */ 0);
+  private static final MediaPeriodId DUMMY_MEDIA_PERIOD_ID =
+      new MediaPeriodId(/* periodUid= */ new Object());
 
   /** The current {@link Timeline}. */
   public final Timeline timeline;
@@ -39,7 +41,8 @@ import com.google.android.exoplayer2.trackselection.TrackSelectorResult;
   public final MediaPeriodId periodId;
   /**
    * The start position at which playback started in {@link #periodId} relative to the start of the
-   * associated period in the {@link #timeline}, in microseconds.
+   * associated period in the {@link #timeline}, in microseconds. Note that this value changes for
+   * each position discontinuity.
    */
   public final long startPositionUs;
   /**
@@ -91,7 +94,7 @@ import com.google.android.exoplayer2.trackselection.TrackSelectorResult;
         /* manifest= */ null,
         DUMMY_MEDIA_PERIOD_ID,
         startPositionUs,
-        /* contentPositionUs =*/ C.TIME_UNSET,
+        /* contentPositionUs= */ C.TIME_UNSET,
         Player.STATE_IDLE,
         /* isLoading= */ false,
         TrackGroupArray.EMPTY,
@@ -102,6 +105,23 @@ import com.google.android.exoplayer2.trackselection.TrackSelectorResult;
         startPositionUs);
   }
 
+  /**
+   * Create playback info.
+   *
+   * @param timeline See {@link #timeline}.
+   * @param manifest See {@link #manifest}.
+   * @param periodId See {@link #periodId}.
+   * @param startPositionUs See {@link #startPositionUs}.
+   * @param contentPositionUs See {@link #contentPositionUs}.
+   * @param playbackState See {@link #playbackState}.
+   * @param isLoading See {@link #isLoading}.
+   * @param trackGroups See {@link #trackGroups}.
+   * @param trackSelectorResult See {@link #trackSelectorResult}.
+   * @param loadingMediaPeriodId See {@link #loadingMediaPeriodId}.
+   * @param bufferedPositionUs See {@link #bufferedPositionUs}.
+   * @param totalBufferedDurationUs See {@link #totalBufferedDurationUs}.
+   * @param positionUs See {@link #positionUs}.
+   */
   public PlaybackInfo(
       Timeline timeline,
       @Nullable Object manifest,
@@ -131,7 +151,35 @@ import com.google.android.exoplayer2.trackselection.TrackSelectorResult;
     this.positionUs = positionUs;
   }
 
-  public PlaybackInfo fromNewPosition(
+  /**
+   * Returns dummy media period id for the first-to-be-played period of the current timeline.
+   *
+   * @param shuffleModeEnabled Whether shuffle mode is enabled.
+   * @param window A writable {@link Timeline.Window}.
+   * @return A dummy media period id for the first-to-be-played period of the current timeline.
+   */
+  public MediaPeriodId getDummyFirstMediaPeriodId(
+      boolean shuffleModeEnabled, Timeline.Window window) {
+    if (timeline.isEmpty()) {
+      return DUMMY_MEDIA_PERIOD_ID;
+    }
+    int firstPeriodIndex =
+        timeline.getWindow(timeline.getFirstWindowIndex(shuffleModeEnabled), window)
+            .firstPeriodIndex;
+    return new MediaPeriodId(timeline.getUidOfPeriod(firstPeriodIndex));
+  }
+
+  /**
+   * Copies playback info and resets playing and loading position.
+   *
+   * @param periodId New playing and loading {@link MediaPeriodId}.
+   * @param startPositionUs New start position. See {@link #startPositionUs}.
+   * @param contentPositionUs New content position. See {@link #contentPositionUs}. Value is ignored
+   *     if {@code periodId.isAd()} is true.
+   * @return Copied playback info with reset position.
+   */
+  @CheckResult
+  public PlaybackInfo resetToNewPosition(
       MediaPeriodId periodId, long startPositionUs, long contentPositionUs) {
     return new PlaybackInfo(
         timeline,
@@ -149,13 +197,28 @@ import com.google.android.exoplayer2.trackselection.TrackSelectorResult;
         startPositionUs);
   }
 
-  public PlaybackInfo copyWithPeriodIndex(int periodIndex) {
+  /**
+   * Copied playback info with new playing position.
+   *
+   * @param periodId New playing media period. See {@link #periodId}.
+   * @param positionUs New position. See {@link #positionUs}.
+   * @param contentPositionUs New content position. See {@link #contentPositionUs}. Value is ignored
+   *     if {@code periodId.isAd()} is true.
+   * @param totalBufferedDurationUs New buffered duration. See {@link #totalBufferedDurationUs}.
+   * @return Copied playback info with new playing position.
+   */
+  @CheckResult
+  public PlaybackInfo copyWithNewPosition(
+      MediaPeriodId periodId,
+      long positionUs,
+      long contentPositionUs,
+      long totalBufferedDurationUs) {
     return new PlaybackInfo(
         timeline,
         manifest,
-        periodId.copyWithPeriodIndex(periodIndex),
-        startPositionUs,
-        contentPositionUs,
+        periodId,
+        positionUs,
+        periodId.isAd() ? contentPositionUs : C.TIME_UNSET,
         playbackState,
         isLoading,
         trackGroups,
@@ -166,6 +229,14 @@ import com.google.android.exoplayer2.trackselection.TrackSelectorResult;
         positionUs);
   }
 
+  /**
+   * Copies playback info with new timeline and manifest.
+   *
+   * @param timeline New timeline. See {@link #timeline}.
+   * @param manifest New manifest. See {@link #manifest}.
+   * @return Copied playback info with new timeline and manifest.
+   */
+  @CheckResult
   public PlaybackInfo copyWithTimeline(Timeline timeline, Object manifest) {
     return new PlaybackInfo(
         timeline,
@@ -183,6 +254,13 @@ import com.google.android.exoplayer2.trackselection.TrackSelectorResult;
         positionUs);
   }
 
+  /**
+   * Copies playback info with new playback state.
+   *
+   * @param playbackState New playback state. See {@link #playbackState}.
+   * @return Copied playback info with new playback state.
+   */
+  @CheckResult
   public PlaybackInfo copyWithPlaybackState(int playbackState) {
     return new PlaybackInfo(
         timeline,
@@ -200,6 +278,13 @@ import com.google.android.exoplayer2.trackselection.TrackSelectorResult;
         positionUs);
   }
 
+  /**
+   * Copies playback info with new loading state.
+   *
+   * @param isLoading New loading state. See {@link #isLoading}.
+   * @return Copied playback info with new loading state.
+   */
+  @CheckResult
   public PlaybackInfo copyWithIsLoading(boolean isLoading) {
     return new PlaybackInfo(
         timeline,
@@ -217,6 +302,14 @@ import com.google.android.exoplayer2.trackselection.TrackSelectorResult;
         positionUs);
   }
 
+  /**
+   * Copies playback info with new track information.
+   *
+   * @param trackGroups New track groups. See {@link #trackGroups}.
+   * @param trackSelectorResult New track selector result. See {@link #trackSelectorResult}.
+   * @return Copied playback info with new track information.
+   */
+  @CheckResult
   public PlaybackInfo copyWithTrackInfo(
       TrackGroupArray trackGroups, TrackSelectorResult trackSelectorResult) {
     return new PlaybackInfo(
@@ -235,6 +328,13 @@ import com.google.android.exoplayer2.trackselection.TrackSelectorResult;
         positionUs);
   }
 
+  /**
+   * Copies playback info with new loading media period.
+   *
+   * @param loadingMediaPeriodId New loading media period id. See {@link #loadingMediaPeriodId}.
+   * @return Copied playback info with new loading media period.
+   */
+  @CheckResult
   public PlaybackInfo copyWithLoadingMediaPeriodId(MediaPeriodId loadingMediaPeriodId) {
     return new PlaybackInfo(
         timeline,

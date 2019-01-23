@@ -60,7 +60,7 @@ opus_int32 silk_NLSF_encode(                                    /* O    Returns 
     const opus_int16 *pCB_Wght_Q9;
     SAVE_STACK;
 
-    silk_assert( signalType >= 0 && signalType <= 2 );
+    celt_assert( signalType >= 0 && signalType <= 2 );
     silk_assert( NLSF_mu_Q20 <= 32767 && NLSF_mu_Q20 >= 0 );
 
     /* NLSF stabilization */

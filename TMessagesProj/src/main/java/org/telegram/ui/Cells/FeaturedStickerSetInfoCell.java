@@ -1,18 +1,16 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.ColorFilter;
 import android.graphics.Paint;
-import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.SpannableStringBuilder;
@@ -51,44 +49,10 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
     private int angle;
     private boolean isInstalled;
     private boolean hasOnClick;
+    private boolean isUnread;
 
     private int currentAccount = UserConfig.selectedAccount;
-
-    Drawable drawable = new Drawable() {
-
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-        @Override
-        public void draw(Canvas canvas) {
-            paint.setColor(Theme.getColor(Theme.key_featuredStickers_unread));
-            canvas.drawCircle(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(4), paint);
-        }
-
-        @Override
-        public void setAlpha(int alpha) {
-
-        }
-
-        @Override
-        public void setColorFilter(ColorFilter colorFilter) {
-
-        }
-
-        @Override
-        public int getOpacity() {
-            return PixelFormat.TRANSPARENT;
-        }
-
-        @Override
-        public int getIntrinsicWidth() {
-            return AndroidUtilities.dp(12);
-        }
-
-        @Override
-        public int getIntrinsicHeight() {
-            return AndroidUtilities.dp(26);
-        }
-    };
+    private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public FeaturedStickerSetInfoCell(Context context, int left) {
         super(context);
@@ -108,14 +72,14 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         nameTextView.setSingleLine(true);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, left, 8, 100, 0));
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, left, 8, 40, 0));
 
         infoTextView = new TextView(context);
         infoTextView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelTrendingDescription));
         infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         infoTextView.setEllipsize(TextUtils.TruncateAt.END);
         infoTextView.setSingleLine(true);
-        addView(infoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, left, 30, 100, 0));
+        addView(infoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, left, 30, 100, 0));
 
         addButton = new TextView(context) {
             @Override
@@ -159,11 +123,15 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, 16, 14, 0));
+
+        setWillNotDraw(false);
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(60), MeasureSpec.EXACTLY));
+
+        measureChildWithMargins(nameTextView, widthMeasureSpec, addButton.getMeasuredWidth(), heightMeasureSpec, 0);
     }
 
     public void setAddOnClickListener(OnClickListener onClickListener) {
@@ -189,11 +157,7 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
             nameTextView.setText(stickerSet.set.title);
         }
         infoTextView.setText(LocaleController.formatPluralString("Stickers", stickerSet.set.count));
-        if (unread) {
-            nameTextView.setCompoundDrawablesWithIntrinsicBounds(null, null, drawable, null);
-        } else {
-            nameTextView.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
-        }
+        isUnread = unread;
         if (hasOnClick) {
             addButton.setVisibility(VISIBLE);
             if (isInstalled = DataQuery.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id)) {
@@ -236,5 +200,13 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
 
     public TLRPC.StickerSetCovered getStickerSet() {
         return set;
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        if (isUnread) {
+            paint.setColor(Theme.getColor(Theme.key_featuredStickers_unread));
+            canvas.drawCircle(nameTextView.getRight() + AndroidUtilities.dp(12), AndroidUtilities.dp(20), AndroidUtilities.dp(4), paint);
+        }
     }
 }

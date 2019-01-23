@@ -24,6 +24,8 @@ import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A {@link Loadable} for objects that can be parsed from binary data using a {@link Parser}.
@@ -68,6 +70,24 @@ public final class ParsingLoadable<T> implements Loadable {
   }
 
   /**
+   * Loads a single parsable object.
+   *
+   * @param dataSource The {@link DataSource} through which the object should be read.
+   * @param parser The {@link Parser} to parse the object from the response.
+   * @param dataSpec The {@link DataSpec} of the object to read.
+   * @param type The type of the data. One of the {@link C}{@code DATA_TYPE_*} constants.
+   * @return The parsed object
+   * @throws IOException Thrown if there is an error while loading or parsing.
+   */
+  public static <T> T load(
+      DataSource dataSource, Parser<? extends T> parser, DataSpec dataSpec, int type)
+      throws IOException {
+    ParsingLoadable<T> loadable = new ParsingLoadable<>(dataSource, dataSpec, type, parser);
+    loadable.load();
+    return Assertions.checkNotNull(loadable.getResult());
+  }
+
+  /**
    * The {@link DataSpec} that defines the data to be loaded.
    */
   public final DataSpec dataSpec;
@@ -89,11 +109,7 @@ public final class ParsingLoadable<T> implements Loadable {
    * @param parser Parses the object from the response.
    */
   public ParsingLoadable(DataSource dataSource, Uri uri, int type, Parser<? extends T> parser) {
-    this(
-        dataSource,
-        new DataSpec(uri, DataSpec.FLAG_ALLOW_GZIP | DataSpec.FLAG_ALLOW_CACHING_UNKNOWN_LENGTH),
-        type,
-        parser);
+    this(dataSource, new DataSpec(uri, DataSpec.FLAG_ALLOW_GZIP), type, parser);
   }
 
   /**
@@ -130,6 +146,14 @@ public final class ParsingLoadable<T> implements Loadable {
    */
   public Uri getUri() {
     return dataSource.getLastOpenedUri();
+  }
+
+  /**
+   * Returns the response headers associated with the load. Must only be called after the load
+   * completed, failed, or was canceled.
+   */
+  public Map<String, List<String>> getResponseHeaders() {
+    return dataSource.getLastResponseHeaders();
   }
 
   @Override

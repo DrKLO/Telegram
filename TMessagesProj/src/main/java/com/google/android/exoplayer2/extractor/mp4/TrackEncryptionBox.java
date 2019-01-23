@@ -16,10 +16,10 @@
 package com.google.android.exoplayer2.extractor.mp4;
 
 import android.support.annotation.Nullable;
-import android.util.Log;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.extractor.TrackOutput;
 import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.Log;
 
 /**
  * Encapsulates information parsed from a track encryption (tenc) box or sample group description 
@@ -45,33 +45,36 @@ public final class TrackEncryptionBox {
    */
   public final TrackOutput.CryptoData cryptoData;
 
-  /**
-   * The initialization vector size in bytes for the samples in the corresponding sample group.
-   */
-  public final int initializationVectorSize;
+  /** The initialization vector size in bytes for the samples in the corresponding sample group. */
+  public final int perSampleIvSize;
 
   /**
-   * If {@link #initializationVectorSize} is 0, holds the default initialization vector as defined
-   * in the track encryption box or sample group description box. Null otherwise.
+   * If {@link #perSampleIvSize} is 0, holds the default initialization vector as defined in the
+   * track encryption box or sample group description box. Null otherwise.
    */
   public final byte[] defaultInitializationVector;
 
   /**
    * @param isEncrypted See {@link #isEncrypted}.
    * @param schemeType See {@link #schemeType}.
-   * @param initializationVectorSize See {@link #initializationVectorSize}.
+   * @param perSampleIvSize See {@link #perSampleIvSize}.
    * @param keyId See {@link TrackOutput.CryptoData#encryptionKey}.
    * @param defaultEncryptedBlocks See {@link TrackOutput.CryptoData#encryptedBlocks}.
    * @param defaultClearBlocks See {@link TrackOutput.CryptoData#clearBlocks}.
    * @param defaultInitializationVector See {@link #defaultInitializationVector}.
    */
-  public TrackEncryptionBox(boolean isEncrypted, @Nullable String schemeType,
-      int initializationVectorSize, byte[] keyId, int defaultEncryptedBlocks,
-      int defaultClearBlocks, @Nullable byte[] defaultInitializationVector) {
-    Assertions.checkArgument(initializationVectorSize == 0 ^ defaultInitializationVector == null);
+  public TrackEncryptionBox(
+      boolean isEncrypted,
+      @Nullable String schemeType,
+      int perSampleIvSize,
+      byte[] keyId,
+      int defaultEncryptedBlocks,
+      int defaultClearBlocks,
+      @Nullable byte[] defaultInitializationVector) {
+    Assertions.checkArgument(perSampleIvSize == 0 ^ defaultInitializationVector == null);
     this.isEncrypted = isEncrypted;
     this.schemeType = schemeType;
-    this.initializationVectorSize = initializationVectorSize;
+    this.perSampleIvSize = perSampleIvSize;
     this.defaultInitializationVector = defaultInitializationVector;
     cryptoData = new TrackOutput.CryptoData(schemeToCryptoMode(schemeType), keyId,
         defaultEncryptedBlocks, defaultClearBlocks);

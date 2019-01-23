@@ -103,7 +103,17 @@ public final class DefaultHttpDataSourceFactory extends BaseFactory {
   @Override
   protected DefaultHttpDataSource createDataSourceInternal(
       HttpDataSource.RequestProperties defaultRequestProperties) {
-    return new DefaultHttpDataSource(userAgent, null, listener, connectTimeoutMillis,
-        readTimeoutMillis, allowCrossProtocolRedirects, defaultRequestProperties);
+    DefaultHttpDataSource dataSource =
+        new DefaultHttpDataSource(
+            userAgent,
+            /* contentTypePredicate= */ null,
+            connectTimeoutMillis,
+            readTimeoutMillis,
+            allowCrossProtocolRedirects,
+            defaultRequestProperties);
+    if (listener != null) {
+      dataSource.addTransferListener(listener);
+    }
+    return dataSource;
   }
 }

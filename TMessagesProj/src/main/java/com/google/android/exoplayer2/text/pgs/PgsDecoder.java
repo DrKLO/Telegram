@@ -25,7 +25,6 @@ import com.google.android.exoplayer2.util.Util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
 /** A {@link SimpleSubtitleDecoder} for PGS subtitles. */
@@ -39,25 +38,22 @@ public final class PgsDecoder extends SimpleSubtitleDecoder {
   private static final byte INFLATE_HEADER = 0x78;
 
   private final ParsableByteArray buffer;
+  private final ParsableByteArray inflatedBuffer;
   private final CueBuilder cueBuilder;
 
   private Inflater inflater;
-  private byte[] inflatedData;
-  private int inflatedDataSize;
 
   public PgsDecoder() {
     super("PgsDecoder");
     buffer = new ParsableByteArray();
+    inflatedBuffer = new ParsableByteArray();
     cueBuilder = new CueBuilder();
   }
 
   @Override
   protected Subtitle decode(byte[] data, int size, boolean reset) throws SubtitleDecoderException {
-    if (maybeInflateData(data, size)) {
-      buffer.reset(inflatedData, inflatedDataSize);
-    } else {
-      buffer.reset(data, size);
-    }
+    buffer.reset(data, size);
+    maybeInflateData(buffer);
     cueBuilder.reset();
     ArrayList<Cue> cues = new ArrayList<>();
     while (buffer.bytesLeft() >= 3) {
@@ -69,31 +65,14 @@ public final class PgsDecoder extends SimpleSubtitleDecoder {
     return new PgsSubtitle(Collections.unmodifiableList(cues));
   }
 
-  private boolean maybeInflateData(byte[] data, int size) {
-    if (size == 0 || data[0] != INFLATE_HEADER) {
-      return false;
-    }
-    if (inflater == null) {
-      inflater = new Inflater();
-      inflatedData = new byte[size];
-    }
-    inflatedDataSize = 0;
-    inflater.setInput(data, 0, size);
-    try {
-      while (!inflater.finished() && !inflater.needsDictionary() && !inflater.needsInput()) {
-        if (inflatedDataSize == inflatedData.length) {
-          inflatedData = Arrays.copyOf(inflatedData, inflatedData.length * 2);
-        }
-        inflatedDataSize +=
-            inflater.inflate(
-                inflatedData, inflatedDataSize, inflatedData.length - inflatedDataSize);
+  private void maybeInflateData(ParsableByteArray buffer) {
+    if (buffer.bytesLeft() > 0 && buffer.peekUnsignedByte() == INFLATE_HEADER) {
+      if (inflater == null) {
+        inflater = new Inflater();
       }
-      return inflater.finished();
-    } catch (DataFormatException e) {
-      // Assume data is not compressed.
-      return false;
-    } finally {
-      inflater.reset();
+      if (Util.inflate(buffer, inflatedBuffer, inflater)) {
+        buffer.reset(inflatedBuffer.data, inflatedBuffer.limit());
+      } // else assume data is not compressed.
     }
   }
 

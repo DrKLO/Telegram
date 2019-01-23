@@ -17,47 +17,50 @@ package com.google.android.exoplayer2.offline;
 
 import android.net.Uri;
 import android.support.annotation.Nullable;
+import com.google.android.exoplayer2.Renderer;
 import com.google.android.exoplayer2.source.TrackGroupArray;
-import java.util.List;
 
 /** A {@link DownloadHelper} for progressive streams. */
-public final class ProgressiveDownloadHelper extends DownloadHelper {
+public final class ProgressiveDownloadHelper extends DownloadHelper<Void> {
 
-  private final Uri uri;
-  private final @Nullable String customCacheKey;
-
+  /**
+   * Creates download helper for progressive streams.
+   *
+   * @param uri The stream {@link Uri}.
+   */
   public ProgressiveDownloadHelper(Uri uri) {
-    this(uri, null);
+    this(uri, /* cacheKey= */ null);
   }
 
-  public ProgressiveDownloadHelper(Uri uri, @Nullable String customCacheKey) {
-    this.uri = uri;
-    this.customCacheKey = customCacheKey;
-  }
-
-  @Override
-  protected void prepareInternal() {
-    // Do nothing.
-  }
-
-  @Override
-  public int getPeriodCount() {
-    return 1;
-  }
-
-  @Override
-  public TrackGroupArray getTrackGroups(int periodIndex) {
-    return TrackGroupArray.EMPTY;
+  /**
+   * Creates download helper for progressive streams.
+   *
+   * @param uri The stream {@link Uri}.
+   * @param cacheKey An optional cache key.
+   */
+  public ProgressiveDownloadHelper(Uri uri, @Nullable String cacheKey) {
+    super(
+        DownloadAction.TYPE_PROGRESSIVE,
+        uri,
+        cacheKey,
+        DownloadHelper.DEFAULT_TRACK_SELECTOR_PARAMETERS,
+        (handler, videoListener, audioListener, metadata, text, drm) -> new Renderer[0],
+        /* drmSessionManager= */ null);
   }
 
   @Override
-  public ProgressiveDownloadAction getDownloadAction(
-      @Nullable byte[] data, List<TrackKey> trackKeys) {
-    return ProgressiveDownloadAction.createDownloadAction(uri, data, customCacheKey);
+  protected Void loadManifest(Uri uri) {
+    return null;
   }
 
   @Override
-  public ProgressiveDownloadAction getRemoveAction(@Nullable byte[] data) {
-    return ProgressiveDownloadAction.createRemoveAction(uri, data, customCacheKey);
+  protected TrackGroupArray[] getTrackGroupArrays(Void manifest) {
+    return new TrackGroupArray[] {TrackGroupArray.EMPTY};
+  }
+
+  @Override
+  protected StreamKey toStreamKey(
+      int periodIndex, int trackGroupIndex, int trackIndexInTrackGroup) {
+    return new StreamKey(periodIndex, trackGroupIndex, trackIndexInTrackGroup);
   }
 }

@@ -22,7 +22,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/* package*/ abstract class Atom {
+@SuppressWarnings({"ConstantField", "ConstantCaseForConstants"})
+/* package */ abstract class Atom {
 
   /**
    * Size of an atom header, in bytes.
@@ -129,6 +130,7 @@ import java.util.List;
   public static final int TYPE_sawb = Util.getIntegerCodeForString("sawb");
   public static final int TYPE_udta = Util.getIntegerCodeForString("udta");
   public static final int TYPE_meta = Util.getIntegerCodeForString("meta");
+  public static final int TYPE_keys = Util.getIntegerCodeForString("keys");
   public static final int TYPE_ilst = Util.getIntegerCodeForString("ilst");
   public static final int TYPE_mean = Util.getIntegerCodeForString("mean");
   public static final int TYPE_name = Util.getIntegerCodeForString("name");
@@ -142,6 +144,12 @@ import java.util.List;
   public static final int TYPE_vpcC = Util.getIntegerCodeForString("vpcC");
   public static final int TYPE_camm = Util.getIntegerCodeForString("camm");
   public static final int TYPE_alac = Util.getIntegerCodeForString("alac");
+  public static final int TYPE_alaw = Util.getIntegerCodeForString("alaw");
+  public static final int TYPE_ulaw = Util.getIntegerCodeForString("ulaw");
+  public static final int TYPE_Opus = Util.getIntegerCodeForString("Opus");
+  public static final int TYPE_dOps = Util.getIntegerCodeForString("dOps");
+  public static final int TYPE_fLaC = Util.getIntegerCodeForString("fLaC");
+  public static final int TYPE_dfLa = Util.getIntegerCodeForString("dfLa");
 
   public final int type;
 

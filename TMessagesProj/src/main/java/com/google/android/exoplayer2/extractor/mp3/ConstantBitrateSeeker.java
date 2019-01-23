@@ -39,4 +39,9 @@ import com.google.android.exoplayer2.extractor.MpegAudioHeader;
   public long getTimeUs(long position) {
     return getTimeUsAtPosition(position);
   }
+
+  @Override
+  public long getDataEndPosition() {
+    return C.POSITION_UNSET;
+  }
 }

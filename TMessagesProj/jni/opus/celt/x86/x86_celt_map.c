@@ -47,7 +47,6 @@ void (*const CELT_FIR_IMPL[OPUS_ARCHMASK + 1])(
          opus_val16       *y,
          int              N,
          int              ord,
-         opus_val16       *mem,
          int              arch
 ) = {
   celt_fir_c,                /* non-sse */

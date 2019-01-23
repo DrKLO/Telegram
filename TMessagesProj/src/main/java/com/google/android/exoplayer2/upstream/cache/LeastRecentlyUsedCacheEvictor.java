@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.upstream.cache;
 
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.upstream.cache.Cache.CacheException;
 import java.util.Comparator;
 import java.util.TreeSet;
@@ -40,8 +41,10 @@ public final class LeastRecentlyUsedCacheEvictor implements CacheEvictor, Compar
   }
 
   @Override
-  public void onStartFile(Cache cache, String key, long position, long maxLength) {
-    evictCache(cache, maxLength);
+  public void onStartFile(Cache cache, String key, long position, long length) {
+    if (length != C.LENGTH_UNSET) {
+      evictCache(cache, length);
+    }
   }
 
   @Override

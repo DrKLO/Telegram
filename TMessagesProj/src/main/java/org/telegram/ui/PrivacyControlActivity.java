@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -109,7 +109,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        if (rulesType == 2) {
+        if (rulesType == 3) {
+            actionBar.setTitle(LocaleController.getString("PrivacyP2P", R.string.PrivacyP2P));
+        } else if (rulesType == 2) {
             actionBar.setTitle(LocaleController.getString("Calls", R.string.Calls));
         } else if (rulesType == 1) {
             actionBar.setTitle(LocaleController.getString("GroupsAndChannels", R.string.GroupsAndChannels));
@@ -252,7 +254,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
 
     private void applyCurrentPrivacySettings() {
         TLRPC.TL_account_setPrivacy req = new TLRPC.TL_account_setPrivacy();
-        if (rulesType == 2) {
+        if (rulesType == 3) {
+            req.key = new TLRPC.TL_inputPrivacyKeyPhoneP2P();
+        } else if (rulesType == 2) {
             req.key = new TLRPC.TL_inputPrivacyKeyPhoneCall();
         } else if (rulesType == 1) {
             req.key = new TLRPC.TL_inputPrivacyKeyChatInvite();
@@ -294,10 +298,8 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         }
         AlertDialog progressDialog = null;
         if (getParentActivity() != null) {
-            progressDialog = new AlertDialog(getParentActivity(), 1);
-            progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
-            progressDialog.setCanceledOnTouchOutside(false);
-            progressDialog.setCancelable(false);
+            progressDialog = new AlertDialog(getParentActivity(), 3);
+            progressDialog.setCanCacnel(false);
             progressDialog.show();
         }
         final AlertDialog progressDialogFinal = progressDialog;
@@ -372,7 +374,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         sectionRow = rowCount++;
         everybodyRow = rowCount++;
         myContactsRow = rowCount++;
-        if (rulesType != 0 && rulesType != 2) {
+        if (rulesType != 0 && rulesType != 2 && rulesType != 3) {
             nobodyRow = -1;
         } else {
             nobodyRow = rowCount++;
@@ -478,7 +480,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 case 1:
                     TextInfoPrivacyCell privacyCell = (TextInfoPrivacyCell) holder.itemView;
                     if (position == detailRow) {
-                        if (rulesType == 2) {
+                        if (rulesType == 3) {
+                            privacyCell.setText(LocaleController.getString("PrivacyCallsP2PHelp", R.string.PrivacyCallsP2PHelp));
+                        } else if (rulesType == 2) {
                             privacyCell.setText(LocaleController.getString("WhoCanCallMeInfo", R.string.WhoCanCallMeInfo));
                         } else if (rulesType == 1) {
                             privacyCell.setText(LocaleController.getString("WhoCanAddMeInfo", R.string.WhoCanAddMeInfo));
@@ -487,7 +491,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         }
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     } else if (position == shareDetailRow) {
-                        if (rulesType == 2) {
+                        if (rulesType == 3) {
+                            privacyCell.setText(LocaleController.getString("CustomP2PInfo", R.string.CustomP2PInfo));
+                        } else if (rulesType == 2) {
                             privacyCell.setText(LocaleController.getString("CustomCallInfo", R.string.CustomCallInfo));
                         } else if (rulesType == 1) {
                             privacyCell.setText(LocaleController.getString("CustomShareInfo", R.string.CustomShareInfo));
@@ -500,7 +506,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 case 2:
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
                     if (position == sectionRow) {
-                        if (rulesType == 2) {
+                        if (rulesType == 3) {
+                            headerCell.setText(LocaleController.getString("P2PEnabledWith", R.string.P2PEnabledWith));
+                        } else if (rulesType == 2) {
                             headerCell.setText(LocaleController.getString("WhoCanCallMe", R.string.WhoCanCallMe));
                         } else if (rulesType == 1) {
                             headerCell.setText(LocaleController.getString("WhoCanAddMe", R.string.WhoCanAddMe));
@@ -515,13 +523,25 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     RadioCell radioCell = (RadioCell) holder.itemView;
                     int checkedType = 0;
                     if (position == everybodyRow) {
-                        radioCell.setText(LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody), lastCheckedType == 0, true);
+                        if (rulesType == 3) {
+                            radioCell.setText(LocaleController.getString("P2PEverybody", R.string.P2PEverybody), lastCheckedType == 0, true);
+                        } else {
+                            radioCell.setText(LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody), lastCheckedType == 0, true);
+                        }
                         checkedType = 0;
                     } else if (position == myContactsRow) {
-                        radioCell.setText(LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts), lastCheckedType == 2, nobodyRow != -1);
+                        if (rulesType == 3) {
+                            radioCell.setText(LocaleController.getString("P2PContacts", R.string.P2PContacts), lastCheckedType == 2, nobodyRow != -1);
+                        } else {
+                            radioCell.setText(LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts), lastCheckedType == 2, nobodyRow != -1);
+                        }
                         checkedType = 2;
                     } else if (position == nobodyRow) {
-                        radioCell.setText(LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody), lastCheckedType == 1, false);
+                        if (rulesType == 3) {
+                            radioCell.setText(LocaleController.getString("P2PNobody", R.string.P2PNobody), lastCheckedType == 1, false);
+                        } else {
+                            radioCell.setText(LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody), lastCheckedType == 1, false);
+                        }
                         checkedType = 1;
                     }
                     if (lastCheckedType == checkedType) {

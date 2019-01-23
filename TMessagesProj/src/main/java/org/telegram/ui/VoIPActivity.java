@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -17,7 +17,6 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.KeyguardManager;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -72,7 +71,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
-import org.telegram.messenger.EmojiData;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
@@ -103,8 +101,6 @@ import org.telegram.ui.Components.voip.FabBackgroundDrawable;
 import org.telegram.ui.Components.voip.VoIPHelper;
 
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.Collections;
 
 public class VoIPActivity extends Activity implements VoIPService.StateListener, NotificationCenter.NotificationCenterDelegate{
 
@@ -194,7 +190,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                     }
                 }
             });
-            photoView.setImage(user.photo.photo_big, null, new ColorDrawable(0xFF000000));
+            photoView.setImage(user.photo.photo_big, null, new ColorDrawable(0xFF000000), user);
             photoView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         } else {
             photoView.setVisibility(View.GONE);
@@ -440,7 +436,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         });
         getWindow().getDecorView().setKeepScreenOn(true);
 
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.closeInCallActivity);
         hintTextView.setText(LocaleController.formatString("CallEmojiKeyTooltip", R.string.CallEmojiKeyTooltip, user.first_name));
         emojiExpandedText.setText(LocaleController.formatString("CallEmojiKeyTooltip", R.string.CallEmojiKeyTooltip, user.first_name));
@@ -771,7 +767,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
 
     @Override
     protected void onDestroy() {
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.closeInCallActivity);
         if (VoIPService.getSharedInstance() != null) {
             VoIPService.getSharedInstance().unregisterStateListener(this);
@@ -1410,7 +1406,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args){
-        if(id==NotificationCenter.emojiDidLoaded){
+        if(id==NotificationCenter.emojiDidLoad){
             for(ImageView iv:keyEmojiViews){
                 iv.invalidate();
             }

@@ -15,7 +15,6 @@
  */
 package com.google.android.exoplayer2.offline;
 
-import com.google.android.exoplayer2.offline.DownloadAction.Deserializer;
 import com.google.android.exoplayer2.util.AtomicFile;
 import com.google.android.exoplayer2.util.Util;
 import java.io.DataInputStream;
@@ -45,11 +44,10 @@ public final class ActionFile {
   /**
    * Loads {@link DownloadAction}s from file.
    *
-   * @param deserializers {@link Deserializer}s to deserialize DownloadActions.
    * @return Loaded DownloadActions. If the action file doesn't exists returns an empty array.
    * @throws IOException If there is an error during loading.
    */
-  public DownloadAction[] load(Deserializer... deserializers) throws IOException {
+  public DownloadAction[] load() throws IOException {
     if (!actionFile.exists()) {
       return new DownloadAction[0];
     }
@@ -64,7 +62,7 @@ public final class ActionFile {
       int actionCount = dataInputStream.readInt();
       DownloadAction[] actions = new DownloadAction[actionCount];
       for (int i = 0; i < actionCount; i++) {
-        actions[i] = DownloadAction.deserializeFromStream(deserializers, dataInputStream);
+        actions[i] = DownloadAction.deserializeFromStream(dataInputStream);
       }
       return actions;
     } finally {
@@ -85,7 +83,7 @@ public final class ActionFile {
       output.writeInt(VERSION);
       output.writeInt(downloadActions.length);
       for (DownloadAction action : downloadActions) {
-        DownloadAction.serializeToStream(action, output);
+        action.serializeToStream(output);
       }
       atomicFile.endWrite(output);
       // Avoid calling close twice.

@@ -22,9 +22,11 @@ import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.upstream.cache.Cache;
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
+import com.google.android.exoplayer2.upstream.cache.CacheKeyFactory;
 import com.google.android.exoplayer2.upstream.cache.CacheUtil;
 import com.google.android.exoplayer2.upstream.cache.CacheUtil.CachingCounters;
 import com.google.android.exoplayer2.util.PriorityTaskManager;
+import com.google.android.exoplayer2.util.Util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,24 +56,25 @@ public abstract class SegmentDownloader<M extends FilterableManifest<M>> impleme
 
     @Override
     public int compareTo(@NonNull Segment other) {
-      long startOffsetDiff = startTimeUs - other.startTimeUs;
-      return startOffsetDiff == 0 ? 0 : ((startOffsetDiff < 0) ? -1 : 1);
+      return Util.compareLong(startTimeUs, other.startTimeUs);
     }
   }
 
   private static final int BUFFER_SIZE_BYTES = 128 * 1024;
 
-  private final Uri manifestUri;
-  private final PriorityTaskManager priorityTaskManager;
+  private final DataSpec manifestDataSpec;
   private final Cache cache;
   private final CacheDataSource dataSource;
   private final CacheDataSource offlineDataSource;
+  private final CacheKeyFactory cacheKeyFactory;
+  private final PriorityTaskManager priorityTaskManager;
   private final ArrayList<StreamKey> streamKeys;
   private final AtomicBoolean isCanceled;
 
   private volatile int totalSegments;
   private volatile int downloadedSegments;
   private volatile long downloadedBytes;
+  private volatile long totalBytes;
 
   /**
    * @param manifestUri The {@link Uri} of the manifest to be downloaded.
@@ -81,13 +84,15 @@ public abstract class SegmentDownloader<M extends FilterableManifest<M>> impleme
    */
   public SegmentDownloader(
       Uri manifestUri, List<StreamKey> streamKeys, DownloaderConstructorHelper constructorHelper) {
-    this.manifestUri = manifestUri;
+    this.manifestDataSpec = getCompressibleDataSpec(manifestUri);
     this.streamKeys = new ArrayList<>(streamKeys);
     this.cache = constructorHelper.getCache();
-    this.dataSource = constructorHelper.buildCacheDataSource(false);
-    this.offlineDataSource = constructorHelper.buildCacheDataSource(true);
+    this.dataSource = constructorHelper.createCacheDataSource();
+    this.offlineDataSource = constructorHelper.createOfflineCacheDataSource();
+    this.cacheKeyFactory = constructorHelper.getCacheKeyFactory();
     this.priorityTaskManager = constructorHelper.getPriorityTaskManager();
     totalSegments = C.LENGTH_UNSET;
+    totalBytes = C.LENGTH_UNSET;
     isCanceled = new AtomicBoolean();
   }
 
@@ -115,6 +120,7 @@ public abstract class SegmentDownloader<M extends FilterableManifest<M>> impleme
           CacheUtil.cache(
               segments.get(i).dataSpec,
               cache,
+              cacheKeyFactory,
               dataSource,
               buffer,
               priorityTaskManager,
@@ -143,8 +149,17 @@ public abstract class SegmentDownloader<M extends FilterableManifest<M>> impleme
   }
 
   @Override
+  public long getTotalBytes() {
+    return totalBytes;
+  }
+
+  @Override
   public final float getDownloadPercentage() {
     // Take local snapshot of the volatile fields
+    long totalBytes = this.totalBytes;
+    if (totalBytes != C.LENGTH_UNSET) {
+      return totalBytes == 0 ? 100f : (downloadedBytes * 100f) / totalBytes;
+    }
     int totalSegments = this.totalSegments;
     int downloadedSegments = this.downloadedSegments;
     if (totalSegments == C.LENGTH_UNSET || downloadedSegments == C.LENGTH_UNSET) {
@@ -156,16 +171,16 @@ public abstract class SegmentDownloader<M extends FilterableManifest<M>> impleme
   @Override
   public final void remove() throws InterruptedException {
     try {
-      M manifest = getManifest(offlineDataSource, manifestUri);
+      M manifest = getManifest(offlineDataSource, manifestDataSpec);
       List<Segment> segments = getSegments(offlineDataSource, manifest, true);
       for (int i = 0; i < segments.size(); i++) {
-        removeUri(segments.get(i).dataSpec.uri);
+        removeDataSpec(segments.get(i).dataSpec);
       }
     } catch (IOException e) {
       // Ignore exceptions when removing.
     } finally {
       // Always attempt to remove the manifest.
-      removeUri(manifestUri);
+      removeDataSpec(manifestDataSpec);
     }
   }
 
@@ -175,11 +190,11 @@ public abstract class SegmentDownloader<M extends FilterableManifest<M>> impleme
    * Loads and parses the manifest.
    *
    * @param dataSource The {@link DataSource} through which to load.
-   * @param uri The manifest uri.
+   * @param dataSpec The manifest {@link DataSpec}.
    * @return The manifest.
    * @throws IOException If an error occurs reading data.
    */
-  protected abstract M getManifest(DataSource dataSource, Uri uri) throws IOException;
+  protected abstract M getManifest(DataSource dataSource, DataSpec dataSpec) throws IOException;
 
   /**
    * Returns a list of all downloadable {@link Segment}s for a given manifest.
@@ -202,7 +217,7 @@ public abstract class SegmentDownloader<M extends FilterableManifest<M>> impleme
   // Writes to downloadedSegments and downloadedBytes are safe. See the comment on download().
   @SuppressWarnings("NonAtomicVolatileUpdate")
   private List<Segment> initDownload() throws IOException, InterruptedException {
-    M manifest = getManifest(dataSource, manifestUri);
+    M manifest = getManifest(dataSource, manifestDataSpec);
     if (!streamKeys.isEmpty()) {
       manifest = manifest.copy(streamKeys);
     }
@@ -211,21 +226,38 @@ public abstract class SegmentDownloader<M extends FilterableManifest<M>> impleme
     totalSegments = segments.size();
     downloadedSegments = 0;
     downloadedBytes = 0;
+    long totalBytes = 0;
     for (int i = segments.size() - 1; i >= 0; i--) {
       Segment segment = segments.get(i);
-      CacheUtil.getCached(segment.dataSpec, cache, cachingCounters);
+      CacheUtil.getCached(segment.dataSpec, cache, cacheKeyFactory, cachingCounters);
       downloadedBytes += cachingCounters.alreadyCachedBytes;
-      if (cachingCounters.alreadyCachedBytes == cachingCounters.contentLength) {
-        // The segment is fully downloaded.
-        downloadedSegments++;
-        segments.remove(i);
+      if (cachingCounters.contentLength != C.LENGTH_UNSET) {
+        if (cachingCounters.alreadyCachedBytes == cachingCounters.contentLength) {
+          // The segment is fully downloaded.
+          downloadedSegments++;
+          segments.remove(i);
+        }
+        if (totalBytes != C.LENGTH_UNSET) {
+          totalBytes += cachingCounters.contentLength;
+        }
+      } else {
+        totalBytes = C.LENGTH_UNSET;
       }
     }
+    this.totalBytes = totalBytes;
     return segments;
   }
 
-  private void removeUri(Uri uri) {
-    CacheUtil.remove(cache, CacheUtil.generateKey(uri));
+  private void removeDataSpec(DataSpec dataSpec) {
+    CacheUtil.remove(dataSpec, cache, cacheKeyFactory);
   }
 
+  protected static DataSpec getCompressibleDataSpec(Uri uri) {
+    return new DataSpec(
+        uri,
+        /* absoluteStreamPosition= */ 0,
+        /* length= */ C.LENGTH_UNSET,
+        /* key= */ null,
+        /* flags= */ DataSpec.FLAG_ALLOW_GZIP);
+  }
 }

@@ -64,6 +64,9 @@ import com.google.android.exoplayer2.util.Util;
     this.flags = flags;
     this.durationUs = durationUs;
     sampleCount = offsets.length;
+    if (flags.length > 0) {
+      flags[flags.length - 1] |= C.BUFFER_FLAG_LAST_SAMPLE;
+    }
   }
 
   /**

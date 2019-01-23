@@ -25,8 +25,10 @@ import android.net.NetworkInfo;
 import android.os.BatteryManager;
 import android.os.PowerManager;
 import android.support.annotation.IntDef;
-import android.util.Log;
+import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -35,7 +37,11 @@ import java.lang.annotation.RetentionPolicy;
  */
 public final class Requirements {
 
-  /** Network types. */
+  /**
+   * Network types. One of {@link #NETWORK_TYPE_NONE}, {@link #NETWORK_TYPE_ANY}, {@link
+   * #NETWORK_TYPE_UNMETERED}, {@link #NETWORK_TYPE_NOT_ROAMING} or {@link #NETWORK_TYPE_METERED}.
+   */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
     NETWORK_TYPE_NONE,
@@ -45,22 +51,49 @@ public final class Requirements {
     NETWORK_TYPE_METERED,
   })
   public @interface NetworkType {}
+
+  /**
+   * Requirement flags.
+   *
+   * <p>Combination of the following values is possible:
+   *
+   * <ul>
+   *   <li>Only one of {@link #NETWORK_TYPE_ANY}, {@link #NETWORK_TYPE_UNMETERED}, {@link
+   *       #NETWORK_TYPE_NOT_ROAMING} or {@link #NETWORK_TYPE_METERED}.
+   *   <li>{@link #DEVICE_IDLE}
+   *   <li>{@link #DEVICE_CHARGING}
+   *       <ul>
+   */
+  @Documented
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef(
+      flag = true,
+      value = {
+        NETWORK_TYPE_ANY,
+        NETWORK_TYPE_UNMETERED,
+        NETWORK_TYPE_NOT_ROAMING,
+        NETWORK_TYPE_METERED,
+        DEVICE_IDLE,
+        DEVICE_CHARGING
+      })
+  public @interface RequirementFlags {}
+
   /** This job doesn't require network connectivity. */
   public static final int NETWORK_TYPE_NONE = 0;
   /** This job requires network connectivity. */
   public static final int NETWORK_TYPE_ANY = 1;
   /** This job requires network connectivity that is unmetered. */
-  public static final int NETWORK_TYPE_UNMETERED = 2;
+  public static final int NETWORK_TYPE_UNMETERED = 1 << 1;
   /** This job requires network connectivity that is not roaming. */
-  public static final int NETWORK_TYPE_NOT_ROAMING = 3;
+  public static final int NETWORK_TYPE_NOT_ROAMING = 1 << 2;
   /** This job requires metered connectivity such as most cellular data networks. */
-  public static final int NETWORK_TYPE_METERED = 4;
+  public static final int NETWORK_TYPE_METERED = 1 << 3;
   /** This job requires the device to be idle. */
-  private static final int DEVICE_IDLE = 8;
+  public static final int DEVICE_IDLE = 1 << 4;
   /** This job requires the device to be charging. */
-  private static final int DEVICE_CHARGING = 16;
+  public static final int DEVICE_CHARGING = 1 << 5;
 
-  private static final int NETWORK_TYPE_MASK = 7;
+  private static final int NETWORK_TYPE_MASK = 0b1111;
 
   private static final String TAG = "Requirements";
 
@@ -81,7 +114,7 @@ public final class Requirements {
     }
   }
 
-  private final int requirements;
+  @RequirementFlags private final int requirements;
 
   /**
    * @param networkType Required network type.
@@ -92,9 +125,12 @@ public final class Requirements {
     this(networkType | (charging ? DEVICE_CHARGING : 0) | (idle ? DEVICE_IDLE : 0));
   }
 
-  /** @param requirementsData The value returned by {@link #getRequirementsData()}. */
-  public Requirements(int requirementsData) {
-    this.requirements = requirementsData;
+  /** @param requirements A combination of requirement flags. */
+  public Requirements(@RequirementFlags int requirements) {
+    this.requirements = requirements;
+    int networkType = getRequiredNetworkType();
+    // Check if only one network type is specified.
+    Assertions.checkState((networkType & (networkType - 1)) == 0);
   }
 
   /** Returns required network type. */
@@ -116,15 +152,28 @@ public final class Requirements {
    * Returns whether the requirements are met.
    *
    * @param context Any context.
+   * @return Whether the requirements are met.
    */
   public boolean checkRequirements(Context context) {
-    return checkNetworkRequirements(context)
-        && checkChargingRequirement(context)
-        && checkIdleRequirement(context);
+    return getNotMetRequirements(context) == 0;
   }
 
-  /** Returns the encoded requirements data which can be used with {@link #Requirements(int)}. */
-  public int getRequirementsData() {
+  /**
+   * Returns {@link RequirementFlags} that are not met, or 0.
+   *
+   * @param context Any context.
+   * @return RequirementFlags that are not met, or 0.
+   */
+  @RequirementFlags
+  public int getNotMetRequirements(Context context) {
+    return (!checkNetworkRequirements(context) ? getRequiredNetworkType() : 0)
+        | (!checkChargingRequirement(context) ? DEVICE_CHARGING : 0)
+        | (!checkIdleRequirement(context) ? DEVICE_IDLE : 0);
+  }
+
+  /** Returns the requirement flags. */
+  @RequirementFlags
+  public int getRequirements() {
     return requirements;
   }
 
@@ -182,7 +231,7 @@ public final class Requirements {
     }
     PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
     return Util.SDK_INT >= 23
-        ? !powerManager.isDeviceIdleMode()
+        ? powerManager.isDeviceIdleMode()
         : Util.SDK_INT >= 20 ? !powerManager.isInteractive() : !powerManager.isScreenOn();
   }
 
@@ -233,5 +282,21 @@ public final class Requirements {
         + (isChargingRequired() ? ",charging" : "")
         + (isIdleRequired() ? ",idle" : "")
         + '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return requirements == ((Requirements) o).requirements;
+  }
+
+  @Override
+  public int hashCode() {
+    return requirements;
   }
 }

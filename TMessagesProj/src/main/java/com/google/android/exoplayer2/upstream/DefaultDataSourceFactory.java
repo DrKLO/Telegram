@@ -75,6 +75,11 @@ public final class DefaultDataSourceFactory implements Factory {
 
   @Override
   public DefaultDataSource createDataSource() {
-    return new DefaultDataSource(context, listener, baseDataSourceFactory.createDataSource());
+    DefaultDataSource dataSource =
+        new DefaultDataSource(context, baseDataSourceFactory.createDataSource());
+    if (listener != null) {
+      dataSource.addTransferListener(listener);
+    }
+    return dataSource;
   }
 }

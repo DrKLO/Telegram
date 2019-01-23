@@ -9,8 +9,11 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.os.Build;
+import android.support.annotation.Keep;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,7 +30,9 @@ public class CropAreaView extends View {
 
     interface AreaViewListener {
         void onAreaChangeBegan();
+
         void onAreaChange();
+
         void onAreaChangeEnded();
     }
 
@@ -66,6 +71,7 @@ public class CropAreaView extends View {
     enum GridType {
         NONE, MINOR, MAJOR
     }
+
     private GridType previousGridType;
     private GridType gridType;
     private float gridProgress;
@@ -74,6 +80,10 @@ public class CropAreaView extends View {
     private AreaViewListener listener;
 
     private boolean isDragging;
+
+    private boolean freeform = true;
+    private Bitmap circleBitmap;
+    private Paint eraserPaint;
 
     private Animator animator;
 
@@ -108,6 +118,11 @@ public class CropAreaView extends View {
         framePaint = new Paint();
         framePaint.setStyle(Paint.Style.FILL);
         framePaint.setColor(0xb2ffffff);
+
+        eraserPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        eraserPaint.setColor(0);
+        eraserPaint.setStyle(Paint.Style.FILL);
+        eraserPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
     }
 
     public boolean isDragging() {
@@ -134,16 +149,16 @@ public class CropAreaView extends View {
         listener = l;
     }
 
-    public void setBitmap(Bitmap bitmap, boolean sideward, boolean freeform) {
+    public void setBitmap(Bitmap bitmap, boolean sideward, boolean fform) {
         if (bitmap == null || bitmap.isRecycled()) {
             return;
         }
-
+        freeform = fform;
         float aspectRatio;
         if (sideward) {
-            aspectRatio = ((float)bitmap.getHeight()) / ((float)bitmap.getWidth());
+            aspectRatio = ((float) bitmap.getHeight()) / ((float) bitmap.getWidth());
         } else {
-            aspectRatio = ((float)bitmap.getWidth()) / ((float)bitmap.getHeight());
+            aspectRatio = ((float) bitmap.getWidth()) / ((float) bitmap.getHeight());
         }
 
         if (!freeform) {
@@ -152,6 +167,10 @@ public class CropAreaView extends View {
         }
 
         setActualRect(aspectRatio);
+    }
+
+    public void setFreeform(boolean fform) {
+        freeform = fform;
     }
 
     public void setActualRect(float aspectRatio) {
@@ -168,77 +187,99 @@ public class CropAreaView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        int lineThickness = AndroidUtilities.dp(2);
-        int handleSize = AndroidUtilities.dp(16);
-        int handleThickness = AndroidUtilities.dp(3);
+        if (freeform) {
+            int lineThickness = AndroidUtilities.dp(2);
+            int handleSize = AndroidUtilities.dp(16);
+            int handleThickness = AndroidUtilities.dp(3);
 
-        int originX = (int)actualRect.left - lineThickness;
-        int originY = (int)actualRect.top - lineThickness;
-        int width = (int)(actualRect.right - actualRect.left) + lineThickness * 2;
-        int height = (int)(actualRect.bottom - actualRect.top) + lineThickness * 2;
+            int originX = (int) actualRect.left - lineThickness;
+            int originY = (int) actualRect.top - lineThickness;
+            int width = (int) (actualRect.right - actualRect.left) + lineThickness * 2;
+            int height = (int) (actualRect.bottom - actualRect.top) + lineThickness * 2;
 
-        if (dimVisibile) {
-            canvas.drawRect(0, 0, getWidth(), originY + lineThickness, dimPaint);
-            canvas.drawRect(0, originY + lineThickness, originX + lineThickness, originY + height - lineThickness, dimPaint);
-            canvas.drawRect(originX + width - lineThickness, originY + lineThickness, getWidth(), originY + height - lineThickness, dimPaint);
-            canvas.drawRect(0, originY + height - lineThickness, getWidth(), getHeight(), dimPaint);
-        }
+            if (dimVisibile) {
+                canvas.drawRect(0, 0, getWidth(), originY + lineThickness, dimPaint);
+                canvas.drawRect(0, originY + lineThickness, originX + lineThickness, originY + height - lineThickness, dimPaint);
+                canvas.drawRect(originX + width - lineThickness, originY + lineThickness, getWidth(), originY + height - lineThickness, dimPaint);
+                canvas.drawRect(0, originY + height - lineThickness, getWidth(), getHeight(), dimPaint);
+            }
 
-        if (!frameVisible) {
-            return;
-        }
+            if (!frameVisible) {
+                return;
+            }
 
-        int inset = handleThickness - lineThickness;
-        int gridWidth = width - handleThickness * 2;
-        int gridHeight = height - handleThickness * 2;
+            int inset = handleThickness - lineThickness;
+            int gridWidth = width - handleThickness * 2;
+            int gridHeight = height - handleThickness * 2;
 
-        GridType type = gridType;
-        if (type == GridType.NONE && gridProgress > 0)
-            type = previousGridType;
+            GridType type = gridType;
+            if (type == GridType.NONE && gridProgress > 0)
+                type = previousGridType;
 
-        shadowPaint.setAlpha((int)(gridProgress * 26));
-        linePaint.setAlpha((int)(gridProgress * 178));
+            shadowPaint.setAlpha((int) (gridProgress * 26));
+            linePaint.setAlpha((int) (gridProgress * 178));
 
-        for (int i = 0; i < 3; i++) {
-            if (type == GridType.MINOR) {
-                for (int j = 1; j < 4; j++) {
-                    if (i == 2 && j == 3)
-                        continue;
+            for (int i = 0; i < 3; i++) {
+                if (type == GridType.MINOR) {
+                    for (int j = 1; j < 4; j++) {
+                        if (i == 2 && j == 3)
+                            continue;
 
-                    canvas.drawLine(originX + handleThickness + gridWidth / 3 / 3 * j + gridWidth / 3 * i, originY + handleThickness, originX + handleThickness + gridWidth / 3 / 3 * j + gridWidth / 3 * i, originY + handleThickness + gridHeight, shadowPaint);
-                    canvas.drawLine(originX + handleThickness + gridWidth / 3 / 3 * j + gridWidth / 3 * i, originY + handleThickness, originX + handleThickness + gridWidth / 3 / 3 * j + gridWidth / 3 * i, originY + handleThickness + gridHeight, linePaint);
+                        canvas.drawLine(originX + handleThickness + gridWidth / 3 / 3 * j + gridWidth / 3 * i, originY + handleThickness, originX + handleThickness + gridWidth / 3 / 3 * j + gridWidth / 3 * i, originY + handleThickness + gridHeight, shadowPaint);
+                        canvas.drawLine(originX + handleThickness + gridWidth / 3 / 3 * j + gridWidth / 3 * i, originY + handleThickness, originX + handleThickness + gridWidth / 3 / 3 * j + gridWidth / 3 * i, originY + handleThickness + gridHeight, linePaint);
 
-                    canvas.drawLine(originX + handleThickness, originY + handleThickness + gridHeight / 3 / 3 * j + gridHeight / 3 * i, originX + handleThickness + gridWidth, originY + handleThickness + gridHeight / 3 / 3 * j + gridHeight / 3 * i, shadowPaint);
-                    canvas.drawLine(originX + handleThickness, originY + handleThickness + gridHeight / 3 / 3 * j + gridHeight / 3 * i, originX + handleThickness + gridWidth, originY + handleThickness + gridHeight / 3 / 3 * j + gridHeight / 3 * i, linePaint);
+                        canvas.drawLine(originX + handleThickness, originY + handleThickness + gridHeight / 3 / 3 * j + gridHeight / 3 * i, originX + handleThickness + gridWidth, originY + handleThickness + gridHeight / 3 / 3 * j + gridHeight / 3 * i, shadowPaint);
+                        canvas.drawLine(originX + handleThickness, originY + handleThickness + gridHeight / 3 / 3 * j + gridHeight / 3 * i, originX + handleThickness + gridWidth, originY + handleThickness + gridHeight / 3 / 3 * j + gridHeight / 3 * i, linePaint);
+                    }
+                } else if (type == GridType.MAJOR) {
+                    if (i > 0) {
+                        canvas.drawLine(originX + handleThickness + gridWidth / 3 * i, originY + handleThickness, originX + handleThickness + gridWidth / 3 * i, originY + handleThickness + gridHeight, shadowPaint);
+                        canvas.drawLine(originX + handleThickness + gridWidth / 3 * i, originY + handleThickness, originX + handleThickness + gridWidth / 3 * i, originY + handleThickness + gridHeight, linePaint);
+
+                        canvas.drawLine(originX + handleThickness, originY + handleThickness + gridHeight / 3 * i, originX + handleThickness + gridWidth, originY + handleThickness + gridHeight / 3 * i, shadowPaint);
+                        canvas.drawLine(originX + handleThickness, originY + handleThickness + gridHeight / 3 * i, originX + handleThickness + gridWidth, originY + handleThickness + gridHeight / 3 * i, linePaint);
+                    }
                 }
             }
-            else if (type == GridType.MAJOR) {
-                if (i > 0) {
-                    canvas.drawLine(originX + handleThickness + gridWidth / 3 * i, originY + handleThickness, originX + handleThickness + gridWidth / 3 * i, originY + handleThickness + gridHeight, shadowPaint);
-                    canvas.drawLine(originX + handleThickness + gridWidth / 3 * i, originY + handleThickness, originX + handleThickness + gridWidth / 3 * i, originY + handleThickness + gridHeight, linePaint);
 
-                    canvas.drawLine(originX + handleThickness, originY + handleThickness + gridHeight / 3 * i, originX + handleThickness + gridWidth, originY + handleThickness + gridHeight / 3 * i, shadowPaint);
-                    canvas.drawLine(originX + handleThickness, originY + handleThickness + gridHeight / 3 * i, originX + handleThickness + gridWidth, originY + handleThickness + gridHeight / 3 * i, linePaint);
+            canvas.drawRect(originX + inset, originY + inset, originX + width - inset, originY + inset + lineThickness, framePaint);
+            canvas.drawRect(originX + inset, originY + inset, originX + inset + lineThickness, originY + height - inset, framePaint);
+            canvas.drawRect(originX + inset, originY + height - inset - lineThickness, originX + width - inset, originY + height - inset, framePaint);
+            canvas.drawRect(originX + width - inset - lineThickness, originY + inset, originX + width - inset, originY + height - inset, framePaint);
+
+            canvas.drawRect(originX, originY, originX + handleSize, originY + handleThickness, handlePaint);
+            canvas.drawRect(originX, originY, originX + handleThickness, originY + handleSize, handlePaint);
+
+            canvas.drawRect(originX + width - handleSize, originY, originX + width, originY + handleThickness, handlePaint);
+            canvas.drawRect(originX + width - handleThickness, originY, originX + width, originY + handleSize, handlePaint);
+
+            canvas.drawRect(originX, originY + height - handleThickness, originX + handleSize, originY + height, handlePaint);
+            canvas.drawRect(originX, originY + height - handleSize, originX + handleThickness, originY + height, handlePaint);
+
+            canvas.drawRect(originX + width - handleSize, originY + height - handleThickness, originX + width, originY + height, handlePaint);
+            canvas.drawRect(originX + width - handleThickness, originY + height - handleSize, originX + width, originY + height, handlePaint);
+        } else {
+            if (circleBitmap == null || circleBitmap.getWidth() != actualRect.width()) {
+                if (circleBitmap != null) {
+                    circleBitmap.recycle();
+                    circleBitmap = null;
+                }
+                try {
+                    circleBitmap = Bitmap.createBitmap((int) actualRect.width(), (int) actualRect.height(), Bitmap.Config.ARGB_8888);
+                    Canvas circleCanvas = new Canvas(circleBitmap);
+                    circleCanvas.drawRect(0, 0, actualRect.width(), actualRect.height(), dimPaint);
+                    circleCanvas.drawCircle(actualRect.width() / 2, actualRect.height() / 2, actualRect.width() / 2, eraserPaint);
+                    circleCanvas.setBitmap(null);
+                } catch (Throwable ignore) {
+
                 }
             }
+            canvas.drawRect(0, 0, getWidth(), (int) actualRect.top, dimPaint);
+            canvas.drawRect(0, (int) actualRect.top, (int) actualRect.left, (int) actualRect.bottom, dimPaint);
+            canvas.drawRect((int) actualRect.right, (int) actualRect.top, getWidth(), (int) actualRect.bottom, dimPaint);
+            canvas.drawRect(0, (int) actualRect.bottom, getWidth(), getHeight(), dimPaint);
+            canvas.drawBitmap(circleBitmap, (int) actualRect.left, (int) actualRect.top, null);
         }
-
-        canvas.drawRect(originX + inset, originY + inset, originX + width - inset, originY + inset + lineThickness, framePaint);
-        canvas.drawRect(originX + inset, originY + inset, originX + inset + lineThickness, originY + height - inset, framePaint);
-        canvas.drawRect(originX + inset, originY + height - inset - lineThickness, originX + width - inset, originY + height - inset, framePaint);
-        canvas.drawRect(originX + width - inset - lineThickness, originY + inset, originX + width - inset, originY + height - inset, framePaint);
-
-        canvas.drawRect(originX, originY, originX + handleSize, originY + handleThickness, handlePaint);
-        canvas.drawRect(originX, originY, originX + handleThickness, originY + handleSize, handlePaint);
-
-        canvas.drawRect(originX + width - handleSize, originY, originX + width, originY + handleThickness, handlePaint);
-        canvas.drawRect(originX + width - handleThickness, originY, originX + width, originY + handleSize, handlePaint);
-
-        canvas.drawRect(originX, originY + height - handleThickness, originX + handleSize, originY + height, handlePaint);
-        canvas.drawRect(originX, originY + height - handleSize, originX + handleThickness, originY + height, handlePaint);
-
-        canvas.drawRect(originX + width - handleSize, originY + height - handleThickness, originX + width, originY + height, handlePaint);
-        canvas.drawRect(originX + width - handleThickness, originY + height - handleSize, originX + width, originY + height, handlePaint);
     }
 
     private void updateTouchAreas() {
@@ -296,6 +337,7 @@ public class CropAreaView extends View {
         }
     }
 
+    @Keep
     @SuppressWarnings("unused")
     private void setGridProgress(float value) {
         gridProgress = value;
@@ -355,6 +397,7 @@ public class CropAreaView extends View {
         }
     }
 
+    @Keep
     @SuppressWarnings("unused")
     private void setCropLeft(float value) {
         actualRect.left = value;
@@ -366,6 +409,7 @@ public class CropAreaView extends View {
         return actualRect.left;
     }
 
+    @Keep
     @SuppressWarnings("unused")
     private void setCropTop(float value) {
         actualRect.top = value;
@@ -377,6 +421,7 @@ public class CropAreaView extends View {
         return actualRect.top;
     }
 
+    @Keep
     @SuppressWarnings("unused")
     private void setCropRight(float value) {
         actualRect.right = value;
@@ -387,6 +432,7 @@ public class CropAreaView extends View {
         return actualRect.right;
     }
 
+    @Keep
     @SuppressWarnings("unused")
     private void setCropBottom(float value) {
         actualRect.bottom = value;
@@ -422,8 +468,8 @@ public class CropAreaView extends View {
     public void calculateRect(RectF rect, float cropAspectRatio) {
         float statusBarHeight = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
         float left, top, right, bottom;
-        float measuredHeight = (float)getMeasuredHeight() - bottomPadding - statusBarHeight;
-        float aspectRatio = (float)getMeasuredWidth() / measuredHeight;
+        float measuredHeight = (float) getMeasuredHeight() - bottomPadding - statusBarHeight;
+        float aspectRatio = (float) getMeasuredWidth() / measuredHeight;
         float minSide = Math.min(getMeasuredWidth(), measuredHeight) - 2 * sidePadding;
         float width = getMeasuredWidth() - 2 * sidePadding;
         float height = measuredHeight - 2 * sidePadding;
@@ -451,30 +497,35 @@ public class CropAreaView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        int x = (int)(event.getX() - ((ViewGroup)getParent()).getX());
-        int y = (int)(event.getY() - ((ViewGroup)getParent()).getY());
+        int x = (int) (event.getX() - ((ViewGroup) getParent()).getX());
+        int y = (int) (event.getY() - ((ViewGroup) getParent()).getY());
 
         float statusBarHeight = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
 
         int action = event.getActionMasked();
 
         if (action == MotionEvent.ACTION_DOWN) {
-            if (this.topLeftCorner.contains(x, y)) {
-                activeControl = Control.TOP_LEFT;
-            } else if (this.topRightCorner.contains(x, y)) {
-                activeControl = Control.TOP_RIGHT;
-            } else if (this.bottomLeftCorner.contains(x, y)) {
-                activeControl = Control.BOTTOM_LEFT;
-            } else if (this.bottomRightCorner.contains(x, y)) {
-                activeControl = Control.BOTTOM_RIGHT;
-            } else if (this.leftEdge.contains(x, y)) {
-                activeControl = Control.LEFT;
-            } else if (this.topEdge.contains(x, y)) {
-                activeControl = Control.TOP;
-            } else if (this.rightEdge.contains(x, y)) {
-                activeControl = Control.RIGHT;
-            } else if (this.bottomEdge.contains(x, y)) {
-                activeControl = Control.BOTTOM;
+            if (freeform) {
+                if (this.topLeftCorner.contains(x, y)) {
+                    activeControl = Control.TOP_LEFT;
+                } else if (this.topRightCorner.contains(x, y)) {
+                    activeControl = Control.TOP_RIGHT;
+                } else if (this.bottomLeftCorner.contains(x, y)) {
+                    activeControl = Control.BOTTOM_LEFT;
+                } else if (this.bottomRightCorner.contains(x, y)) {
+                    activeControl = Control.BOTTOM_RIGHT;
+                } else if (this.leftEdge.contains(x, y)) {
+                    activeControl = Control.LEFT;
+                } else if (this.topEdge.contains(x, y)) {
+                    activeControl = Control.TOP;
+                } else if (this.rightEdge.contains(x, y)) {
+                    activeControl = Control.RIGHT;
+                } else if (this.bottomEdge.contains(x, y)) {
+                    activeControl = Control.BOTTOM;
+                } else {
+                    activeControl = Control.NONE;
+                    return false;
+                }
             } else {
                 activeControl = Control.NONE;
                 return false;
@@ -489,8 +540,7 @@ public class CropAreaView extends View {
                 listener.onAreaChangeBegan();
 
             return true;
-        }
-        else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             isDragging = false;
 
             if (activeControl == Control.NONE)
@@ -502,8 +552,7 @@ public class CropAreaView extends View {
                 listener.onAreaChangeEnded();
 
             return true;
-        }
-        else if (action == MotionEvent.ACTION_MOVE) {
+        } else if (action == MotionEvent.ACTION_MOVE) {
             if (activeControl == Control.NONE)
                 return false;
 

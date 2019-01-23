@@ -15,12 +15,15 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
+import static com.google.android.exoplayer2.extractor.ts.TsPayloadReader.FLAG_RANDOM_ACCESS_INDICATOR;
+
 import android.util.SparseArray;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.extractor.ExtractorOutput;
 import com.google.android.exoplayer2.extractor.TrackOutput;
 import com.google.android.exoplayer2.extractor.ts.TsPayloadReader.TrackIdGenerator;
+import com.google.android.exoplayer2.util.CodecSpecificDataUtil;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.NalUnitUtil;
 import com.google.android.exoplayer2.util.NalUnitUtil.SpsData;
@@ -55,8 +58,11 @@ public final class H264Reader implements ElementaryStreamReader {
   // State that should not be reset on seek.
   private boolean hasOutputFormat;
 
-  // Per packet state that gets reset at the start of each packet.
+  // Per PES packet state that gets reset at the start of each PES packet.
   private long pesTimeUs;
+
+  // State inherited from the TS packet header.
+  private boolean randomAccessIndicator;
 
   // Scratch variables to avoid allocations.
   private final ParsableByteArray seiWrapper;
@@ -87,6 +93,7 @@ public final class H264Reader implements ElementaryStreamReader {
     sei.reset();
     sampleReader.reset();
     totalBytesWritten = 0;
+    randomAccessIndicator = false;
   }
 
   @Override
@@ -99,8 +106,9 @@ public final class H264Reader implements ElementaryStreamReader {
   }
 
   @Override
-  public void packetStarted(long pesTimeUs, boolean dataAlignmentIndicator) {
+  public void packetStarted(long pesTimeUs, @TsPayloadReader.Flags int flags) {
     this.pesTimeUs = pesTimeUs;
+    randomAccessIndicator |= (flags & FLAG_RANDOM_ACCESS_INDICATOR) != 0;
   }
 
   @Override
@@ -180,9 +188,23 @@ public final class H264Reader implements ElementaryStreamReader {
           initializationData.add(Arrays.copyOf(pps.nalData, pps.nalLength));
           NalUnitUtil.SpsData spsData = NalUnitUtil.parseSpsNalUnit(sps.nalData, 3, sps.nalLength);
           NalUnitUtil.PpsData ppsData = NalUnitUtil.parsePpsNalUnit(pps.nalData, 3, pps.nalLength);
-          output.format(Format.createVideoSampleFormat(formatId, MimeTypes.VIDEO_H264, null,
-              Format.NO_VALUE, Format.NO_VALUE, spsData.width, spsData.height, Format.NO_VALUE,
-              initializationData, Format.NO_VALUE, spsData.pixelWidthAspectRatio, null));
+          output.format(
+              Format.createVideoSampleFormat(
+                  formatId,
+                  MimeTypes.VIDEO_H264,
+                  CodecSpecificDataUtil.buildAvcCodecString(
+                      spsData.profileIdc,
+                      spsData.constraintsFlagsAndReservedZero2Bits,
+                      spsData.levelIdc),
+                  /* bitrate= */ Format.NO_VALUE,
+                  /* maxInputSize= */ Format.NO_VALUE,
+                  spsData.width,
+                  spsData.height,
+                  /* frameRate= */ Format.NO_VALUE,
+                  initializationData,
+                  /* rotationDegrees= */ Format.NO_VALUE,
+                  spsData.pixelWidthAspectRatio,
+                  /* drmInitData= */ null));
           hasOutputFormat = true;
           sampleReader.putSps(spsData);
           sampleReader.putPps(ppsData);
@@ -205,12 +227,17 @@ public final class H264Reader implements ElementaryStreamReader {
       seiWrapper.setPosition(4); // NAL prefix and nal_unit() header.
       seiReader.consume(pesTimeUs, seiWrapper);
     }
-    sampleReader.endNalUnit(position, offset);
+    boolean sampleIsKeyFrame =
+        sampleReader.endNalUnit(position, offset, hasOutputFormat, randomAccessIndicator);
+    if (sampleIsKeyFrame) {
+      // This is either an IDR frame or the first I-frame since the random access indicator, so mark
+      // it as a keyframe. Clear the flag so that subsequent non-IDR I-frames are not marked as
+      // keyframes until we see another random access indicator.
+      randomAccessIndicator = false;
+    }
   }
 
-  /**
-   * Consumes a stream of NAL units and outputs samples.
-   */
+  /** Consumes a stream of NAL units and outputs samples. */
   private static final class SampleReader {
 
     private static final int DEFAULT_BUFFER_SIZE = 128;
@@ -415,11 +442,12 @@ public final class H264Reader implements ElementaryStreamReader {
       isFilling = false;
     }
 
-    public void endNalUnit(long position, int offset) {
+    public boolean endNalUnit(
+        long position, int offset, boolean hasOutputFormat, boolean randomAccessIndicator) {
       if (nalUnitType == NAL_UNIT_TYPE_AUD
           || (detectAccessUnits && sliceHeader.isFirstVclNalUnitOfPicture(previousSliceHeader))) {
         // If the NAL unit ending is the start of a new sample, output the previous one.
-        if (readingSample) {
+        if (hasOutputFormat && readingSample) {
           int nalUnitLength = (int) (position - nalUnitStartPosition);
           outputSample(offset + nalUnitLength);
         }
@@ -428,8 +456,12 @@ public final class H264Reader implements ElementaryStreamReader {
         sampleIsKeyframe = false;
         readingSample = true;
       }
-      sampleIsKeyframe |= nalUnitType == NAL_UNIT_TYPE_IDR || (allowNonIdrKeyframes
-          && nalUnitType == NAL_UNIT_TYPE_NON_IDR && sliceHeader.isISlice());
+      boolean treatIFrameAsKeyframe =
+          allowNonIdrKeyframes ? sliceHeader.isISlice() : randomAccessIndicator;
+      sampleIsKeyframe |=
+          nalUnitType == NAL_UNIT_TYPE_IDR
+              || (treatIFrameAsKeyframe && nalUnitType == NAL_UNIT_TYPE_NON_IDR);
+      return sampleIsKeyframe;
     }
 
     private void outputSample(int offset) {
@@ -471,10 +503,21 @@ public final class H264Reader implements ElementaryStreamReader {
         hasSliceType = true;
       }
 
-      public void setAll(SpsData spsData, int nalRefIdc, int sliceType, int frameNum,
-          int picParameterSetId, boolean fieldPicFlag, boolean bottomFieldFlagPresent,
-          boolean bottomFieldFlag, boolean idrPicFlag, int idrPicId, int picOrderCntLsb,
-          int deltaPicOrderCntBottom, int deltaPicOrderCnt0, int deltaPicOrderCnt1) {
+      public void setAll(
+          SpsData spsData,
+          int nalRefIdc,
+          int sliceType,
+          int frameNum,
+          int picParameterSetId,
+          boolean fieldPicFlag,
+          boolean bottomFieldFlagPresent,
+          boolean bottomFieldFlag,
+          boolean idrPicFlag,
+          int idrPicId,
+          int picOrderCntLsb,
+          int deltaPicOrderCntBottom,
+          int deltaPicOrderCnt0,
+          int deltaPicOrderCnt1) {
         this.spsData = spsData;
         this.nalRefIdc = nalRefIdc;
         this.sliceType = sliceType;
@@ -499,23 +542,26 @@ public final class H264Reader implements ElementaryStreamReader {
 
       private boolean isFirstVclNalUnitOfPicture(SliceHeaderData other) {
         // See ISO 14496-10 subsection 7.4.1.2.4.
-        return isComplete && (!other.isComplete || frameNum != other.frameNum
-            || picParameterSetId != other.picParameterSetId || fieldPicFlag != other.fieldPicFlag
-            || (bottomFieldFlagPresent && other.bottomFieldFlagPresent
-                && bottomFieldFlag != other.bottomFieldFlag)
-            || (nalRefIdc != other.nalRefIdc && (nalRefIdc == 0 || other.nalRefIdc == 0))
-            || (spsData.picOrderCountType == 0 && other.spsData.picOrderCountType == 0
-                && (picOrderCntLsb != other.picOrderCntLsb
-                    || deltaPicOrderCntBottom != other.deltaPicOrderCntBottom))
-            || (spsData.picOrderCountType == 1 && other.spsData.picOrderCountType == 1
-                && (deltaPicOrderCnt0 != other.deltaPicOrderCnt0
-                    || deltaPicOrderCnt1 != other.deltaPicOrderCnt1))
-            || idrPicFlag != other.idrPicFlag
-            || (idrPicFlag && other.idrPicFlag && idrPicId != other.idrPicId));
+        return isComplete
+            && (!other.isComplete
+                || frameNum != other.frameNum
+                || picParameterSetId != other.picParameterSetId
+                || fieldPicFlag != other.fieldPicFlag
+                || (bottomFieldFlagPresent
+                    && other.bottomFieldFlagPresent
+                    && bottomFieldFlag != other.bottomFieldFlag)
+                || (nalRefIdc != other.nalRefIdc && (nalRefIdc == 0 || other.nalRefIdc == 0))
+                || (spsData.picOrderCountType == 0
+                    && other.spsData.picOrderCountType == 0
+                    && (picOrderCntLsb != other.picOrderCntLsb
+                        || deltaPicOrderCntBottom != other.deltaPicOrderCntBottom))
+                || (spsData.picOrderCountType == 1
+                    && other.spsData.picOrderCountType == 1
+                    && (deltaPicOrderCnt0 != other.deltaPicOrderCnt0
+                        || deltaPicOrderCnt1 != other.deltaPicOrderCnt1))
+                || idrPicFlag != other.idrPicFlag
+                || (idrPicFlag && other.idrPicFlag && idrPicId != other.idrPicId));
       }
-
     }
-
   }
-
 }

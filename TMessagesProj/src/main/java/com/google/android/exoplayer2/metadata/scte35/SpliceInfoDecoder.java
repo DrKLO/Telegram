@@ -44,6 +44,7 @@ public final class SpliceInfoDecoder implements MetadataDecoder {
     sectionHeader = new ParsableBitArray();
   }
 
+  @SuppressWarnings("ByteBufferBackingArray")
   @Override
   public Metadata decode(MetadataInputBuffer inputBuffer) {
     // Internal timestamps adjustment.

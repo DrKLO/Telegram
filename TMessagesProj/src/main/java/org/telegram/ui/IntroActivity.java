@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -55,8 +55,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -188,12 +186,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
                 if (eglThread == null && surface != null) {
                     eglThread = new EGLThread(surface);
                     eglThread.setSurfaceTextureSize(width, height);
-                    eglThread.postRunnable(new Runnable() {
-                        @Override
-                        public void run() {
-                            eglThread.drawRunnable.run();
-                        }
-                    });
+                    eglThread.postRunnable(() -> eglThread.drawRunnable.run());
                 }
             }
 
@@ -273,27 +266,21 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         }
         startMessagingButton.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(10), AndroidUtilities.dp(20), AndroidUtilities.dp(10));
         frameLayout.addView(startMessagingButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 10, 0, 10, 76));
-        startMessagingButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (startPressed) {
-                    return;
-                }
-                startPressed = true;
-                Intent intent2 = new Intent(IntroActivity.this, LaunchActivity.class);
-                intent2.putExtra("fromIntro", true);
-                startActivity(intent2);
-                destroyed = true;
-                finish();
+        startMessagingButton.setOnClickListener(view -> {
+            if (startPressed) {
+                return;
             }
+            startPressed = true;
+            Intent intent2 = new Intent(IntroActivity.this, LaunchActivity.class);
+            intent2.putExtra("fromIntro", true);
+            startActivity(intent2);
+            destroyed = true;
+            finish();
         });
         if (BuildVars.DEBUG_VERSION) {
-            startMessagingButton.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View v) {
-                    ConnectionsManager.getInstance(currentAccount).switchBackend();
-                    return true;
-                }
+            startMessagingButton.setOnLongClickListener(v -> {
+                ConnectionsManager.getInstance(currentAccount).switchBackend();
+                return true;
             });
         }
 
@@ -305,20 +292,17 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         textView.setGravity(Gravity.CENTER);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 20));
-        textView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (startPressed || localeInfo == null) {
-                    return;
-                }
-                LocaleController.getInstance().applyLanguage(localeInfo, true, false, currentAccount);
-                startPressed = true;
-                Intent intent2 = new Intent(IntroActivity.this, LaunchActivity.class);
-                intent2.putExtra("fromIntro", true);
-                startActivity(intent2);
-                destroyed = true;
-                finish();
+        textView.setOnClickListener(v -> {
+            if (startPressed || localeInfo == null) {
+                return;
             }
+            LocaleController.getInstance().applyLanguage(localeInfo, true, false, currentAccount);
+            startPressed = true;
+            Intent intent2 = new Intent(IntroActivity.this, LaunchActivity.class);
+            intent2.putExtra("fromIntro", true);
+            startActivity(intent2);
+            destroyed = true;
+            finish();
         });
 
         if (AndroidUtilities.isTablet()) {
@@ -386,7 +370,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         LocaleController.LocaleInfo englishInfo = null;
         LocaleController.LocaleInfo systemInfo = null;
         LocaleController.LocaleInfo currentLocaleInfo = LocaleController.getInstance().getCurrentLocaleInfo();
-        String systemLang = LocaleController.getSystemLocaleStringIso639().toLowerCase();
+        final String systemLang = MessagesController.getInstance(currentAccount).suggestedLangCode;
         String arg = systemLang.contains("-") ? systemLang.split("-")[0] : systemLang;
         String alias = LocaleController.getLocaleAlias(arg);
         for (int a = 0; a < LocaleController.getInstance().languages.size(); a++) {
@@ -406,34 +390,28 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         }
         TLRPC.TL_langpack_getStrings req = new TLRPC.TL_langpack_getStrings();
         if (systemInfo != currentLocaleInfo) {
-            req.lang_code = systemInfo.shortName.replace("_", "-");
+            req.lang_code = systemInfo.getLangCode();
             localeInfo = systemInfo;
         } else {
-            req.lang_code = englishInfo.shortName.replace("_", "-");
+            req.lang_code = englishInfo.getLangCode();
             localeInfo = englishInfo;
         }
         req.keys.add("ContinueOnThisLanguage");
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-                if (response != null) {
-                    TLRPC.Vector vector = (TLRPC.Vector) response;
-                    if (vector.objects.isEmpty()) {
-                        return;
-                    }
-                    final TLRPC.LangPackString string = (TLRPC.LangPackString) vector.objects.get(0);
-                    if (string instanceof TLRPC.TL_langPackString) {
-                        AndroidUtilities.runOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (!destroyed) {
-                                    textView.setText(string.value);
-                                    SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                                    preferences.edit().putString("language_showed2", LocaleController.getSystemLocaleStringIso639().toLowerCase()).commit();
-                                }
-                            }
-                        });
-                    }
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+            if (response != null) {
+                TLRPC.Vector vector = (TLRPC.Vector) response;
+                if (vector.objects.isEmpty()) {
+                    return;
+                }
+                final TLRPC.LangPackString string = (TLRPC.LangPackString) vector.objects.get(0);
+                if (string instanceof TLRPC.TL_langPackString) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (!destroyed) {
+                            textView.setText(string.value);
+                            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                            preferences.edit().putString("language_showed2", systemLang.toLowerCase()).commit();
+                        }
+                    });
                 }
             }
         }, ConnectionsManager.RequestFlagWithoutLogin);
@@ -692,12 +670,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
                 Intro.onDrawFrame();
                 egl10.eglSwapBuffers(eglDisplay, eglSurface);
 
-                postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        drawRunnable.run();
-                    }
-                }, 16);
+                postRunnable(() -> drawRunnable.run(), 16);
             }
         };
 
@@ -715,14 +688,11 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         }
 
         public void shutdown() {
-            postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    finish();
-                    Looper looper = Looper.myLooper();
-                    if (looper != null) {
-                        looper.quit();
-                    }
+            postRunnable(() -> {
+                finish();
+                Looper looper = Looper.myLooper();
+                if (looper != null) {
+                    looper.quit();
                 }
             });
         }

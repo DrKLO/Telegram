@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
@@ -23,6 +23,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
@@ -145,8 +146,9 @@ public class StickerSetCell extends FrameLayout {
         if (documents != null && !documents.isEmpty()) {
             valueTextView.setText(LocaleController.formatPluralString("Stickers", documents.size()));
             TLRPC.Document document = documents.get(0);
-            if (document.thumb != null && document.thumb.location != null) {
-                imageView.setImage(document.thumb.location, null, "webp", null);
+            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+            if (thumb != null) {
+                imageView.setImage(thumb, null, "webp", null, set);
             }
         } else {
             valueTextView.setText(LocaleController.formatPluralString("Stickers", 0));

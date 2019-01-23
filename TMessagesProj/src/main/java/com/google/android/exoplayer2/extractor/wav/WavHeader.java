@@ -52,7 +52,7 @@ import com.google.android.exoplayer2.util.Util;
     this.encoding = encoding;
   }
 
-  // Setting bounds.
+  // Data bounds.
 
   /**
    * Sets the data start position and size in bytes of sample data in this WAV.
@@ -63,6 +63,11 @@ import com.google.android.exoplayer2.util.Util;
   public void setDataBounds(long dataStartPosition, long dataSize) {
     this.dataStartPosition = dataStartPosition;
     this.dataSize = dataSize;
+  }
+
+  /** Returns the data limit, or {@link C#POSITION_UNSET} if the data bounds have not been set. */
+  public long getDataLimit() {
+    return hasDataBounds() ? (dataStartPosition + dataSize) : C.POSITION_UNSET;
   }
 
   /** Returns whether the data start position and size have been set. */

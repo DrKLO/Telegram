@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -20,6 +20,7 @@ public class GroupCreateDividerItemDecoration extends RecyclerView.ItemDecoratio
 
     private boolean searching;
     private boolean single;
+    private int skipRows;
 
     public void setSearching(boolean value) {
         searching = value;
@@ -27,6 +28,10 @@ public class GroupCreateDividerItemDecoration extends RecyclerView.ItemDecoratio
 
     public void setSingle(boolean value) {
         single = value;
+    }
+
+    public void setSkipRows(int value) {
+        skipRows = value;
     }
 
     @Override
@@ -37,6 +42,9 @@ public class GroupCreateDividerItemDecoration extends RecyclerView.ItemDecoratio
         for (int i = 0; i < childCount; i++) {
             View child = parent.getChildAt(i);
             int position = parent.getChildAdapterPosition(child);
+            if (position < skipRows) {
+                continue;
+            }
             top = child.getBottom();
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(72), top, width - (LocaleController.isRTL ? AndroidUtilities.dp(72) : 0), top, Theme.dividerPaint);
         }

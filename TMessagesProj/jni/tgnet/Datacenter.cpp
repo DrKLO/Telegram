@@ -423,6 +423,29 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
     }
 }
 
+bool Datacenter::isCustomPort(uint32_t flags) {
+    uint32_t currentPortNum;
+    if (flags == 0 && authKeyPerm == nullptr && !addressesIpv4Temp.empty()) {
+        flags = TcpAddressFlagTemp;
+    }
+    if ((flags & TcpAddressFlagTemp) != 0) {
+        currentPortNum = currentPortNumIpv4Temp;
+    } else if ((flags & TcpAddressFlagDownload) != 0) {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
+            currentPortNum = currentPortNumIpv6Download;
+        } else {
+            currentPortNum = currentPortNumIpv4Download;
+        }
+    } else {
+        if ((flags & TcpAddressFlagIpv6) != 0) {
+            currentPortNum = currentPortNumIpv6;
+        } else {
+            currentPortNum = currentPortNumIpv4;
+        }
+    }
+    return defaultPorts[currentPortNum] != -1;
+}
+
 void Datacenter::storeCurrentAddressAndPortNum() {
     if (config == nullptr) {
         config = new Config(instanceNum, "dc" + to_string_int32(datacenterId) + "conf.dat");
@@ -618,7 +641,7 @@ int64_t Datacenter::getServerSalt() {
     }
 
     if (result == 0) {
-        DEBUG_D("dc%u valid salt not found", datacenterId);
+        if (LOGS_ENABLED) DEBUG_D("dc%u valid salt not found", datacenterId);
     }
 
     return result;
@@ -669,9 +692,12 @@ bool Datacenter::containsServerSalt(int64_t value) {
     return false;
 }
 
-void Datacenter::suspendConnections() {
+void Datacenter::suspendConnections(bool suspendPush) {
     if (genericConnection != nullptr) {
         genericConnection->suspendConnection();
+    }
+    if (suspendPush && pushConnection != nullptr) {
+        pushConnection->suspendConnection();
     }
     if (genericMediaConnection != nullptr) {
         genericMediaConnection->suspendConnection();
@@ -1040,13 +1066,13 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
         } else {
             messageBody = networkMessage->message->body.get();
         }
-        DEBUG_D("connection(%p, account%u, dc%u, type %d) send message (session: 0x%" PRIx64 ", seqno: %d, messageid: 0x%" PRIx64 "): %s(%p)", connection, instanceNum, datacenterId, connection->getConnectionType(), (uint64_t) connection->getSessionId(), networkMessage->message->seqno, (uint64_t) networkMessage->message->msg_id, typeid(*messageBody).name(), messageBody);
+        if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) send message (session: 0x%" PRIx64 ", seqno: %d, messageid: 0x%" PRIx64 "): %s(%p)", connection, instanceNum, datacenterId, connection->getConnectionType(), (uint64_t) connection->getSessionId(), networkMessage->message->seqno, (uint64_t) networkMessage->message->msg_id, typeid(*messageBody).name(), messageBody);
 
         int64_t messageTime = (int64_t) (networkMessage->message->msg_id / 4294967296.0 * 1000);
         int64_t currentTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMillis() + (int64_t) ConnectionsManager::getInstance(instanceNum).getTimeDifference() * 1000;
 
         if (!pfsInit && (messageTime < currentTime - 30000 || messageTime > currentTime + 25000)) {
-            DEBUG_D("wrap message in container");
+            if (LOGS_ENABLED) DEBUG_D("wrap message in container");
             TL_msg_container *messageContainer = new TL_msg_container();
             messageContainer->messages.push_back(std::move(networkMessage->message));
 
@@ -1059,7 +1085,7 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
             messageSeqNo = networkMessage->message->seqno;
         }
     } else {
-        DEBUG_D("start write messages to container");
+        if (LOGS_ENABLED) DEBUG_D("start write messages to container");
         TL_msg_container *messageContainer = new TL_msg_container();
         size_t count = requests.size();
         for (uint32_t a = 0; a < count; a++) {
@@ -1069,7 +1095,7 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
             } else {
                 messageBody = networkMessage->message->body.get();
             }
-            DEBUG_D("connection(%p, account%u, dc%u, type %d) send message (session: 0x%" PRIx64 ", seqno: %d, messageid: 0x%" PRIx64 "): %s(%p)", connection, instanceNum, datacenterId, connection->getConnectionType(), (uint64_t) connection->getSessionId(), networkMessage->message->seqno, (uint64_t) networkMessage->message->msg_id, typeid(*messageBody).name(), messageBody);
+            if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) send message (session: 0x%" PRIx64 ", seqno: %d, messageid: 0x%" PRIx64 "): %s(%p)", connection, instanceNum, datacenterId, connection->getConnectionType(), (uint64_t) connection->getSessionId(), networkMessage->message->seqno, (uint64_t) networkMessage->message->msg_id, typeid(*messageBody).name(), messageBody);
             messageContainer->messages.push_back(std::unique_ptr<TL_message>(std::move(networkMessage->message)));
         }
         messageId = ConnectionsManager::getInstance(instanceNum).generateMessageId();
@@ -1364,25 +1390,25 @@ void Datacenter::exportAuthorization() {
     exportingAuthorization = true;
     TL_auth_exportAuthorization *request = new TL_auth_exportAuthorization();
     request->dc_id = datacenterId;
-    DEBUG_D("dc%u begin export authorization", datacenterId);
+    if (LOGS_ENABLED) DEBUG_D("dc%u begin export authorization", datacenterId);
     ConnectionsManager::getInstance(instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType) {
         if (error == nullptr) {
             TL_auth_exportedAuthorization *res = (TL_auth_exportedAuthorization *) response;
             TL_auth_importAuthorization *request2 = new TL_auth_importAuthorization();
             request2->bytes = std::move(res->bytes);
             request2->id = res->id;
-            DEBUG_D("dc%u begin import authorization", datacenterId);
+            if (LOGS_ENABLED) DEBUG_D("dc%u begin import authorization", datacenterId);
             ConnectionsManager::getInstance(instanceNum).sendRequest(request2, [&](TLObject *response2, TL_error *error2, int32_t networkType) {
                 if (error2 == nullptr) {
                     authorized = true;
                     ConnectionsManager::getInstance(instanceNum).onDatacenterExportAuthorizationComplete(this);
                 } else {
-                    DEBUG_D("dc%u failed import authorization", datacenterId);
+                    if (LOGS_ENABLED) DEBUG_D("dc%u failed import authorization", datacenterId);
                 }
                 exportingAuthorization = false;
             }, nullptr, RequestFlagEnableUnauthorized | RequestFlagWithoutLogin, datacenterId, ConnectionTypeGeneric, true);
         } else {
-            DEBUG_D("dc%u failed export authorization", datacenterId);
+            if (LOGS_ENABLED) DEBUG_D("dc%u failed export authorization", datacenterId);
             exportingAuthorization = false;
         }
     }, nullptr, 0, DEFAULT_DATACENTER_ID, ConnectionTypeGeneric, true);
@@ -1430,7 +1456,7 @@ TL_help_configSimple *Datacenter::decodeSimpleConfig(NativeByteBuffer *buffer) {
     RSA *rsaKey = PEM_read_bio_RSAPublicKey(keyBio, NULL, NULL, NULL);
     if (rsaKey == nullptr) {
         if (rsaKey == nullptr) {
-            DEBUG_E("Invalid rsa public key");
+            if (LOGS_ENABLED) DEBUG_E("Invalid rsa public key");
             return nullptr;
         }
     }
@@ -1474,10 +1500,10 @@ TL_help_configSimple *Datacenter::decodeSimpleConfig(NativeByteBuffer *buffer) {
                             }
                         }
                     } else {
-                        DEBUG_E("TL data length field invalid - %d", data_len);
+                        if (LOGS_ENABLED) DEBUG_E("TL data length field invalid - %d", data_len);
                     }
                 } else {
-                    DEBUG_E("RSA signature check FAILED (SHA256 mismatch)");
+                    if (LOGS_ENABLED) DEBUG_E("RSA signature check FAILED (SHA256 mismatch)");
                 }
             }
         }

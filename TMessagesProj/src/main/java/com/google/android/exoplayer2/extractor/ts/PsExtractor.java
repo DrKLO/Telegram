@@ -39,9 +39,9 @@ public final class PsExtractor implements Extractor {
   public static final ExtractorsFactory FACTORY = () -> new Extractor[] {new PsExtractor()};
 
   /* package */ static final int PACK_START_CODE = 0x000001BA;
-  private static final int SYSTEM_HEADER_START_CODE = 0x000001BB;
-  private static final int PACKET_START_CODE_PREFIX = 0x000001;
-  private static final int MPEG_PROGRAM_END_CODE = 0x000001B9;
+  /* package */ static final int SYSTEM_HEADER_START_CODE = 0x000001BB;
+  /* package */ static final int PACKET_START_CODE_PREFIX = 0x000001;
+  /* package */ static final int MPEG_PROGRAM_END_CODE = 0x000001B9;
   private static final int MAX_STREAM_ID_PLUS_ONE = 0x100;
 
   // Max search length for first audio and video track in input data.
@@ -67,6 +67,7 @@ public final class PsExtractor implements Extractor {
   private long lastTrackPosition;
 
   // Accessed only by the loading thread.
+  private PsBinarySearchSeeker psBinarySearchSeeker;
   private ExtractorOutput output;
   private boolean hasOutputSeekMap;
 
@@ -129,7 +130,23 @@ public final class PsExtractor implements Extractor {
 
   @Override
   public void seek(long position, long timeUs) {
-    timestampAdjuster.reset();
+    boolean hasNotEncounteredFirstTimestamp =
+        timestampAdjuster.getTimestampOffsetUs() == C.TIME_UNSET;
+    if (hasNotEncounteredFirstTimestamp
+        || (timestampAdjuster.getFirstSampleTimestampUs() != 0
+            && timestampAdjuster.getFirstSampleTimestampUs() != timeUs)) {
+      // - If the timestamp adjuster in the PS stream has not encountered any sample, it's going to
+      // treat the first timestamp encountered as sample time 0, which is incorrect. In this case,
+      // we have to set the first sample timestamp manually.
+      // - If the timestamp adjuster has its timestamp set manually before, and now we seek to a
+      // different position, we need to set the first sample timestamp manually again.
+      timestampAdjuster.reset();
+      timestampAdjuster.setFirstSampleTimestampUs(timeUs);
+    }
+
+    if (psBinarySearchSeeker != null) {
+      psBinarySearchSeeker.setSeekTargetUs(timeUs);
+    }
     for (int i = 0; i < psPayloadReaders.size(); i++) {
       psPayloadReaders.valueAt(i).seek();
     }
@@ -144,12 +161,23 @@ public final class PsExtractor implements Extractor {
   public int read(ExtractorInput input, PositionHolder seekPosition)
       throws IOException, InterruptedException {
 
-    boolean canReadDuration = input.getLength() != C.LENGTH_UNSET;
+    long inputLength = input.getLength();
+    boolean canReadDuration = inputLength != C.LENGTH_UNSET;
     if (canReadDuration && !durationReader.isDurationReadFinished()) {
       return durationReader.readDuration(input, seekPosition);
     }
-    maybeOutputSeekMap();
+    maybeOutputSeekMap(inputLength);
+    if (psBinarySearchSeeker != null && psBinarySearchSeeker.isSeeking()) {
+      return psBinarySearchSeeker.handlePendingSeek(
+          input, seekPosition, /* outputFrameHolder= */ null);
+    }
 
+    input.resetPeekPosition();
+    long peekBytesLeft =
+        inputLength != C.LENGTH_UNSET ? inputLength - input.getPeekPosition() : C.LENGTH_UNSET;
+    if (peekBytesLeft != C.LENGTH_UNSET && peekBytesLeft < 4) {
+      return RESULT_END_OF_INPUT;
+    }
     // First peek and check what type of start code is next.
     if (!input.peekFully(psPacketBuffer.data, 0, 4, true)) {
       return RESULT_END_OF_INPUT;
@@ -251,10 +279,19 @@ public final class PsExtractor implements Extractor {
 
   // Internals.
 
-  private void maybeOutputSeekMap() {
+  private void maybeOutputSeekMap(long inputLength) {
     if (!hasOutputSeekMap) {
       hasOutputSeekMap = true;
-      output.seekMap(new SeekMap.Unseekable(durationReader.getDurationUs()));
+      if (durationReader.getDurationUs() != C.TIME_UNSET) {
+        psBinarySearchSeeker =
+            new PsBinarySearchSeeker(
+                durationReader.getScrTimestampAdjuster(),
+                durationReader.getDurationUs(),
+                inputLength);
+        output.seekMap(psBinarySearchSeeker.getSeekMap());
+      } else {
+        output.seekMap(new SeekMap.Unseekable(durationReader.getDurationUs()));
+      }
     }
   }
 
@@ -306,7 +343,7 @@ public final class PsExtractor implements Extractor {
       data.readBytes(pesScratch.data, 0, extendedHeaderLength);
       pesScratch.setPosition(0);
       parseHeaderExtension();
-      pesPayloadReader.packetStarted(timeUs, true);
+      pesPayloadReader.packetStarted(timeUs, TsPayloadReader.FLAG_DATA_ALIGNMENT_INDICATOR);
       pesPayloadReader.consume(data);
       // We always have complete PES packets with program stream.
       pesPayloadReader.packetFinished();

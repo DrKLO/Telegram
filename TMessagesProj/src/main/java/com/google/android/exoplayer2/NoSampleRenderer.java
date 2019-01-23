@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2;
 
+import android.support.annotation.Nullable;
 import com.google.android.exoplayer2.source.SampleStream;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.MediaClock;
@@ -158,6 +159,12 @@ public abstract class NoSampleRenderer implements Renderer, RendererCapabilities
   }
 
   @Override
+  public final void reset() {
+    Assertions.checkState(state == STATE_DISABLED);
+    onReset();
+  }
+
+  @Override
   public boolean isReady() {
     return true;
   }
@@ -182,7 +189,7 @@ public abstract class NoSampleRenderer implements Renderer, RendererCapabilities
   // PlayerMessage.Target implementation.
 
   @Override
-  public void handleMessage(int what, Object object) throws ExoPlaybackException {
+  public void handleMessage(int what, @Nullable Object object) throws ExoPlaybackException {
     // Do nothing.
   }
 
@@ -256,6 +263,15 @@ public abstract class NoSampleRenderer implements Renderer, RendererCapabilities
    * The default implementation is a no-op.
    */
   protected void onDisabled() {
+    // Do nothing.
+  }
+
+  /**
+   * Called when the renderer is reset.
+   *
+   * <p>The default implementation is a no-op.
+   */
+  protected void onReset() {
     // Do nothing.
   }
 

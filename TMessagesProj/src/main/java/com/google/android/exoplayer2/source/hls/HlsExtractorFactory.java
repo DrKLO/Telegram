@@ -20,7 +20,10 @@ import android.util.Pair;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.drm.DrmInitData;
 import com.google.android.exoplayer2.extractor.Extractor;
+import com.google.android.exoplayer2.extractor.ExtractorInput;
+import com.google.android.exoplayer2.extractor.PositionHolder;
 import com.google.android.exoplayer2.util.TimestampAdjuster;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -45,9 +48,14 @@ public interface HlsExtractorFactory {
    * @param timestampAdjuster Adjuster corresponding to the provided discontinuity sequence number.
    * @param responseHeaders The HTTP response headers associated with the media segment or
    *     initialization section to extract.
+   * @param sniffingExtractorInput The first extractor input that will be passed to the returned
+   *     extractor's {@link Extractor#read(ExtractorInput, PositionHolder)}. Must only be used to
+   *     call {@link Extractor#sniff(ExtractorInput)}.
    * @return A pair containing the {@link Extractor} and a boolean that indicates whether it is a
    *     packed audio extractor. The first element may be {@code previousExtractor} if the factory
    *     has determined it can be re-used.
+   * @throws InterruptedException If the thread is interrupted while sniffing.
+   * @throws IOException If an I/O error is encountered while sniffing.
    */
   Pair<Extractor, Boolean> createExtractor(
       Extractor previousExtractor,
@@ -56,5 +64,7 @@ public interface HlsExtractorFactory {
       List<Format> muxedCaptionFormats,
       DrmInitData drmInitData,
       TimestampAdjuster timestampAdjuster,
-      Map<String, List<String>> responseHeaders);
+      Map<String, List<String>> responseHeaders,
+      ExtractorInput sniffingExtractorInput)
+      throws InterruptedException, IOException;
 }

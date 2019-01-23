@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -12,17 +12,14 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.text.TextUtils;
@@ -171,10 +168,10 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.updateInterfaces);
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingDidReset);
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.contactsDidLoaded);
+            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.contactsDidLoad);
         }
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pushMessagesUpdated);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
         classGuid = ConnectionsManager.generateClassGuid();
 
         statusDrawables[0] = new TypingDotsDrawable();
@@ -541,17 +538,13 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             builder.setMessage(LocaleController.getString("PermissionNoAudio", R.string.PermissionNoAudio));
-            builder.setNegativeButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), new DialogInterface.OnClickListener() {
-                @TargetApi(Build.VERSION_CODES.GINGERBREAD)
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    try {
-                        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                        intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
-                        startActivity(intent);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
+            builder.setNegativeButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialog, which) -> {
+                try {
+                    Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
+                    startActivity(intent);
+                } catch (Exception e) {
+                    FileLog.e(e);
                 }
             });
             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
@@ -650,37 +643,28 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     moveDiff = width - centerView.getTranslationX();
                     otherView = leftView;
                     otherButtonsView = leftButtonsView;
-                    onAnimationEndRunnable = new Runnable() {
-                        @Override
-                        public void run() {
-                            animationInProgress = false;
-                            switchToPreviousMessage();
-                            AndroidUtilities.unlockOrientation(PopupNotificationActivity.this);
-                        }
+                    onAnimationEndRunnable = () -> {
+                        animationInProgress = false;
+                        switchToPreviousMessage();
+                        AndroidUtilities.unlockOrientation(PopupNotificationActivity.this);
                     };
                 } else if ((forceMove == 2 || diff < -width / 3) && rightView != null) {
                     moveDiff = -width - centerView.getTranslationX();
                     otherView = rightView;
                     otherButtonsView = rightButtonsView;
-                    onAnimationEndRunnable = new Runnable() {
-                        @Override
-                        public void run() {
-                            animationInProgress = false;
-                            switchToNextMessage();
-                            AndroidUtilities.unlockOrientation(PopupNotificationActivity.this);
-                        }
+                    onAnimationEndRunnable = () -> {
+                        animationInProgress = false;
+                        switchToNextMessage();
+                        AndroidUtilities.unlockOrientation(PopupNotificationActivity.this);
                     };
                 } else if (centerView.getTranslationX() != 0) {
                     moveDiff = -centerView.getTranslationX();
                     otherView = diff > 0 ? leftView : rightView;
                     otherButtonsView = diff > 0 ? leftButtonsView : rightButtonsView;
-                    onAnimationEndRunnable = new Runnable() {
-                        @Override
-                        public void run() {
-                            animationInProgress = false;
-                            applyViewsLayoutParams(0);
-                            AndroidUtilities.unlockOrientation(PopupNotificationActivity.this);
-                        }
+                    onAnimationEndRunnable = () -> {
+                        animationInProgress = false;
+                        applyViewsLayoutParams(0);
+                        AndroidUtilities.unlockOrientation(PopupNotificationActivity.this);
                     };
                 }
                 if (moveDiff != 0) {
@@ -807,12 +791,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                             view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                             view.setWeightSum(100);
                             view.setTag("b");
-                            view.setOnTouchListener(new View.OnTouchListener() {
-                                @Override
-                                public boolean onTouch(View v, MotionEvent event) {
-                                    return true;
-                                }
-                            });
+                            view.setOnTouchListener((v, event) -> true);
                         }
 
                         TextView textView = new TextView(this);
@@ -824,13 +803,10 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                         textView.setGravity(Gravity.CENTER);
                         textView.setBackgroundDrawable(Theme.getSelectorDrawable(true));
                         view.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 100.0f / buttonsCount));
-                        textView.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                TLRPC.KeyboardButton button = (TLRPC.KeyboardButton) v.getTag();
-                                if (button != null) {
-                                    SendMessagesHelper.getInstance(account).sendNotificationCallback(messageObject.getDialogId(), messageObject.getId(), button.data);
-                                }
+                        textView.setOnClickListener(v -> {
+                            TLRPC.KeyboardButton button1 = (TLRPC.KeyboardButton) v.getTag();
+                            if (button1 != null) {
+                                SendMessagesHelper.getInstance(account).sendNotificationCallback(messageObject.getDialogId(), messageObject.getId(), button1.data);
                             }
                         });
                     }
@@ -869,7 +845,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         ViewGroup view;
         MessageObject messageObject = popupMessages.get(num);
-        if (messageObject.type == 1 || messageObject.type == 4) {
+        if ((messageObject.type == 1 || messageObject.type == 4) && !messageObject.isSecretMedia()) {
             if (imageViews.size() > 0) {
                 view = imageViews.get(0);
                 imageViews.remove(0);
@@ -894,12 +870,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
                 view.setTag(2);
 
-                view.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        openCurrentMessage();
-                    }
-                });
+                view.setOnClickListener(v -> openCurrentMessage());
             }
 
             TextView messageText = view.findViewWithTag(312);
@@ -918,13 +889,17 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                             photoExist = false;
                         }
                     }
-                    if (photoExist || DownloadController.getInstance(messageObject.currentAccount).canDownloadMedia(messageObject)) {
-                        imageView.setImage(currentPhotoObject.location, "100_100", thumb.location, currentPhotoObject.size);
-                        photoSet = true;
+                    if (messageObject.needDrawBluredPreview()) {
+                        imageView.setImage(null, "100_100_b2", thumb, currentPhotoObject.size, messageObject);
                     } else {
-                        if (thumb != null) {
-                            imageView.setImage(thumb.location, null, (Drawable) null);
+                        if (photoExist || DownloadController.getInstance(messageObject.currentAccount).canDownloadMedia(messageObject)) {
+                            imageView.setImage(currentPhotoObject, "100_100", thumb, currentPhotoObject.size, messageObject);
                             photoSet = true;
+                        } else {
+                            if (thumb != null) {
+                                imageView.setImage(thumb, null, (Drawable) null, messageObject);
+                                photoSet = true;
+                            }
                         }
                     }
                 }
@@ -946,9 +921,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 double lon = geoPoint._long;
 
                 if (MessagesController.getInstance(messageObject.currentAccount).mapProvider == 2) {
-                    imageView.setImage(WebFile.createWithGeoPoint(geoPoint, 100, 100, 13, Math.min(2, (int) Math.ceil(AndroidUtilities.density))), null, (Drawable) null);
+                    imageView.setImage(WebFile.createWithGeoPoint(geoPoint, 100, 100, 15, Math.min(2, (int) Math.ceil(AndroidUtilities.density))), null, (Drawable) null, messageObject);
                 } else {
-                    String currentUrl = AndroidUtilities.formapMapUrl(messageObject.currentAccount, lat, lon, 100, 100, true, 13);
+                    String currentUrl = AndroidUtilities.formapMapUrl(messageObject.currentAccount, lat, lon, 100, 100, true, 15);
                     imageView.setImage(currentUrl, null, null);
                 }
             }
@@ -974,12 +949,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
                 view.setTag(3);
 
-                view.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        openCurrentMessage();
-                    }
-                });
+                view.setOnClickListener(v -> openCurrentMessage());
             }
 
             cell.setMessageObject(messageObject);
@@ -1002,12 +972,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 linearLayout.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                 scrollView.addView(linearLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
                 linearLayout.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(10));
-                linearLayout.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        openCurrentMessage();
-                    }
-                });
+                linearLayout.setOnClickListener(v -> openCurrentMessage());
 
                 TextView textView = new TextView(this);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -1368,12 +1333,13 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         TLRPC.FileLocation newPhoto = null;
         AvatarDrawable avatarDrawable = null;
+        Object parentObject = null;
         if (currentChat != null) {
             TLRPC.Chat chat = MessagesController.getInstance(currentMessageObject.currentAccount).getChat(currentChat.id);
             if (chat == null) {
                 return;
             }
-            currentChat = chat;
+            parentObject = currentChat = chat;
             if (currentChat.photo != null) {
                 newPhoto = currentChat.photo.photo_small;
             }
@@ -1383,14 +1349,14 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             if (user == null) {
                 return;
             }
-            currentUser = user;
+            parentObject = currentUser = user;
             if (currentUser.photo != null) {
                 newPhoto = currentUser.photo.photo_small;
             }
             avatarDrawable = new AvatarDrawable(currentUser);
         }
         if (avatarImageView != null) {
-            avatarImageView.setImage(newPhoto, "50_50", avatarDrawable);
+            avatarImageView.setImage(newPhoto, "50_50", avatarDrawable, parentObject);
         }
     }
 
@@ -1522,7 +1488,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     }
                 }
             }
-        } else if (id == NotificationCenter.emojiDidLoaded) {
+        } else if (id == NotificationCenter.emojiDidLoad) {
             if (messageContainer != null) {
                 int count = messageContainer.getChildCount();
                 for (int a = 0; a < count; a++) {
@@ -1535,7 +1501,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     }
                 }
             }
-        } else if (id == NotificationCenter.contactsDidLoaded) {
+        } else if (id == NotificationCenter.contactsDidLoad) {
             if (account == lastResumedAccount) {
                 updateSubtitle();
             }
@@ -1568,10 +1534,10 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.updateInterfaces);
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingDidReset);
-            NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.contactsDidLoaded);
+            NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.contactsDidLoad);
         }
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pushMessagesUpdated);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
         if (chatActivityEnterView != null) {
             chatActivityEnterView.onDestroy();
         }

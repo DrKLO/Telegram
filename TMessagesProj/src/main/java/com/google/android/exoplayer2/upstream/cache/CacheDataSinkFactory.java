@@ -23,28 +23,50 @@ import com.google.android.exoplayer2.upstream.DataSink;
 public final class CacheDataSinkFactory implements DataSink.Factory {
 
   private final Cache cache;
-  private final long maxCacheFileSize;
+  private final long fragmentSize;
   private final int bufferSize;
 
-  /**
-   * @see CacheDataSink#CacheDataSink(Cache, long)
-   */
-  public CacheDataSinkFactory(Cache cache, long maxCacheFileSize) {
-    this(cache, maxCacheFileSize, CacheDataSink.DEFAULT_BUFFER_SIZE);
+  private boolean syncFileDescriptor;
+  private boolean respectCacheFragmentationFlag;
+
+  /** @see CacheDataSink#CacheDataSink(Cache, long) */
+  public CacheDataSinkFactory(Cache cache, long fragmentSize) {
+    this(cache, fragmentSize, CacheDataSink.DEFAULT_BUFFER_SIZE);
+  }
+
+  /** @see CacheDataSink#CacheDataSink(Cache, long, int) */
+  public CacheDataSinkFactory(Cache cache, long fragmentSize, int bufferSize) {
+    this.cache = cache;
+    this.fragmentSize = fragmentSize;
+    this.bufferSize = bufferSize;
   }
 
   /**
-   * @see CacheDataSink#CacheDataSink(Cache, long, int)
+   * See {@link CacheDataSink#experimental_setSyncFileDescriptor(boolean)}.
+   *
+   * <p>This method is experimental, and will be renamed or removed in a future release.
    */
-  public CacheDataSinkFactory(Cache cache, long maxCacheFileSize, int bufferSize) {
-    this.cache = cache;
-    this.maxCacheFileSize = maxCacheFileSize;
-    this.bufferSize = bufferSize;
+  public CacheDataSinkFactory experimental_setSyncFileDescriptor(boolean syncFileDescriptor) {
+    this.syncFileDescriptor = syncFileDescriptor;
+    return this;
+  }
+
+  /**
+   * See {@link CacheDataSink#experimental_setRespectCacheFragmentationFlag(boolean)}.
+   *
+   * <p>This method is experimental, and will be renamed or removed in a future release.
+   */
+  public CacheDataSinkFactory experimental_setRespectCacheFragmentationFlag(
+      boolean respectCacheFragmentationFlag) {
+    this.respectCacheFragmentationFlag = respectCacheFragmentationFlag;
+    return this;
   }
 
   @Override
   public DataSink createDataSink() {
-    return new CacheDataSink(cache, maxCacheFileSize, bufferSize);
+    CacheDataSink dataSink = new CacheDataSink(cache, fragmentSize, bufferSize);
+    dataSink.experimental_setSyncFileDescriptor(syncFileDescriptor);
+    dataSink.experimental_setRespectCacheFragmentationFlag(respectCacheFragmentationFlag);
+    return dataSink;
   }
-
 }

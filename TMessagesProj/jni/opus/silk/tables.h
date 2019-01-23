@@ -97,12 +97,6 @@ extern const opus_uint8  silk_NLSF_interpolation_factor_iCDF[ 5 ];              
 extern const silk_NLSF_CB_struct silk_NLSF_CB_WB;                                                   /* 1040 */
 extern const silk_NLSF_CB_struct silk_NLSF_CB_NB_MB;                                                /* 728 */
 
-/* Piece-wise linear mapping from bitrate in kbps to coding quality in dB SNR */
-extern const opus_int32  silk_TargetRate_table_NB[  TARGET_RATE_TAB_SZ ];                           /*  32 */
-extern const opus_int32  silk_TargetRate_table_MB[  TARGET_RATE_TAB_SZ ];                           /*  32 */
-extern const opus_int32  silk_TargetRate_table_WB[  TARGET_RATE_TAB_SZ ];                           /*  32 */
-extern const opus_int16  silk_SNR_table_Q1[         TARGET_RATE_TAB_SZ ];                           /*  32 */
-
 /* Quantization offsets */
 extern const opus_int16  silk_Quantization_Offsets_Q10[ 2 ][ 2 ];                                   /*   8 */
 

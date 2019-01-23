@@ -83,7 +83,7 @@ public final class MpegAudioReader implements ElementaryStreamReader {
   }
 
   @Override
-  public void packetStarted(long pesTimeUs, boolean dataAlignmentIndicator) {
+  public void packetStarted(long pesTimeUs, @TsPayloadReader.Flags int flags) {
     timeUs = pesTimeUs;
   }
 
@@ -100,6 +100,8 @@ public final class MpegAudioReader implements ElementaryStreamReader {
         case STATE_READING_FRAME:
           readFrameRemainder(data);
           break;
+        default:
+          throw new IllegalStateException();
       }
     }
   }

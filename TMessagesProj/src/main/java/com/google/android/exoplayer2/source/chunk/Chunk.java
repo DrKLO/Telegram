@@ -119,7 +119,7 @@ public abstract class Chunk implements Loadable {
    * occurred, this is the redirected uri. Must only be called after the load completed, failed, or
    * was canceled.
    *
-   * @see DataSource#getUri().
+   * @see DataSource#getUri()
    */
   public final Uri getUri() {
     return dataSource.getLastOpenedUri();
@@ -129,7 +129,7 @@ public abstract class Chunk implements Loadable {
    * Returns the response headers associated with the last {@link DataSource#open} call. Must only
    * be called after the load completed, failed, or was canceled.
    *
-   * @see DataSource#getResponseHeaders().
+   * @see DataSource#getResponseHeaders()
    */
   public final Map<String, List<String>> getResponseHeaders() {
     return dataSource.getLastResponseHeaders();

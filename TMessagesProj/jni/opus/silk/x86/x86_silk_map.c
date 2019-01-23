@@ -68,7 +68,7 @@ opus_int (*const SILK_VAD_GETSA_Q8_IMPL[ OPUS_ARCHMASK + 1 ] )(
 
 #if 0 /* FIXME: SSE disabled until the NSQ code gets updated. */
 void (*const SILK_NSQ_IMPL[ OPUS_ARCHMASK + 1 ] )(
-    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
     const opus_int32            x_Q3[],                                     /* I    Prefiltered input signal        */
@@ -116,7 +116,7 @@ void (*const SILK_VQ_WMAT_EC_IMPL[ OPUS_ARCHMASK + 1 ] )(
 
 #if 0 /* FIXME: SSE disabled until the NSQ code gets updated. */
 void (*const SILK_NSQ_DEL_DEC_IMPL[ OPUS_ARCHMASK + 1 ] )(
-    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    const silk_encoder_state    *psEncC,                                    /* I    Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
     const opus_int32            x_Q3[],                                     /* I    Prefiltered input signal        */

@@ -15,8 +15,6 @@
  */
 package com.google.android.exoplayer2.ext.flac;
 
-import android.support.annotation.Keep;
-
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.util.FlacStreamInfo;
@@ -26,7 +24,6 @@ import java.nio.ByteBuffer;
 /**
  * JNI wrapper for the libflac Flac decoder.
  */
-@Keep
 /* package */ final class FlacDecoderJni {
 
   /** Exception to be thrown if {@link #decodeSample(ByteBuffer)} fails to decode a frame. */
@@ -100,7 +97,6 @@ import java.nio.ByteBuffer;
    * @return Returns the number of bytes read, or -1 on failure. It's not an error if this returns
    * zero; it just means all the data read from the source.
    */
-  @Keep
   public int read(ByteBuffer target) throws IOException, InterruptedException {
     int byteCount = target.remaining();
     if (byteBufferData != null) {
@@ -156,6 +152,7 @@ import java.nio.ByteBuffer;
   }
 
   /** Decodes and consumes the next sample from the FLAC stream into the given byte buffer. */
+  @SuppressWarnings("ByteBufferBackingArray")
   public void decodeSample(ByteBuffer output)
       throws IOException, InterruptedException, FlacFrameDecodeException {
     output.clear();

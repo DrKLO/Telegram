@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
@@ -28,8 +28,13 @@ public class TextInfoPrivacyCell extends FrameLayout {
 
     private TextView textView;
     private String linkTextColorKey = Theme.key_windowBackgroundWhiteLinkText;
+    private int bottomPadding = 17;
 
     public TextInfoPrivacyCell(Context context) {
+        this(context, 21);
+    }
+
+    public TextInfoPrivacyCell(Context context, int padding) {
         super(context);
 
         textView = new TextView(context);
@@ -37,14 +42,9 @@ public class TextInfoPrivacyCell extends FrameLayout {
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(17));
         textView.setMovementMethod(LinkMovementMethod.getInstance());
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 0, 17, 0));
-    }
-
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
         textView.setLinkTextColor(Theme.getColor(linkTextColorKey));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, padding, 0, padding, 0));
     }
 
     public void setLinkTextColorKey(String key) {
@@ -56,11 +56,15 @@ public class TextInfoPrivacyCell extends FrameLayout {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
     }
 
+    public void setBottomPadding(int value) {
+        bottomPadding = value;
+    }
+
     public void setText(CharSequence text) {
         if (text == null) {
             textView.setPadding(0, AndroidUtilities.dp(2), 0, 0);
         } else {
-            textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(17));
+            textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(bottomPadding));
         }
         textView.setText(text);
     }
@@ -69,8 +73,17 @@ public class TextInfoPrivacyCell extends FrameLayout {
         textView.setTextColor(color);
     }
 
+    public void setTextColor(String key) {
+        textView.setTextColor(Theme.getColor(key));
+        textView.setTag(key);
+    }
+
     public TextView getTextView() {
         return textView;
+    }
+
+    public int length() {
+        return textView.length();
     }
 
     public void setEnabled(boolean value, ArrayList<Animator> animators) {

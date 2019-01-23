@@ -18,7 +18,6 @@ package com.google.android.exoplayer2.ext.ffmpeg;
 import android.support.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayerLibraryInfo;
-import com.google.android.exoplayer2.util.LibraryLoader;
 import com.google.android.exoplayer2.util.MimeTypes;
 
 /**
@@ -63,6 +62,7 @@ public final class FfmpegLibrary {
       case MimeTypes.AUDIO_AC3:
         return "ac3";
       case MimeTypes.AUDIO_E_AC3:
+      case MimeTypes.AUDIO_E_AC3_JOC:
         return "eac3";
       case MimeTypes.AUDIO_TRUEHD:
         return "truehd";

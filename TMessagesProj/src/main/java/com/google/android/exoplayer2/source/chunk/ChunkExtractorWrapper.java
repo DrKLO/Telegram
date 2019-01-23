@@ -64,6 +64,7 @@ public final class ChunkExtractorWrapper implements ExtractorOutput {
 
   private boolean extractorInitialized;
   private TrackOutputProvider trackOutputProvider;
+  private long endTimeUs;
   private SeekMap seekMap;
   private Format[] sampleFormats;
 
@@ -101,21 +102,25 @@ public final class ChunkExtractorWrapper implements ExtractorOutput {
    * TrackOutputProvider}, and configures the extractor to receive data from a new chunk.
    *
    * @param trackOutputProvider The provider of {@link TrackOutput}s that will receive sample data.
-   * @param seekTimeUs The seek position within the new chunk, or {@link C#TIME_UNSET} to output the
-   *     whole chunk.
+   * @param startTimeUs The start position in the new chunk, or {@link C#TIME_UNSET} to output
+   *     samples from the start of the chunk.
+   * @param endTimeUs The end position in the new chunk, or {@link C#TIME_UNSET} to output samples
+   *     to the end of the chunk.
    */
-  public void init(@Nullable TrackOutputProvider trackOutputProvider, long seekTimeUs) {
+  public void init(
+      @Nullable TrackOutputProvider trackOutputProvider, long startTimeUs, long endTimeUs) {
     this.trackOutputProvider = trackOutputProvider;
+    this.endTimeUs = endTimeUs;
     if (!extractorInitialized) {
       extractor.init(this);
-      if (seekTimeUs != C.TIME_UNSET) {
-        extractor.seek(/* position= */ 0, seekTimeUs);
+      if (startTimeUs != C.TIME_UNSET) {
+        extractor.seek(/* position= */ 0, startTimeUs);
       }
       extractorInitialized = true;
     } else {
-      extractor.seek(/* position= */ 0, seekTimeUs == C.TIME_UNSET ? 0 : seekTimeUs);
+      extractor.seek(/* position= */ 0, startTimeUs == C.TIME_UNSET ? 0 : startTimeUs);
       for (int i = 0; i < bindingTrackOutputs.size(); i++) {
-        bindingTrackOutputs.valueAt(i).bind(trackOutputProvider);
+        bindingTrackOutputs.valueAt(i).bind(trackOutputProvider, endTimeUs);
       }
     }
   }
@@ -131,7 +136,7 @@ public final class ChunkExtractorWrapper implements ExtractorOutput {
       // TODO: Manifest formats for embedded tracks should also be passed here.
       bindingTrackOutput = new BindingTrackOutput(id, type,
           type == primaryTrackType ? primaryTrackManifestFormat : null);
-      bindingTrackOutput.bind(trackOutputProvider);
+      bindingTrackOutput.bind(trackOutputProvider, endTimeUs);
       bindingTrackOutputs.put(id, bindingTrackOutput);
     }
     return bindingTrackOutput;
@@ -158,21 +163,25 @@ public final class ChunkExtractorWrapper implements ExtractorOutput {
     private final int id;
     private final int type;
     private final Format manifestFormat;
+    private final DummyTrackOutput dummyTrackOutput;
 
     public Format sampleFormat;
     private TrackOutput trackOutput;
+    private long endTimeUs;
 
     public BindingTrackOutput(int id, int type, Format manifestFormat) {
       this.id = id;
       this.type = type;
       this.manifestFormat = manifestFormat;
+      dummyTrackOutput = new DummyTrackOutput();
     }
 
-    public void bind(TrackOutputProvider trackOutputProvider) {
+    public void bind(TrackOutputProvider trackOutputProvider, long endTimeUs) {
       if (trackOutputProvider == null) {
-        trackOutput = new DummyTrackOutput();
+        trackOutput = dummyTrackOutput;
         return;
       }
+      this.endTimeUs = endTimeUs;
       trackOutput = trackOutputProvider.track(id, type);
       if (sampleFormat != null) {
         trackOutput.format(sampleFormat);
@@ -200,6 +209,9 @@ public final class ChunkExtractorWrapper implements ExtractorOutput {
     @Override
     public void sampleMetadata(long timeUs, @C.BufferFlags int flags, int size, int offset,
         CryptoData cryptoData) {
+      if (endTimeUs != C.TIME_UNSET && timeUs >= endTimeUs) {
+        trackOutput = dummyTrackOutput;
+      }
       trackOutput.sampleMetadata(timeUs, flags, size, offset, cryptoData);
     }
 

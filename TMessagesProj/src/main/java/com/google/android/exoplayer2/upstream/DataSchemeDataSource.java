@@ -59,7 +59,7 @@ public final class DataSchemeDataSource extends BaseDataSource {
       }
     } else {
       // TODO: Add support for other charsets.
-      data = URLDecoder.decode(dataString, C.ASCII_NAME).getBytes();
+      data = Util.getUtf8Bytes(URLDecoder.decode(dataString, C.ASCII_NAME));
     }
     transferStarted(dataSpec);
     return data.length;

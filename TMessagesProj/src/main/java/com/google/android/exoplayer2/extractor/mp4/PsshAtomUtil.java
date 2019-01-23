@@ -16,7 +16,7 @@
 package com.google.android.exoplayer2.extractor.mp4;
 
 import android.support.annotation.Nullable;
-import android.util.Log;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import java.nio.ByteBuffer;
 import java.util.UUID;
@@ -75,6 +75,16 @@ public final class PsshAtomUtil {
       psshBox.put(data);
     } // Else the last 4 bytes are a 0 DataSize.
     return psshBox.array();
+  }
+
+  /**
+   * Returns whether the data is a valid PSSH atom.
+   *
+   * @param data The data to parse.
+   * @return Whether the data is a valid PSSH atom.
+   */
+  public static boolean isPsshAtom(byte[] data) {
+    return parsePsshAtom(data) != null;
   }
 
   /**

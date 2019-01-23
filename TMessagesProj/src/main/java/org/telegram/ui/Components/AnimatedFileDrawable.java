@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -86,6 +86,29 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         }
     };
 
+    private Runnable uiRunnableNoFrame = new Runnable() {
+        @Override
+        public void run() {
+            if (destroyWhenDone && nativePtr != 0) {
+                destroyDecoder(nativePtr);
+                nativePtr = 0;
+            }
+            if (nativePtr == 0) {
+                if (renderingBitmap != null) {
+                    renderingBitmap.recycle();
+                    renderingBitmap = null;
+                }
+                if (backgroundBitmap != null) {
+                    backgroundBitmap.recycle();
+                    backgroundBitmap = null;
+                }
+                return;
+            }
+            loadFrameTask = null;
+            scheduleNextGetFrame();
+        }
+    };
+
     private Runnable uiRunnable = new Runnable() {
         @Override
         public void run() {
@@ -133,20 +156,27 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                     decoderCreated = true;
                 }
                 try {
-                    if (backgroundBitmap == null) {
-                        try {
-                            backgroundBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
-                        } catch (Throwable e) {
-                            FileLog.e(e);
+                    if (nativePtr != 0 || metaData[0] == 0 || metaData[1] == 0) {
+                        if (backgroundBitmap == null) {
+                            try {
+                                backgroundBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
+                            } catch (Throwable e) {
+                                FileLog.e(e);
+                            }
+                            if (backgroundShader == null && backgroundBitmap != null && roundRadius != 0) {
+                                backgroundShader = new BitmapShader(backgroundBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                            }
                         }
-                        if (backgroundShader == null && backgroundBitmap != null && roundRadius != 0) {
-                            backgroundShader = new BitmapShader(backgroundBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                        if (backgroundBitmap != null) {
+                            lastFrameDecodeTime = System.currentTimeMillis();
+                            if (getVideoFrame(nativePtr, backgroundBitmap, metaData) == 0) {
+                                AndroidUtilities.runOnUIThread(uiRunnableNoFrame);
+                                return;
+                            }
                         }
-                    }
-                    if (backgroundBitmap != null) {
-                        lastFrameDecodeTime = System.currentTimeMillis();
-                        getVideoFrame(nativePtr, backgroundBitmap, metaData);
-
+                    } else {
+                        AndroidUtilities.runOnUIThread(uiRunnableNoFrame);
+                        return;
                     }
                 } catch (Throwable e) {
                     FileLog.e(e);
@@ -270,12 +300,20 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
 
     @Override
     public int getIntrinsicHeight() {
-        return decoderCreated ? (metaData[2] == 90 || metaData[2] == 270 ? metaData[0] : metaData[1]) : AndroidUtilities.dp(100);
+        int height = decoderCreated ? (metaData[2] == 90 || metaData[2] == 270 ? metaData[0] : metaData[1]) : 0;
+        if (height == 0) {
+            return AndroidUtilities.dp(100);
+        }
+        return height;
     }
 
     @Override
     public int getIntrinsicWidth() {
-        return decoderCreated ? (metaData[2] == 90 || metaData[2] == 270 ? metaData[1] : metaData[0]) : AndroidUtilities.dp(100);
+        int width = decoderCreated ? (metaData[2] == 90 || metaData[2] == 270 ? metaData[1] : metaData[0]) : 0;
+        if (width == 0) {
+            return AndroidUtilities.dp(100);
+        }
+        return width;
     }
 
     @Override
@@ -377,12 +415,20 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
 
     @Override
     public int getMinimumHeight() {
-        return decoderCreated ? (metaData[2] == 90 || metaData[2] == 270 ? metaData[0] : metaData[1]) : AndroidUtilities.dp(100);
+        int height = decoderCreated ? (metaData[2] == 90 || metaData[2] == 270 ? metaData[0] : metaData[1]) : 0;
+        if (height == 0) {
+            return AndroidUtilities.dp(100);
+        }
+        return height;
     }
 
     @Override
     public int getMinimumWidth() {
-        return decoderCreated ? (metaData[2] == 90 || metaData[2] == 270 ? metaData[1] : metaData[0]) : AndroidUtilities.dp(100);
+        int width = decoderCreated ? (metaData[2] == 90 || metaData[2] == 270 ? metaData[1] : metaData[0]) : 0;
+        if (width == 0) {
+            return AndroidUtilities.dp(100);
+        }
+        return width;
     }
 
     public Bitmap getAnimatedBitmap() {

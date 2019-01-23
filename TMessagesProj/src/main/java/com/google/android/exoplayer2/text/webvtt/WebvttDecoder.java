@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.text.webvtt;
 
 import android.text.TextUtils;
+import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.text.SimpleSubtitleDecoder;
 import com.google.android.exoplayer2.text.SubtitleDecoderException;
 import com.google.android.exoplayer2.util.ParsableByteArray;
@@ -62,7 +63,11 @@ public final class WebvttDecoder extends SimpleSubtitleDecoder {
     definedStyles.clear();
 
     // Validate the first line of the header, and skip the remainder.
-    WebvttParserUtil.validateWebvttHeaderLine(parsableWebvttData);
+    try {
+      WebvttParserUtil.validateWebvttHeaderLine(parsableWebvttData);
+    } catch (ParserException e) {
+      throw new SubtitleDecoderException(e);
+    }
     while (!TextUtils.isEmpty(parsableWebvttData.readLine())) {}
 
     int event;
@@ -105,7 +110,7 @@ public final class WebvttDecoder extends SimpleSubtitleDecoder {
         foundEvent = EVENT_END_OF_FILE;
       } else if (STYLE_START.equals(line)) {
         foundEvent = EVENT_STYLE_BLOCK;
-      } else if (COMMENT_START.startsWith(line)) {
+      } else if (line.startsWith(COMMENT_START)) {
         foundEvent = EVENT_COMMENT;
       } else {
         foundEvent = EVENT_CUE;

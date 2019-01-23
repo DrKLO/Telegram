@@ -1,15 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
 
 import android.content.Context;
-import android.graphics.Canvas;
 import android.graphics.Typeface;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -26,13 +25,10 @@ public class TextPriceCell extends FrameLayout {
 
     private TextView textView;
     private TextView valueTextView;
-    private String dotstring;
-    private int dotLength;
 
     public TextPriceCell(Context context) {
         super(context);
 
-        dotstring = LocaleController.isRTL ? " ." : ". ";
         setWillNotDraw(false);
 
         textView = new TextView(context);
@@ -42,7 +38,7 @@ public class TextPriceCell extends FrameLayout {
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 0, 17, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 0, 21, 0));
 
         valueTextView = new TextView(context);
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -52,7 +48,7 @@ public class TextPriceCell extends FrameLayout {
         valueTextView.setSingleLine(true);
         valueTextView.setEllipsize(TextUtils.TruncateAt.END);
         valueTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
-        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 17, 0, 17, 0));
+        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 21, 0, 21, 0));
     }
 
     @Override
@@ -66,7 +62,6 @@ public class TextPriceCell extends FrameLayout {
         width = availableWidth - valueTextView.getMeasuredWidth() - AndroidUtilities.dp(8);
 
         textView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
-        dotLength = (int) Math.ceil(textView.getPaint().measureText(dotstring));
     }
 
     public void setTextColor(int color) {
@@ -99,18 +94,5 @@ public class TextPriceCell extends FrameLayout {
             valueTextView.setTypeface(Typeface.DEFAULT);
         }
         requestLayout();
-    }
-
-    @Override
-    protected void onDraw(Canvas canvas) {
-        /*if (LocaleController.isRTL) {
-
-        } else {
-            int start = textView.getMeasuredWidth() + AndroidUtilities.dp(17 + 4);
-            int end = getMeasuredWidth() - valueTextView.getMeasuredWidth() - AndroidUtilities.dp(17 + 4);
-            for (int a = start; a < end; a+= dotLength) {
-                canvas.drawText(dotstring, a, AndroidUtilities.dp(30), textView.getPaint());
-            }
-        }*/
     }
 }

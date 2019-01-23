@@ -23,17 +23,25 @@ import com.google.android.exoplayer2.drm.DrmInitData;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.ParsableBitArray;
 import com.google.android.exoplayer2.util.ParsableByteArray;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.ByteBuffer;
 
-/** Utility methods for parsing Dolby TrueHD and (E-)AC3 syncframes. */
+/**
+ * Utility methods for parsing Dolby TrueHD and (E-)AC-3 syncframes. (E-)AC-3 parsing follows the
+ * definition in ETSI TS 102 366 V1.2.1.
+ */
 public final class Ac3Util {
 
   /** Holds sample format information as presented by a syncframe header. */
   public static final class SyncFrameInfo {
 
-    /** AC3 stream types. See also ETSI TS 102 366 E.1.3.1.1. */
+    /**
+     * AC3 stream types. See also ETSI TS 102 366 E.1.3.1.1. One of {@link #STREAM_TYPE_UNDEFINED},
+     * {@link #STREAM_TYPE_TYPE0}, {@link #STREAM_TYPE_TYPE1} or {@link #STREAM_TYPE_TYPE2}.
+     */
+    @Documented
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({STREAM_TYPE_UNDEFINED, STREAM_TYPE_TYPE0, STREAM_TYPE_TYPE1, STREAM_TYPE_TYPE2})
     public @interface StreamType {}
@@ -234,7 +242,7 @@ public final class Ac3Util {
   public static SyncFrameInfo parseAc3SyncframeInfo(ParsableBitArray data) {
     int initialPosition = data.getPosition();
     data.skipBits(40);
-    boolean isEac3 = data.readBits(5) == 16;
+    boolean isEac3 = data.readBits(5) == 16; // See bsid in subsection E.1.3.1.6.
     data.setPosition(initialPosition);
     String mimeType;
     @StreamType int streamType = SyncFrameInfo.STREAM_TYPE_UNDEFINED;
@@ -262,7 +270,7 @@ public final class Ac3Util {
           break;
       }
       data.skipBits(3); // substreamid
-      frameSize = (data.readBits(11) + 1) * 2;
+      frameSize = (data.readBits(11) + 1) * 2; // See frmsiz in subsection E.1.3.1.3.
       int fscod = data.readBits(2);
       int audioBlocks;
       int numblkscod;
@@ -448,18 +456,25 @@ public final class Ac3Util {
   }
 
   /**
-   * Returns the size in bytes of the given AC-3 syncframe.
+   * Returns the size in bytes of the given (E-)AC-3 syncframe.
    *
    * @param data The syncframe to parse.
    * @return The syncframe size in bytes. {@link C#LENGTH_UNSET} if the input is invalid.
    */
   public static int parseAc3SyncframeSize(byte[] data) {
-    if (data.length < 5) {
+    if (data.length < 6) {
       return C.LENGTH_UNSET;
     }
-    int fscod = (data[4] & 0xC0) >> 6;
-    int frmsizecod = data[4] & 0x3F;
-    return getAc3SyncframeSize(fscod, frmsizecod);
+    boolean isEac3 = ((data[5] & 0xFF) >> 3) == 16; // See bsid in subsection E.1.3.1.6.
+    if (isEac3) {
+      int frmsiz = (data[2] & 0x07) << 8; // Most significant 3 bits.
+      frmsiz |= data[3] & 0xFF; // Least significant 8 bits.
+      return (frmsiz + 1) * 2; // See frmsiz in subsection E.1.3.1.3.
+    } else {
+      int fscod = (data[4] & 0xC0) >> 6;
+      int frmsizecod = data[4] & 0x3F;
+      return getAc3SyncframeSize(fscod, frmsizecod);
+    }
   }
 
   /**

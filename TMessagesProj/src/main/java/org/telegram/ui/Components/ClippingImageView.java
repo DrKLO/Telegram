@@ -1,14 +1,15 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -211,7 +212,7 @@ public class ClippingImageView extends View {
             bitmapShader = null;
         }
         bmp = bitmap;
-        if (bitmap != null) {
+        if (bitmap != null && bitmap.bitmap != null) {
             bitmapRect.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
             if (needRadius) {
                 bitmapShader = new BitmapShader(bitmap.bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
@@ -219,6 +220,14 @@ public class ClippingImageView extends View {
             }
         }
         invalidate();
+    }
+
+    public Bitmap getBitmap() {
+        return bmp != null ? bmp.bitmap : null;
+    }
+
+    public int getOrientation() {
+        return orientation;
     }
 
     public void setNeedRadius(boolean value) {

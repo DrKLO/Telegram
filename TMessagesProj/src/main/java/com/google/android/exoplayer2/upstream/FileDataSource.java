@@ -42,12 +42,16 @@ public final class FileDataSource extends BaseDataSource {
   private boolean opened;
 
   public FileDataSource() {
-    this(null);
+    super(/* isNetwork= */ false);
   }
 
-  /** @param listener An optional listener. */
+  /**
+   * @param listener An optional listener.
+   * @deprecated Use {@link #FileDataSource()} and {@link #addTransferListener(TransferListener)}
+   */
+  @Deprecated
   public FileDataSource(@Nullable TransferListener listener) {
-    super(/* isNetwork= */ false);
+    this();
     if (listener != null) {
       addTransferListener(listener);
     }

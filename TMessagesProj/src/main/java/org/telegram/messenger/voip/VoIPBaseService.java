@@ -218,6 +218,8 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	protected int callDiscardReason;
 	protected boolean bluetoothScoActive=false;
 	protected boolean needSwitchToBluetoothAfterScoActivates=false;
+	protected boolean didDeleteConnectionServiceContact=false;
+	protected Runnable connectingSoundRunnable;
 
 	public boolean hasEarpiece() {
 		if(USE_CONNECTION_SERVICE){
@@ -627,6 +629,8 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			soundPool.release();
 
 		if(USE_CONNECTION_SERVICE){
+			if(!didDeleteConnectionServiceContact)
+				ContactsController.getInstance(currentAccount).deleteConnectionServiceContact();
 			if(systemCallConnection!=null && !playingSound){
 				systemCallConnection.destroy();
 			}
@@ -1196,6 +1200,10 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			return;
 		}
 		if (newState == STATE_ESTABLISHED) {
+			if(connectingSoundRunnable!=null){
+				AndroidUtilities.cancelRunOnUIThread(connectingSoundRunnable);
+				connectingSoundRunnable=null;
+			}
 			if (spPlayID != 0) {
 				soundPool.stop(spPlayID);
 				spPlayID = 0;
@@ -1254,6 +1262,11 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			AndroidUtilities.cancelRunOnUIThread(timeoutRunnable);
 			timeoutRunnable=null;
 		}
+		endConnectionServiceCall(needPlayEndSound ? 700 : 0);
+		stopSelf();
+	}
+
+	protected void endConnectionServiceCall(long delay){
 		if(USE_CONNECTION_SERVICE){
 			Runnable r=new Runnable(){
 				@Override
@@ -1281,12 +1294,11 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 					}
 				}
 			};
-			if(needPlayEndSound)
-				AndroidUtilities.runOnUIThread(r, 700);
+			if(delay>0)
+				AndroidUtilities.runOnUIThread(r, delay);
 			else
 				r.run();
 		}
-		stopSelf();
 	}
 
 	public boolean isOutgoing(){
@@ -1395,6 +1407,8 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 				|| "marlin".equals(Build.PRODUCT)		// Pixel XL
 				|| "walleye".equals(Build.PRODUCT)		// Pixel 2
 				|| "taimen".equals(Build.PRODUCT)		// Pixel 2 XL
+				|| "blueline".equals(Build.PRODUCT)		// Pixel 3
+				|| "crosshatch".equals(Build.PRODUCT)	// Pixel 3 XL
 				|| MessagesController.getGlobalMainSettings().getBoolean("dbg_force_connection_service", false)
 				;
 	}
@@ -1450,7 +1464,11 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		public void onStateChanged(int state){
 			super.onStateChanged(state);
 			if(BuildVars.LOGS_ENABLED)
-				FileLog.d("ConnectionService onStateChanged "+state);
+				FileLog.d("ConnectionService onStateChanged "+stateToString(state));
+			if(state==Connection.STATE_ACTIVE){
+				ContactsController.getInstance(currentAccount).deleteConnectionServiceContact();
+				didDeleteConnectionServiceContact=true;
+			}
 		}
 
 		@Override

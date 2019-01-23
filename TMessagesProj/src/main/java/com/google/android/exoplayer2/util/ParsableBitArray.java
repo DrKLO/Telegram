@@ -28,10 +28,10 @@ public final class ParsableBitArray {
   private int bitOffset;
   private int byteLimit;
 
-  /**
-   * Creates a new instance that initially has no backing data.
-   */
-  public ParsableBitArray() {}
+  /** Creates a new instance that initially has no backing data. */
+  public ParsableBitArray() {
+    data = Util.EMPTY_BYTE_ARRAY;
+  }
 
   /**
    * Creates a new instance that wraps an existing array.

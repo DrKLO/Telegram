@@ -24,6 +24,7 @@ import com.google.android.exoplayer2.extractor.ExtractorOutput;
 import com.google.android.exoplayer2.extractor.ExtractorsFactory;
 import com.google.android.exoplayer2.extractor.PositionHolder;
 import com.google.android.exoplayer2.extractor.TrackOutput;
+import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.MimeTypes;
 import java.io.IOException;
 
@@ -88,7 +89,16 @@ public final class WavExtractor implements Extractor {
       extractorOutput.seekMap(wavHeader);
     }
 
-    int bytesAppended = trackOutput.sampleData(input, MAX_INPUT_SIZE - pendingBytes, true);
+    long dataLimit = wavHeader.getDataLimit();
+    Assertions.checkState(dataLimit != C.POSITION_UNSET);
+
+    long bytesLeft = dataLimit - input.getPosition();
+    if (bytesLeft <= 0) {
+      return Extractor.RESULT_END_OF_INPUT;
+    }
+
+    int maxBytesToRead = (int) Math.min(MAX_INPUT_SIZE - pendingBytes, bytesLeft);
+    int bytesAppended = trackOutput.sampleData(input, maxBytesToRead, true);
     if (bytesAppended != RESULT_END_OF_INPUT) {
       pendingBytes += bytesAppended;
     }

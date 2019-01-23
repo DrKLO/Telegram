@@ -26,14 +26,10 @@ private:
     pthread_mutex_t mutex;
 };
 
-#ifdef DEBUG_VERSION
+extern bool LOGS_ENABLED;
+
 #define DEBUG_E FileLog::getInstance().e
 #define DEBUG_W FileLog::getInstance().w
 #define DEBUG_D FileLog::getInstance().d
-#else
-#define DEBUG_E
-#define DEBUG_W
-#define DEBUG_D
-#endif
 
 #endif

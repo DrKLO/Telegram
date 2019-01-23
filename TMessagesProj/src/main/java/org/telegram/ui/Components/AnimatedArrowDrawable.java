@@ -18,12 +18,14 @@ public class AnimatedArrowDrawable extends Drawable {
     private float animProgress;
     private float animateToProgress;
     private long lastUpdateTime;
+    private boolean isSmall;
 
-    public AnimatedArrowDrawable(int color) {
+    public AnimatedArrowDrawable(int color, boolean small) {
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(AndroidUtilities.dp(2));
         paint.setColor(color);
+        isSmall = small;
 
         updatePath();
     }
@@ -37,9 +39,15 @@ public class AnimatedArrowDrawable extends Drawable {
     private void updatePath() {
         path.reset();
         float p = animProgress * 2 - 1;
-        path.moveTo(AndroidUtilities.dp(3), AndroidUtilities.dp(12) - AndroidUtilities.dp(4) * p);
-        path.lineTo(AndroidUtilities.dp(13), AndroidUtilities.dp(12) + AndroidUtilities.dp(4) * p);
-        path.lineTo(AndroidUtilities.dp(23), AndroidUtilities.dp(12) - AndroidUtilities.dp(4) * p);
+        if (isSmall) {
+            path.moveTo(AndroidUtilities.dp(3), AndroidUtilities.dp(6) - AndroidUtilities.dp(2) * p);
+            path.lineTo(AndroidUtilities.dp(8), AndroidUtilities.dp(6) + AndroidUtilities.dp(2) * p);
+            path.lineTo(AndroidUtilities.dp(13), AndroidUtilities.dp(6) - AndroidUtilities.dp(2) * p);
+        } else {
+            path.moveTo(AndroidUtilities.dp(3), AndroidUtilities.dp(12) - AndroidUtilities.dp(4) * p);
+            path.lineTo(AndroidUtilities.dp(13), AndroidUtilities.dp(12) + AndroidUtilities.dp(4) * p);
+            path.lineTo(AndroidUtilities.dp(23), AndroidUtilities.dp(12) - AndroidUtilities.dp(4) * p);
+        }
     }
 
     @Keep

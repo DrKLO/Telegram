@@ -48,6 +48,7 @@ protected:
     void onReceivedData(NativeByteBuffer *buffer) override;
     void onDisconnected(int32_t reason, int32_t error) override;
     void onConnected() override;
+    bool hasPendingRequests() override;
     void reconnect();
 
 private:
@@ -95,6 +96,8 @@ private:
     bool waitForReconnectTimer = false;
     uint32_t lastReconnectTimeout = 100;
     int64_t usefullDataReceiveTime;
+    uint32_t currentTimeout = 4;
+    uint32_t receivedDataAmount = 0;
 
     uint8_t temp[64];
 

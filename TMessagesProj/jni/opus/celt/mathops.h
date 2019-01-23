@@ -72,7 +72,7 @@ static OPUS_INLINE float fast_atan2f(float y, float x) {
 #undef cA
 #undef cB
 #undef cC
-#undef cD
+#undef cE
 #endif
 
 
@@ -179,7 +179,7 @@ static OPUS_INLINE float celt_exp2(float x)
 /** Integer log in base2. Undefined for zero and negative numbers */
 static OPUS_INLINE opus_int16 celt_ilog2(opus_int32 x)
 {
-   celt_assert2(x>0, "celt_ilog2() only defined for strictly positive numbers");
+   celt_sig_assert(x>0);
    return EC_ILOG(x)-1;
 }
 #endif

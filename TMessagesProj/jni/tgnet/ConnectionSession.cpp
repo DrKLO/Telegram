@@ -52,8 +52,17 @@ uint32_t ConnectionSession::generateMessageSeqNo(bool increment) {
     return value * 2 + (increment ? 1 : 0);
 }
 
-bool ConnectionSession::isMessageIdProcessed(int64_t messageId) {
-    return !(messageId & 1) || minProcessedMessageId != 0 && messageId < minProcessedMessageId || std::find(processedMessageIds.begin(), processedMessageIds.end(), messageId) != processedMessageIds.end();
+int32_t ConnectionSession::isMessageIdProcessed(int64_t messageId) {
+    if (!(messageId & 1)) {
+        return 1;
+    }
+    if (minProcessedMessageId != 0 && messageId < minProcessedMessageId) {
+        return 2;
+    }
+    if (std::find(processedMessageIds.begin(), processedMessageIds.end(), messageId) != processedMessageIds.end()) {
+        return 1;
+    }
+    return 0;
 }
 
 void ConnectionSession::addProcessedMessageId(int64_t messageId) {
@@ -70,7 +79,7 @@ bool ConnectionSession::hasMessagesToConfirm() {
 }
 
 void ConnectionSession::addMessageToConfirm(int64_t messageId) {
-    if (std::find(processedMessageIds.begin(), processedMessageIds.end(), messageId) != processedMessageIds.end()) {
+    if (std::find(messagesIdsForConfirmation.begin(), messagesIdsForConfirmation.end(), messageId) != messagesIdsForConfirmation.end()) {
         return;
     }
     messagesIdsForConfirmation.push_back(messageId);

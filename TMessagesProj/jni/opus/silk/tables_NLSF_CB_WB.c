@@ -98,7 +98,7 @@ static const opus_uint8 silk_NLSF_CB1_WB_Q8[ 512 ] = {
        110,    119,    129,    141,    175,    198,    218,    237
 };
 
-static const opus_int16 silk_NLSF_CB1_Wght_Q9[ 512 ] = {
+static const opus_int16 silk_NLSF_CB1_WB_Wght_Q9[ 512 ] = {
      3657, 2925, 2925, 2925, 2925, 2925, 2925, 2925, 2925, 2925, 2925, 2925, 2963, 2963, 2925, 2846,
      3216, 3085, 2972, 3056, 3056, 3010, 3010, 3010, 2963, 2963, 3010, 2972, 2888, 2846, 2846, 2726,
      3920, 4014, 2981, 3207, 3207, 2934, 3056, 2846, 3122, 3244, 2925, 2846, 2620, 2553, 2780, 2925,
@@ -223,7 +223,7 @@ const silk_NLSF_CB_struct silk_NLSF_CB_WB =
     SILK_FIX_CONST( 0.15, 16 ),
     SILK_FIX_CONST( 1.0 / 0.15, 6 ),
     silk_NLSF_CB1_WB_Q8,
-    silk_NLSF_CB1_Wght_Q9,
+    silk_NLSF_CB1_WB_Wght_Q9,
     silk_NLSF_CB1_iCDF_WB,
     silk_NLSF_PRED_WB_Q8,
     silk_NLSF_CB2_SELECT_WB,

@@ -18,6 +18,8 @@ package com.google.android.exoplayer2.audio;
 import android.support.annotation.IntDef;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.util.Util;
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.ByteBuffer;
@@ -33,12 +35,12 @@ public final class SilenceSkippingAudioProcessor implements AudioProcessor {
    * The minimum duration of audio that must be below {@link #SILENCE_THRESHOLD_LEVEL} to classify
    * that part of audio as silent, in microseconds.
    */
-  private static final long MINIMUM_SILENCE_DURATION_US = 100_000;
+  private static final long MINIMUM_SILENCE_DURATION_US = 150_000;
   /**
    * The duration of silence by which to extend non-silent sections, in microseconds. The value must
    * not exceed {@link #MINIMUM_SILENCE_DURATION_US}.
    */
-  private static final long PADDING_SILENCE_US = 10_000;
+  private static final long PADDING_SILENCE_US = 20_000;
   /**
    * The absolute level below which an individual PCM sample is classified as silent. Note: the
    * specified value will be rounded so that the threshold check only depends on the more
@@ -53,6 +55,7 @@ public final class SilenceSkippingAudioProcessor implements AudioProcessor {
   private static final byte SILENCE_THRESHOLD_LEVEL_MSB = (SILENCE_THRESHOLD_LEVEL + 128) >> 8;
 
   /** Trimming states. */
+  @Documented
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
     STATE_NOISY,
@@ -102,8 +105,8 @@ public final class SilenceSkippingAudioProcessor implements AudioProcessor {
     outputBuffer = EMPTY_BUFFER;
     channelCount = Format.NO_VALUE;
     sampleRateHz = Format.NO_VALUE;
-    maybeSilenceBuffer = new byte[0];
-    paddingBuffer = new byte[0];
+    maybeSilenceBuffer = Util.EMPTY_BYTE_ARRAY;
+    paddingBuffer = Util.EMPTY_BYTE_ARRAY;
   }
 
   /**
@@ -234,8 +237,8 @@ public final class SilenceSkippingAudioProcessor implements AudioProcessor {
     channelCount = Format.NO_VALUE;
     sampleRateHz = Format.NO_VALUE;
     paddingSize = 0;
-    maybeSilenceBuffer = new byte[0];
-    paddingBuffer = new byte[0];
+    maybeSilenceBuffer = Util.EMPTY_BYTE_ARRAY;
+    paddingBuffer = Util.EMPTY_BYTE_ARRAY;
   }
 
   // Internal methods.

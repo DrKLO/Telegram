@@ -15,7 +15,9 @@
  */
 package com.google.android.exoplayer2.upstream.cache;
 
+import android.support.annotation.VisibleForTesting;
 import android.util.SparseArray;
+import android.util.SparseBooleanArray;
 import com.google.android.exoplayer2.upstream.cache.Cache.CacheException;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.AtomicFile;
@@ -41,9 +43,10 @@ import javax.crypto.CipherOutputStream;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import org.checkerframework.checker.nullness.compatqual.NullableType;
 
 /** Maintains the index of cached content. */
-/*package*/ class CachedContentIndex {
+/* package */ class CachedContentIndex {
 
   public static final String FILE_NAME = "cached_content_index.exi";
 
@@ -52,7 +55,30 @@ import javax.crypto.spec.SecretKeySpec;
   private static final int FLAG_ENCRYPTED_INDEX = 1;
 
   private final HashMap<String, CachedContent> keyToContent;
-  private final SparseArray<String> idToKey;
+  /**
+   * Maps assigned ids to their corresponding keys. Also contains (id -> null) entries for ids that
+   * have been removed from the index since it was last stored. This prevents reuse of these ids,
+   * which is necessary to avoid clashes that could otherwise occur as a result of the sequence:
+   *
+   * <p>[1] (key1, id1) is removed from the in-memory index ... the index is not stored to disk ...
+   * [2] id1 is reused for a different key2 ... the index is not stored to disk ... [3] A file for
+   * key2 is partially written using a path corresponding to id1 ... the process is killed before
+   * the index is stored to disk ... [4] The index is read from disk, causing the partially written
+   * file to be incorrectly associated to key1
+   *
+   * <p>By avoiding id reuse in step [2], a new id2 will be used instead. Step [4] will then delete
+   * the partially written file because the index does not contain an entry for id2.
+   *
+   * <p>When the index is next stored (id -> null) entries are removed, making the ids eligible for
+   * reuse.
+   */
+  private final SparseArray<@NullableType String> idToKey;
+  /**
+   * Tracks ids for which (id -> null) entries are present in idToKey, so that they can be removed
+   * efficiently when the index is next stored.
+   */
+  private final SparseBooleanArray removedIds;
+
   private final AtomicFile atomicFile;
   private final Cipher cipher;
   private final SecretKeySpec secretKeySpec;
@@ -104,6 +130,7 @@ import javax.crypto.spec.SecretKeySpec;
     }
     keyToContent = new HashMap<>();
     idToKey = new SparseArray<>();
+    removedIds = new SparseBooleanArray();
     atomicFile = new AtomicFile(new File(cacheDir, FILE_NAME));
   }
 
@@ -124,6 +151,12 @@ import javax.crypto.spec.SecretKeySpec;
     }
     writeFile();
     changed = false;
+    // Make ids that were removed since the index was last stored eligible for re-use.
+    int removedIdCount = removedIds.size();
+    for (int i = 0; i < removedIdCount; i++) {
+      idToKey.remove(removedIds.keyAt(i));
+    }
+    removedIds.clear();
   }
 
   /**
@@ -168,8 +201,11 @@ import javax.crypto.spec.SecretKeySpec;
     CachedContent cachedContent = keyToContent.get(key);
     if (cachedContent != null && cachedContent.isEmpty() && !cachedContent.isLocked()) {
       keyToContent.remove(key);
-      idToKey.remove(cachedContent.id);
       changed = true;
+      // Keep an entry in idToKey to stop the id from being reused until the index is next stored.
+      idToKey.put(cachedContent.id, /* value= */ null);
+      // Track that the entry should be removed from idToKey when the index is next stored.
+      removedIds.put(cachedContent.id, /* value= */ true);
     }
   }
 
@@ -336,7 +372,7 @@ import javax.crypto.spec.SecretKeySpec;
    * than {@link java.lang.Integer#MAX_VALUE} it just returns the next bigger integer. Otherwise it
    * returns the smallest unused non-negative integer.
    */
-  //@VisibleForTesting
+  @VisibleForTesting
   public static int getNewId(SparseArray<String> idToKey) {
     int size = idToKey.size();
     int id = size == 0 ? 0 : (idToKey.keyAt(size - 1) + 1);

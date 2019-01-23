@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.ActionBar;
@@ -36,6 +36,7 @@ import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.ContextProgressView;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.EditTextCaption;
+import org.telegram.ui.Components.EditTextEmoji;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.GroupCreateCheckBox;
 import org.telegram.ui.Components.GroupCreateSpan;
@@ -46,8 +47,6 @@ import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RadioButton;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SeekBarView;
-import org.telegram.ui.Components.Switch;
-import org.telegram.ui.Components.Switch2;
 import org.telegram.ui.Components.TypefaceSpan;
 
 import java.lang.reflect.Field;
@@ -117,6 +116,9 @@ public class ThemeDescription {
         changeFlags = flags;
         listClasses = classes;
         delegate = themeDescriptionDelegate;
+        if (viewToInvalidate instanceof EditTextEmoji) {
+            viewToInvalidate = ((EditTextEmoji) viewToInvalidate).getEditText();
+        }
     }
 
     public ThemeDescription(View view, int flags, Class[] classes, Paint paint, Drawable[] drawables, ThemeDescriptionDelegate themeDescriptionDelegate, String key) {
@@ -129,6 +131,9 @@ public class ThemeDescription {
         changeFlags = flags;
         listClasses = classes;
         delegate = themeDescriptionDelegate;
+        if (viewToInvalidate instanceof EditTextEmoji) {
+            viewToInvalidate = ((EditTextEmoji) viewToInvalidate).getEditText();
+        }
     }
 
     public ThemeDescription(View view, int flags, Class[] classes, String[] classesFields, Paint[] paint, Drawable[] drawables, ThemeDescriptionDelegate themeDescriptionDelegate, String key) {
@@ -142,6 +147,9 @@ public class ThemeDescription {
         delegate = themeDescriptionDelegate;
         cachedFields = new HashMap<>();
         notFoundCachedFields = new HashMap<>();
+        if (viewToInvalidate instanceof EditTextEmoji) {
+            viewToInvalidate = ((EditTextEmoji) viewToInvalidate).getEditText();
+        }
     }
 
     public ThemeDescriptionDelegate setDelegateDisabled() {
@@ -487,8 +495,6 @@ public class ThemeDescription {
                                 }
                                 if ((changeFlags & FLAG_BACKGROUND) != 0 && object instanceof View) {
                                     ((View) object).setBackgroundColor(color);
-                                } else if (object instanceof Switch) {
-                                    ((Switch) object).checkColorFilters();
                                 } else if (object instanceof EditTextCaption) {
                                     if ((changeFlags & FLAG_HINTTEXTCOLOR) != 0) {
                                         ((EditTextCaption) object).setHintColor(color);

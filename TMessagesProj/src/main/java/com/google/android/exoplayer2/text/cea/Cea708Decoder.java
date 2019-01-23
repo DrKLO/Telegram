@@ -25,7 +25,6 @@ import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
-import android.util.Log;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.text.Cue;
@@ -34,6 +33,7 @@ import com.google.android.exoplayer2.text.Subtitle;
 import com.google.android.exoplayer2.text.SubtitleDecoder;
 import com.google.android.exoplayer2.text.SubtitleInputBuffer;
 import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ParsableBitArray;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import java.util.ArrayList;
@@ -272,7 +272,10 @@ public final class Cea708Decoder extends CeaDecoder {
     if (serviceNumber == 7) {
       // extended service numbers
       serviceBlockPacket.skipBits(2);
-      serviceNumber += serviceBlockPacket.readBits(6);
+      serviceNumber = serviceBlockPacket.readBits(6);
+      if (serviceNumber < 7) {
+        Log.w(TAG, "Invalid extended service number: " + serviceNumber);
+      }
     }
 
     // Ignore packets in which blockSize is 0

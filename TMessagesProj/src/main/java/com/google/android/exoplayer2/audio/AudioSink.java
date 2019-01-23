@@ -18,34 +18,36 @@ package com.google.android.exoplayer2.audio;
 import android.media.AudioTrack;
 import android.support.annotation.Nullable;
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.PlaybackParameters;
 import java.nio.ByteBuffer;
 
 /**
  * A sink that consumes audio data.
- * <p>
- * Before starting playback, specify the input audio format by calling
- * {@link #configure(int, int, int, int, int[], int, int)}.
- * <p>
- * Call {@link #handleBuffer(ByteBuffer, long)} to write data, and {@link #handleDiscontinuity()}
+ *
+ * <p>Before starting playback, specify the input audio format by calling {@link #configure(int,
+ * int, int, int, int[], int, int)}.
+ *
+ * <p>Call {@link #handleBuffer(ByteBuffer, long)} to write data, and {@link #handleDiscontinuity()}
  * when the data being fed is discontinuous. Call {@link #play()} to start playing the written data.
- * <p>
- * Call {@link #configure(int, int, int, int, int[], int, int)} whenever the input format changes.
- * The sink will be reinitialized on the next call to {@link #handleBuffer(ByteBuffer, long)}.
- * <p>
- * Call {@link #reset()} to prepare the sink to receive audio data from a new playback position.
- * <p>
- * Call {@link #playToEndOfStream()} repeatedly to play out all data when no more input buffers will
- * be provided via {@link #handleBuffer(ByteBuffer, long)} until the next {@link #reset()}. Call
- * {@link #release()} when the instance is no longer required.
- * <p>
- * The implementation may be backed by a platform {@link AudioTrack}. In this case,
- * {@link #setAudioSessionId(int)}, {@link #setAudioAttributes(AudioAttributes)},
- * {@link #enableTunnelingV21(int)} and/or {@link #disableTunneling()} may be called before writing
- * data to the sink. These methods may also be called after writing data to the sink, in which case
- * it will be reinitialized as required. For implementations that are not based on platform
- * {@link AudioTrack}s, calling methods relating to audio sessions, audio attributes, and tunneling
- * may have no effect.
+ *
+ * <p>Call {@link #configure(int, int, int, int, int[], int, int)} whenever the input format
+ * changes. The sink will be reinitialized on the next call to {@link #handleBuffer(ByteBuffer,
+ * long)}.
+ *
+ * <p>Call {@link #flush()} to prepare the sink to receive audio data from a new playback position.
+ *
+ * <p>Call {@link #playToEndOfStream()} repeatedly to play out all data when no more input buffers
+ * will be provided via {@link #handleBuffer(ByteBuffer, long)} until the next {@link #flush()}.
+ * Call {@link #reset()} when the instance is no longer required.
+ *
+ * <p>The implementation may be backed by a platform {@link AudioTrack}. In this case, {@link
+ * #setAudioSessionId(int)}, {@link #setAudioAttributes(AudioAttributes)}, {@link
+ * #enableTunnelingV21(int)} and/or {@link #disableTunneling()} may be called before writing data to
+ * the sink. These methods may also be called after writing data to the sink, in which case it will
+ * be reinitialized as required. For implementations that are not based on platform {@link
+ * AudioTrack}s, calling methods relating to audio sessions, audio attributes, and tunneling may
+ * have no effect.
  */
 public interface AudioSink {
 
@@ -165,12 +167,13 @@ public interface AudioSink {
   void setListener(Listener listener);
 
   /**
-   * Returns whether it's possible to play audio in the specified encoding.
+   * Returns whether the sink supports the audio format.
    *
-   * @param encoding The audio encoding.
-   * @return Whether it's possible to play audio in the specified encoding.
+   * @param channelCount The number of channels, or {@link Format#NO_VALUE} if not known.
+   * @param encoding The audio encoding, or {@link Format#NO_VALUE} if not known.
+   * @return Whether the sink supports the audio format.
    */
-  boolean isEncodingSupported(@C.Encoding int encoding);
+  boolean supportsOutput(int channelCount, @C.Encoding int encoding);
 
   /**
    * Returns the playback position in the stream starting at zero, in microseconds, or
@@ -197,7 +200,7 @@ public interface AudioSink {
    * @param trimStartFrames The number of audio frames to trim from the start of data written to the
    *     sink after this call.
    * @param trimEndFrames The number of audio frames to trim from data written to the sink
-   *     immediately preceding the next call to {@link #reset()} or this method.
+   *     immediately preceding the next call to {@link #flush()} or this method.
    * @throws ConfigurationException If an error occurs configuring the sink.
    */
   void configure(
@@ -215,9 +218,7 @@ public interface AudioSink {
    */
   void play();
 
-  /**
-   * Signals to the sink that the next buffer is discontinuous with the previous buffer.
-   */
+  /** Signals to the sink that the next buffer may be discontinuous with the previous buffer. */
   void handleDiscontinuity();
 
   /**
@@ -225,11 +226,11 @@ public interface AudioSink {
    * ending at its limit (exclusive). The position of the {@link ByteBuffer} is advanced by the
    * number of bytes that were handled. {@link Listener#onPositionDiscontinuity()} will be called if
    * {@code presentationTimeUs} is discontinuous with the last buffer handled since the last reset.
-   * <p>
-   * Returns whether the data was handled in full. If the data was not handled in full then the same
-   * {@link ByteBuffer} must be provided to subsequent calls until it has been fully consumed,
-   * except in the case of an intervening call to {@link #reset()} (or to
-   * {@link #configure(int, int, int, int, int[], int, int)} that causes the sink to be reset).
+   *
+   * <p>Returns whether the data was handled in full. If the data was not handled in full then the
+   * same {@link ByteBuffer} must be provided to subsequent calls until it has been fully consumed,
+   * except in the case of an intervening call to {@link #flush()} (or to {@link #configure(int,
+   * int, int, int, int[], int, int)} that causes the sink to be flushed).
    *
    * @param buffer The buffer containing audio data.
    * @param presentationTimeUs The presentation timestamp of the buffer in microseconds.
@@ -283,10 +284,11 @@ public interface AudioSink {
    */
   void setAudioAttributes(AudioAttributes audioAttributes);
 
-  /**
-   * Sets the audio session id.
-   */
+  /** Sets the audio session id. */
   void setAudioSessionId(int audioSessionId);
+
+  /** Sets the auxiliary effect. */
+  void setAuxEffectInfo(AuxEffectInfo auxEffectInfo);
 
   /**
    * Enables tunneling, if possible. The sink is reset if tunneling was previously disabled or if
@@ -317,15 +319,12 @@ public interface AudioSink {
   void pause();
 
   /**
-   * Resets the sink, after which it is ready to receive buffers from a new playback position.
-   * <p>
-   * The audio session may remain active until {@link #release()} is called.
+   * Flushes the sink, after which it is ready to receive buffers from a new playback position.
+   *
+   * <p>The audio session may remain active until {@link #reset()} is called.
    */
+  void flush();
+
+  /** Resets the renderer, releasing any resources that it currently holds. */
   void reset();
-
-  /**
-   * Releases any resources associated with this instance.
-   */
-  void release();
-
 }

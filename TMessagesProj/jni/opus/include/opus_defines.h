@@ -169,6 +169,9 @@ extern "C" {
 #define OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST 4046
 #define OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST 4047
 
+/** Defines for the presence of extended APIs. */
+#define OPUS_HAVE_OPUS_PROJECTION_H
+
 /* Macros to trigger compilation errors when the wrong types are provided to a CTL */
 #define __opus_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
 #define __opus_check_int_ptr(ptr) ((ptr) + ((ptr) - (opus_int32*)(ptr)))
@@ -573,7 +576,6 @@ extern "C" {
   * <dt>OPUS_FRAMESIZE_80_MS</dt><dd>Use 80 ms frames.</dd>
   * <dt>OPUS_FRAMESIZE_100_MS</dt><dd>Use 100 ms frames.</dd>
   * <dt>OPUS_FRAMESIZE_120_MS</dt><dd>Use 120 ms frames.</dd>
-  * <dt>OPUS_FRAMESIZE_VARIABLE</dt><dd>Optimize the frame size dynamically.</dd>
   * </dl>
   * @hideinitializer */
 #define OPUS_SET_EXPERT_FRAME_DURATION(x) OPUS_SET_EXPERT_FRAME_DURATION_REQUEST, __opus_check_int(x)
@@ -591,7 +593,6 @@ extern "C" {
   * <dt>OPUS_FRAMESIZE_80_MS</dt><dd>Use 80 ms frames.</dd>
   * <dt>OPUS_FRAMESIZE_100_MS</dt><dd>Use 100 ms frames.</dd>
   * <dt>OPUS_FRAMESIZE_120_MS</dt><dd>Use 120 ms frames.</dd>
-  * <dt>OPUS_FRAMESIZE_VARIABLE</dt><dd>Optimize the frame size dynamically.</dd>
   * </dl>
   * @hideinitializer */
 #define OPUS_GET_EXPERT_FRAME_DURATION(x) OPUS_GET_EXPERT_FRAME_DURATION_REQUEST, __opus_check_int_ptr(x)

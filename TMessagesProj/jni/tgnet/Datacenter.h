@@ -35,6 +35,7 @@ public:
     int32_t getCurrentPort(uint32_t flags);
     void addAddressAndPort(std::string address, uint32_t port, uint32_t flags, std::string secret);
     void nextAddressOrPort(uint32_t flags);
+    bool isCustomPort(uint32_t flags);
     void storeCurrentAddressAndPortNum();
     void replaceAddresses(std::vector<TcpAddress> &newAddresses, uint32_t flags);
     void serializeToStream(NativeByteBuffer *stream);
@@ -44,7 +45,7 @@ public:
     void mergeServerSalts(std::vector<std::unique_ptr<TL_future_salt>> &salts);
     void addServerSalt(std::unique_ptr<TL_future_salt> &serverSalt);
     bool containsServerSalt(int64_t value);
-    void suspendConnections();
+    void suspendConnections(bool suspendPush);
     void getSessions(std::vector<int64_t> &sessions);
     void recreateSessions(HandshakeType type);
     void resetAddressAndPortNum();

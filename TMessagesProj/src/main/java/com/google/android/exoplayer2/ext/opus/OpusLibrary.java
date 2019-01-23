@@ -36,4 +36,5 @@ public final class OpusLibrary {
   }
 
   public static native String opusGetVersion();
+  public static native boolean opusIsSecureDecodeSupported();
 }

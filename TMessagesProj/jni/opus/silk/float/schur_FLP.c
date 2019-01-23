@@ -41,12 +41,13 @@ silk_float silk_schur_FLP(                  /* O    returns residual energy     
     double C[ SILK_MAX_ORDER_LPC + 1 ][ 2 ];
     double Ctmp1, Ctmp2, rc_tmp;
 
-    silk_assert( order <= SILK_MAX_ORDER_LPC );
+    celt_assert( order >= 0 && order <= SILK_MAX_ORDER_LPC );
 
     /* Copy correlations */
-    for( k = 0; k < order+1; k++ ) {
+    k = 0;
+    do {
         C[ k ][ 0 ] = C[ k ][ 1 ] = auto_corr[ k ];
-    }
+    } while( ++k <= order );
 
     for( k = 0; k < order; k++ ) {
         /* Get reflection coefficient */

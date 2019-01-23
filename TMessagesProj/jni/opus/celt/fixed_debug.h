@@ -61,9 +61,11 @@ extern opus_int64 celt_mips;
 
 /** Add two 32-bit values, ignore any overflows */
 #define ADD32_ovflw(a,b) (celt_mips+=2,(opus_val32)((opus_uint32)(a)+(opus_uint32)(b)))
-/** Subtract two 32-bit values, ignore any overflows  */
+/** Subtract two 32-bit values, ignore any overflows */
 #define SUB32_ovflw(a,b) (celt_mips+=2,(opus_val32)((opus_uint32)(a)-(opus_uint32)(b)))
-#define NEG32_ovflw(a) (celt_mips+=2,(opus_val32)(-(opus_uint32)(a)))
+/* Avoid MSVC warning C4146: unary minus operator applied to unsigned type */
+/** Negate 32-bit value, ignore any overflows */
+#define NEG32_ovflw(a) (celt_mips+=2,(opus_val32)(0-(opus_uint32)(a)))
 
 static OPUS_INLINE short NEG16(int x)
 {
@@ -237,9 +239,6 @@ static OPUS_INLINE int SHL32_(opus_int64 a, int shift, char *file, int line)
 
 #define HALF16(x)  (SHR16(x,1))
 #define HALF32(x)  (SHR32(x,1))
-
-//#define SHR(a,shift) ((a) >> (shift))
-//#define SHL(a,shift) ((a) << (shift))
 
 #define ADD16(a, b) ADD16_(a, b, __FILE__, __LINE__)
 static OPUS_INLINE short ADD16_(int a, int b, char *file, int line)

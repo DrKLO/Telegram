@@ -18,8 +18,10 @@ package com.google.android.exoplayer2.metadata;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.Nullable;
+import com.google.android.exoplayer2.util.Util;
 import java.util.Arrays;
 import java.util.List;
+import org.checkerframework.checker.nullness.compatqual.NullableType;
 
 /**
  * A collection of metadata entries.
@@ -74,6 +76,18 @@ public final class Metadata implements Parcelable {
    */
   public Metadata.Entry get(int index) {
     return entries[index];
+  }
+
+  /**
+   * Returns a copy of this metadata with the specified entries appended.
+   *
+   * @param entriesToAppend The entries to append.
+   * @return The metadata instance with the appended entries.
+   */
+  public Metadata copyWithAppendedEntries(Entry... entriesToAppend) {
+    @NullableType Entry[] merged = Arrays.copyOf(entries, entries.length + entriesToAppend.length);
+    System.arraycopy(entriesToAppend, 0, merged, entries.length, entriesToAppend.length);
+    return new Metadata(Util.castNonNullTypeArray(merged));
   }
 
   @Override

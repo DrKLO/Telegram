@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 /* Compute inverse of LPC prediction gain, and                          */
 /* test if LPC coefficients are stable (all poles within unit circle)   */
-static opus_int32 LPC_inverse_pred_gain_QA(                 /* O   Returns inverse prediction gain in energy domain, Q30    */
+static opus_int32 LPC_inverse_pred_gain_QA_c(               /* O   Returns inverse prediction gain in energy domain, Q30    */
     opus_int32           A_QA[ SILK_MAX_ORDER_LPC ],        /* I   Prediction coefficients                                  */
     const opus_int       order                              /* I   Prediction order                                         */
 )
@@ -119,7 +119,7 @@ static opus_int32 LPC_inverse_pred_gain_QA(                 /* O   Returns inver
 }
 
 /* For input in Q12 domain */
-opus_int32 silk_LPC_inverse_pred_gain(              /* O   Returns inverse prediction gain in energy domain, Q30        */
+opus_int32 silk_LPC_inverse_pred_gain_c(            /* O   Returns inverse prediction gain in energy domain, Q30        */
     const opus_int16            *A_Q12,             /* I   Prediction coefficients, Q12 [order]                         */
     const opus_int              order               /* I   Prediction order                                             */
 )
@@ -137,25 +137,5 @@ opus_int32 silk_LPC_inverse_pred_gain(              /* O   Returns inverse predi
     if( DC_resp >= 4096 ) {
         return 0;
     }
-    return LPC_inverse_pred_gain_QA( Atmp_QA, order );
+    return LPC_inverse_pred_gain_QA_c( Atmp_QA, order );
 }
-
-#ifdef FIXED_POINT
-
-/* For input in Q24 domain */
-opus_int32 silk_LPC_inverse_pred_gain_Q24(          /* O    Returns inverse prediction gain in energy domain, Q30       */
-    const opus_int32            *A_Q24,             /* I    Prediction coefficients [order]                             */
-    const opus_int              order               /* I    Prediction order                                            */
-)
-{
-    opus_int   k;
-    opus_int32 Atmp_QA[ SILK_MAX_ORDER_LPC ];
-
-    /* Increase Q domain of the AR coefficients */
-    for( k = 0; k < order; k++ ) {
-        Atmp_QA[ k ] = silk_RSHIFT32( A_Q24[ k ], 24 - QA );
-    }
-
-    return LPC_inverse_pred_gain_QA( Atmp_QA, order );
-}
-#endif

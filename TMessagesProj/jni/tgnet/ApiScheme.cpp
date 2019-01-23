@@ -22,7 +22,7 @@ Bool *Bool::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_
             break;
         default:
             error = true;
-            DEBUG_E("can't parse magic %x in Bool", constructor);
+            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in Bool", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -40,7 +40,7 @@ void TL_boolFalse::serializeToStream(NativeByteBuffer *stream) {
 TL_dcOption *TL_dcOption::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_dcOption::constructor != constructor) {
         error = true;
-        DEBUG_E("can't parse magic %x in TL_dcOption", constructor);
+        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_dcOption", constructor);
         return nullptr;
     }
     TL_dcOption *result = new TL_dcOption();
@@ -82,7 +82,7 @@ void TL_dcOption::serializeToStream(NativeByteBuffer *stream) {
 TL_cdnPublicKey *TL_cdnPublicKey::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_cdnPublicKey::constructor != constructor) {
         error = true;
-        DEBUG_E("can't parse magic %x in TL_cdnPublicKey", constructor);
+        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_cdnPublicKey", constructor);
         return nullptr;
     }
     TL_cdnPublicKey *result = new TL_cdnPublicKey();
@@ -104,7 +104,7 @@ void TL_cdnPublicKey::serializeToStream(NativeByteBuffer *stream) {
 TL_cdnConfig *TL_cdnConfig::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_cdnConfig::constructor != constructor) {
         error = true;
-        DEBUG_E("can't parse magic %x in TL_cdnConfig", constructor);
+        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_cdnConfig", constructor);
         return nullptr;
     }
     TL_cdnConfig *result = new TL_cdnConfig();
@@ -116,7 +116,7 @@ void TL_cdnConfig::readParams(NativeByteBuffer *stream, int32_t instanceNum, boo
     int magic = stream->readInt32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        DEBUG_E("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
         return;
     }
     int count = stream->readInt32(&error);
@@ -154,7 +154,7 @@ void TL_help_getCdnConfig::serializeToStream(NativeByteBuffer *stream) {
 TL_config *TL_config::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_config::constructor != constructor) {
         error = true;
-        DEBUG_E("can't parse magic %x in TL_config", constructor);
+        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_config", constructor);
         return nullptr;
     }
     TL_config *result = new TL_config();
@@ -171,7 +171,7 @@ void TL_config::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &
     uint32_t magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
-        DEBUG_E("wrong Vector magic, got %x", magic);
+        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
         return;
     }
     int32_t count = stream->readInt32(&error);
@@ -234,6 +234,9 @@ void TL_config::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &
     }
     if ((flags & 4) != 0) {
         lang_pack_version = stream->readInt32(&error);
+    }
+    if ((flags & 4) != 0) {
+        base_lang_pack_version = stream->readInt32(&error);
     }
 }
 
@@ -303,6 +306,9 @@ void TL_config::serializeToStream(NativeByteBuffer *stream) {
     if ((flags & 4) != 0) {
         stream->writeInt32(lang_pack_version);
     }
+    if ((flags & 4) != 0) {
+        stream->writeInt32(base_lang_pack_version);
+    }
 }
 
 TLObject *TL_help_getConfig::deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
@@ -342,7 +348,7 @@ User *User::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_
             break;
         default:
             error = true;
-            DEBUG_E("can't parse magic %x in User", constructor);
+            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in User", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -438,7 +444,7 @@ void TL_user::serializeToStream(NativeByteBuffer *stream) {
 TL_auth_authorization *TL_auth_authorization::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_auth_authorization::constructor != constructor) {
         error = true;
-        DEBUG_E("can't parse magic %x in TL_auth_authorization", constructor);
+        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_auth_authorization", constructor);
         return nullptr;
     }
     TL_auth_authorization *result = new TL_auth_authorization();
@@ -457,7 +463,7 @@ void TL_auth_authorization::readParams(NativeByteBuffer *stream, int32_t instanc
 TL_auth_exportedAuthorization *TL_auth_exportedAuthorization::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     if (TL_auth_exportedAuthorization::constructor != constructor) {
         error = true;
-        DEBUG_E("can't parse magic %x in TL_auth_exportedAuthorization", constructor);
+        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_auth_exportedAuthorization", constructor);
         return nullptr;
     }
     TL_auth_exportedAuthorization *result = new TL_auth_exportedAuthorization();
@@ -520,7 +526,7 @@ UserStatus *UserStatus::TLdeserialize(NativeByteBuffer *stream, uint32_t constru
             break;
         default:
             error = true;
-            DEBUG_E("can't parse magic %x in UserStatus", constructor);
+            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in UserStatus", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -564,7 +570,7 @@ void TL_userStatusRecently::serializeToStream(NativeByteBuffer *stream) {
 FileLocation *FileLocation::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     FileLocation *result = nullptr;
     switch (constructor) {
-        case 0x53d69076:
+        case 0x91d11eb:
             result = new TL_fileLocation();
             break;
         case 0x7c596b46:
@@ -575,7 +581,7 @@ FileLocation *FileLocation::TLdeserialize(NativeByteBuffer *stream, uint32_t con
             break;
         default:
             error = true;
-            DEBUG_E("can't parse magic %x in FileLocation", constructor);
+            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in FileLocation", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -587,6 +593,7 @@ void TL_fileLocation::readParams(NativeByteBuffer *stream, int32_t instanceNum, 
     volume_id = stream->readInt64(&error);
     local_id = stream->readInt32(&error);
     secret = stream->readInt64(&error);
+    file_reference = std::unique_ptr<ByteArray>(stream->readByteArray(&error));
 }
 
 void TL_fileLocation::serializeToStream(NativeByteBuffer *stream) {
@@ -595,6 +602,7 @@ void TL_fileLocation::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt64(volume_id);
     stream->writeInt32(local_id);
     stream->writeInt64(secret);
+    stream->writeByteArray(file_reference.get());
 }
 
 void TL_fileLocationUnavailable::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
@@ -640,7 +648,7 @@ UserProfilePhoto *UserProfilePhoto::TLdeserialize(NativeByteBuffer *stream, uint
             break;
         default:
             error = true;
-            DEBUG_E("can't parse magic %x in UserProfilePhoto", constructor);
+            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in UserProfilePhoto", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -675,7 +683,7 @@ auth_SentCode *auth_SentCode::TLdeserialize(NativeByteBuffer *stream, uint32_t c
             break;
         default:
             error = true;
-            DEBUG_E("can't parse magic %x in auth_SentCode", constructor);
+            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in auth_SentCode", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);

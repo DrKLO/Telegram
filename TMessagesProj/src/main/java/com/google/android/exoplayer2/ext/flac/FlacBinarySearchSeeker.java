@@ -15,7 +15,6 @@
  */
 package com.google.android.exoplayer2.ext.flac;
 
-import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.extractor.BinarySearchSeeker;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.extractor.SeekMap;
@@ -75,7 +74,6 @@ import java.nio.ByteBuffer;
         throws IOException, InterruptedException {
       ByteBuffer outputBuffer = outputFrameHolder.byteBuffer;
       long searchPosition = input.getPosition();
-      int searchRangeBytes = getTimestampSearchBytesRange();
       decoderJni.reset(searchPosition);
       try {
         decoderJni.decodeSampleWithBacktrackPosition(
@@ -106,13 +104,6 @@ import java.nio.ByteBuffer;
       } else {
         return TimestampSearchResult.overestimatedResult(lastFrameSampleIndex, searchPosition);
       }
-    }
-
-    @Override
-    public int getTimestampSearchBytesRange() {
-      // We rely on decoderJni to search for timestamp (sample index) from a given stream point, so
-      // we don't restrict the range at all.
-      return C.LENGTH_UNSET;
     }
   }
 

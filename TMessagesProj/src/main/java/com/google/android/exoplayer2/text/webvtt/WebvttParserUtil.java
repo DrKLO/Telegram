@@ -15,7 +15,7 @@
  */
 package com.google.android.exoplayer2.text.webvtt;
 
-import com.google.android.exoplayer2.text.SubtitleDecoderException;
+import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
 import java.util.regex.Matcher;
@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 public final class WebvttParserUtil {
 
   private static final Pattern COMMENT = Pattern.compile("^NOTE((\u0020|\u0009).*)?$");
-  private static final Pattern HEADER = Pattern.compile("^\uFEFF?WEBVTT((\u0020|\u0009).*)?$");
+  private static final String WEBVTT_HEADER = "WEBVTT";
 
   private WebvttParserUtil() {}
 
@@ -35,14 +35,24 @@ public final class WebvttParserUtil {
    * Reads and validates the first line of a WebVTT file.
    *
    * @param input The input from which the line should be read.
-   * @throws SubtitleDecoderException If the line isn't the start of a valid WebVTT file.
+   * @throws ParserException If the line isn't the start of a valid WebVTT file.
    */
-  public static void validateWebvttHeaderLine(ParsableByteArray input)
-      throws SubtitleDecoderException {
-    String line = input.readLine();
-    if (line == null || !HEADER.matcher(line).matches()) {
-      throw new SubtitleDecoderException("Expected WEBVTT. Got " + line);
+  public static void validateWebvttHeaderLine(ParsableByteArray input) throws ParserException {
+    int startPosition = input.getPosition();
+    if (!isWebvttHeaderLine(input)) {
+      input.setPosition(startPosition);
+      throw new ParserException("Expected WEBVTT. Got " + input.readLine());
     }
+  }
+
+  /**
+   * Returns whether the given input is the first line of a WebVTT file.
+   *
+   * @param input The input from which the line should be read.
+   */
+  public static boolean isWebvttHeaderLine(ParsableByteArray input) {
+    String line = input.readLine();
+    return line != null && line.startsWith(WEBVTT_HEADER);
   }
 
   /**

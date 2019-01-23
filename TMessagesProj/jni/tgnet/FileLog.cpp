@@ -16,6 +16,12 @@
 #include <android/log.h>
 #endif
 
+#ifdef DEBUG_VERSION
+bool LOGS_ENABLED = true;
+#else
+bool LOGS_ENABLED = false;
+#endif
+
 FileLog &FileLog::getInstance() {
     static FileLog instance;
     return instance;
@@ -34,6 +40,9 @@ void FileLog::init(std::string path) {
 }
 
 void FileLog::e(const char *message, ...) {
+    if (!LOGS_ENABLED) {
+        return;
+    }
     va_list argptr;
     va_start(argptr, message);
     time_t t = time(0);
@@ -62,6 +71,9 @@ void FileLog::e(const char *message, ...) {
 }
 
 void FileLog::w(const char *message, ...) {
+    if (!LOGS_ENABLED) {
+        return;
+    }
     va_list argptr;
     va_start(argptr, message);
     time_t t = time(0);
@@ -90,6 +102,9 @@ void FileLog::w(const char *message, ...) {
 }
 
 void FileLog::d(const char *message, ...) {
+    if (!LOGS_ENABLED) {
+        return;
+    }
     va_list argptr;
     va_start(argptr, message);
     time_t t = time(0);

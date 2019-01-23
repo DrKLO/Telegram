@@ -428,6 +428,16 @@ void setLangCode(JNIEnv *env, jclass c, jint instanceNum, jstring langCode) {
     }
 }
 
+void setSystemLangCode(JNIEnv *env, jclass c, jint instanceNum, jstring langCode) {
+    const char *langCodeStr = env->GetStringUTFChars(langCode, 0);
+
+    ConnectionsManager::getInstance(instanceNum).setSystemLangCode(std::string(langCodeStr));
+
+    if (langCodeStr != 0) {
+        env->ReleaseStringUTFChars(langCode, langCodeStr);
+    }
+}
+
 void init(JNIEnv *env, jclass c, jint instanceNum, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring systemLangCode, jstring configPath, jstring logPath, jint userId, jboolean enablePushConnection, jboolean hasNetwork, jint networkType) {
     const char *deviceModelStr = env->GetStringUTFChars(deviceModel, 0);
     const char *systemVersionStr = env->GetStringUTFChars(systemVersion, 0);
@@ -486,6 +496,7 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_setUserId", "(II)V", (void *) setUserId},
         {"native_init", "(IIIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZZI)V", (void *) init},
         {"native_setLangCode", "(ILjava/lang/String;)V", (void *) setLangCode},
+        {"native_setSystemLangCode", "(ILjava/lang/String;)V", (void *) setSystemLangCode},
         {"native_switchBackend", "(I)V", (void *) switchBackend},
         {"native_pauseNetwork", "(I)V", (void *) pauseNetwork},
         {"native_resumeNetwork", "(IZ)V", (void *) resumeNetwork},

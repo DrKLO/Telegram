@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -13,7 +13,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
@@ -27,8 +26,6 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
@@ -46,8 +43,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -68,7 +63,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 
 import static android.widget.LinearLayout.HORIZONTAL;
@@ -147,48 +141,39 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                     inputPhoneContact.last_name = lastNameField.getText().toString();
                     inputPhoneContact.phone = "+" + codeField.getText().toString() + phoneField.getText().toString();
                     req.contacts.add(inputPhoneContact);
-                    int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-                        @Override
-                        public void run(TLObject response, final TLRPC.TL_error error) {
-                            final TLRPC.TL_contacts_importedContacts res = (TLRPC.TL_contacts_importedContacts) response;
-                            AndroidUtilities.runOnUIThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    donePressed = false;
-                                    if (res != null) {
-                                        if (!res.users.isEmpty()) {
-                                            MessagesController.getInstance(currentAccount).putUsers(res.users, false);
-                                            MessagesController.openChatOrProfileWith(res.users.get(0), null, NewContactActivity.this, 1, true);
-                                        } else {
-                                            if (getParentActivity() == null) {
-                                                return;
-                                            }
-                                            showEditDoneProgress(false, true);
-                                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                                            builder.setMessage(LocaleController.formatString("ContactNotRegistered", R.string.ContactNotRegistered, ContactsController.formatName(inputPhoneContact.first_name, inputPhoneContact.last_name)));
-                                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                                            builder.setPositiveButton(LocaleController.getString("Invite", R.string.Invite), new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog, int which) {
-                                                    try {
-                                                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", inputPhoneContact.phone, null));
-                                                        intent.putExtra("sms_body", ContactsController.getInstance(currentAccount).getInviteText(1));
-                                                        getParentActivity().startActivityForResult(intent, 500);
-                                                    } catch (Exception e) {
-                                                        FileLog.e(e);
-                                                    }
-                                                }
-                                            });
-                                            showDialog(builder.create());
-                                        }
-                                    } else {
-                                        showEditDoneProgress(false, true);
-                                        AlertsCreator.processError(currentAccount, error, NewContactActivity.this, req);
+                    int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                        final TLRPC.TL_contacts_importedContacts res = (TLRPC.TL_contacts_importedContacts) response;
+                        AndroidUtilities.runOnUIThread(() -> {
+                            donePressed = false;
+                            if (res != null) {
+                                if (!res.users.isEmpty()) {
+                                    MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                                    MessagesController.openChatOrProfileWith(res.users.get(0), null, NewContactActivity.this, 1, true);
+                                } else {
+                                    if (getParentActivity() == null) {
+                                        return;
                                     }
+                                    showEditDoneProgress(false, true);
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                    builder.setMessage(LocaleController.formatString("ContactNotRegistered", R.string.ContactNotRegistered, ContactsController.formatName(inputPhoneContact.first_name, inputPhoneContact.last_name)));
+                                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                                    builder.setPositiveButton(LocaleController.getString("Invite", R.string.Invite), (dialog, which) -> {
+                                        try {
+                                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", inputPhoneContact.phone, null));
+                                            intent.putExtra("sms_body", ContactsController.getInstance(currentAccount).getInviteText(1));
+                                            getParentActivity().startActivityForResult(intent, 500);
+                                        } catch (Exception e) {
+                                            FileLog.e(e);
+                                        }
+                                    });
+                                    showDialog(builder.create());
                                 }
-                            });
-                        }
+                            } else {
+                                showEditDoneProgress(false, true);
+                                AlertsCreator.processError(currentAccount, error, NewContactActivity.this, req);
+                            }
+                        });
                     }, ConnectionsManager.RequestFlagFailOnServerErrors);
                     ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
                 }
@@ -211,12 +196,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         linearLayout.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
         ((ScrollView) fragmentView).addView(linearLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
-        linearLayout.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
+        linearLayout.setOnTouchListener((v, event) -> true);
 
         FrameLayout frameLayout = new FrameLayout(context);
         linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 24, 0, 0));
@@ -241,16 +221,13 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         firstNameField.setCursorSize(AndroidUtilities.dp(20));
         firstNameField.setCursorWidth(1.5f);
         frameLayout.addView(firstNameField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 34, Gravity.LEFT | Gravity.TOP, 84, 0, 0, 0));
-        firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_NEXT) {
-                    lastNameField.requestFocus();
-                    lastNameField.setSelection(lastNameField.length());
-                    return true;
-                }
-                return false;
+        firstNameField.setOnEditorActionListener((textView, i, keyEvent) -> {
+            if (i == EditorInfo.IME_ACTION_NEXT) {
+                lastNameField.requestFocus();
+                lastNameField.setSelection(lastNameField.length());
+                return true;
             }
+            return false;
         });
         firstNameField.addTextChangedListener(new TextWatcher() {
             @Override
@@ -286,16 +263,13 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         lastNameField.setCursorSize(AndroidUtilities.dp(20));
         lastNameField.setCursorWidth(1.5f);
         frameLayout.addView(lastNameField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 34, Gravity.LEFT | Gravity.TOP, 84, 44, 0, 0));
-        lastNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_NEXT) {
-                    phoneField.requestFocus();
-                    phoneField.setSelection(phoneField.length());
-                    return true;
-                }
-                return false;
+        lastNameField.setOnEditorActionListener((textView, i, keyEvent) -> {
+            if (i == EditorInfo.IME_ACTION_NEXT) {
+                phoneField.requestFocus();
+                phoneField.setSelection(phoneField.length());
+                return true;
             }
+            return false;
         });
         lastNameField.addTextChangedListener(new TextWatcher() {
             @Override
@@ -325,26 +299,15 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         countryButton.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
         countryButton.setBackgroundResource(R.drawable.spinner_states);
         linearLayout.addView(countryButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 0, 24, 0, 14));
-        countryButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                CountrySelectActivity fragment = new CountrySelectActivity(true);
-                fragment.setCountrySelectActivityDelegate(new CountrySelectActivity.CountrySelectActivityDelegate() {
-                    @Override
-                    public void didSelectCountry(String name, String shortName) {
-                        selectCountry(name);
-                        AndroidUtilities.runOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                AndroidUtilities.showKeyboard(phoneField);
-                            }
-                        }, 300);
-                        phoneField.requestFocus();
-                        phoneField.setSelection(phoneField.length());
-                    }
-                });
-                presentFragment(fragment);
-            }
+        countryButton.setOnClickListener(view -> {
+            CountrySelectActivity fragment = new CountrySelectActivity(true);
+            fragment.setCountrySelectActivityDelegate((name, shortName) -> {
+                selectCountry(name);
+                AndroidUtilities.runOnUIThread(() -> AndroidUtilities.showKeyboard(phoneField), 300);
+                phoneField.requestFocus();
+                phoneField.setSelection(phoneField.length());
+            });
+            presentFragment(fragment);
         });
 
         lineView = new View(context);
@@ -454,16 +417,13 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                 ignoreOnTextChange = false;
             }
         });
-        codeField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_NEXT) {
-                    phoneField.requestFocus();
-                    phoneField.setSelection(phoneField.length());
-                    return true;
-                }
-                return false;
+        codeField.setOnEditorActionListener((textView, i, keyEvent) -> {
+            if (i == EditorInfo.IME_ACTION_NEXT) {
+                phoneField.requestFocus();
+                phoneField.setSelection(phoneField.length());
+                return true;
             }
+            return false;
         });
 
         phoneField = new HintEditText(context);
@@ -554,15 +514,12 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                 ignoreOnPhoneChange = false;
             }
         });
-        phoneField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_DONE) {
-                    editDoneItem.performClick();
-                    return true;
-                }
-                return false;
+        phoneField.setOnEditorActionListener((textView, i, keyEvent) -> {
+            if (i == EditorInfo.IME_ACTION_DONE) {
+                editDoneItem.performClick();
+                return true;
             }
+            return false;
         });
 
         HashMap<String, String> languageMap = new HashMap<>();
@@ -584,12 +541,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
             FileLog.e(e);
         }
 
-        Collections.sort(countriesArray, new Comparator<String>() {
-            @Override
-            public int compare(String lhs, String rhs) {
-                return lhs.compareTo(rhs);
-            }
-        });
+        Collections.sort(countriesArray, String::compareTo);
 
         String country = null;
 
@@ -747,13 +699,10 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
-            @Override
-            public void didSetColor() {
-                if (avatarImage != null) {
-                    avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString(), false);
-                    avatarImage.invalidate();
-                }
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
+            if (avatarImage != null) {
+                avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString(), false);
+                avatarImage.invalidate();
             }
         };
 
@@ -794,7 +743,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                 new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressInner2),
                 new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressOuter2),
 
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),

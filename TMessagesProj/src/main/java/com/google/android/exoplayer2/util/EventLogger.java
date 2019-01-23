@@ -17,7 +17,6 @@ package com.google.android.exoplayer2.util;
 
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.Surface;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
@@ -42,9 +41,10 @@ import java.text.NumberFormat;
 import java.util.Locale;
 
 /** Logs events from {@link Player} and other core components using {@link Log}. */
+@SuppressWarnings("UngroupedOverloads")
 public class EventLogger implements AnalyticsListener {
 
-  private static final String TAG = "EventLogger";
+  private static final String DEFAULT_TAG = "EventLogger";
   private static final int MAX_TIMELINE_ITEM_LINES = 3;
   private static final NumberFormat TIME_FORMAT;
   static {
@@ -55,6 +55,7 @@ public class EventLogger implements AnalyticsListener {
   }
 
   private final @Nullable MappingTrackSelector trackSelector;
+  private final String tag;
   private final Timeline.Window window;
   private final Timeline.Period period;
   private final long startTimeMs;
@@ -66,7 +67,19 @@ public class EventLogger implements AnalyticsListener {
    *     logging of track mapping is not required.
    */
   public EventLogger(@Nullable MappingTrackSelector trackSelector) {
+    this(trackSelector, DEFAULT_TAG);
+  }
+
+  /**
+   * Creates event logger.
+   *
+   * @param trackSelector The mapping track selector used by the player. May be null if detailed
+   *     logging of track mapping is not required.
+   * @param tag The tag used for logging.
+   */
+  public EventLogger(@Nullable MappingTrackSelector trackSelector, String tag) {
     this.trackSelector = trackSelector;
+    this.tag = tag;
     window = new Timeline.Window();
     period = new Timeline.Period();
     startTimeMs = SystemClock.elapsedRealtime();
@@ -309,8 +322,8 @@ public class EventLogger implements AnalyticsListener {
   }
 
   @Override
-  public void onRenderedFirstFrame(EventTime eventTime, Surface surface) {
-    logd(eventTime, "renderedFirstFrame", surface.toString());
+  public void onRenderedFirstFrame(EventTime eventTime, @Nullable Surface surface) {
+    logd(eventTime, "renderedFirstFrame", String.valueOf(surface));
   }
 
   @Override
@@ -378,6 +391,11 @@ public class EventLogger implements AnalyticsListener {
   }
 
   @Override
+  public void onDrmSessionAcquired(EventTime eventTime) {
+    logd(eventTime, "drmSessionAcquired");
+  }
+
+  @Override
   public void onDrmSessionManagerError(EventTime eventTime, Exception e) {
     printInternalError(eventTime, "drmSessionManagerError", e);
   }
@@ -397,13 +415,18 @@ public class EventLogger implements AnalyticsListener {
     logd(eventTime, "drmKeysLoaded");
   }
 
+  @Override
+  public void onDrmSessionReleased(EventTime eventTime) {
+    logd(eventTime, "drmSessionReleased");
+  }
+
   /**
    * Logs a debug message.
    *
    * @param msg The message to log.
    */
   protected void logd(String msg) {
-    Log.d(TAG, msg);
+    Log.d(tag, msg);
   }
 
   /**
@@ -412,8 +435,8 @@ public class EventLogger implements AnalyticsListener {
    * @param msg The message to log.
    * @param tr The exception to log.
    */
-  protected void loge(String msg, Throwable tr) {
-    Log.e(TAG, msg, tr);
+  protected void loge(String msg, @Nullable Throwable tr) {
+    Log.e(tag, msg, tr);
   }
 
   // Internal methods
@@ -426,12 +449,15 @@ public class EventLogger implements AnalyticsListener {
     logd(getEventString(eventTime, eventName, eventDescription));
   }
 
-  private void loge(EventTime eventTime, String eventName, Throwable throwable) {
+  private void loge(EventTime eventTime, String eventName, @Nullable Throwable throwable) {
     loge(getEventString(eventTime, eventName), throwable);
   }
 
   private void loge(
-      EventTime eventTime, String eventName, String eventDescription, Throwable throwable) {
+      EventTime eventTime,
+      String eventName,
+      String eventDescription,
+      @Nullable Throwable throwable) {
     loge(getEventString(eventTime, eventName, eventDescription), throwable);
   }
 
@@ -456,7 +482,8 @@ public class EventLogger implements AnalyticsListener {
   private String getEventTimeString(EventTime eventTime) {
     String windowPeriodString = "window=" + eventTime.windowIndex;
     if (eventTime.mediaPeriodId != null) {
-      windowPeriodString += ", period=" + eventTime.mediaPeriodId.periodIndex;
+      windowPeriodString +=
+          ", period=" + eventTime.timeline.getIndexOfPeriod(eventTime.mediaPeriodId.periodUid);
       if (eventTime.mediaPeriodId.isAd()) {
         windowPeriodString += ", adGroup=" + eventTime.mediaPeriodId.adGroupIndex;
         windowPeriodString += ", ad=" + eventTime.mediaPeriodId.adIndexInAdGroup;
@@ -524,8 +551,8 @@ public class EventLogger implements AnalyticsListener {
   // Suppressing reference equality warning because the track group stored in the track selection
   // must point to the exact track group object to be considered part of it.
   @SuppressWarnings("ReferenceEquality")
-  private static String getTrackStatusString(TrackSelection selection, TrackGroup group,
-      int trackIndex) {
+  private static String getTrackStatusString(
+      @Nullable TrackSelection selection, TrackGroup group, int trackIndex) {
     return getTrackStatusString(selection != null && selection.getTrackGroup() == group
         && selection.indexOf(trackIndex) != C.INDEX_UNSET);
   }
@@ -585,6 +612,8 @@ public class EventLogger implements AnalyticsListener {
         return "default";
       case C.TRACK_TYPE_METADATA:
         return "metadata";
+      case C.TRACK_TYPE_CAMERA_MOTION:
+        return "camera motion";
       case C.TRACK_TYPE_NONE:
         return "none";
       case C.TRACK_TYPE_TEXT:

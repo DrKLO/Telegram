@@ -16,11 +16,12 @@
 package com.google.android.exoplayer2.metadata.id3;
 
 import android.support.annotation.Nullable;
-import android.util.Log;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.MetadataDecoder;
 import com.google.android.exoplayer2.metadata.MetadataInputBuffer;
+import com.google.android.exoplayer2.util.Log;
+import com.google.android.exoplayer2.util.ParsableBitArray;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
 import java.io.UnsupportedEncodingException;
@@ -56,13 +57,7 @@ public final class Id3Decoder implements MetadataDecoder {
 
   /** A predicate that indicates no frames should be decoded. */
   public static final FramePredicate NO_FRAMES_PREDICATE =
-      new FramePredicate() {
-
-        @Override
-        public boolean evaluate(int majorVersion, int id0, int id1, int id2, int id3) {
-          return false;
-        }
-      };
+      (majorVersion, id0, id1, id2, id3) -> false;
 
   private static final String TAG = "Id3Decoder";
 
@@ -102,6 +97,7 @@ public final class Id3Decoder implements MetadataDecoder {
     this.framePredicate = framePredicate;
   }
 
+  @SuppressWarnings("ByteBufferBackingArray")
   @Override
   public @Nullable Metadata decode(MetadataInputBuffer inputBuffer) {
     ByteBuffer buffer = inputBuffer.data;
@@ -387,6 +383,8 @@ public final class Id3Decoder implements MetadataDecoder {
       } else if (frameId0 == 'C' && frameId1 == 'T' && frameId2 == 'O' && frameId3 == 'C') {
         frame = decodeChapterTOCFrame(id3Data, frameSize, majorVersion, unsignedIntFrameSizeHack,
             frameHeaderSize, framePredicate);
+      } else if (frameId0 == 'M' && frameId1 == 'L' && frameId2 == 'L' && frameId3 == 'T') {
+        frame = decodeMlltFrame(id3Data, frameSize);
       } else {
         String id = getFrameId(majorVersion, frameId0, frameId1, frameId2, frameId3);
         frame = decodeBinaryFrame(id3Data, frameSize, id);
@@ -667,6 +665,36 @@ public final class Id3Decoder implements MetadataDecoder {
     return new ChapterTocFrame(elementId, isRoot, isOrdered, children, subFrameArray);
   }
 
+  private static MlltFrame decodeMlltFrame(ParsableByteArray id3Data, int frameSize) {
+    // See ID3v2.4.0 native frames subsection 4.6.
+    int mpegFramesBetweenReference = id3Data.readUnsignedShort();
+    int bytesBetweenReference = id3Data.readUnsignedInt24();
+    int millisecondsBetweenReference = id3Data.readUnsignedInt24();
+    int bitsForBytesDeviation = id3Data.readUnsignedByte();
+    int bitsForMillisecondsDeviation = id3Data.readUnsignedByte();
+
+    ParsableBitArray references = new ParsableBitArray();
+    references.reset(id3Data);
+    int referencesBits = 8 * (frameSize - 10);
+    int bitsPerReference = bitsForBytesDeviation + bitsForMillisecondsDeviation;
+    int referencesCount = referencesBits / bitsPerReference;
+    int[] bytesDeviations = new int[referencesCount];
+    int[] millisecondsDeviations = new int[referencesCount];
+    for (int i = 0; i < referencesCount; i++) {
+      int bytesDeviation = references.readBits(bitsForBytesDeviation);
+      int millisecondsDeviation = references.readBits(bitsForMillisecondsDeviation);
+      bytesDeviations[i] = bytesDeviation;
+      millisecondsDeviations[i] = millisecondsDeviation;
+    }
+
+    return new MlltFrame(
+        mpegFramesBetweenReference,
+        bytesBetweenReference,
+        millisecondsBetweenReference,
+        bytesDeviations,
+        millisecondsDeviations);
+  }
+
   private static BinaryFrame decodeBinaryFrame(ParsableByteArray id3Data, int frameSize,
       String id) {
     byte[] frame = new byte[frameSize];
@@ -702,14 +730,13 @@ public final class Id3Decoder implements MetadataDecoder {
    */
   private static String getCharsetName(int encodingByte) {
     switch (encodingByte) {
-      case ID3_TEXT_ENCODING_ISO_8859_1:
-        return "ISO-8859-1";
       case ID3_TEXT_ENCODING_UTF_16:
         return "UTF-16";
       case ID3_TEXT_ENCODING_UTF_16BE:
         return "UTF-16BE";
       case ID3_TEXT_ENCODING_UTF_8:
         return "UTF-8";
+      case ID3_TEXT_ENCODING_ISO_8859_1:
       default:
         return "ISO-8859-1";
     }
@@ -765,7 +792,7 @@ public final class Id3Decoder implements MetadataDecoder {
   private static byte[] copyOfRangeIfValid(byte[] data, int from, int to) {
     if (to <= from) {
       // Invalid or zero length range.
-      return new byte[0];
+      return Util.EMPTY_BYTE_ARRAY;
     }
     return Arrays.copyOfRange(data, from, to);
   }

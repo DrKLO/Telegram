@@ -28,10 +28,24 @@
                                              __VA_ARGS__))
 
 #define DECODER_FUNC(RETURN_TYPE, NAME, ...) \
-  JNIEXPORT RETURN_TYPE Java_com_google_android_exoplayer2_ext_opus_OpusDecoder_##NAME(JNIEnv* env, jobject thiz, ##__VA_ARGS__)
+  extern "C" { \
+  JNIEXPORT RETURN_TYPE \
+    Java_com_google_android_exoplayer2_ext_opus_OpusDecoder_ ## NAME \
+      (JNIEnv* env, jobject thiz, ##__VA_ARGS__);\
+  } \
+  JNIEXPORT RETURN_TYPE \
+    Java_com_google_android_exoplayer2_ext_opus_OpusDecoder_ ## NAME \
+      (JNIEnv* env, jobject thiz, ##__VA_ARGS__)\
 
 #define LIBRARY_FUNC(RETURN_TYPE, NAME, ...) \
-  JNIEXPORT RETURN_TYPE Java_com_google_android_exoplayer2_ext_opus_OpusLibrary_##NAME(JNIEnv* env, jobject thiz, ##__VA_ARGS__)
+  extern "C" { \
+  JNIEXPORT RETURN_TYPE \
+    Java_com_google_android_exoplayer2_ext_opus_OpusLibrary_ ## NAME \
+      (JNIEnv* env, jobject thiz, ##__VA_ARGS__);\
+  } \
+  JNIEXPORT RETURN_TYPE \
+    Java_com_google_android_exoplayer2_ext_opus_OpusLibrary_ ## NAME \
+      (JNIEnv* env, jobject thiz, ##__VA_ARGS__)\
 
 // JNI references for SimpleOutputBuffer class.
 static jmethodID outputBufferInit;
@@ -40,8 +54,6 @@ static const int kBytesPerSample = 2;  // opus fixed point uses 16 bit samples.
 static const int kMaxOpusOutputPacketSizeSamples = 960 * 6;
 static int channelCount;
 static int errorCode;
-
-extern "C" {
 
 DECODER_FUNC(jlong, opusInit, jint sampleRate, jint channelCount,
      jint numStreams, jint numCoupled, jint gain, jbyteArray jStreamMap) {
@@ -141,6 +153,4 @@ LIBRARY_FUNC(jstring, opusIsSecureDecodeSupported) {
 
 LIBRARY_FUNC(jstring, opusGetVersion) {
   return env->NewStringUTF(opus_get_version_string());
-}
-    
 }

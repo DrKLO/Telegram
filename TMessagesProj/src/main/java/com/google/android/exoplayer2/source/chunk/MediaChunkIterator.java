@@ -55,6 +55,11 @@ public interface MediaChunkIterator {
         public long getChunkEndTimeUs() {
           throw new NoSuchElementException();
         }
+
+        @Override
+        public void reset() {
+          // Do nothing.
+        }
       };
 
   /** Returns whether the iteration has reached the end of the available data. */
@@ -93,4 +98,7 @@ public interface MediaChunkIterator {
    *     {@link #next()} or when {@link #isEnded()} is true.
    */
   long getChunkEndTimeUs();
+
+  /** Resets the iterator to the initial position. */
+  void reset();
 }

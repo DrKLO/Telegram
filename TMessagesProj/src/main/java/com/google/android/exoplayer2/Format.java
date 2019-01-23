@@ -1181,6 +1181,37 @@ public final class Format implements Parcelable {
         metadata);
   }
 
+  public Format copyWithFrameRate(float frameRate) {
+    return new Format(
+        id,
+        label,
+        containerMimeType,
+        sampleMimeType,
+        codecs,
+        bitrate,
+        maxInputSize,
+        width,
+        height,
+        frameRate,
+        rotationDegrees,
+        pixelWidthHeightRatio,
+        projectionData,
+        stereoMode,
+        colorInfo,
+        channelCount,
+        sampleRate,
+        pcmEncoding,
+        encoderDelay,
+        encoderPadding,
+        selectionFlags,
+        language,
+        accessibilityChannel,
+        subsampleOffsetUs,
+        initializationData,
+        drmInitData,
+        metadata);
+  }
+
   public Format copyWithDrmInitData(@Nullable DrmInitData drmInitData) {
     return new Format(
         id,
@@ -1274,6 +1305,37 @@ public final class Format implements Parcelable {
         metadata);
   }
 
+  public Format copyWithBitrate(int bitrate) {
+    return new Format(
+        id,
+        label,
+        containerMimeType,
+        sampleMimeType,
+        codecs,
+        bitrate,
+        maxInputSize,
+        width,
+        height,
+        frameRate,
+        rotationDegrees,
+        pixelWidthHeightRatio,
+        projectionData,
+        stereoMode,
+        colorInfo,
+        channelCount,
+        sampleRate,
+        pcmEncoding,
+        encoderDelay,
+        encoderPadding,
+        selectionFlags,
+        language,
+        accessibilityChannel,
+        subsampleOffsetUs,
+        initializationData,
+        drmInitData,
+        metadata);
+  }
+
   /**
    * Returns the number of pixels if this is a video format whose {@link #width} and {@link #height}
    * are known, or {@link #NO_VALUE} otherwise
@@ -1329,6 +1391,18 @@ public final class Format implements Parcelable {
       result = 31 * result + accessibilityChannel;
       result = 31 * result + (drmInitData == null ? 0 : drmInitData.hashCode());
       result = 31 * result + (metadata == null ? 0 : metadata.hashCode());
+      result = 31 * result + (label != null ? label.hashCode() : 0);
+      result = 31 * result + maxInputSize;
+      result = 31 * result + (int) subsampleOffsetUs;
+      result = 31 * result + Float.floatToIntBits(frameRate);
+      result = 31 * result + Float.floatToIntBits(pixelWidthHeightRatio);
+      result = 31 * result + rotationDegrees;
+      result = 31 * result + stereoMode;
+      result = 31 * result + pcmEncoding;
+      result = 31 * result + encoderDelay;
+      result = 31 * result + encoderPadding;
+      result = 31 * result + selectionFlags;
+      // Not all of the fields are included to keep the calculation quick enough.
       hashCode = result;
     }
     return hashCode;
@@ -1343,13 +1417,16 @@ public final class Format implements Parcelable {
       return false;
     }
     Format other = (Format) obj;
+    if (hashCode != 0 && other.hashCode != 0 && hashCode != other.hashCode) {
+      return false;
+    }
     return bitrate == other.bitrate
         && maxInputSize == other.maxInputSize
         && width == other.width
         && height == other.height
-        && frameRate == other.frameRate
+        && Float.compare(frameRate, other.frameRate) == 0
         && rotationDegrees == other.rotationDegrees
-        && pixelWidthHeightRatio == other.pixelWidthHeightRatio
+        && Float.compare(pixelWidthHeightRatio, other.pixelWidthHeightRatio) == 0
         && stereoMode == other.stereoMode
         && channelCount == other.channelCount
         && sampleRate == other.sampleRate
@@ -1394,10 +1471,8 @@ public final class Format implements Parcelable {
 
   // Utility methods
 
-  /**
-   * Returns a prettier {@link String} than {@link #toString()}, intended for logging.
-   */
-  public static String toLogString(Format format) {
+  /** Returns a prettier {@link String} than {@link #toString()}, intended for logging. */
+  public static String toLogString(@Nullable Format format) {
     if (format == null) {
       return "null";
     }

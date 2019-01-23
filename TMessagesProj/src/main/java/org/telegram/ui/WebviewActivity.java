@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -72,25 +72,22 @@ public class WebviewActivity extends BaseFragment {
     private class TelegramWebviewProxy {
         @JavascriptInterface
         public void postEvent(final String eventName, final String eventData) {
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (getParentActivity() == null) {
-                        return;
-                    }
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d(eventName);
-                    }
-                    switch (eventName) {
-                        case "share_game":
-                            currentMessageObject.messageOwner.with_my_score = false;
-                            break;
-                        case "share_score":
-                            currentMessageObject.messageOwner.with_my_score = true;
-                            break;
-                    }
-                    showDialog(ShareAlert.createShareAlert(getParentActivity(), currentMessageObject, null, false, linkToCopy, false));
+            AndroidUtilities.runOnUIThread(() -> {
+                if (getParentActivity() == null) {
+                    return;
                 }
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d(eventName);
+                }
+                switch (eventName) {
+                    case "share_game":
+                        currentMessageObject.messageOwner.with_my_score = false;
+                        break;
+                    case "share_score":
+                        currentMessageObject.messageOwner.with_my_score = true;
+                        break;
+                }
+                showDialog(ShareAlert.createShareAlert(getParentActivity(), currentMessageObject, null, false, linkToCopy, false));
             });
         }
     }
@@ -159,8 +156,11 @@ public class WebviewActivity extends BaseFragment {
         ActionBarMenu menu = actionBar.createMenu();
         progressItem = menu.addItemWithWidth(share, R.drawable.share, AndroidUtilities.dp(54));
         progressView = new ContextProgressView(context, 1);
+        progressView.setAlpha(0.0f);
+        progressView.setScaleX(0.1f);
+        progressView.setScaleY(0.1f);
+        progressView.setVisibility(View.INVISIBLE);
         progressItem.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        progressItem.getImageView().setVisibility(View.INVISIBLE);
 
         ActionBarMenuItem menuItem = menu.addItem(0, R.drawable.ic_ab_other);
         menuItem.addSubItem(open_in, LocaleController.getString("OpenInExternalApp", R.string.OpenInExternalApp));

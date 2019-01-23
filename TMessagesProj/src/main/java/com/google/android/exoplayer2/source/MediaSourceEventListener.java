@@ -28,6 +28,9 @@ import com.google.android.exoplayer2.source.MediaSource.MediaPeriodId;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.util.Assertions;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /** Interface for callbacks to be notified of {@link MediaSource} events. */
@@ -44,6 +47,8 @@ public interface MediaSourceEventListener {
      * after redirection.
      */
     public final Uri uri;
+    /** The response headers associated with the load, or an empty map if unavailable. */
+    public final Map<String, List<String>> responseHeaders;
     /** The value of {@link SystemClock#elapsedRealtime} at the time of the load event. */
     public final long elapsedRealtimeMs;
     /** The duration of the load up to the event time. */
@@ -58,6 +63,8 @@ public interface MediaSourceEventListener {
      * @param uri The {@link Uri} from which data is being read. The uri must be identical to the
      *     one in {@code dataSpec.uri} unless redirection has occurred. If redirection has occurred,
      *     this is the uri after redirection.
+     * @param responseHeaders The response headers associated with the load, or an empty map if
+     *     unavailable.
      * @param elapsedRealtimeMs The value of {@link SystemClock#elapsedRealtime} at the time of the
      *     load event.
      * @param loadDurationMs The duration of the load up to the event time.
@@ -65,9 +72,15 @@ public interface MediaSourceEventListener {
      *     network responses, this is the decompressed size.
      */
     public LoadEventInfo(
-        DataSpec dataSpec, Uri uri, long elapsedRealtimeMs, long loadDurationMs, long bytesLoaded) {
+        DataSpec dataSpec,
+        Uri uri,
+        Map<String, List<String>> responseHeaders,
+        long elapsedRealtimeMs,
+        long loadDurationMs,
+        long bytesLoaded) {
       this.dataSpec = dataSpec;
       this.uri = uri;
+      this.responseHeaders = responseHeaders;
       this.elapsedRealtimeMs = elapsedRealtimeMs;
       this.loadDurationMs = loadDurationMs;
       this.bytesLoaded = bytesLoaded;
@@ -168,7 +181,8 @@ public interface MediaSourceEventListener {
    * @param mediaPeriodId The {@link MediaPeriodId} this load belongs to. Null if the load does not
    *     belong to a specific media period.
    * @param loadEventInfo The {@link LoadEventInfo} corresponding to the event. The value of {@link
-   *     LoadEventInfo#uri} won't reflect potential redirection yet.
+   *     LoadEventInfo#uri} won't reflect potential redirection yet and {@link
+   *     LoadEventInfo#responseHeaders} will be empty.
    * @param mediaLoadData The {@link MediaLoadData} defining the data being loaded.
    */
   void onLoadStarted(
@@ -370,10 +384,9 @@ public interface MediaSourceEventListener {
     }
 
     /** Dispatches {@link #onLoadStarted(int, MediaPeriodId, LoadEventInfo, MediaLoadData)}. */
-    public void loadStarted(DataSpec dataSpec, Uri uri, int dataType, long elapsedRealtimeMs) {
+    public void loadStarted(DataSpec dataSpec, int dataType, long elapsedRealtimeMs) {
       loadStarted(
           dataSpec,
-          uri,
           dataType,
           C.TRACK_TYPE_UNKNOWN,
           null,
@@ -387,7 +400,6 @@ public interface MediaSourceEventListener {
     /** Dispatches {@link #onLoadStarted(int, MediaPeriodId, LoadEventInfo, MediaLoadData)}. */
     public void loadStarted(
         DataSpec dataSpec,
-        Uri uri,
         int dataType,
         int trackType,
         @Nullable Format trackFormat,
@@ -398,7 +410,12 @@ public interface MediaSourceEventListener {
         long elapsedRealtimeMs) {
       loadStarted(
           new LoadEventInfo(
-              dataSpec, uri, elapsedRealtimeMs, /* loadDurationMs= */ 0, /* bytesLoaded= */ 0),
+              dataSpec,
+              dataSpec.uri,
+              /* responseHeaders= */ Collections.emptyMap(),
+              elapsedRealtimeMs,
+              /* loadDurationMs= */ 0,
+              /* bytesLoaded= */ 0),
           new MediaLoadData(
               dataType,
               trackType,
@@ -423,6 +440,7 @@ public interface MediaSourceEventListener {
     public void loadCompleted(
         DataSpec dataSpec,
         Uri uri,
+        Map<String, List<String>> responseHeaders,
         int dataType,
         long elapsedRealtimeMs,
         long loadDurationMs,
@@ -430,6 +448,7 @@ public interface MediaSourceEventListener {
       loadCompleted(
           dataSpec,
           uri,
+          responseHeaders,
           dataType,
           C.TRACK_TYPE_UNKNOWN,
           null,
@@ -446,6 +465,7 @@ public interface MediaSourceEventListener {
     public void loadCompleted(
         DataSpec dataSpec,
         Uri uri,
+        Map<String, List<String>> responseHeaders,
         int dataType,
         int trackType,
         @Nullable Format trackFormat,
@@ -457,7 +477,8 @@ public interface MediaSourceEventListener {
         long loadDurationMs,
         long bytesLoaded) {
       loadCompleted(
-          new LoadEventInfo(dataSpec, uri, elapsedRealtimeMs, loadDurationMs, bytesLoaded),
+          new LoadEventInfo(
+              dataSpec, uri, responseHeaders, elapsedRealtimeMs, loadDurationMs, bytesLoaded),
           new MediaLoadData(
               dataType,
               trackType,
@@ -483,6 +504,7 @@ public interface MediaSourceEventListener {
     public void loadCanceled(
         DataSpec dataSpec,
         Uri uri,
+        Map<String, List<String>> responseHeaders,
         int dataType,
         long elapsedRealtimeMs,
         long loadDurationMs,
@@ -490,6 +512,7 @@ public interface MediaSourceEventListener {
       loadCanceled(
           dataSpec,
           uri,
+          responseHeaders,
           dataType,
           C.TRACK_TYPE_UNKNOWN,
           null,
@@ -506,6 +529,7 @@ public interface MediaSourceEventListener {
     public void loadCanceled(
         DataSpec dataSpec,
         Uri uri,
+        Map<String, List<String>> responseHeaders,
         int dataType,
         int trackType,
         @Nullable Format trackFormat,
@@ -517,7 +541,8 @@ public interface MediaSourceEventListener {
         long loadDurationMs,
         long bytesLoaded) {
       loadCanceled(
-          new LoadEventInfo(dataSpec, uri, elapsedRealtimeMs, loadDurationMs, bytesLoaded),
+          new LoadEventInfo(
+              dataSpec, uri, responseHeaders, elapsedRealtimeMs, loadDurationMs, bytesLoaded),
           new MediaLoadData(
               dataType,
               trackType,
@@ -546,6 +571,7 @@ public interface MediaSourceEventListener {
     public void loadError(
         DataSpec dataSpec,
         Uri uri,
+        Map<String, List<String>> responseHeaders,
         int dataType,
         long elapsedRealtimeMs,
         long loadDurationMs,
@@ -555,6 +581,7 @@ public interface MediaSourceEventListener {
       loadError(
           dataSpec,
           uri,
+          responseHeaders,
           dataType,
           C.TRACK_TYPE_UNKNOWN,
           null,
@@ -576,6 +603,7 @@ public interface MediaSourceEventListener {
     public void loadError(
         DataSpec dataSpec,
         Uri uri,
+        Map<String, List<String>> responseHeaders,
         int dataType,
         int trackType,
         @Nullable Format trackFormat,
@@ -589,7 +617,8 @@ public interface MediaSourceEventListener {
         IOException error,
         boolean wasCanceled) {
       loadError(
-          new LoadEventInfo(dataSpec, uri, elapsedRealtimeMs, loadDurationMs, bytesLoaded),
+          new LoadEventInfo(
+              dataSpec, uri, responseHeaders, elapsedRealtimeMs, loadDurationMs, bytesLoaded),
           new MediaLoadData(
               dataType,
               trackType,

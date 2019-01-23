@@ -18,79 +18,96 @@ package com.google.android.exoplayer2.source.smoothstreaming.offline;
 import android.net.Uri;
 import android.support.annotation.Nullable;
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.RenderersFactory;
+import com.google.android.exoplayer2.drm.DrmSessionManager;
+import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
+import com.google.android.exoplayer2.offline.DownloadAction;
 import com.google.android.exoplayer2.offline.DownloadHelper;
 import com.google.android.exoplayer2.offline.StreamKey;
-import com.google.android.exoplayer2.offline.TrackKey;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.smoothstreaming.manifest.SsManifest;
 import com.google.android.exoplayer2.source.smoothstreaming.manifest.SsManifestParser;
+import com.google.android.exoplayer2.source.smoothstreaming.manifest.SsUtil;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.ParsingLoadable;
-import com.google.android.exoplayer2.util.Assertions;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 /** A {@link DownloadHelper} for SmoothStreaming streams. */
-public final class SsDownloadHelper extends DownloadHelper {
+public final class SsDownloadHelper extends DownloadHelper<SsManifest> {
 
-  private final Uri uri;
   private final DataSource.Factory manifestDataSourceFactory;
 
-  private @MonotonicNonNull SsManifest manifest;
+  /**
+   * Creates a SmoothStreaming download helper.
+   *
+   * <p>The helper uses {@link DownloadHelper#DEFAULT_TRACK_SELECTOR_PARAMETERS} for track selection
+   * and does not support drm protected content.
+   *
+   * @param uri A manifest {@link Uri}.
+   * @param manifestDataSourceFactory A {@link DataSource.Factory} used to load the manifest.
+   * @param renderersFactory The {@link RenderersFactory} creating the renderers for which tracks
+   *     are selected.
+   */
+  public SsDownloadHelper(
+      Uri uri, DataSource.Factory manifestDataSourceFactory, RenderersFactory renderersFactory) {
+    this(
+        uri,
+        manifestDataSourceFactory,
+        DownloadHelper.DEFAULT_TRACK_SELECTOR_PARAMETERS,
+        renderersFactory,
+        /* drmSessionManager= */ null);
+  }
 
-  public SsDownloadHelper(Uri uri, DataSource.Factory manifestDataSourceFactory) {
-    this.uri = uri;
+  /**
+   * Creates a SmoothStreaming download helper.
+   *
+   * @param uri A manifest {@link Uri}.
+   * @param manifestDataSourceFactory A {@link DataSource.Factory} used to load the manifest.
+   * @param trackSelectorParameters {@link DefaultTrackSelector.Parameters} for selecting tracks for
+   *     downloading.
+   * @param renderersFactory The {@link RenderersFactory} creating the renderers for which tracks
+   *     are selected.
+   * @param drmSessionManager An optional {@link DrmSessionManager} used by the renderers created by
+   *     {@code renderersFactory}.
+   */
+  public SsDownloadHelper(
+      Uri uri,
+      DataSource.Factory manifestDataSourceFactory,
+      DefaultTrackSelector.Parameters trackSelectorParameters,
+      RenderersFactory renderersFactory,
+      @Nullable DrmSessionManager<FrameworkMediaCrypto> drmSessionManager) {
+    super(
+        DownloadAction.TYPE_SS,
+        uri,
+        /* cacheKey= */ null,
+        trackSelectorParameters,
+        renderersFactory,
+        drmSessionManager);
     this.manifestDataSourceFactory = manifestDataSourceFactory;
   }
 
   @Override
-  protected void prepareInternal() throws IOException {
+  protected SsManifest loadManifest(Uri uri) throws IOException {
     DataSource dataSource = manifestDataSourceFactory.createDataSource();
-    manifest = ParsingLoadable.load(dataSource, new SsManifestParser(), uri, C.DATA_TYPE_MANIFEST);
-  }
-
-  /** Returns the SmoothStreaming manifest. Must not be called until after preparation completes. */
-  public SsManifest getManifest() {
-    Assertions.checkNotNull(manifest);
-    return manifest;
+    Uri fixedUri = SsUtil.fixManifestUri(uri);
+    return ParsingLoadable.load(dataSource, new SsManifestParser(), fixedUri, C.DATA_TYPE_MANIFEST);
   }
 
   @Override
-  public int getPeriodCount() {
-    Assertions.checkNotNull(manifest);
-    return 1;
-  }
-
-  @Override
-  public TrackGroupArray getTrackGroups(int periodIndex) {
-    Assertions.checkNotNull(manifest);
+  protected TrackGroupArray[] getTrackGroupArrays(SsManifest manifest) {
     SsManifest.StreamElement[] streamElements = manifest.streamElements;
     TrackGroup[] trackGroups = new TrackGroup[streamElements.length];
     for (int i = 0; i < streamElements.length; i++) {
       trackGroups[i] = new TrackGroup(streamElements[i].formats);
     }
-    return new TrackGroupArray(trackGroups);
+    return new TrackGroupArray[] {new TrackGroupArray(trackGroups)};
   }
 
   @Override
-  public SsDownloadAction getDownloadAction(@Nullable byte[] data, List<TrackKey> trackKeys) {
-    return SsDownloadAction.createDownloadAction(uri, data, toStreamKeys(trackKeys));
-  }
-
-  @Override
-  public SsDownloadAction getRemoveAction(@Nullable byte[] data) {
-    return SsDownloadAction.createRemoveAction(uri, data);
-  }
-
-  private static List<StreamKey> toStreamKeys(List<TrackKey> trackKeys) {
-    List<StreamKey> representationKeys = new ArrayList<>(trackKeys.size());
-    for (int i = 0; i < trackKeys.size(); i++) {
-      TrackKey trackKey = trackKeys.get(i);
-      representationKeys.add(new StreamKey(trackKey.groupIndex, trackKey.trackIndex));
-    }
-    return representationKeys;
+  protected StreamKey toStreamKey(
+      int periodIndex, int trackGroupIndex, int trackIndexInTrackGroup) {
+    return new StreamKey(trackGroupIndex, trackIndexInTrackGroup);
   }
 }

@@ -39,22 +39,23 @@ public final class EventDispatcher<T> {
   /** The list of listeners and handlers. */
   private final CopyOnWriteArrayList<HandlerAndListener<T>> listeners;
 
-  /** Creates event dispatcher. */
+  /** Creates an event dispatcher. */
   public EventDispatcher() {
     listeners = new CopyOnWriteArrayList<>();
   }
 
-  /** Adds listener to event dispatcher. */
+  /** Adds a listener to the event dispatcher. */
   public void addListener(Handler handler, T eventListener) {
     Assertions.checkArgument(handler != null && eventListener != null);
     removeListener(eventListener);
     listeners.add(new HandlerAndListener<>(handler, eventListener));
   }
 
-  /** Removes listener from event dispatcher. */
+  /** Removes a listener from the event dispatcher. */
   public void removeListener(T eventListener) {
     for (HandlerAndListener<T> handlerAndListener : listeners) {
       if (handlerAndListener.listener == eventListener) {
+        handlerAndListener.release();
         listeners.remove(handlerAndListener);
       }
     }
@@ -67,19 +68,33 @@ public final class EventDispatcher<T> {
    */
   public void dispatch(Event<T> event) {
     for (HandlerAndListener<T> handlerAndListener : listeners) {
-      T eventListener = handlerAndListener.listener;
-      handlerAndListener.handler.post(() -> event.sendTo(eventListener));
+      handlerAndListener.dispatch(event);
     }
   }
 
   private static final class HandlerAndListener<T> {
 
-    public final Handler handler;
-    public final T listener;
+    private final Handler handler;
+    private final T listener;
+
+    private boolean released;
 
     public HandlerAndListener(Handler handler, T eventListener) {
       this.handler = handler;
       this.listener = eventListener;
+    }
+
+    public void release() {
+      released = true;
+    }
+
+    public void dispatch(Event<T> event) {
+      handler.post(
+          () -> {
+            if (!released) {
+              event.sendTo(listener);
+            }
+          });
     }
   }
 }

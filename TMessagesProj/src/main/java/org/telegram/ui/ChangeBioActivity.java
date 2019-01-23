@@ -1,15 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Vibrator;
 import android.text.Editable;
@@ -20,8 +19,6 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
@@ -36,8 +33,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -80,12 +75,7 @@ public class ChangeBioActivity extends BaseFragment {
         fragmentView = new LinearLayout(context);
         LinearLayout linearLayout = (LinearLayout) fragmentView;
         linearLayout.setOrientation(LinearLayout.VERTICAL);
-        fragmentView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
+        fragmentView.setOnTouchListener((v, event) -> true);
 
         FrameLayout fieldContainer = new FrameLayout(context);
         linearLayout.addView(fieldContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 24, 20, 0));
@@ -126,15 +116,12 @@ public class ChangeBioActivity extends BaseFragment {
         firstNameField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         firstNameField.setCursorSize(AndroidUtilities.dp(20));
         firstNameField.setCursorWidth(1.5f);
-        firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
-                    doneButton.performClick();
-                    return true;
-                }
-                return false;
+        firstNameField.setOnEditorActionListener((textView, i, keyEvent) -> {
+            if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
+                doneButton.performClick();
+                return true;
             }
+            return false;
         });
         firstNameField.addTextChangedListener(new TextWatcher() {
             @Override
@@ -203,61 +190,39 @@ public class ChangeBioActivity extends BaseFragment {
             return;
         }
 
-        final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 1);
-        progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
-        progressDialog.setCanceledOnTouchOutside(false);
-        progressDialog.setCancelable(false);
+        final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
 
         final TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
         req.about = newName;
         req.flags |= 4;
 
-        final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(TLObject response, final TLRPC.TL_error error) {
-                if (error == null) {
-                    final TLRPC.User user = (TLRPC.User)response;
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                progressDialog.dismiss();
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
-                            userFull.about = newName;
-                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.userInfoDidLoaded, user.id, userFull);
-                            finishFragment();
-                        }
-                    });
-                } else {
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                progressDialog.dismiss();
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
-                            AlertsCreator.processError(currentAccount, error, ChangeBioActivity.this, req);
-                        }
-                    });
-                }
+        final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+            if (error == null) {
+                final TLRPC.User user = (TLRPC.User)response;
+                AndroidUtilities.runOnUIThread(() -> {
+                    try {
+                        progressDialog.dismiss();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    userFull.about = newName;
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.userInfoDidLoad, user.id, userFull, null);
+                    finishFragment();
+                });
+            } else {
+                AndroidUtilities.runOnUIThread(() -> {
+                    try {
+                        progressDialog.dismiss();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    AlertsCreator.processError(currentAccount, error, ChangeBioActivity.this, req);
+                });
             }
         }, ConnectionsManager.RequestFlagFailOnServerErrors);
         ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
 
-        progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
-                try {
-                    dialog.dismiss();
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-            }
-        });
+        progressDialog.setOnCancelListener(dialog -> ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true));
         progressDialog.show();
     }
 

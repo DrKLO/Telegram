@@ -15,7 +15,6 @@
  */
 package com.google.android.exoplayer2.drm;
 
-import android.support.annotation.Nullable;
 import com.google.android.exoplayer2.drm.ExoMediaDrm.KeyRequest;
 import com.google.android.exoplayer2.drm.ExoMediaDrm.ProvisionRequest;
 import com.google.android.exoplayer2.util.Assertions;
@@ -45,9 +44,7 @@ public final class LocalMediaDrmCallback implements MediaDrmCallback {
   }
 
   @Override
-  public byte[] executeKeyRequest(
-      UUID uuid, KeyRequest request, @Nullable String mediaProvidedLicenseServerUrl)
-      throws Exception {
+  public byte[] executeKeyRequest(UUID uuid, KeyRequest request) throws Exception {
     return keyResponse;
   }
 

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Cells;
@@ -22,7 +22,6 @@ import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -37,6 +36,7 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.SnowflakesEffect;
 
 public class DrawerProfileCell extends FrameLayout {
 
@@ -49,6 +49,7 @@ public class DrawerProfileCell extends FrameLayout {
     private Rect destRect = new Rect();
     private Paint paint = new Paint();
     private Integer currentColor;
+    private SnowflakesEffect snowflakesEffect;
     private boolean accountsShowed;
 
     public DrawerProfileCell(Context context) {
@@ -85,6 +86,10 @@ public class DrawerProfileCell extends FrameLayout {
         arrowView = new ImageView(context);
         arrowView.setScaleType(ImageView.ScaleType.CENTER);
         addView(arrowView, LayoutHelper.createFrame(59, 59, Gravity.RIGHT | Gravity.BOTTOM));
+
+        if (Theme.getEventType() == 0) {
+            snowflakesEffect = new SnowflakesEffect();
+        }
     }
 
     @Override
@@ -143,6 +148,10 @@ public class DrawerProfileCell extends FrameLayout {
             phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuPhoneCats));
             super.onDraw(canvas);
         }
+
+        if (snowflakesEffect != null) {
+            snowflakesEffect.onDraw(this, canvas);
+        }
     }
 
     public boolean isAccountsShowed() {
@@ -158,13 +167,10 @@ public class DrawerProfileCell extends FrameLayout {
     }
 
     public void setOnArrowClickListener(final OnClickListener onClickListener) {
-        arrowView.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                accountsShowed = !accountsShowed;
-                arrowView.setImageResource(accountsShowed ? R.drawable.collapse_up : R.drawable.collapse_down);
-                onClickListener.onClick(DrawerProfileCell.this);
-            }
+        arrowView.setOnClickListener(v -> {
+            accountsShowed = !accountsShowed;
+            arrowView.setImageResource(accountsShowed ? R.drawable.collapse_up : R.drawable.collapse_down);
+            onClickListener.onClick(DrawerProfileCell.this);
         });
     }
 
@@ -182,6 +188,6 @@ public class DrawerProfileCell extends FrameLayout {
         phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
         avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundInProfileBlue));
-        avatarImageView.setImage(photo, "50_50", avatarDrawable);
+        avatarImageView.setImage(photo, "50_50", avatarDrawable, user);
     }
 }

@@ -69,7 +69,7 @@ import java.util.List;
       List<byte[]> initializationData, ExoMediaCrypto exoMediaCrypto) throws OpusDecoderException {
     super(new DecoderInputBuffer[numInputBuffers], new SimpleOutputBuffer[numOutputBuffers]);
     this.exoMediaCrypto = exoMediaCrypto;
-    if (exoMediaCrypto != null) {
+    if (exoMediaCrypto != null && !OpusLibrary.opusIsSecureDecodeSupported()) {
       throw new OpusDecoderException("Opus decoder does not support secure decode.");
     }
     byte[] headerBytes = initializationData.get(0);

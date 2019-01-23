@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -12,7 +12,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -105,12 +104,7 @@ public class ChannelIntroActivity extends BaseFragment {
         };
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         ViewGroup viewGroup = (ViewGroup) fragmentView;
-        viewGroup.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
+        viewGroup.setOnTouchListener((v, event) -> true);
 
         imageView = new ImageView(context);
         imageView.setImageResource(R.drawable.channelintro);
@@ -138,13 +132,10 @@ public class ChannelIntroActivity extends BaseFragment {
         createChannelText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         createChannelText.setText(LocaleController.getString("ChannelAlertCreate", R.string.ChannelAlertCreate));
         viewGroup.addView(createChannelText);
-        createChannelText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Bundle args = new Bundle();
-                args.putInt("step", 0);
-                presentFragment(new ChannelCreateActivity(args), true);
-            }
+        createChannelText.setOnClickListener(v -> {
+            Bundle args = new Bundle();
+            args.putInt("step", 0);
+            presentFragment(new ChannelCreateActivity(args), true);
         });
 
         return fragmentView;

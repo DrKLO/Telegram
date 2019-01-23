@@ -56,8 +56,8 @@ public final class Tx3gDecoder extends SimpleSubtitleDecoder {
   private static final int FONT_FACE_ITALIC = 0x0002;
   private static final int FONT_FACE_UNDERLINE = 0x0004;
 
-  private static final int SPAN_PRIORITY_LOW = (0xFF << Spanned.SPAN_PRIORITY_SHIFT);
-  private static final int SPAN_PRIORITY_HIGH = (0x00 << Spanned.SPAN_PRIORITY_SHIFT);
+  private static final int SPAN_PRIORITY_LOW = 0xFF << Spanned.SPAN_PRIORITY_SHIFT;
+  private static final int SPAN_PRIORITY_HIGH = 0;
 
   private static final int DEFAULT_FONT_FACE = 0;
   private static final int DEFAULT_COLOR = Color.WHITE;

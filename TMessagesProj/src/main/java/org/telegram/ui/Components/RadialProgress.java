@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -425,8 +425,6 @@ public class RadialProgress {
                 miniProgressBackgroundPaint.setColor(progressColor);
                 if (previousMiniDrawable != null && currentMiniDrawable == null) {
                     miniProgressBackgroundPaint.setAlpha((int) (255 * animatedAlphaValue * overrideAlpha));
-                } else if (previousMiniDrawable != null && currentMiniDrawable == null) {
-                    miniProgressBackgroundPaint.setAlpha((int) (255 * overrideAlpha));
                 } else {
                     miniProgressBackgroundPaint.setAlpha(255);
                 }

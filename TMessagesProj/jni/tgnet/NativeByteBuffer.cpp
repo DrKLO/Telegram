@@ -19,12 +19,12 @@ NativeByteBuffer::NativeByteBuffer(uint32_t size) {
     if (jclass_ByteBuffer != nullptr) {
         JNIEnv *env = 0;
         if (javaVm->GetEnv((void **) &env, JNI_VERSION_1_6) != JNI_OK) {
-            DEBUG_E("can't get jnienv");
+            if (LOGS_ENABLED) DEBUG_E("can't get jnienv");
             exit(1);
         }
         javaByteBuffer = env->CallStaticObjectMethod(jclass_ByteBuffer, jclass_ByteBuffer_allocateDirect, size);
         if (javaByteBuffer == nullptr) {
-            DEBUG_E("can't create javaByteBuffer");
+            if (LOGS_ENABLED) DEBUG_E("can't create javaByteBuffer");
             exit(1);
         }
         jobject globalRef = env->NewGlobalRef(javaByteBuffer);
@@ -40,7 +40,7 @@ NativeByteBuffer::NativeByteBuffer(uint32_t size) {
     }
 #endif
     if (buffer == nullptr) {
-        DEBUG_E("can't allocate NativeByteBuffer buffer");
+        if (LOGS_ENABLED) DEBUG_E("can't allocate NativeByteBuffer buffer");
         exit(1);
     }
     _limit = _capacity = size;
@@ -61,7 +61,7 @@ NativeByteBuffer::~NativeByteBuffer() {
     if (javaByteBuffer != nullptr) {
         JNIEnv *env = 0;
         if (javaVm->GetEnv((void **) &env, JNI_VERSION_1_6) != JNI_OK) {
-		    DEBUG_E("can't get jnienv");
+		    if (LOGS_ENABLED) DEBUG_E("can't get jnienv");
             exit(1);
 	    }
         env->DeleteGlobalRef(javaByteBuffer);
@@ -162,7 +162,7 @@ void NativeByteBuffer::writeInt32(int32_t x, bool *error) {
             if (error != nullptr) {
                 *error = true;
             }
-            DEBUG_E("write int32 error");
+            if (LOGS_ENABLED) DEBUG_E("write int32 error");
             return;
         }
         buffer[_position++] = (uint8_t) x;
@@ -180,7 +180,7 @@ void NativeByteBuffer::writeInt64(int64_t x, bool *error) {
             if (error != nullptr) {
                 *error = true;
             }
-            DEBUG_E("write int64 error");
+            if (LOGS_ENABLED) DEBUG_E("write int64 error");
             return;
         }
         buffer[_position++] = (uint8_t) x;
@@ -214,7 +214,7 @@ void NativeByteBuffer::writeBytes(uint8_t *b, uint32_t length, bool *error) {
             if (error != nullptr) {
                 *error = true;
             }
-            DEBUG_E("write bytes error");
+            if (LOGS_ENABLED) DEBUG_E("write bytes error");
             return;
         }
         writeBytesInternal(b, 0, length);
@@ -229,7 +229,7 @@ void NativeByteBuffer::writeBytes(uint8_t *b, uint32_t offset, uint32_t length, 
             if (error != nullptr) {
                 *error = true;
             }
-            DEBUG_E("write bytes error");
+            if (LOGS_ENABLED) DEBUG_E("write bytes error");
             return;
         }
         writeBytesInternal(b, offset, length);
@@ -248,7 +248,7 @@ void NativeByteBuffer::writeBytes(NativeByteBuffer *b, bool *error) {
             if (error != nullptr) {
                 *error = true;
             }
-            DEBUG_E("write bytes error");
+            if (LOGS_ENABLED) DEBUG_E("write bytes error");
             return;
         }
         writeBytesInternal(b->buffer + b->_position, 0, length);
@@ -264,7 +264,7 @@ void NativeByteBuffer::writeBytes(ByteArray *b, bool *error) {
             if (error != nullptr) {
                 *error = true;
             }
-            DEBUG_E("write bytes error");
+            if (LOGS_ENABLED) DEBUG_E("write bytes error");
             return;
         }
         writeBytesInternal(b->bytes, 0, b->length);
@@ -284,7 +284,7 @@ void NativeByteBuffer::writeByte(uint8_t i, bool *error) {
             if (error != nullptr) {
                 *error = true;
             }
-            DEBUG_E("write byte error");
+            if (LOGS_ENABLED) DEBUG_E("write byte error");
             return;
         }
         buffer[_position++] = i;
@@ -304,7 +304,7 @@ void NativeByteBuffer::writeByteArray(uint8_t *b, uint32_t offset, uint32_t leng
                 if (error != nullptr) {
                     *error = true;
                 }
-                DEBUG_E("write byte array error");
+                if (LOGS_ENABLED) DEBUG_E("write byte array error");
                 return;
             }
             buffer[_position++] = (uint8_t) length;
@@ -317,7 +317,7 @@ void NativeByteBuffer::writeByteArray(uint8_t *b, uint32_t offset, uint32_t leng
                 if (error != nullptr) {
                     *error = true;
                 }
-                DEBUG_E("write byte array error");
+                if (LOGS_ENABLED) DEBUG_E("write byte array error");
                 return;
             }
             buffer[_position++] = (uint8_t) 254;
@@ -333,7 +333,7 @@ void NativeByteBuffer::writeByteArray(uint8_t *b, uint32_t offset, uint32_t leng
             if (error != nullptr) {
                 *error = true;
             }
-            DEBUG_E("write byte array error");
+            if (LOGS_ENABLED) DEBUG_E("write byte array error");
             return;
         }
         writeBytesInternal(b, offset, length);
@@ -348,7 +348,7 @@ void NativeByteBuffer::writeByteArray(uint8_t *b, uint32_t offset, uint32_t leng
         if (error != nullptr) {
             *error = true;
         }
-        DEBUG_E("write byte array error");
+        if (LOGS_ENABLED) DEBUG_E("write byte array error");
         return;
     }
     for (uint32_t a = 0; a < addition; a++) {
@@ -440,7 +440,7 @@ int32_t NativeByteBuffer::readInt32(bool *error) {
         if (error != nullptr) {
             *error = true;
         }
-        DEBUG_E("read int32 error");
+        if (LOGS_ENABLED) DEBUG_E("read int32 error");
         return 0;
     }
     int32_t result = ((buffer[_position] & 0xff)) |
@@ -464,7 +464,7 @@ int32_t NativeByteBuffer::readBigInt32(bool *error) {
         if (error != nullptr) {
             *error = true;
         }
-        DEBUG_E("read big int32 error");
+        if (LOGS_ENABLED) DEBUG_E("read big int32 error");
         return 0;
     }
     int32_t result = ((buffer[_position] & 0xff) << 24) |
@@ -480,7 +480,7 @@ int64_t NativeByteBuffer::readInt64(bool *error) {
         if (error != nullptr) {
             *error = true;
         }
-        DEBUG_E("read int64 error");
+        if (LOGS_ENABLED) DEBUG_E("read int64 error");
         return 0;
     }
     int64_t result = ((int64_t) (buffer[_position] & 0xff)) |
@@ -500,7 +500,7 @@ uint8_t NativeByteBuffer::readByte(bool *error) {
         if (error != nullptr) {
             *error = true;
         }
-        DEBUG_E("read byte error");
+        if (LOGS_ENABLED) DEBUG_E("read byte error");
         return 0;
     }
     return buffer[_position++];
@@ -515,7 +515,7 @@ bool NativeByteBuffer::readBool(bool *error) {
     }
     if (error != nullptr) {
         *error = true;
-        DEBUG_E("read bool error");
+        if (LOGS_ENABLED) DEBUG_E("read bool error");
     }
     return false;
 }
@@ -525,7 +525,7 @@ void NativeByteBuffer::readBytes(uint8_t *b, uint32_t length, bool *error) {
         if (error != nullptr) {
             *error = true;
         }
-        DEBUG_E("read bytes error");
+        if (LOGS_ENABLED) DEBUG_E("read bytes error");
         return;
     }
     memcpy(b, buffer + _position, length);
@@ -537,7 +537,7 @@ ByteArray *NativeByteBuffer::readBytes(uint32_t length, bool *error) {
         if (error != nullptr) {
             *error = true;
         }
-        DEBUG_E("read bytes error");
+        if (LOGS_ENABLED) DEBUG_E("read bytes error");
         return nullptr;
     }
     ByteArray *byteArray = new ByteArray(length);
@@ -552,7 +552,7 @@ std::string NativeByteBuffer::readString(bool *error) {
         if (error != nullptr) {
             *error = true;
         }
-        DEBUG_E("read string error");
+        if (LOGS_ENABLED) DEBUG_E("read string error");
         return std::string("");
     }
     uint32_t l = buffer[_position++];
@@ -561,7 +561,7 @@ std::string NativeByteBuffer::readString(bool *error) {
             if (error != nullptr) {
                 *error = true;
             }
-            DEBUG_E("read string error");
+            if (LOGS_ENABLED) DEBUG_E("read string error");
             return std::string("");
         }
         l = buffer[_position] | (buffer[_position + 1] << 8) | (buffer[_position + 2] << 16);
@@ -576,7 +576,7 @@ std::string NativeByteBuffer::readString(bool *error) {
         if (error != nullptr) {
             *error = true;
         }
-        DEBUG_E("read string error");
+        if (LOGS_ENABLED) DEBUG_E("read string error");
         return std::string("");
     }
     std::string result = std::string((const char *) (buffer + _position), l);
@@ -590,7 +590,7 @@ ByteArray *NativeByteBuffer::readByteArray(bool *error) {
         if (error != nullptr) {
             *error = true;
         }
-        DEBUG_E("read byte array error");
+        if (LOGS_ENABLED) DEBUG_E("read byte array error");
         return nullptr;
     }
     uint32_t l = buffer[_position++];
@@ -599,7 +599,7 @@ ByteArray *NativeByteBuffer::readByteArray(bool *error) {
             if (error != nullptr) {
                 *error = true;
             }
-            DEBUG_E("read byte array error");
+            if (LOGS_ENABLED) DEBUG_E("read byte array error");
             return nullptr;
         }
         l = buffer[_position] | (buffer[_position + 1] << 8) | (buffer[_position + 2] << 16);
@@ -614,7 +614,7 @@ ByteArray *NativeByteBuffer::readByteArray(bool *error) {
         if (error != nullptr) {
             *error = true;
         }
-        DEBUG_E("read byte array error");
+        if (LOGS_ENABLED) DEBUG_E("read byte array error");
         return nullptr;
     }
     ByteArray *result = new ByteArray(l);
@@ -629,7 +629,7 @@ NativeByteBuffer *NativeByteBuffer::readByteBuffer(bool copy, bool *error) {
         if (error != nullptr) {
             *error = true;
         }
-        DEBUG_E("read byte buffer error");
+        if (LOGS_ENABLED) DEBUG_E("read byte buffer error");
         return nullptr;
     }
     uint32_t l = buffer[_position++];
@@ -638,7 +638,7 @@ NativeByteBuffer *NativeByteBuffer::readByteBuffer(bool copy, bool *error) {
             if (error != nullptr) {
                 *error = true;
             }
-            DEBUG_E("read byte buffer error");
+            if (LOGS_ENABLED) DEBUG_E("read byte buffer error");
             return nullptr;
         }
         l = buffer[_position] | (buffer[_position + 1] << 8) | (buffer[_position + 2] << 16);
@@ -653,7 +653,7 @@ NativeByteBuffer *NativeByteBuffer::readByteBuffer(bool copy, bool *error) {
         if (error != nullptr) {
             *error = true;
         }
-        DEBUG_E("read byte buffer error");
+        if (LOGS_ENABLED) DEBUG_E("read byte buffer error");
         return nullptr;
     }
     NativeByteBuffer *result = nullptr;
@@ -686,12 +686,12 @@ jobject NativeByteBuffer::getJavaByteBuffer() {
     if (javaByteBuffer == nullptr && javaVm != nullptr) {
         JNIEnv *env = 0;
         if (javaVm->GetEnv((void **) &env, JNI_VERSION_1_6) != JNI_OK) {
-		    DEBUG_E("can't get jnienv");
+		    if (LOGS_ENABLED) DEBUG_E("can't get jnienv");
             exit(1);
 	    }
         javaByteBuffer = env->NewDirectByteBuffer(buffer, _capacity);
         if (javaByteBuffer == nullptr) {
-            DEBUG_E("can't allocate NativeByteBuffer buffer");
+            if (LOGS_ENABLED) DEBUG_E("can't allocate NativeByteBuffer buffer");
             exit(1);
         }
         jobject globalRef = env->NewGlobalRef(javaByteBuffer);

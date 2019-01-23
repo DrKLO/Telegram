@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
@@ -110,7 +110,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
 
             }
         });
-        item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
+        item.setSearchFieldHint(LocaleController.getString("Search", R.string.Search));
 
         actionBar.setBackButtonDrawable(new MenuDrawable());
         actionBar.setAddToContainer(false);
@@ -214,7 +214,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                 return result;
             }
         };
-        page2.setBackgroundImage(Theme.getCachedWallpaper());
+        page2.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
 
         actionBar2 = createActionBar(context);
         actionBar2.setBackButtonDrawable(new BackDrawable(false));
@@ -326,13 +326,10 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
         cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
         cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         bottomLayout.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Theme.applyPreviousTheme();
-                parentLayout.rebuildAllFragmentViews(false, false);
-                finishFragment();
-            }
+        cancelButton.setOnClickListener(v -> {
+            Theme.applyPreviousTheme();
+            parentLayout.rebuildAllFragmentViews(false, false);
+            finishFragment();
         });
 
         TextView doneButton = new TextView(context);
@@ -344,14 +341,11 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
         doneButton.setText(LocaleController.getString("ApplyTheme", R.string.ApplyTheme).toUpperCase());
         doneButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         bottomLayout.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
-        doneButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                applied = true;
-                parentLayout.rebuildAllFragmentViews(false, false);
-                Theme.applyThemeFile(themeFile, applyingTheme.name, false);
-                finishFragment();
-            }
+        doneButton.setOnClickListener(v -> {
+            applied = true;
+            parentLayout.rebuildAllFragmentViews(false, false);
+            Theme.applyThemeFile(themeFile, applyingTheme.name, false);
+            finishFragment();
         });
 
         return fragmentView;
@@ -359,13 +353,13 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
         super.onFragmentDestroy();
     }
 
@@ -377,6 +371,17 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
         }
         if (messagesAdapter != null) {
             messagesAdapter.notifyDataSetChanged();
+        }
+        if (page2 != null) {
+            page2.onResume();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (page2 != null) {
+            page2.onResume();
         }
     }
 
@@ -390,7 +395,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
     @Override
     @SuppressWarnings("unchecked")
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.emojiDidLoaded) {
+        if (id == NotificationCenter.emojiDidLoad) {
             if (listView == null) {
                 return;
             }
@@ -620,8 +625,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             message.media.flags |= 3;
             message.media.document = new TLRPC.TL_document();
             message.media.document.mime_type = "audio/mp4";
-            message.media.document.thumb = new TLRPC.TL_photoSizeEmpty();
-            message.media.document.thumb.type = "s";
+            message.media.document.file_reference = new byte[0];
             TLRPC.TL_documentAttributeAudio audio = new TLRPC.TL_documentAttributeAudio();
             audio.duration = 243;
             audio.performer = "David Hasselhoff";
@@ -659,8 +663,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             message.media.flags |= 3;
             message.media.document = new TLRPC.TL_document();
             message.media.document.mime_type = "audio/ogg";
-            message.media.document.thumb = new TLRPC.TL_photoSizeEmpty();
-            message.media.document.thumb.type = "s";
+            message.media.document.file_reference = new byte[0];
             audio = new TLRPC.TL_documentAttributeAudio();
             audio.flags = 1028;
             audio.duration = 3;
@@ -689,6 +692,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             message.media = new TLRPC.TL_messageMediaPhoto();
             message.media.flags |= 3;
             message.media.photo = new TLRPC.TL_photo();
+            message.media.photo.file_reference = new byte[0];
             message.media.photo.has_stickers = false;
             message.media.photo.id = 1;
             message.media.photo.access_hash = 0;
@@ -737,7 +741,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                 ChatMessageCell chatMessageCell = (ChatMessageCell) view;
                 chatMessageCell.setDelegate(new ChatMessageCell.ChatMessageCellDelegate() {
                     @Override
-                    public void didPressedShare(ChatMessageCell cell) {
+                    public void didPressShare(ChatMessageCell cell) {
 
                     }
 
@@ -747,32 +751,37 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                     }
 
                     @Override
-                    public void didPressedChannelAvatar(ChatMessageCell cell, TLRPC.Chat chat, int postId) {
+                    public void didPressChannelAvatar(ChatMessageCell cell, TLRPC.Chat chat, int postId) {
 
                     }
 
                     @Override
-                    public void didPressedOther(ChatMessageCell cell) {
+                    public void didPressOther(ChatMessageCell cell) {
 
                     }
 
                     @Override
-                    public void didPressedUserAvatar(ChatMessageCell cell, TLRPC.User user) {
+                    public void didPressUserAvatar(ChatMessageCell cell, TLRPC.User user) {
 
                     }
 
                     @Override
-                    public void didPressedBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button) {
+                    public void didPressBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button) {
 
                     }
 
                     @Override
-                    public void didPressedCancelSendButton(ChatMessageCell cell) {
+                    public void didPressVoteButton(ChatMessageCell cell, TLRPC.TL_pollAnswer button) {
 
                     }
 
                     @Override
-                    public void didLongPressed(ChatMessageCell cell) {
+                    public void didPressCancelSendButton(ChatMessageCell cell) {
+
+                    }
+
+                    @Override
+                    public void didLongPress(ChatMessageCell cell) {
 
                     }
 
@@ -782,7 +791,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                     }
 
                     @Override
-                    public void didPressedUrl(MessageObject messageObject, final CharacterStyle url, boolean longPress) {
+                    public void didPressUrl(MessageObject messageObject, final CharacterStyle url, boolean longPress) {
 
                     }
 
@@ -792,22 +801,22 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                     }
 
                     @Override
-                    public void didPressedReplyMessage(ChatMessageCell cell, int id) {
+                    public void didPressReplyMessage(ChatMessageCell cell, int id) {
 
                     }
 
                     @Override
-                    public void didPressedViaBot(ChatMessageCell cell, String username) {
+                    public void didPressViaBot(ChatMessageCell cell, String username) {
 
                     }
 
                     @Override
-                    public void didPressedImage(ChatMessageCell cell) {
+                    public void didPressImage(ChatMessageCell cell) {
 
                     }
 
                     @Override
-                    public void didPressedInstantButton(ChatMessageCell cell, int type) {
+                    public void didPressInstantButton(ChatMessageCell cell, int type) {
 
                     }
 

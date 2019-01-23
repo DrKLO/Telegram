@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.source.chunk;
 
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.SeekParameters;
 import java.io.IOException;
 import java.util.List;
@@ -83,8 +84,8 @@ public interface ChunkSource {
   /**
    * Called when the {@link ChunkSampleStream} has finished loading a chunk obtained from this
    * source.
-   * <p>
-   * This method should only be called when the source is enabled.
+   *
+   * <p>This method should only be called when the source is enabled.
    *
    * @param chunk The chunk whose load has been completed.
    */
@@ -93,15 +94,15 @@ public interface ChunkSource {
   /**
    * Called when the {@link ChunkSampleStream} encounters an error loading a chunk obtained from
    * this source.
-   * <p>
-   * This method should only be called when the source is enabled.
+   *
+   * <p>This method should only be called when the source is enabled.
    *
    * @param chunk The chunk whose load encountered the error.
    * @param cancelable Whether the load can be canceled.
    * @param e The error.
-   * @return Whether the load should be canceled. Should always be false if {@code cancelable} is
-   *     false.
+   * @param blacklistDurationMs The duration for which the associated track may be blacklisted, or
+   *     {@link C#TIME_UNSET} if the track may not be blacklisted.
+   * @return Whether the load should be canceled. Must be false if {@code cancelable} is false.
    */
-  boolean onChunkLoadError(Chunk chunk, boolean cancelable, Exception e);
-
+  boolean onChunkLoadError(Chunk chunk, boolean cancelable, Exception e, long blacklistDurationMs);
 }

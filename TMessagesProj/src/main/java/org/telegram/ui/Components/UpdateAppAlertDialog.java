@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
-import android.content.DialogInterface;
 import android.graphics.Canvas;
 import android.os.Bundle;
 import android.view.View;
@@ -48,31 +47,25 @@ public class UpdateAppAlertDialog extends AlertDialog implements NotificationCen
         }
         setDismissDialogByButtons(false);
         setTitle(LocaleController.getString("UpdateTelegram", R.string.UpdateTelegram));
-        setPositiveButton(LocaleController.getString("UpdateNow", R.string.UpdateNow), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                if (!BlockingUpdateView.checkApkInstallPermissions(getContext())) {
-                    return;
-                }
-                if (appUpdate.document instanceof TLRPC.TL_document) {
-                    if (!BlockingUpdateView.openApkInstall(parentActivity, appUpdate.document)) {
-                        FileLoader.getInstance(accountNum).loadFile(appUpdate.document, true, 1);
-                        showProgress(true);
-                    }
-                } else if (appUpdate.url != null) {
-                    Browser.openUrl(getContext(), appUpdate.url);
-                    dialog.dismiss();
-                }
+        setPositiveButton(LocaleController.getString("UpdateNow", R.string.UpdateNow), (dialog, which) -> {
+            if (!BlockingUpdateView.checkApkInstallPermissions(getContext())) {
+                return;
             }
-        });
-        setNeutralButton(LocaleController.getString("Later", R.string.Later), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                if (appUpdate.document instanceof TLRPC.TL_document) {
-                    FileLoader.getInstance(accountNum).cancelLoadFile(appUpdate.document);
+            if (appUpdate.document instanceof TLRPC.TL_document) {
+                if (!BlockingUpdateView.openApkInstall(parentActivity, appUpdate.document)) {
+                    FileLoader.getInstance(accountNum).loadFile(appUpdate.document, "update", 1, 1);
+                    showProgress(true);
                 }
+            } else if (appUpdate.url != null) {
+                Browser.openUrl(getContext(), appUpdate.url);
                 dialog.dismiss();
             }
+        });
+        setNeutralButton(LocaleController.getString("Later", R.string.Later), (dialog, which) -> {
+            if (appUpdate.document instanceof TLRPC.TL_document) {
+                FileLoader.getInstance(accountNum).cancelLoadFile(appUpdate.document);
+            }
+            dialog.dismiss();
         });
 
         radialProgressView = new FrameLayout(parentActivity) {
@@ -105,13 +98,13 @@ public class UpdateAppAlertDialog extends AlertDialog implements NotificationCen
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.FileDidLoaded) {
+        if (id == NotificationCenter.fileDidLoad) {
             String location = (String) args[0];
             if (fileName != null && fileName.equals(location)) {
                 showProgress(false);
                 BlockingUpdateView.openApkInstall(parentActivity, appUpdate.document);
             }
-        } else if (id == NotificationCenter.FileDidFailedLoad) {
+        } else if (id == NotificationCenter.fileDidFailedLoad) {
             String location = (String) args[0];
             if (fileName != null && fileName.equals(location)) {
                 showProgress(false);
@@ -128,8 +121,8 @@ public class UpdateAppAlertDialog extends AlertDialog implements NotificationCen
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.FileDidLoaded);
-        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.FileDidFailedLoad);
+        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileDidLoad);
+        NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.fileDidFailedLoad);
         NotificationCenter.getInstance(accountNum).addObserver(this, NotificationCenter.FileLoadProgressChanged);
         buttonsLayout.addView(radialProgressView, LayoutHelper.createFrame(36, 36));
     }
@@ -137,8 +130,8 @@ public class UpdateAppAlertDialog extends AlertDialog implements NotificationCen
     @Override
     public void dismiss() {
         super.dismiss();
-        NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.FileDidLoaded);
-        NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.FileDidFailedLoad);
+        NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.fileDidLoad);
+        NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.fileDidFailedLoad);
         NotificationCenter.getInstance(accountNum).removeObserver(this, NotificationCenter.FileLoadProgressChanged);
     }
 

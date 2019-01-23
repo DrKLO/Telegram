@@ -102,7 +102,7 @@ public final class AudioAttributes {
   }
 
   @TargetApi(21)
-  /* package */ android.media.AudioAttributes getAudioAttributesV21() {
+  public android.media.AudioAttributes getAudioAttributesV21() {
     if (audioAttributesV21 == null) {
       audioAttributesV21 = new android.media.AudioAttributes.Builder()
           .setContentType(contentType)

@@ -142,7 +142,7 @@ void FileLoadOperation::start() {
             if (tempFile != nullptr) {
                 if (downloadedBytes != 0) {
                     if (!fseek(tempFile, downloadedBytes, SEEK_SET)) {
-                        DEBUG_D("resume loading file to temp = %s final = %s from %d", tempFilePath.c_str(), filePath.c_str(), nextDownloadOffset);
+                        if (LOGS_ENABLED) DEBUG_D("resume loading file to temp = %s final = %s from %d", tempFilePath.c_str(), filePath.c_str(), nextDownloadOffset);
                     } else {
                         fclose(tempFile);
                         tempFile = nullptr;
@@ -156,7 +156,7 @@ void FileLoadOperation::start() {
                     onFailedLoadingFile(FileLoadFailReasonError);
                     return;
                 }
-                DEBUG_D("start loading file to temp = %s final = %s", tempFilePath.c_str(), filePath.c_str());
+                if (LOGS_ENABLED) DEBUG_D("start loading file to temp = %s final = %s", tempFilePath.c_str(), filePath.c_str());
             }
             if (totalBytesCount != 0 && downloadedBytes == totalBytesCount) {
                 onFinishLoadingFile();
@@ -229,11 +229,11 @@ void FileLoadOperation::onFinishLoadingFile() {
         fclose(tempFile);
         tempFile = nullptr;
         if (rename(tempFilePath.c_str(), filePath.c_str())) {
-            DEBUG_E("unable to rename temp = %s to final = %s", tempFilePath.c_str(), filePath.c_str());
+            if (LOGS_ENABLED) DEBUG_E("unable to rename temp = %s to final = %s", tempFilePath.c_str(), filePath.c_str());
             filePath = tempFilePath;
         }
     }
-    DEBUG_D("finished downloading file %s", filePath.c_str());
+    if (LOGS_ENABLED) DEBUG_D("finished downloading file %s", filePath.c_str());
     if (onFinishedCallback != nullptr) {
         onFinishedCallback(filePath);
     }

@@ -3,13 +3,12 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2017.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.View;
@@ -106,19 +105,16 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
                     args.putBoolean(isAlwaysShare ? "isAlwaysShare" : "isNeverShare", true);
                     args.putBoolean("isGroup", isGroup);
                     GroupCreateActivity fragment = new GroupCreateActivity(args);
-                    fragment.setDelegate(new GroupCreateActivity.GroupCreateActivityDelegate() {
-                        @Override
-                        public void didSelectUsers(ArrayList<Integer> ids) {
-                            for (Integer id : ids) {
-                                if (uidArray.contains(id)) {
-                                    continue;
-                                }
-                                uidArray.add(id);
+                    fragment.setDelegate(ids -> {
+                        for (Integer id1 : ids) {
+                            if (uidArray.contains(id1)) {
+                                continue;
                             }
-                            listViewAdapter.notifyDataSetChanged();
-                            if (delegate != null) {
-                                delegate.didUpdatedUserList(uidArray, true);
-                            }
+                            uidArray.add(id1);
+                        }
+                        listViewAdapter.notifyDataSetChanged();
+                        if (delegate != null) {
+                            delegate.didUpdatedUserList(uidArray, true);
                         }
                     });
                     presentFragment(fragment);
@@ -145,41 +141,32 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                if (position < uidArray.size()) {
-                    Bundle args = new Bundle();
-                    args.putInt("user_id", uidArray.get(position));
-                    presentFragment(new ProfileActivity(args));
-                }
+        listView.setOnItemClickListener((view, position) -> {
+            if (position < uidArray.size()) {
+                Bundle args = new Bundle();
+                args.putInt("user_id", uidArray.get(position));
+                presentFragment(new ProfileActivity(args));
             }
         });
-        listView.setOnItemLongClickListener(new RecyclerListView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemClick(View view, int position) {
-                if (position < 0 || position >= uidArray.size() || getParentActivity() == null) {
-                    return false;
-                }
-                selectedUserId = uidArray.get(position);
-
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                CharSequence[] items = new CharSequence[]{LocaleController.getString("Delete", R.string.Delete)};
-                builder.setItems(items, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        if (i == 0) {
-                            uidArray.remove((Integer) selectedUserId);
-                            listViewAdapter.notifyDataSetChanged();
-                            if (delegate != null) {
-                                delegate.didUpdatedUserList(uidArray, false);
-                            }
-                        }
-                    }
-                });
-                showDialog(builder.create());
-                return true;
+        listView.setOnItemLongClickListener((view, position) -> {
+            if (position < 0 || position >= uidArray.size() || getParentActivity() == null) {
+                return false;
             }
+            selectedUserId = uidArray.get(position);
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            CharSequence[] items = new CharSequence[]{LocaleController.getString("Delete", R.string.Delete)};
+            builder.setItems(items, (dialogInterface, i) -> {
+                if (i == 0) {
+                    uidArray.remove((Integer) selectedUserId);
+                    listViewAdapter.notifyDataSetChanged();
+                    if (delegate != null) {
+                        delegate.didUpdatedUserList(uidArray, false);
+                    }
+                }
+            });
+            showDialog(builder.create());
+            return true;
         });
 
         return fragmentView;
@@ -276,16 +263,13 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate cellDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
-            @Override
-            public void didSetColor() {
-                if (listView != null) {
-                    int count = listView.getChildCount();
-                    for (int a = 0; a < count; a++) {
-                        View child = listView.getChildAt(a);
-                        if (child instanceof UserCell) {
-                            ((UserCell) child).update(0);
-                        }
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
+            if (listView != null) {
+                int count = listView.getChildCount();
+                for (int a = 0; a < count; a++) {
+                    View child = listView.getChildAt(a);
+                    if (child instanceof UserCell) {
+                        ((UserCell) child).update(0);
                     }
                 }
             }
@@ -308,7 +292,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
 
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText),
-                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, new Drawable[]{Theme.avatar_photoDrawable, Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),

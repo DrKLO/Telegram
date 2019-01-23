@@ -68,8 +68,8 @@ public final class SsDownloader extends SegmentDownloader<SsManifest> {
   }
 
   @Override
-  protected SsManifest getManifest(DataSource dataSource, Uri uri) throws IOException {
-    return ParsingLoadable.load(dataSource, new SsManifestParser(), uri, C.DATA_TYPE_MANIFEST);
+  protected SsManifest getManifest(DataSource dataSource, DataSpec dataSpec) throws IOException {
+    return ParsingLoadable.load(dataSource, new SsManifestParser(), dataSpec, C.DATA_TYPE_MANIFEST);
   }
 
   @Override
