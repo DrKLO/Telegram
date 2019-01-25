@@ -8,9 +8,7 @@
     <uses-feature android:name="android.hardware.location" android:required="false" />
     <uses-feature android:name="android.hardware.LOCATION" android:required="false" />
 
-    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
     <uses-permission android:name="${applicationId}.permission.MAPS_RECEIVE"/>
-    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
@@ -30,36 +28,6 @@
         android:supportsRtl="false"
         android:requestLegacyExternalStorage="true"
         tools:replace="android:supportsRtl">
-
-        <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k" />
-
-        <service
-            android:name="org.telegram.messenger.GcmPushListenerService" android:exported="true">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
-
-        <uses-library android:name="com.google.android.maps" android:required="false"/>
-
-        <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
-        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
-
-        <receiver
-            tools:replace="android:enabled"
-            android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
-            android:enabled="false"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.android.gms.measurement.UPLOAD" />
-            </intent-filter>
-        </receiver>
-
-        <service
-            tools:replace="android:enabled"
-            android:name="com.google.android.gms.measurement.AppMeasurementService"
-            android:enabled="false"
-            android:exported="false" />
 
     </application>
 
