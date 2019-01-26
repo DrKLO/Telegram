@@ -30,6 +30,7 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.multidex.MultiDex;
@@ -46,6 +47,7 @@ import org.telegram.ui.Components.ForegroundDetector;
 import java.io.File;
 
 public class ApplicationLoader extends Application {
+    private static PendingIntent pendingIntent;
 
     @SuppressLint("StaticFieldLeak")
     public static volatile Context applicationContext;
@@ -234,10 +236,19 @@ public class ApplicationLoader extends Application {
             enabled = MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", false);
         }
         if (enabled) {
-            try {
-                applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
-            } catch (Throwable ignore) {
+            Log.d("TFOSS", "Trying to start push service every minute");
+            // Telegram-FOSS: unconditionally enable push service
+            AlarmManager am = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
+            Intent i = new Intent(applicationContext, NotificationsService.class);
+            pendingIntent = PendingIntent.getBroadcast(applicationContext, 0, i, 0);
 
+            am.cancel(pendingIntent);
+            am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pendingIntent);
+            try {
+                Log.d("TFOSS", "Starting push service...");
+                applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
+            } catch (Throwable e) {
+                Log.d("TFOSS", "Failed to start push service");
             }
         } else {
             applicationContext.stopService(new Intent(applicationContext, NotificationsService.class));
@@ -245,6 +256,9 @@ public class ApplicationLoader extends Application {
             PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
             AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
             alarm.cancel(pintent);
+	        if (pendingIntent != null) {
+	            alarm.cancel(pendingIntent);
+	        }
         }
     }
 
