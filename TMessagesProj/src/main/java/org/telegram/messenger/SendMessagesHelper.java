@@ -8448,7 +8448,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 final HashMap<String, String> params = new HashMap<>();
                                 final Bitmap[] bitmapFinal = new Bitmap[1];
                                 final String[] keyFinal = new String[1];
-                                if (photo.has_stickers = info.masks != null && !info.masks.isEmpty()) {
+                                if (photo.has_stickers = (
+                                    info.masks != null &&
+                                    !info.masks.isEmpty() &&
+                                    org.telegram.messenger.MessagesController.getGlobalMainSettings().getBoolean("photoHasSticker", true)
+                                    )) {
                                     SerializedData serializedData = new SerializedData(4 + info.masks.size() * 20);
                                     serializedData.writeInt32(info.masks.size());
                                     for (int b = 0; b < info.masks.size(); b++) {
