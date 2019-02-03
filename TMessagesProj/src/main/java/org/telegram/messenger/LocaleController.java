@@ -2192,6 +2192,12 @@ public class LocaleController {
     }
 
     public static String formatShortNumber(int number, int[] rounded) {
+        if (number > 0) {
+            java.text.DecimalFormatSymbols spaces = new java.text.DecimalFormatSymbols();
+            spaces.setGroupingSeparator(' ');
+            return new java.text.DecimalFormat("###,###,###", spaces).format(number);
+        }
+
         StringBuilder K = new StringBuilder();
         int lastDec = 0;
         int KCount = 0;
