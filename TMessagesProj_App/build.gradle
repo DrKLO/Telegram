@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply from: '../utils.gradle'
 
 repositories {
     mavenCentral()
@@ -33,10 +34,6 @@ android {
         disable 'BlockedPrivateApi'
     }
 
-    dexOptions {
-        jumboMode = true
-    }
-
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -44,36 +41,66 @@ android {
         coreLibraryDesugaringEnabled true
     }
 
+    def appSuffix = ".beta"
+    def flavorsConfig = "config/debug"
+
+    signingConfigs {
+        debug {
+            storeFile file("../TMessagesProj/config/release.keystore")
+            storePassword RELEASE_STORE_PASSWORD
+            keyAlias RELEASE_KEY_ALIAS
+            keyPassword RELEASE_KEY_PASSWORD
+        }
+
+        release {
+            storeFile file("../TMessagesProj/config/release.keystore")
+            storePassword RELEASE_STORE_PASSWORD
+            keyAlias RELEASE_KEY_ALIAS
+            keyPassword RELEASE_KEY_PASSWORD
+        }
+    }
+
     buildTypes {
         debug {
             debuggable true
             jniDebuggable true
-            applicationIdSuffix ".beta"
+            signingConfig signingConfigs.debug
+            applicationIdSuffix appSuffix
             minifyEnabled false
             shrinkResources false
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
-            ndk.debugSymbolLevel = 'FULL'
+        }
+
+        HA {
+            debuggable false
+            jniDebuggable false
+            signingConfig signingConfigs.debug
+            applicationIdSuffix appSuffix
+            minifyEnabled true
+            multiDexEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
         }
 
         standalone {
             debuggable false
             jniDebuggable false
+            signingConfig signingConfigs.release
             applicationIdSuffix ".web"
             minifyEnabled true
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
-            ndk.debugSymbolLevel = 'FULL'
         }
 
         release {
             debuggable false
             jniDebuggable false
+            signingConfig signingConfigs.release
+            applicationIdSuffix appSuffix
             minifyEnabled true
             shrinkResources false
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
-            ndk.debugSymbolLevel = 'FULL'
         }
     }
 
@@ -81,12 +108,16 @@ android {
         manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
     }
 
+    sourceSets.HA {
+        manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
+    }
+
     sourceSets.standalone {
-        manifest.srcFile '../TMessagesProj/config/release/AndroidManifest.xml'
+        manifest.srcFile '../TMessagesProj/config/' + flavorsConfig + '/AndroidManifest.xml'
     }
 
     sourceSets.release {
-        manifest.srcFile '../TMessagesProj/config/release/AndroidManifest.xml'
+        manifest.srcFile '../TMessagesProj/config/' + flavorsConfig + '/AndroidManifest.xml'
     }
 
     flavorDimensions "minApi"
@@ -108,7 +139,10 @@ android {
                 manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
             }
             sourceSets.release {
-                manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_SDK23.xml'
+                manifest.srcFile '../TMessagesProj/config/' + flavorsConfig + '/AndroidManifest_SDK23.xml'
+            }
+            sourceSets.standalone {
+                manifest.srcFile '../TMessagesProj/config/' + flavorsConfig + '/AndroidManifest_standalone.xml'
             }
             minSdkVersion 23
             ext {
@@ -123,24 +157,67 @@ android {
                 manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
             }
             sourceSets.release {
-                manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_SDK23.xml'
+                manifest.srcFile '../TMessagesProj/config/' + flavorsConfig + '/AndroidManifest_SDK23.xml'
             }
             sourceSets.standalone {
-                manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_standalone.xml'
+                manifest.srcFile '../TMessagesProj/config/' + flavorsConfig + '/AndroidManifest_standalone.xml'
             }
             ext {
                 abiVersionCode = 9
             }
         }
+//
+        afatFd_v7a {
+            ndk {
+                abiFilters "armeabi-v7a"
+            }
+            sourceSets.debug {
+                manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
+            }
+            sourceSets.release {
+                manifest.srcFile '../TMessagesProj/config/' + flavorsConfig + '/AndroidManifest_SDK23.xml'
+            }
+            sourceSets.standalone {
+                manifest.srcFile '../TMessagesProj/config/' + flavorsConfig + '/AndroidManifest_standalone.xml'
+            }
+            ext {
+                abiVersionCode = 7
+            }
+        }
+        afatFd_v8a {
+            ndk {
+                abiFilters "arm64-v8a"
+            }
+            sourceSets.debug {
+                manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
+            }
+            sourceSets.release {
+                manifest.srcFile '../TMessagesProj/config/' + flavorsConfig + '/AndroidManifest_SDK23.xml'
+            }
+            sourceSets.standalone {
+                manifest.srcFile '../TMessagesProj/config/' + flavorsConfig + '/AndroidManifest_standalone.xml'
+            }
+            ext {
+                abiVersionCode = 8
+            }
+        }
+//
     }
 
-    defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
+    defaultConfig.versionCode = Integer.parseInt(Utils['getVersionCode']())
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
             outputFileName = "app.apk"
             output.versionCodeOverride = defaultConfig.versionCode * 10 + variant.productFlavors.get(0).abiVersionCode
         }
+    }
+
+    task wrapper(type: Wrapper) {
+        gradleVersion = '7.0.4'
+    }
+
+    task prepareKotlinBuildScriptModel {
     }
 
     variantFilter { variant ->
@@ -152,13 +229,11 @@ android {
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 33
-        versionName APP_VERSION_NAME
+        targetSdkVersion 30
+        versionName Utils['getVersionName']()
         ndkVersion "21.4.7075529"
 
         multiDexEnabled true
-
-        vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
         externalNativeBuild {
             cmake {

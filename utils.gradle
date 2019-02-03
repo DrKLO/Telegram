@@ -1,0 +1,14 @@
+
+def getVersionName = {
+    return APP_VERSION_NAME + "." + ADDITIONAL_BUILD_NUMBER
+}
+
+def getVersionCode = {
+    return (APP_VERSION_CODE.toInteger() * 10 + ADDITIONAL_BUILD_NUMBER.toInteger()) + ""
+}
+
+ext {
+    Utils = [:]
+    Utils['getVersionName'] = getVersionName
+    Utils['getVersionCode'] = getVersionCode
+}

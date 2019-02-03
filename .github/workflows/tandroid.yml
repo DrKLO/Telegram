@@ -1,0 +1,82 @@
+name: Fork Client
+
+on: [push]
+
+jobs:
+  linux:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.1.0
+        with:
+          submodules: true
+      - uses: nttld/setup-ndk@v1.4.2
+        id: setup-ndk
+        with:
+          ndk-version: r21e
+          link-to-sdk: true
+      - name: Prepare additional build number.
+        env:
+          ADDITIONAL_BUILD: ${{ secrets.ADDITIONAL_BUILD_NUMBER }}
+        run: |
+          result=$((ADDITIONAL_BUILD / 10000))
+          echo "ADDITIONAL_BUILD_NUMBER = $result should be between 0 and 10!"
+          echo "ADDITIONAL_BUILD_NUMBER=$result" >> $GITHUB_ENV
+      - name: Add language.
+        env:
+          URL_LANG: ${{ secrets.URL_LANG }}
+        run: |
+          wget -q -O strings.xml $URL_LANG
+          ls
+          lang_code=$(grep 'LanguageCode' strings.xml | awk -F">" '{print $2}' | awk -F"<" '{print $1}')
+          folder=TMessagesProj/src/main/res/values-$lang_code
+          mkdir $folder
+          mv strings.xml $folder/strings.xml
+      - name: Build.
+        run: |
+          ###
+          vars=gradle.properties
+
+          echo "DUMMY_CONST=0" >> $vars
+          echo "org.gradle.workers.max=1" >> $vars
+          echo "APP_ID=${{ secrets.APP_ID }}" >> $vars
+          echo "APP_HASH=${{ secrets.APP_HASH }}" >> $vars
+          echo "RELEASE_KEY_PASSWORD=${{ secrets.ALIAS_PASS }}" >> $vars
+          echo "RELEASE_KEY_ALIAS=${{ secrets.ALIAS_NAME }}" >> $vars
+          echo "RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASS }}" >> $vars
+          echo "ADDITIONAL_BUILD_NUMBER=$ADDITIONAL_BUILD_NUMBER" >> $vars
+          echo "USER_ID_OWNER=${{ secrets.USER_ID_OWNER }}" >> $vars
+
+          ###
+          echo $ADDITIONAL_BUILD_NUMBER
+          sudo apt update
+          sudo apt install openjdk-17-jdk openjdk-17-jre ninja-build
+          ./gradlew :TMessagesProj_App:assembleAfatDebug
+          grep BUILD_VERSION_STRING TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java | cut -d'"' -f 2 > ver.txt
+          mkdir artifact
+          mv TMessagesProj_App/build/outputs/apk/afat/debug/app.apk app.apk
+          cp app.apk "artifact/ForkClient $(cat ver.txt).apk"
+          mkdir tag_asset
+          cp app.apk "tag_asset/ForkClient_$(cat ver.txt).apk"
+
+          echo "NEW_TAG_TEXT=$(cat ver.txt)" >> $GITHUB_ENV
+
+          tempVer=$(cat ver.txt)
+          tempVer=${tempVer::-2}
+          echo "NEW_OFFICIAL_TAG_TEXT=$tempVer" >> $GITHUB_ENV
+      - name: Draft release.
+        uses: softprops/action-gh-release@v0.1.15
+        if: ${{ matrix.type == 'debug' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
+        with:
+          draft: true
+          files: tag_asset/*
+          tag_name: ${{ env.NEW_TAG_TEXT }}
+          name: "ForkClient ${{ env.NEW_TAG_TEXT }}"
+          body: "— Updated to ${{ env.NEW_OFFICIAL_TAG_TEXT }} build of the official Telegram."
+      - uses: actions/upload-artifact@master
+        name: Upload artifact.
+        with:
+          name: ForkClient
+          path: artifact/

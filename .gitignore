@@ -5,8 +5,10 @@ build/
 obj/
 *.iml
 local.properties
+TMessagesProj/.cxx/
 API_KEYS
 *.hprof
+TMessagesProj/jni/cache_keys/
 TMessagesProj/.externalNativeBuild/
 TMessagesProj/jni/ffmpeg/android/
 TMessagesProj/jni/ffmpeg/build/
