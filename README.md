@@ -13,9 +13,9 @@ Apply themes shared by other users
 
 **PRIVACY:** Mobile number can be hidden from Menu Drawer and Settings menu
 
-**SOCIAL:** Get in touch with other Telegram+ users trough [our Google+ community](https://plus.google.com/communities/106927015963860485525)
+**SOCIAL:** Get in touch with other Telegram+ users trough [our official support group](https://t.me/plusmsgrchat)
 
-This repo contains the source code for [Telegram+ App for Android](https://play.google.com/store/apps/details?id=org.telegram.plus).
+This repo contains the source code for [Plus Messenger App for Android](https://play.google.com/store/apps/details?id=org.telegram.plus).
 
 ### USAGE
 **Beware of using the dev branch and uploading it to any markets, in many cases it not will work as expected**.
