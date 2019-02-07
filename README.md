@@ -1,4 +1,4 @@
-### Telegram+ for Android
+### Plus Messenger for Android
 
 This is an UNOFFICIAL app that uses [Telegram's API](https://core.telegram.org/api)
 
