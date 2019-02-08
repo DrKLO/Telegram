@@ -6349,7 +6349,10 @@ public class MessageObject {
                 return false;
             }
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(messageOwner.from_id.user_id);
-            if (user != null && user.bot && !hasExtendedMedia()) {
+            if (user != null && !DialogObject.isEncryptedDialog(getDialogId())
+            //  && user.bot
+                && !hasExtendedMedia()
+                && messageOwner.from_id.user_id != UserConfig.getInstance(currentAccount).getClientUserId()) {
                 return true;
             }
             if (!isOut()) {
