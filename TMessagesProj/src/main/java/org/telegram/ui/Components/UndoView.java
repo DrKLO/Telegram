@@ -102,7 +102,7 @@ public class UndoView extends FrameLayout {
     }
 
     public void hide(boolean apply, boolean animated) {
-        if (getVisibility() != VISIBLE) {
+        if (getVisibility() != VISIBLE || currentActionRunnable == null) {
             return;
         }
         if (currentActionRunnable != null) {
@@ -159,6 +159,9 @@ public class UndoView extends FrameLayout {
                 infoTextView.setText(LocaleController.getString("ChatDeletedUndo", R.string.ChatDeletedUndo));
             }
         }
+        if (currentActionRunnable != null) {
+            currentActionRunnable.run();
+        }
         currentActionRunnable = actionRunnable;
         currentCancelRunnable = cancelRunnable;
         currentDialogId = did;
@@ -166,13 +169,15 @@ public class UndoView extends FrameLayout {
         timeLeft = 5000;
         lastUpdateTime = SystemClock.uptimeMillis();
         MessagesController.getInstance(currentAccount).addDialogAction(did, clear);
-        setVisibility(VISIBLE);
-        setTranslationY(AndroidUtilities.dp(48));
-        AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(ObjectAnimator.ofFloat(this, View.TRANSLATION_Y, AndroidUtilities.dp(48), 0));
-        animatorSet.setInterpolator(new DecelerateInterpolator());
-        animatorSet.setDuration(180);
-        animatorSet.start();
+        if (getVisibility() != VISIBLE) {
+            setVisibility(VISIBLE);
+            setTranslationY(AndroidUtilities.dp(48));
+            AnimatorSet animatorSet = new AnimatorSet();
+            animatorSet.playTogether(ObjectAnimator.ofFloat(this, View.TRANSLATION_Y, AndroidUtilities.dp(48), 0));
+            animatorSet.setInterpolator(new DecelerateInterpolator());
+            animatorSet.setDuration(180);
+            animatorSet.start();
+        }
     }
 
     @Override

@@ -405,6 +405,8 @@ public class EditTextBoldCursor extends EditText {
 
                 if (supportRtlHint && LocaleController.isRTL) {
                     canvas.translate((hintWidth + lineLeft) - (hintWidth + lineLeft) * scale, 0);
+                } else if (lineLeft != 0) {
+                    canvas.translate(lineLeft * (1.0f - scale), 0);
                 }
                 canvas.scale(scale, scale);
                 canvas.translate(0, translation);

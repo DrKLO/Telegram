@@ -8512,6 +8512,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 obj.messageOwner.id = newMsgId;
                 obj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
                 obj.forceUpdate = mediaUpdated;
+                if (args.length >= 6) {
+                    obj.applyMediaExistanceFlags((Integer) args[5]);
+                }
                 addToPolls(obj, null);
                 ArrayList<MessageObject> messArr = new ArrayList<>();
                 messArr.add(obj);
@@ -8982,7 +8985,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
                 if (message.media.ttl_seconds != 0 && (message.media.photo instanceof TLRPC.TL_photoEmpty || message.media.document instanceof TLRPC.TL_documentEmpty)) {
                     existMessageObject.setType();
-                    chatAdapter.updateRowWithMessageObject(existMessageObject, false);
+                    if (chatAdapter != null) {
+                        chatAdapter.updateRowWithMessageObject(existMessageObject, false);
+                    }
                 } else {
                     updateVisibleRows();
                 }
@@ -10377,6 +10382,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             chatLeaveTime = System.currentTimeMillis();
             updateInformationForScreenshotDetector();
         }
+        if (undoView != null) {
+            undoView.hide(true, false);
+        }
     }
 
     private void applyDraftMaybe(boolean canClear) {
@@ -10736,7 +10744,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             if (msg.messageOwner.action != null) {
                                 continue;
                             }
-                            if ((msg.isOut() || canRevokeInbox) || ChatObject.canBlockUsers(currentChat)) {
+                            if ((msg.isOut() || canRevokeInbox) || currentChat != null && ChatObject.canBlockUsers(currentChat)) {
                                 if (!hasOutgoing && (currentDate - msg.messageOwner.date) <= revokeTimeLimit) {
                                     hasOutgoing = true;
                                 }

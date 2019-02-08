@@ -20,12 +20,12 @@ import android.net.Uri;
 import android.os.Vibrator;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
-import android.text.InputFilter;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
@@ -337,9 +337,6 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         codeField.setMaxLines(1);
         codeField.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         codeField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-        InputFilter[] inputFilters = new InputFilter[1];
-        inputFilters[0] = new InputFilter.LengthFilter(5);
-        codeField.setFilters(inputFilters);
         linearLayout2.addView(codeField, LayoutHelper.createLinear(55, 36, -9, 0, 16, 0));
         codeField.addTextChangedListener(new TextWatcher() {
             @Override
@@ -517,6 +514,15 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         phoneField.setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_DONE) {
                 editDoneItem.performClick();
+                return true;
+            }
+            return false;
+        });
+        phoneField.setOnKeyListener((v, keyCode, event) -> {
+            if (keyCode == KeyEvent.KEYCODE_DEL && phoneField.length() == 0) {
+                codeField.requestFocus();
+                codeField.setSelection(codeField.length());
+                codeField.dispatchKeyEvent(event);
                 return true;
             }
             return false;

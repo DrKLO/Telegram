@@ -89,12 +89,16 @@ public class ConnectionsManager {
 
     private static class ResolvedDomain {
 
-        public String address;
+        public ArrayList<String> addresses;
         long ttl;
 
-        public ResolvedDomain(String a, long t) {
-            address = a;
+        public ResolvedDomain(ArrayList<String> a, long t) {
+            addresses = a;
             ttl = t;
+        }
+
+        public String getAddress() {
+            return addresses.get(Utilities.random.nextInt(addresses.size()));
         }
     }
 
@@ -438,7 +442,7 @@ public class ConnectionsManager {
         });
     }
 
-    public static int getInitFlags() {    
+    public static int getInitFlags() {
         return 0;
     }
 
@@ -492,7 +496,7 @@ public class ConnectionsManager {
         HashMap<String, ResolvedDomain> cache = dnsCache.get();
         ResolvedDomain resolvedDomain = cache.get(domain);
         if (resolvedDomain != null && SystemClock.elapsedRealtime() - resolvedDomain.ttl < 5 * 60 * 1000) {
-            return resolvedDomain.address;
+            return resolvedDomain.getAddress();
         }
 
         ByteArrayOutputStream outbuf = null;
@@ -525,10 +529,13 @@ public class ConnectionsManager {
             JSONArray array = jsonObject.getJSONArray("Answer");
             int len = array.length();
             if (len > 0) {
-                String ip = array.getJSONObject(Utilities.random.nextInt(array.length())).getString("data");
-                ResolvedDomain newResolvedDomain = new ResolvedDomain(ip, SystemClock.elapsedRealtime());
+                ArrayList<String> addresses = new ArrayList<>(len);
+                for (int a = 0; a < len; a++) {
+                    addresses.add(array.getJSONObject(a).getString("data"));
+                }
+                ResolvedDomain newResolvedDomain = new ResolvedDomain(addresses, SystemClock.elapsedRealtime());
                 cache.put(domain, newResolvedDomain);
-                return ip;
+                return newResolvedDomain.getAddress();
             }
         } catch (Throwable e) {
             FileLog.e(e);
@@ -741,7 +748,14 @@ public class ConnectionsManager {
                         googleDomain = "google.com";
                     }
                     String domain = native_isTestBackend(currentAccount) != 0 ? "tapv2.stel.com" : MessagesController.getInstance(currentAccount).dcDomainName;
-                    URL downloadUrl = new URL("https://" + googleDomain + "/resolve?name=" + domain + "&type=16");
+                    int len = Utilities.random.nextInt(116) + 13;
+                    final String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+                    StringBuilder padding = new StringBuilder(len);
+                    for (int a = 0; a < len; a++) {
+                        padding.append(characters.charAt(Utilities.random.nextInt(characters.length())));
+                    }
+                    URL downloadUrl = new URL("https://" + googleDomain + "/resolve?name=" + domain + "&type=ANY&random_padding=" + padding);
                     URLConnection httpConnection = downloadUrl.openConnection();
                     httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/10.0 Mobile/14A5297c Safari/602.1");
                     httpConnection.addRequestProperty("Host", "dns.google.com");
@@ -769,10 +783,15 @@ public class ConnectionsManager {
 
                     JSONObject jsonObject = new JSONObject(new String(outbuf.toByteArray(), "UTF-8"));
                     JSONArray array = jsonObject.getJSONArray("Answer");
-                    int len = array.length();
+                    len = array.length();
                     ArrayList<String> arrayList = new ArrayList<>(len);
                     for (int a = 0; a < len; a++) {
-                        arrayList.add(array.getJSONObject(a).getString("data"));
+                        JSONObject object = array.getJSONObject(a);
+                        int type = object.getInt("type");
+                        if (type != 16) {
+                            continue;
+                        }
+                        arrayList.add(object.getString("data"));
                     }
                     Collections.sort(arrayList, (o1, o2) -> {
                         int l1 = o1.length();

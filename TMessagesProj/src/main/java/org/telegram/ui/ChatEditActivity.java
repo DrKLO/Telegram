@@ -852,7 +852,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 chatId = param;
                 currentChat = MessagesController.getInstance(currentAccount).getChat(param);
                 donePressed = false;
-                info.hidden_prehistory = true;
+                if (info != null) {
+                    info.hidden_prehistory = true;
+                }
                 processDone();
             });
             return;

@@ -60,6 +60,8 @@ public class MediaActionDrawable extends Drawable {
     private String percentString;
     private int percentStringWidth;
 
+    private float overrideAlpha = 1.0f;
+
     private int currentIcon;
     private int nextIcon;
     private float transitionProgress = 1.0f;
@@ -104,9 +106,11 @@ public class MediaActionDrawable extends Drawable {
 
     @Override
     public void setAlpha(int alpha) {
-        paint.setAlpha(alpha);
-        paint2.setAlpha(alpha);
-        textPaint.setAlpha(alpha);
+
+    }
+
+    public void setOverrideAlpha(float alpha) {
+        overrideAlpha = alpha;
     }
 
     @Override
@@ -148,7 +152,7 @@ public class MediaActionDrawable extends Drawable {
             }
             if (icon == ICON_CANCEL) {
                 transitionAnimationTime = 400.0f;
-            } else if (icon == ICON_CHECK) {
+            } else if (currentIcon != ICON_NONE && icon == ICON_CHECK) {
                 transitionAnimationTime = 360.0f;
             } else {
                 transitionAnimationTime = 220.0f;
@@ -178,6 +182,10 @@ public class MediaActionDrawable extends Drawable {
 
     public int getCurrentIcon() {
         return nextIcon;
+    }
+
+    public int getPreviousIcon() {
+        return currentIcon;
     }
 
     public void setProgress(float value, boolean animated) {
@@ -235,6 +243,9 @@ public class MediaActionDrawable extends Drawable {
             float progress = 1.0f - transitionProgress;
             canvas.save();
             canvas.scale(progress, progress, cx, cy);
+        } else if ((nextIcon == ICON_CHECK || nextIcon == ICON_EMPTY) && currentIcon == ICON_NONE) {
+            canvas.save();
+            canvas.scale(transitionProgress, transitionProgress, cx, cy);
         }
 
         int width = AndroidUtilities.dp(3);
@@ -399,9 +410,9 @@ public class MediaActionDrawable extends Drawable {
                 rect.set(bounds.left + diff, bounds.top + diff, bounds.right - diff, bounds.bottom - diff);
                 canvas.drawArc(rect, downloadRadOffset, rad, false, paint);
             }
-        } else if (currentIcon == ICON_EMPTY || currentIcon == ICON_CANCEL_PERCENT) {
+        } else if (currentIcon == ICON_EMPTY || nextIcon == ICON_EMPTY || currentIcon == ICON_CANCEL_PERCENT) {
             int alpha;
-            if (nextIcon == ICON_NONE) {
+            if (nextIcon == ICON_NONE || nextIcon == ICON_CHECK) {
                 float progress = transitionProgress;
                 float backProgress = 1.0f - progress;
                 alpha = (int) (255 * backProgress);
@@ -410,7 +421,7 @@ public class MediaActionDrawable extends Drawable {
             }
 
             if (alpha != 0) {
-                paint.setAlpha(alpha);
+                paint.setAlpha((int) (alpha * overrideAlpha));
                 float rad = Math.max(4, 360 * animatedDownloadProgress);
                 int diff = AndroidUtilities.dp(isMini ? 2 : 4);
                 rect.set(bounds.left + diff, bounds.top + diff, bounds.right - diff, bounds.bottom - diff);
@@ -707,7 +718,7 @@ public class MediaActionDrawable extends Drawable {
                 invalidateSelf();
             }
         }
-        if (nextIcon == ICON_NONE) {
+        if (nextIcon == ICON_NONE || (nextIcon == ICON_CHECK || nextIcon == ICON_EMPTY) && currentIcon == ICON_NONE) {
             canvas.restore();
         }
     }

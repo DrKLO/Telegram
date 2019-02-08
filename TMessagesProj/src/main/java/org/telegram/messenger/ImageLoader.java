@@ -286,7 +286,7 @@ public class ImageLoader {
 
         public ArtworkLoadTask(CacheImage cacheImage) {
             this.cacheImage = cacheImage;
-            Uri uri = Uri.parse(cacheImage.httpUrl);
+            Uri uri = Uri.parse((String) cacheImage.location);
             small = uri.getQueryParameter("s") != null;
         }
 
@@ -294,7 +294,8 @@ public class ImageLoader {
             ByteArrayOutputStream outbuf = null;
             InputStream httpConnectionStream = null;
             try {
-                URL downloadUrl = new URL(cacheImage.httpUrl.replace("athumb://", "https://"));
+                String location = (String) cacheImage.location;
+                URL downloadUrl = new URL(location.replace("athumb://", "https://"));
                 httpConnection = (HttpURLConnection) downloadUrl.openConnection();
                 httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/10.0 Mobile/14A5297c Safari/602.1");
                 httpConnection.setConnectTimeout(5000);
@@ -437,10 +438,11 @@ public class ImageLoader {
 
             if (!isCancelled()) {
                 try {
-                    if (cacheImage.httpUrl.startsWith("https://static-maps") || cacheImage.httpUrl.startsWith("https://maps.googleapis")) {
+                    String location = (String) cacheImage.location;
+                    if (location.startsWith("https://static-maps") || location.startsWith("https://maps.googleapis")) {
                         int provider = MessagesController.getInstance(cacheImage.currentAccount).mapProvider;
                         if (provider == 3 || provider == 4) {
-                            WebFile webFile = testWebFile.get(cacheImage.httpUrl);
+                            WebFile webFile = testWebFile.get(location);
                             if (webFile != null) {
                                 TLRPC.TL_upload_getWebFile req = new TLRPC.TL_upload_getWebFile();
                                 req.location = webFile.location;
@@ -453,7 +455,7 @@ public class ImageLoader {
                         }
                     }
 
-                    URL downloadUrl = new URL(overrideUrl != null ? overrideUrl : cacheImage.httpUrl);
+                    URL downloadUrl = new URL(overrideUrl != null ? overrideUrl : location);
                     httpConnection = (HttpURLConnection) downloadUrl.openConnection();
                     httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/10.0 Mobile/14A5297c Safari/602.1");
                     //httpConnection.addRequestProperty("Referer", "google.com");
@@ -927,23 +929,24 @@ public class ImageLoader {
                 } else {
                     try {
                         String mediaThumbPath = null;
-                        if (cacheImage.httpUrl != null) {
-                            if (cacheImage.httpUrl.startsWith("thumb://")) {
-                                int idx = cacheImage.httpUrl.indexOf(":", 8);
+                        if (cacheImage.location instanceof String) {
+                            String location = (String) cacheImage.location;
+                            if (location.startsWith("thumb://")) {
+                                int idx = location.indexOf(":", 8);
                                 if (idx >= 0) {
-                                    mediaId = Long.parseLong(cacheImage.httpUrl.substring(8, idx));
+                                    mediaId = Long.parseLong(location.substring(8, idx));
                                     mediaIsVideo = false;
-                                    mediaThumbPath = cacheImage.httpUrl.substring(idx + 1);
+                                    mediaThumbPath = location.substring(idx + 1);
                                 }
                                 canDeleteFile = false;
-                            } else if (cacheImage.httpUrl.startsWith("vthumb://")) {
-                                int idx = cacheImage.httpUrl.indexOf(":", 9);
+                            } else if (location.startsWith("vthumb://")) {
+                                int idx = location.indexOf(":", 9);
                                 if (idx >= 0) {
-                                    mediaId = Long.parseLong(cacheImage.httpUrl.substring(9, idx));
+                                    mediaId = Long.parseLong(location.substring(9, idx));
                                     mediaIsVideo = true;
                                 }
                                 canDeleteFile = false;
-                            } else if (!cacheImage.httpUrl.startsWith("http")) {
+                            } else if (!location.startsWith("http")) {
                                 canDeleteFile = false;
                             }
                         }
@@ -969,6 +972,7 @@ public class ImageLoader {
                         float h_filter = 0;
                         boolean blur = false;
                         boolean checkInversion = false;
+                        boolean force8888 = false;
                         if (cacheImage.filter != null) {
                             String args[] = cacheImage.filter.split("_");
                             if (args.length >= 2) {
@@ -980,6 +984,9 @@ public class ImageLoader {
                             }
                             if (cacheImage.filter.contains("i")) {
                                 checkInversion = true;
+                            }
+                            if (cacheImage.filter.contains("f")) {
+                                force8888 = true;
                             }
                             if (w_filter != 0 && h_filter != 0) {
                                 opts.inJustDecodeBounds = true;
@@ -1057,7 +1064,7 @@ public class ImageLoader {
                             }
                         }
 
-                        if (cacheImage.filter == null || blur || cacheImage.httpUrl != null) {
+                        if (force8888 || cacheImage.filter == null || blur || cacheImage.location instanceof String) {
                             opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
                         } else {
                             opts.inPreferredConfig = Bitmap.Config.RGB_565;
@@ -1240,7 +1247,7 @@ public class ImageLoader {
         protected String filter;
         protected String ext;
         protected SecureDocument secureDocument;
-        protected TLObject location;
+        protected Object location;
         protected boolean animatedFile;
         protected boolean selfThumb;
 
@@ -1250,7 +1257,6 @@ public class ImageLoader {
         protected File tempFilePath;
         protected File encryptionKeyPath;
 
-        protected String httpUrl;
         protected ArtworkLoadTask artworkTask;
         protected HttpImageTask httpTask;
         protected CacheOutTask cacheTask;
@@ -1916,7 +1922,7 @@ public class ImageLoader {
         imageLoadQueue.postRunnable(() -> forceLoadingImages.remove(key));
     }
 
-    private void createLoadOperationForImageReceiver(final ImageReceiver imageReceiver, final String key, final String url, final String ext, final TLObject imageLocation, final String httpLocation, final String filter, final int size, final int cacheType, final int thumb) {
+    private void createLoadOperationForImageReceiver(final ImageReceiver imageReceiver, final String key, final String url, final String ext, final Object imageLocation, final String filter, final int size, final int cacheType, final int thumb) {
         if (imageReceiver == null || url == null || key == null) {
             return;
         }
@@ -1933,7 +1939,7 @@ public class ImageLoader {
         final boolean finalIsNeedsQualityThumb = imageReceiver.isNeedsQualityThumb();
         final Object parentObject = imageReceiver.getParentObject();
         final boolean shouldGenerateQualityThumb = imageReceiver.isShouldGenerateQualityThumb();
-        final int currentAccount = imageReceiver.getcurrentAccount();
+        final int currentAccount = imageReceiver.getCurrentAccount();
         final boolean currentKeyQuality = imageReceiver.isCurrentKeyQuality();
         imageLoadQueue.postRunnable(() -> {
             boolean added = false;
@@ -1970,21 +1976,22 @@ public class ImageLoader {
                 File cacheFile = null;
                 boolean cacheFileExists = false;
 
-                if (httpLocation != null) {
-                    if (!httpLocation.startsWith("http") && !httpLocation.startsWith("athumb")) {
+                if (imageLocation instanceof String) {
+                    String location = (String) imageLocation;
+                    if (!location.startsWith("http") && !location.startsWith("athumb")) {
                         onlyCache = true;
-                        if (httpLocation.startsWith("thumb://")) {
-                            int idx = httpLocation.indexOf(":", 8);
+                        if (location.startsWith("thumb://")) {
+                            int idx = location.indexOf(":", 8);
                             if (idx >= 0) {
-                                cacheFile = new File(httpLocation.substring(idx + 1));
+                                cacheFile = new File(location.substring(idx + 1));
                             }
-                        } else if (httpLocation.startsWith("vthumb://")) {
-                            int idx = httpLocation.indexOf(":", 9);
+                        } else if (location.startsWith("vthumb://")) {
+                            int idx = location.indexOf(":", 9);
                             if (idx >= 0) {
-                                cacheFile = new File(httpLocation.substring(idx + 1));
+                                cacheFile = new File(location.substring(idx + 1));
                             }
                         } else {
-                            cacheFile = new File(httpLocation);
+                            cacheFile = new File(location);
                         }
                     }
                 } else if (thumb == 0 && currentKeyQuality) {
@@ -2036,14 +2043,17 @@ public class ImageLoader {
                 if (thumb != 2) {
                     boolean isEncrypted = imageLocation instanceof TLRPC.TL_documentEncrypted || imageLocation instanceof TLRPC.TL_fileEncryptedLocation;
                     CacheImage img = new CacheImage();
-                    if (httpLocation != null && !httpLocation.startsWith("vthumb") && !httpLocation.startsWith("thumb")) {
-                        String trueExt = getHttpUrlExtension(httpLocation, "jpg");
-                        if (trueExt.equals("mp4") || trueExt.equals("gif")) {
-                            img.animatedFile = true;
-                        }
-                    } else if (imageLocation instanceof WebFile && MessageObject.isGifDocument((WebFile) imageLocation) ||
+                    if (imageLocation instanceof WebFile && MessageObject.isGifDocument((WebFile) imageLocation) ||
                             imageLocation instanceof TLRPC.Document && (MessageObject.isGifDocument((TLRPC.Document) imageLocation) || MessageObject.isRoundVideoDocument((TLRPC.Document) imageLocation))) {
                         img.animatedFile = true;
+                    } else if (imageLocation instanceof String) {
+                        String location = (String) imageLocation;
+                        if (!location.startsWith("vthumb") && !location.startsWith("thumb")) {
+                            String trueExt = getHttpUrlExtension(location, "jpg");
+                            if (trueExt.equals("mp4") || trueExt.equals("gif")) {
+                                img.animatedFile = true;
+                            }
+                        }
                     }
 
                     if (cacheFile == null) {
@@ -2053,7 +2063,7 @@ public class ImageLoader {
                             img.secureDocument = (SecureDocument) imageLocation;
                             onlyCache = img.secureDocument.secureFile.dc_id == Integer.MIN_VALUE;
                             cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), url);
-                        } else if (cacheType != 0 || size <= 0 || httpLocation != null || isEncrypted) {
+                        } else if (cacheType != 0 || size <= 0 || imageLocation instanceof String || isEncrypted) {
                             cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), url);
                             if (cacheFile.exists()) {
                                 cacheFileExists = true;
@@ -2076,7 +2086,7 @@ public class ImageLoader {
                     img.selfThumb = thumb != 0;
                     img.key = key;
                     img.filter = filter;
-                    img.httpUrl = httpLocation;
+                    img.location = imageLocation;
                     img.ext = ext;
                     img.currentAccount = currentAccount;
                     if (cacheType == 2) {
@@ -2095,9 +2105,24 @@ public class ImageLoader {
                         }
                     } else {
                         img.url = url;
-                        img.location = imageLocation;
+
                         imageLoadingByUrl.put(url, img);
-                        if (httpLocation == null) {
+                        if (imageLocation instanceof String) {
+                            String location = (String) imageLocation;
+                            String file = Utilities.MD5(location);
+                            File cacheDir = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
+                            img.tempFilePath = new File(cacheDir, file + "_temp.jpg");
+                            img.finalFilePath = cacheFile;
+                            if (location.startsWith("athumb")) {
+                                img.artworkTask = new ArtworkLoadTask(img);
+                                artworkTasks.add(img.artworkTask);
+                                runArtworkTasks(false);
+                            } else {
+                                img.httpTask = new HttpImageTask(img, size);
+                                httpTasks.add(img.httpTask);
+                                runHttpTasks(false);
+                            }
+                        } else {
                             if (imageLocation instanceof TLRPC.FileLocation) {
                                 TLRPC.FileLocation location = (TLRPC.FileLocation) imageLocation;
                                 int localCacheType = cacheType;
@@ -2121,20 +2146,6 @@ public class ImageLoader {
                             }
                             if (imageReceiver.isForceLoding()) {
                                 forceLoadingImages.put(img.key, 0);
-                            }
-                        } else {
-                            String file = Utilities.MD5(httpLocation);
-                            File cacheDir = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
-                            img.tempFilePath = new File(cacheDir, file + "_temp.jpg");
-                            img.finalFilePath = cacheFile;
-                            if (httpLocation.startsWith("athumb")) {
-                                img.artworkTask = new ArtworkLoadTask(img);
-                                artworkTasks.add(img.artworkTask);
-                                runArtworkTasks(false);
-                            } else {
-                                img.httpTask = new HttpImageTask(img, size);
-                                httpTasks.add(img.httpTask);
-                                runHttpTasks(false);
                             }
                         }
                     }
@@ -2177,14 +2188,12 @@ public class ImageLoader {
 
         boolean qualityThumb = false;
         Object parentObject = imageReceiver.getParentObject();
-        TLObject thumbLocation = imageReceiver.getThumbLocation();
-        TLObject imageLocation = imageReceiver.getImageLocation();
+        Object thumbLocation = imageReceiver.getThumbLocation();
+        Object imageLocation = imageReceiver.getImageLocation();
         if (imageLocation == null && imageReceiver.isNeedsQualityThumb() && imageReceiver.isCurrentKeyQuality() && parentObject instanceof MessageObject) {
             imageLocation = ((MessageObject) parentObject).getDocument();
             qualityThumb = true;
         }
-        String httpLocation = imageReceiver.getHttpImageLocation();
-
         boolean saveImageToCache = false;
 
         String url = null;
@@ -2195,11 +2204,12 @@ public class ImageLoader {
         if (ext == null) {
             ext = "jpg";
         }
-        if (httpLocation != null) {
-            key = Utilities.MD5(httpLocation);
-            url = key + "." + getHttpUrlExtension(httpLocation, "jpg");
-        } else if (imageLocation != null) {
-            if (imageLocation instanceof TLRPC.FileLocation) {
+        if (imageLocation != null) {
+            if (imageLocation instanceof String) {
+                String location = (String) imageLocation;
+                key = Utilities.MD5(location);
+                url = key + "." + getHttpUrlExtension(location, "jpg");
+            } else if (imageLocation instanceof TLRPC.FileLocation) {
                 TLRPC.FileLocation location = (TLRPC.FileLocation) imageLocation;
                 key = location.volume_id + "_" + location.local_id;
                 url = key + "." + ext;
@@ -2266,17 +2276,21 @@ public class ImageLoader {
             }
         }
 
-        if (thumbLocation instanceof TLRPC.FileLocation) {
+        if (thumbLocation instanceof String) {
+            String location = (String) thumbLocation;
+            thumbKey = Utilities.MD5(location);
+            thumbUrl = thumbKey + "." + getHttpUrlExtension(location, "jpg");
+        } else if (thumbLocation instanceof TLRPC.FileLocation) {
             TLRPC.FileLocation location = (TLRPC.FileLocation) thumbLocation;
             thumbKey = location.volume_id + "_" + location.local_id;
+            thumbUrl = thumbKey + "." + ext;
         } else if (thumbLocation instanceof TLRPC.TL_photoStrippedSize) {
             TLRPC.TL_photoStrippedSize location = (TLRPC.TL_photoStrippedSize) thumbLocation;
             thumbKey = "stripped" + FileRefController.getKeyForParentObject(parentObject);
+            thumbUrl = thumbKey + "." + ext;
         } else if (thumbLocation instanceof TLRPC.TL_photoSize) {
             TLRPC.TL_photoSize photoSize = (TLRPC.TL_photoSize) thumbLocation;
             thumbKey = photoSize.location.volume_id + "_" + photoSize.location.local_id;
-        }
-        if (thumbKey != null) {
             thumbUrl = thumbKey + "." + ext;
         }
 
@@ -2289,17 +2303,20 @@ public class ImageLoader {
             thumbKey += "@" + thumbFilter;
         }
 
-        if (httpLocation != null) {
-            createLoadOperationForImageReceiver(imageReceiver, thumbKey, thumbUrl, ext, thumbLocation, null, thumbFilter, 0, 1, thumbSet ? 2 : 1);
-            createLoadOperationForImageReceiver(imageReceiver, key, url, ext, null, httpLocation, filter, 0, 1, 0);
+        int cacheType;
+        int thumbCacheType;
+        if (imageLocation instanceof String) {
+            cacheType = 1;
+            thumbCacheType = 1;
         } else {
-            int cacheType = imageReceiver.getCacheType();
+            cacheType = imageReceiver.getCacheType();
             if (cacheType == 0 && saveImageToCache) {
                 cacheType = 1;
             }
-            createLoadOperationForImageReceiver(imageReceiver, thumbKey, thumbUrl, ext, thumbLocation, null, thumbFilter, 0, cacheType == 0 ? 1 : cacheType, thumbSet ? 2 : 1);
-            createLoadOperationForImageReceiver(imageReceiver, key, url, ext, imageLocation, null, filter, imageReceiver.getSize(), cacheType, 0);
+            thumbCacheType = cacheType == 0 ? 1 : cacheType;
         }
+        createLoadOperationForImageReceiver(imageReceiver, thumbKey, thumbUrl, ext, thumbLocation, thumbFilter, 0, thumbCacheType, thumbSet ? 2 : 1);
+        createLoadOperationForImageReceiver(imageReceiver, key, url, ext, imageLocation, filter, imageReceiver.getSize(), cacheType, 0);
     }
 
     private void httpFileLoadError(final String location) {
@@ -2353,7 +2370,7 @@ public class ImageLoader {
                     cacheImage.currentAccount = img.currentAccount;
                     cacheImage.finalFilePath = finalFile;
                     cacheImage.key = key;
-                    cacheImage.httpUrl = img.httpUrl;
+                    cacheImage.location = img.location;
                     cacheImage.selfThumb = thumb;
                     cacheImage.ext = img.ext;
                     cacheImage.encryptionKeyPath = img.encryptionKeyPath;

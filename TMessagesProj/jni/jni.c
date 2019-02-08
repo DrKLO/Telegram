@@ -164,9 +164,9 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_aesCbcEncryption(JNIEnv *en
 }
 
 JNIEXPORT jstring Java_org_telegram_messenger_Utilities_readlink(JNIEnv *env, jclass class, jstring path) {
-    static char buf[1000];
+    static char buf[PATH_MAX + 1];
     const char *fileName = (*env)->GetStringUTFChars(env, path, NULL);
-    ssize_t result = readlink(fileName, buf, 999);
+    ssize_t result = readlink(fileName, buf, PATH_MAX);
     jstring value = 0;
     if (result != -1) {
         buf[result] = '\0';

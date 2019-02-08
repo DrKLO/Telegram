@@ -928,7 +928,10 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     }
 
     public View getButton(int type) {
-        return buttonsLayout.findViewWithTag(type);
+        if (buttonsLayout != null) {
+            return buttonsLayout.findViewWithTag(type);
+        }
+        return null;
     }
 
     @Override

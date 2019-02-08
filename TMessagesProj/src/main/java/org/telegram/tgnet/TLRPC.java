@@ -59,7 +59,7 @@ public class TLRPC {
 	public static final int MESSAGE_FLAG_EDITED             = 0x00008000;
 	public static final int MESSAGE_FLAG_MEGAGROUP          = 0x80000000;
 
-    public static final int LAYER = 94;
+    public static final int LAYER = 95;
 
     public static class TL_chatBannedRights extends TLObject {
         public static int constructor = 0x9f120418;
@@ -13537,7 +13537,7 @@ public class TLRPC {
         public static int constructor = 0x702b65a9;
 
         public int hash;
-        public ArrayList<TL_wallPaper> wallpapers = new ArrayList<>();
+        public ArrayList<WallPaper> wallpapers = new ArrayList<>();
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             hash = stream.readInt32(exception);
@@ -13550,7 +13550,7 @@ public class TLRPC {
             }
             int count = stream.readInt32(exception);
             for (int a = 0; a < count; a++) {
-                TL_wallPaper object = TL_wallPaper.TLdeserialize(stream, stream.readInt32(exception), exception);
+                WallPaper object = WallPaper.TLdeserialize(stream, stream.readInt32(exception), exception);
                 if (object == null) {
                     return;
                 }
@@ -22613,6 +22613,54 @@ public class TLRPC {
 		}
 	}
 
+    public static class TL_wallPaperSettings extends TLObject {
+        public static int constructor = 0xa12f40b8;
+
+        public int flags;
+        public boolean blur;
+        public boolean motion;
+        public int background_color;
+        public int intensity;
+
+        public static TL_wallPaperSettings TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+            if (TL_wallPaperSettings.constructor != constructor) {
+                if (exception) {
+                    throw new RuntimeException(String.format("can't parse magic %x in TL_wallPaperSettings", constructor));
+                } else {
+                    return null;
+                }
+            }
+            TL_wallPaperSettings result = new TL_wallPaperSettings();
+            result.readParams(stream, exception);
+            return result;
+        }
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            blur = (flags & 2) != 0;
+            motion = (flags & 4) != 0;
+            if ((flags & 1) != 0) {
+                background_color = stream.readInt32(exception);
+            }
+            if ((flags & 8) != 0) {
+                intensity = stream.readInt32(exception);
+            }
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = blur ? (flags | 2) : (flags &~ 2);
+            flags = motion ? (flags | 4) : (flags &~ 4);
+            stream.writeInt32(flags);
+            if ((flags & 1) != 0) {
+                stream.writeInt32(background_color);
+            }
+            if ((flags & 8) != 0) {
+                stream.writeInt32(intensity);
+            }
+        }
+    }
+
 	public static class TL_contacts_found extends TLObject {
 		public static int constructor = 0xb3134d9d;
 
@@ -26823,29 +26871,77 @@ public class TLRPC {
 		public static int constructor = 0xe317af7e;
 	}
 
-    public static class TL_wallPaper extends TLObject {
-        public static int constructor = 0xf04f91ec;
+    public static abstract class WallPaper extends TLObject {
+
+        public static WallPaper TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+            WallPaper result = null;
+            switch (constructor) {
+                case 0xa437c3ed:
+                    result = new TL_wallPaper();
+                    break;
+                case 0xf04f91ec:
+                    result = new TL_wallPaper_layer94();
+                    break;
+            }
+            if (result == null && exception) {
+                throw new RuntimeException(String.format("can't parse magic %x in WallPaper", constructor));
+            }
+            if (result != null) {
+                result.readParams(stream, exception);
+            }
+            return result;
+        }
+    }
+
+    public static class TL_wallPaper extends WallPaper {
+        public static int constructor = 0xa437c3ed;
 
         public long id;
         public int flags;
         public boolean creator;
         public boolean isDefault;
+        public boolean pattern;
+        public boolean dark;
         public long access_hash;
         public String slug;
         public Document document;
+        public TL_wallPaperSettings settings;
 
-        public static TL_wallPaper TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
-            if (TL_wallPaper.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_wallPaper", constructor));
-                } else {
-                    return null;
-                }
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            id = stream.readInt64(exception);
+            flags = stream.readInt32(exception);
+            creator = (flags & 1) != 0;
+            isDefault = (flags & 2) != 0;
+            pattern = (flags & 8) != 0;
+            dark = (flags & 16) != 0;
+            access_hash = stream.readInt64(exception);
+            slug = stream.readString(exception);
+            document = Document.TLdeserialize(stream, stream.readInt32(exception), exception);
+            if ((flags & 4) != 0) {
+                settings = TL_wallPaperSettings.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            TL_wallPaper result = new TL_wallPaper();
-            result.readParams(stream, exception);
-            return result;
         }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(id);
+            flags = creator ? (flags | 1) : (flags &~ 1);
+            flags = isDefault ? (flags | 2) : (flags &~ 2);
+            flags = pattern ? (flags | 8) : (flags &~ 8);
+            flags = dark ? (flags | 16) : (flags &~ 16);
+            stream.writeInt32(flags);
+            stream.writeInt64(access_hash);
+            stream.writeString(slug);
+            document.serializeToStream(stream);
+            if ((flags & 4) != 0) {
+                settings.serializeToStream(stream);
+            }
+        }
+    }
+
+    public static class TL_wallPaper_layer94 extends TL_wallPaper {
+        public static int constructor = 0xf04f91ec;
+
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             id = stream.readInt64(exception);
@@ -30913,30 +31009,13 @@ public class TLRPC {
         }
     }
 
-    public static class TL_account_uploadWallPaper extends TLObject {
-        public static int constructor = 0xc7ba9b4d;
-
-        public InputFile file;
-        public String mime_type;
-
-        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
-            return TL_wallPaper.TLdeserialize(stream, constructor, exception);
-        }
-
-        public void serializeToStream(AbstractSerializedData stream) {
-            stream.writeInt32(constructor);
-            file.serializeToStream(stream);
-            stream.writeString(mime_type);
-        }
-    }
-
     public static class TL_account_getWallPaper extends TLObject {
         public static int constructor = 0xfc8ddbea;
 
         public InputWallPaper wallpaper;
 
         public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
-            return TL_wallPaper.TLdeserialize(stream, constructor, exception);
+            return WallPaper.TLdeserialize(stream, constructor, exception);
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
@@ -30945,11 +31024,31 @@ public class TLRPC {
         }
     }
 
+    public static class TL_account_uploadWallPaper extends TLObject {
+        public static int constructor = 0xdd853661;
+
+        public InputFile file;
+        public String mime_type;
+        public TL_wallPaperSettings settings;
+
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return WallPaper.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            file.serializeToStream(stream);
+            stream.writeString(mime_type);
+            settings.serializeToStream(stream);
+        }
+    }
+
     public static class TL_account_saveWallPaper extends TLObject {
-        public static int constructor = 0x189581b3;
+        public static int constructor = 0x6c5a5b37;
 
         public InputWallPaper wallpaper;
         public boolean unsave;
+        public TL_wallPaperSettings settings;
 
         public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
             return Bool.TLdeserialize(stream, constructor, exception);
@@ -30959,13 +31058,15 @@ public class TLRPC {
             stream.writeInt32(constructor);
             wallpaper.serializeToStream(stream);
             stream.writeBool(unsave);
+            settings.serializeToStream(stream);
         }
     }
 
     public static class TL_account_installWallPaper extends TLObject {
-        public static int constructor = 0x4a0378ce;
+        public static int constructor = 0xfeed5769;
 
         public InputWallPaper wallpaper;
+        public TL_wallPaperSettings settings;
 
         public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
             return Bool.TLdeserialize(stream, constructor, exception);
@@ -30974,6 +31075,20 @@ public class TLRPC {
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
             wallpaper.serializeToStream(stream);
+            settings.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_account_resetWallPapers extends TLObject {
+        public static int constructor = 0xbb3b9804;
+
+
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
         }
     }
 
@@ -34398,7 +34513,14 @@ public class TLRPC {
 
 		protected void writeAttachPath(AbstractSerializedData stream) {
         	if (this instanceof TL_message_secret || this instanceof TL_message_secret_layer72) {
-				stream.writeString(attachPath);
+                String path = attachPath != null ? attachPath : "";
+                if (send_state == 1 && params != null && params.size() > 0) {
+                    for (HashMap.Entry<String, String> entry : params.entrySet()) {
+                        path = entry.getKey() + "|=|" + entry.getValue() + "||" + path;
+                    }
+                    path = "||" + path;
+                }
+                stream.writeString(path);
 			} else {
 				String path = attachPath != null ? attachPath : "";
 				if ((id < 0 || send_state == 3) && params != null && params.size() > 0) {

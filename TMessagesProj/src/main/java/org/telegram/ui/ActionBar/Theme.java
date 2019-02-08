@@ -105,6 +105,10 @@ public class Theme {
             return name;
         }
 
+        public boolean isDark() {
+            return "Dark".equals(name) || "Dark Blue".equals(name);
+        }
+
         public static ThemeInfo createWithJson(JSONObject object) {
             if (object == null) {
                 return null;
@@ -302,6 +306,7 @@ public class Theme {
     private static Drawable themedWallpaper;
     private static int themedWallpaperFileOffset;
     private static boolean isWallpaperMotion;
+    private static boolean isPatternWallpaper;
 
     public static Paint dividerPaint;
     public static Paint linkSelectionPaint;
@@ -1563,9 +1568,9 @@ public class Theme {
         defaultColors.put(key_player_actionBarItems, 0xff8a8a8a);
         defaultColors.put(key_player_background, 0xffffffff);
         defaultColors.put(key_player_time, 0xff8c9296);
-        defaultColors.put(key_player_progressBackground, 0x19000000);
-        defaultColors.put(key_player_progressCachedBackground, 0x19000000);
-        defaultColors.put(key_player_progress, 0xff23afef);
+        defaultColors.put(key_player_progressBackground, 0xffe9eff5);
+        defaultColors.put(key_player_progressCachedBackground, 0xffe9eff5);
+        defaultColors.put(key_player_progress, 0xff4b9fe3);
         defaultColors.put(key_player_placeholder, 0xffa8a8a8);
         defaultColors.put(key_player_placeholderBackground, 0xfff0f0f0);
         defaultColors.put(key_player_button, 0xff333333);
@@ -2268,8 +2273,8 @@ public class Theme {
         applyTheme(themeInfo, true, true, false);
     }
 
-    public static void applyTheme(ThemeInfo themeInfo, boolean animated) {
-        applyTheme(themeInfo, true, true, animated);
+    public static void applyTheme(ThemeInfo themeInfo, boolean nightTheme) {
+        applyTheme(themeInfo, true, true, nightTheme);
     }
 
     public static void applyTheme(ThemeInfo themeInfo, boolean save, boolean removeWallpaperOverride, final boolean nightTheme) {
@@ -2547,12 +2552,12 @@ public class Theme {
         if (night) {
             if (currentTheme != currentNightTheme) {
                 lastThemeSwitchTime = SystemClock.elapsedRealtime();
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, currentNightTheme);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, currentNightTheme, true);
             }
         } else {
             if (currentTheme != currentDayTheme) {
                 lastThemeSwitchTime = SystemClock.elapsedRealtime();
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, currentDayTheme);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, currentDayTheme, true);
             }
         }
     }
@@ -3698,6 +3703,7 @@ public class Theme {
                 SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                 boolean overrideTheme = preferences.getBoolean("overrideThemeWallpaper", false);
                 isWallpaperMotion = preferences.getBoolean("selectedBackgroundMotion", false);
+                isPatternWallpaper = preferences.getLong("selectedPattern", 0) != 0;
                 if (!overrideTheme) {
                     Integer backgroundColor = currentColors.get(key_chat_wallpaper);
                     if (backgroundColor != null) {
@@ -3737,13 +3743,17 @@ public class Theme {
                     int selectedColor = 0;
                     try {
                         long selectedBackground = getSelectedBackgroundId();
+                        long selectedPattern = preferences.getLong("selectedPattern", 0);
                         selectedColor = preferences.getInt("selectedColor", 0);
-                        if (selectedColor == 0) {
-                            if (selectedBackground == DEFAULT_BACKGROUND_ID) {
-                                wallpaper = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.background_hd);
-                                isCustomTheme = false;
+                        if (selectedBackground == DEFAULT_BACKGROUND_ID) {
+                            wallpaper = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.background_hd);
+                            isCustomTheme = false;
+                        } else if (selectedBackground == -1 || selectedBackground < -100 || selectedBackground > 0) {
+                            if (selectedColor != 0 && selectedPattern == 0) {
+                                wallpaper = new ColorDrawable(selectedColor);
                             } else {
                                 File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper.jpg");
+                                long len = toFile.length();
                                 if (toFile.exists()) {
                                     wallpaper = Drawable.createFromPath(toFile.getAbsolutePath());
                                     isCustomTheme = true;
@@ -3849,7 +3859,19 @@ public class Theme {
         }
     }
 
+    public static Drawable getCachedWallpaperNonBlocking() {
+        if (themedWallpaper != null) {
+            return themedWallpaper;
+        } else {
+            return wallpaper;
+        }
+    }
+
     public static boolean isWallpaperMotion() {
         return isWallpaperMotion;
+    }
+
+    public static boolean isPatternWallpaper() {
+        return isPatternWallpaper;
     }
 }

@@ -5952,7 +5952,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
                 SecureDocument document = secureDocuments.get(index);
                 int imageSize = document.secureFile.size;
-                imageReceiver.setImage(document, null, "d", placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, null, null, imageSize, null, null, 0);
+                imageReceiver.setImage(document, "d", placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, null, null, imageSize, null, null, 0);
             }
         } else if (!imagesArrLocals.isEmpty()) {
             if (index >= 0 && index < imagesArrLocals.size()) {
@@ -6036,9 +6036,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
                 if (document != null) {
                     TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-                    imageReceiver.setImage(document, null, "d", placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, placeHolder == null ? thumb : null, String.format(Locale.US, "%d_%d", size, size), imageSize, null, object, cacheType);
+                    imageReceiver.setImage(document, "d", placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, placeHolder == null ? thumb : null, String.format(Locale.US, "%d_%d", size, size), imageSize, null, object, cacheType);
                 } else if (photo != null) {
-                    imageReceiver.setImage(photo, null, filter, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, null, String.format(Locale.US, "%d_%d", size, size), imageSize, null, object, cacheType);
+                    imageReceiver.setImage(photo, filter, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, null, String.format(Locale.US, "%d_%d", size, size), imageSize, null, object, cacheType);
                 } else if (webDocument != null) {
                     imageReceiver.setImage(webDocument, filter, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : (isVideo && parentActivity != null ? parentActivity.getResources().getDrawable(R.drawable.nophotos) : null), null, object, cacheType);
                 } else {
@@ -6065,7 +6065,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             placeHolder = currentThumb;
                         }
                         TLRPC.PhotoSize thumbLocation = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 100);
-                        imageReceiver.setImage(null, null, null, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, placeHolder == null ? thumbLocation : null, "b", 0, null, messageObject, 1);
+                        imageReceiver.setImage(null, null, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, placeHolder == null ? thumbLocation : null, "b", 0, null, messageObject, 1);
                     } else {
                         imageReceiver.setImageBitmap(parentActivity.getResources().getDrawable(R.drawable.photoview_placeholder));
                     }
@@ -6083,7 +6083,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             placeHolder = currentThumb;
                         }
                         TLRPC.PhotoSize thumbLocation = messageObject != null ? FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 100) : null;
-                        imageReceiver.setImage(document, null, null, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, placeHolder == null ? thumbLocation : null, "b", document.size, null, messageObject, 0);
+                        imageReceiver.setImage(document, null, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, placeHolder == null ? thumbLocation : null, "b", document.size, null, messageObject, 0);
                     } else {
                         OtherDocumentPlaceholderDrawable drawable = new OtherDocumentPlaceholderDrawable(parentActivity, containerView, messageObject);
                         imageReceiver.setImageBitmap(drawable);
@@ -6108,7 +6108,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     thumbLocation = null;
                 }
                 boolean cacheOnly = messageObject != null && messageObject.isWebpage() || avatarsDialogId != 0 || isEvent;
-                imageReceiver.setImage(fileLocation, null, null, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, placeHolder == null ? thumbLocation : null, "b", size[0], null, messageObject, cacheOnly ? 1 : 0);
+                imageReceiver.setImage(fileLocation, null, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, placeHolder == null ? thumbLocation : null, "b", size[0], null, messageObject, cacheOnly ? 1 : 0);
             } else {
                 imageReceiver.setNeedsQualityThumb(true);
                 if (size[0] == 0) {

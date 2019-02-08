@@ -120,7 +120,14 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+        radialProgress.onDetachedFromWindow();
         DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        radialProgress.onAttachedToWindow();
     }
 
     public MessageObject getMessageObject() {

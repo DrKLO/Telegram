@@ -357,6 +357,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private static Runnable refreshGalleryRunnable;
     public static AlbumEntry allMediaAlbumEntry;
     public static AlbumEntry allPhotosAlbumEntry;
+    public static AlbumEntry allVideosAlbumEntry;
     private static Runnable broadcastPhotosRunnable;
 
     private boolean isPaused = false;
@@ -3026,6 +3027,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             SparseArray<AlbumEntry> mediaAlbums = new SparseArray<>();
             SparseArray<AlbumEntry> photoAlbums = new SparseArray<>();
             AlbumEntry allPhotosAlbum = null;
+            AlbumEntry allVideosAlbum = null;
             AlbumEntry allMediaAlbum = null;
             String cameraFolder = null;
             try {
@@ -3139,10 +3141,22 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
                             PhotoEntry photoEntry = new PhotoEntry(bucketId, imageId, dateTaken, path, (int) (duration / 1000), true);
 
+                            if (allVideosAlbum == null) {
+                                allVideosAlbum = new AlbumEntry(0, LocaleController.getString("AllVideos", R.string.AllVideos), photoEntry);
+                                int index = 0;
+                                if (allMediaAlbum != null) {
+                                    index++;
+                                }
+                                if (allPhotosAlbum != null) {
+                                    index++;
+                                }
+                                mediaAlbumsSorted.add(index, allVideosAlbum);
+                            }
                             if (allMediaAlbum == null) {
                                 allMediaAlbum = new AlbumEntry(0, LocaleController.getString("AllMedia", R.string.AllMedia), photoEntry);
                                 mediaAlbumsSorted.add(0, allMediaAlbum);
                             }
+                            allVideosAlbum.addPhoto(photoEntry);
                             allMediaAlbum.addPhoto(photoEntry);
 
                             AlbumEntry albumEntry = mediaAlbums.get(bucketId);
@@ -3182,24 +3196,25 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     return 0;
                 });
             }
-            broadcastNewPhotos(guid, mediaAlbumsSorted, photoAlbumsSorted, mediaCameraAlbumId, allMediaAlbum, allPhotosAlbum, 0);
+            broadcastNewPhotos(guid, mediaAlbumsSorted, photoAlbumsSorted, mediaCameraAlbumId, allMediaAlbum, allPhotosAlbum, allVideosAlbum, 0);
         });
         thread.setPriority(Thread.MIN_PRIORITY);
         thread.start();
     }
 
-    private static void broadcastNewPhotos(final int guid, final ArrayList<AlbumEntry> mediaAlbumsSorted, final ArrayList<AlbumEntry> photoAlbumsSorted, final Integer cameraAlbumIdFinal, final AlbumEntry allMediaAlbumFinal, final AlbumEntry allPhotosAlbumFinal, int delay) {
+    private static void broadcastNewPhotos(final int guid, final ArrayList<AlbumEntry> mediaAlbumsSorted, final ArrayList<AlbumEntry> photoAlbumsSorted, final Integer cameraAlbumIdFinal, final AlbumEntry allMediaAlbumFinal, final AlbumEntry allPhotosAlbumFinal, final AlbumEntry allVideosAlbumFinal, int delay) {
         if (broadcastPhotosRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(broadcastPhotosRunnable);
         }
         AndroidUtilities.runOnUIThread(broadcastPhotosRunnable = () -> {
             if (PhotoViewer.getInstance().isVisible()) {
-                broadcastNewPhotos(guid, mediaAlbumsSorted, photoAlbumsSorted, cameraAlbumIdFinal, allMediaAlbumFinal, allPhotosAlbumFinal, 1000);
+                broadcastNewPhotos(guid, mediaAlbumsSorted, photoAlbumsSorted, cameraAlbumIdFinal, allMediaAlbumFinal, allPhotosAlbumFinal, allVideosAlbumFinal, 1000);
                 return;
             }
             broadcastPhotosRunnable = null;
             allPhotosAlbumEntry = allPhotosAlbumFinal;
             allMediaAlbumEntry = allMediaAlbumFinal;
+            allVideosAlbumEntry = allVideosAlbumFinal;
             for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
                 NotificationCenter.getInstance(a).postNotificationName(NotificationCenter.albumsDidLoad, guid, mediaAlbumsSorted, photoAlbumsSorted, cameraAlbumIdFinal);
             }

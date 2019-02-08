@@ -486,7 +486,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             circleSize = AndroidUtilities.dp(5);
             gapSize = AndroidUtilities.dp(2);
             sideSide = AndroidUtilities.dp(17);
-            lineSize = (getMeasuredWidth() - circleSize * fontSizeCount - gapSize * 8 - sideSide * 2) / (fontSizeCount - 1);
+            lineSize = (getMeasuredWidth() - circleSize * fontSizeCount - gapSize * 2 * (fontSizeCount - 1) - sideSide * 2) / (fontSizeCount - 1);
         }
 
         @Override
@@ -1481,6 +1481,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 pageSwitchAnimation.playTogether(ObjectAnimator.ofFloat(listView[0], View.TRANSLATION_X, AndroidUtilities.dp(56), 0),
                         ObjectAnimator.ofFloat(listView[0], View.ALPHA, 0.0f, 1.0f));
             } else if (order == -1) {
+                listView[0].setAlpha(1.0f);
+                listView[0].setTranslationX(0.0f);
                 pageSwitchAnimation.playTogether(ObjectAnimator.ofFloat(listView[1], View.TRANSLATION_X, 0, AndroidUtilities.dp(56)),
                         ObjectAnimator.ofFloat(listView[1], View.ALPHA, 1.0f, 0.0f));
             }
@@ -2401,9 +2403,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         int end = spanned.getSpanEnd(innerSpans[a]);
                         textPath.setCurrentLayout(result, start, 0);
                         int shift = innerSpans[a].getTextPaint() != null ? innerSpans[a].getTextPaint().baselineShift : 0;
-                        if (shift != 0) {
-                            markPath.setBaselineShift(shift + AndroidUtilities.dp(shift > 0 ? 5 : -2));
-                        }
+                        textPath.setBaselineShift(shift != 0 ? shift + AndroidUtilities.dp(shift > 0 ? 5 : -2) : 0);
                         result.getSelectionPath(start, end, textPath);
                     }
                     textPath.setAllowReset(true);
@@ -2421,9 +2421,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         int end = spanned.getSpanEnd(innerSpans[a]);
                         markPath.setCurrentLayout(result, start, 0);
                         int shift = innerSpans[a].getTextPaint() != null ? innerSpans[a].getTextPaint().baselineShift : 0;
-                        if (shift != 0) {
-                            markPath.setBaselineShift(shift + AndroidUtilities.dp(shift > 0 ? 5 : -2));
-                        }
+                        markPath.setBaselineShift(shift != 0 ? shift + AndroidUtilities.dp(shift > 0 ? 5 : -2) : 0);
                         result.getSelectionPath(start, end, markPath);
                     }
                     markPath.setAllowReset(true);
@@ -3906,6 +3904,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         containerView.setTranslationX(0);
         containerView.setTranslationY(0);
         listView[0].setTranslationY(0);
+        listView[0].setTranslationX(0.0f);
+        listView[1].setTranslationX(0.0f);
         listView[0].setAlpha(1.0f);
         windowView.setInnerTranslationX(0);
 
@@ -5711,6 +5711,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     } else {
                         imageView.setImage(null, null, thumb, "80_80_b", 0, null, currentPage, 1);
                     }
+                    imageView.setAspectFit(isGif);
                     buttonX = (int) (imageView.getImageX() + (imageView.getImageWidth() - size) / 2.0f);
                     buttonY = (int) (imageView.getImageY() + (imageView.getImageHeight() - size) / 2.0f);
                     radialProgress.setProgressRect(buttonX, buttonY, buttonX + size, buttonY + size);
@@ -5751,8 +5752,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (currentBlock == null) {
                 return;
             }
-            if (!imageView.hasBitmapImage() || imageView.getcurrentAccount() != 1.0f) {
-                canvas.drawRect(imageView.getImageX(), imageView.getImageY(), imageView.getImageX2(), imageView.getImageY2(), photoBackgroundPaint);
+            if (!imageView.hasBitmapImage() || imageView.getCurrentAlpha() != 1.0f) {
+                canvas.drawRect(imageView.getDrawRegion(), photoBackgroundPaint);
             }
             imageView.draw(canvas);
             if (imageView.getVisible()) {
@@ -9186,7 +9187,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (currentBlock == null) {
                 return;
             }
-            if (!imageView.hasBitmapImage() || imageView.getcurrentAccount() != 1.0f) {
+            if (!imageView.hasBitmapImage() || imageView.getCurrentAlpha() != 1.0f) {
                 canvas.drawRect(imageView.getImageX(), imageView.getImageY(), imageView.getImageX2(), imageView.getImageY2(), photoBackgroundPaint);
             }
             imageView.draw(canvas);
@@ -11071,14 +11072,14 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     size[0] = -1;
                 }
                 TLRPC.PhotoSize thumbLocation = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 80);
-                imageReceiver.setImage(fileLocation, null, null, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, thumbLocation, "b", size[0], null, currentPage, 1);
+                imageReceiver.setImage(fileLocation, null, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, thumbLocation, "b", size[0], null, currentPage, 1);
             } else if (isMediaVideo(index)) {
                 if (!(fileLocation.location instanceof TLRPC.TL_fileLocationUnavailable)) {
                     ImageReceiver.BitmapHolder placeHolder = null;
                     if (currentThumb != null && imageReceiver == centerImage) {
                         placeHolder = currentThumb;
                     }
-                    imageReceiver.setImage(null, null, null, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, fileLocation, "b", 0, null, currentPage, 1);
+                    imageReceiver.setImage(null, null, placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, fileLocation, "b", 0, null, currentPage, 1);
                 } else {
                     imageReceiver.setImageBitmap(parentActivity.getResources().getDrawable(R.drawable.photoview_placeholder));
                 }
@@ -11191,7 +11192,12 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             xPos += ((WindowInsets) lastInsets).getSystemWindowInsetLeft();
         }
         float yPos = ((AndroidUtilities.displaySize.y + AndroidUtilities.statusBarHeight) - height) / 2.0f;
-        int clipHorizontal = Math.abs(drawRegion.left - object.imageReceiver.getImageX());
+        int clipHorizontal;
+        if (object.imageReceiver.isAspectFit()) {
+            clipHorizontal = 0;
+        } else {
+            clipHorizontal = Math.abs(drawRegion.left - object.imageReceiver.getImageX());
+        }
         int clipVertical = Math.abs(drawRegion.top - object.imageReceiver.getImageY());
 
         int coords2[] = new int[2];
@@ -11358,7 +11364,12 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
             if (object != null) {
                 object.imageReceiver.setVisible(false, true);
-                int clipHorizontal = Math.abs(drawRegion.left - object.imageReceiver.getImageX());
+                int clipHorizontal;
+                if (object.imageReceiver.isAspectFit()) {
+                    clipHorizontal = 0;
+                } else {
+                    clipHorizontal = Math.abs(drawRegion.left - object.imageReceiver.getImageX());
+                }
                 int clipVertical = Math.abs(drawRegion.top - object.imageReceiver.getImageY());
 
                 int coords2[] = new int[2];

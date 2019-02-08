@@ -146,7 +146,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.encryptedChatCreated);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.closeChats);
-        MessagesController.getGlobalNotificationsSettings().getBoolean("askAboutContacts", true);
         checkPermission = UserConfig.getInstance(currentAccount).syncContacts;
         if (arguments != null) {
             onlyUsers = getArguments().getBoolean("onlyUsers", false);
@@ -375,7 +374,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 if (row < 0 || section < 0) {
                     return;
                 }
-                if ((!onlyUsers || chat_id != 0) && section == 0) {
+                if ((!onlyUsers || chat_id != 0 && inviteViaLink) && section == 0) {
                     if (needPhonebook) {
                         if (row == 0) {
                             presentFragment(new InviteContactsActivity());
@@ -671,7 +670,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     if (activity.shouldShowRequestPermissionRationale(Manifest.permission.READ_CONTACTS)) {
                         AlertDialog.Builder builder = AlertsCreator.createContactsPermissionDialog(activity, param -> {
                             askAboutContacts = param != 0;
-                            MessagesController.getGlobalNotificationsSettings().edit().putBoolean("askAboutContacts", askAboutContacts).commit();
+                            if (param == 0) {
+                                return;
+                            }
                             askForPermissons(false);
                         });
                         showDialog(permissionDialog = builder.create());
@@ -703,7 +704,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @Override
     protected void onDialogDismiss(Dialog dialog) {
         super.onDialogDismiss(dialog);
-        if (permissionDialog != null && dialog == permissionDialog && getParentActivity() != null) {
+        if (permissionDialog != null && dialog == permissionDialog && getParentActivity() != null && askAboutContacts) {
             askForPermissons(false);
         }
     }
@@ -717,7 +718,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         if (alert && askAboutContacts) {
             AlertDialog.Builder builder = AlertsCreator.createContactsPermissionDialog(activity, param -> {
                 askAboutContacts = param != 0;
-                MessagesController.getGlobalNotificationsSettings().edit().putBoolean("askAboutContacts", askAboutContacts).commit();
+                if (param == 0) {
+                    return;
+                }
                 askForPermissons(false);
             });
             showDialog(builder.create());

@@ -34,6 +34,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private float translationX;
     private float translationY;
     private float parallaxScale = 1.0f;
+    private boolean paused = true;
 
     public interface SizeNotifierFrameLayoutDelegate {
         void onSizeChanged(int keyboardHeight, boolean isWidthGreater);
@@ -58,10 +59,13 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                     parallaxScale = parallaxEffect.getScale(getMeasuredWidth(), getMeasuredHeight());
                 }
             }
+            if (!paused) {
+                parallaxEffect.setEnabled(true);
+            }
         } else if (parallaxEffect != null) {
             parallaxEffect.setEnabled(false);
             parallaxEffect = null;
-            parallaxScale = 0;
+            parallaxScale = 1.0f;
             translationX = 0;
             translationY = 0;
         }
@@ -84,12 +88,14 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         if (parallaxEffect != null) {
             parallaxEffect.setEnabled(false);
         }
+        paused = true;
     }
 
     public void onResume() {
         if (parallaxEffect != null) {
             parallaxEffect.setEnabled(true);
         }
+        paused = false;
     }
 
     @Override

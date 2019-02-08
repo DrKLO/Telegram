@@ -65,8 +65,8 @@ public class WallpaperParallaxEffect implements SensorEventListener {
 		float z = event.values[2] / SensorManager.GRAVITY_EARTH;
 
 
-		float roll = (float) (Math.atan2(y, z) / Math.PI * 2.0);
-		float pitch = (float) (Math.atan2(-x, Math.sqrt(y * y + z * z)) / Math.PI * 2.0);
+		float pitch=(float)(Math.atan2(x, Math.sqrt(y*y+z*z))/Math.PI*2.0);
+		float roll=(float)(Math.atan2(y, Math.sqrt(x*x+z*z))/Math.PI*2.0);
 
 		switch (rotation) {
 			case Surface.ROTATION_0:

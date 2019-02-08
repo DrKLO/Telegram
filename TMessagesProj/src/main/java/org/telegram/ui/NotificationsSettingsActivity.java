@@ -114,6 +114,57 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     @Override
     public boolean onFragmentCreate() {
         MessagesController.getInstance(currentAccount).loadSignUpNotificationsSettings();
+        loadExceptions();
+
+        notificationsSectionRow = rowCount++;
+        privateRow = rowCount++;
+        groupRow = rowCount++;
+        channelsRow = rowCount++;
+        notificationsSection2Row = rowCount++;
+
+        callsSectionRow = rowCount++;
+        callsVibrateRow = rowCount++;
+        callsRingtoneRow = rowCount++;
+        eventsSection2Row = rowCount++;
+
+        badgeNumberSection = rowCount++;
+        badgeNumberShowRow = rowCount++;
+        badgeNumberMutedRow = rowCount++;
+        badgeNumberMessagesRow = rowCount++;
+        badgeNumberSection2Row = rowCount++;
+
+        inappSectionRow = rowCount++;
+        inappSoundRow = rowCount++;
+        inappVibrateRow = rowCount++;
+        inappPreviewRow = rowCount++;
+        inchatSoundRow = rowCount++;
+        if (Build.VERSION.SDK_INT >= 21) {
+            inappPriorityRow = rowCount++;
+        } else {
+            inappPriorityRow = -1;
+        }
+        callsSection2Row = rowCount++;
+
+        eventsSectionRow = rowCount++;
+        contactJoinedRow = rowCount++;
+        pinnedMessageRow = rowCount++;
+        otherSection2Row = rowCount++;
+
+        otherSectionRow = rowCount++;
+        notificationsServiceRow = rowCount++;
+        notificationsServiceConnectionRow = rowCount++;
+        androidAutoAlertRow = -1;
+        repeatRow = rowCount++;
+        resetSection2Row = rowCount++;
+        resetSectionRow = rowCount++;
+        resetNotificationsRow = rowCount++;
+
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.notificationsSettingsUpdated);
+
+        return super.onFragmentCreate();
+    }
+
+    private void loadExceptions() {
         MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
             ArrayList<NotificationException> usersResult = new ArrayList<>();
             ArrayList<NotificationException> chatsResult = new ArrayList<>();
@@ -258,53 +309,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 adapter.notifyItemChanged(channelsRow);
             });
         });
-
-        notificationsSectionRow = rowCount++;
-        privateRow = rowCount++;
-        groupRow = rowCount++;
-        channelsRow = rowCount++;
-        notificationsSection2Row = rowCount++;
-
-        callsSectionRow = rowCount++;
-        callsVibrateRow = rowCount++;
-        callsRingtoneRow = rowCount++;
-        eventsSection2Row = rowCount++;
-
-        badgeNumberSection = rowCount++;
-        badgeNumberShowRow = rowCount++;
-        badgeNumberMutedRow = rowCount++;
-        badgeNumberMessagesRow = rowCount++;
-        badgeNumberSection2Row = rowCount++;
-
-        inappSectionRow = rowCount++;
-        inappSoundRow = rowCount++;
-        inappVibrateRow = rowCount++;
-        inappPreviewRow = rowCount++;
-        inchatSoundRow = rowCount++;
-        if (Build.VERSION.SDK_INT >= 21) {
-            inappPriorityRow = rowCount++;
-        } else {
-            inappPriorityRow = -1;
-        }
-        callsSection2Row = rowCount++;
-
-        eventsSectionRow = rowCount++;
-        contactJoinedRow = rowCount++;
-        pinnedMessageRow = rowCount++;
-        otherSection2Row = rowCount++;
-
-        otherSectionRow = rowCount++;
-        notificationsServiceRow = rowCount++;
-        notificationsServiceConnectionRow = rowCount++;
-        androidAutoAlertRow = -1;
-        repeatRow = rowCount++;
-        resetSection2Row = rowCount++;
-        resetSectionRow = rowCount++;
-        resetNotificationsRow = rowCount++;
-
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.notificationsSettingsUpdated);
-
-        return super.onFragmentCreate();
     }
 
     @Override
@@ -376,24 +380,22 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 try {
                     SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                     Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
-                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, position == callsRingtoneRow ? RingtoneManager.TYPE_RINGTONE : RingtoneManager.TYPE_NOTIFICATION);
+                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_RINGTONE);
                     tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
-                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(position == callsRingtoneRow ? RingtoneManager.TYPE_RINGTONE : RingtoneManager.TYPE_NOTIFICATION));
+                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE));
                     Uri currentSound = null;
 
                     String defaultPath = null;
-                    Uri defaultUri = position == callsRingtoneRow ? Settings.System.DEFAULT_RINGTONE_URI : Settings.System.DEFAULT_NOTIFICATION_URI;
+                    Uri defaultUri = Settings.System.DEFAULT_RINGTONE_URI;
                     if (defaultUri != null) {
                         defaultPath = defaultUri.getPath();
                     }
-                    if (position == callsRingtoneRow) {
-                        String path = preferences.getString("CallsRingtonfePath", defaultPath);
-                        if (path != null && !path.equals("NoSound")) {
-                            if (path.equals(defaultPath)) {
-                                currentSound = defaultUri;
-                            } else {
-                                currentSound = Uri.parse(path);
-                            }
+                    String path = preferences.getString("CallsRingtonePath", defaultPath);
+                    if (path != null && !path.equals("NoSound")) {
+                        if (path.equals(defaultPath)) {
+                            currentSound = defaultUri;
+                        } else {
+                            currentSound = Uri.parse(path);
                         }
                     }
                     tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
