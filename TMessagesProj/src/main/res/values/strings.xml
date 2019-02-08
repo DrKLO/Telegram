@@ -8450,6 +8450,7 @@
     <string name="RemoveFromHideMode">Remove from Hide Mode</string>
     <string name="AddToHideMode">Add to Hide Mode</string>
     <string name="PinOrderInfo">You can manage local order of pinned dialogs right here.</string>
+    <string name="GoToFirstMessage">Go to Beginning</string>
     <!--fork settings view-->
     <string name="ForkSettingsTitle">Fork Client Settings</string>
     <string name="SquareAvatars">Square Avatars</string>
