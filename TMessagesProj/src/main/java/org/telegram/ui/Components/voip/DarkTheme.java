@@ -180,7 +180,7 @@ public class DarkTheme{
 				return 0xFF8A8A8A;
 			case "chat_outLocationIcon":
 				return 0xFF669ABF;
-			case "chat_inAudioPerfomerText":
+			case "chat_inAudioPerformerText":
 				return 0xFF798897;
 			case "chats_attachMessage":
 				return 0xFF5491C6;
@@ -204,7 +204,7 @@ public class DarkTheme{
 				return 0xFF71D756;
 			case "dialogIcon":
 				return 0xFF7A848D;
-			case "chat_outAudioPerfomerText":
+			case "chat_outAudioPerformerText":
 				return 0xFF94C0E2;
 			case "chats_pinnedOverlay":
 				return 0x09FFFFFF;
