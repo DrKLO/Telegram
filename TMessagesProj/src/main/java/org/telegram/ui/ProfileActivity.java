@@ -1045,6 +1045,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             nameTextView[a].setPivotX(0);
             nameTextView[a].setPivotY(0);
             nameTextView[a].setAlpha(a == 0 ? 0.0f : 1.0f);
+            if (a == 1) {
+                nameTextView[a].setScrollNonFitText(true);
+                nameTextView[a].setBackgroundColor(AvatarDrawable.getProfileBackColorForId(user_id != 0 || ChatObject.isChannel(chat_id, currentAccount) && !currentChat.megagroup ? 5 : chat_id));
+            }
             frameLayout.addView(nameTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118, 0, a == 0 ? 48 : 0, 0));
 
             onlineTextView[a] = new SimpleTextView(context);
@@ -2791,7 +2795,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (chat_id > 0) {
                 TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chat_id);
                 if (ChatObject.isChannel(chat)) {
-                    if (ChatObject.hasAdminRights(chat)) {
+                    if (ChatObject.hasAdminRights(chat) || ChatObject.canChangeChatInfo(chat)) {
                         editItem = menu.addItem(edit_channel, R.drawable.group_edit_profile);
                     }
                     if (!chat.megagroup && chatInfo != null && chatInfo.can_view_stats) {
@@ -3253,6 +3257,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 new ThemeDescription(topView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_avatar_backgroundActionBarBlue),
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_avatar_actionBarSelectorBlue),
                 new ThemeDescription(nameTextView[1], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_profile_title),
+                new ThemeDescription(nameTextView[1], ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_avatar_backgroundActionBarBlue),
                 new ThemeDescription(onlineTextView[1], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_avatar_subtitleInProfileBlue),
 
                 new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),

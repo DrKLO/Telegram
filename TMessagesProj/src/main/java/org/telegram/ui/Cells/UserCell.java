@@ -35,6 +35,7 @@ import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.ActionBar.SimpleTextView;
+import org.telegram.ui.NotificationsSettingsActivity;
 
 public class UserCell extends FrameLayout {
 
@@ -48,6 +49,7 @@ public class UserCell extends FrameLayout {
 
     private AvatarDrawable avatarDrawable;
     private TLObject currentObject;
+    private TLRPC.EncryptedChat encryptedChat;
 
     private CharSequence currentName;
     private CharSequence currrntStatus;
@@ -154,10 +156,14 @@ public class UserCell extends FrameLayout {
     }
 
     public void setData(TLObject object, CharSequence name, CharSequence status, int resId) {
-        setData(object, name, status, resId, false);
+        setData(object, null, name, status, resId, false);
     }
 
     public void setData(TLObject object, CharSequence name, CharSequence status, int resId, boolean divider) {
+        setData(object, null, name, status, resId, divider);
+    }
+
+    public void setData(TLObject object, TLRPC.EncryptedChat ec, CharSequence name, CharSequence status, int resId, boolean divider) {
         if (object == null && name == null && status == null) {
             currrntStatus = null;
             currentName = null;
@@ -167,6 +173,7 @@ public class UserCell extends FrameLayout {
             avatarImageView.setImageDrawable(null);
             return;
         }
+        encryptedChat = ec;
         currrntStatus = status;
         currentName = name;
         currentObject = object;
@@ -174,6 +181,74 @@ public class UserCell extends FrameLayout {
         needDivider = divider;
         setWillNotDraw(!needDivider);
         update(0);
+    }
+
+    public void setException(NotificationsSettingsActivity.NotificationException exception, CharSequence name, boolean divider) {
+        String text;
+        boolean enabled;
+        boolean custom = exception.hasCustom;
+        int value = exception.notify;
+        int delta = exception.muteUntil;
+        if (value == 3 && delta != Integer.MAX_VALUE) {
+            delta -= ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+            if (delta <= 0) {
+                if (custom) {
+                    text = LocaleController.getString("NotificationsCustom", R.string.NotificationsCustom);
+                } else {
+                    text = LocaleController.getString("NotificationsUnmuted", R.string.NotificationsUnmuted);
+                }
+            } else if (delta < 60 * 60) {
+                text = LocaleController.formatString("WillUnmuteIn", R.string.WillUnmuteIn, LocaleController.formatPluralString("Minutes", delta / 60));
+            } else if (delta < 60 * 60 * 24) {
+                text = LocaleController.formatString("WillUnmuteIn", R.string.WillUnmuteIn, LocaleController.formatPluralString("Hours", (int) Math.ceil(delta / 60.0f / 60)));
+            } else if (delta < 60 * 60 * 24 * 365) {
+                text = LocaleController.formatString("WillUnmuteIn", R.string.WillUnmuteIn, LocaleController.formatPluralString("Days", (int) Math.ceil(delta / 60.0f / 60 / 24)));
+            } else {
+                text = null;
+            }
+        } else {
+            if (value == 0) {
+                enabled = true;
+            } else if (value == 1) {
+                enabled = true;
+            } else if (value == 2) {
+                enabled = false;
+            } else {
+                enabled = false;
+            }
+            if (enabled && custom) {
+                text = LocaleController.getString("NotificationsCustom", R.string.NotificationsCustom);
+            } else {
+                text = enabled ? LocaleController.getString("NotificationsUnmuted", R.string.NotificationsUnmuted) : LocaleController.getString("NotificationsMuted", R.string.NotificationsMuted);
+            }
+        }
+        if (text == null) {
+            text = LocaleController.getString("NotificationsOff", R.string.NotificationsOff);
+        }
+
+        int lower_id = (int) exception.did;
+        int high_id = (int) (exception.did >> 32);
+        if (lower_id != 0) {
+            if (lower_id > 0) {
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
+                if (user != null) {
+                    setData(user, null, name, text, 0, divider);
+                }
+            } else {
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
+                if (chat != null) {
+                    setData(chat, null, name, text, 0, divider);
+                }
+            }
+        } else {
+            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(high_id);
+            if (encryptedChat != null) {
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(encryptedChat.user_id);
+                if (user != null) {
+                    setData(user, encryptedChat, name, text, 0, false);
+                }
+            }
+        }
     }
 
     public void setNameTypeface(Typeface typeface) {
@@ -232,6 +307,18 @@ public class UserCell extends FrameLayout {
             if (currentUser.photo != null) {
                 photo = currentUser.photo.photo_small;
             }
+            /*if (encryptedChat != null) {
+                drawNameLock = true;
+                dialog_id = ((long) encryptedChat.id) << 32;
+                if (!LocaleController.isRTL) {
+                    nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
+                    nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + Theme.dialogs_lockDrawable.getIntrinsicWidth();
+                } else {
+                    nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline + 2) - Theme.dialogs_lockDrawable.getIntrinsicWidth();
+                    nameLeft = AndroidUtilities.dp(11);
+                }
+                nameLockTop = AndroidUtilities.dp(16.5f);
+            }*/
         } else if (currentObject instanceof TLRPC.Chat) {
             currentChat = (TLRPC.Chat) currentObject;
             if (currentChat.photo != null) {

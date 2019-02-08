@@ -134,6 +134,7 @@ public class NotificationCenter {
     public static final int pushMessagesUpdated = totalEvents++;
     public static final int stopEncodingService = totalEvents++;
     public static final int wallpapersDidLoad = totalEvents++;
+    public static final int wallpapersNeedReload = totalEvents++;
     public static final int didReceiveSmsCode = totalEvents++;
     public static final int didReceiveCall = totalEvents++;
     public static final int emojiDidLoad = totalEvents++;

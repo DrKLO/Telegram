@@ -1031,6 +1031,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 });
                 view = horizontalListView;
                 innerListView = horizontalListView;
+                break;
         }
         if (viewType == 5) {
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(86)));

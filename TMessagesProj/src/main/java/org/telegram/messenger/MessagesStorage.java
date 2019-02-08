@@ -1013,6 +1013,17 @@ public class MessagesStorage {
                                 AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).markMessageAsRead(mid, channelId, inputChannel, ttl, taskId));
                                 break;
                             }
+                            case 12: {
+                                long wallPaperId = data.readInt64(false);
+                                long accessHash = data.readInt64(false);
+                                boolean isBlurred = data.readBool(false);
+                                boolean isMotion = data.readBool(false);
+                                int backgroundColor = data.readInt32(false);
+                                float intesity = (float) data.readDouble(false);
+                                boolean install = data.readBool(false);
+                                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).saveWallpaperToServer(null, wallPaperId, accessHash, isBlurred, isMotion, backgroundColor, intesity, install, taskId));
+                                break;
+                            }
                         }
                         data.reuse();
                     }
@@ -1333,28 +1344,28 @@ public class MessagesStorage {
         });
     }
 
-    public void putWallpapers(final ArrayList<TLRPC.TL_wallPaper> wallPapers, boolean replace) {
+    public void putWallpapers(final ArrayList<TLRPC.WallPaper> wallPapers, int action) {
         storageQueue.postRunnable(() -> {
             try {
-                if (replace) {
+                if (action == 1) {
                     database.executeFast("DELETE FROM wallpapers2 WHERE 1").stepThis().dispose();
                 }
                 database.beginTransaction();
                 SQLitePreparedStatement state;
-                if (replace) {
+                if (action != 0) {
                     state = database.executeFast("REPLACE INTO wallpapers2 VALUES(?, ?, ?)");
                 } else {
                     state = database.executeFast("UPDATE wallpapers2 SET data = ? WHERE uid = ?");
                 }
                 for (int a = 0, N = wallPapers.size(); a < N; a++) {
-                    TLRPC.TL_wallPaper wallPaper = wallPapers.get(a);
+                    TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) wallPapers.get(a);
                     state.requery();
                     NativeByteBuffer data = new NativeByteBuffer(wallPaper.getObjectSize());
                     wallPaper.serializeToStream(data);
-                    if (replace) {
+                    if (action != 0) {
                         state.bindLong(1, wallPaper.id);
                         state.bindByteBuffer(2, data);
-                        state.bindInteger(3, a);
+                        state.bindInteger(3, action == 2 ? -1 : a);
                     } else {
                         state.bindByteBuffer(1, data);
                         state.bindLong(2, wallPaper.id);
@@ -1379,7 +1390,7 @@ public class MessagesStorage {
                 while (cursor.next()) {
                     NativeByteBuffer data = cursor.byteBufferValue(0);
                     if (data != null) {
-                        TLRPC.TL_wallPaper wallPaper = TLRPC.TL_wallPaper.TLdeserialize(data, data.readInt32(false), false);
+                        TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) TLRPC.WallPaper.TLdeserialize(data, data.readInt32(false), false);
                         data.reuse();
                         if (wallPaper != null) {
                             wallPapers.add(wallPaper);
@@ -7292,7 +7303,6 @@ public class MessagesStorage {
                 if (!encryptedToLoad.isEmpty()) {
                     getEncryptedChatsInternal(TextUtils.join(",", encryptedToLoad), encryptedChats, usersToLoad);
                 }
-
                 if (!chatsToLoad.isEmpty()) {
                     getChatsInternal(TextUtils.join(",", chatsToLoad), dialogs.chats);
                 }

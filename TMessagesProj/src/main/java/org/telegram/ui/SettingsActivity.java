@@ -356,7 +356,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             } else if (position == dataRow) {
                 presentFragment(new DataSettingsActivity());
             } else if (position == chatRow) {
-                presentFragment(new ChatSettingsActivity());
+                presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
             } else if (position == helpRow) {
                 BottomSheet.Builder builder = new BottomSheet.Builder(context);
                 builder.setApplyTopPadding(false);

@@ -175,7 +175,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
                 TLRPC.Document document = messageObject.getDocument();
                 TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
                 if (thumb != null) {
-                    imageView.setImage(null, null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, thumb, "b", null, 0, messageObject);
+                    imageView.setImage(null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, thumb, "b", null, 0, messageObject);
                 } else {
                     imageView.setImageResource(R.drawable.photo_placeholder_in);
                 }
@@ -189,7 +189,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
                     }
                     imageView.getImageReceiver().setImage(currentPhotoObject, "100_100", currentPhotoObjectThumb, "b", currentPhotoObject.size, null, messageObject, messageObject.shouldEncryptPhotoOrVideo() ? 2 : 0);
                 } else {
-                    imageView.setImage(null, null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, currentPhotoObjectThumb, "b", null, 0, messageObject);
+                    imageView.setImage(null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, currentPhotoObjectThumb, "b", null, 0, messageObject);
                 }
             } else {
                 videoInfoContainer.setVisibility(INVISIBLE);

@@ -53,9 +53,7 @@ public class LocaleController {
     public FastDateFormat formatterDay;
     public FastDateFormat formatterWeek;
     public FastDateFormat formatterDayMonth;
-    public FastDateFormat formatterMonth;
     public FastDateFormat formatterYear;
-    public FastDateFormat formatterMonthYear;
     public FastDateFormat formatterYearMax;
     public FastDateFormat formatterStats;
     public FastDateFormat formatterBannedUntil;
@@ -1426,14 +1424,12 @@ public class LocaleController {
         nameDisplayOrder = lang.equals("ko") ? 2 : 1;
 
         formatterDayMonth = createFormatter(locale, getStringInternal("formatterMonth", R.string.formatterMonth), "dd MMM");
-        formatterMonth = createFormatter(locale, getStringInternal("formatterMonthName", R.string.formatterMonthName), "LLLL");
         formatterYear = createFormatter(locale, getStringInternal("formatterYear", R.string.formatterYear), "dd.MM.yy");
         formatterYearMax = createFormatter(locale, getStringInternal("formatterYearMax", R.string.formatterYearMax), "dd.MM.yyyy");
         chatDate = createFormatter(locale, getStringInternal("chatDate", R.string.chatDate), "d MMMM");
         chatFullDate = createFormatter(locale, getStringInternal("chatFullDate", R.string.chatFullDate), "d MMMM yyyy");
         formatterWeek = createFormatter(locale, getStringInternal("formatterWeek", R.string.formatterWeek), "EEE");
         formatterScheduleDay = createFormatter(locale, getStringInternal("formatDateScheduleDay", R.string.formatDateScheduleDay), "EEE MMM d");
-        formatterMonthYear = createFormatter(locale, getStringInternal("formatterMonthYear2", R.string.formatterMonthYear2), "LLLL yyyy");
         formatterDay = createFormatter(lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko") ? locale : Locale.US, is24HourFormat ? getStringInternal("formatterDay24H", R.string.formatterDay24H) : getStringInternal("formatterDay12H", R.string.formatterDay12H), is24HourFormat ? "HH:mm" : "h:mm a");
         formatterStats = createFormatter(locale, is24HourFormat ? getStringInternal("formatterStats24H", R.string.formatterStats24H) : getStringInternal("formatterStats12H", R.string.formatterStats12H), is24HourFormat ? "MMM dd yyyy, HH:mm" : "MMM dd yyyy, h:mm a");
         formatterBannedUntil = createFormatter(locale, is24HourFormat ? getStringInternal("formatterBannedUntil24H", R.string.formatterBannedUntil24H) : getStringInternal("formatterBannedUntil12H", R.string.formatterBannedUntil12H), is24HourFormat ? "MMM dd yyyy, HH:mm" : "MMM dd yyyy, h:mm a");
@@ -1451,11 +1447,26 @@ public class LocaleController {
             int year = rightNow.get(Calendar.YEAR);
             rightNow.setTimeInMillis(date);
             int dateYear = rightNow.get(Calendar.YEAR);
+            int month = rightNow.get(Calendar.MONTH);
 
+            final String[] months = new String[]{
+                    LocaleController.getString("January", R.string.January),
+                    LocaleController.getString("February", R.string.February),
+                    LocaleController.getString("March", R.string.March),
+                    LocaleController.getString("April", R.string.April),
+                    LocaleController.getString("May", R.string.May),
+                    LocaleController.getString("June", R.string.June),
+                    LocaleController.getString("July", R.string.July),
+                    LocaleController.getString("August", R.string.August),
+                    LocaleController.getString("September", R.string.September),
+                    LocaleController.getString("October", R.string.October),
+                    LocaleController.getString("November", R.string.November),
+                    LocaleController.getString("December", R.string.December)
+            };
             if (year == dateYear) {
-                return getInstance().formatterMonth.format(new Date(date));
+                return months[month];
             } else {
-                return getInstance().formatterMonthYear.format(new Date(date));
+                return months[month] + " " + dateYear;
             }
         } catch (Exception e) {
             FileLog.e(e);

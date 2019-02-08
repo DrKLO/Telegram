@@ -22,7 +22,7 @@
     <string name="SyncContactsInfoOff">Ative para sincronizar continuamente contatos deste dispositivos com a sua conta.</string>
     <string name="SyncContactsAdded">Contatos deste dispositivo foram adicionados a sua conta.</string>
     <!--code enter view-->
-    <string name="YourCode">Verificação do tel.</string>
+    <string name="YourCode">Verificar Número</string>
     <string name="SentSmsCode">Enviamos um SMS com um código de ativação para **%1$s**.</string>
     <string name="SentAppCode">Nós enviamos o código para o aplicativo do **Telegram** em seu outro dispositivo.</string>
     <string name="SentAppCodeTitle">Confira suas mensagens no Telegram</string>
@@ -49,7 +49,7 @@
     <string name="OtherLoginCode">Seu código de login é **%1$s**. Digite ele no app do Telegram no qual você está tentando fazer o login.\n\nNão informe esse código para ninguém.</string>
     <!--signup view-->
     <string name="YourName">Seu nome</string>
-    <string name="RegisterText2">Por favor, digite seu nome completo e envie sua foto de perfil.</string>
+    <string name="RegisterText2">Por favor, digite seu nome completo e coloque uma foto de perfil.</string>
     <string name="FirstName">Nome (obrigatório)</string>
     <string name="LastName">Sobrenome (opcional)</string>
     <string name="CancelRegistration">Cancelar registro</string>
@@ -365,6 +365,8 @@
     <string name="EditAdminPinMessages">Fixar Mensagens</string>
     <string name="EditAdminPromotedBy">Promovido por %1$s</string>
     <string name="EditAdminCantEdit">Você não tem permissão para editar os direitos desse admin.</string>
+    <string name="EditCantEditPermissions">Você não pode editar essa permissão.</string>
+    <string name="EditCantEditPermissionsPublic">Esta permissão não está disponível em grupos públicos.</string>
     <string name="UserRemovedBy">Removido por %1$s</string>
     <string name="UserRestrictions">Permissões do Usuário</string>
     <string name="UserRestrictionsDisabled">Esta opção está desativada para todos os membros nas Permissões do Grupo</string>
@@ -490,7 +492,7 @@
     <string name="EventLogPinnedMessages">un1 fixou essa mensagem:</string>
     <string name="EventLogUnpinnedMessages">un1 desafixou essa mensagem:</string>
     <string name="EventLogStopPoll">un1 encerrou a enquete:</string>
-    <string name="EventLogDeletedMessages">un1 removeu essa mensagem:</string>
+    <string name="EventLogDeletedMessages">un1 apagou esta mensagem:</string>
     <string name="EventLogChangedStickersSet">un1 alterou o pacote de sticker do grupo</string>
     <string name="EventLogRemovedStickersSet">un1 removeu o pacote de sticker do grupo</string>
     <string name="EventLogChangedGroupLink">un1 alterou o link do grupo:</string>
@@ -511,7 +513,7 @@
     <string name="EventLogDefaultPermissions">alterou as permissões padrão</string>
     <string name="EventLogRestrictedSendStickers">Enviar Stickers &amp; GIFs</string>
     <string name="EventLogRestrictedSendMedia">Enviar mídias</string>
-    <string name="EventLogRestrictedChangeInfo">Alterar Info</string>
+    <string name="EventLogRestrictedChangeInfo">Alterar info</string>
     <string name="EventLogRestrictedInviteUsers">Adicionar usuários</string>
     <string name="EventLogRestrictedPinMessages">Fixar mensagens</string>
     <string name="EventLogRestrictedSendPolls">Enviar enquetes</string>
@@ -519,7 +521,7 @@
     <string name="EventLogRestrictedSendEmbed">Prévia de links</string>
     <string name="EventLogRestrictedReadMessages">Ler Mensagens</string>
     <string name="EventLogPromoted">alterou os privilégios de %1$s</string>
-    <string name="EventLogPromotedChangeChannelInfo">Alterar Info do canal</string>
+    <string name="EventLogPromotedChangeChannelInfo">Alterar Info do Canal</string>
     <string name="EventLogPromotedChangeGroupInfo">Alterar Info do grupo</string>
     <string name="EventLogPromotedPostMessages">Postar mensagens</string>
     <string name="EventLogPromotedEditMessages">Editar mensagens</string>
@@ -537,7 +539,7 @@
     <string name="EventLogFilterDeletedMessages">Mensagens apagadas</string>
     <string name="EventLogFilterEditedMessages">Mensagens editadas</string>
     <string name="EventLogFilterPinnedMessages">Mensagens fixadas</string>
-    <string name="EventLogFilterLeavingMembers">Membros saindo</string>
+    <string name="EventLogFilterLeavingMembers">Membros saindo do grupo</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nova Lista de Transmissão</string>
     <string name="EnterListName">Digite o nome da lista</string>
@@ -701,10 +703,10 @@
     <string name="ChatYourSelfName">Você</string>
     <string name="GroupEmptyTitle1">Você criou um **grupo**.</string>
     <string name="GroupEmptyTitle2">Grupos podem ter:</string>
-    <string name="GroupDescription1">Até 100,000 membros</string>
+    <string name="GroupDescription1">Até 200.000 membros</string>
     <string name="GroupDescription2">"Histórico persistente do chat "</string>
     <string name="GroupDescription3">Links públicos, como t.me/nome</string>
-    <string name="GroupDescription4">Admins com direitos diferentes</string>
+    <string name="GroupDescription4">Admins com permissões diferentes</string>
     <string name="ChatYourSelfDescription1">Encaminhe mensagens aqui para salvá-las</string>
     <string name="ChatYourSelfDescription2">Envie mídias e arquivos aqui para salvá-los</string>
     <string name="ChatYourSelfDescription3">Acesse este chat de qualquer dispositivo</string>
@@ -722,11 +724,11 @@
     <string name="DiscardVideoMessageDescription">Você tem certeza de que deseja parar de gravar e descartar sua mensagem de vídeo?</string>
     <string name="DiscardVoiceMessageAction">Descartar</string>
     <string name="AttachMediaRestricted">Os admins do grupo restringiram você de enviar mídias aqui até %1$s</string>
-    <string name="AttachInlineRestricted">Os admins do grupo restringiram você de usar bots inline aqui até %1$s</string>
+    <string name="AttachInlineRestricted">Os admins do grupo restringiram você de usar conteúdo inline aqui até %1$s.</string>
     <string name="AttachStickersRestricted">Os admins do grupo restringiram você de enviar stickers aqui até %1$s</string>
     <string name="SendMessageRestricted">Os admins do grupo restringiram você de escrever aqui até %1$s</string>
     <string name="AttachMediaRestrictedForever">Os admins do grupo restringiram você de enviar mídias aqui.</string>
-    <string name="AttachInlineRestrictedForever">Os admins do grupo restringiram você de usar bots inline aqui</string>
+    <string name="AttachInlineRestrictedForever">Os admins do grupo restringiram você de usar conteúdo inline aqui.</string>
     <string name="AttachStickersRestrictedForever">Os admins do grupo restringiram você de enviar stickers aqui.</string>
     <string name="SendMessageRestrictedForever">Os admins do grupo restringiram você de escrever aqui.</string>
     <string name="GlobalAttachMediaRestricted">Não é permitido enviar mídias neste grupo.</string>
@@ -845,7 +847,7 @@
     <string name="NotificationActionPinnedMusicChannel">%1$s fixou um arquivo de áudio</string>
     <string name="SecretChatName">Telegram</string>
     <!--contacts view-->
-    <string name="SelectContact">Selecionar Contato</string>
+    <string name="SelectContact">Selecione um Contato</string>
     <string name="ContactShare">COMPARTILHAR CONTATO</string>
     <string name="NoContacts">Ainda não há contatos</string>
     <string name="InviteText2">Ei, estou usando o Telegram para conversar. Vem comigo! Baixe aqui: %1$s</string>
@@ -871,8 +873,8 @@
     <string name="ShareTelegram">Compartilhar Telegram...</string>
     <string name="UpdateContactsTitle">Atualizar contatos?</string>
     <string name="UpdateContactsMessage">O Telegram detectou muitos contatos não sincronizados, você gostaria de sincronizá-los agora? Escolha \'OK\' se você está usando seu próprio celular, cartão SIM e conta do Google.</string>
-    <string name="SortedByName">Ordernado por Nome</string>
-    <string name="SortedByLastSeen">Ordenado por Visto por Último</string>
+    <string name="SortedByName">Listado por Nome</string>
+    <string name="SortedByLastSeen">Listado por Visto por Último</string>
     <!--group create view-->
     <string name="SendMessageTo">Adicionar pessoas...</string>
     <string name="SoftUserLimitAlert">Você poderá adicionar mais usuários após finalizar a criação do grupo e convertê-lo em supergrupo.</string>
@@ -967,7 +969,7 @@
     <string name="UsernameInvalidShort">O nome de usuário deve ter pelo menos 5 caracteres.</string>
     <string name="UsernameInvalidLong">O nome de usuário não pode exceder 32 caracteres.</string>
     <string name="UsernameInvalidStartNumber">Desculpe, o nome de usuário não pode começar com um número.</string>
-    <string name="UsernameHelp">Você pode escolher um nome de usuário no **Telegram**. Assim, outras pessoas poderão te encontrar pelo nome de usuário e entrar em contato sem precisar saber seu telefone.\n\nVocê pode usar **a–z**, **0–9** e underline. O tamanho mínimo é **5** caracteres.</string>
+    <string name="UsernameHelp">Você pode escolher um nome de usuário no **Telegram**. Assim, outras pessoas poderão te encontrar pelo nome de usuário e entrar em contato sem precisar saber seu telefone.\n\nVocê pode usar **a–z**, **0–9** e underline.\nO tamanho mínimo é de **5** caracteres.</string>
     <string name="UsernameHelpLink">Este link abre um chat com você:\n%1$s</string>
     <string name="UsernameChecking">Verificando nome de usuário...</string>
     <string name="UsernameAvailable">%1$s está disponível.</string>
@@ -1020,6 +1022,7 @@
     <!--theme view-->
     <string name="Theme">Tema</string>
     <string name="AutoNightTheme">Modo Noturno Automático</string>
+    <string name="AutoNightThemeOff">Desativado</string>
     <string name="AutoNightDisabled">Desativado</string>
     <string name="AutoNightScheduled">Programado</string>
     <string name="AutoNightAutomatic">Automático</string>
@@ -1040,17 +1043,19 @@
     <string name="EnterThemeName">Insira o nome do tema</string>
     <string name="CloseEditor">FECHAR EDITOR</string>
     <string name="SaveTheme">SALVAR TEMA</string>
-    <string name="NewTheme">Novo Tema</string>
+    <string name="NewTheme">Novo tema de cores</string>
+    <string name="ColorTheme">Tema de cores</string>
+    <string name="CreateTheme">CRIAR TEMA</string>
     <string name="ApplyTheme">APLICAR</string>
     <string name="ThemePreview">Prévia do Tema</string>
     <string name="SelectColor">Selecionar cor</string>
-    <string name="CreateNewTheme">Criar Novo Tema</string>
+    <string name="CreateNewThemeMenu">Criar novo tema</string>
     <string name="CreateNewThemeHelp">Toque no ícone da paleta para visualizar a lista de elementos de cada tela - e editá-los.</string>
-    <string name="CreateNewThemeInfo">Você pode criar seu próprio tema alterando as cores do app. Você pode voltar ao tema padrão do Telegram aqui.</string>
+    <string name="CreateNewThemeAlert">Você pode criar seu próprio tema alterando as cores dentro do aplicativo.\n\nVocê sempre pode voltar para o tema padrão do Telegram aqui.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restaurar todas as configurações de notificação</string>
     <string name="ResetNotificationsAlert">Deseja mesmo resetar as configurações de notificação para o padrão?</string>
-    <string name="TextSize">Tamanho do Texto</string>
+    <string name="TextSizeHeader">Tamanho do texto das mensagens</string>
     <string name="AskAQuestion">Fazer uma Pergunta</string>
     <string name="EnableAnimations">Permitir Animações</string>
     <string name="ChatSettings">Configurações de Chats</string>
@@ -1111,15 +1116,46 @@
     <string name="BackgroundBlurred">Desfoque</string>
     <string name="BackgroundMotion">Movimento</string>
     <string name="ChatBackground">Papel de Parede</string>
+    <string name="ResetChatBackgrounds">Redefinir Papéis de Parede</string>
+    <string name="ResetChatBackgroundsInfo">Remove todos os papéis de parede enviados e restaura os pré-instalados.</string>
+    <string name="ResetChatBackgroundsAlert">Deseja mesmo redefinir todos os papéis de parede?</string>
+    <string name="DeleteChatBackgroundsAlert">Deseja mesmo apagar os papéis de parede selecionados?</string>
     <string name="BackgroundPreview">Prévia do Papel de Parede</string>
-    <string name="BackgroundPreviewLine1">Dica: alguns papéis de parede ficam melhores com o efeito de desfoque.</string>
-    <string name="BackgroundPreviewLine2">Obrigado!</string>
+    <string name="BackgroundPreviewLine1">Dica: alguns papéis de parede ficam melhores desfocados.</string>
+    <string name="BackgroundPreviewLine2">Valeu!</string>
+    <string name="BackgroundColorPreviewLine1">Deslize para os lados para ver mais cores</string>
+    <string name="BackgroundColorPreviewLine2">Salmão é um peixe, não uma cor.</string>
+    <string name="FontSizePreviewReply">Reinhardt, temos que achar umas músicas novas pra você. &#127926;.</string>
+    <string name="FontSizePreviewLine1">Ahh, vocês crianças de hoje em dia com essas músicas eletrônicas! Ouçam os clássicos, como Hasselhoff!</string>
+    <string name="FontSizePreviewLine2">Não consigo nem te levar a sério agora.</string>
+    <string name="BackgroundColorSinglePreviewLine1">Press \'Set\' to apply the background.</string>
+    <string name="BackgroundColorSinglePreviewLine2">Enjoy the view.</string>
     <string name="SetBackground">DEFINIR PAPEL DE PAREDE</string>
+    <string name="SearchByColor">Buscar por cor</string>
+    <string name="SearchBackgrounds">Buscar Papéis de Parede</string>
+    <string name="BackgroundSearchColor">Cor:</string>
+    <string name="BackgroundBrightness">Brilho</string>
+    <string name="BackgroundHexColorCode">Código hex da cor</string>
+    <string name="BackgroundColor">Cor</string>
+    <string name="BackgroundPattern">Textura</string>
+    <string name="BackgroundIntensity">Intensidade</string>
+    <string name="Blue">Azul</string>
+    <string name="Red">Vermelho</string>
+    <string name="Orange">Laranja</string>
+    <string name="Yellow">Amarelo</string>
+    <string name="Green">Verde</string>
+    <string name="Teal">Turquesa</string>
+    <string name="Purple">Roxo</string>
+    <string name="Pink">Rosa</string>
+    <string name="Brown">Marrom</string>
+    <string name="Black">Preto</string>
+    <string name="Gray">Cinza</string>
+    <string name="White">Branco</string>
     <string name="SelectColorTitle">Selecionar uma cor</string>
     <string name="UploadImage">Enviar imagem</string>
     <string name="SelectImage">Selecionar imagem</string>
     <string name="LoadingFullImage">carregando imagem completa...</string>
-    <string name="SetColor">Definir uma Cor</string>
+    <string name="SetColor">Definir uma cor</string>
     <string name="MessagesSettings">Mensagens</string>
     <string name="SendByEnter">Enviar usando \'Enter\'</string>
     <string name="Events">Eventos</string>
@@ -1146,13 +1182,13 @@
     <string name="TermsOfService">Termos de Serviço</string>
     <string name="TermsOfServiceLogin">Ao se cadastrar,\nvocê concorda com os *Termos de Serviço*.</string>
     <string name="PrivacyPolicyUrl">https://telegram.org/privacy</string>
-    <string name="DeleteLocalization">Apagar localização?</string>
+    <string name="DeleteLocalization">Apagar tradução?</string>
     <string name="IncorrectLocalization">Arquivo de localização incorreto</string>
     <string name="NotificationsService">Manter Serviço Ativo</string>
     <string name="NotificationsServiceInfo">Reinicia o app quando ele tiver sido fechado. Ative para notificações mais estáveis.</string>
     <string name="NotificationsServiceConnection">Conexão em Segundo Plano</string>
     <string name="NotificationsServiceConnectionInfo">Mantém uma conexão de baixo impacto para que o Telegram receba notificações mais estáveis.</string>
-    <string name="SortBy">Ordenar Por</string>
+    <string name="SortBy">Listar Por</string>
     <string name="ImportContacts">Importar Contatos</string>
     <string name="SortFirstName">Primeiro nome</string>
     <string name="SortLastName">Último nome</string>
@@ -1544,10 +1580,22 @@
     <string name="FingerprintHelp">Toque o sensor</string>
     <string name="FingerprintNotRecognized">Digital não reconhecida, tente de novo.</string>
     <string name="ScreenCapture">Mostrar Conteúdo do App nos Recentes</string>
-    <string name="ScreenCaptureInfo">Se desativado, você não poderá fazer capturas de tela no aplicativo, mas o conteúdo do chat ficará oculto no alternador de tarefas.</string>
-    <string name="ScreenCaptureAlert">Isso ocultará o conteúdo de seus chats ou lista de chats do alternador de tarefas, mas você não poderá tirar capturas de tela no Telegram.\n\nPode ser necessário reiniciar o aplicativo para que isso entre em vigor.</string>
+    <string name="ScreenCaptureInfo">Se desativado, você não poderá fazer capturas de tela no aplicativo, mas o conteúdo do chat ficará oculto no multitarefas.</string>
+    <string name="ScreenCaptureAlert">Isso ocultará o conteúdo de seus chats ou lista de chats do multitarefas, mas você não poderá tirar capturas de tela no Telegram.\n\nPode ser necessário reiniciar o aplicativo para que isso entre em vigor.</string>
     <string name="TooManyTries">Muitas tentativas.\nPor favor, tente de novo em %1$s.</string>
     <!--media view-->
+    <string name="January">janeiro</string>
+    <string name="February">fevereiro</string>
+    <string name="March">março</string>
+    <string name="April">abril</string>
+    <string name="May">maio</string>
+    <string name="June">junho</string>
+    <string name="July">julho</string>
+    <string name="August">agosto</string>
+    <string name="September">setembro</string>
+    <string name="October">outubro</string>
+    <string name="November">novembro</string>
+    <string name="December">dezembro</string>
     <string name="SharedFilesTab">ARQUIVOS</string>
     <string name="SharedMediaTab">MÍDIA</string>
     <string name="SharedLinksTab">LINKS</string>
@@ -1556,7 +1604,7 @@
     <string name="DocumentsTitle">Arquivos Compartilhados</string>
     <string name="SharedContentTitle">Conteúdo Compartilhado</string>
     <string name="LinksTitle">Links Compartilhados</string>
-    <string name="AudioTitle">Música Compartilhada</string>
+    <string name="AudioTitle">Músicas Compartilhadas</string>
     <string name="NoMedia">Compartilhar fotos e vídeos no chat e acessá-los em qualquer um de seus dispositivos.</string>
     <string name="NoSharedAudio">Compartilhe músicas neste chat e acesse-as de qualquer um de seus dispositivos.</string>
     <string name="NoSharedFiles">Compartilhar arquivos e documentos no chat e acessá-los de qualquer um de seus dispositivos.</string>
@@ -1612,11 +1660,12 @@
     <string name="Gallery">Galeria</string>
     <string name="AllPhotos">Todas as fotos</string>
     <string name="AllMedia">Todas as mídias</string>
+    <string name="AllVideos">Todos os vídeos</string>
     <string name="NoPhotos">Ainda não há fotos</string>
     <string name="PleaseDownload">Por favor, baixe a mídia primeiro</string>
     <string name="PleaseStreamDownload">Aguarde que o vídeo seja baixado completamente.</string>
     <string name="VideoDoesNotSupportStreaming">Este vídeo não está otimizado para streaming. Talvez você precise baixá-lo para assistir.</string>
-    <string name="CantPlayVideo">O app não conseguiu reproduzir o vídeo. Tentar reproduzir em um player externo?</string>
+    <string name="CantPlayVideo">O app não conseguiu reproduzir o vídeo. Deseja abrir em um player externo?</string>
     <string name="NoRecentPhotos">Nenhuma foto recente</string>
     <string name="NoRecentGIFs">Nenhum GIF recente</string>
     <string name="SearchImages">BUSCAR IMAGENS</string>
@@ -2099,7 +2148,7 @@
     <string name="CallMessageReportProblem">Avaliar Chamada</string>
     <string name="CallReportHint">O que aconteceu de errado?</string>
     <string name="CallReportIncludeLogs">Incluir informação técnica</string>
-    <string name="CallReportLogsExplain">Isso não irá revelar o conteúdo de sua conversa, mas nos ajudará a resolver o problema.</string>
+    <string name="CallReportLogsExplain">Não revela o conteúdo do chat e nos ajudará a corrigir o problema mais rápido.</string>
     <string name="CallReportSent">Agradecemos por ajudar a tornar as chamadas do Telegram melhores.</string>
     <string name="VoipAnsweringAsAccount">Respondendo como %s</string>
     <string name="VoipQuickReplies">Responder com Texto</string>
@@ -2116,9 +2165,9 @@
     <string name="RateCallNoise">Ouvi barulho no fundo</string>
     <string name="RateCallInterruptions">A outra pessoa ficou sumindo</string>
     <string name="RateCallDistorted">Fala distorcida</string>
-    <string name="RateCallSilentLocal">Eu não consegui ouvir a outra pessoa</string>
+    <string name="RateCallSilentLocal">Não consegui ouvir a outra pessoa</string>
     <string name="RateCallSilentRemote">A outra pessoa não conseguiu me ouvir</string>
-    <string name="RateCallDropped">Chamada encerrada inesperadamente</string>
+    <string name="RateCallDropped">Chamada encerrada do nada</string>
     <!--plural-->
     <string name="Recipient_zero">%1$d destinatários</string>
     <string name="Recipient_one">%1$d destinatário</string>

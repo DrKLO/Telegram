@@ -15,6 +15,8 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.Gravity;
@@ -25,6 +27,7 @@ import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -50,6 +53,7 @@ public class WallpaperCell extends FrameLayout {
 
         public WallpaperView(Context context) {
             super(context);
+            setWillNotDraw(false);
 
             imageView = new BackupImageView(context) {
                 @Override
@@ -112,6 +116,9 @@ public class WallpaperCell extends FrameLayout {
             } else {
                 imageView.setVisibility(VISIBLE);
                 imageView2.setVisibility(INVISIBLE);
+                imageView.setBackgroundDrawable(null);
+                imageView.getImageReceiver().setColorFilter(null);
+                imageView.getImageReceiver().setAlpha(1.0f);
                 if (object instanceof TLRPC.TL_wallPaper) {
                     TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) object;
                     isSelected = wallPaper.id == selectedBackground;
@@ -121,22 +128,51 @@ public class WallpaperCell extends FrameLayout {
                         image = null;
                     }
                     int size = image != null ? image.size : wallPaper.document.size;
-                    imageView.setImage(image != null ? image : wallPaper.document, "100_100", thumb, "100_100_b", "jpg", size, 1, wallPaper);
-                    imageView.setBackgroundColor(0x5a475866);
+                    if (wallPaper.pattern) {
+                        imageView.setBackgroundColor(0xff000000 | wallPaper.settings.background_color);
+                        imageView.setImage(image, "100_100", thumb, null, "jpg", size, 1, wallPaper);
+                        imageView.getImageReceiver().setColorFilter(new PorterDuffColorFilter(AndroidUtilities.getPatternColor(wallPaper.settings.background_color), PorterDuff.Mode.SRC_IN));
+                        imageView.getImageReceiver().setAlpha(wallPaper.settings.intensity / 100.0f);
+                    } else {
+                        /*if (wallPaper.settings != null && wallPaper.settings.blur) {
+                            imageView.setImage(null, "100_100", thumb, "100_100_b", "jpg", size, 1, wallPaper);
+                        } else {*/
+                        imageView.setImage(image != null ? image : wallPaper.document, "100_100", thumb, "100_100_b", "jpg", size, 1, wallPaper);
+                        //}
+                    }
                 } else if (object instanceof WallpapersListActivity.ColorWallpaper) {
                     WallpapersListActivity.ColorWallpaper wallPaper = (WallpapersListActivity.ColorWallpaper) object;
+                    if (wallPaper.path != null) {
+                        imageView.setImage(wallPaper.path.getAbsolutePath(), "100_100", null);
+                    } else {
+                        imageView.setImageBitmap(null);
+                        imageView.setBackgroundColor(0xff000000 | wallPaper.color);
+                    }
                     isSelected = wallPaper.id == selectedBackground;
-                    imageView.setImageBitmap(null);
-                    imageView.setBackgroundColor(0xff000000 | wallPaper.color);
                 } else if (object instanceof WallpapersListActivity.FileWallpaper) {
                     WallpapersListActivity.FileWallpaper wallPaper = (WallpapersListActivity.FileWallpaper) object;
                     isSelected = wallPaper.id == selectedBackground;
-                    if (wallPaper.path != null) {
+                    if (wallPaper.originalPath != null) {
+                        imageView.setImage(wallPaper.originalPath.getAbsolutePath(), "100_100", null);
+                    } else if (wallPaper.path != null) {
                         imageView.setImage(wallPaper.path.getAbsolutePath(), "100_100", null);
                     } else if (wallPaper.resId == Theme.THEME_BACKGROUND_ID) {
                         imageView.setImageDrawable(Theme.getThemedWallpaper(true));
                     } else {
                         imageView.setImageResource(wallPaper.thumbResId);
+                    }
+                } else if (object instanceof MediaController.SearchImage) {
+                    MediaController.SearchImage wallPaper = (MediaController.SearchImage) object;
+                    if (wallPaper.photo != null) {
+                        TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(wallPaper.photo.sizes, 100);
+                        TLRPC.PhotoSize image = FileLoader.getClosestPhotoSizeWithSize(wallPaper.photo.sizes, 320);
+                        if (image == thumb) {
+                            image = null;
+                        }
+                        int size = image != null ? image.size : 0;
+                        imageView.setImage(image, "100_100", thumb, "100_100_b", "jpg", size, 1, wallPaper);
+                    } else {
+                        imageView.setImage(wallPaper.thumbUrl, "100_100", null);
                     }
                 } else {
                     isSelected = false;
@@ -155,8 +191,8 @@ public class WallpaperCell extends FrameLayout {
             }
             if (animated) {
                 animator = new AnimatorSet();
-                animator.playTogether(ObjectAnimator.ofFloat(imageView, "scaleX", checked ? 0.85f : 1.0f),
-                        ObjectAnimator.ofFloat(imageView, "scaleY", checked ? 0.85f : 1.0f));
+                animator.playTogether(ObjectAnimator.ofFloat(imageView, "scaleX", checked ? 0.8875f : 1.0f),
+                        ObjectAnimator.ofFloat(imageView, "scaleY", checked ? 0.8875f : 1.0f));
                 animator.setDuration(200);
                 animator.addListener(new AnimatorListenerAdapter() {
                     @Override
@@ -178,15 +214,32 @@ public class WallpaperCell extends FrameLayout {
                 });
                 animator.start();
             } else {
-                imageView.setScaleX(checked ? 0.85f : 1.0f);
-                imageView.setScaleY(checked ? 0.85f : 1.0f);
+                imageView.setScaleX(checked ? 0.8875f : 1.0f);
+                imageView.setScaleY(checked ? 0.8875f : 1.0f);
             }
+            invalidate();
         }
 
         @Override
         public void invalidate() {
             super.invalidate();
             imageView.invalidate();
+        }
+
+        @Override
+        public void clearAnimation() {
+            super.clearAnimation();
+            if (animator != null) {
+                animator.cancel();
+                animator = null;
+            }
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (checkBox.isChecked() || !imageView.getImageReceiver().hasBitmapImage() || imageView.getImageReceiver().getCurrentAlpha() != 1.0f) {
+                canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
+            }
         }
     }
 
@@ -197,6 +250,7 @@ public class WallpaperCell extends FrameLayout {
     private int currentType;
     private Paint framePaint;
     private Paint circlePaint;
+    private Paint backgroundPaint;
     private Drawable checkDrawable;
 
     public WallpaperCell(Context context) {
@@ -205,12 +259,10 @@ public class WallpaperCell extends FrameLayout {
         wallpaperViews = new WallpaperView[5];
         for (int a = 0; a < wallpaperViews.length; a++) {
             WallpaperView wallpaperView = wallpaperViews[a] = new WallpaperView(context);
+            int num = a;
             addView(wallpaperView);
-            wallpaperView.setOnClickListener(v -> onWallpaperClick(wallpaperView.currentWallpaper));
-            wallpaperView.setOnLongClickListener(v -> {
-                onWallpaperLongClick(wallpaperView.currentWallpaper);
-                return true;
-            });
+            wallpaperView.setOnClickListener(v -> onWallpaperClick(wallpaperView.currentWallpaper, num));
+            wallpaperView.setOnLongClickListener(v -> onWallpaperLongClick(wallpaperView.currentWallpaper, num));
         }
 
         framePaint = new Paint();
@@ -219,14 +271,17 @@ public class WallpaperCell extends FrameLayout {
         circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         checkDrawable = context.getResources().getDrawable(R.drawable.background_selected).mutate();
+
+        backgroundPaint = new Paint();
+        backgroundPaint.setColor(Theme.getColor(Theme.key_sharedMedia_photoPlaceholder));
     }
 
-    protected void onWallpaperClick(Object wallPaper) {
+    protected void onWallpaperClick(Object wallPaper, int index) {
 
     }
 
-    protected void onWallpaperLongClick(Object wallPaper) {
-
+    protected boolean onWallpaperLongClick(Object wallPaper, int index) {
+        return false;
     }
 
     @Override
@@ -260,6 +315,7 @@ public class WallpaperCell extends FrameLayout {
         isBottom = bottom;
         for (int a = 0; a < wallpaperViews.length; a++) {
             wallpaperViews[a].setVisibility(a < columns ? VISIBLE : GONE);
+            wallpaperViews[a].clearAnimation();
         }
     }
 
@@ -267,6 +323,7 @@ public class WallpaperCell extends FrameLayout {
         currentType = type;
         if (wallpaper == null) {
             wallpaperViews[index].setVisibility(GONE);
+            wallpaperViews[index].clearAnimation();
         } else {
             wallpaperViews[index].setVisibility(VISIBLE);
             wallpaperViews[index].setWallpaper(wallpaper, selectedBackground, themedWallpaper, themed);

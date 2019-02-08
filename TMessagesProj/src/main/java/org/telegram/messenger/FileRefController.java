@@ -86,7 +86,7 @@ public class FileRefController {
             TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) parentObject;
             return "wallpaper" + wallPaper.id;
         }
-        return null;
+        return parentObject != null ? "" + parentObject : null;
     }
 
     @SuppressWarnings("unchecked")
@@ -598,21 +598,21 @@ public class FileRefController {
             } else if (response instanceof TLRPC.TL_account_wallPapers) {
                 TLRPC.TL_account_wallPapers accountWallPapers = (TLRPC.TL_account_wallPapers) response;
                 for (int i = 0, size10 = accountWallPapers.wallpapers.size(); i < size10; i++) {
-                    result = getFileReference(accountWallPapers.wallpapers.get(i).document, requester.location);
+                    result = getFileReference(((TLRPC.TL_wallPaper) accountWallPapers.wallpapers.get(i)).document, requester.location);
                     if (result != null) {
                         break;
                     }
                 }
                 if (result != null && cache) {
-                    MessagesStorage.getInstance(currentAccount).putWallpapers(accountWallPapers.wallpapers, true);
+                    MessagesStorage.getInstance(currentAccount).putWallpapers(accountWallPapers.wallpapers, 1);
                 }
             } else if (response instanceof TLRPC.TL_wallPaper) {
                 TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) response;
                 result = getFileReference(wallPaper.document, requester.location);
                 if (result != null && cache) {
-                    ArrayList<TLRPC.TL_wallPaper> wallpapers = new ArrayList<>();
+                    ArrayList<TLRPC.WallPaper> wallpapers = new ArrayList<>();
                     wallpapers.add(wallPaper);
-                    MessagesStorage.getInstance(currentAccount).putWallpapers(wallpapers, false);
+                    MessagesStorage.getInstance(currentAccount).putWallpapers(wallpapers, 0);
                 }
             } else if (response instanceof TLRPC.Vector) {
                 TLRPC.Vector vector = (TLRPC.Vector) response;

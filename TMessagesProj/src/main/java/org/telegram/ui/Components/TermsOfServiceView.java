@@ -30,6 +30,8 @@ public class TermsOfServiceView extends FrameLayout {
     private TextView textView;
     private TermsOfServiceViewDelegate delegate;
     private TLRPC.TL_help_termsOfService currentTos;
+    private TextView titleTextView;
+    private ScrollView scrollView;
     private int currentAccount;
 
     public interface TermsOfServiceViewDelegate {
@@ -52,7 +54,7 @@ public class TermsOfServiceView extends FrameLayout {
         imageView.setImageResource(R.drawable.logo_middle);
         addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 30 + top, 0, 0));
 
-        TextView titleTextView = new TextView(context);
+        titleTextView = new TextView(context);
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         titleTextView.setGravity(Gravity.LEFT | Gravity.TOP);
@@ -60,7 +62,7 @@ public class TermsOfServiceView extends FrameLayout {
         titleTextView.setText(LocaleController.getString("PrivacyPolicyAndTerms", R.string.PrivacyPolicyAndTerms));
         addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 27, 126 + top, 27, 75));
 
-        ScrollView scrollView = new ScrollView(context);
+        scrollView = new ScrollView(context);
         AndroidUtilities.setScrollViewEdgeEffectColor(scrollView, Theme.getColor(Theme.key_actionBarDefault));
         addView(scrollView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 27, 160 + top, 27, 75));
 
@@ -171,6 +173,14 @@ public class TermsOfServiceView extends FrameLayout {
         textView.setText(builder);
         currentTos = tos;
         currentAccount = account;
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        measureChildWithMargins(titleTextView, widthMeasureSpec, 0, heightMeasureSpec, 0);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) scrollView.getLayoutParams();
+        layoutParams.topMargin = AndroidUtilities.dp(126 + 30) + titleTextView.getMeasuredHeight();
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
     public void setDelegate(TermsOfServiceViewDelegate termsOfServiceViewDelegate) {

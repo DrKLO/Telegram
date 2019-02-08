@@ -335,7 +335,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                     } else {
                         parent = "avatar_" + delegate.getAvatarsDialogId();
                     }
-                    receiver.setImage(null, null, null, null, location, "80_80", 0, null, parent, 1);
+                    receiver.setImage(null, null, null, location, "80_80", 0, null, parent, 1);
                     receiver.setParam(a);
                 } else {
                     break;
@@ -357,7 +357,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                     } else {
                         parent = "avatar_" + delegate.getAvatarsDialogId();
                     }
-                    receiver.setImage(null, null, null, null, location, "80_80", 0, null, parent, 1);
+                    receiver.setImage(null, null, null, location, "80_80", 0, null, parent, 1);
                     receiver.setParam(a);
                 } else {
                     break;

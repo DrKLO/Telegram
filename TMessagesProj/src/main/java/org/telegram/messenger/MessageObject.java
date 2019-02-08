@@ -9,6 +9,7 @@
 package org.telegram.messenger;
 
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Build;
 import android.text.Layout;
 import android.text.Spannable;
@@ -2314,6 +2315,10 @@ public class MessageObject {
         return false;
     }
 
+    public void resetLayout() {
+        layoutCreated = false;
+    }
+
     public String getMimeType() {
         if (messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
             return messageOwner.media.document.mime_type;
@@ -3098,14 +3103,32 @@ public class MessageObject {
     }
 
     public int getMaxMessageTextWidth() {
-        int maxWidth;
-        generatedWithMinSize = AndroidUtilities.isTablet() ? AndroidUtilities.getMinTabletSide() : AndroidUtilities.displaySize.x;
-        maxWidth = generatedWithMinSize - AndroidUtilities.dp(needDrawAvatarInternal() && !isOutOwner() ? 132 : 80);
-        if (needDrawShareButton() && !isOutOwner()) {
-            maxWidth -= AndroidUtilities.dp(10);
+        int maxWidth = 0;
+        if (AndroidUtilities.isTablet() && eventId != 0) {
+            generatedWithMinSize = AndroidUtilities.dp(530);
+        } else {
+            generatedWithMinSize = AndroidUtilities.isTablet() ? AndroidUtilities.getMinTabletSide() : AndroidUtilities.displaySize.x;
         }
-        if (messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
-            maxWidth -= AndroidUtilities.dp(10);
+        if (messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && messageOwner.media.webpage != null && "telegram_background".equals(messageOwner.media.webpage.type)) {
+            try {
+                Uri uri = Uri.parse(messageOwner.media.webpage.url);
+                if (uri.getQueryParameter("bg_color") != null) {
+                    maxWidth = AndroidUtilities.dp(220);
+                } else if (uri.getLastPathSegment().length() == 6) {
+                    maxWidth = AndroidUtilities.dp(200);
+                }
+            } catch (Exception ignore) {
+
+            }
+        }
+        if (maxWidth == 0) {
+            maxWidth = generatedWithMinSize - AndroidUtilities.dp(needDrawAvatarInternal() && !isOutOwner() ? 132 : 80);
+            if (needDrawShareButton() && !isOutOwner()) {
+                maxWidth -= AndroidUtilities.dp(10);
+            }
+            if (messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
+                maxWidth -= AndroidUtilities.dp(10);
+            }
         }
         return maxWidth;
     }
@@ -4340,6 +4363,26 @@ public class MessageObject {
 
     public boolean isWallpaper() {
         return messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && messageOwner.media.webpage != null && "telegram_background".equals(messageOwner.media.webpage.type);
+    }
+
+    public int getMediaExistanceFlags() {
+        int flags = 0;
+        if (attachPathExists) {
+            flags |= 1;
+        }
+        if (mediaExists) {
+            flags |= 2;
+        }
+        return flags;
+    }
+
+    public void applyMediaExistanceFlags(int flags) {
+        if (flags == -1) {
+            checkMediaExistance();
+        } else {
+            attachPathExists = (flags & 1) != 0;
+            mediaExists = (flags & 2) != 0;
+        }
     }
 
     public void checkMediaExistance() {

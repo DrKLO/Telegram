@@ -276,13 +276,13 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
                 if (documentAttach != null) {
                     linkImageView.setImage(documentAttach, null, currentPhotoObject, currentPhotoFilter, documentAttach.size, ext, parentObject, 0);
                 } else {
-                    linkImageView.setImage(webFile, urlLocation, null, null, currentPhotoObject, currentPhotoFilter, -1, ext, parentObject, 1);
+                    linkImageView.setImage(webFile != null ? webFile : urlLocation, null, null, currentPhotoObject, currentPhotoFilter, -1, ext, parentObject, 1);
                 }
             } else {
                 if (currentPhotoObject != null) {
                     linkImageView.setImage(currentPhotoObject, currentPhotoFilter, currentPhotoObjectThumb, currentPhotoFilterThumb, currentPhotoObject.size, ext, parentObject, 0);
                 } else {
-                    linkImageView.setImage(webFile, urlLocation, currentPhotoFilter, null, currentPhotoObjectThumb, currentPhotoFilterThumb, -1, ext, parentObject, 1);
+                    linkImageView.setImage(webFile != null ? webFile : urlLocation, currentPhotoFilter, null, currentPhotoObjectThumb, currentPhotoFilterThumb, -1, ext, parentObject, 1);
                 }
             }
             drawLinkImageView = true;
@@ -449,6 +449,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
         if (drawLinkImageView) {
             linkImageView.onDetachedFromWindow();
         }
+        radialProgress.onDetachedFromWindow();
         DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
     }
 
@@ -460,6 +461,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
                 updateButtonState(false, false);
             }
         }
+        radialProgress.onAttachedToWindow();
     }
 
     public MessageObject getMessageObject() {

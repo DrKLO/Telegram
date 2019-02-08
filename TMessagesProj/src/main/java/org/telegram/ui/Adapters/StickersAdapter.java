@@ -178,7 +178,7 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
                     a--;
                 }
             }
-            lastSticker = emoji.toString().trim();
+            lastSticker = emoji.toString();/*.trim();*/
             if (!Emoji.isValidEmoji(originalEmoji) && !Emoji.isValidEmoji(lastSticker)) {
                 if (visible) {
                     visible = false;

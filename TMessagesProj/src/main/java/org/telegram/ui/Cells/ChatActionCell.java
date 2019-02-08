@@ -36,11 +36,20 @@ import org.telegram.ui.Components.AvatarDrawable;
 public class ChatActionCell extends BaseCell {
 
     public interface ChatActionCellDelegate {
-        void didClickedImage(ChatActionCell cell);
-        void didLongPressed(ChatActionCell cell);
-        void needOpenUserProfile(int uid);
-        void didPressedBotButton(MessageObject messageObject, TLRPC.KeyboardButton button);
-        void didPressedReplyMessage(ChatActionCell cell, int id);
+        default void didClickedImage(ChatActionCell cell) {
+        }
+
+        default void didLongPressed(ChatActionCell cell) {
+        }
+
+        default void needOpenUserProfile(int uid) {
+        }
+
+        default void didPressedBotButton(MessageObject messageObject, TLRPC.KeyboardButton button) {
+        }
+
+        default void didPressedReplyMessage(ChatActionCell cell, int id) {
+        }
     }
 
     private URLSpan pressedLink;

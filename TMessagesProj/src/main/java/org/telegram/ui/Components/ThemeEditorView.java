@@ -192,7 +192,7 @@ public class ThemeEditorView {
                 linearLayout = new LinearLayout(context);
                 linearLayout.setOrientation(LinearLayout.HORIZONTAL);
                 addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
-                for (int a = 0; a < 4; a++){
+                for (int a = 0; a < 4; a++) {
                     colorEditText[a] = new EditTextBoldCursor(context);
                     colorEditText[a].setInputType(InputType.TYPE_CLASS_NUMBER);
                     colorEditText[a].setTextColor(0xff212121);

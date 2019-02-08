@@ -10,6 +10,7 @@ package org.telegram.ui.Components;
 
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.os.Build;
 import android.text.StaticLayout;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -24,6 +25,7 @@ public class LinkPath extends Path {
     private RectF rect;
     private boolean allowReset = true;
     private int baselineShift;
+    private int lineHeight;
 
     public LinkPath() {
         super();
@@ -39,6 +41,12 @@ public class LinkPath extends Path {
         currentLine = layout.getLineForOffset(start);
         lastTop = -1;
         heightOffset = yOffset;
+        if (Build.VERSION.SDK_INT >= 28) {
+            int lineCount = layout.getLineCount();
+            if (lineCount > 0) {
+                lineHeight = layout.getLineBottom(lineCount - 1) - layout.getLineTop(lineCount - 1);
+            }
+        }
     }
 
     public void setAllowReset(boolean value) {
@@ -79,7 +87,15 @@ public class LinkPath extends Path {
             left = lineLeft;
         }
         float y = top;
-        float y2 = bottom - (bottom != currentLayout.getHeight() ? currentLayout.getSpacingAdd() : 0);
+        float y2;
+        if (Build.VERSION.SDK_INT >= 28) {
+            y2 = bottom;
+            if (bottom - top > lineHeight) {
+                y2 -= (bottom != currentLayout.getHeight() ? currentLayout.getSpacingAdd() : 0);
+            }
+        } else {
+            y2 = bottom - (bottom != currentLayout.getHeight() ? currentLayout.getSpacingAdd() : 0);
+        }
         if (baselineShift < 0) {
             y2 += baselineShift;
         } else if (baselineShift > 0) {

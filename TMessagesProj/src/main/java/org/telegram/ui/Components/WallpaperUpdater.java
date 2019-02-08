@@ -54,7 +54,6 @@ public class WallpaperUpdater {
         parentActivity = activity;
         parentFragment = fragment;
         delegate = wallpaperUpdaterDelegate;
-        currentWallpaperPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.random.nextInt() + ".jpg");
     }
 
     public void showAlert(final boolean fromTheme) {
@@ -147,6 +146,7 @@ public class WallpaperUpdater {
             if (!photos.isEmpty()) {
                 SendMessagesHelper.SendingMediaInfo info = photos.get(0);
                 if (info.path != null) {
+                    currentWallpaperPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.random.nextInt() + ".jpg");
                     Point screenSize = AndroidUtilities.getRealScreenSize();
                     Bitmap bitmap = ImageLoader.loadBitmap(info.path, null, screenSize.x, screenSize.y, true);
                     FileOutputStream stream = new FileOutputStream(currentWallpaperPath);
@@ -160,11 +160,9 @@ public class WallpaperUpdater {
     }
 
     public void cleanup() {
-        currentWallpaperPath.delete();
-    }
-
-    public File getCurrentWallpaperPath() {
-        return currentWallpaperPath;
+        /*if (currentWallpaperPath != null) {
+            currentWallpaperPath.delete();
+        }*/
     }
 
     public String getCurrentPicturePath() {
@@ -181,6 +179,7 @@ public class WallpaperUpdater {
                 AndroidUtilities.addMediaToGallery(currentPicturePath);
                 FileOutputStream stream = null;
                 try {
+                    currentWallpaperPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.random.nextInt() + ".jpg");
                     Point screenSize = AndroidUtilities.getRealScreenSize();
                     Bitmap bitmap = ImageLoader.loadBitmap(currentPicturePath, null, screenSize.x, screenSize.y, true);
                     stream = new FileOutputStream(currentWallpaperPath);
@@ -203,6 +202,7 @@ public class WallpaperUpdater {
                     return;
                 }
                 try {
+                    currentWallpaperPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.random.nextInt() + ".jpg");
                     Point screenSize = AndroidUtilities.getRealScreenSize();
                     Bitmap bitmap = ImageLoader.loadBitmap(null, data.getData(), screenSize.x, screenSize.y, true);
                     FileOutputStream stream = new FileOutputStream(currentWallpaperPath);

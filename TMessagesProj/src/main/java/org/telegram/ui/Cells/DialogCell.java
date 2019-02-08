@@ -910,6 +910,10 @@ public class DialogCell extends BaseCell {
             return MessagesController.getInstance(currentAccount).dialogsGroupsOnly;
         } else if (dialogsType == 3) {
             return MessagesController.getInstance(currentAccount).dialogsForward;
+        } else if (dialogsType == 4) {
+            return MessagesController.getInstance(currentAccount).dialogsUsersOnly;
+        } else if (dialogsType == 5) {
+            return MessagesController.getInstance(currentAccount).dialogsChannelsOnly;
         }
         return null;
     }

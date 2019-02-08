@@ -68,6 +68,9 @@ public class Utilities {
     public static native void stackBlurBitmap(Bitmap bitmap, int radius);
 
     public static Bitmap blurWallpaper(Bitmap src) {
+        if (src == null) {
+            return null;
+        }
         Bitmap b;
         if (src.getHeight() > src.getWidth()) {
             b = Bitmap.createBitmap(Math.round(450f * src.getWidth() / src.getHeight()), 450, Bitmap.Config.ARGB_8888);

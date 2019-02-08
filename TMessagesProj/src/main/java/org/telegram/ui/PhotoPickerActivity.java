@@ -967,8 +967,8 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 return;
             }
             int addedCount = 0;
+            int oldCount = searchResult.size();
             if (response != null) {
-                boolean added = false;
                 TLRPC.TL_messages_foundGifs res = (TLRPC.TL_messages_foundGifs) response;
                 nextGiphySearchOffset = res.next_offset;
                 for (int a = 0; a < res.results.size(); a++) {
@@ -976,7 +976,6 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     if (searchResultKeys.containsKey(gif.url)) {
                         continue;
                     }
-                    added = true;
                     MediaController.SearchImage bingImage = new MediaController.SearchImage();
                     bingImage.id = gif.url;
                     if (gif.document != null) {
@@ -1009,11 +1008,11 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     addedCount++;
                     searchResultKeys.put(bingImage.id, bingImage);
                 }
-                giphySearchEndReached = !added;
+                giphySearchEndReached = oldCount == searchResult.size();
             }
             searching = false;
             if (addedCount != 0) {
-                listAdapter.notifyItemRangeInserted(searchResult.size(), addedCount);
+                listAdapter.notifyItemRangeInserted(oldCount, addedCount);
             } else if (giphySearchEndReached) {
                 listAdapter.notifyItemRemoved(searchResult.size() - 1);
             }
@@ -1097,10 +1096,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 return;
             }
             int addedCount = 0;
+            int oldCount = searchResult.size();
             if (response != null) {
                 TLRPC.messages_BotResults res = (TLRPC.messages_BotResults) response;
                 nextImagesSearchOffset = res.next_offset;
-                boolean added = false;
 
                 for (int a = 0, count = res.results.size(); a < count; a++) {
                     TLRPC.BotInlineResult result = res.results.get(a);
@@ -1111,7 +1110,6 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                         continue;
                     }
 
-                    added = true;
                     MediaController.SearchImage bingImage = new MediaController.SearchImage();
                     if (result.photo != null) {
                         TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(result.photo.sizes, AndroidUtilities.getPhotoSize());
@@ -1154,13 +1152,12 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
                     searchResultKeys.put(bingImage.id, bingImage);
                     addedCount++;
-                    added = true;
                 }
-                bingSearchEndReached = !added || nextImagesSearchOffset == null;
+                bingSearchEndReached = oldCount == searchResult.size() || nextImagesSearchOffset == null;
             }
             searching = false;
             if (addedCount != 0) {
-                listAdapter.notifyItemRangeInserted(searchResult.size(), addedCount);
+                listAdapter.notifyItemRangeInserted(oldCount, addedCount);
             } else if (bingSearchEndReached) {
                 listAdapter.notifyItemRemoved(searchResult.size() - 1);
             }

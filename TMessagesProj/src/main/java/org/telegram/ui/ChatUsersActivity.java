@@ -654,17 +654,13 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         removeUser(user_id);
                     }
                 } else {
-                    if (type == TYPE_BANNED) {
-                        createMenuForParticipant(listViewAdapter.getItem(position), false);
-                        return;
-                    }
                     boolean canEdit = false;
                     if (type == TYPE_ADMIN) {
                         canEdit = user_id != UserConfig.getInstance(currentAccount).getClientUserId() && (currentChat.creator || canEditAdmin);
                     } else if (type == TYPE_BANNED || type == TYPE_KICKED) {
                         canEdit = ChatObject.canBlockUsers(currentChat);
                     }
-                    if (type != TYPE_ADMIN && isChannel || type == TYPE_USERS && selectType == 0) {
+                    if (type == TYPE_BANNED || type != TYPE_ADMIN && isChannel || type == TYPE_USERS && selectType == 0) {
                         Bundle args = new Bundle();
                         args.putInt("user_id", user_id);
                         presentFragment(new ProfileActivity(args));
@@ -963,7 +959,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     return true;
                 }
                 items = new CharSequence[]{
-                        isChannel ? LocaleController.getString("ChannelAddToChannel", R.string.ChannelAddToChannel) : LocaleController.getString("ChannelAddToGroup", R.string.ChannelAddToGroup),
+                        ChatObject.canAddUsers(currentChat) ? (isChannel ? LocaleController.getString("ChannelAddToChannel", R.string.ChannelAddToChannel) : LocaleController.getString("ChannelAddToGroup", R.string.ChannelAddToGroup)) : null,
                         LocaleController.getString("ChannelDeleteFromList", R.string.ChannelDeleteFromList)};
                 icons = new int[]{
                         R.drawable.actions_addmember2,
