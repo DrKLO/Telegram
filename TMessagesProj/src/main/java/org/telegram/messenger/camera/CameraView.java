@@ -294,13 +294,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     }
 
     private int clamp(int x, int min, int max) {
-        if (x > max) {
+        if (Math.max(x, min) > max) {
             return max;
         }
-        if (x < min) {
-            return min;
-        }
-        return x;
+        return Math.max(x, min);
     }
 
     public void focusToPoint(int x, int y) {
