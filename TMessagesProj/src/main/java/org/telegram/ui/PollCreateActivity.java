@@ -160,7 +160,7 @@ public class PollCreateActivity extends BaseFragment {
                         TLRPC.TL_pollAnswer answer = new TLRPC.TL_pollAnswer();
                         answer.text = getFixedString(answers[a]);
                         answer.option = new byte[1];
-                        answer.option[0] = (byte) poll.poll.answers.size();
+                        answer.option[0] = (byte) (48 + poll.poll.answers.size());
                         poll.poll.answers.add(answer);
                     }
                     poll.results = new TLRPC.TL_pollResults();

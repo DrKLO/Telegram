@@ -4890,7 +4890,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                                 bitmap = ImageLoader.loadBitmap(finalPath, null, side, side, true);
                                             }
                                             if (bitmap != null) {
-                                                TLRPC.PhotoSize thumb = ImageLoader.scaleAndSaveImage(bitmap, side, side, 55, false);
+                                                TLRPC.PhotoSize thumb = ImageLoader.scaleAndSaveImage(bitmap, side, side, side > 90 ? 70 : 55, false);
                                                 if (thumb != null) {
                                                     document.thumbs.add(thumb);
                                                     document.flags |= 1;
@@ -5174,7 +5174,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         thumb = ThumbnailUtils.createVideoThumbnail(path, MediaStore.Video.Thumbnails.MINI_KIND);
                     }
                     int side = isEncrypted ? 90 : 320;
-                    document.thumbs.set(0, ImageLoader.scaleAndSaveImage(photoSize, thumb, side, side, 55, false));
+                    document.thumbs.set(0, ImageLoader.scaleAndSaveImage(photoSize, thumb, side, side, side > 90 ? 70 : 55, false));
                 }
             }
         }
@@ -5335,7 +5335,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                             }
                             if (thumbFile != null) {
                                 try {
-                                    int side = isEncrypted ? 90 : 320;
+                                    int side = isEncrypted || info.ttl != 0 ? 90 : 320;
                                     Bitmap bitmap;
                                     if (thumbFile.getAbsolutePath().endsWith("mp4")) {
                                         bitmap = ThumbnailUtils.createVideoThumbnail(thumbFile.getAbsolutePath(), MediaStore.Video.Thumbnails.MINI_KIND);
@@ -5343,7 +5343,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                         bitmap = ImageLoader.loadBitmap(thumbFile.getAbsolutePath(), null, side, side, true);
                                     }
                                     if (bitmap != null) {
-                                        TLRPC.PhotoSize thumb = ImageLoader.scaleAndSaveImage(bitmap, side, side, 55, isEncrypted);
+                                        TLRPC.PhotoSize thumb = ImageLoader.scaleAndSaveImage(bitmap, side, side, side > 90 ? 70 : 55, isEncrypted);
                                         if (thumb != null) {
                                             document.thumbs.add(thumb);
                                             document.flags |= 1;
@@ -5492,8 +5492,8 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                 if (thumb == null) {
                                     thumb = ThumbnailUtils.createVideoThumbnail(info.path, MediaStore.Video.Thumbnails.MINI_KIND);
                                 }
-                                int side = isEncrypted ? 90 : 320;
-                                TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(thumb, side, side, 55, isEncrypted);
+                                int side = isEncrypted || info.ttl != 0 ? 90 : 320;
+                                TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(thumb, side, side, side > 90 ? 70 : 55, isEncrypted);
                                 if (thumb != null && size != null) {
                                     thumb = null;
                                 }
@@ -5707,7 +5707,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                             if (AndroidUtilities.isTablet()) {
                                                 maxPhotoWidth = photoWidth = (int) (AndroidUtilities.getMinTabletSide() * 0.7f);
                                             } else {
-                                                maxPhotoWidth = photoWidth = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.7f);
+                                                if (currentPhotoObject.w >= currentPhotoObject.h) {
+                                                    maxPhotoWidth = photoWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(64);
+                                                } else {
+                                                    maxPhotoWidth = photoWidth = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.7f);
+                                                }
                                             }
 
                                             photoHeight = photoWidth + AndroidUtilities.dp(100);
@@ -5988,8 +5992,36 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     for (int a = 0; a < sizes.length; a++) {
                         sampleSizes += sizes[a];
                     }
-                    videoDuration = (float) mediaHeaderBox.getDuration() / (float) mediaHeaderBox.getTimescale();
-                    trackBitrate = (int) (sampleSizes * 8 / videoDuration);
+                    if (videoDuration == 0) {
+                        videoDuration = (float) mediaHeaderBox.getDuration() / (float) mediaHeaderBox.getTimescale();
+                        if (videoDuration == 0) {
+                            MediaPlayer player = null;
+                            try {
+                                player = new MediaPlayer();
+                                player.setDataSource(videoPath);
+                                player.prepare();
+                                videoDuration = player.getDuration() / 1000.0f;
+                                if (videoDuration < 0) {
+                                    videoDuration = 0;
+                                }
+                            } catch (Throwable ignore) {
+
+                            } finally {
+                                try {
+                                    if (player != null) {
+                                        player.release();
+                                    }
+                                } catch (Throwable ignore) {
+
+                                }
+                            }
+                        }
+                    }
+                    if (videoDuration != 0) {
+                        trackBitrate = (int) (sampleSizes * 8 / videoDuration);
+                    } else {
+                        trackBitrate = 400000;
+                    }
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -6149,6 +6181,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             videoEditedInfo.estimatedSize = (int) (audioFramesSize + videoFramesSize);
             videoEditedInfo.estimatedSize += videoEditedInfo.estimatedSize / (32 * 1024) * 16;
         }
+        if (videoEditedInfo.estimatedSize == 0) {
+            videoEditedInfo.estimatedSize = 1;
+        }
 
         return videoEditedInfo;
     }
@@ -6200,8 +6235,8 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     if (thumb == null) {
                         thumb = ThumbnailUtils.createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);
                     }
-                    int side = isEncrypted ? 90 : 320;
-                    TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(thumb, side, side, 55, isEncrypted);
+                    int side = isEncrypted || ttl != 0 ? 90 : 320;
+                    TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(thumb, side, side, side > 90 ? 70 : 55, isEncrypted);
                     if (thumb != null && size != null) {
                         if (isRound) {
                             if (isEncrypted) {

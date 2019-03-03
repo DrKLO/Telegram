@@ -614,7 +614,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
         stopProgressTimer();
         if (videoPlayer != null) {
-            videoPlayer.releasePlayer();
+            videoPlayer.releasePlayer(true);
             videoPlayer = null;
         }
         if (state == 4) {
@@ -689,7 +689,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     public void cancel() {
         stopProgressTimer();
         if (videoPlayer != null) {
-            videoPlayer.releasePlayer();
+            videoPlayer.releasePlayer(true);
             videoPlayer = null;
         }
         if (textureView == null) {
@@ -1904,7 +1904,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         videoEditedInfo.estimatedDuration = duration;
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent, videoEditedInfo, videoFile.getAbsolutePath());
                     }
-                    didWriteData(videoFile, true);
+                    didWriteData(videoFile, 0, true);
                 });
             } else {
                 FileLoader.getInstance(currentAccount).cancelUploadFile(videoFile.getAbsolutePath(), false);
@@ -2100,15 +2100,15 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             return surface;
         }
 
-        private void didWriteData(File file, boolean last) {
+        private void didWriteData(File file, long availableSize, boolean last) {
             if (videoConvertFirstWrite) {
                 FileLoader.getInstance(currentAccount).uploadFile(file.toString(), isSecretChat, false, 1, ConnectionsManager.FileTypeVideo);
                 videoConvertFirstWrite = false;
                 if (last) {
-                    FileLoader.getInstance(currentAccount).checkUploadNewDataAvailable(file.toString(), isSecretChat, file.length(), last ? file.length() : 0);
+                    FileLoader.getInstance(currentAccount).checkUploadNewDataAvailable(file.toString(), isSecretChat, availableSize, last ? file.length() : 0);
                 }
             } else {
-                FileLoader.getInstance(currentAccount).checkUploadNewDataAvailable(file.toString(), isSecretChat, file.length(), last ? file.length() : 0);
+                FileLoader.getInstance(currentAccount).checkUploadNewDataAvailable(file.toString(), isSecretChat, availableSize, last ? file.length() : 0);
             }
         }
 
@@ -2148,8 +2148,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     }
                     if (videoBufferInfo.size > 1) {
                         if ((videoBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
-                            if (mediaMuxer.writeSampleData(videoTrackIndex, encodedData, videoBufferInfo, true)) {
-                                didWriteData(videoFile, false);
+                            long availableSize = mediaMuxer.writeSampleData(videoTrackIndex, encodedData, videoBufferInfo, true);
+                            if (availableSize != 0) {
+                                didWriteData(videoFile, availableSize, false);
                             }
                         } else if (videoTrackIndex == -5) {
                             byte[] csd = new byte[videoBufferInfo.size];
@@ -2220,8 +2221,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         audioBufferInfo.size = 0;
                     }
                     if (audioBufferInfo.size != 0) {
-                        if (mediaMuxer.writeSampleData(audioTrackIndex, encodedData, audioBufferInfo, false)) {
-                            didWriteData(videoFile, false);
+                        long availableSize = mediaMuxer.writeSampleData(audioTrackIndex, encodedData, audioBufferInfo, false);
+                        if (availableSize != 0) {
+                            didWriteData(videoFile, availableSize, false);
                         }
                     }
                     audioEncoder.releaseOutputBuffer(encoderStatus, false);

@@ -240,8 +240,9 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
             if (position == exceptionsAddRow) {
                 Bundle args = new Bundle();
                 args.putBoolean("onlySelect", true);
+                args.putBoolean("checkCanWrite", false);
                 if (currentType == NotificationsController.TYPE_GROUP) {
-                    args.putInt("dialogsType", 2);
+                    args.putInt("dialogsType", 6);
                 } else if (currentType == NotificationsController.TYPE_CHANNEL) {
                     args.putInt("dialogsType", 5);
                 } else {

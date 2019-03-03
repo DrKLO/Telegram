@@ -25,6 +25,8 @@ public class ContextProgressView extends View {
     private int radOffset = 0;
     private long lastUpdateTime;
     private int currentColorType;
+    private String innerKey;
+    private String outerKey;
 
     public ContextProgressView(Context context, int colorType) {
         super(context);
@@ -33,21 +35,25 @@ public class ContextProgressView extends View {
         outerPaint.setStyle(Paint.Style.STROKE);
         outerPaint.setStrokeWidth(AndroidUtilities.dp(2));
         outerPaint.setStrokeCap(Paint.Cap.ROUND);
-        currentColorType = colorType;
+        if (colorType == 0) {
+            innerKey = Theme.key_contextProgressInner1;
+            outerKey = Theme.key_contextProgressOuter1;
+        } else if (colorType == 1) {
+            innerKey = Theme.key_contextProgressInner2;
+            outerKey = Theme.key_contextProgressOuter2;
+        } else if (colorType == 2) {
+            innerKey = Theme.key_contextProgressInner3;
+            outerKey = Theme.key_contextProgressOuter3;
+        } else if (colorType == 3) {
+            innerKey = Theme.key_contextProgressInner4;
+            outerKey = Theme.key_contextProgressOuter4;
+        }
         updateColors();
     }
 
     public void updateColors() {
-        if (currentColorType == 0) {
-            innerPaint.setColor(Theme.getColor(Theme.key_contextProgressInner1));
-            outerPaint.setColor(Theme.getColor(Theme.key_contextProgressOuter1));
-        } else if (currentColorType == 1) {
-            innerPaint.setColor(Theme.getColor(Theme.key_contextProgressInner2));
-            outerPaint.setColor(Theme.getColor(Theme.key_contextProgressOuter2));
-        } else if (currentColorType == 2) {
-            innerPaint.setColor(Theme.getColor(Theme.key_contextProgressInner3));
-            outerPaint.setColor(Theme.getColor(Theme.key_contextProgressOuter3));
-        }
+        innerPaint.setColor(Theme.getColor(innerKey));
+        outerPaint.setColor(Theme.getColor(outerKey));
         invalidate();
     }
 

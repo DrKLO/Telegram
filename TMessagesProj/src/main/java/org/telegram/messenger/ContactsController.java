@@ -2008,8 +2008,8 @@ public class ContactsController {
             try {
                 Uri rawContactUri = ContactsContract.RawContacts.CONTENT_URI.buildUpon().appendQueryParameter(ContactsContract.CALLER_IS_SYNCADAPTER, "true").appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_NAME, systemAccount.name).appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_TYPE, systemAccount.type).build();
                 int value = contentResolver.delete(rawContactUri, ContactsContract.RawContacts.SYNC2 + " = " + user.id, null);
-            } catch (Exception e) {
-                FileLog.e(e);
+            } catch (Exception ignore) {
+
             }
         }
 
@@ -2049,8 +2049,8 @@ public class ContactsController {
             if (result != null && result.length > 0 && result[0].uri != null) {
                 res = Long.parseLong(result[0].uri.getLastPathSegment());
             }
-        } catch (Exception e) {
-            FileLog.e(e);
+        } catch (Exception ignore) {
+
         }
         synchronized (observerLock) {
             ignoreChanges = false;

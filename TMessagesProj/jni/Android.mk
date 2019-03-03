@@ -65,6 +65,22 @@ include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
+LOCAL_MODULE    := swscale
+
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+    LOCAL_SRC_FILES := ./ffmpeg/armv7-a/libswscale.a
+else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+    LOCAL_SRC_FILES := ./ffmpeg/arm64/libswscale.a
+else ifeq ($(TARGET_ARCH_ABI),x86)
+    LOCAL_SRC_FILES := ./ffmpeg/i686/libswscale.a
+else ifeq ($(TARGET_ARCH_ABI),x86_64)
+    LOCAL_SRC_FILES := ./ffmpeg/x86_64/libswscale.a
+endif
+
+include $(PREBUILT_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+
 LOCAL_MODULE    := crypto
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
@@ -255,13 +271,13 @@ include $(BUILD_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false
 
-LOCAL_MODULE 	:= tmessages.29
+LOCAL_MODULE 	:= tmessages.30
 LOCAL_CFLAGS 	:= -w -std=c11 -Os -DNULL=0 -DSOCKLEN_T=socklen_t -DLOCALE_NOT_USED -D_LARGEFILE_SOURCE=1
 LOCAL_CFLAGS 	+= -Drestrict='' -D__EMX__ -DOPUS_BUILD -DFIXED_POINT -DUSE_ALLOCA -DHAVE_LRINT -DHAVE_LRINTF -fno-math-errno
 LOCAL_CFLAGS 	+= -DANDROID_NDK -DDISABLE_IMPORTGL -fno-strict-aliasing -fprefetch-loop-arrays -DAVOID_TABLES -DANDROID_TILE_BASED_DECODE -DANDROID_ARMV6_IDCT -ffast-math -D__STDC_CONSTANT_MACROS
 LOCAL_CPPFLAGS 	:= -DBSD=1 -ffast-math -Os -funroll-loops -std=c++11
 LOCAL_LDLIBS 	:= -ljnigraphics -llog -lz -latomic -lEGL -lGLESv2 -landroid
-LOCAL_STATIC_LIBRARIES := webp sqlite tgnet avformat avcodec avresample avutil voip flac
+LOCAL_STATIC_LIBRARIES := webp sqlite tgnet swscale avformat avcodec avresample avutil voip flac
 
 LOCAL_SRC_FILES     := \
 ./opus/src/opus.c \
@@ -523,10 +539,10 @@ endif
 LOCAL_SRC_FILES     += \
 ./jni.c \
 ./audio.c \
-./utils.c \
 ./image.c \
 ./video.c \
 ./intro/IntroRenderer.c \
+./utilities.cpp \
 ./gifvideo.cpp \
 ./SqliteWrapper.cpp \
 ./TgNetWrapper.cpp \

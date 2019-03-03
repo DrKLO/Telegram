@@ -87,6 +87,7 @@ public class NotificationCenter {
     public static final int updateMentionsCount = totalEvents++;
     public static final int didUpdatePollResults = totalEvents++;
     public static final int chatOnlineCountDidLoad = totalEvents++;
+    public static final int videoLoadingStateChanged = totalEvents++;
 
     public static final int httpFileDidLoad = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
@@ -110,6 +111,7 @@ public class NotificationCenter {
     public static final int messagePlayingPlayStateChanged = totalEvents++;
     public static final int messagePlayingDidStart = totalEvents++;
     public static final int messagePlayingDidSeek = totalEvents++;
+    public static final int messagePlayingGoingToStop = totalEvents++;
     public static final int recordProgressChanged = totalEvents++;
     public static final int recordStarted = totalEvents++;
     public static final int recordStartError = totalEvents++;

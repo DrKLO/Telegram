@@ -394,7 +394,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
   }
 
   @Override
-  public void release() {
+  public void release(boolean async) {
     Log.i(TAG, "Release " + Integer.toHexString(System.identityHashCode(this)) + " ["
         + ExoPlayerLibraryInfo.VERSION_SLASHY + "] [" + Util.DEVICE_DEBUG_INFO + "] ["
         + ExoPlayerLibraryInfo.registeredModules() + "]");

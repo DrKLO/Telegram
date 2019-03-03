@@ -141,6 +141,44 @@ enum AVFrameSideDataType {
      * metadata key entry "name".
      */
     AV_FRAME_DATA_ICC_PROFILE,
+
+#if FF_API_FRAME_QP
+    /**
+     * Implementation-specific description of the format of AV_FRAME_QP_TABLE_DATA.
+     * The contents of this side data are undocumented and internal; use
+     * av_frame_set_qp_table() and av_frame_get_qp_table() to access this in a
+     * meaningful way instead.
+     */
+    AV_FRAME_DATA_QP_TABLE_PROPERTIES,
+
+    /**
+     * Raw QP table data. Its format is described by
+     * AV_FRAME_DATA_QP_TABLE_PROPERTIES. Use av_frame_set_qp_table() and
+     * av_frame_get_qp_table() to access this instead.
+     */
+    AV_FRAME_DATA_QP_TABLE_DATA,
+#endif
+
+    /**
+     * Timecode which conforms to SMPTE ST 12-1. The data is an array of 4 uint32_t
+     * where the first uint32_t describes how many (1-3) of the other timecodes are used.
+     * The timecode format is described in the av_timecode_get_smpte_from_framenum()
+     * function in libavutil/timecode.c.
+     */
+    AV_FRAME_DATA_S12M_TIMECODE,
+
+    /**
+     * HDR dynamic metadata associated with a video frame. The payload is
+     * an AVDynamicHDRPlus type and contains information for color
+     * volume transform - application 4 of SMPTE 2094-40:2016 standard.
+     */
+    AV_FRAME_DATA_DYNAMIC_HDR_PLUS,
+
+    /**
+     * Regions Of Interest, the data is an array of AVRegionOfInterest type, the number of
+     * array element is implied by AVFrameSideData.size / AVRegionOfInterest.self_size.
+     */
+    AV_FRAME_DATA_REGIONS_OF_INTEREST,
 };
 
 enum AVActiveFormatDescription {
@@ -167,6 +205,35 @@ typedef struct AVFrameSideData {
     AVDictionary *metadata;
     AVBufferRef *buf;
 } AVFrameSideData;
+
+/**
+ * Structure to hold Region Of Interest.
+ *
+ * self_size specifies the size of this data structure. This value
+ * should be set to sizeof(AVRegionOfInterest). EINVAL is returned if self_size is zero.
+ *
+ * Number of pixels to discard from the top/bottom/left/right border of
+ * the frame to obtain the region of interest of the frame.
+ * They are encoder dependent and will be extended internally
+ * if the codec requires an alignment.
+ * If the regions overlap, the last value in the list will be used.
+ *
+ * qoffset is quant offset, and base rule here:
+ * returns EINVAL if AVRational.den is zero.
+ * the value (num/den) range is [-1.0, 1.0], clamp to +-1.0 if out of range.
+ * 0 means no picture quality change,
+ * negative offset asks for better quality (and the best with value -1.0),
+ * positive offset asks for worse quality (and the worst with value 1.0).
+ * How to explain/implement the different quilaity requirement is encoder dependent.
+ */
+typedef struct AVRegionOfInterest {
+    uint32_t self_size;
+    int top;
+    int bottom;
+    int left;
+    int right;
+    AVRational qoffset;
+} AVRegionOfInterest;
 
 /**
  * This structure describes decoded (raw) audio or video data.
@@ -364,7 +431,6 @@ typedef struct AVFrame {
      * that time,
      * the decoder reorders values as needed and sets AVFrame.reordered_opaque
      * to exactly one of the values provided by the user through AVCodecContext.reordered_opaque
-     * @deprecated in favor of pkt_pts
      */
     int64_t reordered_opaque;
 
@@ -529,6 +595,7 @@ typedef struct AVFrame {
     attribute_deprecated
     int qscale_type;
 
+    attribute_deprecated
     AVBufferRef *qp_table_buf;
 #endif
     /**
@@ -799,6 +866,22 @@ AVBufferRef *av_frame_get_plane_buffer(AVFrame *frame, int plane);
 AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
                                         enum AVFrameSideDataType type,
                                         int size);
+
+/**
+ * Add a new side data to a frame from an existing AVBufferRef
+ *
+ * @param frame a frame to which the side data should be added
+ * @param type  the type of the added side data
+ * @param buf   an AVBufferRef to add as side data. The ownership of
+ *              the reference is transferred to the frame.
+ *
+ * @return newly added side data on success, NULL on error. On failure
+ *         the frame is unchanged and the AVBufferRef remains owned by
+ *         the caller.
+ */
+AVFrameSideData *av_frame_new_side_data_from_buf(AVFrame *frame,
+                                                 enum AVFrameSideDataType type,
+                                                 AVBufferRef *buf);
 
 /**
  * @return a pointer to the side data of a given type on success, NULL if there

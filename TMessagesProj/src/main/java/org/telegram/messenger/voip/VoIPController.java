@@ -51,6 +51,7 @@ public class VoIPController{
 	public static final int DATA_SAVING_NEVER=0;
 	public static final int DATA_SAVING_MOBILE=1;
 	public static final int DATA_SAVING_ALWAYS=2;
+	public static final int DATA_SAVING_ROAMING=3;
 
 	public static final int ERROR_CONNECTION_SERVICE=-5;
 	public static final int ERROR_INSECURE_UPGRADE=-4;

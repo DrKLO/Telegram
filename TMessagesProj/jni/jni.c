@@ -13,6 +13,7 @@
 #include "libtgvoip/client/android/tg_voip_jni.h"
 
 int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env);
+int videoOnJNILoad(JavaVM *vm, JNIEnv *env);
 
 jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 	JNIEnv *env = 0;
@@ -22,7 +23,11 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 		return -1;
 	}
     
-    if (imageOnJNILoad(vm, reserved, env) == -1) {
+    if (imageOnJNILoad(vm, env) != JNI_TRUE) {
+        return -1;
+    }
+
+    if (videoOnJNILoad(vm, env) != JNI_TRUE) {
         return -1;
     }
 
@@ -163,19 +168,6 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_aesCbcEncryption(JNIEnv *en
     (*env)->ReleaseByteArrayElements(env, iv, ivBuff, JNI_ABORT);
 }
 
-JNIEXPORT jstring Java_org_telegram_messenger_Utilities_readlink(JNIEnv *env, jclass class, jstring path) {
-    static char buf[PATH_MAX + 1];
-    const char *fileName = (*env)->GetStringUTFChars(env, path, NULL);
-    ssize_t result = readlink(fileName, buf, PATH_MAX);
-    jstring value = 0;
-    if (result != -1) {
-        buf[result] = '\0';
-        value = (*env)->NewStringUTF(env, buf);
-    }
-    (*env)->ReleaseStringUTFChars(env, path, fileName);
-    return value;
-}
-
 int64_t listdir(const char *fileName, int32_t mode, int32_t docType, int64_t time) {
     int64_t value = 0;
     DIR *dir;
@@ -209,7 +201,7 @@ int64_t listdir(const char *fileName, int32_t mode, int32_t docType, int64_t tim
             } else {
                 stat(buff, &attrib);
                 if (mode == 0) {
-                    value += attrib.st_size;
+                    value += 512 * attrib.st_blocks;
                 } else if (mode == 1) {
                     if (attrib.st_atim.tv_sec != 0) {
                         if (attrib.st_atim.tv_sec < time) {

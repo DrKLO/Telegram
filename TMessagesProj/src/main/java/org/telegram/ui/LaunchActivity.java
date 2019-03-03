@@ -192,8 +192,13 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             try {
                 setTaskDescription(new ActivityManager.TaskDescription(null, null, Theme.getColor(Theme.key_actionBarDefault) | 0xff000000));
-            } catch (Exception e) {
-                //
+            } catch (Exception ignore) {
+
+            }
+            try {
+                getWindow().setNavigationBarColor(0xff000000);
+            } catch (Exception ignore) {
+
             }
         }
 
@@ -1733,7 +1738,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         }
                         if (error == null && actionBarLayout != null) {
                             TLRPC.ChatInvite invite = (TLRPC.ChatInvite) response;
-                            if (invite.chat != null && !ChatObject.isLeftFromChat(invite.chat)) {
+                            if (invite.chat != null && (!ChatObject.isLeftFromChat(invite.chat) || !invite.chat.kicked && !TextUtils.isEmpty(invite.chat.username))) {
                                 MessagesController.getInstance(intentAccount).putChat(invite.chat, false);
                                 ArrayList<TLRPC.Chat> chats = new ArrayList<>();
                                 chats.add(invite.chat);
@@ -3099,6 +3104,20 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        int keyCode = event.getKeyCode();
+        if (!mainFragmentsStack.isEmpty() && (!PhotoViewer.hasInstance() || !PhotoViewer.getInstance().isVisible()) && event.getRepeatCount() == 0 && event.getAction() == KeyEvent.ACTION_DOWN && (event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_UP || event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN)) {
+            BaseFragment fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
+            if (fragment instanceof ChatActivity) {
+                if (((ChatActivity) fragment).maybePlayVisibleVideo()) {
+                    return true;
+                }
+            }
+        }
+        return super.dispatchKeyEvent(event);
     }
 
     @Override

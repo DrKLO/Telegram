@@ -124,7 +124,11 @@ public class LinearSmoothScrollerMiddle extends RecyclerView.SmoothScroller {
 
         int boxSize = end - start;
         int viewSize = bottom - top;
-        start = (boxSize - viewSize) / 2;
+        if (viewSize > boxSize) {
+            start = 0;
+        } else {
+            start = (boxSize - viewSize) / 2;
+        }
         end = start + viewSize;
         final int dtStart = start - top;
         if (dtStart > 0) {

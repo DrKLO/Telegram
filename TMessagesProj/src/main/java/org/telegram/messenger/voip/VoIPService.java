@@ -103,6 +103,9 @@ public class VoIPService extends VoIPBaseService{
 	private List<Integer> groupUsersToAdd=new ArrayList<>();
 	private boolean upgrading;
 	private boolean joiningGroupCall;
+	private String debugLog;
+
+	private boolean startedRinging=false;
 
 	@Nullable
 	@Override
@@ -209,7 +212,7 @@ public class VoIPService extends VoIPBaseService{
 
 	@Override
 	protected void onControllerPreRelease(){
-		if(BuildConfig.DEBUG){
+		/*if(BuildConfig.DEBUG){
 			String debugLog=controller.getDebugLog();
 			TLRPC.TL_phone_saveCallDebug req=new TLRPC.TL_phone_saveCallDebug();
 			req.debug=new TLRPC.TL_dataJSON();
@@ -225,7 +228,9 @@ public class VoIPService extends VoIPBaseService{
                     }
 				}
 			});
-		}
+		}*/
+		if(debugLog==null)
+			debugLog=controller.getDebugLog();
 	}
 
 	public static VoIPService getSharedInstance() {
@@ -450,13 +455,13 @@ public class VoIPService extends VoIPBaseService{
             FileLog.d("starting ringing for call " + call.id);
         }
 		dispatchStateChanged(STATE_WAITING_INCOMING);
-		startRingtoneAndVibration(user.id);
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !((KeyguardManager) getSystemService(KEYGUARD_SERVICE)).inKeyguardRestrictedInputMode() && NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
 			showIncomingNotification(ContactsController.formatName(user.first_name, user.last_name), null, user, null, 0, VoIPActivity.class);
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("Showing incoming call notification");
             }
 		} else {
+			startRingtoneAndVibration(user.id);
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("Starting incall activity for incoming call");
             }
@@ -467,9 +472,14 @@ public class VoIPService extends VoIPBaseService{
                     FileLog.e("Error starting incall activity", x);
                 }
 			}
-			if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.O){
-				showNotification();
-			}
+		}
+	}
+
+	@Override
+	public void startRingtoneAndVibration(){
+		if(!startedRinging){
+			startRingtoneAndVibration(user.id);
+			startedRinging=true;
 		}
 	}
 
@@ -748,6 +758,25 @@ public class VoIPService extends VoIPBaseService{
 			if (call.need_rating || forceRating || (controller!=null && VoIPServerConfig.getBoolean("bad_call_rating", true) && controller.needRate())) {
 				startRatingActivity();
 			}
+			if(debugLog==null && controller!=null){
+            	debugLog=controller.getDebugLog();
+			}
+			if(needSendDebugLog && debugLog!=null){
+				TLRPC.TL_phone_saveCallDebug req=new TLRPC.TL_phone_saveCallDebug();
+				req.debug=new TLRPC.TL_dataJSON();
+				req.debug.data=debugLog;
+				req.peer=new TLRPC.TL_inputPhoneCall();
+				req.peer.access_hash=call.access_hash;
+				req.peer.id=call.id;
+				ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate(){
+					@Override
+					public void run(TLObject response, TLRPC.TL_error error){
+						if (BuildVars.LOGS_ENABLED) {
+							FileLog.d("Sent debug logs, response=" + response);
+						}
+					}
+				});
+			}
 		} else if (call instanceof TLRPC.TL_phoneCall && authKey == null){
 			if(call.g_a_or_b==null){
                 if (BuildVars.LOGS_ENABLED) {
@@ -916,6 +945,12 @@ public class VoIPService extends VoIPBaseService{
 		});
 	}
 
+	private int convertDataSavingMode(int mode){
+		if(mode!=VoIPController.DATA_SAVING_ROAMING)
+			return mode;
+		return ApplicationLoader.isRoaming() ? VoIPController.DATA_SAVING_MOBILE : VoIPController.DATA_SAVING_NEVER;
+	}
+
 	private void initiateActualEncryptedCall() {
 		if (timeoutRunnable != null) {
 			AndroidUtilities.cancelRunOnUIThread(timeoutRunnable);
@@ -955,7 +990,7 @@ public class VoIPService extends VoIPBaseService{
 			nprefs.edit().putStringSet("calls_access_hashes", hashes).commit();
 			final SharedPreferences preferences = MessagesController.getGlobalMainSettings();
 			controller.setConfig(MessagesController.getInstance(currentAccount).callPacketTimeout / 1000.0, MessagesController.getInstance(currentAccount).callConnectTimeout / 1000.0,
-					preferences.getInt("VoipDataSaving", VoIPController.DATA_SAVING_NEVER), call.id);
+					convertDataSavingMode(preferences.getInt("VoipDataSaving", VoIPHelper.getDataSavingDefault())), call.id);
 			controller.setEncryptionKey(authKey, isOutgoing);
 			TLRPC.TL_phoneConnection[] endpoints = new TLRPC.TL_phoneConnection[1 + call.alternative_connections.size()];
 			endpoints[0] = call.connection;
@@ -1062,6 +1097,9 @@ public class VoIPService extends VoIPBaseService{
 	}
 
 	public void onUIForegroundStateChanged(boolean isForeground) {
+		if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.LOLLIPOP)
+			return;
+
 		if (currentState == STATE_WAITING_INCOMING) {
 			if (isForeground) {
 				stopForeground(true);

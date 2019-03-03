@@ -56,7 +56,7 @@ public class MP4Builder {
     private FileOutputStream fos = null;
     private FileChannel fc = null;
     private long dataOffset = 0;
-    private long writedSinceLastMdat = 0;
+    private long wroteSinceLastMdat = 0;
     private boolean writeNewMdat = true;
     private HashMap<Track, long[]> track2SampleSizes = new HashMap<>();
     private ByteBuffer sizeBuffer = null;
@@ -71,7 +71,7 @@ public class MP4Builder {
         FileTypeBox fileTypeBox = createFileTypeBox();
         fileTypeBox.getBox(fc);
         dataOffset += fileTypeBox.getSize();
-        writedSinceLastMdat += dataOffset;
+        wroteSinceLastMdat += dataOffset;
         splitMdat = split;
 
         mdat = new InterleaveChunkMdat();
@@ -92,27 +92,27 @@ public class MP4Builder {
         fos.getFD().sync();
     }
 
-    public boolean writeSampleData(int trackIndex, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo, boolean writeLength) throws Exception {
+    public long writeSampleData(int trackIndex, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo, boolean writeLength) throws Exception {
         if (writeNewMdat) {
             mdat.setContentSize(0);
             mdat.getBox(fc);
             mdat.setDataOffset(dataOffset);
             dataOffset += 16;
-            writedSinceLastMdat += 16;
+            wroteSinceLastMdat += 16;
             writeNewMdat = false;
         }
 
         mdat.setContentSize(mdat.getContentSize() + bufferInfo.size);
-        writedSinceLastMdat += bufferInfo.size;
+        wroteSinceLastMdat += bufferInfo.size;
 
         boolean flush = false;
-        if (writedSinceLastMdat >= 32 * 1024) {
+        if (wroteSinceLastMdat >= 32 * 1024) {
             if (splitMdat) {
                 flushCurrentMdat();
                 writeNewMdat = true;
             }
             flush = true;
-            writedSinceLastMdat = 0;
+            wroteSinceLastMdat = 0;
         }
 
         currentMp4Movie.addSample(trackIndex, dataOffset, bufferInfo);
@@ -132,8 +132,9 @@ public class MP4Builder {
         if (flush) {
             fos.flush();
             fos.getFD().sync();
+            return fc.position();
         }
-        return flush;
+        return 0;
     }
 
     public int addTrack(MediaFormat mediaFormat, boolean isAudio) {
@@ -452,6 +453,12 @@ public class MP4Builder {
         SampleSizeBox stsz = new SampleSizeBox();
         stsz.setSampleSizes(track2SampleSizes.get(track));
         stbl.addBox(stsz);
+    }
+
+    protected void createSidx(Track track, SampleTableBox stbl) {
+        //SampleSizeBox stsz = new SampleSizeBox();
+        //stsz.setSampleSizes(track2SampleSizes.get(track));
+        //stbl.addBox(stsz);
     }
 
     protected void createStco(Track track, SampleTableBox stbl) {

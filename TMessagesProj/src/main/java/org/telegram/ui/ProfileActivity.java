@@ -59,7 +59,6 @@ import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
@@ -218,7 +217,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
 
         @Override
-        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview) {
             if (fileLocation == null) {
                 return null;
             }
@@ -447,7 +446,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (user == null) {
                         return;
                     }
-                    if (!isBot) {
+                    if (!isBot || MessagesController.isSupportUser(user)) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         if (!userBlocked) {
                             builder.setMessage(LocaleController.getString("AreYouSureBlockContact", R.string.AreYouSureBlockContact));
@@ -598,6 +597,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     final AlertDialog progressDialog[] = new AlertDialog[] {new AlertDialog(getParentActivity(), 3)};
                     TLRPC.TL_messages_getStatsURL req = new TLRPC.TL_messages_getStatsURL();
                     req.peer = MessagesController.getInstance(currentAccount).getInputPeer(did);
+                    req.params = "";
                     int requestId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                         try {
                             progressDialog[0].dismiss();
@@ -607,7 +607,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         progressDialog[0] = null;
                         if (response != null) {
                             TLRPC.TL_statsURL url = (TLRPC.TL_statsURL) response;
-                            Browser.openUrl(getParentActivity(), url.url);
+                            presentFragment(new WebviewActivity(url.url, -chat_id));
                         }
                     }));
                     if (progressDialog[0] == null) {
@@ -2597,8 +2597,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (user.id == UserConfig.getInstance(currentAccount).getClientUserId()) {
                 newString2 = LocaleController.getString("ChatYourSelf", R.string.ChatYourSelf);
                 newString = LocaleController.getString("ChatYourSelfName", R.string.ChatYourSelfName);
-            } else if (user.id == 333000 || user.id == 777000) {
+            } else if (user.id == 333000 || user.id == 777000 || user.id == 42777) {
                 newString2 = LocaleController.getString("ServiceNotifications", R.string.ServiceNotifications);
+            } else if (MessagesController.isSupportUser(user)) {
+                newString2 = LocaleController.getString("SupportStatus", R.string.SupportStatus);
             } else if (isBot) {
                 newString2 = LocaleController.getString("Bot", R.string.Bot);
             } else {
@@ -2753,31 +2755,36 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         ActionBarMenuItem item = null;
         if (user_id != 0) {
             if (UserConfig.getInstance(currentAccount).getClientUserId() != user_id) {
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(user_id);
+                if (user == null) {
+                    return;
+                }
                 if (userInfo != null && userInfo.phone_calls_available) {
                     callItem = menu.addItem(call_item, R.drawable.ic_call_white_24dp);
                 }
-                if (ContactsController.getInstance(currentAccount).contactsDict.get(user_id) == null) {
-                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(user_id);
-                    if (user == null) {
-                        return;
-                    }
+                if (isBot || ContactsController.getInstance(currentAccount).contactsDict.get(user_id) == null) {
                     item = menu.addItem(10, R.drawable.ic_ab_other);
-                    if (isBot) {
-                        if (!user.bot_nochats) {
-                            item.addSubItem(invite_to_group, LocaleController.getString("BotInvite", R.string.BotInvite));
+                    if (MessagesController.isSupportUser(user)) {
+                        if (userBlocked) {
+                            item.addSubItem(block_contact, LocaleController.getString("Unblock", R.string.Unblock));
                         }
-                        item.addSubItem(share, LocaleController.getString("BotShare", R.string.BotShare));
-                    }
-
-                    if (user.phone != null && user.phone.length() != 0) {
-                        item.addSubItem(add_contact, LocaleController.getString("AddContact", R.string.AddContact));
-                        item.addSubItem(share_contact, LocaleController.getString("ShareContact", R.string.ShareContact));
-                        item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock));
                     } else {
                         if (isBot) {
-                            item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BotStop", R.string.BotStop) : LocaleController.getString("BotRestart", R.string.BotRestart));
-                        } else {
+                            if (!user.bot_nochats) {
+                                item.addSubItem(invite_to_group, LocaleController.getString("BotInvite", R.string.BotInvite));
+                            }
+                            item.addSubItem(share, LocaleController.getString("BotShare", R.string.BotShare));
+                        }
+                        if (user.phone != null && user.phone.length() != 0) {
+                            item.addSubItem(add_contact, LocaleController.getString("AddContact", R.string.AddContact));
+                            item.addSubItem(share_contact, LocaleController.getString("ShareContact", R.string.ShareContact));
                             item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock));
+                        } else {
+                            if (isBot) {
+                                item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BotStop", R.string.BotStop) : LocaleController.getString("BotRestart", R.string.BotRestart));
+                            } else {
+                                item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock));
+                            }
                         }
                     }
                 } else {

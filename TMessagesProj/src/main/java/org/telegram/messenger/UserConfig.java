@@ -66,6 +66,7 @@ public class UserConfig {
     public int pendingAppUpdateBuildVersion;
     public long pendingAppUpdateInstallTime;
     public long lastUpdateCheckTime;
+    public long autoDownloadConfigLoadTime;
 
     public volatile byte[] savedPasswordHash;
     public volatile byte[] savedSaltedPassword;
@@ -145,6 +146,7 @@ public class UserConfig {
                 editor.putBoolean("hasSecureData", hasSecureData);
                 editor.putBoolean("notificationsSettingsLoaded3", notificationsSettingsLoaded);
                 editor.putBoolean("notificationsSignUpSettingsLoaded", notificationsSignUpSettingsLoaded);
+                editor.putLong("autoDownloadConfigLoadTime", autoDownloadConfigLoadTime);
 
                 editor.putInt("3migrateOffsetId", migrateOffsetId);
                 if (migrateOffsetId != -1) {
@@ -292,6 +294,7 @@ public class UserConfig {
             hasSecureData = preferences.getBoolean("hasSecureData", false);
             notificationsSettingsLoaded = preferences.getBoolean("notificationsSettingsLoaded3", false);
             notificationsSignUpSettingsLoaded = preferences.getBoolean("notificationsSignUpSettingsLoaded", false);
+            autoDownloadConfigLoadTime = preferences.getLong("autoDownloadConfigLoadTime", 0);
 
             try {
                 String terms = preferences.getString("terms", null);

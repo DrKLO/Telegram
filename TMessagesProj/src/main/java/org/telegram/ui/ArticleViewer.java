@@ -5563,6 +5563,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
             setWillNotDraw(false);
             imageView = new ImageReceiver(this);
+            imageView.setNeedsQualityThumb(true);
+            imageView.setShouldGenerateQualityThumb(true);
             currentType = type;
             radialProgress = new RadialProgress(this);
             radialProgress.setAlphaForPrevious(true);
@@ -5704,14 +5706,16 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                             photoHeight -= AndroidUtilities.dp(2);
                         }
                     }
+                    imageView.setQualityThumbDocument(currentDocument);
                     imageView.setImageCoords(photoX, (isFirst || currentType == 1 || currentType == 2 || currentBlock.level > 0) ? 0 : AndroidUtilities.dp(8), photoWidth, photoHeight);
+
                     if (isGif) {
                         String filter = String.format(Locale.US, "%d_%d", photoWidth, photoHeight);
-                        imageView.setImage(currentDocument, filter, thumb, "80_80_b", currentDocument.size, null, currentPage, 1);
+                        imageView.setImage(currentDocument, null, null, null, null, thumb, "80_80_b", currentDocument.size, null, currentPage, 1);
                     } else {
                         imageView.setImage(null, null, thumb, "80_80_b", 0, null, currentPage, 1);
                     }
-                    imageView.setAspectFit(isGif);
+                    imageView.setAspectFit(true);
                     buttonX = (int) (imageView.getImageX() + (imageView.getImageWidth() - size) / 2.0f);
                     buttonY = (int) (imageView.getImageY() + (imageView.getImageHeight() - size) / 2.0f);
                     radialProgress.setProgressRect(buttonX, buttonY, buttonX + size, buttonY + size);
@@ -6323,7 +6327,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         avatarImageView.setImage(image, String.format(Locale.US, "%d_%d", 40, 40), avatarDrawable, 0, null, currentPage, 1);
                     }
                 }
-                nameLayout = createLayoutForText(this, currentBlock.author, null, width - AndroidUtilities.dp(36 + 14 + (avatarVisible ? 40 + 14 : 0)), currentBlock, parentAdapter);
+                nameLayout = createLayoutForText(this, currentBlock.author, null, width - AndroidUtilities.dp(36 + 14 + (avatarVisible ? 40 + 14 : 0)), 0, currentBlock, Layout.Alignment.ALIGN_NORMAL, 1, parentAdapter);
                 if (currentBlock.date != 0) {
                     dateLayout = createLayoutForText(this, LocaleController.getInstance().chatFullDate.format((long) currentBlock.date * 1000), null, width - AndroidUtilities.dp(36 + 14 + (avatarVisible ? 40 + 14 : 0)), currentBlock, parentAdapter);
                 } else {
@@ -6489,6 +6493,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         private int creditOffset;
         private int listX;
         private int exactWebViewHeight;
+        private boolean wasUserInteraction;
 
         private TLRPC.TL_pageBlockEmbed currentBlock;
 
@@ -6503,6 +6508,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
             @Override
             public boolean onTouchEvent(MotionEvent event) {
+                wasUserInteraction = true;
                 if (currentBlock != null) {
                     if (currentBlock.allow_scrolling) {
                         requestDisallowInterceptTouchEvent(true);
@@ -6683,8 +6689,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                    Browser.openUrl(parentActivity, url);
-                    return true;
+                    if (wasUserInteraction) {
+                        Browser.openUrl(parentActivity, url);
+                        return true;
+                    }
+                    return false;
                 }
             });
             addView(webView);
@@ -6708,6 +6717,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             TLRPC.TL_pageBlockEmbed previousBlock = currentBlock;
             currentBlock = block;
             if (previousBlock != currentBlock) {
+                wasUserInteraction = false;
                 if (currentBlock.allow_scrolling) {
                     webView.setVerticalScrollBarEnabled(true);
                     webView.setHorizontalScrollBarEnabled(true);
@@ -10146,7 +10156,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
     };
 
-    private float animationValues[][] = new float[2][8];
+    private float animationValues[][] = new float[2][10];
 
     private int photoAnimationInProgress;
     private long photoTransitionAnimationStartTime;
@@ -10573,7 +10583,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
     private void releasePlayer() {
         if (videoPlayer != null) {
-            videoPlayer.releasePlayer();
+            videoPlayer.releasePlayer(true);
             videoPlayer = null;
         }
         try {
@@ -11221,6 +11231,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         animationValues[0][5] = clipTop * object.scale;
         animationValues[0][6] = clipBottom * object.scale;
         animationValues[0][7] = animatingImageView.getRadius();
+        animationValues[0][8] = clipVertical * object.scale;
+        animationValues[0][9] = clipHorizontal * object.scale;
 
         animationValues[1][0] = scale;
         animationValues[1][1] = scale;
@@ -11230,6 +11242,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         animationValues[1][5] = 0;
         animationValues[1][6] = 0;
         animationValues[1][7] = 0;
+        animationValues[1][8] = 0;
+        animationValues[1][9] = 0;
 
         photoContainerView.setVisibility(View.VISIBLE);
         photoContainerBackground.setVisibility(View.VISIBLE);
@@ -11394,6 +11408,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 animationValues[0][5] = 0;
                 animationValues[0][6] = 0;
                 animationValues[0][7] = 0;
+                animationValues[0][8] = 0;
+                animationValues[0][9] = 0;
 
                 animationValues[1][0] = object.scale;
                 animationValues[1][1] = object.scale;
@@ -11403,6 +11419,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 animationValues[1][5] = clipTop * object.scale;
                 animationValues[1][6] = clipBottom * object.scale;
                 animationValues[1][7] = object.radius;
+                animationValues[1][8] = clipVertical * object.scale;
+                animationValues[1][9] = clipHorizontal * object.scale;
 
                 animatorSet.playTogether(
                         ObjectAnimator.ofFloat(animatingImageView, "animationProgress", 0.0f, 1.0f),
@@ -11609,7 +11627,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         moveStartX = ev.getX();
                         moveStartY = ev.getY();
                         updateMinMax(scale);
-                        if (translationX < minX && (!rightImage.hasImage()) || translationX > maxX && !leftImage.hasImage()) {
+                        if (translationX < minX && (!rightImage.hasImageSet()) || translationX > maxX && !leftImage.hasImageSet()) {
                             moveDx /= 3.0f;
                         }
                         if (maxY == 0 && minY == 0) {
@@ -11683,11 +11701,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     velocity = velocityTracker.getXVelocity();
                 }
 
-                if ((translationX < minX - getContainerViewWidth() / 3 || velocity < -AndroidUtilities.dp(650)) && rightImage.hasImage()) {
+                if ((translationX < minX - getContainerViewWidth() / 3 || velocity < -AndroidUtilities.dp(650)) && rightImage.hasImageSet()) {
                     goToNext();
                     return true;
                 }
-                if ((translationX > maxX + getContainerViewWidth() / 3 || velocity > AndroidUtilities.dp(650)) && leftImage.hasImage()) {
+                if ((translationX > maxX + getContainerViewWidth() / 3 || velocity > AndroidUtilities.dp(650)) && leftImage.hasImageSet()) {
                     goToPrev();
                     return true;
                 }

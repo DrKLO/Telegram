@@ -199,7 +199,7 @@ public class FileUploadOperation {
                     storeFileUploadInfo();
                 }
             }
-            availableSize = newAvailableSize;
+            availableSize = finalSize > 0 ? finalSize : newAvailableSize;
             if (currentUploadRequetsCount < maxRequestsCount) {
                 startUploadRequest();
             }

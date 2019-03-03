@@ -16,11 +16,11 @@
     <string name="AccountSwitch">Alternar</string>
     <string name="SyncContacts">Sincronizar Contatos</string>
     <string name="SyncContactsDeleteInfo">Isso removerá os seus contatos dos servidores do Telegram. Se \"Contatos Sincronizados\" estiver ativa, os contatos serão sincronizados novamente.</string>
-    <string name="SyncContactsOn">Contatos deste dispositivo serão adicionados a sua conta.</string>
-    <string name="SyncContactsOff">Contatos deste dispositivo não serão adicionados a sua conta.</string>
-    <string name="SyncContactsInfoOn">Contatos deste dispositivo serão adicionados a sua conta.</string>
+    <string name="SyncContactsOn">Contatos deste dispositivo serão adicionados à sua conta.</string>
+    <string name="SyncContactsOff">Contatos deste dispositivo não serão adicionados à sua conta.</string>
+    <string name="SyncContactsInfoOn">Contatos deste dispositivo serão adicionados à sua conta.</string>
     <string name="SyncContactsInfoOff">Ative para sincronizar continuamente contatos deste dispositivos com a sua conta.</string>
-    <string name="SyncContactsAdded">Contatos deste dispositivo foram adicionados a sua conta.</string>
+    <string name="SyncContactsAdded">Contatos deste dispositivo foram adicionados à sua conta.</string>
     <!--code enter view-->
     <string name="YourCode">Verificar Número</string>
     <string name="SentSmsCode">Enviamos um SMS com um código de ativação para **%1$s**.</string>
@@ -307,7 +307,7 @@
     <string name="ChannelInviteViaLink">Convidar via Link</string>
     <string name="ChannelRemoveUserAdmin">Dispensar admin</string>
     <string name="ChannelEditPermissions">Editar permissões</string>
-    <string name="ChannelMembersInfo">Somente os administradores do canal podem ver essa lista.</string>
+    <string name="ChannelMembersInfo">Somente os administradores do canal podem ver esta lista.</string>
     <string name="ChannelLinkInfo">Qualquer pessoa que tenha o Telegram instalado poderá participar do seu canal seguindo esse link.</string>
     <string name="ChannelAdminsInfo">Você pode adicionar administradores para ajudar você a gerenciar seu canal. Aperte e segure para removê-los.</string>
     <string name="ChannelJoinTo">Você deseja entrar no canal \'%1$s\'?</string>
@@ -324,7 +324,7 @@
     <string name="ChannelJoined">Você entrou neste canal</string>
     <string name="ChannelMegaJoined">Você entrou neste grupo</string>
     <string name="ChannelRemoveUser">Remover do canal</string>
-    <string name="ChannelCantSendMessage">Desculp, você não pode enviar mensagens para esse canal.</string>
+    <string name="ChannelCantSendMessage">Desculpe, você não pode enviar mensagens para esse canal.</string>
     <string name="ChannelAddedByNotification">%1$s adicionou você ao canal %2$s</string>
     <string name="ChannelPhotoEditNotification">Canal %1$s atualizou a foto</string>
     <string name="ChannelMessageNoText">%1$s postou uma mensagem</string>
@@ -400,7 +400,7 @@
     <string name="ManageChannelMenu">Gerenciar canal</string>
     <string name="ChatHistory">Histórico do chat para novos membros</string>
     <string name="ChatHistoryVisible">Visível</string>
-    <string name="ChatHistoryVisibleInfo">Novos membros verão mensagens que foram enviadas antes deles entrarem.</string>
+    <string name="ChatHistoryVisibleInfo">Novos membros verão mensagens que foram enviadas antes de eles entrarem.</string>
     <string name="ChatHistoryHidden">Oculto</string>
     <string name="ChatHistoryHiddenInfo">Novos membros não verão mensagens anteriores.</string>
     <string name="ChatHistoryHiddenInfo2">Novos membros não verão mais de 100 mensagens anteriores.</string>
@@ -539,7 +539,7 @@
     <string name="EventLogFilterDeletedMessages">Mensagens apagadas</string>
     <string name="EventLogFilterEditedMessages">Mensagens editadas</string>
     <string name="EventLogFilterPinnedMessages">Mensagens fixadas</string>
-    <string name="EventLogFilterLeavingMembers">Membros saindo do grupo</string>
+    <string name="EventLogFilterLeavingMembers">Pessoas que saíram</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nova Lista de Transmissão</string>
     <string name="EnterListName">Digite o nome da lista</string>
@@ -579,6 +579,7 @@
     <string name="ChooseStickerSetNotFoundInfo">Tente novamente para escolher através da lista</string>
     <!--chat view-->
     <string name="Invisible">invisível</string>
+    <string name="SupportStatus">suporte</string>
     <string name="Typing">escrevendo...</string>
     <string name="IsTyping">está escrevendo...</string>
     <string name="AreTyping">estão escrevendo...</string>
@@ -890,7 +891,7 @@
     <string name="InviteToGroupByLink">Convidar para o Grupo via Link</string>
     <string name="InviteLink">Link de Convite</string>
     <string name="RevokeAlert">Você tem certeza de que deseja desativar o link de convite? Se fizer isso, ninguém conseguirá usá-lo.</string>
-    <string name="RevokeAlertNewLink">Este link de convite está inativo. Um novo link foi gerado.</string>
+    <string name="RevokeAlertNewLink">O link de convite anterior foi desativado. Um novo link foi gerado.</string>
     <string name="RevokeButton">Desativar</string>
     <string name="RevokeLink">Desativar Link</string>
     <string name="RevokeLinkAlert">Você tem certeza de que deseja desativar o link **%1$s**?\n\nO grupo \"**%2$s**\" se tornará privado.</string>
@@ -1054,7 +1055,7 @@
     <string name="CreateNewThemeAlert">Você pode criar seu próprio tema alterando as cores dentro do aplicativo.\n\nVocê sempre pode voltar para o tema padrão do Telegram aqui.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restaurar todas as configurações de notificação</string>
-    <string name="ResetNotificationsAlert">Deseja mesmo resetar as configurações de notificação para o padrão?</string>
+    <string name="ResetNotificationsAlert">Tem certeza de que deseja restaurar todas as configurações de notificação para o padrão?</string>
     <string name="TextSizeHeader">Tamanho do texto das mensagens</string>
     <string name="AskAQuestion">Fazer uma Pergunta</string>
     <string name="EnableAnimations">Permitir Animações</string>
@@ -1125,11 +1126,12 @@
     <string name="BackgroundPreviewLine2">Valeu!</string>
     <string name="BackgroundColorPreviewLine1">Deslize para os lados para ver mais cores</string>
     <string name="BackgroundColorPreviewLine2">Salmão é um peixe, não uma cor.</string>
+    <string name="FontSizePreviewName">Lúcio</string>
     <string name="FontSizePreviewReply">Reinhardt, temos que achar umas músicas novas pra você. &#127926;.</string>
     <string name="FontSizePreviewLine1">Ahh, vocês crianças de hoje em dia com essas músicas eletrônicas! Ouçam os clássicos, como Hasselhoff!</string>
     <string name="FontSizePreviewLine2">Não consigo nem te levar a sério agora.</string>
-    <string name="BackgroundColorSinglePreviewLine1">Press \'Set\' to apply the background.</string>
-    <string name="BackgroundColorSinglePreviewLine2">Enjoy the view.</string>
+    <string name="BackgroundColorSinglePreviewLine1">Toque em \'Definir\' para aplicar a imagem.</string>
+    <string name="BackgroundColorSinglePreviewLine2">Aprecie a vista.</string>
     <string name="SetBackground">DEFINIR PAPEL DE PAREDE</string>
     <string name="SearchByColor">Buscar por cor</string>
     <string name="SearchBackgrounds">Buscar Papéis de Parede</string>
@@ -1206,13 +1208,50 @@
     <string name="Long">Longa</string>
     <string name="AutomaticMediaDownload">Download automático de mídia</string>
     <string name="AutoDownloadMedia">Baixar Automaticamente</string>
+    <string name="AutoDownloadOnAllChats">Sim, em todos os chats</string>
+    <string name="AutoDownloadUpToOnAllChats">Até %1$s em todos os chats</string>
+    <string name="AutoDownloadOff">Não</string>
+    <string name="AutoDownloadOnUpToFor">Até %1$s para %2$s</string>
+    <string name="AutoDownloadOnFor">Sim, para %1$s</string>
+    <string name="AutoDownloadContacts">Contatos</string>
+    <string name="AutoDownloadChannels">Canais</string>
+    <string name="AutoDownloadLow">Baixo</string>
+    <string name="AutoDownloadMedium">Médio</string>
+    <string name="AutoDownloadHigh">Alto</string>
+    <string name="AutoDownloadCustom">Pessoal</string>
+    <string name="AutoDownloadPm">PV</string>
+    <string name="AutoDownloadGroups">Grupos</string>
+    <string name="AutoDownloadPhotos">Fotos</string>
+    <string name="AutoDownloadVideos">Vídeos</string>
+    <string name="AutoDownloadFiles">Arquivos</string>
+    <string name="AutoDownloadFilesTitle">Download automático de arquivos e músicas</string>
+    <string name="AutoDownloadPhotosTitle">Download automático de fotos</string>
+    <string name="AutoDownloadVideosTitle">Download automático de vídeos e GIFs</string>
+    <string name="AutoDownloadMaxVideoSize">Tamanho máximo do vídeo</string>
+    <string name="AutoDownloadMaxFileSize">Tamanho máximo do arquivo</string>
+    <string name="AutoDownloadPreloadMusic">Pré-carregar próxima faixa</string>
+    <string name="AutoDownloadPreloadMusicInfo">Baixa a próxima faixa enquanto você escuta um arquivo de áudio.</string>
+    <string name="AutoDownloadPreloadVideo">Pré-carregar vídeos grandes</string>
+    <string name="AutoDownloadPreloadVideoInfo">Baixa os primeiros segundos (1-2 MB) de vídeos mais pesados do que %1$s para reprodução instantânea.</string>
+    <string name="AutoDownloadOnMobileDataInfo">Ative esta opção se você quiser que mídias sejam baixadas automaticamente ao usar os dados móveis.</string>
+    <string name="AutoDownloadOnRoamingDataInfo">Ative esta opção se você quiser que mídias sejam baixadas automaticamente quando em roaming.</string>
+    <string name="AutoDownloadOnWiFiDataInfo">Ative esta opção se você quiser que mídias sejam baixadas automaticamente ao usar a conexão Wi-Fi.</string>
+    <string name="AutoDownloadOnMobileData">Nos Dados Móveis</string>
+    <string name="AutoDownloadOnRoamingData">Em Roaming</string>
+    <string name="AutoDownloadOnWiFiData">No Wi-Fi</string>
+    <string name="AutoDownloadDataUsage">Uso de dados</string>
+    <string name="AutoDownloadTypes">Tipos de mídia</string>
+    <string name="AutoDownloadAudioInfo">Mensagens de voz são bastante leves, portanto são sempre baixadas automaticamente.</string>
+    <string name="NoMediaAutoDownload">Sem mídia</string>
     <string name="ResetAutomaticMediaDownload">Apagar Configurações de Download</string>
     <string name="ResetAutomaticMediaDownloadAlert">Tem certeza de que deseja apagar as configurações de download automático?</string>
     <string name="WhenUsingMobileData">Ao usar dados móveis</string>
     <string name="WhenConnectedOnWiFi">Quando conectado ao Wi-Fi</string>
     <string name="WhenRoaming">Quando em roaming</string>
-    <string name="NoMediaAutoDownload">Sem mídia</string>
-    <string name="AutoplayGifs">GIFs Automáticos</string>
+    <string name="AutoplayGIF">GIFs</string>
+    <string name="AutoplayVideo">Vídeos</string>
+    <string name="AutoplayVideoInfo">Press the volume buttons to turn sound on.</string>
+    <string name="AutoplayMedia">Reproduzir automaticamente</string>
     <string name="RaiseToSpeak">Levantar para Falar</string>
     <string name="SaveToGallerySettings">Salvar na Galeria</string>
     <string name="EditName">Editar nome</string>
@@ -1244,6 +1283,8 @@
     <string name="VibrationDefault">Padrão</string>
     <string name="SmartNotifications">Notificações Inteligentes</string>
     <string name="NotificationsExceptions">Exceções</string>
+    <string name="NotificationsAddAnException">Adicionar Exceção</string>
+    <string name="NotificationsNewException">Nova Exceção</string>
     <string name="NoExceptions">Esta seção irá listar todos os chats que possuem configurações não-padrão.\n\nVocê pode personalizar notificações para um chat abrindo o perfil do mesmo e escolhendo \'Notificações\'.</string>
     <string name="EmptyExceptions">Nenhum</string>
     <string name="SmartNotificationsInfo">%1$d / %2$s</string>
@@ -1328,6 +1369,19 @@
     <string name="NotificationsForPrivateChats">Notificações para chats privados</string>
     <string name="NotificationsForChannels">Notificações para canais</string>
     <string name="TapToChange">Toque para alterar</string>
+    <string name="AlternativeOptions">Opções alternativas</string>
+    <string name="AddAnotherAccount">Adicionar outra conta</string>
+    <string name="AddAnotherAccountInfo">Conecte outras contas do Telegram e alterne facilmente entre elas.</string>
+    <string name="SetPasscode">Definir Senha de Bloqueio</string>
+    <string name="SetPasscodeInfo">Bloqueie o aplicativo com uma senha para que outras pessoas não possam abri-lo.</string>
+    <string name="ClearCache">Limpar Cache</string>
+    <string name="ClearCacheInfo">Libere espaço em disco no seu dispositivo; sua mídia ficará na nuvem.</string>
+    <string name="ChangePhoneNumber">Alterar Número de Telefone</string>
+    <string name="ChangePhoneNumberInfo">Mova sua conta, chats e mídias para um novo número.</string>
+    <string name="ContactSupport">Contatar Suporte</string>
+    <string name="ContactSupportInfo">Conte-nos sobre quaisquer problemas; sair geralmente não ajuda.</string>
+    <string name="LogOutTitle">Sair</string>
+    <string name="LogOutInfo">Sair encerrará todos os Chats Secretos.</string>
     <!--cache view-->
     <string name="LocalDatabase">Banco de Dados Local</string>
     <string name="LocalDatabaseClear">Limpar todos os textos em cache?</string>
@@ -1538,7 +1592,7 @@
     <string name="SessionsTitle">Sessões Ativas</string>
     <string name="CurrentSession">Sessão atual</string>
     <string name="NoOtherSessions">Nenhuma outra sessão ativa</string>
-    <string name="NoOtherSessionsInfo">Você pode entrar no Telegram a partir de outro celular, tablet ou computador usando o mesmo número de telefone. Todos os seus dados serão sincronizados instantaneamente.</string>
+    <string name="NoOtherSessionsInfo">Você pode entrar no Telegram em outros celulares, tablets e computadores usando o mesmo número de telefone. Todos os seus dados serão sincronizados.</string>
     <string name="OtherSessions">Sessões Ativas</string>
     <string name="SessionsInfo">Controle suas sessões em outros aparelhos.</string>
     <string name="TerminateSessionInfo">Toque em uma sessão para terminá-la.</string>
@@ -1579,7 +1633,7 @@
     <string name="FingerprintInfo">Confirme a impressão digital para continuar</string>
     <string name="FingerprintHelp">Toque o sensor</string>
     <string name="FingerprintNotRecognized">Digital não reconhecida, tente de novo.</string>
-    <string name="ScreenCapture">Mostrar Conteúdo do App nos Recentes</string>
+    <string name="ScreenCapture">Mostrar Conteúdo no Multitarefas</string>
     <string name="ScreenCaptureInfo">Se desativado, você não poderá fazer capturas de tela no aplicativo, mas o conteúdo do chat ficará oculto no multitarefas.</string>
     <string name="ScreenCaptureAlert">Isso ocultará o conteúdo de seus chats ou lista de chats do multitarefas, mas você não poderá tirar capturas de tela no Telegram.\n\nPode ser necessário reiniciar o aplicativo para que isso entre em vigor.</string>
     <string name="TooManyTries">Muitas tentativas.\nPor favor, tente de novo em %1$s.</string>
@@ -1778,11 +1832,12 @@
     <string name="EnabledPasswordText">Você ativou a Verificação em Duas Etapas.\nToda vez que você entrar na sua conta em um novo aparelho, será preciso digitar a senha que você configurar aqui.</string>
     <!--data settings-->
     <string name="DataSettings">Dados e Armazenamento</string>
-    <string name="DataUsage">Uso do disco e da rede</string>
-    <string name="StorageUsage">Uso do Armazenamento</string>
-    <string name="MobileUsage">Uso de Dados Móveis</string>
-    <string name="RoamingUsage">Uso de Dados em Roaming</string>
-    <string name="WiFiUsage">Uso de Dados no Wi-Fi</string>
+    <string name="DataUsage">Uso de disco e de rede</string>
+    <string name="StorageUsage">Uso de Armazenamento</string>
+    <string name="NetworkUsage">Uso de Dados</string>
+    <string name="NetworkUsageMobile">DADOS MÓVEIS</string>
+    <string name="NetworkUsageWiFi">WI-FI</string>
+    <string name="NetworkUsageRoaming">ROAMING</string>
     <string name="MessagesDataUsage">Mensagens e outros dados</string>
     <string name="CountSent">Enviados</string>
     <string name="CountReceived">Recebidos</string>
@@ -2000,7 +2055,7 @@
     <string name="SendMessagesTo">Enviar mensagens para %1$s?</string>
     <string name="SendGameTo">Compartilhar jogo com %1$s?</string>
     <string name="SendContactTo">Enviar contato para %1$s?</string>
-    <string name="AreYouSureLogout">Você tem certeza de que desejar sair?\n\nSaiba que você pode usar o Telegram em todos os seus dispositivos ao mesmo tempo.\n\nLembre-se, sair apaga todos os seus Chats Secretos.</string>
+    <string name="AreYouSureLogout">Você tem certeza de que desejar sair?\n\nNote que você pode usar o Telegram em todos os seus dispositivos ao mesmo tempo.\n\nLembre-se, sair apaga todos os seus Chats Secretos.</string>
     <string name="AreYouSureDeleteAndExit">Você tem certeza de que deseja apagar e sair do grupo?</string>
     <string name="AreYouSureDeleteAndExitName">Tem certeza de que deseja apagar e sair do grupo **%1$s**?</string>
     <string name="AreYouSureDeleteThisChat">Você tem certeza de que deseja apagar essa conversa?</string>
@@ -2033,7 +2088,7 @@
     <string name="SendMessagesToGroup">Enviar mensagens para %1$s?</string>
     <string name="SendGameToGroup">Compartilhar jogo com %1$s?</string>
     <string name="SendContactToGroup">Enviar contato para %1$s?</string>
-    <string name="NoUsernameFound">Não há conta do Telegram com esse nome de usuário</string>
+    <string name="NoUsernameFound">Não existe conta no Telegram com esse nome de usuário.</string>
     <string name="BotCantJoinGroups">Esse bot não pode entrar em grupos.</string>
     <string name="SecretLinkPreviewAlert">Você gostaria de ativar a prévia de links estendida em Chats Secretos? Note que a pré-visualização é gerada nos servidores do Telegram.</string>
     <string name="SecretChatContextBotAlert">Os bots inline são fornecidos por desenvolvedores terceiros. Para o bot funcionar, os símbolos que você digita depois do nome de usuário do bot são enviados para o respectivo desenvolvedor.</string>
@@ -2115,6 +2170,7 @@
     <string name="UseLessDataNever">Nunca</string>
     <string name="UseLessDataOnMobile">Em redes móveis</string>
     <string name="UseLessDataAlways">Sempre</string>
+    <string name="UseLessDataOnRoaming">Apenas em roaming</string>
     <string name="VoipAnswerCall">Atender</string>
     <string name="VoipDeclineCall">Rejeitar</string>
     <string name="VoipOffline">Você está offline. Conecte à internet para poder realizar chamadas.</string>

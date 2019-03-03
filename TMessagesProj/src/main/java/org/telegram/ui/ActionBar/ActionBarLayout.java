@@ -40,6 +40,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -126,8 +127,8 @@ public class ActionBarLayout extends FrameLayout {
             //
             try {
                 return (!inPreviewMode || this != containerView) && super.dispatchTouchEvent(ev);
-            } catch (Throwable ignore) {
-
+            } catch (Throwable e) {
+                FileLog.e(e);
             }
             return false;
         }
@@ -1058,7 +1059,11 @@ public class ActionBarLayout extends FrameLayout {
             ViewGroup parent = (ViewGroup) fragmentView.getParent();
             if (parent != null) {
                 previousFragment.onRemoveFromParent();
-                parent.removeView(fragmentView);
+                try {
+                    parent.removeView(fragmentView);
+                } catch (Exception ignore) {
+
+                }
             }
             containerView.addView(fragmentView);
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) fragmentView.getLayoutParams();

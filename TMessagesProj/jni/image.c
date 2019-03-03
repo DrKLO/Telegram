@@ -7,7 +7,7 @@
 #include <android/bitmap.h>
 #include <libwebp/webp/decode.h>
 #include <libwebp/webp/encode.h>
-#include "utils.h"
+#include "c_utils.h"
 #include "image.h"
 
 jclass jclass_NullPointerException;
@@ -28,34 +28,34 @@ jclass createGlobarRef(JNIEnv *env, jclass class) {
     return 0;
 }
 
-jint imageOnJNILoad(JavaVM *vm, void *reserved, JNIEnv *env) {
+jint imageOnJNILoad(JavaVM *vm, JNIEnv *env) {
     jclass_NullPointerException = createGlobarRef(env, (*env)->FindClass(env, "java/lang/NullPointerException"));
     if (jclass_NullPointerException == 0) {
-        return -1;
+        return JNI_FALSE;
     }
     jclass_RuntimeException = createGlobarRef(env, (*env)->FindClass(env, "java/lang/RuntimeException"));
     if (jclass_RuntimeException == 0) {
-        return -1;
+        return JNI_FALSE;
     }
     
     jclass_Options = createGlobarRef(env, (*env)->FindClass(env, "android/graphics/BitmapFactory$Options"));
     if (jclass_Options == 0) {
-        return -1;
+        return JNI_FALSE;
     }
     jclass_Options_inJustDecodeBounds = (*env)->GetFieldID(env, jclass_Options, "inJustDecodeBounds", "Z");
     if (jclass_Options_inJustDecodeBounds == 0) {
-        return -1;
+        return JNI_FALSE;
     }
     jclass_Options_outHeight = (*env)->GetFieldID(env, jclass_Options, "outHeight", "I");
     if (jclass_Options_outHeight == 0) {
-        return -1;
+        return JNI_FALSE;
     }
     jclass_Options_outWidth = (*env)->GetFieldID(env, jclass_Options, "outWidth", "I");
     if (jclass_Options_outWidth == 0) {
-        return -1;
+        return JNI_FALSE;
     }
     
-    return JNI_VERSION_1_6;
+    return JNI_TRUE;
 }
 
 static inline uint64_t getColors(const uint8_t *p) {
@@ -545,7 +545,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass
 
     uint32_t totalSegments = PGPhotoEnhanceSegments * PGPhotoEnhanceSegments;
     uint32_t tileArea = (uint32_t) (floorf(imageWidth / PGPhotoEnhanceSegments) * floorf(imageHeight / PGPhotoEnhanceSegments));
-    uint32_t clipLimit = (uint32_t) max(1, _clipLimit * tileArea / (float) PGPhotoEnhanceHistogramBins);
+    uint32_t clipLimit = (uint32_t) MAX(1, _clipLimit * tileArea / (float) PGPhotoEnhanceHistogramBins);
     float scale = 255.0f / (float) tileArea;
 
     unsigned char *bytes = (*env)->GetDirectBufferAddress(env, hsvBuffer);
@@ -609,7 +609,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass
         uint32_t cdf = 0;
         for (uint32_t j = hMin; j < PGPhotoEnhanceHistogramBins; ++j) {
             cdf += cdfs[i][j];
-            cdfs[i][j] = (uint8_t) min(255, cdf * scale);
+            cdfs[i][j] = (uint8_t) MIN(255, cdf * scale);
         }
         
         cdfsMin[i] = cdfs[i][hMin];
@@ -709,8 +709,6 @@ JNIEXPORT jboolean Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *e
 }
 
 #define SQUARE(i) ((i)*(i))
-#define MAX(a, b) (a>b ? a : b)
-#define MIN(a, b) (a>b ? b : a)
 inline static void zeroClearInt(int* p, size_t count) { memset(p, 0, sizeof(int) * count); }
 
 JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env, jclass class, jobject bitmap, jint radius){
@@ -724,6 +722,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
 
     int w=info.width;
     int h=info.height;
+    int stride=info.stride;
 
     unsigned char* pixels=0;
     AndroidBitmap_lockPixels(env, bitmap, (void **) &pixels);
@@ -777,7 +776,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
 
         for(i = -radius;i <= radius;i++){
             sir = &stack[(i + radius)*3];
-            int offset = (yi + MIN(wm, MAX(i, 0)))*4;
+            int offset = (y*stride + (MIN(wm, MAX(i, 0)))*4);
             sir[0] = pixels[offset];
             sir[1] = pixels[offset + 1];
             sir[2] = pixels[offset + 2];
@@ -818,7 +817,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
                 vmin[x] = MIN(x + radius + 1, wm);
             }
 
-            int offset = (yw + vmin[x])*4;
+            int offset = (y*stride + vmin[x]*4);
             sir[0] = pixels[offset];
             sir[1] = pixels[offset + 1];
             sir[2] = pixels[offset + 2];
@@ -878,10 +877,9 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
                 yp += w;
             }
         }
-        yi = x;
         stackpointer = radius;
         for (y = 0;y < h;y++) {
-            int offset = yi*4;
+            int offset = stride*y+x*4;
             pixels[offset]     = dv[rsum];
             pixels[offset + 1] = dv[gsum];
             pixels[offset + 2] = dv[bsum];
@@ -897,7 +895,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
             boutsum -= sir[2];
 
             if (x == 0){
-                vmin[y] = MIN(y + r1, hm)*w;
+                vmin[y] = (MIN(y + r1, hm))*w;
             }
             p = x + vmin[y];
 

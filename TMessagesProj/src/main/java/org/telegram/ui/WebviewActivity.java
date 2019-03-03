@@ -40,7 +40,9 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -60,14 +62,22 @@ public class WebviewActivity extends BaseFragment {
     private ContextProgressView progressView;
 
     private String currentUrl;
+    private long currentDialogId;
     private String currentBot;
     private String currentGame;
     private String linkToCopy;
     private MessageObject currentMessageObject;
     private String short_param;
 
+    private boolean loadStats;
+
     private final static int share = 1;
     private final static int open_in = 2;
+
+    private static final int TYPE_GAME = 0;
+    private static final int TYPE_STAT = 1;
+
+    private int type;
 
     private class TelegramWebviewProxy {
         @JavascriptInterface
@@ -111,12 +121,28 @@ public class WebviewActivity extends BaseFragment {
         currentMessageObject = messageObject;
         short_param = startParam;
         linkToCopy = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/" + currentBot + (TextUtils.isEmpty(startParam) ? "" : "?game=" + startParam);
+        type = TYPE_GAME;
     }
+
+    public WebviewActivity(String statUrl, long did) {
+        super();
+        currentUrl = statUrl;
+        currentDialogId = did;
+        type = TYPE_STAT;
+    }
+
+    /*@Override
+    protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
+        if (!isOpen) {
+
+        }
+    }*/
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         AndroidUtilities.cancelRunOnUIThread(typingRunnable);
+        webView.setLayerType(View.LAYER_TYPE_NONE, null);
         typingRunnable = null;
         try {
             ViewParent parent = webView.getParent();
@@ -138,8 +164,7 @@ public class WebviewActivity extends BaseFragment {
         swipeBackEnabled = false;
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(currentGame);
-        actionBar.setSubtitle("@" + currentBot);
+
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -155,15 +180,35 @@ public class WebviewActivity extends BaseFragment {
         });
         ActionBarMenu menu = actionBar.createMenu();
         progressItem = menu.addItemWithWidth(share, R.drawable.share, AndroidUtilities.dp(54));
-        progressView = new ContextProgressView(context, 1);
-        progressView.setAlpha(0.0f);
-        progressView.setScaleX(0.1f);
-        progressView.setScaleY(0.1f);
-        progressView.setVisibility(View.INVISIBLE);
-        progressItem.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        if (type == TYPE_GAME) {
+            ActionBarMenuItem menuItem = menu.addItem(0, R.drawable.ic_ab_other);
+            menuItem.addSubItem(open_in, LocaleController.getString("OpenInExternalApp", R.string.OpenInExternalApp));
 
-        ActionBarMenuItem menuItem = menu.addItem(0, R.drawable.ic_ab_other);
-        menuItem.addSubItem(open_in, LocaleController.getString("OpenInExternalApp", R.string.OpenInExternalApp));
+            actionBar.setTitle(currentGame);
+            actionBar.setSubtitle("@" + currentBot);
+
+            progressView = new ContextProgressView(context, 1);
+            progressItem.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            progressView.setAlpha(0.0f);
+            progressView.setScaleX(0.1f);
+            progressView.setScaleY(0.1f);
+            progressView.setVisibility(View.INVISIBLE);
+        } else if (type == TYPE_STAT) {
+            actionBar.setBackgroundColor(Theme.getColor(Theme.key_player_actionBar));
+            actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarItems), false);
+            actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_player_actionBarSelector), false);
+            actionBar.setTitleColor(Theme.getColor(Theme.key_player_actionBarTitle));
+            actionBar.setSubtitleColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
+            actionBar.setTitle(LocaleController.getString("Statistics", R.string.Statistics));
+
+            progressView = new ContextProgressView(context, 3);
+            progressItem.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            progressView.setAlpha(1.0f);
+            progressView.setScaleX(1.0f);
+            progressView.setScaleY(1.0f);
+            progressView.setVisibility(View.VISIBLE);
+            progressItem.getImageView().setVisibility(View.GONE);
+        }
 
         webView = new WebView(context);
         webView.getSettings().setJavaScriptEnabled(true);
@@ -171,12 +216,17 @@ public class WebviewActivity extends BaseFragment {
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
+        if (Build.VERSION.SDK_INT >= 19) {
+            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        }
 
         if (Build.VERSION.SDK_INT >= 21) {
             webView.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
             CookieManager cookieManager = CookieManager.getInstance();
             cookieManager.setAcceptThirdPartyCookies(webView, true);
-            webView.addJavascriptInterface(new TelegramWebviewProxy(), "TelegramWebviewProxy");
+            if (type == TYPE_GAME) {
+                webView.addJavascriptInterface(new TelegramWebviewProxy(), "TelegramWebviewProxy");
+            }
         }
 
         webView.setWebViewClient(new WebViewClient() {
@@ -187,15 +237,24 @@ public class WebviewActivity extends BaseFragment {
                 }
                 Uri uri = Uri.parse(url);
                 if ("tg".equals(uri.getScheme())) {
-                    finishFragment(false);
-                    try {
-                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                        ComponentName componentName = new ComponentName(ApplicationLoader.applicationContext.getPackageName(), LaunchActivity.class.getName());
-                        intent.setComponent(componentName);
-                        intent.putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, ApplicationLoader.applicationContext.getPackageName());
-                        ApplicationLoader.applicationContext.startActivity(intent);
-                    } catch (Exception e) {
-                        FileLog.e(e);
+                    if (type == TYPE_STAT) {
+                        try {
+                            uri = Uri.parse(url.replace("tg:statsrefresh", "tg://telegram.org"));
+                            reloadStats(uri.getQueryParameter("params"));
+                        } catch (Throwable e) {
+                            FileLog.e(e);
+                        }
+                    } else {
+                        finishFragment(false);
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                            ComponentName componentName = new ComponentName(ApplicationLoader.applicationContext.getPackageName(), LaunchActivity.class.getName());
+                            intent.setComponent(componentName);
+                            intent.putExtra(android.provider.Browser.EXTRA_APPLICATION_ID, ApplicationLoader.applicationContext.getPackageName());
+                            ApplicationLoader.applicationContext.startActivity(intent);
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
                     }
                     return true;
                 }
@@ -218,25 +277,37 @@ public class WebviewActivity extends BaseFragment {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-
-                progressItem.getImageView().setVisibility(View.VISIBLE);
-                progressItem.setEnabled(true);
-                AnimatorSet animatorSet = new AnimatorSet();
-                animatorSet.playTogether(
-                        ObjectAnimator.ofFloat(progressView, "scaleX", 1.0f, 0.1f),
-                        ObjectAnimator.ofFloat(progressView, "scaleY", 1.0f, 0.1f),
-                        ObjectAnimator.ofFloat(progressView, "alpha", 1.0f, 0.0f),
-                        ObjectAnimator.ofFloat(progressItem.getImageView(), "scaleX", 0.0f, 1.0f),
-                        ObjectAnimator.ofFloat(progressItem.getImageView(), "scaleY", 0.0f, 1.0f),
-                        ObjectAnimator.ofFloat(progressItem.getImageView(), "alpha", 0.0f, 1.0f));
-                animatorSet.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animator) {
-                        progressView.setVisibility(View.INVISIBLE);
+                if (progressView != null && progressView.getVisibility() == View.VISIBLE) {
+                    AnimatorSet animatorSet = new AnimatorSet();
+                    if (type == TYPE_GAME) {
+                        progressItem.getImageView().setVisibility(View.VISIBLE);
+                        progressItem.setEnabled(true);
+                        animatorSet.playTogether(
+                                ObjectAnimator.ofFloat(progressView, "scaleX", 1.0f, 0.1f),
+                                ObjectAnimator.ofFloat(progressView, "scaleY", 1.0f, 0.1f),
+                                ObjectAnimator.ofFloat(progressView, "alpha", 1.0f, 0.0f),
+                                ObjectAnimator.ofFloat(progressItem.getImageView(), "scaleX", 0.0f, 1.0f),
+                                ObjectAnimator.ofFloat(progressItem.getImageView(), "scaleY", 0.0f, 1.0f),
+                                ObjectAnimator.ofFloat(progressItem.getImageView(), "alpha", 0.0f, 1.0f));
+                    } else {
+                        animatorSet.playTogether(
+                                ObjectAnimator.ofFloat(progressView, "scaleX", 1.0f, 0.1f),
+                                ObjectAnimator.ofFloat(progressView, "scaleY", 1.0f, 0.1f),
+                                ObjectAnimator.ofFloat(progressView, "alpha", 1.0f, 0.0f));
                     }
-                });
-                animatorSet.setDuration(150);
-                animatorSet.start();
+                    animatorSet.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animator) {
+                            if (type == TYPE_STAT) {
+                                progressItem.setVisibility(View.GONE);
+                            } else {
+                                progressView.setVisibility(View.INVISIBLE);
+                            }
+                        }
+                    });
+                    animatorSet.setDuration(150);
+                    animatorSet.start();
+                }
             }
         });
 
@@ -268,6 +339,23 @@ public class WebviewActivity extends BaseFragment {
             }
         }
         return true;
+    }
+
+    private void reloadStats(String params) {
+        if (loadStats) {
+            return;
+        }
+        loadStats = true;
+        TLRPC.TL_messages_getStatsURL req = new TLRPC.TL_messages_getStatsURL();
+        req.peer = MessagesController.getInstance(currentAccount).getInputPeer((int) currentDialogId);
+        req.params = params != null ? params : "";
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            loadStats = false;
+            if (response != null) {
+                TLRPC.TL_statsURL url = (TLRPC.TL_statsURL) response;
+                webView.loadUrl(currentUrl = url.url);
+            }
+        }));
     }
 
     public static void openGameInBrowser(String urlStr, MessageObject messageObject, Activity parentActivity, String short_name, String username) {
@@ -315,18 +403,35 @@ public class WebviewActivity extends BaseFragment {
 
     @Override
     public ThemeDescription[] getThemeDescriptions() {
-        return new ThemeDescription[]{
-                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+        if (type == TYPE_GAME) {
+            return new ThemeDescription[]{
+                    new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
 
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUBACKGROUND, null, null, null, null, Theme.key_actionBarDefaultSubmenuBackground),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM, null, null, null, null, Theme.key_actionBarDefaultSubmenuItem),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUBACKGROUND, null, null, null, null, Theme.key_actionBarDefaultSubmenuBackground),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM, null, null, null, null, Theme.key_actionBarDefaultSubmenuItem),
 
-                new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressInner2),
-                new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressOuter2),
-        };
+                    new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressInner2),
+                    new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressOuter2),
+            };
+        } else {
+            return new ThemeDescription[]{
+                    new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_player_actionBar),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_player_actionBarItems),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_player_actionBarTitle),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBTITLECOLOR, null, null, null, null, Theme.key_player_actionBarTitle),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_player_actionBarSelector),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUBACKGROUND, null, null, null, null, Theme.key_actionBarDefaultSubmenuBackground),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM, null, null, null, null, Theme.key_actionBarDefaultSubmenuItem),
+
+                    new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressInner4),
+                    new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressOuter4),
+            };
+        }
     }
 }

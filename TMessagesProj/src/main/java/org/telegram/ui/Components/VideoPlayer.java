@@ -14,6 +14,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.view.TextureView;
 
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.source.LoopingMediaSource;
 import com.google.android.exoplayer2.DefaultLoadControl;
@@ -39,6 +40,7 @@ import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DefaultAllocator;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 
@@ -110,8 +112,16 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     private void ensurePleyaerCreated() {
+        DefaultLoadControl loadControl = new DefaultLoadControl(
+                new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE),
+                DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
+                DefaultLoadControl.DEFAULT_MAX_BUFFER_MS,
+                100,
+                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS,
+                DefaultLoadControl.DEFAULT_TARGET_BUFFER_BYTES,
+                DefaultLoadControl.DEFAULT_PRIORITIZE_TIME_OVER_SIZE_THRESHOLDS);
         if (player == null) {
-            player = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, trackSelector, new DefaultLoadControl(), null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
+            player = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, trackSelector, loadControl, null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
             player.addListener(this);
             player.setVideoListener(this);
             player.setVideoTextureView(textureView);
@@ -119,7 +129,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         }
         if (mixedAudio) {
             if (audioPlayer == null) {
-                audioPlayer = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, trackSelector, new DefaultLoadControl(), null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
+                audioPlayer = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, trackSelector, loadControl, null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
                 audioPlayer.addListener(new Player.EventListener() {
 
                     @Override
@@ -250,13 +260,13 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         return player != null;
     }
 
-    public void releasePlayer() {
+    public void releasePlayer(boolean async) {
         if (player != null) {
-            player.release();
+            player.release(async);
             player = null;
         }
         if (audioPlayer != null) {
-            audioPlayer.release();
+            audioPlayer.release(async);
             audioPlayer = null;
         }
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.playerDidStartPlaying);
@@ -271,6 +281,14 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
             return;
         }
         player.setVideoTextureView(textureView);
+    }
+
+    public boolean getPlayWhenReady() {
+        return player.getPlayWhenReady();
+    }
+
+    public int getPlaybackState() {
+        return player.getPlaybackState();
     }
 
     public void play() {

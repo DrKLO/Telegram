@@ -54,6 +54,9 @@ import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.video.VideoFrameMetadataListener;
 import com.google.android.exoplayer2.video.VideoRendererEventListener;
 import com.google.android.exoplayer2.video.spherical.CameraMotionListener;
+
+import org.telegram.messenger.Utilities;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -986,9 +989,13 @@ public class SimpleExoPlayer extends BasePlayer
   }
 
   @Override
-  public void release() {
+  public void release(boolean async) {
     audioFocusManager.handleStop();
-    player.release();
+    if (async) {
+      Utilities.globalQueue.postRunnable(() -> player.release(async));
+    } else {
+      player.release(async);
+    }
     removeSurfaceCallbacks();
     if (surface != null) {
       if (ownsSurface) {

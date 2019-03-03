@@ -12,11 +12,13 @@ import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -254,6 +256,25 @@ public class UserCell extends FrameLayout {
                 } else {
                     statusTextView.setTextColor(statusColor);
                     statusTextView.setText(LocaleController.formatUserStatus(currentAccount, currentUser));
+                }
+            }
+        } else if (currentChat != null) {
+            statusTextView.setTextColor(statusColor);
+            if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
+                if (currentChat.participants_count != 0) {
+                    statusTextView.setText(LocaleController.formatPluralString("Subscribers", currentChat.participants_count));
+                } else if (TextUtils.isEmpty(currentChat.username)) {
+                    statusTextView.setText(LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate));
+                } else {
+                    statusTextView.setText(LocaleController.getString("ChannelPublic", R.string.ChannelPublic));
+                }
+            } else {
+                if (currentChat.participants_count != 0) {
+                    statusTextView.setText(LocaleController.formatPluralString("Members", currentChat.participants_count));
+                } else if (TextUtils.isEmpty(currentChat.username)) {
+                    statusTextView.setText(LocaleController.getString("MegaPrivate", R.string.MegaPrivate));
+                } else {
+                    statusTextView.setText(LocaleController.getString("MegaPublic", R.string.MegaPublic));
                 }
             }
         }

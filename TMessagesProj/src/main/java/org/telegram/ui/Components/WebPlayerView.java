@@ -2286,7 +2286,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
     }
 
     public void destroy() {
-        videoPlayer.releasePlayer();
+        videoPlayer.releasePlayer(false);
         if (currentTask != null) {
             currentTask.cancel(true);
             currentTask = null;

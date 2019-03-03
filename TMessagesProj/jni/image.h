@@ -3,6 +3,6 @@
 
 #include <jni.h>
 
-jint imageOnJNILoad(JavaVM *vm, void *reserved, JNIEnv *env);
+jint imageOnJNILoad(JavaVM *vm, JNIEnv *env);
 
 #endif

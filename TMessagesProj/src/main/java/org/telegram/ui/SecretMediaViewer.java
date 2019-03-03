@@ -319,6 +319,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     private boolean disableShowCheck;
     private PhotoViewer.PhotoViewerProvider currentProvider;
 
+    private int playerRetryPlayCount;
+
     private boolean textureUploaded;
     private boolean videoCrossfadeStarted;
     private float videoCrossfadeAlpha;
@@ -523,7 +525,12 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
                 @Override
                 public void onError(Exception e) {
-                    FileLog.e(e);
+                    if (playerRetryPlayCount > 0) {
+                        playerRetryPlayCount--;
+                        AndroidUtilities.runOnUIThread(() -> preparePlayer(file), 100);
+                    } else {
+                        FileLog.e(e);
+                    }
                 }
 
                 @Override
@@ -563,7 +570,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
     private void releasePlayer() {
         if (videoPlayer != null) {
-            videoPlayer.releasePlayer();
+            playerRetryPlayCount = 0;
+            videoPlayer.releasePlayer(true);
             videoPlayer = null;
         }
         try {
@@ -719,7 +727,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         if (parentActivity == null || messageObject == null || !messageObject.needDrawBluredPreview() || provider == null) {
             return;
         }
-        final PhotoViewer.PlaceProviderObject object = provider.getPlaceForPhoto(messageObject, null, 0);
+        final PhotoViewer.PlaceProviderObject object = provider.getPlaceForPhoto(messageObject, null, 0, true);
         if (object == null) {
             return;
         }
@@ -815,6 +823,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 centerImage.setImage(document, null, currentThumb != null ? new BitmapDrawable(currentThumb.bitmap) : null, -1, null, messageObject, 1);
                 secretDeleteTimer.setDestroyTime((long) messageObject.messageOwner.destroyTime * 1000, messageObject.messageOwner.ttl, false);
             } else {
+                playerRetryPlayCount = 1;
                 actionBar.setTitle(LocaleController.getString("DisappearingVideo", R.string.DisappearingVideo));
                 File f = new File(messageObject.messageOwner.attachPath);
                 if (f.exists()) {
@@ -1177,7 +1186,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         if (currentProvider == null || currentMessageObject.messageOwner.media.photo instanceof TLRPC.TL_photoEmpty || currentMessageObject.messageOwner.media.document instanceof TLRPC.TL_documentEmpty) {
             object = null;
         } else {
-            object = currentProvider.getPlaceForPhoto(currentMessageObject, null, 0);
+            object = currentProvider.getPlaceForPhoto(currentMessageObject, null, 0, true);
         }
         if (videoPlayer != null) {
             videoPlayer.pause();

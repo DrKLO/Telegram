@@ -167,6 +167,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private long openedDialogId;
     private boolean cantSendToChannels;
     private boolean allowSwitchAccount;
+    private boolean checkCanWrite;
 
     private DialogsActivityDelegate delegate;
 
@@ -190,6 +191,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             selectAlertStringGroup = arguments.getString("selectAlertStringGroup");
             addToGroupAlertString = arguments.getString("addToGroupAlertString");
             allowSwitchAccount = arguments.getBoolean("allowSwitchAccount");
+            checkCanWrite = arguments.getBoolean("checkCanWrite", true);
         }
 
         if (dialogsType == 0) {
@@ -844,7 +846,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     return false;
                 }
                 final TLRPC.TL_dialog dialog;
-                ArrayList<TLRPC.TL_dialog> dialogs = getDialogsArray();
+                ArrayList<TLRPC.TL_dialog> dialogs = getDialogsArray(dialogsType, currentAccount);
                 if (position < 0 || position >= dialogs.size()) {
                     return false;
                 }
@@ -946,7 +948,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         } else {
                             user = !isChat && lower_id > 0 && high_id != 1 ? MessagesController.getInstance(currentAccount).getUser(lower_id) : null;
                         }
-                        final boolean isBot = user != null && user.bot;
+                        final boolean isBot = user != null && user.bot && !MessagesController.isSupportUser(user);
 
                         builder.setItems(new CharSequence[]{
                                 dialog.pinned ? LocaleController.getString("UnpinFromTop", R.string.UnpinFromTop) : LocaleController.getString("PinToTop", R.string.PinToTop),
@@ -1164,7 +1166,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             });
         }
-        unreadFloatingButtonCounter.setTextColor(Theme.getColor(Theme.key_chat_goDownButtonCounter));
+        unreadFloatingButtonCounter.setColors(Theme.getColor(Theme.key_chat_goDownButtonCounter));
         unreadFloatingButtonCounter.setGravity(Gravity.CENTER);
         unreadFloatingButtonCounter.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(11.5f), Theme.getColor(Theme.key_chat_goDownButtonCounterBackground)));
         unreadFloatingButtonCounter.setMinWidth(AndroidUtilities.dp(23));
@@ -1200,7 +1202,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     return;
                 }
                 if (visibleItemCount > 0) {
-                    if (layoutManager.findLastVisibleItemPosition() >= getDialogsArray().size() - 10) {
+                    if (layoutManager.findLastVisibleItemPosition() >= getDialogsArray(dialogsType, currentAccount).size() - 10) {
                         boolean fromCache = !MessagesController.getInstance(currentAccount).dialogsEndReached;
                         if (fromCache || !MessagesController.getInstance(currentAccount).serverDialogsEndReached) {
                             MessagesController.getInstance(currentAccount).loadDialogs(-1, 100, fromCache);
@@ -1943,19 +1945,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
-    private ArrayList<TLRPC.TL_dialog> getDialogsArray() {
+    public static ArrayList<TLRPC.TL_dialog> getDialogsArray(int dialogsType, int currentAccount) {
         if (dialogsType == 0) {
             return MessagesController.getInstance(currentAccount).dialogs;
         } else if (dialogsType == 1) {
             return MessagesController.getInstance(currentAccount).dialogsServerOnly;
         } else if (dialogsType == 2) {
-            return MessagesController.getInstance(currentAccount).dialogsGroupsOnly;
+            return MessagesController.getInstance(currentAccount).dialogsCanAddUsers;
         } else if (dialogsType == 3) {
             return MessagesController.getInstance(currentAccount).dialogsForward;
         } else if (dialogsType == 4) {
             return MessagesController.getInstance(currentAccount).dialogsUsersOnly;
         } else if (dialogsType == 5) {
             return MessagesController.getInstance(currentAccount).dialogsChannelsOnly;
+        } else if (dialogsType == 6) {
+            return MessagesController.getInstance(currentAccount).dialogsGroupsOnly;
         }
         return null;
     }
@@ -2049,7 +2053,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void didSelectResult(final long dialog_id, boolean useAlert, final boolean param) {
-        if (addToGroupAlertString == null) {
+        if (addToGroupAlertString == null && checkCanWrite) {
             if ((int) dialog_id < 0) {
                 TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-(int) dialog_id);
                 if (ChatObject.isChannel(chat) && !chat.megagroup && (cantSendToChannels || !ChatObject.isCanWriteToChannel(-(int) dialog_id, currentAccount))) {

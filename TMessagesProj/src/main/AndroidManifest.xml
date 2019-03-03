@@ -67,7 +67,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="replace" />
 
     <application
-        android:name=".ApplicationLoader"
+        android:name="org.telegram.messenger.${applicationClassName}"
         android:allowBackup="false"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
         android:icon="@drawable/ic_launcher"
@@ -363,6 +363,11 @@
             android:name=".NotificationImageProvider"
             android:exported="false"
             android:grantUriPermissions="true"/>
+
+        <provider
+            android:authorities="${applicationId}.call_sound_provider"
+            android:name=".voip.CallNotificationSoundProvider"
+            android:exported="true"/>
 
         <uses-library android:name="com.sec.android.app.multiwindow" android:required="false" />
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />

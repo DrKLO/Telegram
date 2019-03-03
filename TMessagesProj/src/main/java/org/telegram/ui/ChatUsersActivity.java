@@ -258,7 +258,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             participantsInfoRow = rowCount++;
         } else if (type == TYPE_USERS) {
             if (selectType == 0 && ChatObject.canAddUsers(currentChat)) {
-                if (!ChatObject.isChannel(currentChat) || currentChat.megagroup || TextUtils.isEmpty(currentChat.username)) {
+                if (ChatObject.canUserDoAdminAction(currentChat, ChatObject.ACTION_INVITE) && (!ChatObject.isChannel(currentChat) || currentChat.megagroup || TextUtils.isEmpty(currentChat.username))) {
                     addNew2Row = rowCount++;
                     addNewSectionRow = rowCount++;
                 }

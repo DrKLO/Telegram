@@ -210,13 +210,17 @@ public class AspectRatioFrameLayout extends FrameLayout {
         }
         break;
       case RESIZE_MODE_FILL:
+        if (aspectDeformation <= 0) {
+          height = (int) (width / videoAspectRatio);
+        } else {
+          width = (int) (height * videoAspectRatio);
+        }
       default:
         // Ignore target aspect ratio
         break;
     }
     aspectRatioUpdateDispatcher.scheduleUpdate(videoAspectRatio, viewAspectRatio, true);
-    super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
-        MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
+    super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
 
     int count = getChildCount();
     for (int a = 0; a < count; a++) {

@@ -110,7 +110,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int directShareRow;
     private int raiseToSpeakRow;
     private int sendByEnterRow;
-    private int autoplayGifsRow;
     private int saveToGalleryRow;
     private int enableAnimationsRow;
     private int settings2Row;
@@ -338,7 +337,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             message.to_id = new TLRPC.TL_peerUser();
             message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
             MessageObject message2 = new MessageObject(currentAccount, message, true);
-            message2.customReplyName = "Lucio";
+            message2.customReplyName = LocaleController.getString("FontSizePreviewName", R.string.FontSizePreviewName);
             message2.eventId = 1;
             message2.resetLayout();
             message2.replyMessageObject = replyMessageObject;
@@ -428,7 +427,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         enableAnimationsRow = -1;
         raiseToSpeakRow = -1;
         sendByEnterRow = -1;
-        autoplayGifsRow = -1;
         saveToGalleryRow = -1;
         settings2Row = -1;
         stickersRow = -1;
@@ -452,7 +450,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             enableAnimationsRow = rowCount++;
             raiseToSpeakRow = rowCount++;
             sendByEnterRow = rowCount++;
-            autoplayGifsRow = rowCount++;
             saveToGalleryRow = rowCount++;
             settings2Row = rowCount++;
             stickersRow = rowCount++;
@@ -631,11 +628,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 SharedConfig.toogleRaiseToSpeak();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.raiseToSpeak);
-                }
-            } else if (position == autoplayGifsRow) {
-                SharedConfig.toggleAutoplayGifs();
-                if (view instanceof TextCheckCell) {
-                    ((TextCheckCell) view).setChecked(SharedConfig.autoplayGifs);
                 }
             } else if (position == saveToGalleryRow) {
                 SharedConfig.toggleSaveToGallery();
@@ -1336,8 +1328,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         textCheckCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), true);
                     } else if (position == saveToGalleryRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("SaveToGallerySettings", R.string.SaveToGallerySettings), SharedConfig.saveToGallery, false);
-                    } else if (position == autoplayGifsRow) {
-                        textCheckCell.setTextAndCheck(LocaleController.getString("AutoplayGifs", R.string.AutoplayGifs), SharedConfig.autoplayGifs, true);
                     } else if (position == raiseToSpeakRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("RaiseToSpeak", R.string.RaiseToSpeak), SharedConfig.raiseToSpeak, true);
                     } else if (position == customTabsRow) {
@@ -1382,8 +1372,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             } else if (position == automaticBrightnessRow) {
                 return 6;
             } else if (position == scheduleLocationRow || position == enableAnimationsRow || position == sendByEnterRow ||
-                    position == saveToGalleryRow || position == autoplayGifsRow || position == raiseToSpeakRow ||
-                    position == customTabsRow || position == directShareRow) {
+                    position == saveToGalleryRow || position == raiseToSpeakRow || position == customTabsRow ||
+                    position == directShareRow) {
                 return 7;
             } else if (position == textSizeRow) {
                 return 8;

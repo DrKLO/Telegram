@@ -633,7 +633,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 create = true;
             }
         }
-        if (messageObject == null || messageObject.getId() == 0/* || !messageObject.isMusic()*/) {
+        if (messageObject == null || messageObject.getId() == 0 || messageObject.isVideo()) {
             lastMessageObject = null;
             boolean callAvailable = VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().getCallState() != VoIPService.STATE_WAITING_INCOMING;
             if (callAvailable) {

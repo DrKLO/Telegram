@@ -34,6 +34,7 @@ public class TextSettingsCell extends FrameLayout {
     private TextView valueTextView;
     private ImageView valueImageView;
     private boolean needDivider;
+    private boolean canDisable;
 
     public TextSettingsCell(Context context) {
         this(context, 21);
@@ -89,6 +90,10 @@ public class TextSettingsCell extends FrameLayout {
 
     public TextView getTextView() {
         return textView;
+    }
+
+    public void setCanDisable(boolean value) {
+        canDisable = value;
     }
 
     public TextView getValueTextView() {
@@ -156,6 +161,18 @@ public class TextSettingsCell extends FrameLayout {
             if (valueImageView.getVisibility() == VISIBLE) {
                 valueImageView.setAlpha(value ? 1.0f : 0.5f);
             }
+        }
+    }
+
+    @Override
+    public void setEnabled(boolean value) {
+        super.setEnabled(value);
+        textView.setAlpha(value || !canDisable ? 1.0f : 0.5f);
+        if (valueTextView.getVisibility() == VISIBLE) {
+            valueTextView.setAlpha(value || !canDisable ? 1.0f : 0.5f);
+        }
+        if (valueImageView.getVisibility() == VISIBLE) {
+            valueImageView.setAlpha(value || !canDisable ? 1.0f : 0.5f);
         }
     }
 

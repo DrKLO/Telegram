@@ -5500,47 +5500,41 @@ public class MessagesStorage {
 
                 data.reuse();
 
-                if (downloadMask != 0 && (message.to_id.channel_id == 0 || message.post) && message.date >= ConnectionsManager.getInstance(currentAccount).getCurrentTime() - 60 * 60 && DownloadController.getInstance(currentAccount).canDownloadMedia(message)) {
+                if (downloadMask != 0 && (message.to_id.channel_id == 0 || message.post) && message.date >= ConnectionsManager.getInstance(currentAccount).getCurrentTime() - 60 * 60 && DownloadController.getInstance(currentAccount).canDownloadMedia(message) == 1) {
                     if (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaDocument) {
                         int type = 0;
                         long id = 0;
                         TLRPC.MessageMedia object = null;
                         if (MessageObject.isVoiceMessage(message)) {
                             id = message.media.document.id;
-                            type = DownloadController.AUTODOWNLOAD_MASK_AUDIO;
-                            object = new TLRPC.TL_messageMediaDocument();
-                            object.document = message.media.document;
-                            object.flags |= 1;
-                        } else if (MessageObject.isRoundVideoMessage(message)) {
-                            id = message.media.document.id;
-                            type = DownloadController.AUTODOWNLOAD_MASK_VIDEOMESSAGE;
+                            type = DownloadController.AUTODOWNLOAD_TYPE_AUDIO;
                             object = new TLRPC.TL_messageMediaDocument();
                             object.document = message.media.document;
                             object.flags |= 1;
                         } else if (MessageObject.isStickerMessage(message)) {
                             id = message.media.document.id;
-                            type = DownloadController.AUTODOWNLOAD_MASK_PHOTO;
+                            type = DownloadController.AUTODOWNLOAD_TYPE_PHOTO;
                             object = new TLRPC.TL_messageMediaDocument();
                             object.document = message.media.document;
                             object.flags |= 1;
-                        }else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
+                        } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
                             TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(message.media.photo.sizes, AndroidUtilities.getPhotoSize());
                             if (photoSize != null) {
                                 id = message.media.photo.id;
-                                type = DownloadController.AUTODOWNLOAD_MASK_PHOTO;
+                                type = DownloadController.AUTODOWNLOAD_TYPE_PHOTO;
                                 object = new TLRPC.TL_messageMediaPhoto();
                                 object.photo = message.media.photo;
                                 object.flags |= 1;
                             }
-                        } else if (MessageObject.isVideoMessage(message)) {
+                        } else if (MessageObject.isVideoMessage(message) || MessageObject.isRoundVideoMessage(message)) {
                             id = message.media.document.id;
-                            type = DownloadController.AUTODOWNLOAD_MASK_VIDEO;
+                            type = DownloadController.AUTODOWNLOAD_TYPE_VIDEO;
                             object = new TLRPC.TL_messageMediaDocument();
                             object.document = message.media.document;
                             object.flags |= 1;
                         } else if (message.media instanceof TLRPC.TL_messageMediaDocument && !MessageObject.isMusicMessage(message) && !MessageObject.isGifDocument(message.media.document)) {
                             id = message.media.document.id;
-                            type = DownloadController.AUTODOWNLOAD_MASK_DOCUMENT;
+                            type = DownloadController.AUTODOWNLOAD_TYPE_DOCUMENT;
                             object = new TLRPC.TL_messageMediaDocument();
                             object.document = message.media.document;
                             object.flags |= 1;

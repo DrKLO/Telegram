@@ -565,6 +565,7 @@ public class RecyclerListView extends RecyclerView {
                     }
                 }
             });
+            gestureDetector.setIsLongpressEnabled(false);
         }
 
         @Override
@@ -1052,10 +1053,12 @@ public class RecyclerListView extends RecyclerView {
 
     public void setOnItemLongClickListener(OnItemLongClickListener listener) {
         onItemLongClickListener = listener;
+        gestureDetector.setIsLongpressEnabled(listener != null);
     }
 
     public void setOnItemLongClickListener(OnItemLongClickListenerExtended listener) {
         onItemLongClickListenerExtended = listener;
+        gestureDetector.setIsLongpressEnabled(listener != null);
     }
 
     public void setEmptyView(View view) {

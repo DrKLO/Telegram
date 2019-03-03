@@ -347,7 +347,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
 
         @Override
-        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview) {
             if (index < 0 || index >= currentPhotoViewerLayout.getChildCount()) {
                 return null;
             }

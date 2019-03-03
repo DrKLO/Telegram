@@ -36,6 +36,8 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
     private LinearLayout tabsContainer;
     private ScrollSlidingTabStripDelegate delegate;
 
+    private boolean useSameWidth;
+
     private int tabCount;
     private int currentPosition;
     private int selectedTabId = -1;
@@ -150,6 +152,10 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
         if (delegate != null) {
             delegate.onPageScrolled(value);
         }
+    }
+
+    public void setUseSameWidth(boolean value) {
+        useSameWidth = value;
     }
 
     public Paint getRectPaint() {
@@ -282,6 +288,9 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
             if (allTextWidth > width) {
                 layoutParams.weight = 0;
                 layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
+            } else if (useSameWidth) {
+                layoutParams.weight = 1.0f / count;
+                layoutParams.width = 0;
             } else {
                 layoutParams.weight = 1.0f / allTextWidth * positionToWidth.get(a);
                 layoutParams.width = 0;

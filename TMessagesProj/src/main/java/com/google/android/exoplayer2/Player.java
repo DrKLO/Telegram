@@ -760,7 +760,7 @@ public interface Player {
    * Releases the player. This method must be called when the player is no longer required. The
    * player must not be used after calling this method.
    */
-  void release();
+  void release(boolean async);
 
   /**
    * Returns the number of renderers.

@@ -88,7 +88,7 @@ public final class Mp4Extractor implements Extractor, SeekMap {
    * For poorly interleaved streams, the maximum byte difference one track is allowed to be read
    * ahead before the source will be reloaded at a new position to read another track.
    */
-  private static final long MAXIMUM_READ_AHEAD_BYTES_STREAM = 10 * 1024 * 1024;
+  private static final long MAXIMUM_READ_AHEAD_BYTES_STREAM = 1024 * 1024;
 
   private final @Flags int flags;
 

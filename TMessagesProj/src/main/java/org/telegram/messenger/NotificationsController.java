@@ -699,7 +699,11 @@ public class NotificationsController {
                         if (popupFinal == 3 || popupFinal == 1 && ApplicationLoader.isScreenOn || popupFinal == 2 && !ApplicationLoader.isScreenOn) {
                             Intent popupIntent = new Intent(ApplicationLoader.applicationContext, PopupNotificationActivity.class);
                             popupIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_NO_USER_ACTION | Intent.FLAG_FROM_BACKGROUND);
-                            ApplicationLoader.applicationContext.startActivity(popupIntent);
+                            try {
+                                ApplicationLoader.applicationContext.startActivity(popupIntent);
+                            } catch (Throwable ignore) {
+
+                            }
                         }
                     }
                 });

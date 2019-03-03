@@ -6,7 +6,7 @@
 #include <time.h>
 #include <opusfile.h>
 #include <math.h>
-#include "utils.h"
+#include "c_utils.h"
 
 typedef struct {
     int version;
@@ -335,7 +335,7 @@ int initRecorder(const char *path) {
     }
     
 #ifdef OPUS_SET_LSB_DEPTH
-    result = opus_encoder_ctl(_encoder, OPUS_SET_LSB_DEPTH(max(8, min(24, inopt.samplesize))));
+    result = opus_encoder_ctl(_encoder, OPUS_SET_LSB_DEPTH(MAX(8, MIN(24, inopt.samplesize))));
     if (result != OPUS_OK) {
         LOGE("Warning OPUS_SET_LSB_DEPTH returned: %s", opus_strerror(result));
     }
@@ -447,7 +447,7 @@ int writeFrame(uint8_t *framePcmBytes, uint32_t frameByteCount) {
         
         enc_granulepos += cur_frame_size * 48000 / coding_rate;
         size_segments = (nbBytes + 255) / 255;
-        min_bytes = min(nbBytes, min_bytes);
+        min_bytes = MIN(nbBytes, min_bytes);
     }
     
     while ((((size_segments <= 255) && (last_segments + size_segments > 255)) || (enc_granulepos - last_granulepos > max_ogg_delay)) && ogg_stream_flush_fill(&os, &og, 255 * 255)) {
@@ -548,7 +548,7 @@ JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform2(JN
     uint16_t *samples = malloc(100 * 2);
     uint64_t sampleIndex = 0;
     uint16_t peakSample = 0;
-    int32_t sampleRate = (int32_t) max(1, length / resultSamples);
+    int32_t sampleRate = (int32_t) MAX(1, length / resultSamples);
     int32_t index = 0;
 
     for (int32_t i = 0; i < length; i++) {
@@ -588,7 +588,7 @@ JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform2(JN
         uint8_t *bytes = malloc(bitstreamLength + 4);
         memset(bytes, 0, bitstreamLength + 4);
         for (int32_t i = 0; i < resultSamples; i++) {
-            int32_t value = min(31, abs((int32_t) samples[i]) * 31 / peak);
+            int32_t value = MIN(31, abs((int32_t) samples[i]) * 31 / peak);
             set_bits(bytes, i * 5, value & 31);
         }
         (*env)->SetByteArrayRegion(env, result, 0, bitstreamLength, (jbyte *) bytes);
@@ -609,7 +609,7 @@ JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform(JNI
     if (opusFile != NULL && error == OPUS_OK) {
         int64_t totalSamples = op_pcm_total(opusFile, -1);
         const uint32_t resultSamples = 100;
-        int32_t sampleRate = max(1, (int32_t) (totalSamples / resultSamples));
+        int32_t sampleRate = MAX(1, (int32_t) (totalSamples / resultSamples));
 
         uint16_t *samples = malloc(100 * 2);
 
@@ -667,7 +667,7 @@ JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform(JNI
             memset(bytes, 0, bitstreamLength + 4);
 
             for (int32_t i = 0; i < resultSamples; i++) {
-                int32_t value = min(31, abs((int32_t) samples[i]) * 31 / peak);
+                int32_t value = MIN(31, abs((int32_t) samples[i]) * 31 / peak);
                 set_bits(bytes, i * 5, value & 31);
             }
 

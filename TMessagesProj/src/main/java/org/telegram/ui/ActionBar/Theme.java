@@ -404,6 +404,7 @@ public class Theme {
     public static TextPaint chat_contextResult_titleTextPaint;
     public static TextPaint chat_contextResult_descriptionTextPaint;
 
+    public static Drawable chat_msgNoSoundDrawable;
     public static Drawable chat_composeShadowDrawable;
     public static Drawable chat_roundVideoShadow;
     public static Drawable chat_msgInDrawable;
@@ -532,6 +533,9 @@ public class Theme {
 
 
     public static final String key_windowBackgroundWhite = "windowBackgroundWhite";
+    public static final String key_windowBackgroundUnchecked = "windowBackgroundUnchecked";
+    public static final String key_windowBackgroundChecked = "windowBackgroundChecked";
+    public static final String key_windowBackgroundCheckText = "windowBackgroundCheckText";
     public static final String key_progressCircle = "progressCircle";
     public static final String key_listSelector = "listSelectorSDK21";
     public static final String key_windowBackgroundWhiteInputField = "windowBackgroundWhiteInputField";
@@ -571,6 +575,12 @@ public class Theme {
     public static final String key_windowBackgroundWhiteBlueHeader = "windowBackgroundWhiteBlueHeader";
     public static final String key_switchTrack = "switchTrack";
     public static final String key_switchTrackChecked = "switchTrackChecked";
+    public static final String key_switchTrackBlue = "switchTrackBlue";
+    public static final String key_switchTrackBlueChecked = "switchTrackBlueChecked";
+    public static final String key_switchTrackBlueThumb = "switchTrackBlueThumb";
+    public static final String key_switchTrackBlueThumbChecked = "switchTrackBlueThumbChecked";
+    public static final String key_switchTrackBlueSelector = "switchTrackBlueSelector";
+    public static final String key_switchTrackBlueSelectorChecked = "switchTrackBlueSelectorChecked";
     public static final String key_switch2Track = "switch2Track";
     public static final String key_switch2TrackChecked = "switch2TrackChecked";
     public static final String key_checkboxSquareBackground = "checkboxSquareBackground";
@@ -606,6 +616,8 @@ public class Theme {
     public static final String key_contextProgressOuter2 = "contextProgressOuter2";
     public static final String key_contextProgressInner3 = "contextProgressInner3";
     public static final String key_contextProgressOuter3 = "contextProgressOuter3";
+    public static final String key_contextProgressInner4 = "contextProgressInner4";
+    public static final String key_contextProgressOuter4 = "contextProgressOuter4";
 
     public static final String key_avatar_text = "avatar_text";
     public static final String key_avatar_backgroundSaved = "avatar_backgroundSaved";
@@ -825,10 +837,10 @@ public class Theme {
     public static final String key_chat_outTimeText = "chat_outTimeText";
     public static final String key_chat_inTimeSelectedText = "chat_inTimeSelectedText";
     public static final String key_chat_outTimeSelectedText = "chat_outTimeSelectedText";
-    public static final String key_chat_inAudioPerfomerText = "chat_inAudioPerfomerText";
-    public static final String key_chat_inAudioPerfomerSelectedText = "chat_inAudioPerfomerSelectedText";
-    public static final String key_chat_outAudioPerfomerText = "chat_outAudioPerfomerText";
-    public static final String key_chat_outAudioPerfomerSelectedText = "chat_outAudioPerfomerSelectedText";
+    public static final String key_chat_inAudioPerformerText = "chat_inAudioPerfomerText";
+    public static final String key_chat_inAudioPerformerSelectedText = "chat_inAudioPerfomerSelectedText";
+    public static final String key_chat_outAudioPerformerText = "chat_outAudioPerfomerText";
+    public static final String key_chat_outAudioPerformerSelectedText = "chat_outAudioPerfomerSelectedText";
     public static final String key_chat_inAudioTitleText = "chat_inAudioTitleText";
     public static final String key_chat_outAudioTitleText = "chat_outAudioTitleText";
     public static final String key_chat_inAudioDurationText = "chat_inAudioDurationText";
@@ -1124,6 +1136,9 @@ public class Theme {
         defaultColors.put(key_dialog_inlineProgress, 0xff6b7378);
 
         defaultColors.put(key_windowBackgroundWhite, 0xffffffff);
+        defaultColors.put(key_windowBackgroundUnchecked, 0xff9da7b1);
+        defaultColors.put(key_windowBackgroundChecked, 0xff579ed9);
+        defaultColors.put(key_windowBackgroundCheckText, 0xffffffff);
         defaultColors.put(key_progressCircle, 0xff527da3);
         defaultColors.put(key_windowBackgroundWhiteGrayIcon, 0xff81868b);
         defaultColors.put(key_windowBackgroundWhiteBlueText, 0xff4092cd);
@@ -1162,6 +1177,12 @@ public class Theme {
         defaultColors.put(key_windowBackgroundWhiteInputFieldActivated, 0xff37a9f0);
         defaultColors.put(key_switchTrack, 0xffb0b5ba);
         defaultColors.put(key_switchTrackChecked, 0xff52ade9);
+        defaultColors.put(key_switchTrackBlue, 0xff828e99);
+        defaultColors.put(key_switchTrackBlueChecked, 0xff3c88c7);
+        defaultColors.put(key_switchTrackBlueThumb, 0xffffffff);
+        defaultColors.put(key_switchTrackBlueThumbChecked, 0xffffffff);
+        defaultColors.put(key_switchTrackBlueSelector, 0x17404a53);
+        defaultColors.put(key_switchTrackBlueSelectorChecked, 0x21024781);
         defaultColors.put(key_switch2Track, 0xfff57e7e);
         defaultColors.put(key_switch2TrackChecked, 0xff52ade9);
         defaultColors.put(key_checkboxSquareBackground, 0xff43a0df);
@@ -1183,6 +1204,8 @@ public class Theme {
         defaultColors.put(key_contextProgressOuter2, 0xffffffff);
         defaultColors.put(key_contextProgressInner3, 0xffb3b3b3);
         defaultColors.put(key_contextProgressOuter3, 0xffffffff);
+        defaultColors.put(key_contextProgressInner4, 0xffcacdd0);
+        defaultColors.put(key_contextProgressOuter4, 0xff2f3438);
         defaultColors.put(key_fastScrollActive, 0xff52a3db);
         defaultColors.put(key_fastScrollInactive, 0xffc9cdd1);
         defaultColors.put(key_fastScrollText, 0xffffffff);
@@ -1401,10 +1424,10 @@ public class Theme {
         defaultColors.put(key_chat_adminSelectedText, 0xff89b4c1);
         defaultColors.put(key_chat_inTimeSelectedText, 0xff89b4c1);
         defaultColors.put(key_chat_outTimeSelectedText, 0xff70b15c);
-        defaultColors.put(key_chat_inAudioPerfomerText, 0xff2f3438);
-        defaultColors.put(key_chat_inAudioPerfomerSelectedText, 0xff2f3438);
-        defaultColors.put(key_chat_outAudioPerfomerText, 0xff354234);
-        defaultColors.put(key_chat_outAudioPerfomerSelectedText, 0xff354234);
+        defaultColors.put(key_chat_inAudioPerformerText, 0xff2f3438);
+        defaultColors.put(key_chat_inAudioPerformerSelectedText, 0xff2f3438);
+        defaultColors.put(key_chat_outAudioPerformerText, 0xff354234);
+        defaultColors.put(key_chat_outAudioPerformerSelectedText, 0xff354234);
         defaultColors.put(key_chat_inAudioTitleText, 0xff4e9ad4);
         defaultColors.put(key_chat_outAudioTitleText, 0xff55ab4f);
         defaultColors.put(key_chat_inAudioDurationText, 0xffa1aab3);
@@ -1689,6 +1712,17 @@ public class Theme {
         fallbackKeys.put(key_undo_background, key_chat_gifSaveHintBackground);
         fallbackKeys.put(key_undo_cancelColor, key_chat_gifSaveHintText);
         fallbackKeys.put(key_undo_infoColor, key_chat_gifSaveHintText);
+        fallbackKeys.put(key_windowBackgroundUnchecked, key_windowBackgroundWhite);
+        fallbackKeys.put(key_windowBackgroundChecked, key_windowBackgroundWhite);
+        fallbackKeys.put(key_switchTrackBlue, key_switchTrack);
+        fallbackKeys.put(key_switchTrackBlueChecked, key_switchTrackChecked);
+        fallbackKeys.put(key_switchTrackBlueThumb, key_windowBackgroundWhite);
+        fallbackKeys.put(key_switchTrackBlueThumbChecked, key_windowBackgroundWhite);
+        fallbackKeys.put(key_windowBackgroundCheckText, key_windowBackgroundWhiteBlackText);
+        fallbackKeys.put(key_contextProgressInner4, key_contextProgressInner1);
+        fallbackKeys.put(key_contextProgressOuter4, key_contextProgressOuter1);
+        fallbackKeys.put(key_switchTrackBlueSelector, key_listSelector);
+        fallbackKeys.put(key_switchTrackBlueSelectorChecked, key_listSelector);
 
         themes = new ArrayList<>();
         otherThemes = new ArrayList<>();
@@ -2936,6 +2970,8 @@ public class Theme {
             chat_msgInDrawable = resources.getDrawable(R.drawable.msg_in).mutate();
             chat_msgInSelectedDrawable = resources.getDrawable(R.drawable.msg_in).mutate();
 
+            chat_msgNoSoundDrawable = resources.getDrawable(R.drawable.video_muted);
+
             chat_msgOutDrawable = resources.getDrawable(R.drawable.msg_out).mutate();
             chat_msgOutSelectedDrawable = resources.getDrawable(R.drawable.msg_out).mutate();
 
@@ -3199,6 +3235,7 @@ public class Theme {
             chat_composeBackgroundPaint.setColor(getColor(key_chat_messagePanelBackground));
             chat_timeBackgroundPaint.setColor(getColor(key_chat_mediaTimeBackground));
 
+            setDrawableColorByKey(chat_msgNoSoundDrawable, key_chat_mediaTimeText);
             setDrawableColorByKey(chat_msgInDrawable, key_chat_inBubble);
             setDrawableColorByKey(chat_msgInSelectedDrawable, key_chat_inBubbleSelected);
             setDrawableColorByKey(chat_msgInShadowDrawable, key_chat_inBubbleShadow);

@@ -60,14 +60,17 @@ public class SharedConfig {
     public static boolean saveToGallery;
     public static int mapPreviewType = 2;
     public static boolean autoplayGifs = true;
+    public static boolean autoplayVideo = true;
     public static boolean raiseToSpeak = true;
     public static boolean customTabs = true;
     public static boolean directShare = true;
     public static boolean inappCamera = true;
     public static boolean roundCamera16to9 = true;
     public static boolean groupPhotosEnabled = true;
+    public static boolean noSoundHintShowed = false;
     public static boolean streamMedia = true;
     public static boolean streamAllVideo = false;
+    public static boolean streamMkv = false;
     public static boolean saveStreamMedia = true;
     public static boolean sortContactsByName;
     public static boolean shuffleMusic;
@@ -204,6 +207,7 @@ public class SharedConfig {
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             saveToGallery = preferences.getBoolean("save_gallery", false);
             autoplayGifs = preferences.getBoolean("autoplay_gif", true);
+            autoplayVideo = preferences.getBoolean("autoplay_video", true);
             mapPreviewType = preferences.getInt("mapPreviewType", 2);
             raiseToSpeak = preferences.getBoolean("raise_to_speak", true);
             customTabs = preferences.getBoolean("custom_tabs", true);
@@ -221,8 +225,10 @@ public class SharedConfig {
             streamMedia = preferences.getBoolean("streamMedia", true);
             saveStreamMedia = preferences.getBoolean("saveStreamMedia", true);
             streamAllVideo = preferences.getBoolean("streamAllVideo", BuildVars.DEBUG_VERSION);
+            streamMkv = preferences.getBoolean("streamMkv", false);
             suggestStickers = preferences.getInt("suggestStickers", 0);
             sortContactsByName = preferences.getBoolean("sortContactsByName", false);
+            noSoundHintShowed = preferences.getBoolean("noSoundHintShowed", false);
 
             configLoaded = true;
         }
@@ -388,6 +394,14 @@ public class SharedConfig {
         editor.commit();
     }
 
+    public static void toggleAutoplayVideo() {
+        autoplayVideo = !autoplayVideo;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("autoplay_video", autoplayVideo);
+        editor.commit();
+    }
+
     public static boolean isSecretMapPreviewSet() {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         return preferences.contains("mapPreviewType");
@@ -398,6 +412,17 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt("mapPreviewType", mapPreviewType);
+        editor.commit();
+    }
+
+    public static void setNoSoundHintShowed(boolean value) {
+        if (noSoundHintShowed == value) {
+            return;
+        }
+        noSoundHintShowed = value;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("noSoundHintShowed", noSoundHintShowed);
         editor.commit();
     }
 
@@ -446,6 +471,14 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("streamAllVideo", streamAllVideo);
+        editor.commit();
+    }
+
+    public static void toggleStreamMkv() {
+        streamMkv = !streamMkv;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("streamMkv", streamMkv);
         editor.commit();
     }
 

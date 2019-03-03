@@ -59,7 +59,6 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DataQuery;
-import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
@@ -185,7 +184,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
     private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
 
         @Override
-        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview) {
             int count = chatListView.getChildCount();
 
             for (int a = 0; a < count; a++) {
@@ -404,7 +403,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             if (messageObject1.isVoice() || messageObject1.isMusic()) {
                                 cell.updateButtonState(false, true, false);
                             } else if (messageObject1.isRoundVideo()) {
-                                cell.checkRoundVideoPlayback(false);
+                                cell.checkVideoPlayback(false);
                                 if (!MediaController.getInstance().isPlayingMessage(messageObject1)) {
                                     if (messageObject1.audioProgress != 0) {
                                         messageObject1.resetPlayingProgress();
@@ -429,7 +428,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                 cell.updateButtonState(false, true, false);
                             } else if (messageObject.isRoundVideo()) {
                                 if (!MediaController.getInstance().isPlayingMessage(messageObject)) {
-                                    cell.checkRoundVideoPlayback(true);
+                                    cell.checkVideoPlayback(true);
                                 }
                             }
                         }
@@ -1605,11 +1604,11 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 fragmentView.invalidate();
                 if (messageObject != null && messageObject.isRoundVideo()) {
                     if (checkTextureViewPosition || PipRoundVideoView.getInstance() != null) {
-                        MediaController.getInstance().setCurrentRoundVisible(false);
+                        MediaController.getInstance().setCurrentVideoVisible(false);
                     }
                 }
             } else {
-                MediaController.getInstance().setCurrentRoundVisible(true);
+                MediaController.getInstance().setCurrentVideoVisible(true);
             }
         }
     }
@@ -1676,10 +1675,10 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 fragmentView.invalidate();
                 MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
                 if (messageObject != null && messageObject.isRoundVideo() && checkTextureViewPosition) {
-                    MediaController.getInstance().setCurrentRoundVisible(false);
+                    MediaController.getInstance().setCurrentVideoVisible(false);
                 }
             } else {
-                MediaController.getInstance().setCurrentRoundVisible(true);
+                MediaController.getInstance().setCurrentVideoVisible(true);
             }
         }
         if (minMessageChild != null) {
@@ -2274,9 +2273,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                         pinnedTop = false;
                     }
                     messageCell.setMessageObject(message, null, pinnedBotton, pinnedTop);
-                    if (view instanceof ChatMessageCell && DownloadController.getInstance(currentAccount).canDownloadMedia(message)) {
-                        ((ChatMessageCell) view).downloadAudioIfNeed();
-                    }
                     messageCell.setHighlighted(false);
                     messageCell.setHighlightedText(null);
                 } else if (view instanceof ChatActionCell) {
@@ -2541,8 +2537,8 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outTimeText),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_inTimeSelectedText),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outTimeSelectedText),
-                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_inAudioPerfomerText),
-                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outAudioPerfomerText),
+                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_inAudioPerformerText),
+                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outAudioPerformerText),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_inAudioTitleText),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outAudioTitleText),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_inAudioDurationText),

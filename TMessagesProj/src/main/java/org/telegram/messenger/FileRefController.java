@@ -56,7 +56,7 @@ public class FileRefController {
         if (parentObject instanceof MessageObject) {
             MessageObject messageObject = (MessageObject) parentObject;
             int channelId = messageObject.getChannelId();
-            return "message" + messageObject.getId() + "_" + channelId;
+            return "message" + messageObject.getRealId() + "_" + channelId;
         } else if (parentObject instanceof TLRPC.Message) {
             TLRPC.Message message = (TLRPC.Message) parentObject;
             int channelId = message.to_id != null ? message.to_id.channel_id : 0;
@@ -200,7 +200,7 @@ public class FileRefController {
         }
         if (parentObject instanceof MessageObject) {
             MessageObject messageObject = (MessageObject) parentObject;
-            if (messageObject.getId() < 0 && messageObject.messageOwner.media.webpage != null) {
+            if (messageObject.getRealId() < 0 && messageObject.messageOwner.media.webpage != null) {
                 parentObject = messageObject.messageOwner.media.webpage;
             }
         }
@@ -266,11 +266,11 @@ public class FileRefController {
             if (channelId != 0) {
                 TLRPC.TL_channels_getMessages req = new TLRPC.TL_channels_getMessages();
                 req.channel = MessagesController.getInstance(currentAccount).getInputChannel(channelId);
-                req.id.add(messageObject.getId());
+                req.id.add(messageObject.getRealId());
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
             } else {
                 TLRPC.TL_messages_getMessages req = new TLRPC.TL_messages_getMessages();
-                req.id.add(messageObject.getId());
+                req.id.add(messageObject.getRealId());
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
             }
         } else if (parentObject instanceof TLRPC.TL_wallPaper) {
@@ -872,6 +872,6 @@ public class FileRefController {
     }
 
     public static boolean isFileRefError(String error) {
-        return "FILEREF_EXPIRED".equals(error) || "FILE_REFERENCE_EXPIRED".equals(error) || "FILE_REFERENCE_EMPTY".equals(error);
+        return "FILEREF_EXPIRED".equals(error) || "FILE_REFERENCE_EXPIRED".equals(error) || "FILE_REFERENCE_EMPTY".equals(error) || error != null && error.startsWith("FILE_REFERENCE_");
     }
 }

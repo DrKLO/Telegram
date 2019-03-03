@@ -1853,14 +1853,33 @@ public class AndroidUtilities {
     }
 
     public static String formatFileSize(long size) {
+        return formatFileSize(size, false);
+    }
+
+    public static String formatFileSize(long size, boolean removeZero) {
         if (size < 1024) {
             return String.format("%d B", size);
         } else if (size < 1024 * 1024) {
-            return String.format("%.1f KB", size / 1024.0f);
+            float value = size / 1024.0f;
+            if (removeZero && (value - (int) value) * 10 == 0) {
+                return String.format("%d KB", (int) value);
+            } else {
+                return String.format("%.1f KB", value);
+            }
         } else if (size < 1024 * 1024 * 1024) {
-            return String.format("%.1f MB", size / 1024.0f / 1024.0f);
+            float value = size / 1024.0f / 1024.0f;
+            if (removeZero && (value - (int) value) * 10 == 0) {
+                return String.format("%d MB", (int) value);
+            } else {
+                return String.format("%.1f MB", value);
+            }
         } else {
-            return String.format("%.1f GB", size / 1024.0f / 1024.0f / 1024.0f);
+            float value = size / 1024.0f / 1024.0f / 1024.0f;
+            if (removeZero && (value - (int) value) * 10 == 0) {
+                return String.format("%d GB", (int) value);
+            } else {
+                return String.format("%.1f GB", value);
+            }
         }
     }
 
@@ -2132,9 +2151,10 @@ public class AndroidUtilities {
         return rights == null || Math.abs(rights.until_date - System.currentTimeMillis() / 1000) > 5 * 365 * 24 * 60 * 60;
     }
 
-    public static void setRectToRect(Matrix matrix, RectF src, RectF dst, int rotation, Matrix.ScaleToFit align) {
+    public static void setRectToRect(Matrix matrix, RectF src, RectF dst, int rotation, boolean translate) {
         float tx, sx;
         float ty, sy;
+        boolean xLarger = false;
         if (rotation == 90 || rotation == 270) {
             sx = dst.height() / src.width();
             sy = dst.width() / src.height();
@@ -2142,17 +2162,16 @@ public class AndroidUtilities {
             sx = dst.width() / src.width();
             sy = dst.height() / src.height();
         }
-        if (align != Matrix.ScaleToFit.FILL) {
-            if (sx > sy) {
-                sx = sy;
-            } else {
-                sy = sx;
-            }
+        if (sx < sy) {
+            sx = sy;
+            xLarger = true;
+        } else {
+            sy = sx;
         }
-        tx = -src.left * sx;
-        ty = -src.top * sy;
 
-        matrix.setTranslate(dst.left, dst.top);
+        if (translate) {
+            matrix.setTranslate(dst.left, dst.top);
+        }
         if (rotation == 90) {
             matrix.preRotate(90);
             matrix.preTranslate(0, -dst.width());
@@ -2164,8 +2183,31 @@ public class AndroidUtilities {
             matrix.preTranslate(-dst.height(), 0);
         }
 
+        if (translate) {
+            tx = -src.left * sx;
+            ty = -src.top * sy;
+        } else {
+            tx = dst.left - src.left * sx;
+            ty = dst.top - src.top * sy;
+        }
+
+        float diff;
+        if (xLarger) {
+            diff = dst.width() - src.width() * sy;
+        } else {
+            diff = dst.height() - src.height() * sy;
+        }
+        diff = diff / 2.0f;
+        if (xLarger) {
+            tx += diff;
+        } else {
+            ty += diff;
+        }
+
         matrix.preScale(sx, sy);
-        matrix.preTranslate(tx, ty);
+        if (translate) {
+            matrix.preTranslate(tx, ty);
+        }
     }
 
     public static boolean handleProxyIntent(Activity activity, Intent intent) {
@@ -2537,5 +2579,11 @@ public class AndroidUtilities {
             link = null;
         }
         return link;
+    }
+
+    public static float distanceInfluenceForSnapDuration(float f) {
+        f -= 0.5F;
+        f *= 0.47123894F;
+        return (float) Math.sin((double) f);
     }
 }

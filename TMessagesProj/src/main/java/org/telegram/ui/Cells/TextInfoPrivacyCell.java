@@ -29,6 +29,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
     private TextView textView;
     private String linkTextColorKey = Theme.key_windowBackgroundWhiteLinkText;
     private int bottomPadding = 17;
+    private int fixedSize;
 
     public TextInfoPrivacyCell(Context context) {
         this(context, 21);
@@ -53,11 +54,19 @@ public class TextInfoPrivacyCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+        if (fixedSize != 0) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(fixedSize), MeasureSpec.EXACTLY));
+        } else {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+        }
     }
 
     public void setBottomPadding(int value) {
         bottomPadding = value;
+    }
+
+    public void setFixedSize(int size) {
+        fixedSize = size;
     }
 
     public void setText(CharSequence text) {

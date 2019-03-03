@@ -190,7 +190,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
 
         @Override
-        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+        public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview) {
             if (messageObject == null || mediaPages[0].selectedType != 0 && mediaPages[0].selectedType != 1) {
                 return null;
             }
@@ -1086,7 +1086,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             int width = getMeasuredWidth();
                             int halfWidth = width / 2;
                             float distanceRatio = Math.min(1.0f, 1.0f * dx / (float) width);
-                            float distance = (float) halfWidth + (float) halfWidth * distanceInfluenceForSnapDuration(distanceRatio);
+                            float distance = (float) halfWidth + (float) halfWidth * AndroidUtilities.distanceInfluenceForSnapDuration(distanceRatio);
                             velX = Math.abs(velX);
                             int duration;
                             if (velX > 0) {
@@ -1350,12 +1350,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             mediaPages[a].listView.setPinnedSectionOffsetY((int) value);
         }
         fragmentView.invalidate();
-    }
-
-    private float distanceInfluenceForSnapDuration(float f) {
-        f -= 0.5F;
-        f *= 0.47123894F;
-        return (float) Math.sin((double) f);
     }
 
     private void resetScroll() {
@@ -2890,7 +2884,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             boolean result = MediaController.getInstance().playMessage(messageObject);
                             MediaController.getInstance().setVoiceMessagesPlaylist(result ? searchResult : null, false);
                             if (messageObject.isRoundVideo()) {
-                                MediaController.getInstance().setCurrentRoundVisible(false);
+                                MediaController.getInstance().setCurrentVideoVisible(false);
                             }
                             return result;
                         } else if (messageObject.isMusic()) {

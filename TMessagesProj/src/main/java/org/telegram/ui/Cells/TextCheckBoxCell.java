@@ -29,10 +29,14 @@ public class TextCheckBoxCell extends FrameLayout {
     private boolean needDivider;
 
     public TextCheckBoxCell(Context context) {
+        this(context, false);
+    }
+
+    public TextCheckBoxCell(Context context, boolean dialog) {
         super(context);
 
         textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        textView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);
@@ -41,7 +45,7 @@ public class TextCheckBoxCell extends FrameLayout {
         textView.setEllipsize(TextUtils.TruncateAt.END);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 66 : 21, 0, LocaleController.isRTL ? 21 : 66, 0));
 
-        checkBox = new CheckBoxSquare(context, false);
+        checkBox = new CheckBoxSquare(context, dialog);
         checkBox.setDuplicateParentStateEnabled(false);
         checkBox.setFocusable(false);
         checkBox.setFocusableInTouchMode(false);
