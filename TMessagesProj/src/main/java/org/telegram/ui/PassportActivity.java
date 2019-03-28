@@ -28,6 +28,7 @@ import android.os.Bundle;
 import android.os.Vibrator;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
+import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
@@ -6309,7 +6310,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 @SuppressLint("HardwareIds")
                 String number = tm.getLine1Number();
                 if (!TextUtils.isEmpty(number)) {
-                    req.settings.current_number = phone.contains(number) || number.contains(phone);
+                    req.settings.current_number = PhoneNumberUtils.compare(phone, number);
                     if (!req.settings.current_number) {
                         req.settings.allow_flashcall = false;
                     }
