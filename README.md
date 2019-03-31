@@ -1,7 +1,9 @@
-## Telegram messenger for Android
+## Telegram Messenger for Android
 
-[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+[Telegram](https://telegram.org) is a messaging app with a focus on speed and security.
+It’s superfast, simple and free.
+
+This repo contains the official source code of [Telegram Client for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
 
 ## Creating your Telegram Application
 
@@ -16,9 +18,9 @@ There are several things we require from **all developers** for the moment.
 
 ### API, Protocol documentation
 
-Telegram API manuals: https://core.telegram.org/api
+[Telegram API manuals](https://core.telegram.org/api)
 
-MTproto protocol manuals: https://core.telegram.org/mtproto
+[MTproto protocol manuals](https://core.telegram.org/mtproto)
 
 ### Usage
 
@@ -29,4 +31,6 @@ Import the root folder into your IDE (tested on Android Studio), then run projec
 
 ### Localization
 
-We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+We moved all translations [here](https://translations.telegram.org/en/android/).
+
+If you want to help us with translations, use that plaform.
