@@ -1,4 +1,4 @@
-include_directories(. .. ../../include)
+include_directories(../../include)
 
 add_custom_command(
   OUTPUT err_data.c
@@ -21,6 +21,7 @@ add_custom_command(
   hkdf.errordata
   obj.errordata
   pem.errordata
+  pkcs7.errordata
   pkcs8.errordata
   rsa.errordata
   ssl.errordata
@@ -37,4 +38,3 @@ add_library(
   err.c
   err_data.c
 )
-

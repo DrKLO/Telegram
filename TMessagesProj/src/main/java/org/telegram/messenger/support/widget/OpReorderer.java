@@ -16,19 +16,20 @@
 
 package org.telegram.messenger.support.widget;
 
-import java.util.List;
-
-import org.telegram.messenger.support.widget.AdapterHelper.UpdateOp;
 import static org.telegram.messenger.support.widget.AdapterHelper.UpdateOp.ADD;
 import static org.telegram.messenger.support.widget.AdapterHelper.UpdateOp.MOVE;
 import static org.telegram.messenger.support.widget.AdapterHelper.UpdateOp.REMOVE;
 import static org.telegram.messenger.support.widget.AdapterHelper.UpdateOp.UPDATE;
 
+import org.telegram.messenger.support.widget.AdapterHelper.UpdateOp;
+
+import java.util.List;
+
 class OpReorderer {
 
     final Callback mCallback;
 
-    public OpReorderer(Callback callback) {
+    OpReorderer(Callback callback) {
         mCallback = callback;
     }
 
@@ -72,8 +73,8 @@ class OpReorderer {
             }
         } else {
             moveIsBackwards = true;
-            if (removeOp.positionStart == moveOp.itemCount + 1 &&
-                    removeOp.itemCount == moveOp.positionStart - moveOp.itemCount) {
+            if (removeOp.positionStart == moveOp.itemCount + 1
+                    && removeOp.itemCount == moveOp.positionStart - moveOp.itemCount) {
                 revertedMove = true;
             }
         }
@@ -83,7 +84,7 @@ class OpReorderer {
             removeOp.positionStart--;
         } else if (moveOp.itemCount < removeOp.positionStart + removeOp.itemCount) {
             // move is removed.
-            removeOp.itemCount --;
+            removeOp.itemCount--;
             moveOp.cmd = REMOVE;
             moveOp.itemCount = 1;
             if (removeOp.itemCount == 0) {
@@ -229,7 +230,7 @@ class OpReorderer {
         return -1;
     }
 
-    static interface Callback {
+    interface Callback {
 
         UpdateOp obtainUpdateOp(int cmd, int startPosition, int itemCount, Object payload);
 

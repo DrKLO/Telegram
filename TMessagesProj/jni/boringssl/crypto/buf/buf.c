@@ -61,6 +61,8 @@
 #include <openssl/mem.h>
 #include <openssl/err.h>
 
+#include "../internal.h"
+
 
 BUF_MEM *BUF_MEM_new(void) {
   BUF_MEM *ret;
@@ -71,7 +73,7 @@ BUF_MEM *BUF_MEM_new(void) {
     return NULL;
   }
 
-  memset(ret, 0, sizeof(BUF_MEM));
+  OPENSSL_memset(ret, 0, sizeof(BUF_MEM));
   return ret;
 }
 
@@ -80,79 +82,75 @@ void BUF_MEM_free(BUF_MEM *buf) {
     return;
   }
 
-  if (buf->data != NULL) {
-    OPENSSL_cleanse(buf->data, buf->max);
-    OPENSSL_free(buf->data);
-  }
-
+  OPENSSL_free(buf->data);
   OPENSSL_free(buf);
 }
 
-static size_t buf_mem_grow(BUF_MEM *buf, size_t len, char clean) {
-  char *new_buf;
-  size_t n, alloc_size;
-
-  if (buf->length >= len) {
-    buf->length = len;
-    return len;
-  }
-  if (buf->max >= len) {
-    memset(&buf->data[buf->length], 0, len - buf->length);
-    buf->length = len;
-    return len;
+int BUF_MEM_reserve(BUF_MEM *buf, size_t cap) {
+  if (buf->max >= cap) {
+    return 1;
   }
 
-  n = len + 3;
-  if (n < len) {
-    /* overflow */
+  size_t n = cap + 3;
+  if (n < cap) {
+    // overflow
     OPENSSL_PUT_ERROR(BUF, ERR_R_MALLOC_FAILURE);
     return 0;
   }
   n = n / 3;
-  alloc_size = n * 4;
+  size_t alloc_size = n * 4;
   if (alloc_size / 4 != n) {
-    /* overflow */
+    // overflow
     OPENSSL_PUT_ERROR(BUF, ERR_R_MALLOC_FAILURE);
     return 0;
   }
 
-  if (buf->data == NULL) {
-    new_buf = OPENSSL_malloc(alloc_size);
-  } else {
-    if (clean) {
-      new_buf = OPENSSL_realloc_clean(buf->data, buf->max, alloc_size);
-    } else {
-      new_buf = OPENSSL_realloc(buf->data, alloc_size);
-    }
-  }
-
+  char *new_buf = OPENSSL_realloc(buf->data, alloc_size);
   if (new_buf == NULL) {
     OPENSSL_PUT_ERROR(BUF, ERR_R_MALLOC_FAILURE);
-    len = 0;
-  } else {
-    buf->data = new_buf;
-    buf->max = alloc_size;
-    memset(&buf->data[buf->length], 0, len - buf->length);
-    buf->length = len;
+    return 0;
   }
 
-  return len;
+  buf->data = new_buf;
+  buf->max = alloc_size;
+  return 1;
 }
 
 size_t BUF_MEM_grow(BUF_MEM *buf, size_t len) {
-  return buf_mem_grow(buf, len, 0 /* don't clear old buffer contents. */);
+  if (!BUF_MEM_reserve(buf, len)) {
+    return 0;
+  }
+  if (buf->length < len) {
+    OPENSSL_memset(&buf->data[buf->length], 0, len - buf->length);
+  }
+  buf->length = len;
+  return len;
 }
 
 size_t BUF_MEM_grow_clean(BUF_MEM *buf, size_t len) {
-  return buf_mem_grow(buf, len, 1 /* clear old buffer contents. */);
+  return BUF_MEM_grow(buf, len);
 }
 
-char *BUF_strdup(const char *buf) {
-  if (buf == NULL) {
+int BUF_MEM_append(BUF_MEM *buf, const void *in, size_t len) {
+  size_t new_len = buf->length + len;
+  if (new_len < len) {
+    OPENSSL_PUT_ERROR(BUF, ERR_R_OVERFLOW);
+    return 0;
+  }
+  if (!BUF_MEM_reserve(buf, new_len)) {
+    return 0;
+  }
+  OPENSSL_memcpy(buf->data + buf->length, in, len);
+  buf->length = new_len;
+  return 1;
+}
+
+char *BUF_strdup(const char *str) {
+  if (str == NULL) {
     return NULL;
   }
 
-  return BUF_strndup(buf, strlen(buf));
+  return BUF_strndup(str, strlen(str));
 }
 
 size_t BUF_strnlen(const char *str, size_t max_len) {
@@ -167,19 +165,19 @@ size_t BUF_strnlen(const char *str, size_t max_len) {
   return i;
 }
 
-char *BUF_strndup(const char *buf, size_t size) {
+char *BUF_strndup(const char *str, size_t size) {
   char *ret;
   size_t alloc_size;
 
-  if (buf == NULL) {
+  if (str == NULL) {
     return NULL;
   }
 
-  size = BUF_strnlen(buf, size);
+  size = BUF_strnlen(str, size);
 
   alloc_size = size + 1;
   if (alloc_size < size) {
-    /* overflow */
+    // overflow
     OPENSSL_PUT_ERROR(BUF, ERR_R_MALLOC_FAILURE);
     return NULL;
   }
@@ -189,7 +187,7 @@ char *BUF_strndup(const char *buf, size_t size) {
     return NULL;
   }
 
-  memcpy(ret, buf, size);
+  OPENSSL_memcpy(ret, str, size);
   ret[size] = '\0';
   return ret;
 }
@@ -217,19 +215,17 @@ size_t BUF_strlcat(char *dst, const char *src, size_t dst_size) {
   return l + BUF_strlcpy(dst, src, dst_size);
 }
 
-void *BUF_memdup(const void *data, size_t dst_size) {
-  void *ret;
-
-  if (data == NULL) {
+void *BUF_memdup(const void *data, size_t size) {
+  if (size == 0) {
     return NULL;
   }
 
-  ret = OPENSSL_malloc(dst_size);
+  void *ret = OPENSSL_malloc(size);
   if (ret == NULL) {
     OPENSSL_PUT_ERROR(BUF, ERR_R_MALLOC_FAILURE);
     return NULL;
   }
 
-  memcpy(ret, data, dst_size);
+  OPENSSL_memcpy(ret, data, size);
   return ret;
 }

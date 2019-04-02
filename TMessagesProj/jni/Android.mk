@@ -1,17 +1,16 @@
-LOCAL_PATH := $(call my-dir)
+MY_LOCAL_PATH := $(call my-dir)
+LOCAL_PATH := $(MY_LOCAL_PATH)
 
 LOCAL_MODULE    := avutil 
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
     LOCAL_SRC_FILES := ./ffmpeg/armv7-a/libavutil.a
-else
-    ifeq ($(TARGET_ARCH_ABI),armeabi)
-	LOCAL_SRC_FILES := ./ffmpeg/armv5te/libavutil.a
-    else
-        ifeq ($(TARGET_ARCH_ABI),x86)
-	    LOCAL_SRC_FILES := ./ffmpeg/i686/libavutil.a
-        endif
-    endif
+else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+    LOCAL_SRC_FILES := ./ffmpeg/arm64/libavutil.a
+else ifeq ($(TARGET_ARCH_ABI),x86)
+    LOCAL_SRC_FILES := ./ffmpeg/i686/libavutil.a
+else ifeq ($(TARGET_ARCH_ABI),x86_64)
+    LOCAL_SRC_FILES := ./ffmpeg/x86_64/libavutil.a
 endif
 
 include $(PREBUILT_STATIC_LIBRARY)
@@ -22,99 +21,93 @@ LOCAL_MODULE    := avformat
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
     LOCAL_SRC_FILES := ./ffmpeg/armv7-a/libavformat.a
-else
-    ifeq ($(TARGET_ARCH_ABI),armeabi)
-	LOCAL_SRC_FILES := ./ffmpeg/armv5te/libavformat.a
-    else
-        ifeq ($(TARGET_ARCH_ABI),x86)
-	    LOCAL_SRC_FILES := ./ffmpeg/i686/libavformat.a
-        endif
-    endif
+else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+    LOCAL_SRC_FILES := ./ffmpeg/arm64/libavformat.a
+else ifeq ($(TARGET_ARCH_ABI),x86)
+    LOCAL_SRC_FILES := ./ffmpeg/i686/libavformat.a
+else ifeq ($(TARGET_ARCH_ABI),x86_64)
+    LOCAL_SRC_FILES := ./ffmpeg/x86_64/libavformat.a
 endif
 
 include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE    := avcodec 
+LOCAL_MODULE    := avcodec
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
     LOCAL_SRC_FILES := ./ffmpeg/armv7-a/libavcodec.a
-else
-    ifeq ($(TARGET_ARCH_ABI),armeabi)
-	LOCAL_SRC_FILES := ./ffmpeg/armv5te/libavcodec.a
-    else
-        ifeq ($(TARGET_ARCH_ABI),x86)
-	    LOCAL_SRC_FILES := ./ffmpeg/i686/libavcodec.a
-        endif
-    endif
+else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+    LOCAL_SRC_FILES := ./ffmpeg/arm64/libavcodec.a
+else ifeq ($(TARGET_ARCH_ABI),x86)
+    LOCAL_SRC_FILES := ./ffmpeg/i686/libavcodec.a
+else ifeq ($(TARGET_ARCH_ABI),x86_64)
+    LOCAL_SRC_FILES := ./ffmpeg/x86_64/libavcodec.a
 endif
 
 include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE    := crypto 
+LOCAL_MODULE    := avresample
+
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+    LOCAL_SRC_FILES := ./ffmpeg/armv7-a/libavresample.a
+else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+    LOCAL_SRC_FILES := ./ffmpeg/arm64/libavresample.a
+else ifeq ($(TARGET_ARCH_ABI),x86)
+    LOCAL_SRC_FILES := ./ffmpeg/i686/libavresample.a
+else ifeq ($(TARGET_ARCH_ABI),x86_64)
+    LOCAL_SRC_FILES := ./ffmpeg/x86_64/libavresample.a
+endif
+
+include $(PREBUILT_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE    := swscale
+
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+    LOCAL_SRC_FILES := ./ffmpeg/armv7-a/libswscale.a
+else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+    LOCAL_SRC_FILES := ./ffmpeg/arm64/libswscale.a
+else ifeq ($(TARGET_ARCH_ABI),x86)
+    LOCAL_SRC_FILES := ./ffmpeg/i686/libswscale.a
+else ifeq ($(TARGET_ARCH_ABI),x86_64)
+    LOCAL_SRC_FILES := ./ffmpeg/x86_64/libswscale.a
+endif
+
+include $(PREBUILT_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE    := crypto
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
     LOCAL_SRC_FILES := ./boringssl/lib/libcrypto_armeabi-v7a.a
-else
-    ifeq ($(TARGET_ARCH_ABI),armeabi)
-	LOCAL_SRC_FILES := ./boringssl/lib/libcrypto_armeabi.a
-    else
-        ifeq ($(TARGET_ARCH_ABI),x86)
-	    LOCAL_SRC_FILES := ./boringssl/lib/libcrypto_x86.a
-        endif
-    endif
+else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+    LOCAL_SRC_FILES := ./boringssl/lib/libcrypto_arm64-v8a.a
+else ifeq ($(TARGET_ARCH_ABI),x86)
+    LOCAL_SRC_FILES := ./boringssl/lib/libcrypto_x86.a
+else ifeq ($(TARGET_ARCH_ABI),x86_64)
+    LOCAL_SRC_FILES := ./boringssl/lib/libcrypto_x86_64.a
 endif
 
 include $(PREBUILT_STATIC_LIBRARY)
 
-include $(CLEAR_VARS)
-
-LOCAL_CPP_EXTENSION := .cc
-LOCAL_ARM_MODE := arm
-LOCAL_MODULE := breakpad
-LOCAL_CPPFLAGS := -Wall -std=c++11 -DANDROID -finline-functions -ffast-math -Os -fno-strict-aliasing
-
-LOCAL_C_INCLUDES := \
-./breakpad/common/android/include \
-./breakpad
-
-LOCAL_SRC_FILES := \
-./breakpad/client/linux/crash_generation/crash_generation_client.cc \
-./breakpad/client/linux/dump_writer_common/ucontext_reader.cc \
-./breakpad/client/linux/dump_writer_common/thread_info.cc \
-./breakpad/client/linux/handler/exception_handler.cc \
-./breakpad/client/linux/handler/minidump_descriptor.cc \
-./breakpad/client/linux/log/log.cc \
-./breakpad/client/linux/microdump_writer/microdump_writer.cc \
-./breakpad/client/linux/minidump_writer/linux_dumper.cc \
-./breakpad/client/linux/minidump_writer/linux_ptrace_dumper.cc \
-./breakpad/client/linux/minidump_writer/minidump_writer.cc \
-./breakpad/client/minidump_file_writer.cc \
-./breakpad/common/android/breakpad_getcontext.S \
-./breakpad/common/convert_UTF.c \
-./breakpad/common/md5.cc \
-./breakpad/common/string_conversion.cc \
-./breakpad/common/linux/elfutils.cc \
-./breakpad/common/linux/file_id.cc \
-./breakpad/common/linux/guid_creator.cc \
-./breakpad/common/linux/linux_libc_support.cc \
-./breakpad/common/linux/memory_mapped_file.cc \
-./breakpad/common/linux/safe_readlink.cc
-
-include $(BUILD_STATIC_LIBRARY)
+include $(MY_LOCAL_PATH)/libtgvoip/Android.mk
+LOCAL_PATH := $(MY_LOCAL_PATH) # restore local path after include
 
 include $(CLEAR_VARS)
 
-LOCAL_CPPFLAGS := -Wall -std=c++11 -DANDROID -frtti -DHAVE_PTHREAD -finline-functions -ffast-math -Os
-LOCAL_C_INCLUDES += ./boringssl/include/
+LOCAL_CPPFLAGS := -Wall -std=c++11 -DANDROID -frtti -DHAVE_PTHREAD -finline-functions -ffast-math -O0
+LOCAL_C_INCLUDES += ./jni/boringssl/include/
 LOCAL_ARM_MODE := arm
 LOCAL_MODULE := tgnet
 LOCAL_STATIC_LIBRARIES := crypto
 
 LOCAL_SRC_FILES := \
+./tgnet/ApiScheme.cpp \
 ./tgnet/BuffersStorage.cpp \
 ./tgnet/ByteArray.cpp \
 ./tgnet/ByteStream.cpp \
@@ -130,14 +123,17 @@ LOCAL_SRC_FILES := \
 ./tgnet/Request.cpp \
 ./tgnet/Timer.cpp \
 ./tgnet/TLObject.cpp \
+./tgnet/FileLoadOperation.cpp \
+./tgnet/ProxyCheckInfo.cpp \
+./tgnet/Handshake.cpp \
 ./tgnet/Config.cpp
 
 include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
-LOCAL_CFLAGS := -Wall -DANDROID -DHAVE_MALLOC_H -DHAVE_PTHREAD -DWEBP_USE_THREAD -finline-functions -ffast-math -ffunction-sections -fdata-sections -Os
-LOCAL_C_INCLUDES += ./libwebp/src
+LOCAL_CFLAGS := -Wall -DANDROID -DHAVE_MALLOC_H -DHAVE_PTHREAD -DWEBP_USE_THREAD -finline-functions -ffast-math -ffunction-sections -fdata-sections -O0
+LOCAL_C_INCLUDES += ./jni/libwebp/src
 LOCAL_ARM_MODE := arm
 LOCAL_STATIC_LIBRARIES := cpufeatures
 LOCAL_MODULE := webp
@@ -213,18 +209,58 @@ LOCAL_SRC_FILES := \
 ./libwebp/utils/random.c \
 ./libwebp/utils/rescaler.c \
 ./libwebp/utils/thread.c \
-./libwebp/utils/utils.c \
+./libwebp/utils/utils.c
 
 include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
-ifeq ($(TARGET_ARCH_ABI),armeabi)
-	LOCAL_ARM_MODE  := thumb
-else
-	LOCAL_ARM_MODE  := arm
-endif
+
+LOCAL_CPPFLAGS := -frtti
+LOCAL_CFLAGS += '-DVERSION="1.3.1"' -DFLAC__NO_MD5 -DFLAC__INTEGER_ONLY_LIBRARY -DFLAC__NO_ASM
+LOCAL_CFLAGS += -D_REENTRANT -DPIC -DU_COMMON_IMPLEMENTATION -fPIC -DHAVE_SYS_PARAM_H
+LOCAL_CFLAGS += -O3 -funroll-loops -finline-functions
+LOCAL_LDLIBS := -lz -lm
+LOCAL_C_INCLUDES := ./jni/exoplayer/libFLAC/include
+LOCAL_ARM_MODE := arm
+LOCAL_CPP_EXTENSION := .cc
+LOCAL_MODULE := flac
+
+LOCAL_SRC_FILES := \
+./exoplayer/libFLAC/bitmath.c                     \
+./exoplayer/libFLAC/bitreader.c                   \
+./exoplayer/libFLAC/bitwriter.c                   \
+./exoplayer/libFLAC/cpu.c                         \
+./exoplayer/libFLAC/crc.c                         \
+./exoplayer/libFLAC/fixed.c                       \
+./exoplayer/libFLAC/fixed_intrin_sse2.c           \
+./exoplayer/libFLAC/fixed_intrin_ssse3.c          \
+./exoplayer/libFLAC/float.c                       \
+./exoplayer/libFLAC/format.c                      \
+./exoplayer/libFLAC/lpc.c                         \
+./exoplayer/libFLAC/lpc_intrin_avx2.c             \
+./exoplayer/libFLAC/lpc_intrin_sse2.c             \
+./exoplayer/libFLAC/lpc_intrin_sse41.c            \
+./exoplayer/libFLAC/lpc_intrin_sse.c              \
+./exoplayer/libFLAC/md5.c                         \
+./exoplayer/libFLAC/memory.c                      \
+./exoplayer/libFLAC/metadata_iterators.c          \
+./exoplayer/libFLAC/metadata_object.c             \
+./exoplayer/libFLAC/stream_decoder.c              \
+./exoplayer/libFLAC/stream_encoder.c              \
+./exoplayer/libFLAC/stream_encoder_framing.c      \
+./exoplayer/libFLAC/stream_encoder_intrin_avx2.c  \
+./exoplayer/libFLAC/stream_encoder_intrin_sse2.c  \
+./exoplayer/libFLAC/stream_encoder_intrin_ssse3.c \
+./exoplayer/libFLAC/windows_unicode_filenames     \
+./exoplayer/libFLAC/window.c
+
+include $(BUILD_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+
+LOCAL_ARM_MODE  := arm
 LOCAL_MODULE := sqlite
-LOCAL_CFLAGS 	:= -w -std=c11 -Os -DNULL=0 -DSOCKLEN_T=socklen_t -DLOCALE_NOT_USED -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64
+LOCAL_CFLAGS 	:= -w -std=c11 -Os -DNULL=0 -DSOCKLEN_T=socklen_t -DLOCALE_NOT_USED -D_LARGEFILE_SOURCE=1
 LOCAL_CFLAGS 	+= -DANDROID_NDK -DDISABLE_IMPORTGL -fno-strict-aliasing -fprefetch-loop-arrays -DAVOID_TABLES -DANDROID_TILE_BASED_DECODE -DANDROID_ARMV6_IDCT -DHAVE_STRCHRNUL=0
 
 LOCAL_SRC_FILES     := \
@@ -235,13 +271,13 @@ include $(BUILD_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false
 
-LOCAL_MODULE 	:= tmessages.20
-LOCAL_CFLAGS 	:= -w -std=c11 -Os -DNULL=0 -DSOCKLEN_T=socklen_t -DLOCALE_NOT_USED -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64
+LOCAL_MODULE 	:= tmessages.30
+LOCAL_CFLAGS 	:= -w -std=c11 -Os -DNULL=0 -DSOCKLEN_T=socklen_t -DLOCALE_NOT_USED -D_LARGEFILE_SOURCE=1
 LOCAL_CFLAGS 	+= -Drestrict='' -D__EMX__ -DOPUS_BUILD -DFIXED_POINT -DUSE_ALLOCA -DHAVE_LRINT -DHAVE_LRINTF -fno-math-errno
 LOCAL_CFLAGS 	+= -DANDROID_NDK -DDISABLE_IMPORTGL -fno-strict-aliasing -fprefetch-loop-arrays -DAVOID_TABLES -DANDROID_TILE_BASED_DECODE -DANDROID_ARMV6_IDCT -ffast-math -D__STDC_CONSTANT_MACROS
 LOCAL_CPPFLAGS 	:= -DBSD=1 -ffast-math -Os -funroll-loops -std=c++11
-LOCAL_LDLIBS 	:= -ljnigraphics -llog -lz
-LOCAL_STATIC_LIBRARIES := webp sqlite tgnet breakpad avformat avcodec avutil
+LOCAL_LDLIBS 	:= -ljnigraphics -llog -lz -latomic -lEGL -lGLESv2 -landroid
+LOCAL_STATIC_LIBRARIES := webp sqlite tgnet swscale avformat avcodec avresample avutil voip flac
 
 LOCAL_SRC_FILES     := \
 ./opus/src/opus.c \
@@ -253,22 +289,51 @@ LOCAL_SRC_FILES     := \
 ./opus/src/repacketizer.c \
 ./opus/src/analysis.c \
 ./opus/src/mlp.c \
-./opus/src/mlp_data.c
+./opus/src/mlp_data.c \
+./opus/src/opus_projection_encoder.c \
+./opus/src/opus_projection_decoder.c \
+./opus/src/mapping_matrix.c
 
-ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+ifeq ($(TARGET_ARCH_ABI),$(filter $(TARGET_ARCH_ABI),armeabi-v7a arm64-v8a))
     LOCAL_ARM_MODE := arm
     LOCAL_CPPFLAGS += -DLIBYUV_NEON
     LOCAL_CFLAGS += -DLIBYUV_NEON
-else
-    ifeq ($(TARGET_ARCH_ABI),armeabi)
-	LOCAL_ARM_MODE  := arm
+    LOCAL_CFLAGS += -DOPUS_HAVE_RTCD -DOPUS_ARM_ASM
+    LOCAL_SRC_FILES += \
+    ./opus/celt/arm/celt_neon_intr.c.neon \
+    ./opus/celt/arm/pitch_neon_intr.c.neon \
+    ./opus/silk/arm/NSQ_neon.c.neon \
+    ./opus/silk/arm/arm_silk_map.c \
+    ./opus/silk/arm/LPC_inv_pred_gain_neon_intr.c.neon \
+    ./opus/silk/arm/NSQ_del_dec_neon_intr.c.neon \
+    ./opus/silk/arm/biquad_alt_neon_intr.c.neon \
+    ./opus/silk/fixed/arm/warped_autocorrelation_FIX_neon_intr.c.neon
 
-    else
-        ifeq ($(TARGET_ARCH_ABI),x86)
+#    LOCAL_SRC_FILES += ./opus/celt/arm/celt_pitch_xcorr_arm-gnu.S
+
+else
+	ifeq ($(TARGET_ARCH_ABI),x86)
+	    LOCAL_CFLAGS += -Dx86fix
+ 	    LOCAL_CPPFLAGS += -Dx86fix
 	    LOCAL_ARM_MODE  := arm
-	    LOCAL_SRC_FILE += \
-	    ./libyuv/source/row_x86.asm
-        endif
+#	    LOCAL_SRC_FILES += \
+#	    ./libyuv/source/row_x86.asm
+
+#	    LOCAL_SRC_FILES += \
+#	    ./opus/celt/x86/celt_lpc_sse.c \
+#		./opus/celt/x86/pitch_sse.c \
+#		./opus/celt/x86/pitch_sse2.c \
+#		./opus/celt/x86/pitch_sse4_1.c \
+#		./opus/celt/x86/vq_sse2.c \
+#		./opus/celt/x86/x86_celt_map.c \
+#		./opus/celt/x86/x86cpu.c \
+#		./opus/silk/fixed/x86/burg_modified_FIX_sse.c \
+#		./opus/silk/fixed/x86/vector_ops_FIX_sse.c \
+#		./opus/silk/x86/NSQ_del_dec_sse.c \
+#		./opus/silk/x86/NSQ_sse.c \
+#		./opus/silk/x86/VAD_sse.c \
+#		./opus/silk/x86/VQ_WMat_sse.c \
+#		./opus/silk/x86/x86_silk_map.c
     endif
 endif
 
@@ -348,7 +413,8 @@ LOCAL_SRC_FILES     += \
 ./opus/silk/stereo_decode_pred.c \
 ./opus/silk/stereo_encode_pred.c \
 ./opus/silk/stereo_find_predictor.c \
-./opus/silk/stereo_quant_pred.c
+./opus/silk/stereo_quant_pred.c \
+./opus/silk/LPC_fit.c
 
 LOCAL_SRC_FILES     += \
 ./opus/silk/fixed/LTP_analysis_filter_FIX.c \
@@ -360,12 +426,10 @@ LOCAL_SRC_FILES     += \
 ./opus/silk/fixed/find_pitch_lags_FIX.c \
 ./opus/silk/fixed/find_pred_coefs_FIX.c \
 ./opus/silk/fixed/noise_shape_analysis_FIX.c \
-./opus/silk/fixed/prefilter_FIX.c \
 ./opus/silk/fixed/process_gains_FIX.c \
 ./opus/silk/fixed/regularize_correlations_FIX.c \
 ./opus/silk/fixed/residual_energy16_FIX.c \
 ./opus/silk/fixed/residual_energy_FIX.c \
-./opus/silk/fixed/solve_LS_FIX.c \
 ./opus/silk/fixed/warped_autocorrelation_FIX.c \
 ./opus/silk/fixed/apply_sine_window_FIX.c \
 ./opus/silk/fixed/autocorr_FIX.c \
@@ -408,66 +472,19 @@ LOCAL_SRC_FILES     += \
 ./opus/opusfile/stream.c
 
 LOCAL_C_INCLUDES    := \
-./opus/include \
-./opus/silk \
-./opus/silk/fixed \
-./opus/celt \
-./opus/ \
-./opus/opusfile \
-./libyuv/include \
-./boringssl/include \
-./breakpad/common/android/include \
-./breakpad \
-./ffmpeg/include
-
-LOCAL_SRC_FILES     += \
-./libjpeg/jcapimin.c \
-./libjpeg/jcapistd.c \
-./libjpeg/armv6_idct.S \
-./libjpeg/jccoefct.c \
-./libjpeg/jccolor.c \
-./libjpeg/jcdctmgr.c \
-./libjpeg/jchuff.c \
-./libjpeg/jcinit.c \
-./libjpeg/jcmainct.c \
-./libjpeg/jcmarker.c \
-./libjpeg/jcmaster.c \
-./libjpeg/jcomapi.c \
-./libjpeg/jcparam.c \
-./libjpeg/jcphuff.c \
-./libjpeg/jcprepct.c \
-./libjpeg/jcsample.c \
-./libjpeg/jctrans.c \
-./libjpeg/jdapimin.c \
-./libjpeg/jdapistd.c \
-./libjpeg/jdatadst.c \
-./libjpeg/jdatasrc.c \
-./libjpeg/jdcoefct.c \
-./libjpeg/jdcolor.c \
-./libjpeg/jddctmgr.c \
-./libjpeg/jdhuff.c \
-./libjpeg/jdinput.c \
-./libjpeg/jdmainct.c \
-./libjpeg/jdmarker.c \
-./libjpeg/jdmaster.c \
-./libjpeg/jdmerge.c \
-./libjpeg/jdphuff.c \
-./libjpeg/jdpostct.c \
-./libjpeg/jdsample.c \
-./libjpeg/jdtrans.c \
-./libjpeg/jerror.c \
-./libjpeg/jfdctflt.c \
-./libjpeg/jfdctfst.c \
-./libjpeg/jfdctint.c \
-./libjpeg/jidctflt.c \
-./libjpeg/jidctfst.c \
-./libjpeg/jidctint.c \
-./libjpeg/jidctred.c \
-./libjpeg/jmemmgr.c \
-./libjpeg/jmemnobs.c \
-./libjpeg/jquant1.c \
-./libjpeg/jquant2.c \
-./libjpeg/jutils.c
+./jni/opus/include \
+./jni/opus/silk \
+./jni/opus/silk/fixed \
+./jni/opus/celt \
+./jni/opus/ \
+./jni/opus/opusfile \
+./jni/libyuv/include \
+./jni/boringssl/include \
+./jni/ffmpeg/include \
+./jni/emoji \
+./jni/exoplayer/include \
+./jni/exoplayer/libFLAC/include \
+./jni/intro
 
 LOCAL_SRC_FILES     += \
 ./libyuv/source/compare_common.cc \
@@ -521,17 +538,24 @@ endif
 
 LOCAL_SRC_FILES     += \
 ./jni.c \
-./sqlite_cursor.c \
-./sqlite_database.c \
-./sqlite_statement.c \
-./sqlite.c \
 ./audio.c \
-./utils.c \
 ./image.c \
 ./video.c \
+./intro/IntroRenderer.c \
+./utilities.cpp \
 ./gifvideo.cpp \
+./SqliteWrapper.cpp \
 ./TgNetWrapper.cpp \
-./NativeLoader.cpp
+./NativeLoader.cpp \
+./emoji/emoji_suggestions_data.cpp \
+./emoji/emoji_suggestions.cpp \
+./exoplayer/flac_jni.cc \
+./exoplayer/flac_parser.cc \
+./exoplayer/opus_jni.cc \
+./exoplayer/ffmpeg_jni.cc \
+./fast-edge.cpp \
+./genann.c \
+./secureid_ocr.cpp
 
 include $(BUILD_SHARED_LIBRARY)
 

@@ -1,9 +1,9 @@
 /*
- * This is the source code of tgnet library v. 1.0
+ * This is the source code of tgnet library v. 1.1
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2015.
+ * Copyright Nikolai Kudashov, 2015-2018.
  */
 
 #include <algorithm>
@@ -12,6 +12,10 @@
 #include "MTProtoScheme.h"
 #include "ConnectionsManager.h"
 #include "NativeByteBuffer.h"
+
+ConnectionSession::ConnectionSession(int32_t instance) {
+    instanceNum = instance;
+}
 
 void ConnectionSession::recreateSession() {
     processedMessageIds.clear();
@@ -36,7 +40,7 @@ void ConnectionSession::setSessionId(int64_t id) {
     sessionId = id;
 }
 
-int64_t ConnectionSession::getSissionId() {
+int64_t ConnectionSession::getSessionId() {
     return sessionId;
 }
 
@@ -48,13 +52,24 @@ uint32_t ConnectionSession::generateMessageSeqNo(bool increment) {
     return value * 2 + (increment ? 1 : 0);
 }
 
-bool ConnectionSession::isMessageIdProcessed(int64_t messageId) {
-    return std::find(processedMessageIds.begin(), processedMessageIds.end(), messageId) != processedMessageIds.end();
+int32_t ConnectionSession::isMessageIdProcessed(int64_t messageId) {
+    if (!(messageId & 1)) {
+        return 1;
+    }
+    if (minProcessedMessageId != 0 && messageId < minProcessedMessageId) {
+        return 2;
+    }
+    if (std::find(processedMessageIds.begin(), processedMessageIds.end(), messageId) != processedMessageIds.end()) {
+        return 1;
+    }
+    return 0;
 }
 
 void ConnectionSession::addProcessedMessageId(int64_t messageId) {
     if (processedMessageIds.size() > 300) {
+        std::sort(processedMessageIds.begin(), processedMessageIds.end());
         processedMessageIds.erase(processedMessageIds.begin(), processedMessageIds.begin() + 100);
+        minProcessedMessageId = *(processedMessageIds.begin());
     }
     processedMessageIds.push_back(messageId);
 }
@@ -64,7 +79,7 @@ bool ConnectionSession::hasMessagesToConfirm() {
 }
 
 void ConnectionSession::addMessageToConfirm(int64_t messageId) {
-    if (std::find(processedMessageIds.begin(), processedMessageIds.end(), messageId) != processedMessageIds.end()) {
+    if (std::find(messagesIdsForConfirmation.begin(), messagesIdsForConfirmation.end(), messageId) != messagesIdsForConfirmation.end()) {
         return;
     }
     messagesIdsForConfirmation.push_back(messageId);
@@ -80,7 +95,7 @@ NetworkMessage *ConnectionSession::generateConfirmationRequest() {
         msgAck->serializeToStream(os);
         networkMessage = new NetworkMessage();
         networkMessage->message = std::unique_ptr<TL_message>(new TL_message);
-        networkMessage->message->msg_id = ConnectionsManager::getInstance().generateMessageId();
+        networkMessage->message->msg_id = ConnectionsManager::getInstance(instanceNum).generateMessageId();
         networkMessage->message->seqno = generateMessageSeqNo(false);
         networkMessage->message->bytes = os->capacity();
         networkMessage->message->body = std::unique_ptr<TLObject>(msgAck);

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -13,6 +13,7 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.StaticLayout;
@@ -20,11 +21,13 @@ import android.text.TextPaint;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.ui.ActionBar.Theme;
 
 public class LetterDrawable extends Drawable {
 
-    private static Paint paint = new Paint();
+    public static Paint paint = new Paint();
     private static TextPaint namePaint;
+    private RectF rect = new RectF();
 
     private StaticLayout textLayout;
     private float textWidth;
@@ -36,11 +39,19 @@ public class LetterDrawable extends Drawable {
         super();
 
         if (namePaint == null) {
-            paint.setColor(0xffdfdfdf);
             namePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            namePaint.setColor(0xffffffff);
-            namePaint.setTextSize(AndroidUtilities.dp(28));
         }
+        namePaint.setTextSize(AndroidUtilities.dp(28));
+        paint.setColor(Theme.getColor(Theme.key_sharedMedia_linkPlaceholder));
+        namePaint.setColor(Theme.getColor(Theme.key_sharedMedia_linkPlaceholderText));
+    }
+
+    public void setBackgroundColor(int value) {
+        paint.setColor(value);
+    }
+
+    public void setColor(int value) {
+        namePaint.setColor(value);
     }
 
     public void setTitle(String title) {
@@ -59,7 +70,7 @@ public class LetterDrawable extends Drawable {
                     textHeight = textLayout.getLineBottom(0);
                 }
             } catch (Exception e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
         } else {
             textLayout = null;
@@ -72,10 +83,11 @@ public class LetterDrawable extends Drawable {
         if (bounds == null) {
             return;
         }
-        int size = bounds.width();
+        rect.set(bounds.left, bounds.top, bounds.right, bounds.bottom);
+        canvas.drawRoundRect(rect, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
         canvas.save();
-        canvas.drawRect(bounds.left, bounds.top, bounds.right, bounds.bottom, paint);
         if (textLayout != null) {
+            int size = bounds.width();
             canvas.translate(bounds.left + (size - textWidth) / 2 - textLeft, bounds.top + (size - textHeight) / 2);
             textLayout.draw(canvas);
         }

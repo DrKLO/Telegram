@@ -55,21 +55,30 @@
 
 #include <openssl/evp.h>
 
-#include <openssl/digest.h>
 #include <openssl/err.h>
 
 #include "internal.h"
-#include "../digest/internal.h"
+#include "../fipsmodule/digest/internal.h"
 
+
+enum evp_sign_verify_t {
+  evp_sign,
+  evp_verify,
+};
 
 static const struct evp_md_pctx_ops md_pctx_ops = {
   EVP_PKEY_CTX_free,
   EVP_PKEY_CTX_dup,
 };
 
+static int uses_prehash(EVP_MD_CTX *ctx, enum evp_sign_verify_t op) {
+  return (op == evp_sign) ? (ctx->pctx->pmeth->sign != NULL)
+                          : (ctx->pctx->pmeth->verify != NULL);
+}
+
 static int do_sigver_init(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
                           const EVP_MD *type, ENGINE *e, EVP_PKEY *pkey,
-                          int is_verify) {
+                          enum evp_sign_verify_t op) {
   if (ctx->pctx == NULL) {
     ctx->pctx = EVP_PKEY_CTX_new(pkey, e);
   }
@@ -78,16 +87,7 @@ static int do_sigver_init(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
   }
   ctx->pctx_ops = &md_pctx_ops;
 
-  if (type == NULL) {
-    type = EVP_sha1();
-  }
-
-  if (type == NULL) {
-    OPENSSL_PUT_ERROR(EVP, EVP_R_NO_DEFAULT_DIGEST);
-    return 0;
-  }
-
-  if (is_verify) {
+  if (op == evp_verify) {
     if (!EVP_PKEY_verify_init(ctx->pctx)) {
       return 0;
     }
@@ -96,38 +96,63 @@ static int do_sigver_init(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
       return 0;
     }
   }
-  if (!EVP_PKEY_CTX_set_signature_md(ctx->pctx, type)) {
+
+  if (type != NULL &&
+      !EVP_PKEY_CTX_set_signature_md(ctx->pctx, type)) {
     return 0;
   }
+
+  if (uses_prehash(ctx, op)) {
+    if (type == NULL) {
+      OPENSSL_PUT_ERROR(EVP, EVP_R_NO_DEFAULT_DIGEST);
+      return 0;
+    }
+    if (!EVP_DigestInit_ex(ctx, type, e)) {
+      return 0;
+    }
+  }
+
   if (pctx) {
     *pctx = ctx->pctx;
-  }
-  if (!EVP_DigestInit_ex(ctx, type, e)) {
-    return 0;
   }
   return 1;
 }
 
 int EVP_DigestSignInit(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx, const EVP_MD *type,
                        ENGINE *e, EVP_PKEY *pkey) {
-  return do_sigver_init(ctx, pctx, type, e, pkey, 0);
+  return do_sigver_init(ctx, pctx, type, e, pkey, evp_sign);
 }
 
 int EVP_DigestVerifyInit(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
                          const EVP_MD *type, ENGINE *e, EVP_PKEY *pkey) {
-  return do_sigver_init(ctx, pctx, type, e, pkey, 1);
+  return do_sigver_init(ctx, pctx, type, e, pkey, evp_verify);
 }
 
 int EVP_DigestSignUpdate(EVP_MD_CTX *ctx, const void *data, size_t len) {
+  if (!uses_prehash(ctx, evp_sign)) {
+    OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+    return 0;
+  }
+
   return EVP_DigestUpdate(ctx, data, len);
 }
 
 int EVP_DigestVerifyUpdate(EVP_MD_CTX *ctx, const void *data, size_t len) {
+  if (!uses_prehash(ctx, evp_verify)) {
+    OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+    return 0;
+  }
+
   return EVP_DigestUpdate(ctx, data, len);
 }
 
 int EVP_DigestSignFinal(EVP_MD_CTX *ctx, uint8_t *out_sig,
                         size_t *out_sig_len) {
+  if (!uses_prehash(ctx, evp_sign)) {
+    OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+    return 0;
+  }
+
   if (out_sig) {
     EVP_MD_CTX tmp_ctx;
     int ret;
@@ -149,6 +174,11 @@ int EVP_DigestSignFinal(EVP_MD_CTX *ctx, uint8_t *out_sig,
 
 int EVP_DigestVerifyFinal(EVP_MD_CTX *ctx, const uint8_t *sig,
                           size_t sig_len) {
+  if (!uses_prehash(ctx, evp_verify)) {
+    OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+    return 0;
+  }
+
   EVP_MD_CTX tmp_ctx;
   int ret;
   uint8_t md[EVP_MAX_MD_SIZE];
@@ -161,4 +191,41 @@ int EVP_DigestVerifyFinal(EVP_MD_CTX *ctx, const uint8_t *sig,
   EVP_MD_CTX_cleanup(&tmp_ctx);
 
   return ret;
+}
+
+int EVP_DigestSign(EVP_MD_CTX *ctx, uint8_t *out_sig, size_t *out_sig_len,
+                   const uint8_t *data, size_t data_len) {
+  if (uses_prehash(ctx, evp_sign)) {
+    // If |out_sig| is NULL, the caller is only querying the maximum output
+    // length. |data| should only be incorporated in the final call.
+    if (out_sig != NULL &&
+        !EVP_DigestSignUpdate(ctx, data, data_len)) {
+      return 0;
+    }
+
+    return EVP_DigestSignFinal(ctx, out_sig, out_sig_len);
+  }
+
+  if (ctx->pctx->pmeth->sign_message == NULL) {
+    OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+    return 0;
+  }
+
+  return ctx->pctx->pmeth->sign_message(ctx->pctx, out_sig, out_sig_len, data,
+                                        data_len);
+}
+
+int EVP_DigestVerify(EVP_MD_CTX *ctx, const uint8_t *sig, size_t sig_len,
+                     const uint8_t *data, size_t len) {
+  if (uses_prehash(ctx, evp_verify)) {
+    return EVP_DigestVerifyUpdate(ctx, data, len) &&
+           EVP_DigestVerifyFinal(ctx, sig, sig_len);
+  }
+
+  if (ctx->pctx->pmeth->verify_message == NULL) {
+    OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+    return 0;
+  }
+
+  return ctx->pctx->pmeth->verify_message(ctx->pctx, sig, sig_len, data, len);
 }

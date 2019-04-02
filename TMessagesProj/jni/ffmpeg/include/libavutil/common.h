@@ -40,6 +40,7 @@
 #include <string.h>
 
 #include "attributes.h"
+#include "macros.h"
 #include "version.h"
 #include "libavutil/avconfig.h"
 
@@ -53,9 +54,12 @@
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
 /* assume b>0 */
 #define ROUNDED_DIV(a,b) (((a)>0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
-/* assume a>0 and b>0 */
-#define FF_CEIL_RSHIFT(a,b) (!av_builtin_constant_p(b) ? -((-(a)) >> (b)) \
+/* Fast a/(1<<b) rounded toward +inf. Assume a>=0 and b>=0 */
+#define AV_CEIL_RSHIFT(a,b) (!av_builtin_constant_p(b) ? -((-(a)) >> (b)) \
                                                        : ((a) + (1<<(b)) - 1) >> (b))
+/* Backwards compat. */
+#define FF_CEIL_RSHIFT AV_CEIL_RSHIFT
+
 #define FFUDIV(a,b) (((a)>0 ?(a):(a)-(b)+1) / (b))
 #define FFUMOD(a,b) ((a)-(b)*FFUDIV(a,b))
 
@@ -94,7 +98,6 @@
 
 #define FFSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 #define FF_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
-#define FFALIGN(x, a) (((x)+(a)-1)&~((a)-1))
 
 /* misc math functions */
 
@@ -155,7 +158,7 @@ static av_always_inline av_const int64_t av_clip64_c(int64_t a, int64_t amin, in
  */
 static av_always_inline av_const uint8_t av_clip_uint8_c(int a)
 {
-    if (a&(~0xFF)) return (-a)>>31;
+    if (a&(~0xFF)) return (~a)>>31;
     else           return a;
 }
 
@@ -177,7 +180,7 @@ static av_always_inline av_const int8_t av_clip_int8_c(int a)
  */
 static av_always_inline av_const uint16_t av_clip_uint16_c(int a)
 {
-    if (a&(~0xFFFF)) return (-a)>>31;
+    if (a&(~0xFFFF)) return (~a)>>31;
     else             return a;
 }
 
@@ -211,7 +214,7 @@ static av_always_inline av_const int32_t av_clipl_int32_c(int64_t a)
  */
 static av_always_inline av_const int av_clip_intp2_c(int a, int p)
 {
-    if ((a + (1 << p)) & ~((2 << p) - 1))
+    if (((unsigned)a + (1 << p)) & ~((2 << p) - 1))
         return (a >> 31) ^ ((1 << p) - 1);
     else
         return a;
@@ -225,7 +228,7 @@ static av_always_inline av_const int av_clip_intp2_c(int a, int p)
  */
 static av_always_inline av_const unsigned av_clip_uintp2_c(int a, int p)
 {
-    if (a & ~((1<<p) - 1)) return -a >> 31 & ((1<<p) - 1);
+    if (a & ~((1<<p) - 1)) return (~a) >> 31 & ((1<<p) - 1);
     else                   return  a;
 }
 
@@ -257,11 +260,35 @@ static av_always_inline int av_sat_add32_c(int a, int b)
  *
  * @param  a first value
  * @param  b value doubled and added to a
- * @return sum with signed saturation
+ * @return sum sat(a + sat(2*b)) with signed saturation
  */
 static av_always_inline int av_sat_dadd32_c(int a, int b)
 {
     return av_sat_add32(a, av_sat_add32(b, b));
+}
+
+/**
+ * Subtract two signed 32-bit values with saturation.
+ *
+ * @param  a one value
+ * @param  b another value
+ * @return difference with signed saturation
+ */
+static av_always_inline int av_sat_sub32_c(int a, int b)
+{
+    return av_clipl_int32((int64_t)a - b);
+}
+
+/**
+ * Subtract a doubled value from another value with saturation at both stages.
+ *
+ * @param  a first value
+ * @param  b value doubled and subtracted from a
+ * @return difference sat(a - sat(2*b)) with signed saturation
+ */
+static av_always_inline int av_sat_dsub32_c(int a, int b)
+{
+    return av_sat_sub32(a, av_sat_add32(b, b));
 }
 
 /**
@@ -331,6 +358,11 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
     return av_popcount((uint32_t)x) + av_popcount((uint32_t)(x >> 32));
 }
 
+static av_always_inline av_const int av_parity_c(uint32_t v)
+{
+    return av_popcount(v) & 1;
+}
+
 #define MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((unsigned)(d) << 24))
 #define MKBETAG(a,b,c,d) ((d) | ((c) << 8) | ((b) << 16) | ((unsigned)(a) << 24))
 
@@ -351,13 +383,13 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
  * to prevent undefined results.
  */
 #define GET_UTF8(val, GET_BYTE, ERROR)\
-    val= GET_BYTE;\
+    val= (GET_BYTE);\
     {\
         uint32_t top = (val & 128) >> 1;\
         if ((val & 0xc0) == 0x80 || val >= 0xFE)\
             ERROR\
         while (val & top) {\
-            int tmp= GET_BYTE - 128;\
+            int tmp= (GET_BYTE) - 128;\
             if(tmp>>6)\
                 ERROR\
             val= (val<<6) + tmp;\
@@ -505,6 +537,12 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
 #ifndef av_sat_dadd32
 #   define av_sat_dadd32    av_sat_dadd32_c
 #endif
+#ifndef av_sat_sub32
+#   define av_sat_sub32     av_sat_sub32_c
+#endif
+#ifndef av_sat_dsub32
+#   define av_sat_dsub32    av_sat_dsub32_c
+#endif
 #ifndef av_clipf
 #   define av_clipf         av_clipf_c
 #endif
@@ -516,4 +554,7 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
 #endif
 #ifndef av_popcount64
 #   define av_popcount64    av_popcount64_c
+#endif
+#ifndef av_parity
+#   define av_parity        av_parity_c
 #endif

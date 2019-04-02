@@ -57,8 +57,13 @@
 #include <openssl/x509.h>
 
 #include <openssl/bio.h>
+#include <openssl/err.h>
 #include <openssl/mem.h>
 
+
+/* |X509_R_UNSUPPORTED_ALGORITHM| is no longer emitted, but continue to define
+ * it to avoid downstream churn. */
+OPENSSL_DECLARE_ERROR_REASON(X509, UNSUPPORTED_ALGORITHM)
 
 int PKCS8_pkey_set0(PKCS8_PRIV_KEY_INFO *priv, ASN1_OBJECT *aobj, int version,
                     int ptype, void *pval, uint8_t *penc, int penclen) {

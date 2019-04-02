@@ -22,8 +22,8 @@ extern "C" {
     defined(__mips_dsp) && (__mips_dsp_rev >= 2) && \
     (_MIPS_SIM == _MIPS_SIM_ABI32)
 
-void TransposeWx8_MIPS_DSPR2(const uint8* src, int src_stride,
-                             uint8* dst, int dst_stride, int width) {
+void TransposeWx8_DSPR2(const uint8* src, int src_stride,
+                        uint8* dst, int dst_stride, int width) {
    __asm__ __volatile__ (
       ".set push                                         \n"
       ".set noreorder                                    \n"
@@ -106,8 +106,8 @@ void TransposeWx8_MIPS_DSPR2(const uint8* src, int src_stride,
   );
 }
 
-void TransposeWx8_Fast_MIPS_DSPR2(const uint8* src, int src_stride,
-                                  uint8* dst, int dst_stride, int width) {
+void TransposeWx8_Fast_DSPR2(const uint8* src, int src_stride,
+                             uint8* dst, int dst_stride, int width) {
   __asm__ __volatile__ (
       ".set noat                                         \n"
       ".set push                                         \n"
@@ -308,10 +308,10 @@ void TransposeWx8_Fast_MIPS_DSPR2(const uint8* src, int src_stride,
   );
 }
 
-void TransposeUVWx8_MIPS_DSPR2(const uint8* src, int src_stride,
-                               uint8* dst_a, int dst_stride_a,
-                               uint8* dst_b, int dst_stride_b,
-                               int width) {
+void TransposeUVWx8_DSPR2(const uint8* src, int src_stride,
+                          uint8* dst_a, int dst_stride_a,
+                          uint8* dst_b, int dst_stride_b,
+                          int width) {
   __asm__ __volatile__ (
       ".set push                                         \n"
       ".set noreorder                                    \n"

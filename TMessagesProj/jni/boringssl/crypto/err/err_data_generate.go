@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -25,6 +26,8 @@ import (
 	"strconv"
 	"strings"
 )
+
+var verbose = flag.Bool("verbose", false, "If true, prints a status message at the end.")
 
 // libraryNames must be kept in sync with the enum in err.h. The generated code
 // will contain static assertions to enforce this.
@@ -138,7 +141,9 @@ type stringWriter interface {
 
 func (st *stringList) WriteTo(out stringWriter, name string) {
 	list := st.buildList()
-	fmt.Fprintf(os.Stderr, "%s: %d bytes of list and %d bytes of string data.\n", name, 4*len(list), len(st.stringData))
+	if *verbose {
+		fmt.Fprintf(os.Stderr, "%s: %d bytes of list and %d bytes of string data.\n", name, 4*len(list), len(st.stringData))
+	}
 
 	values := "kOpenSSL" + name + "Values"
 	out.WriteString("const uint32_t " + values + "[] = {\n")
@@ -215,6 +220,8 @@ func (e *errorData) readErrorDataFile(filename string) error {
 }
 
 func main() {
+	flag.Parse()
+
 	e := &errorData{
 		reasons:    newStringList(),
 		libraryMap: make(map[string]uint32),

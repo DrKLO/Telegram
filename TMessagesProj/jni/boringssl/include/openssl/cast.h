@@ -72,7 +72,7 @@ extern "C" {
 
 typedef struct cast_key_st {
   uint32_t data[32];
-  int short_key; /* Use reduced rounds for short key */
+  int short_key;  // Use reduced rounds for short key
 } CAST_KEY;
 
 OPENSSL_EXPORT void CAST_set_key(CAST_KEY *key, size_t len,
@@ -93,4 +93,4 @@ OPENSSL_EXPORT void CAST_cfb64_encrypt(const uint8_t *in, uint8_t *out,
 }
 #endif
 
-#endif  /* OPENSSL_HEADER_CAST_H */
+#endif  // OPENSSL_HEADER_CAST_H

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -15,6 +15,7 @@ import android.graphics.RectF;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 public class ContextProgressView extends View {
 
@@ -23,16 +24,37 @@ public class ContextProgressView extends View {
     private RectF cicleRect = new RectF();
     private int radOffset = 0;
     private long lastUpdateTime;
+    private int currentColorType;
+    private String innerKey;
+    private String outerKey;
 
-    public ContextProgressView(Context context) {
+    public ContextProgressView(Context context, int colorType) {
         super(context);
-        innerPaint.setColor(0xffbfdff6);
         innerPaint.setStyle(Paint.Style.STROKE);
         innerPaint.setStrokeWidth(AndroidUtilities.dp(2));
-        outerPaint.setColor(0xff2b96e2);
         outerPaint.setStyle(Paint.Style.STROKE);
         outerPaint.setStrokeWidth(AndroidUtilities.dp(2));
         outerPaint.setStrokeCap(Paint.Cap.ROUND);
+        if (colorType == 0) {
+            innerKey = Theme.key_contextProgressInner1;
+            outerKey = Theme.key_contextProgressOuter1;
+        } else if (colorType == 1) {
+            innerKey = Theme.key_contextProgressInner2;
+            outerKey = Theme.key_contextProgressOuter2;
+        } else if (colorType == 2) {
+            innerKey = Theme.key_contextProgressInner3;
+            outerKey = Theme.key_contextProgressOuter3;
+        } else if (colorType == 3) {
+            innerKey = Theme.key_contextProgressInner4;
+            outerKey = Theme.key_contextProgressOuter4;
+        }
+        updateColors();
+    }
+
+    public void updateColors() {
+        innerPaint.setColor(Theme.getColor(innerKey));
+        outerPaint.setColor(Theme.getColor(outerKey));
+        invalidate();
     }
 
     @Override

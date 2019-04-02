@@ -1,11 +1,13 @@
 #include <jni.h>
 #include <stdio.h>
 #include <setjmp.h>
-#include <libjpeg/jpeglib.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
 #include <android/bitmap.h>
 #include <libwebp/webp/decode.h>
 #include <libwebp/webp/encode.h>
-#include "utils.h"
+#include "c_utils.h"
 #include "image.h"
 
 jclass jclass_NullPointerException;
@@ -26,68 +28,69 @@ jclass createGlobarRef(JNIEnv *env, jclass class) {
     return 0;
 }
 
-jint imageOnJNILoad(JavaVM *vm, void *reserved, JNIEnv *env) {
+jint imageOnJNILoad(JavaVM *vm, JNIEnv *env) {
     jclass_NullPointerException = createGlobarRef(env, (*env)->FindClass(env, "java/lang/NullPointerException"));
     if (jclass_NullPointerException == 0) {
-        return -1;
+        return JNI_FALSE;
     }
     jclass_RuntimeException = createGlobarRef(env, (*env)->FindClass(env, "java/lang/RuntimeException"));
     if (jclass_RuntimeException == 0) {
-        return -1;
+        return JNI_FALSE;
     }
     
     jclass_Options = createGlobarRef(env, (*env)->FindClass(env, "android/graphics/BitmapFactory$Options"));
     if (jclass_Options == 0) {
-        return -1;
+        return JNI_FALSE;
     }
     jclass_Options_inJustDecodeBounds = (*env)->GetFieldID(env, jclass_Options, "inJustDecodeBounds", "Z");
     if (jclass_Options_inJustDecodeBounds == 0) {
-        return -1;
+        return JNI_FALSE;
     }
     jclass_Options_outHeight = (*env)->GetFieldID(env, jclass_Options, "outHeight", "I");
     if (jclass_Options_outHeight == 0) {
-        return -1;
+        return JNI_FALSE;
     }
     jclass_Options_outWidth = (*env)->GetFieldID(env, jclass_Options, "outWidth", "I");
     if (jclass_Options_outWidth == 0) {
-        return -1;
+        return JNI_FALSE;
     }
     
-    return JNI_VERSION_1_6;
+    return JNI_TRUE;
 }
 
-static inline uint64_t get_colors (const uint8_t *p) {
-    return p[0] + (p[1] << 16) + ((uint64_t)p[2] << 32);
+static inline uint64_t getColors(const uint8_t *p) {
+    return p[0] + (p[1] << 16) + ((uint64_t) p[2] << 32);
 }
 
-static void fastBlurMore(int imageWidth, int imageHeight, int imageStride, void *pixels, int radius) {
-    uint8_t *pix = (uint8_t *)pixels;
-    const int w = imageWidth;
-    const int h = imageHeight;
-    const int stride = imageStride;
-    const int r1 = radius + 1;
-    const int div = radius * 2 + 1;
+static inline uint64_t getColors565(const uint8_t *p) {
+    uint16_t *ps = (uint16_t *) p;
+    return ((((ps[0] & 0xF800) >> 11) * 255) / 31) + (((((ps[0] & 0x07E0) >> 5) * 255) / 63) << 16) + ((uint64_t) (((ps[0] & 0x001F) * 255) / 31) << 32);
+}
+
+static void fastBlurMore(int32_t w, int32_t h, int32_t stride, uint8_t *pix, int32_t radius) {
+    const int32_t r1 = radius + 1;
+    const int32_t div = radius * 2 + 1;
     
-    if (radius > 15 || div >= w || div >= h || w * h > 150 * 150 || imageStride > imageWidth * 4) {
+    if (radius > 15 || div >= w || div >= h || w * h > 150 * 150 || stride > w * 4) {
         return;
     }
-    
-    uint64_t *rgb = malloc(imageWidth * imageHeight * sizeof(uint64_t));
+
+    uint64_t *rgb = malloc(w * h * sizeof(uint64_t));
     if (rgb == NULL) {
         return;
     }
-    
-    int x, y, i;
-    
-    int yw = 0;
-    const int we = w - r1;
+
+    int32_t x, y, i;
+
+    int32_t yw = 0;
+    const int32_t we = w - r1;
     for (y = 0; y < h; y++) {
-        uint64_t cur = get_colors (&pix[yw]);
+        uint64_t cur = getColors(&pix[yw]);
         uint64_t rgballsum = -radius * cur;
         uint64_t rgbsum = cur * ((r1 * (r1 + 1)) >> 1);
         
         for (i = 1; i <= radius; i++) {
-            uint64_t cur = get_colors (&pix[yw + i * 4]);
+            cur = getColors(&pix[yw + i * 4]);
             rgbsum += cur * (r1 - i);
             rgballsum += cur;
         }
@@ -96,7 +99,7 @@ static void fastBlurMore(int imageWidth, int imageHeight, int imageStride, void 
         
     #define update(start, middle, end) \
             rgb[y * w + x] = (rgbsum >> 6) & 0x00FF00FF00FF00FF; \
-            rgballsum += get_colors (&pix[yw + (start) * 4]) - 2 * get_colors (&pix[yw + (middle) * 4]) + get_colors (&pix[yw + (end) * 4]); \
+            rgballsum += getColors(&pix[yw + (start) * 4]) - 2 * getColors(&pix[yw + (middle) * 4]) + getColors(&pix[yw + (end) * 4]); \
             rgbsum += rgballsum; \
             x++; \
 
@@ -114,7 +117,7 @@ static void fastBlurMore(int imageWidth, int imageHeight, int imageStride, void 
         yw += stride;
     }
     
-    const int he = h - r1;
+    const int32_t he = h - r1;
     for (x = 0; x < w; x++) {
         uint64_t rgballsum = -radius * rgb[x];
         uint64_t rgbsum = rgb[x] * ((r1 * (r1 + 1)) >> 1);
@@ -124,13 +127,13 @@ static void fastBlurMore(int imageWidth, int imageHeight, int imageStride, void 
         }
         
         y = 0;
-        int yi = x * 4;
+        int32_t yi = x * 4;
         
     #define update(start, middle, end) \
             int64_t res = rgbsum >> 6; \
-            pix[yi] = res; \
-            pix[yi + 1] = res >> 16; \
-            pix[yi + 2] = res >> 32; \
+            pix[yi] = res;              \
+            pix[yi + 1] = res >> 16;    \
+            pix[yi + 2] = res >> 32;    \
             rgballsum += rgb[x + (start) * w] - 2 * rgb[x + (middle) * w] + rgb[x + (end) * w]; \
             rgbsum += rgballsum; \
             y++; \
@@ -149,17 +152,13 @@ static void fastBlurMore(int imageWidth, int imageHeight, int imageStride, void 
     }
 }
 
-static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pixels, int radius) {
-    uint8_t *pix = (uint8_t *)pixels;
+static void fastBlur(int32_t w, int32_t h, int32_t stride, uint8_t *pix, int32_t radius) {
     if (pix == NULL) {
         return;
     }
-    const int w = imageWidth;
-    const int h = imageHeight;
-    const int stride = imageStride;
-    const int r1 = radius + 1;
-    const int div = radius * 2 + 1;
-    int shift;
+    const int32_t r1 = radius + 1;
+    const int32_t div = radius * 2 + 1;
+    int32_t shift;
     if (radius == 1) {
         shift = 2;
     } else if (radius == 3) {
@@ -172,26 +171,26 @@ static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pix
         return;
     }
     
-    if (radius > 15 || div >= w || div >= h || w * h > 150 * 150 || imageStride > imageWidth * 4) {
+    if (radius > 15 || div >= w || div >= h || w * h > 150 * 150 || stride > w * 4) {
         return;
     }
-    
-    uint64_t *rgb = malloc(imageWidth * imageHeight * sizeof(uint64_t));
+
+    uint64_t *rgb = malloc(w * h * sizeof(uint64_t));
     if (rgb == NULL) {
         return;
     }
-    
-    int x, y, i;
-    
-    int yw = 0;
-    const int we = w - r1;
+
+    int32_t x, y, i;
+
+    int32_t yw = 0;
+    const int32_t we = w - r1;
     for (y = 0; y < h; y++) {
-        uint64_t cur = get_colors (&pix[yw]);
+        uint64_t cur = getColors(&pix[yw]);
         uint64_t rgballsum = -radius * cur;
         uint64_t rgbsum = cur * ((r1 * (r1 + 1)) >> 1);
         
         for (i = 1; i <= radius; i++) {
-            uint64_t cur = get_colors (&pix[yw + i * 4]);
+            cur = getColors(&pix[yw + i * 4]);
             rgbsum += cur * (r1 - i);
             rgballsum += cur;
         }
@@ -200,7 +199,7 @@ static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pix
         
         #define update(start, middle, end)  \
                 rgb[y * w + x] = (rgbsum >> shift) & 0x00FF00FF00FF00FFLL; \
-                rgballsum += get_colors (&pix[yw + (start) * 4]) - 2 * get_colors (&pix[yw + (middle) * 4]) + get_colors (&pix[yw + (end) * 4]); \
+                rgballsum += getColors(&pix[yw + (start) * 4]) - 2 * getColors(&pix[yw + (middle) * 4]) + getColors(&pix[yw + (end) * 4]); \
                 rgbsum += rgballsum;        \
                 x++;                        \
 
@@ -219,7 +218,7 @@ static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pix
         yw += stride;
     }
     
-    const int he = h - r1;
+    const int32_t he = h - r1;
     for (x = 0; x < w; x++) {
         uint64_t rgballsum = -radius * rgb[x];
         uint64_t rgbsum = rgb[x] * ((r1 * (r1 + 1)) >> 1);
@@ -229,7 +228,7 @@ static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pix
         }
         
         y = 0;
-        int yi = x * 4;
+        int32_t yi = x * 4;
         
         #define update(start, middle, end)  \
                 int64_t res = rgbsum >> shift;   \
@@ -256,19 +255,259 @@ static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pix
     free(rgb);
 }
 
-typedef struct my_error_mgr {
-    struct jpeg_error_mgr pub;
-    jmp_buf setjmp_buffer;
-} *my_error_ptr;
+static void fastBlurMore565(int32_t w, int32_t h, int32_t stride, uint8_t *pix, int32_t radius) {
+    const int32_t r1 = radius + 1;
+    const int32_t div = radius * 2 + 1;
 
+    if (radius > 15 || div >= w || div >= h || w * h > 150 * 150 || stride > w * 2) {
+        return;
+    }
 
-METHODDEF(void) my_error_exit(j_common_ptr cinfo) {
-    my_error_ptr myerr = (my_error_ptr) cinfo->err;
-    (*cinfo->err->output_message) (cinfo);
-    longjmp(myerr->setjmp_buffer, 1);
+    uint64_t *rgb = malloc(w * h * sizeof(uint64_t));
+    if (rgb == NULL) {
+        return;
+    }
+
+    int32_t x, y, i;
+
+    int32_t yw = 0;
+    const int32_t we = w - r1;
+    for (y = 0; y < h; y++) {
+        uint64_t cur = getColors565(&pix[yw]);
+        uint64_t rgballsum = -radius * cur;
+        uint64_t rgbsum = cur * ((r1 * (r1 + 1)) >> 1);
+
+        for (i = 1; i <= radius; i++) {
+            cur = getColors565(&pix[yw + i * 2]);
+            rgbsum += cur * (r1 - i);
+            rgballsum += cur;
+        }
+
+        x = 0;
+
+#define update(start, middle, end) \
+            rgb[y * w + x] = (rgbsum >> 6) & 0x00FF00FF00FF00FF; \
+            rgballsum += getColors565(&pix[yw + (start) * 2]) - 2 * getColors565(&pix[yw + (middle) * 2]) + getColors565(&pix[yw + (end) * 2]); \
+            rgbsum += rgballsum; \
+            x++; \
+
+        while (x < r1) {
+            update (0, x, x + r1);
+        }
+        while (x < we) {
+            update (x - r1, x, x + r1);
+        }
+        while (x < w) {
+            update (x - r1, x, w - 1);
+        }
+#undef update
+
+        yw += stride;
+    }
+
+    const int32_t he = h - r1;
+    for (x = 0; x < w; x++) {
+        uint64_t rgballsum = -radius * rgb[x];
+        uint64_t rgbsum = rgb[x] * ((r1 * (r1 + 1)) >> 1);
+        for (i = 1; i <= radius; i++) {
+            rgbsum += rgb[i * w + x] * (r1 - i);
+            rgballsum += rgb[i * w + x];
+        }
+
+        y = 0;
+        int32_t yi = x * 2;
+
+#define update(start, middle, end) \
+            int64_t res = rgbsum >> 6; \
+            pix[yi] = ((res >> 13) & 0xe0) | ((res >> 35) & 0x1f); \
+            pix[yi + 1] = (res & 0xf8) | ((res >> 21) & 0x7); \
+            rgballsum += rgb[x + (start) * w] - 2 * rgb[x + (middle) * w] + rgb[x + (end) * w]; \
+            rgbsum += rgballsum; \
+            y++; \
+            yi += stride;
+
+        while (y < r1) {
+            update (0, y, y + r1);
+        }
+        while (y < he) {
+            update (y - r1, y, y + r1);
+        }
+        while (y < h) {
+            update (y - r1, y, h - 1);
+        }
+#undef update
+    }
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass class, jobject bitmap, int radius, int unpin, int width, int height, int stride) {
+static void fastBlur565(int32_t w, int32_t h, int32_t stride, uint8_t *pix, int32_t radius) {
+    if (pix == NULL) {
+        return;
+    }
+    const int32_t r1 = radius + 1;
+    const int32_t div = radius * 2 + 1;
+    int32_t shift;
+    if (radius == 1) {
+        shift = 2;
+    } else if (radius == 3) {
+        shift = 4;
+    } else if (radius == 7) {
+        shift = 6;
+    } else if (radius == 15) {
+        shift = 8;
+    } else {
+        return;
+    }
+
+    if (radius > 15 || div >= w || div >= h || w * h > 150 * 150 || stride > w * 2) {
+        return;
+    }
+
+    uint64_t *rgb = malloc(w * h * sizeof(uint64_t));
+    if (rgb == NULL) {
+        return;
+    }
+
+    int32_t x, y, i;
+
+    int32_t yw = 0;
+    const int32_t we = w - r1;
+    for (y = 0; y < h; y++) {
+        uint64_t cur = getColors565(&pix[yw]);
+        uint64_t rgballsum = -radius * cur;
+        uint64_t rgbsum = cur * ((r1 * (r1 + 1)) >> 1);
+
+        for (i = 1; i <= radius; i++) {
+            cur = getColors565(&pix[yw + i * 2]);
+            rgbsum += cur * (r1 - i);
+            rgballsum += cur;
+        }
+
+        x = 0;
+
+#define update(start, middle, end)  \
+                rgb[y * w + x] = (rgbsum >> shift) & 0x00FF00FF00FF00FFLL; \
+                rgballsum += getColors565(&pix[yw + (start) * 2]) - 2 * getColors565(&pix[yw + (middle) * 2]) + getColors565(&pix[yw + (end) * 2]); \
+                rgbsum += rgballsum;        \
+                x++;
+
+        while (x < r1) {
+            update(0, x, x + r1);
+        }
+        while (x < we) {
+            update(x - r1, x, x + r1);
+        }
+        while (x < w) {
+            update(x - r1, x, w - 1);
+        }
+
+#undef update
+
+        yw += stride;
+    }
+
+    const int32_t he = h - r1;
+    for (x = 0; x < w; x++) {
+        uint64_t rgballsum = -radius * rgb[x];
+        uint64_t rgbsum = rgb[x] * ((r1 * (r1 + 1)) >> 1);
+        for (i = 1; i <= radius; i++) {
+            rgbsum += rgb[i * w + x] * (r1 - i);
+            rgballsum += rgb[i * w + x];
+        }
+
+        y = 0;
+        int32_t yi = x * 2;
+
+#define update(start, middle, end)  \
+                uint64_t res = rgbsum >> shift;   \
+                pix[yi] = ((res >> 13) & 0xe0) | ((res >> 35) & 0x1f); \
+                pix[yi + 1] = (res & 0xf8) | ((res >> 21) & 0x7); \
+                rgballsum += rgb[x + (start) * w] - 2 * rgb[x + (middle) * w] + rgb[x + (end) * w]; \
+                rgbsum += rgballsum;        \
+                y++;                        \
+                yi += stride;
+
+        while (y < r1) {
+            update (0, y, y + r1);
+        }
+        while (y < he) {
+            update (y - r1, y, y + r1);
+        }
+        while (y < h) {
+            update (y - r1, y, h - 1);
+        }
+#undef update
+    }
+
+    free(rgb);
+}
+
+JNIEXPORT int Java_org_telegram_messenger_Utilities_needInvert(JNIEnv *env, jclass class, jobject bitmap, jint unpin, jint width, jint height, jint stride) {
+    if (!bitmap) {
+        return 0;
+    }
+
+    if (!width || !height || !stride || stride != width * 4 || width * height > 150 * 150) {
+        return 0;
+    }
+
+    void *pixels = 0;
+    if (AndroidBitmap_lockPixels(env, bitmap, &pixels) < 0) {
+        return 0;
+    }
+    if (pixels == NULL) {
+        return 0;
+    }
+    uint8_t *pix = (uint8_t *) pixels;
+
+    int32_t hasAlpha = 0;
+    float matching = 0;
+    float total = 0;
+    for (int32_t y = 0; y < height; y++) {
+        for (int32_t x = 0; x < width; x++) {
+            int32_t index = y * stride + x * 4;
+            uint8_t a = pix[index + 3];
+            float alpha = a / 255.0f;
+
+            uint8_t r = (uint8_t) (pix[index] * alpha);
+            uint8_t g = (uint8_t) (pix[index + 1] * alpha);
+            uint8_t b = (uint8_t) (pix[index + 2] * alpha);
+
+            uint8_t cmax = (r > g) ? r : g;
+            if (b > cmax) {
+                cmax = b;
+            }
+            uint8_t cmin = (r < g) ? r : g;
+            if (b < cmin) {
+                cmin = b;
+            }
+
+            float saturation;
+            float brightness = ((float) cmax) / 255.0f;
+            if (cmax != 0) {
+                saturation = ((float) (cmax - cmin)) / ((float) cmax);
+            } else {
+                saturation = 0;
+            }
+
+            if (alpha < 1.0) {
+                hasAlpha = 1;
+            }
+
+            if (alpha > 0.0) {
+                total += 1;
+                if (saturation < 0.1f && brightness < 0.25f) {
+                    matching += 1;
+                }
+            }
+        }
+    }
+    if (unpin) {
+        AndroidBitmap_unlockPixels(env, bitmap);
+    }
+    return hasAlpha && matching / total > 0.85;
+}
+
+JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass class, jobject bitmap, jint radius, jint unpin, jint width, jint height, jint stride) {
     if (!bitmap) {
         return;
     }
@@ -281,26 +520,33 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jcl
     if (AndroidBitmap_lockPixels(env, bitmap, &pixels) < 0) {
         return;
     }
-    if (radius <= 3) {
-        fastBlur(width, height, stride, pixels, radius);
+    if (stride == width * 2) {
+        if (radius <= 3) {
+            fastBlur565(width, height, stride, pixels, radius);
+        } else {
+            fastBlurMore565(width, height, stride, pixels, radius);
+        }
     } else {
-        fastBlurMore(width, height, stride, pixels, radius);
+        if (radius <= 3) {
+            fastBlur(width, height, stride, pixels, radius);
+        } else {
+            fastBlurMore(width, height, stride, pixels, radius);
+        }
     }
     if (unpin) {
         AndroidBitmap_unlockPixels(env, bitmap);
     }
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass class, jobject hsvBuffer, int width, int height, jobject buffer) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass class, jobject hsvBuffer, jint width, jint height, jobject buffer) {
     float imageWidth = width;
     float imageHeight = height;
     float _clipLimit = 1.25f;
 
     uint32_t totalSegments = PGPhotoEnhanceSegments * PGPhotoEnhanceSegments;
-    uint32_t tileArea = (uint32_t)(floorf(imageWidth / PGPhotoEnhanceSegments) * floorf(imageHeight / PGPhotoEnhanceSegments));
-    uint32_t clipLimit = (uint32_t)max(1, _clipLimit * tileArea / (float) PGPhotoEnhanceHistogramBins);
+    uint32_t tileArea = (uint32_t) (floorf(imageWidth / PGPhotoEnhanceSegments) * floorf(imageHeight / PGPhotoEnhanceSegments));
+    uint32_t clipLimit = (uint32_t) MAX(1, _clipLimit * tileArea / (float) PGPhotoEnhanceHistogramBins);
     float scale = 255.0f / (float) tileArea;
-
 
     unsigned char *bytes = (*env)->GetDirectBufferAddress(env, hsvBuffer);
 
@@ -363,7 +609,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass
         uint32_t cdf = 0;
         for (uint32_t j = hMin; j < PGPhotoEnhanceHistogramBins; ++j) {
             cdf += cdfs[i][j];
-            cdfs[i][j] = (uint8_t) min(255, cdf * scale);
+            cdfs[i][j] = (uint8_t) MIN(255, cdf * scale);
         }
         
         cdfsMin[i] = cdfs[i][hMin];
@@ -395,104 +641,19 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass
     free(cdfsMin);
 }
 
-JNIEXPORT int Java_org_telegram_messenger_Utilities_pinBitmap(JNIEnv *env, jclass class, jobject bitmap) {
+JNIEXPORT jint Java_org_telegram_messenger_Utilities_pinBitmap(JNIEnv *env, jclass class, jobject bitmap) {
     if (bitmap == NULL) {
-        return;
+        return 0;
     }
     unsigned char *pixels;
     return AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0 ? 1 : 0;
 }
 
-JNIEXPORT int Java_org_telegram_messenger_Utilities_unpinBitmap(JNIEnv *env, jclass class, jobject bitmap) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_unpinBitmap(JNIEnv *env, jclass class, jobject bitmap) {
     if (bitmap == NULL) {
         return;
     }
     AndroidBitmap_unlockPixels(env, bitmap);
-}
-
-JNIEXPORT void Java_org_telegram_messenger_Utilities_loadBitmap(JNIEnv *env, jclass class, jstring path, jobject bitmap, int scale, int width, int height, int stride) {
-    
-    AndroidBitmapInfo info;
-    int i;
-
-    if ((i = AndroidBitmap_getInfo(env, bitmap, &info)) >= 0) {
-        char *fileName = (*env)->GetStringUTFChars(env, path, NULL);
-        FILE *infile;
-        
-        if ((infile = fopen(fileName, "rb"))) {
-            struct my_error_mgr jerr;
-            struct jpeg_decompress_struct cinfo;
-
-            cinfo.err = jpeg_std_error(&jerr.pub);
-            jerr.pub.error_exit = my_error_exit;
-            
-            if (!setjmp(jerr.setjmp_buffer)) {
-                jpeg_create_decompress(&cinfo);
-                jpeg_stdio_src(&cinfo, infile);
-                
-                jpeg_read_header(&cinfo, TRUE);
-                
-                cinfo.scale_denom = scale;
-                cinfo.scale_num = 1;
-                
-                jpeg_start_decompress(&cinfo);
-                int row_stride = cinfo.output_width * cinfo.output_components;
-                JSAMPARRAY buffer = (*cinfo.mem->alloc_sarray) ((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
-
-                unsigned char *pixels;
-                if ((i = AndroidBitmap_lockPixels(env, bitmap, &pixels)) >= 0) {
-                    int rowCount = min(cinfo.output_height, height);
-                    int colCount = min(cinfo.output_width, width);
-                    
-                    while (cinfo.output_scanline < rowCount) {
-                        jpeg_read_scanlines(&cinfo, buffer, 1);
-                        
-                        //if (info.format == ANDROID_BITMAP_FORMAT_RGBA_8888) {
-                            if (cinfo.out_color_space == JCS_GRAYSCALE) {
-                                for (i = 0; i < colCount; i++) {
-                                    float alpha = buffer[0][i] / 255.0f;
-                                    pixels[i * 4] *= alpha;
-                                    pixels[i * 4 + 1] *= alpha;
-                                    pixels[i * 4 + 2] *= alpha;
-                                    pixels[i * 4 + 3] = buffer[0][i];
-                                }
-                            } else {
-                                int c = 0;
-                                for (i = 0; i < colCount; i++) {
-                                    pixels[i * 4] = buffer[0][i * 3];
-                                    pixels[i * 4 + 1] = buffer[0][i * 3 + 1];
-                                    pixels[i * 4 + 2] = buffer[0][i * 3 + 2];
-                                    pixels[i * 4 + 3] = 255;
-                                    c += 4;
-                                }
-                            }
-                        //} else if (info.format == ANDROID_BITMAP_FORMAT_RGB_565) {
-                            
-                        //}
-                        
-                        pixels += stride;
-                    }
-                    
-                    AndroidBitmap_unlockPixels(env, bitmap);
-                } else {
-                    throwException(env, "AndroidBitmap_lockPixels() failed ! error=%d", i);
-                }
-                
-                jpeg_finish_decompress(&cinfo);
-            } else {
-                throwException(env, "the JPEG code has signaled an error");
-            }
-            
-            jpeg_destroy_decompress(&cinfo);
-            fclose(infile);
-        } else {
-            throwException(env, "can't open %s", fileName);
-        }
-        
-        (*env)->ReleaseStringUTFChars(env, path, fileName);
-    } else {
-        throwException(env, "AndroidBitmap_getInfo() failed ! error=%d", i);
-    }
 }
 
 JNIEXPORT jboolean Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *env, jclass class, jobject outputBitmap, jobject buffer, jint len, jobject options, jboolean unpin) {
@@ -503,8 +664,8 @@ JNIEXPORT jboolean Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *e
     
     jbyte *inputBuffer = (*env)->GetDirectBufferAddress(env, buffer);
     
-    int bitmapWidth = 0;
-    int bitmapHeight = 0;
+    int32_t bitmapWidth = 0;
+    int32_t bitmapHeight = 0;
     if (!WebPGetInfo((uint8_t*)inputBuffer, len, &bitmapWidth, &bitmapHeight)) {
         (*env)->ThrowNew(env, jclass_RuntimeException, "Invalid WebP format");
         return 0;
@@ -545,4 +706,229 @@ JNIEXPORT jboolean Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *e
     }
     
     return 1;
+}
+
+#define SQUARE(i) ((i)*(i))
+inline static void zeroClearInt(int* p, size_t count) { memset(p, 0, sizeof(int) * count); }
+
+JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env, jclass class, jobject bitmap, jint radius){
+    if(radius<1) return;
+
+    AndroidBitmapInfo info;
+    if(AndroidBitmap_getInfo(env, bitmap, &info)!=ANDROID_BITMAP_RESULT_SUCCESS)
+        return;
+    if(info.format!=ANDROID_BITMAP_FORMAT_RGBA_8888)
+        return;
+
+    int w=info.width;
+    int h=info.height;
+    int stride=info.stride;
+
+    unsigned char* pixels=0;
+    AndroidBitmap_lockPixels(env, bitmap, (void **) &pixels);
+    if(!pixels){
+        return;
+    }
+    // Constants
+    //const int radius = (int)inradius; // Transform unsigned into signed for further operations
+    const int wm = w - 1;
+    const int hm = h - 1;
+    const int wh = w*h;
+    const int div = radius + radius + 1;
+    const int r1 = radius + 1;
+    const int divsum = SQUARE((div+1)>>1);
+
+    // Small buffers
+    int stack[div*3];
+    zeroClearInt(stack, div*3);
+
+    int vmin[MAX(w,h)];
+    zeroClearInt(vmin, MAX(w,h));
+
+    // Large buffers
+    int *r = malloc(wh*sizeof(int));
+    int *g = malloc(wh*sizeof(int));
+    int *b = malloc(wh*sizeof(int));
+    zeroClearInt(r, wh);
+    zeroClearInt(g, wh);
+    zeroClearInt(b, wh);
+
+    const size_t dvcount = 256 * divsum;
+    int *dv = malloc(sizeof(int) * dvcount);
+    int i;
+    for (i = 0;(size_t)i < dvcount;i++) {
+        dv[i] = (i / divsum);
+    }
+
+    // Variables
+    int x, y;
+    int *sir;
+    int routsum,goutsum,boutsum;
+    int rinsum,ginsum,binsum;
+    int rsum, gsum, bsum, p, yp;
+    int stackpointer;
+    int stackstart;
+    int rbs;
+
+    int yw = 0, yi = 0;
+    for (y = 0;y < h;y++) {
+        rinsum = ginsum = binsum = routsum = goutsum = boutsum = rsum = gsum = bsum = 0;
+
+        for(i = -radius;i <= radius;i++){
+            sir = &stack[(i + radius)*3];
+            int offset = (y*stride + (MIN(wm, MAX(i, 0)))*4);
+            sir[0] = pixels[offset];
+            sir[1] = pixels[offset + 1];
+            sir[2] = pixels[offset + 2];
+
+            rbs = r1 - abs(i);
+            rsum += sir[0] * rbs;
+            gsum += sir[1] * rbs;
+            bsum += sir[2] * rbs;
+            if (i > 0){
+                rinsum += sir[0];
+                ginsum += sir[1];
+                binsum += sir[2];
+            } else {
+                routsum += sir[0];
+                goutsum += sir[1];
+                boutsum += sir[2];
+            }
+        }
+        stackpointer = radius;
+
+        for (x = 0;x < w;x++) {
+            r[yi] = dv[rsum];
+            g[yi] = dv[gsum];
+            b[yi] = dv[bsum];
+
+            rsum -= routsum;
+            gsum -= goutsum;
+            bsum -= boutsum;
+
+            stackstart = stackpointer - radius + div;
+            sir = &stack[(stackstart % div)*3];
+
+            routsum -= sir[0];
+            goutsum -= sir[1];
+            boutsum -= sir[2];
+
+            if (y == 0){
+                vmin[x] = MIN(x + radius + 1, wm);
+            }
+
+            int offset = (y*stride + vmin[x]*4);
+            sir[0] = pixels[offset];
+            sir[1] = pixels[offset + 1];
+            sir[2] = pixels[offset + 2];
+            rinsum += sir[0];
+            ginsum += sir[1];
+            binsum += sir[2];
+
+            rsum += rinsum;
+            gsum += ginsum;
+            bsum += binsum;
+
+            stackpointer = (stackpointer + 1) % div;
+            sir = &stack[(stackpointer % div)*3];
+
+            routsum += sir[0];
+            goutsum += sir[1];
+            boutsum += sir[2];
+
+            rinsum -= sir[0];
+            ginsum -= sir[1];
+            binsum -= sir[2];
+
+            yi++;
+        }
+        yw += w;
+    }
+
+    for (x = 0;x < w;x++) {
+        rinsum = ginsum = binsum = routsum = goutsum = boutsum = rsum = gsum = bsum = 0;
+        yp = -radius*w;
+        for(i = -radius;i <= radius;i++) {
+            yi = MAX(0, yp) + x;
+
+            sir = &stack[(i + radius)*3];
+
+            sir[0] = r[yi];
+            sir[1] = g[yi];
+            sir[2] = b[yi];
+
+            rbs = r1 - abs(i);
+
+            rsum += r[yi]*rbs;
+            gsum += g[yi]*rbs;
+            bsum += b[yi]*rbs;
+
+            if (i > 0) {
+                rinsum += sir[0];
+                ginsum += sir[1];
+                binsum += sir[2];
+            } else {
+                routsum += sir[0];
+                goutsum += sir[1];
+                boutsum += sir[2];
+            }
+
+            if (i < hm) {
+                yp += w;
+            }
+        }
+        stackpointer = radius;
+        for (y = 0;y < h;y++) {
+            int offset = stride*y+x*4;
+            pixels[offset]     = dv[rsum];
+            pixels[offset + 1] = dv[gsum];
+            pixels[offset + 2] = dv[bsum];
+            rsum -= routsum;
+            gsum -= goutsum;
+            bsum -= boutsum;
+
+            stackstart = stackpointer - radius + div;
+            sir = &stack[(stackstart % div)*3];
+
+            routsum -= sir[0];
+            goutsum -= sir[1];
+            boutsum -= sir[2];
+
+            if (x == 0){
+                vmin[y] = (MIN(y + r1, hm))*w;
+            }
+            p = x + vmin[y];
+
+            sir[0] = r[p];
+            sir[1] = g[p];
+            sir[2] = b[p];
+
+            rinsum += sir[0];
+            ginsum += sir[1];
+            binsum += sir[2];
+
+            rsum += rinsum;
+            gsum += ginsum;
+            bsum += binsum;
+
+            stackpointer = (stackpointer + 1) % div;
+            sir = &stack[stackpointer*3];
+
+            routsum += sir[0];
+            goutsum += sir[1];
+            boutsum += sir[2];
+
+            rinsum -= sir[0];
+            ginsum -= sir[1];
+            binsum -= sir[2];
+
+            yi += w;
+        }
+    }
+
+    free(r);
+    free(g);
+    free(b);
+    free(dv);
+    AndroidBitmap_unlockPixels(env, bitmap);
 }

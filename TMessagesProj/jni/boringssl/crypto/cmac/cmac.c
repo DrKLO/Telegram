@@ -55,16 +55,18 @@
 #include <openssl/cipher.h>
 #include <openssl/mem.h>
 
+#include "../internal.h"
+
 
 struct cmac_ctx_st {
   EVP_CIPHER_CTX cipher_ctx;
-  /* k1 and k2 are the CMAC subkeys. See
-   * https://tools.ietf.org/html/rfc4493#section-2.3 */
+  // k1 and k2 are the CMAC subkeys. See
+  // https://tools.ietf.org/html/rfc4493#section-2.3
   uint8_t k1[AES_BLOCK_SIZE];
   uint8_t k2[AES_BLOCK_SIZE];
-  /* Last (possibly partial) scratch */
+  // Last (possibly partial) scratch
   uint8_t block[AES_BLOCK_SIZE];
-  /* block_used contains the number of valid bytes in |block|. */
+  // block_used contains the number of valid bytes in |block|.
   unsigned block_used;
 };
 
@@ -122,20 +124,20 @@ void CMAC_CTX_free(CMAC_CTX *ctx) {
   OPENSSL_free(ctx);
 }
 
-/* binary_field_mul_x treats the 128 bits at |in| as an element of GF(2¹²⁸)
- * with a hard-coded reduction polynomial and sets |out| as x times the
- * input.
- *
- * See https://tools.ietf.org/html/rfc4493#section-2.3 */
+// binary_field_mul_x treats the 128 bits at |in| as an element of GF(2¹²⁸)
+// with a hard-coded reduction polynomial and sets |out| as x times the
+// input.
+//
+// See https://tools.ietf.org/html/rfc4493#section-2.3
 static void binary_field_mul_x(uint8_t out[16], const uint8_t in[16]) {
   unsigned i;
 
-  /* Shift |in| to left, including carry. */
+  // Shift |in| to left, including carry.
   for (i = 0; i < 15; i++) {
     out[i] = (in[i] << 1) | (in[i+1] >> 7);
   }
 
-  /* If MSB set fixup with R. */
+  // If MSB set fixup with R.
   const uint8_t carry = in[0] >> 7;
   out[i] = (in[i] << 1) ^ ((0 - carry) & 0x87);
 }
@@ -150,7 +152,7 @@ int CMAC_Init(CMAC_CTX *ctx, const void *key, size_t key_len,
       EVP_CIPHER_key_length(cipher) != key_len ||
       !EVP_EncryptInit_ex(&ctx->cipher_ctx, cipher, NULL, key, kZeroIV) ||
       !EVP_Cipher(&ctx->cipher_ctx, scratch, kZeroIV, AES_BLOCK_SIZE) ||
-      /* Reset context again ready for first data. */
+      // Reset context again ready for first data.
       !EVP_EncryptInit_ex(&ctx->cipher_ctx, NULL, NULL, NULL, kZeroIV)) {
     return 0;
   }
@@ -176,16 +178,16 @@ int CMAC_Update(CMAC_CTX *ctx, const uint8_t *in, size_t in_len) {
       todo = in_len;
     }
 
-    memcpy(ctx->block + ctx->block_used, in, todo);
+    OPENSSL_memcpy(ctx->block + ctx->block_used, in, todo);
     in += todo;
     in_len -= todo;
     ctx->block_used += todo;
 
-    /* If |in_len| is zero then either |ctx->block_used| is less than
-     * |AES_BLOCK_SIZE|, in which case we can stop here, or |ctx->block_used|
-     * is exactly |AES_BLOCK_SIZE| but there's no more data to process. In the
-     * latter case we don't want to process this block now because it might be
-     * the last block and that block is treated specially. */
+    // If |in_len| is zero then either |ctx->block_used| is less than
+    // |AES_BLOCK_SIZE|, in which case we can stop here, or |ctx->block_used|
+    // is exactly |AES_BLOCK_SIZE| but there's no more data to process. In the
+    // latter case we don't want to process this block now because it might be
+    // the last block and that block is treated specially.
     if (in_len == 0) {
       return 1;
     }
@@ -197,7 +199,7 @@ int CMAC_Update(CMAC_CTX *ctx, const uint8_t *in, size_t in_len) {
     }
   }
 
-  /* Encrypt all but one of the remaining blocks. */
+  // Encrypt all but one of the remaining blocks.
   while (in_len > AES_BLOCK_SIZE) {
     if (!EVP_Cipher(&ctx->cipher_ctx, scratch, in, AES_BLOCK_SIZE)) {
       return 0;
@@ -206,7 +208,7 @@ int CMAC_Update(CMAC_CTX *ctx, const uint8_t *in, size_t in_len) {
     in_len -= AES_BLOCK_SIZE;
   }
 
-  memcpy(ctx->block, in, in_len);
+  OPENSSL_memcpy(ctx->block, in, in_len);
   ctx->block_used = in_len;
 
   return 1;
@@ -221,11 +223,11 @@ int CMAC_Final(CMAC_CTX *ctx, uint8_t *out, size_t *out_len) {
   const uint8_t *mask = ctx->k1;
 
   if (ctx->block_used != AES_BLOCK_SIZE) {
-    /* If the last block is incomplete, terminate it with a single 'one' bit
-     * followed by zeros. */
+    // If the last block is incomplete, terminate it with a single 'one' bit
+    // followed by zeros.
     ctx->block[ctx->block_used] = 0x80;
-    memset(ctx->block + ctx->block_used + 1, 0,
-           AES_BLOCK_SIZE - (ctx->block_used + 1));
+    OPENSSL_memset(ctx->block + ctx->block_used + 1, 0,
+                   AES_BLOCK_SIZE - (ctx->block_used + 1));
 
     mask = ctx->k2;
   }

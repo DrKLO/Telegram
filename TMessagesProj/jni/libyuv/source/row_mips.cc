@@ -375,13 +375,13 @@ void CopyRow_MIPS(const uint8* src, uint8* dst, int count) {
 }
 #endif  // HAS_COPYROW_MIPS
 
-// MIPS DSPR2 functions
+// DSPR2 functions
 #if !defined(LIBYUV_DISABLE_MIPS) && defined(__mips_dsp) && \
     (__mips_dsp_rev >= 2) && \
     (_MIPS_SIM == _MIPS_SIM_ABI32) && (__mips_isa_rev < 6)
 
-void SplitUVRow_MIPS_DSPR2(const uint8* src_uv, uint8* dst_u, uint8* dst_v,
-                           int width) {
+void SplitUVRow_DSPR2(const uint8* src_uv, uint8* dst_u, uint8* dst_v,
+                      int width) {
   __asm__ __volatile__ (
     ".set push                                     \n"
     ".set noreorder                                \n"
@@ -446,7 +446,7 @@ void SplitUVRow_MIPS_DSPR2(const uint8* src_uv, uint8* dst_u, uint8* dst_v,
   );
 }
 
-void MirrorRow_MIPS_DSPR2(const uint8* src, uint8* dst, int width) {
+void MirrorRow_DSPR2(const uint8* src, uint8* dst, int width) {
   __asm__ __volatile__ (
     ".set push                             \n"
     ".set noreorder                        \n"
@@ -496,10 +496,10 @@ void MirrorRow_MIPS_DSPR2(const uint8* src, uint8* dst, int width) {
   );
 }
 
-void MirrorUVRow_MIPS_DSPR2(const uint8* src_uv, uint8* dst_u, uint8* dst_v,
-                            int width) {
-  int x = 0;
-  int y = 0;
+void MirrorUVRow_DSPR2(const uint8* src_uv, uint8* dst_u, uint8* dst_v,
+                       int width) {
+  int x;
+  int y;
   __asm__ __volatile__ (
     ".set push                                    \n"
     ".set noreorder                               \n"
@@ -579,7 +579,7 @@ void MirrorUVRow_MIPS_DSPR2(const uint8* src_uv, uint8* dst_u, uint8* dst_v,
         [dst_u] "+r" (dst_u),
         [dst_v] "+r" (dst_v),
         [x] "=&r" (x),
-        [y] "+r" (y)
+        [y] "=&r" (y)
       : [width] "r" (width)
       : "t0", "t1", "t2", "t3", "t4",
       "t5", "t7", "t8", "t9"
@@ -653,12 +653,12 @@ void MirrorUVRow_MIPS_DSPR2(const uint8* src_uv, uint8* dst_u, uint8* dst_v,
       "addu.ph           $t1, $t1, $s5          \n"
 
 // TODO(fbarchard): accept yuv conversion constants.
-void I422ToARGBRow_MIPS_DSPR2(const uint8* y_buf,
-                              const uint8* u_buf,
-                              const uint8* v_buf,
-                              uint8* rgb_buf,
-                              const struct YuvConstants* yuvconstants,
-                              int width) {
+void I422ToARGBRow_DSPR2(const uint8* y_buf,
+                         const uint8* u_buf,
+                         const uint8* v_buf,
+                         uint8* rgb_buf,
+                         const struct YuvConstants* yuvconstants,
+                         int width) {
   __asm__ __volatile__ (
     ".set push                                \n"
     ".set noreorder                           \n"
@@ -716,9 +716,9 @@ void I422ToARGBRow_MIPS_DSPR2(const uint8* y_buf,
 }
 
 // Bilinear filter 8x2 -> 8x1
-void InterpolateRow_MIPS_DSPR2(uint8* dst_ptr, const uint8* src_ptr,
-                               ptrdiff_t src_stride, int dst_width,
-                               int source_y_fraction) {
+void InterpolateRow_DSPR2(uint8* dst_ptr, const uint8* src_ptr,
+                          ptrdiff_t src_stride, int dst_width,
+                          int source_y_fraction) {
     int y0_fraction = 256 - source_y_fraction;
     const uint8* src_ptr1 = src_ptr + src_stride;
 

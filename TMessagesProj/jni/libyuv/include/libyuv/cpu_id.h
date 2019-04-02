@@ -41,7 +41,7 @@ static const int kCpuHasAVX3 = 0x2000;
 
 // These flags are only valid on MIPS processors.
 static const int kCpuHasMIPS = 0x10000;
-static const int kCpuHasMIPS_DSPR2 = 0x20000;
+static const int kCpuHasDSPR2 = 0x20000;
 
 // Internal function used to auto-init.
 LIBYUV_API
@@ -62,7 +62,7 @@ static __inline int TestCpuFlag(int test_flag) {
 // For testing, allow CPU flags to be disabled.
 // ie MaskCpuFlags(~kCpuHasSSSE3) to disable SSSE3.
 // MaskCpuFlags(-1) to enable all cpu specific optimizations.
-// MaskCpuFlags(0) to disable all cpu specific optimizations.
+// MaskCpuFlags(1) to disable all cpu specific optimizations.
 LIBYUV_API
 void MaskCpuFlags(int enable_flags);
 

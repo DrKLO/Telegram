@@ -33,6 +33,8 @@
  * allocated buffer or map it with mmap() when available.
  * In case of success set *bufptr to the read or mmapped buffer, and
  * *size to the size in bytes of the buffer in *bufptr.
+ * Unlike mmap this function succeeds with zero sized files, in this
+ * case *bufptr will be set to NULL and *size will be set to 0.
  * The returned buffer must be released with av_file_unmap().
  *
  * @param log_offset loglevel offset used for logging
@@ -62,6 +64,7 @@ void av_file_unmap(uint8_t *bufptr, size_t size);
  * @note On very old libcs it is necessary to set a secure umask before
  *       calling this, av_tempfile() can't call umask itself as it is used in
  *       libraries and could interfere with the calling application.
+ * @deprecated as fd numbers cannot be passed saftely between libs on some platforms
  */
 int av_tempfile(const char *prefix, char **filename, int log_offset, void *log_ctx);
 

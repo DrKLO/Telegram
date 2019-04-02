@@ -65,48 +65,26 @@
 #include <openssl/mem.h>
 #include <openssl/thread.h>
 
-#include "internal.h"
 #include "../internal.h"
 
 
-extern const DH_METHOD DH_default_method;
+#define OPENSSL_DH_MAX_MODULUS_BITS 10000
 
 static CRYPTO_EX_DATA_CLASS g_ex_data_class = CRYPTO_EX_DATA_CLASS_INIT;
 
-DH *DH_new(void) { return DH_new_method(NULL); }
-
-DH *DH_new_method(const ENGINE *engine) {
-  DH *dh = (DH *)OPENSSL_malloc(sizeof(DH));
+DH *DH_new(void) {
+  DH *dh = OPENSSL_malloc(sizeof(DH));
   if (dh == NULL) {
     OPENSSL_PUT_ERROR(DH, ERR_R_MALLOC_FAILURE);
     return NULL;
   }
 
-  memset(dh, 0, sizeof(DH));
-
-  if (engine) {
-    dh->meth = ENGINE_get_DH_method(engine);
-  }
-
-  if (dh->meth == NULL) {
-    dh->meth = (DH_METHOD*) &DH_default_method;
-  }
-  METHOD_ref(dh->meth);
+  OPENSSL_memset(dh, 0, sizeof(DH));
 
   CRYPTO_MUTEX_init(&dh->method_mont_p_lock);
 
   dh->references = 1;
-  if (!CRYPTO_new_ex_data(&g_ex_data_class, dh, &dh->ex_data)) {
-    OPENSSL_free(dh);
-    return NULL;
-  }
-
-  if (dh->meth->init && !dh->meth->init(dh)) {
-    CRYPTO_free_ex_data(&g_ex_data_class, dh, &dh->ex_data);
-    METHOD_unref(dh->meth);
-    OPENSSL_free(dh);
-    return NULL;
-  }
+  CRYPTO_new_ex_data(&dh->ex_data);
 
   return dh;
 }
@@ -120,46 +98,335 @@ void DH_free(DH *dh) {
     return;
   }
 
-  if (dh->meth->finish) {
-    dh->meth->finish(dh);
-  }
-  METHOD_unref(dh->meth);
-
   CRYPTO_free_ex_data(&g_ex_data_class, dh, &dh->ex_data);
 
-  if (dh->method_mont_p) BN_MONT_CTX_free(dh->method_mont_p);
-  if (dh->p != NULL) BN_clear_free(dh->p);
-  if (dh->g != NULL) BN_clear_free(dh->g);
-  if (dh->q != NULL) BN_clear_free(dh->q);
-  if (dh->j != NULL) BN_clear_free(dh->j);
-  if (dh->seed) OPENSSL_free(dh->seed);
-  if (dh->counter != NULL) BN_clear_free(dh->counter);
-  if (dh->pub_key != NULL) BN_clear_free(dh->pub_key);
-  if (dh->priv_key != NULL) BN_clear_free(dh->priv_key);
+  BN_MONT_CTX_free(dh->method_mont_p);
+  BN_clear_free(dh->p);
+  BN_clear_free(dh->g);
+  BN_clear_free(dh->q);
+  BN_clear_free(dh->j);
+  OPENSSL_free(dh->seed);
+  BN_clear_free(dh->counter);
+  BN_clear_free(dh->pub_key);
+  BN_clear_free(dh->priv_key);
   CRYPTO_MUTEX_cleanup(&dh->method_mont_p_lock);
 
   OPENSSL_free(dh);
 }
 
-int DH_generate_parameters_ex(DH *dh, int prime_bits, int generator, BN_GENCB *cb) {
-  if (dh->meth->generate_parameters) {
-    return dh->meth->generate_parameters(dh, prime_bits, generator, cb);
+void DH_get0_key(const DH *dh, const BIGNUM **out_pub_key,
+                 const BIGNUM **out_priv_key) {
+  if (out_pub_key != NULL) {
+    *out_pub_key = dh->pub_key;
   }
-  return DH_default_method.generate_parameters(dh, prime_bits, generator, cb);
+  if (out_priv_key != NULL) {
+    *out_priv_key = dh->priv_key;
+  }
+}
+
+int DH_set0_key(DH *dh, BIGNUM *pub_key, BIGNUM *priv_key) {
+  if (pub_key != NULL) {
+    BN_free(dh->pub_key);
+    dh->pub_key = pub_key;
+  }
+
+  if (priv_key != NULL) {
+    BN_free(dh->priv_key);
+    dh->priv_key = priv_key;
+  }
+
+  return 1;
+}
+
+void DH_get0_pqg(const DH *dh, const BIGNUM **out_p, const BIGNUM **out_q,
+                 const BIGNUM **out_g) {
+  if (out_p != NULL) {
+    *out_p = dh->p;
+  }
+  if (out_q != NULL) {
+    *out_q = dh->q;
+  }
+  if (out_g != NULL) {
+    *out_g = dh->g;
+  }
+}
+
+int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
+  if ((dh->p == NULL && p == NULL) ||
+      (dh->g == NULL && g == NULL)) {
+    return 0;
+  }
+
+  if (p != NULL) {
+    BN_free(dh->p);
+    dh->p = p;
+  }
+
+  if (q != NULL) {
+    BN_free(dh->q);
+    dh->q = q;
+  }
+
+  if (g != NULL) {
+    BN_free(dh->g);
+    dh->g = g;
+  }
+
+  return 1;
+}
+
+int DH_generate_parameters_ex(DH *dh, int prime_bits, int generator, BN_GENCB *cb) {
+  // We generate DH parameters as follows
+  // find a prime q which is prime_bits/2 bits long.
+  // p=(2*q)+1 or (p-1)/2 = q
+  // For this case, g is a generator if
+  // g^((p-1)/q) mod p != 1 for values of q which are the factors of p-1.
+  // Since the factors of p-1 are q and 2, we just need to check
+  // g^2 mod p != 1 and g^q mod p != 1.
+  //
+  // Having said all that,
+  // there is another special case method for the generators 2, 3 and 5.
+  // for 2, p mod 24 == 11
+  // for 3, p mod 12 == 5  <<<<< does not work for safe primes.
+  // for 5, p mod 10 == 3 or 7
+  //
+  // Thanks to Phil Karn <karn@qualcomm.com> for the pointers about the
+  // special generators and for answering some of my questions.
+  //
+  // I've implemented the second simple method :-).
+  // Since DH should be using a safe prime (both p and q are prime),
+  // this generator function can take a very very long time to run.
+
+  // Actually there is no reason to insist that 'generator' be a generator.
+  // It's just as OK (and in some sense better) to use a generator of the
+  // order-q subgroup.
+
+  BIGNUM *t1, *t2;
+  int g, ok = 0;
+  BN_CTX *ctx = NULL;
+
+  ctx = BN_CTX_new();
+  if (ctx == NULL) {
+    goto err;
+  }
+  BN_CTX_start(ctx);
+  t1 = BN_CTX_get(ctx);
+  t2 = BN_CTX_get(ctx);
+  if (t1 == NULL || t2 == NULL) {
+    goto err;
+  }
+
+  // Make sure |dh| has the necessary elements
+  if (dh->p == NULL) {
+    dh->p = BN_new();
+    if (dh->p == NULL) {
+      goto err;
+    }
+  }
+  if (dh->g == NULL) {
+    dh->g = BN_new();
+    if (dh->g == NULL) {
+      goto err;
+    }
+  }
+
+  if (generator <= 1) {
+    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+    goto err;
+  }
+  if (generator == DH_GENERATOR_2) {
+    if (!BN_set_word(t1, 24)) {
+      goto err;
+    }
+    if (!BN_set_word(t2, 11)) {
+      goto err;
+    }
+    g = 2;
+  } else if (generator == DH_GENERATOR_5) {
+    if (!BN_set_word(t1, 10)) {
+      goto err;
+    }
+    if (!BN_set_word(t2, 3)) {
+      goto err;
+    }
+    // BN_set_word(t3,7); just have to miss
+    // out on these ones :-(
+    g = 5;
+  } else {
+    // in the general case, don't worry if 'generator' is a
+    // generator or not: since we are using safe primes,
+    // it will generate either an order-q or an order-2q group,
+    // which both is OK
+    if (!BN_set_word(t1, 2)) {
+      goto err;
+    }
+    if (!BN_set_word(t2, 1)) {
+      goto err;
+    }
+    g = generator;
+  }
+
+  if (!BN_generate_prime_ex(dh->p, prime_bits, 1, t1, t2, cb)) {
+    goto err;
+  }
+  if (!BN_GENCB_call(cb, 3, 0)) {
+    goto err;
+  }
+  if (!BN_set_word(dh->g, g)) {
+    goto err;
+  }
+  ok = 1;
+
+err:
+  if (!ok) {
+    OPENSSL_PUT_ERROR(DH, ERR_R_BN_LIB);
+  }
+
+  if (ctx != NULL) {
+    BN_CTX_end(ctx);
+    BN_CTX_free(ctx);
+  }
+  return ok;
 }
 
 int DH_generate_key(DH *dh) {
-  if (dh->meth->generate_key) {
-    return dh->meth->generate_key(dh);
+  int ok = 0;
+  int generate_new_key = 0;
+  BN_CTX *ctx = NULL;
+  BIGNUM *pub_key = NULL, *priv_key = NULL;
+
+  if (BN_num_bits(dh->p) > OPENSSL_DH_MAX_MODULUS_BITS) {
+    OPENSSL_PUT_ERROR(DH, DH_R_MODULUS_TOO_LARGE);
+    goto err;
   }
-  return DH_default_method.generate_key(dh);
+
+  ctx = BN_CTX_new();
+  if (ctx == NULL) {
+    goto err;
+  }
+
+  if (dh->priv_key == NULL) {
+    priv_key = BN_new();
+    if (priv_key == NULL) {
+      goto err;
+    }
+    generate_new_key = 1;
+  } else {
+    priv_key = dh->priv_key;
+  }
+
+  if (dh->pub_key == NULL) {
+    pub_key = BN_new();
+    if (pub_key == NULL) {
+      goto err;
+    }
+  } else {
+    pub_key = dh->pub_key;
+  }
+
+  if (!BN_MONT_CTX_set_locked(&dh->method_mont_p, &dh->method_mont_p_lock,
+                              dh->p, ctx)) {
+    goto err;
+  }
+
+  if (generate_new_key) {
+    if (dh->q) {
+      if (!BN_rand_range_ex(priv_key, 2, dh->q)) {
+        goto err;
+      }
+    } else {
+      // secret exponent length
+      unsigned priv_bits = dh->priv_length;
+      if (priv_bits == 0) {
+        const unsigned p_bits = BN_num_bits(dh->p);
+        if (p_bits == 0) {
+          goto err;
+        }
+
+        priv_bits = p_bits - 1;
+      }
+
+      if (!BN_rand(priv_key, priv_bits, BN_RAND_TOP_ONE, BN_RAND_BOTTOM_ANY)) {
+        goto err;
+      }
+    }
+  }
+
+  if (!BN_mod_exp_mont_consttime(pub_key, dh->g, priv_key, dh->p, ctx,
+                                 dh->method_mont_p)) {
+    goto err;
+  }
+
+  dh->pub_key = pub_key;
+  dh->priv_key = priv_key;
+  ok = 1;
+
+err:
+  if (ok != 1) {
+    OPENSSL_PUT_ERROR(DH, ERR_R_BN_LIB);
+  }
+
+  if (dh->pub_key == NULL) {
+    BN_free(pub_key);
+  }
+  if (dh->priv_key == NULL) {
+    BN_free(priv_key);
+  }
+  BN_CTX_free(ctx);
+  return ok;
 }
 
 int DH_compute_key(unsigned char *out, const BIGNUM *peers_key, DH *dh) {
-  if (dh->meth->compute_key) {
-    return dh->meth->compute_key(dh, out, peers_key);
+  BN_CTX *ctx = NULL;
+  BIGNUM *shared_key;
+  int ret = -1;
+  int check_result;
+
+  if (BN_num_bits(dh->p) > OPENSSL_DH_MAX_MODULUS_BITS) {
+    OPENSSL_PUT_ERROR(DH, DH_R_MODULUS_TOO_LARGE);
+    goto err;
   }
-  return DH_default_method.compute_key(dh, out, peers_key);
+
+  ctx = BN_CTX_new();
+  if (ctx == NULL) {
+    goto err;
+  }
+  BN_CTX_start(ctx);
+  shared_key = BN_CTX_get(ctx);
+  if (shared_key == NULL) {
+    goto err;
+  }
+
+  if (dh->priv_key == NULL) {
+    OPENSSL_PUT_ERROR(DH, DH_R_NO_PRIVATE_VALUE);
+    goto err;
+  }
+
+  if (!BN_MONT_CTX_set_locked(&dh->method_mont_p, &dh->method_mont_p_lock,
+                              dh->p, ctx)) {
+    goto err;
+  }
+
+  if (!DH_check_pub_key(dh, peers_key, &check_result) || check_result) {
+    OPENSSL_PUT_ERROR(DH, DH_R_INVALID_PUBKEY);
+    goto err;
+  }
+
+  if (!BN_mod_exp_mont_consttime(shared_key, peers_key, dh->priv_key, dh->p,
+                                 ctx, dh->method_mont_p)) {
+    OPENSSL_PUT_ERROR(DH, ERR_R_BN_LIB);
+    goto err;
+  }
+
+  ret = BN_bn2bin(shared_key, out);
+
+err:
+  if (ctx != NULL) {
+    BN_CTX_end(ctx);
+    BN_CTX_free(ctx);
+  }
+
+  return ret;
 }
 
 int DH_size(const DH *dh) { return BN_num_bytes(dh->p); }
@@ -233,20 +500,20 @@ DH *DHparams_dup(const DH *dh) {
   return ret;
 }
 
-int DH_get_ex_new_index(long argl, void *argp, CRYPTO_EX_new *new_func,
-                        CRYPTO_EX_dup *dup_func, CRYPTO_EX_free *free_func) {
+int DH_get_ex_new_index(long argl, void *argp, CRYPTO_EX_unused *unused,
+                        CRYPTO_EX_dup *dup_unused, CRYPTO_EX_free *free_func) {
   int index;
-  if (!CRYPTO_get_ex_new_index(&g_ex_data_class, &index, argl, argp, new_func,
-                               dup_func, free_func)) {
+  if (!CRYPTO_get_ex_new_index(&g_ex_data_class, &index, argl, argp,
+                               free_func)) {
     return -1;
   }
   return index;
 }
 
 int DH_set_ex_data(DH *d, int idx, void *arg) {
-  return (CRYPTO_set_ex_data(&d->ex_data, idx, arg));
+  return CRYPTO_set_ex_data(&d->ex_data, idx, arg);
 }
 
 void *DH_get_ex_data(DH *d, int idx) {
-  return (CRYPTO_get_ex_data(&d->ex_data, idx));
+  return CRYPTO_get_ex_data(&d->ex_data, idx);
 }

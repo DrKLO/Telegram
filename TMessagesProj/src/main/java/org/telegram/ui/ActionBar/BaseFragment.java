@@ -1,47 +1,58 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.ActionBar;
 
+import android.animation.AnimatorSet;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 
 public class BaseFragment {
 
-    private boolean isFinished = false;
-    protected Dialog visibleDialog = null;
+    private boolean isFinished;
+    private boolean finishing;
+    protected Dialog visibleDialog;
+    protected int currentAccount = UserConfig.selectedAccount;
 
     protected View fragmentView;
     protected ActionBarLayout parentLayout;
     protected ActionBar actionBar;
-    protected int classGuid = 0;
+    protected boolean inPreviewMode;
+    protected int classGuid;
     protected Bundle arguments;
     protected boolean swipeBackEnabled = true;
     protected boolean hasOwnBackground = false;
 
     public BaseFragment() {
-        classGuid = ConnectionsManager.getInstance().generateClassGuid();
+        classGuid = ConnectionsManager.generateClassGuid();
     }
 
     public BaseFragment(Bundle args) {
         arguments = args;
-        classGuid = ConnectionsManager.getInstance().generateClassGuid();
+        classGuid = ConnectionsManager.generateClassGuid();
+    }
+
+    public void setCurrentAccount(int account) {
+        if (fragmentView != null) {
+            throw new IllegalStateException("trying to set current account when fragment UI already created");
+        }
+        currentAccount = account;
     }
 
     public ActionBar getActionBar() {
@@ -60,14 +71,30 @@ public class BaseFragment {
         return arguments;
     }
 
+    public int getCurrentAccount() {
+        return currentAccount;
+    }
+
+    protected void setInPreviewMode(boolean value) {
+        inPreviewMode = value;
+        if (actionBar != null) {
+            if (inPreviewMode) {
+                actionBar.setOccupyStatusBar(false);
+            } else {
+                actionBar.setOccupyStatusBar(Build.VERSION.SDK_INT >= 21);
+            }
+        }
+    }
+
     protected void clearViews() {
         if (fragmentView != null) {
             ViewGroup parent = (ViewGroup) fragmentView.getParent();
             if (parent != null) {
                 try {
+                    onRemoveFromParent();
                     parent.removeView(fragmentView);
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
             fragmentView = null;
@@ -78,12 +105,16 @@ public class BaseFragment {
                 try {
                     parent.removeView(actionBar);
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
             actionBar = null;
         }
         parentLayout = null;
+    }
+
+    protected void onRemoveFromParent() {
+
     }
 
     protected void setParentLayout(ActionBarLayout layout) {
@@ -93,9 +124,10 @@ public class BaseFragment {
                 ViewGroup parent = (ViewGroup) fragmentView.getParent();
                 if (parent != null) {
                     try {
+                        onRemoveFromParent();
                         parent.removeView(fragmentView);
                     } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
                 }
                 if (parentLayout != null && parentLayout.getContext() != fragmentView.getContext()) {
@@ -103,25 +135,47 @@ public class BaseFragment {
                 }
             }
             if (actionBar != null) {
-                ViewGroup parent = (ViewGroup) actionBar.getParent();
-                if (parent != null) {
-                    try {
-                        parent.removeView(actionBar);
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                boolean differentParent = parentLayout != null && parentLayout.getContext() != actionBar.getContext();
+                if (actionBar.getAddToContainer() || differentParent) {
+                    ViewGroup parent = (ViewGroup) actionBar.getParent();
+                    if (parent != null) {
+                        try {
+                            parent.removeView(actionBar);
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
                     }
                 }
-                if (parentLayout != null && parentLayout.getContext() != actionBar.getContext()) {
+                if (differentParent) {
                     actionBar = null;
                 }
             }
             if (parentLayout != null && actionBar == null) {
-                actionBar = new ActionBar(parentLayout.getContext());
+                actionBar = createActionBar(parentLayout.getContext());
                 actionBar.parentFragment = this;
-                actionBar.setBackgroundColor(0xff54759e);
-                actionBar.setItemsBackground(R.drawable.bar_selector);
             }
         }
+    }
+
+    protected ActionBar createActionBar(Context context) {
+        ActionBar actionBar = new ActionBar(context);
+        actionBar.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefault));
+        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSelector), false);
+        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), true);
+        actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarDefaultIcon), false);
+        actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), true);
+        if (inPreviewMode) {
+            actionBar.setOccupyStatusBar(false);
+        }
+        return actionBar;
+    }
+
+    public void movePreviewFragment(float dy) {
+        parentLayout.movePreviewFragment(dy);
+    }
+
+    public void finishPreviewFragment() {
+        parentLayout.finishPreviewFragment();
     }
 
     public void finishFragment() {
@@ -132,6 +186,7 @@ public class BaseFragment {
         if (isFinished || parentLayout == null) {
             return;
         }
+        finishing = true;
         parentLayout.closeLastFragment(animated);
     }
 
@@ -142,16 +197,24 @@ public class BaseFragment {
         parentLayout.removeFragmentFromStack(this);
     }
 
+    protected boolean isFinishing() {
+        return finishing;
+    }
+
     public boolean onFragmentCreate() {
         return true;
     }
 
     public void onFragmentDestroy() {
-        ConnectionsManager.getInstance().cancelRequestsForGuid(classGuid);
+        ConnectionsManager.getInstance(currentAccount).cancelRequestsForGuid(classGuid);
         isFinished = true;
         if (actionBar != null) {
             actionBar.setEnabled(false);
         }
+    }
+
+    public boolean needDelayOpenAnimation() {
+        return false;
     }
 
     public void onResume() {
@@ -168,8 +231,15 @@ public class BaseFragment {
                 visibleDialog = null;
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
+    }
+
+    public BaseFragment getFragmentForAlert(int offset) {
+        if (parentLayout == null || parentLayout.fragmentsStack.size() <= 1 + offset) {
+            return this;
+        }
+        return parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 2 - offset);
     }
 
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
@@ -196,6 +266,10 @@ public class BaseFragment {
 
     }
 
+    public boolean presentFragmentAsPreview(BaseFragment fragment) {
+        return parentLayout != null && parentLayout.presentFragmentAsPreview(fragment);
+    }
+
     public boolean presentFragment(BaseFragment fragment) {
         return parentLayout != null && parentLayout.presentFragment(fragment);
     }
@@ -205,7 +279,7 @@ public class BaseFragment {
     }
 
     public boolean presentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation) {
-        return parentLayout != null && parentLayout.presentFragment(fragment, removeLast, forceWithoutAnimation, true);
+        return parentLayout != null && parentLayout.presentFragment(fragment, removeLast, forceWithoutAnimation, true, false);
     }
 
     public Activity getParentActivity() {
@@ -221,6 +295,18 @@ public class BaseFragment {
         }
     }
 
+    public void dismissCurrentDialig() {
+        if (visibleDialog == null) {
+            return;
+        }
+        try {
+            visibleDialog.dismiss();
+            visibleDialog = null;
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     public boolean dismissDialogOnPause(Dialog dialog) {
         return true;
     }
@@ -232,7 +318,7 @@ public class BaseFragment {
                 visibleDialog = null;
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         if (actionBar != null) {
             actionBar.onPause();
@@ -251,7 +337,11 @@ public class BaseFragment {
 
     }
 
-    protected AnimatorSetProxy onCustomTransitionAnimation(boolean isOpen, final Runnable callback) {
+    protected void onBecomeFullyHidden() {
+
+    }
+
+    protected AnimatorSet onCustomTransitionAnimation(boolean isOpen, final Runnable callback) {
         return null;
     }
 
@@ -260,10 +350,14 @@ public class BaseFragment {
     }
 
     public Dialog showDialog(Dialog dialog) {
-        return showDialog(dialog, false);
+        return showDialog(dialog, false, null);
     }
 
-    public Dialog showDialog(Dialog dialog, boolean allowInTransition) {
+    public Dialog showDialog(Dialog dialog, Dialog.OnDismissListener onDismissListener) {
+        return showDialog(dialog, false, onDismissListener);
+    }
+
+    public Dialog showDialog(Dialog dialog, boolean allowInTransition, final Dialog.OnDismissListener onDismissListener) {
         if (dialog == null || parentLayout == null || parentLayout.animationInProgress || parentLayout.startedTracking || !allowInTransition && parentLayout.checkTransitionAnimation()) {
             return null;
         }
@@ -273,22 +367,22 @@ public class BaseFragment {
                 visibleDialog = null;
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         try {
             visibleDialog = dialog;
             visibleDialog.setCanceledOnTouchOutside(true);
-            visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                @Override
-                public void onDismiss(DialogInterface dialog) {
-                    onDialogDismiss(visibleDialog);
-                    visibleDialog = null;
+            visibleDialog.setOnDismissListener(dialog1 -> {
+                if (onDismissListener != null) {
+                    onDismissListener.onDismiss(dialog1);
                 }
+                onDialogDismiss(visibleDialog);
+                visibleDialog = null;
             });
             visibleDialog.show();
             return visibleDialog;
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return null;
     }
@@ -303,5 +397,13 @@ public class BaseFragment {
 
     public void setVisibleDialog(Dialog dialog) {
         visibleDialog = dialog;
+    }
+
+    public boolean extendActionMode(Menu menu) {
+        return false;
+    }
+
+    public ThemeDescription[] getThemeDescriptions() {
+        return new ThemeDescription[0];
     }
 }

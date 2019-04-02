@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x
+ * This is the source code of Telegram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -70,15 +70,19 @@ public class StaticLayoutEx {
             sConstructorArgs = new Object[signature.length];
             initialized = true;
         } catch (Throwable e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 
     public static StaticLayout createStaticLayout(CharSequence source, TextPaint paint, int width, Layout.Alignment align, float spacingmult, float spacingadd, boolean includepad, TextUtils.TruncateAt ellipsize, int ellipsisWidth, int maxLines) {
-        return createStaticLayout(source, 0, source.length(), paint, width, align, spacingmult, spacingadd, includepad, ellipsize, ellipsisWidth, maxLines);
+        return createStaticLayout(source, 0, source.length(), paint, width, align, spacingmult, spacingadd, includepad, ellipsize, ellipsisWidth, maxLines, true);
     }
 
-    public static StaticLayout createStaticLayout(CharSequence source, int bufstart, int bufend, TextPaint paint, int outerWidth, Layout.Alignment align, float spacingMult, float spacingAdd, boolean includePad, TextUtils.TruncateAt ellipsize, int ellipsisWidth, int maxLines) {
+    public static StaticLayout createStaticLayout(CharSequence source, TextPaint paint, int width, Layout.Alignment align, float spacingmult, float spacingadd, boolean includepad, TextUtils.TruncateAt ellipsize, int ellipsisWidth, int maxLines, boolean canContainUrl) {
+        return createStaticLayout(source, 0, source.length(), paint, width, align, spacingmult, spacingadd, includepad, ellipsize, ellipsisWidth, maxLines, canContainUrl);
+    }
+
+    public static StaticLayout createStaticLayout(CharSequence source, int bufstart, int bufend, TextPaint paint, int outerWidth, Layout.Alignment align, float spacingMult, float spacingAdd, boolean includePad, TextUtils.TruncateAt ellipsize, int ellipsisWidth, int maxLines, boolean canContainUrl) {
         /*if (Build.VERSION.SDK_INT >= 14) {
             init();
             try {
@@ -97,7 +101,7 @@ public class StaticLayoutEx {
                 sConstructorArgs[12] = maxLines;
                 return sConstructor.newInstance(sConstructorArgs);
             } catch (Exception e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
         }*/
         try {
@@ -105,7 +109,20 @@ public class StaticLayoutEx {
                 CharSequence text = TextUtils.ellipsize(source, paint, ellipsisWidth, TextUtils.TruncateAt.END);
                 return new StaticLayout(text, 0, text.length(), paint, outerWidth, align, spacingMult, spacingAdd, includePad);
             } else {
-                StaticLayout layout = new StaticLayout(source, paint, outerWidth, align, spacingMult, spacingAdd, includePad);
+                StaticLayout layout;
+                if (Build.VERSION.SDK_INT >= 23) {
+                    StaticLayout.Builder builder = StaticLayout.Builder.obtain(source, 0, source.length(), paint, outerWidth)
+                            .setAlignment(align)
+                            .setLineSpacing(spacingAdd, spacingMult)
+                            .setIncludePad(includePad)
+                            .setEllipsize(null)
+                            .setEllipsizedWidth(ellipsisWidth)
+                            .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
+                            .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE);
+                    layout = builder.build();
+                } else {
+                    layout = new StaticLayout(source, paint, outerWidth, align, spacingMult, spacingAdd, includePad);
+                }
                 if (layout.getLineCount() <= maxLines) {
                     return layout;
                 } else {
@@ -116,13 +133,25 @@ public class StaticLayoutEx {
                     } else {
                         off = layout.getOffsetForHorizontal(maxLines - 1, layout.getLineWidth(maxLines - 1));
                     }
-                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder(source.subSequence(0, Math.max(0, off - 1)));
+                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder(source.subSequence(0, Math.max(0, off - 3)));
                     stringBuilder.append("\u2026");
-                    return new StaticLayout(stringBuilder, paint, outerWidth, align, spacingMult, spacingAdd, includePad);
+                    if (Build.VERSION.SDK_INT >= 23) {
+                        StaticLayout.Builder builder = StaticLayout.Builder.obtain(stringBuilder, 0, stringBuilder.length(), paint, outerWidth)
+                                .setAlignment(align)
+                                .setLineSpacing(spacingAdd, spacingMult)
+                                .setIncludePad(includePad)
+                                .setEllipsize(null)
+                                .setEllipsizedWidth(ellipsisWidth)
+                                .setBreakStrategy(canContainUrl ? StaticLayout.BREAK_STRATEGY_HIGH_QUALITY : StaticLayout.BREAK_STRATEGY_SIMPLE)
+                                .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE);
+                        return builder.build();
+                    } else {
+                        return new StaticLayout(stringBuilder, paint, outerWidth, align, spacingMult, spacingAdd, includePad);
+                    }
                 }
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return null;
     }

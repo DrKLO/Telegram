@@ -1,6 +1,7 @@
 /* asn1t.h */
-/* Written by Dr Stephen N Henson (steve@openssl.org) for the OpenSSL
- * project 2006.
+/*
+ * Written by Dr Stephen N Henson (steve@openssl.org) for the OpenSSL project
+ * 2006.
  */
 /* ====================================================================
  * Copyright (c) 2006 The OpenSSL Project.  All rights reserved.
@@ -10,7 +11,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -56,18 +57,48 @@
  *
  */
 
+#ifndef OPENSSL_HEADER_ASN1_ASN1_LOCL_H
+#define OPENSSL_HEADER_ASN1_ASN1_LOCL_H
+
+#include <time.h>
+
+#include <openssl/asn1.h>
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+
+/* Wrapper functions for time functions. */
+
+/* OPENSSL_gmtime wraps |gmtime_r|. See the manual page for that function. */
+struct tm *OPENSSL_gmtime(const time_t *time, struct tm *result);
+
+/* OPENSSL_gmtime_adj updates |tm| by adding |offset_day| days and |offset_sec|
+ * seconds. */
+int OPENSSL_gmtime_adj(struct tm *tm, int offset_day, long offset_sec);
+
+/* OPENSSL_gmtime_diff calculates the difference between |from| and |to| and
+ * outputs the difference as a number of days and seconds in |*out_days| and
+ * |*out_secs|. */
+int OPENSSL_gmtime_diff(int *out_days, int *out_secs, const struct tm *from,
+                        const struct tm *to);
+
+
 /* Internal ASN1 structures and functions: not for application use */
 
 int asn1_utctime_to_tm(struct tm *tm, const ASN1_UTCTIME *d);
 int asn1_generalizedtime_to_tm(struct tm *tm, const ASN1_GENERALIZEDTIME *d);
 
-/* ASN1 print context structure */
+void asn1_item_combine_free(ASN1_VALUE **pval, const ASN1_ITEM *it,
+                            int combine);
 
-struct asn1_pctx_st
-	{
-	unsigned long flags;
-	unsigned long nm_flags;
-	unsigned long cert_flags;
-	unsigned long oid_flags;
-	unsigned long str_flags;
-	} /* ASN1_PCTX */;
+int UTF8_getc(const unsigned char *str, int len, uint32_t *val);
+int UTF8_putc(unsigned char *str, int len, uint32_t value);
+
+
+#if defined(__cplusplus)
+}  /* extern C */
+#endif
+
+#endif  /* OPENSSL_HEADER_ASN1_ASN1_LOCL_H */

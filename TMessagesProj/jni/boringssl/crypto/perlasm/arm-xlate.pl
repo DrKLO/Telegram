@@ -1,6 +1,12 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2015-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
 
-# ARM assembler distiller by <appro>.
+use strict;
 
 my $flavour = shift;
 my $output = shift;
@@ -55,7 +61,9 @@ my $globl = sub {
 			      };
     }
 
-    $ret = ".globl	$name" if (!$ret);
+    $ret = ".globl	$name\n";
+    # All symbols in assembly files are hidden.
+    $ret .= &$hidden($name);
     $$global = $name;
     $ret;
 };
@@ -66,6 +74,12 @@ my $extern = sub {
 };
 my $type = sub {
     if ($flavour =~ /linux/)	{ ".type\t".join(',',@_); }
+    elsif ($flavour =~ /ios32/)	{ if (join(',',@_) =~ /(\w+),%function/) {
+					"#ifdef __thumb2__\n".
+					".thumb_func	$1\n".
+					"#endif";
+				  }
+			        }
     else			{ ""; }
 };
 my $size = sub {
@@ -119,7 +133,7 @@ sub expand_line {
 print "#if defined(__arm__)\n" if ($flavour eq "linux32");
 print "#if defined(__aarch64__)\n" if ($flavour eq "linux64");
 
-while($line=<>) {
+while(my $line=<>) {
 
     if ($line =~ m/^\s*(#|@|\/\/)/)	{ print $line; next; }
 
@@ -165,6 +179,6 @@ while($line=<>) {
     print "\n";
 }
 
-print "#endif" if ($flavour eq "linux32" || $flavour eq "linux64");
+print "#endif\n" if ($flavour eq "linux32" || $flavour eq "linux64");
 
 close STDOUT;

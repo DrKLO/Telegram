@@ -12,18 +12,21 @@
  * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 
-/* This implementation was taken from the public domain, neon2 version in
- * SUPERCOP by D. J. Bernstein and Peter Schwabe. */
+// This implementation was taken from the public domain, neon2 version in
+// SUPERCOP by D. J. Bernstein and Peter Schwabe.
 
 #include <openssl/poly1305.h>
 
-#if defined(OPENSSL_ARM) && !defined(OPENSSL_NO_ASM)
-
 #include <string.h>
 
+#include "../internal.h"
+#include "internal.h"
+
+
+#if defined(OPENSSL_POLY1305_NEON)
 
 typedef struct {
-  uint32_t v[12]; /* for alignment; only using 10 */
+  uint32_t v[12];  // for alignment; only using 10
 } fe1305x2;
 
 #define addmulmod openssl_poly1305_neon2_addmulmod
@@ -122,17 +125,17 @@ static void fe1305x2_tobytearray(uint8_t *r, fe1305x2 *x) {
   *(uint32_t *)(r + 12) = (x3 >> 18) + (x4 << 8);
 }
 
-/* load32 exists to avoid breaking strict aliasing rules in
- * fe1305x2_frombytearray. */
+// load32 exists to avoid breaking strict aliasing rules in
+// fe1305x2_frombytearray.
 static uint32_t load32(uint8_t *t) {
   uint32_t tmp;
-  memcpy(&tmp, t, sizeof(tmp));
+  OPENSSL_memcpy(&tmp, t, sizeof(tmp));
   return tmp;
 }
 
 static void fe1305x2_frombytearray(fe1305x2 *r, const uint8_t *x,
                                    unsigned long long xlen) {
-  int i;
+  unsigned i;
   uint8_t t[17];
 
   for (i = 0; (i < 16) && (i < xlen); i++) {
@@ -170,7 +173,7 @@ static void fe1305x2_frombytearray(fe1305x2 *r, const uint8_t *x,
   }
 }
 
-static const fe1305x2 zero __attribute__((aligned(16)));
+static const alignas(16) fe1305x2 zero;
 
 struct poly1305_state_st {
   uint8_t data[sizeof(fe1305x2[5]) + 128];
@@ -194,13 +197,13 @@ void CRYPTO_poly1305_init_neon(poly1305_state *state, const uint8_t key[32]) {
   r->v[9] = r->v[8] = 0x00fffff & ((*(uint32_t *)(key + 12)) >> 8);
 
   for (j = 0; j < 10; j++) {
-    h->v[j] = 0; /* XXX: should fast-forward a bit */
+    h->v[j] = 0;  // XXX: should fast-forward a bit
   }
 
-  addmulmod(precomp, r, r, &zero);                 /* precompute r^2 */
-  addmulmod(precomp + 1, precomp, precomp, &zero); /* precompute r^4 */
+  addmulmod(precomp, r, r, &zero);                  // precompute r^2
+  addmulmod(precomp + 1, precomp, precomp, &zero);  // precompute r^4
 
-  memcpy(st->key, key + 16, 16);
+  OPENSSL_memcpy(st->key, key + 16, 16);
   st->buf_used = 0;
 }
 
@@ -298,4 +301,4 @@ void CRYPTO_poly1305_finish_neon(poly1305_state *state, uint8_t mac[16]) {
   fe1305x2_tobytearray(mac, h);
 }
 
-#endif  /* OPENSSL_ARM && !OPENSSL_NO_ASM */
+#endif  // OPENSSL_POLY1305_NEON

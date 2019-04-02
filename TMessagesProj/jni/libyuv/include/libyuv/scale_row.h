@@ -23,6 +23,12 @@ extern "C" {
     (defined(__i386__) && !defined(__SSE2__))
 #define LIBYUV_DISABLE_X86
 #endif
+// MemorySanitizer does not support assembly code yet. http://crbug.com/344505
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer)
+#define LIBYUV_DISABLE_X86
+#endif
+#endif
 
 // GCC >= 4.7.0 required for AVX2.
 #if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
@@ -90,10 +96,10 @@ extern "C" {
 // The following are available on Mips platforms:
 #if !defined(LIBYUV_DISABLE_MIPS) && !defined(__native_client__) && \
     defined(__mips__) && defined(__mips_dsp) && (__mips_dsp_rev >= 2)
-#define HAS_SCALEROWDOWN2_MIPS_DSPR2
-#define HAS_SCALEROWDOWN4_MIPS_DSPR2
-#define HAS_SCALEROWDOWN34_MIPS_DSPR2
-#define HAS_SCALEROWDOWN38_MIPS_DSPR2
+#define HAS_SCALEROWDOWN2_DSPR2
+#define HAS_SCALEROWDOWN4_DSPR2
+#define HAS_SCALEROWDOWN34_DSPR2
+#define HAS_SCALEROWDOWN38_DSPR2
 #endif
 
 // Scale ARGB vertically with bilinear interpolation.
@@ -146,6 +152,8 @@ void ScaleRowDown2Linear_16_C(const uint16* src_ptr, ptrdiff_t src_stride,
                               uint16* dst, int dst_width);
 void ScaleRowDown2Box_C(const uint8* src_ptr, ptrdiff_t src_stride,
                         uint8* dst, int dst_width);
+void ScaleRowDown2Box_Odd_C(const uint8* src_ptr, ptrdiff_t src_stride,
+                            uint8* dst, int dst_width);
 void ScaleRowDown2Box_16_C(const uint16* src_ptr, ptrdiff_t src_stride,
                            uint16* dst, int dst_width);
 void ScaleRowDown4_C(const uint8* src_ptr, ptrdiff_t src_stride,
@@ -269,13 +277,17 @@ void ScaleRowDown2_Any_SSSE3(const uint8* src_ptr, ptrdiff_t src_stride,
 void ScaleRowDown2Linear_Any_SSSE3(const uint8* src_ptr, ptrdiff_t src_stride,
                                    uint8* dst_ptr, int dst_width);
 void ScaleRowDown2Box_Any_SSSE3(const uint8* src_ptr, ptrdiff_t src_stride,
-                               uint8* dst_ptr, int dst_width);
+                                uint8* dst_ptr, int dst_width);
+void ScaleRowDown2Box_Odd_SSSE3(const uint8* src_ptr, ptrdiff_t src_stride,
+                                uint8* dst_ptr, int dst_width);
 void ScaleRowDown2_Any_AVX2(const uint8* src_ptr, ptrdiff_t src_stride,
                             uint8* dst_ptr, int dst_width);
 void ScaleRowDown2Linear_Any_AVX2(const uint8* src_ptr, ptrdiff_t src_stride,
                                   uint8* dst_ptr, int dst_width);
 void ScaleRowDown2Box_Any_AVX2(const uint8* src_ptr, ptrdiff_t src_stride,
-                           uint8* dst_ptr, int dst_width);
+                               uint8* dst_ptr, int dst_width);
+void ScaleRowDown2Box_Odd_AVX2(const uint8* src_ptr, ptrdiff_t src_stride,
+                               uint8* dst_ptr, int dst_width);
 void ScaleRowDown4_Any_SSSE3(const uint8* src_ptr, ptrdiff_t src_stride,
                              uint8* dst_ptr, int dst_width);
 void ScaleRowDown4Box_Any_SSSE3(const uint8* src_ptr, ptrdiff_t src_stride,
@@ -431,6 +443,8 @@ void ScaleRowDown2Linear_Any_NEON(const uint8* src_ptr, ptrdiff_t src_stride,
                                   uint8* dst, int dst_width);
 void ScaleRowDown2Box_Any_NEON(const uint8* src_ptr, ptrdiff_t src_stride,
                                uint8* dst, int dst_width);
+void ScaleRowDown2Box_Odd_NEON(const uint8* src_ptr, ptrdiff_t src_stride,
+                               uint8* dst, int dst_width);
 void ScaleRowDown4_Any_NEON(const uint8* src_ptr, ptrdiff_t src_stride,
                             uint8* dst_ptr, int dst_width);
 void ScaleRowDown4Box_Any_NEON(const uint8* src_ptr, ptrdiff_t src_stride,
@@ -460,28 +474,26 @@ void ScaleFilterCols_NEON(uint8* dst_ptr, const uint8* src_ptr,
 void ScaleFilterCols_Any_NEON(uint8* dst_ptr, const uint8* src_ptr,
                               int dst_width, int x, int dx);
 
-
-void ScaleRowDown2_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                              uint8* dst, int dst_width);
-void ScaleRowDown2Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                                 uint8* dst, int dst_width);
-void ScaleRowDown4_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                              uint8* dst, int dst_width);
-void ScaleRowDown4Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                                 uint8* dst, int dst_width);
-void ScaleRowDown34_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                               uint8* dst, int dst_width);
-void ScaleRowDown34_0_Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                                     uint8* d, int dst_width);
-void ScaleRowDown34_1_Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                                     uint8* d, int dst_width);
-void ScaleRowDown38_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                               uint8* dst, int dst_width);
-void ScaleRowDown38_2_Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                                     uint8* dst_ptr, int dst_width);
-void ScaleRowDown38_3_Box_MIPS_DSPR2(const uint8* src_ptr,
-                                     ptrdiff_t src_stride,
-                                     uint8* dst_ptr, int dst_width);
+void ScaleRowDown2_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                         uint8* dst, int dst_width);
+void ScaleRowDown2Box_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                            uint8* dst, int dst_width);
+void ScaleRowDown4_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                         uint8* dst, int dst_width);
+void ScaleRowDown4Box_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                            uint8* dst, int dst_width);
+void ScaleRowDown34_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                          uint8* dst, int dst_width);
+void ScaleRowDown34_0_Box_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                                uint8* d, int dst_width);
+void ScaleRowDown34_1_Box_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                                uint8* d, int dst_width);
+void ScaleRowDown38_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                          uint8* dst, int dst_width);
+void ScaleRowDown38_2_Box_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                                uint8* dst_ptr, int dst_width);
+void ScaleRowDown38_3_Box_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                                uint8* dst_ptr, int dst_width);
 
 #ifdef __cplusplus
 }  // extern "C"

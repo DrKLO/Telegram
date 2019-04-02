@@ -1,4 +1,4 @@
-#if defined(__arm__) && !defined(OPENSSL_NO_ASM)
+#if defined(__arm__) && !defined(OPENSSL_NO_ASM) && !defined(__APPLE__)
 
 # This implementation was taken from the public domain, neon2 version in
 # SUPERCOP by D. J. Bernstein and Peter Schwabe.
@@ -2012,4 +2012,4 @@ vst1.8 d4,[r0,: 64]
 add sp,sp,#0
 bx lr
 
-#endif  /* __arm__ && !OPENSSL_NO_ASM */
+#endif  /* __arm__ && !OPENSSL_NO_ASM && !__APPLE__ */

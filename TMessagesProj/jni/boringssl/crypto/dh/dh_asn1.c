@@ -55,30 +55,106 @@
 
 #include <openssl/dh.h>
 
-#include <openssl/asn1.h>
-#include <openssl/asn1t.h>
+#include <assert.h>
+#include <limits.h>
 
-#include "internal.h"
+#include <openssl/bn.h>
+#include <openssl/bytestring.h>
+#include <openssl/err.h>
 
-/* Override the default free and new methods */
-static int dh_cb(int operation, ASN1_VALUE **pval, const ASN1_ITEM *it,
-                 void *exarg) {
-  if (operation == ASN1_OP_NEW_PRE) {
-    *pval = (ASN1_VALUE *)DH_new();
-    if (*pval) {
-      return 2;
-    }
+#include "../bytestring/internal.h"
+
+
+static int parse_integer(CBS *cbs, BIGNUM **out) {
+  assert(*out == NULL);
+  *out = BN_new();
+  if (*out == NULL) {
     return 0;
-  } else if (operation == ASN1_OP_FREE_PRE) {
-    DH_free((DH *)*pval);
-    *pval = NULL;
-    return 2;
+  }
+  return BN_parse_asn1_unsigned(cbs, *out);
+}
+
+static int marshal_integer(CBB *cbb, BIGNUM *bn) {
+  if (bn == NULL) {
+    // A DH object may be missing some components.
+    OPENSSL_PUT_ERROR(DH, ERR_R_PASSED_NULL_PARAMETER);
+    return 0;
+  }
+  return BN_marshal_asn1(cbb, bn);
+}
+
+DH *DH_parse_parameters(CBS *cbs) {
+  DH *ret = DH_new();
+  if (ret == NULL) {
+    return NULL;
+  }
+
+  CBS child;
+  if (!CBS_get_asn1(cbs, &child, CBS_ASN1_SEQUENCE) ||
+      !parse_integer(&child, &ret->p) ||
+      !parse_integer(&child, &ret->g)) {
+    goto err;
+  }
+
+  uint64_t priv_length;
+  if (CBS_len(&child) != 0) {
+    if (!CBS_get_asn1_uint64(&child, &priv_length) ||
+        priv_length > UINT_MAX) {
+      goto err;
+    }
+    ret->priv_length = (unsigned)priv_length;
+  }
+
+  if (CBS_len(&child) != 0) {
+    goto err;
+  }
+
+  return ret;
+
+err:
+  OPENSSL_PUT_ERROR(DH, DH_R_DECODE_ERROR);
+  DH_free(ret);
+  return NULL;
+}
+
+int DH_marshal_parameters(CBB *cbb, const DH *dh) {
+  CBB child;
+  if (!CBB_add_asn1(cbb, &child, CBS_ASN1_SEQUENCE) ||
+      !marshal_integer(&child, dh->p) ||
+      !marshal_integer(&child, dh->g) ||
+      (dh->priv_length != 0 &&
+       !CBB_add_asn1_uint64(&child, dh->priv_length)) ||
+      !CBB_flush(cbb)) {
+    OPENSSL_PUT_ERROR(DH, DH_R_ENCODE_ERROR);
+    return 0;
   }
   return 1;
 }
 
-ASN1_SEQUENCE_cb(DHparams, dh_cb) = {
-    ASN1_SIMPLE(DH, p, BIGNUM), ASN1_SIMPLE(DH, g, BIGNUM),
-    ASN1_OPT(DH, priv_length, ZLONG)} ASN1_SEQUENCE_END_cb(DH, DHparams);
+DH *d2i_DHparams(DH **out, const uint8_t **inp, long len) {
+  if (len < 0) {
+    return NULL;
+  }
+  CBS cbs;
+  CBS_init(&cbs, *inp, (size_t)len);
+  DH *ret = DH_parse_parameters(&cbs);
+  if (ret == NULL) {
+    return NULL;
+  }
+  if (out != NULL) {
+    DH_free(*out);
+    *out = ret;
+  }
+  *inp = CBS_data(&cbs);
+  return ret;
+}
 
-IMPLEMENT_ASN1_ENCODE_FUNCTIONS_const_fname(DH, DHparams, DHparams)
+int i2d_DHparams(const DH *in, uint8_t **outp) {
+  CBB cbb;
+  if (!CBB_init(&cbb, 0) ||
+      !DH_marshal_parameters(&cbb, in)) {
+    CBB_cleanup(&cbb);
+    return -1;
+  }
+  return CBB_finish_i2d(&cbb, outp);
+}

@@ -445,7 +445,7 @@ int I420ToNV21(const uint8* src_y, int src_stride_y,
   return I420ToNV12(src_y, src_stride_y,
                     src_v, src_stride_v,
                     src_u, src_stride_u,
-                    dst_y, src_stride_y,
+                    dst_y, dst_stride_y,
                     dst_vu, dst_stride_vu,
                     width, height);
 }
@@ -498,13 +498,13 @@ static int I420ToRGBAMatrix(const uint8* src_y, int src_stride_y,
     }
   }
 #endif
-#if defined(HAS_I422TORGBAROW_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) && IS_ALIGNED(width, 4) &&
+#if defined(HAS_I422TORGBAROW_DSPR2)
+  if (TestCpuFlag(kCpuHasDSPR2) && IS_ALIGNED(width, 4) &&
       IS_ALIGNED(src_y, 4) && IS_ALIGNED(src_stride_y, 4) &&
       IS_ALIGNED(src_u, 2) && IS_ALIGNED(src_stride_u, 2) &&
       IS_ALIGNED(src_v, 2) && IS_ALIGNED(src_stride_v, 2) &&
       IS_ALIGNED(dst_rgba, 4) && IS_ALIGNED(dst_stride_rgba, 4)) {
-    I422ToRGBARow = I422ToRGBARow_MIPS_DSPR2;
+    I422ToRGBARow = I422ToRGBARow_DSPR2;
   }
 #endif
 
@@ -888,12 +888,12 @@ int I420ToRGB565Dither(const uint8* src_y, int src_stride_y,
     }
   }
 #endif
-#if defined(HAS_I422TOARGBROW_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) && IS_ALIGNED(width, 4) &&
+#if defined(HAS_I422TOARGBROW_DSPR2)
+  if (TestCpuFlag(kCpuHasDSPR2) && IS_ALIGNED(width, 4) &&
       IS_ALIGNED(src_y, 4) && IS_ALIGNED(src_stride_y, 4) &&
       IS_ALIGNED(src_u, 2) && IS_ALIGNED(src_stride_u, 2) &&
       IS_ALIGNED(src_v, 2) && IS_ALIGNED(src_stride_v, 2)) {
-    I422ToARGBRow = I422ToARGBRow_MIPS_DSPR2;
+    I422ToARGBRow = I422ToARGBRow_DSPR2;
   }
 #endif
 #if defined(HAS_ARGBTORGB565DITHERROW_SSE2)
@@ -1077,7 +1077,6 @@ int ConvertFromI420(const uint8* y, int y_stride,
     // Triplanar formats
     // TODO(fbarchard): halfstride instead of halfwidth
     case FOURCC_I420:
-    case FOURCC_YU12:
     case FOURCC_YV12: {
       int halfwidth = (width + 1) / 2;
       int halfheight = (height + 1) / 2;

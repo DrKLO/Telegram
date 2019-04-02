@@ -1,9 +1,9 @@
 /*
- * This is the source code of tgnet library v. 1.0
+ * This is the source code of tgnet library v. 1.1
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2015.
+ * Copyright Nikolai Kudashov, 2015-2018.
  */
 
 #include "BuffersStorage.h"
@@ -70,7 +70,7 @@ NativeByteBuffer *BuffersStorage::getFreeBuffer(uint32_t size) {
         }
         if (buffer == nullptr) {
             buffer = new NativeByteBuffer(byteCount);
-            DEBUG_D("create new %u buffer", byteCount);
+            if (LOGS_ENABLED) DEBUG_D("create new %u buffer", byteCount);
         }
     }
     if (buffer != nullptr) {
@@ -111,7 +111,7 @@ void BuffersStorage::reuseFreeBuffer(NativeByteBuffer *buffer) {
         if (arrayToReuse->size() < maxCount) {
             arrayToReuse->push_back(buffer);
         } else {
-            DEBUG_D("too more %d buffers", capacity);
+            if (LOGS_ENABLED) DEBUG_D("too more %d buffers", capacity);
             delete buffer;
         }
         if (isThreadSafe) {
