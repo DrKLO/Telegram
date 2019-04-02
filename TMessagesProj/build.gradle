@@ -5,9 +5,9 @@ repositories {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:24.0.0-alpha2'
-    compile 'com.google.android.gms:play-services-gcm:8.4.0'
-    compile 'com.google.android.gms:play-services-maps:8.4.0'
+    compile 'com.android.support:support-v4:23.2.1'
+    compile "com.google.android.gms:play-services-gcm:8.4.0"
+    compile "com.google.android.gms:play-services-maps:8.4.0"
     compile 'net.hockeyapp.android:HockeySDK:3.6.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
 }
@@ -26,17 +26,17 @@ android {
 
     signingConfigs {
         debug {
-            storeFile file("config/myKeyStore.jks")
-            storePassword 'myKeyStore'
-            keyAlias 'Android'
-            keyPassword 'myKeyStore'
+            storeFile file("config/release.keystore")
+            storePassword RELEASE_STORE_PASSWORD
+            keyAlias RELEASE_KEY_ALIAS
+            keyPassword RELEASE_KEY_PASSWORD
         }
 
         release {
-            storeFile file("config/myKeyStore.jks")
-            storePassword 'myKeyStore'
-            keyAlias 'Android'
-            keyPassword 'myKeyStore'
+            storeFile file("config/release.keystore")
+            storePassword RELEASE_STORE_PASSWORD
+            keyAlias RELEASE_KEY_ALIAS
+            keyPassword RELEASE_KEY_PASSWORD
         }
     }
 
