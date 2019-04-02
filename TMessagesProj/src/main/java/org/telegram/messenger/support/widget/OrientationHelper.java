@@ -16,8 +16,8 @@
 
 package org.telegram.messenger.support.widget;
 
+import android.graphics.Rect;
 import android.view.View;
-import android.widget.LinearLayout;
 
 /**
  * Helper class for LayoutManagers to abstract measurements depending on the View's orientation.
@@ -35,14 +35,24 @@ public abstract class OrientationHelper {
 
     protected final RecyclerView.LayoutManager mLayoutManager;
 
-    public static final int HORIZONTAL = LinearLayout.HORIZONTAL;
+    public static final int HORIZONTAL = RecyclerView.HORIZONTAL;
 
-    public static final int VERTICAL = LinearLayout.VERTICAL;
+    public static final int VERTICAL = RecyclerView.VERTICAL;
 
     private int mLastTotalSpace = INVALID_SIZE;
 
+    final Rect mTmpRect = new Rect();
+
     private OrientationHelper(RecyclerView.LayoutManager layoutManager) {
         mLayoutManager = layoutManager;
+    }
+
+    /**
+     * Returns the {@link android.support.v7.widget.RecyclerView.LayoutManager LayoutManager} that
+     * is associated with this OrientationHelper.
+     */
+    public RecyclerView.LayoutManager getLayoutManager() {
+        return mLayoutManager;
     }
 
     /**
@@ -91,6 +101,38 @@ public abstract class OrientationHelper {
      * @see #getDecoratedStart(android.view.View)
      */
     public abstract int getDecoratedEnd(View view);
+
+    /**
+     * Returns the end of the View after its matrix transformations are applied to its layout
+     * position.
+     * <p>
+     * This method is useful when trying to detect the visible edge of a View.
+     * <p>
+     * It includes the decorations but does not include the margins.
+     *
+     * @param view The view whose transformed end will be returned
+     * @return The end of the View after its decor insets and transformation matrix is applied to
+     * its position
+     *
+     * @see RecyclerView.LayoutManager#getTransformedBoundingBox(View, boolean, Rect)
+     */
+    public abstract int getTransformedEndWithDecoration(View view);
+
+    /**
+     * Returns the start of the View after its matrix transformations are applied to its layout
+     * position.
+     * <p>
+     * This method is useful when trying to detect the visible edge of a View.
+     * <p>
+     * It includes the decorations but does not include the margins.
+     *
+     * @param view The view whose transformed start will be returned
+     * @return The start of the View after its decor insets and transformation matrix is applied to
+     * its position
+     *
+     * @see RecyclerView.LayoutManager#getTransformedBoundingBox(View, boolean, Rect)
+     */
+    public abstract int getTransformedStartWithDecoration(View view);
 
     /**
      * Returns the space occupied by this View in the current orientation including decorations and
@@ -195,7 +237,7 @@ public abstract class OrientationHelper {
      * @return A new OrientationHelper
      */
     public static OrientationHelper createOrientationHelper(
-            RecyclerView.LayoutManager layoutManager, int orientation) {
+            RecyclerView.LayoutManager layoutManager, @RecyclerView.Orientation int orientation) {
         switch (orientation) {
             case HORIZONTAL:
                 return createHorizontalHelper(layoutManager);
@@ -262,6 +304,18 @@ public abstract class OrientationHelper {
                 final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams)
                         view.getLayoutParams();
                 return mLayoutManager.getDecoratedLeft(view) - params.leftMargin;
+            }
+
+            @Override
+            public int getTransformedEndWithDecoration(View view) {
+                mLayoutManager.getTransformedBoundingBox(view, true, mTmpRect);
+                return mTmpRect.right;
+            }
+
+            @Override
+            public int getTransformedStartWithDecoration(View view) {
+                mLayoutManager.getTransformedBoundingBox(view, true, mTmpRect);
+                return mTmpRect.left;
             }
 
             @Override
@@ -348,6 +402,18 @@ public abstract class OrientationHelper {
                 final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams)
                         view.getLayoutParams();
                 return mLayoutManager.getDecoratedTop(view) - params.topMargin;
+            }
+
+            @Override
+            public int getTransformedEndWithDecoration(View view) {
+                mLayoutManager.getTransformedBoundingBox(view, true, mTmpRect);
+                return mTmpRect.bottom;
+            }
+
+            @Override
+            public int getTransformedStartWithDecoration(View view) {
+                mLayoutManager.getTransformedBoundingBox(view, true, mTmpRect);
+                return mTmpRect.top;
             }
 
             @Override

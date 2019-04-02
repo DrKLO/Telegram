@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x
+ * This is the source code of Telegram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -12,7 +12,10 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.SurfaceTexture;
+import android.graphics.drawable.Drawable;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.os.Build;
@@ -29,24 +32,24 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.PhotoEditRadioCell;
 import org.telegram.ui.Cells.PhotoEditToolCell;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CountDownLatch;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -59,83 +62,48 @@ import javax.microedition.khronos.opengles.GL10;
 @SuppressLint("NewApi")
 public class PhotoFilterView extends FrameLayout {
 
-    private final int[] tintShadowColors = new int[] {
-            0x00000000,
-            0xffff4d4d,
-            0xfff48022,
-            0xffffcd00,
-            0xff81d281,
-            0xff71c5d6,
-            0xff0072bc,
-            0xff662d91
-    };
-
-    private final int[] tintHighlighsColors = new int[] {
-            0x00000000,
-            0xffef9286,
-            0xffeacea2,
-            0xfff2e17c,
-            0xffa4edae,
-            0xff89dce5,
-            0xff2e8bc8,
-            0xffcd98e5
-    };
-
-    private boolean showOriginal;
-
-    private float previousValue;
-    private int previousValueInt;
-    private int previousValueInt2;
-
-    private int selectedTintMode;
-
-    private int selectedTool = -1;
-    private int enhanceTool = 0;
-    private int exposureTool = 1;
-    private int contrastTool = 2;
-    private int warmthTool = 3;
-    private int saturationTool = 4;
-    private int tintTool = 5;
-    private int fadeTool = 6;
-    private int highlightsTool = 7;
-    private int shadowsTool = 8;
-    private int vignetteTool = 9;
-    private int grainTool = 10;
-    private int blurTool = 11;
-    private int sharpenTool = 12;
-    private int curvesTool = 13;
-
-    private float enhanceValue = 0; //0 100
-    private float exposureValue = 0; //-100 100
-    private float contrastValue = 0; //-100 100
-    private float warmthValue = 0; //-100 100
-    private float saturationValue = 0; //-100 100
-    private float fadeValue = 0; // 0 100
-    private int tintShadowsColor = 0; //0 0xffffffff
-    private int tintHighlightsColor = 0; //0 0xffffffff
-    private float highlightsValue = 0; //-100 100
-    private float shadowsValue = 0; //-100 100
-    private float vignetteValue = 0; //0 100
-    private float grainValue = 0; //0 100
-    private int blurType = 0; //0 none, 1 radial, 2 linear
-    private float sharpenValue = 0; //0 100
-    private CurvesToolValue curvesToolValue = new CurvesToolValue();
-
     private final static int curveGranularity = 100;
     private final static int curveDataStep = 2;
 
-    private float blurExcludeSize = 0.35f;
-    private Point blurExcludePoint = new Point(0.5f, 0.5f);
-    private float blurExcludeBlurSize = 0.15f;
-    private float blurAngle = (float) Math.PI / 2.0f;
+    private boolean showOriginal;
 
-    private ToolsAdapter toolsAdapter;
-    private PhotoEditorSeekBar valueSeekBar;
+    private int enhanceTool = 0;
+    private int exposureTool = 1;
+    private int contrastTool = 2;
+    private int saturationTool = 3;
+    private int warmthTool = 4;
+    private int fadeTool = 5;
+    private int highlightsTool = 6;
+    private int shadowsTool = 7;
+    private int vignetteTool = 8;
+    private int grainTool = 9;
+    private int sharpenTool = 10;
+    private int tintShadowsTool = 11;
+    private int tintHighlightsTool = 12;
+
+    private float enhanceValue; //0 100
+    private float exposureValue; //-100 100
+    private float contrastValue; //-100 100
+    private float warmthValue; //-100 100
+    private float saturationValue; //-100 100
+    private float fadeValue; // 0 100
+    private int tintShadowsColor; //0 0xffffffff
+    private int tintHighlightsColor; //0 0xffffffff
+    private float highlightsValue; //-100 100
+    private float shadowsValue; //-100 100
+    private float vignetteValue; //0 100
+    private float grainValue; //0 100
+    private int blurType; //0 none, 1 radial, 2 linear
+    private float sharpenValue; //0 100
+    private CurvesToolValue curvesToolValue;
+    private float blurExcludeSize;
+    private Point blurExcludePoint;
+    private float blurExcludeBlurSize;
+    private float blurAngle;
+
+    private MediaController.SavedFilterState lastState;
+
     private FrameLayout toolsView;
-    private FrameLayout editView;
-    private TextView paramTextView;
-    private TextView infoTextView;
-    private TextView valueTextView;
     private TextView doneTextView;
     private TextView cancelTextView;
     private TextureView textureView;
@@ -147,12 +115,14 @@ public class PhotoFilterView extends FrameLayout {
     private TextView blurOffButton;
     private TextView blurRadialButton;
     private TextView blurLinearButton;
-    private FrameLayout tintLayout;
-    private TextView tintShadowsButton;
-    private TextView tintHighlightsButton;
-    private LinearLayout tintButtonsContainer;
     private FrameLayout curveLayout;
-    private TextView[] curveTextView = new TextView[4];
+    private RadioButton[] curveRadioButton = new RadioButton[4];
+
+    private int selectedTool;
+
+    private ImageView tuneItem;
+    private ImageView blurItem;
+    private ImageView curveItem;
 
     private Bitmap bitmapToEdit;
     private int orientation;
@@ -272,7 +242,7 @@ public class PhotoFilterView extends FrameLayout {
         public CurvesValue redCurve = new CurvesValue();
         public CurvesValue greenCurve = new CurvesValue();
         public CurvesValue blueCurve = new CurvesValue();
-        public ByteBuffer curveBuffer = null;
+        public ByteBuffer curveBuffer;
 
         public int activeType;
 
@@ -608,327 +578,6 @@ public class PhotoFilterView extends FrameLayout {
                     "gl_FragColor = result;" +
                 "}";
 
-        /*
-        private static final String toolsFragmentShaderCode =
-                "varying highp vec2 texCoord;" +
-                "uniform sampler2D sourceImage;" +
-                "uniform highp float width;" +
-                "uniform highp float height;" +
-                "uniform lowp float rgbCurveValues[200];" +
-                "uniform lowp float redCurveValues[200];" +
-                "uniform lowp float greenCurveValues[200];" +
-                "uniform lowp float blueCurveValues[200];" +
-                "uniform lowp float skipTone;" +
-                "uniform lowp float shadows;" +
-                "const mediump vec3 hsLuminanceWeighting = vec3(0.3, 0.3, 0.3);" +
-                "uniform lowp float highlights;" +
-                "uniform lowp float contrast;" +
-                "uniform lowp float fadeAmount;" +
-                "const mediump vec3 satLuminanceWeighting = vec3(0.2126, 0.7152, 0.0722);" +
-                "uniform lowp float saturation;" +
-                "uniform lowp float shadowsTintIntensity;" +
-                "uniform lowp float highlightsTintIntensity;" +
-                "uniform lowp vec3 shadowsTintColor;" +
-                "uniform lowp vec3 highlightsTintColor;" +
-                "uniform lowp float exposure;" +
-                "uniform lowp float warmth;" +
-                "uniform lowp float grain;" +
-                "const lowp float permTexUnit = 1.0 / 256.0;" +
-                "const lowp float permTexUnitHalf = 0.5 / 256.0;" +
-                "const lowp float grainsize = 2.3;" +
-                "uniform lowp float vignette;" +
-                "highp float getLuma(highp vec3 rgbP) {" +
-                    "return (0.299 * rgbP.r) + (0.587 * rgbP.g) + (0.114 * rgbP.b);" +
-                "}" +
-                "lowp vec3 rgbToHsv(lowp vec3 c) {" +
-                    "highp vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);" +
-                    "highp vec4 p = c.g < c.b ? vec4(c.bg, K.wz) : vec4(c.gb, K.xy);" +
-                    "highp vec4 q = c.r < p.x ? vec4(p.xyw, c.r) : vec4(c.r, p.yzx);" +
-                    "highp float d = q.x - min(q.w, q.y);" +
-                    "highp float e = 1.0e-10;" +
-                    "return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);" +
-                "}" +
-                "lowp vec3 hsvToRgb(lowp vec3 c) {" +
-                    "highp vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);" +
-                    "highp vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);" +
-                    "return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);" +
-                "}" +
-                "highp vec3 rgbToHsl(highp vec3 color) {" +
-                    "highp vec3 hsl;" +
-                    "highp float fmin = min(min(color.r, color.g), color.b);" +
-                    "highp float fmax = max(max(color.r, color.g), color.b);" +
-                    "highp float delta = fmax - fmin;" +
-                    "hsl.z = (fmax + fmin) / 2.0;" +
-                    "if (delta == 0.0) {" +
-                        "hsl.x = 0.0;" +
-                        "hsl.y = 0.0;" +
-                    "} else {" +
-                        "if (hsl.z < 0.5) {" +
-                            "hsl.y = delta / (fmax + fmin);" +
-                        "} else {" +
-                            "hsl.y = delta / (2.0 - fmax - fmin);" +
-                        "}" +
-                        "highp float deltaR = (((fmax - color.r) / 6.0) + (delta / 2.0)) / delta;" +
-                        "highp float deltaG = (((fmax - color.g) / 6.0) + (delta / 2.0)) / delta;" +
-                        "highp float deltaB = (((fmax - color.b) / 6.0) + (delta / 2.0)) / delta;" +
-                        "if (color.r == fmax) {" +
-                            "hsl.x = deltaB - deltaG;" +
-                        "} else if (color.g == fmax) {" +
-                            "hsl.x = (1.0 / 3.0) + deltaR - deltaB;" +
-                        "} else if (color.b == fmax) {" +
-                            "hsl.x = (2.0 / 3.0) + deltaG - deltaR;" +
-                        "}" +
-                        "if (hsl.x < 0.0) {" +
-                            "hsl.x += 1.0;" +
-                        "} else if (hsl.x > 1.0) {" +
-                            "hsl.x -= 1.0;" +
-                        "}" +
-                    "}" +
-                    "return hsl;" +
-                "}" +
-                "highp float hueToRgb(highp float f1, highp float f2, highp float hue) {" +
-                    "if (hue < 0.0) {" +
-                        "hue += 1.0;" +
-                    "} else if (hue > 1.0) {" +
-                        "hue -= 1.0;" +
-                    "}" +
-                    "highp float res;" +
-                    "if ((6.0 * hue) < 1.0) {" +
-                        "res = f1 + (f2 - f1) * 6.0 * hue;" +
-                    "} else if ((2.0 * hue) < 1.0) {" +
-                        "res = f2;" +
-                    "} else if ((3.0 * hue) < 2.0) {" +
-                        "res = f1 + (f2 - f1) * ((2.0 / 3.0) - hue) * 6.0;" +
-                    "} else {" +
-                        "res = f1;" +
-                    "} return res;" +
-                "}" +
-                "highp vec3 hslToRgb(highp vec3 hsl) {" +
-                    "highp vec3 rgb;" +
-                    "if (hsl.y == 0.0) {" +
-                        "rgb = vec3(hsl.z);" +
-                    "} else {" +
-                        "highp float f2;" +
-                        "if (hsl.z < 0.5) {" +
-                            "f2 = hsl.z * (1.0 + hsl.y);" +
-                        "} else {" +
-                            "f2 = (hsl.z + hsl.y) - (hsl.y * hsl.z);" +
-                        "}" +
-                        "highp float f1 = 2.0 * hsl.z - f2;" +
-                        "rgb.r = hueToRgb(f1, f2, hsl.x + (1.0/3.0));" +
-                        "rgb.g = hueToRgb(f1, f2, hsl.x);" +
-                        "rgb.b = hueToRgb(f1, f2, hsl.x - (1.0/3.0));" +
-                    "}" +
-                    "return rgb;" +
-                "}" +
-                "highp vec3 rgbToYuv(highp vec3 inP) {" +
-                    "highp vec3 outP;" +
-                    "outP.r = getLuma(inP);" +
-                    "outP.g = (1.0 / 1.772) * (inP.b - outP.r);" +
-                    "outP.b = (1.0 / 1.402) * (inP.r - outP.r);" +
-                    "return outP;" +
-                "}" +
-                "lowp vec3 yuvToRgb(highp vec3 inP) {" +
-                    "highp float y = inP.r;" +
-                    "highp float u = inP.g;" +
-                    "highp float v = inP.b;" +
-                    "lowp vec3 outP;" +
-                    "outP.r = 1.402 * v + y;" +
-                    "outP.g = (y - (0.299 * 1.402 / 0.587) * v - (0.114 * 1.772 / 0.587) * u);" +
-                    "outP.b = 1.772 * u + y;" +
-                    "return outP;" +
-                "}" +
-                "lowp float easeInOutSigmoid(lowp float value, lowp float strength) {" +
-                    "lowp float t = 1.0 / (1.0 - strength);" +
-                    "if (value > 0.5) {" +
-                        "return 1.0 - pow(2.0 - 2.0 * value, t) * 0.5;" +
-                    "} else {" +
-                        "return pow(2.0 * value, t) * 0.5;" +
-                    "}" +
-                "}" +
-                "lowp vec3 applyLuminanceCurve(lowp vec3 pixel) {" +
-                    "int index = int(clamp(pixel.z / (1.0 / 200.0), 0.0, 199.0));" +
-                    "highp float value = rgbCurveValues[index];" +
-                    "highp float grayscale = (smoothstep(0.0, 0.1, pixel.z) * (1.0 - smoothstep(0.8, 1.0, pixel.z)));" +
-                    "highp float saturation = mix(0.0, pixel.y, grayscale);" +
-                    "pixel.y = saturation;" +
-                    "pixel.z = value;" +
-                    "return pixel;" +
-                "}" +
-                "lowp vec3 applyRGBCurve(lowp vec3 pixel) {" +
-                    "int index = int(clamp(pixel.r / (1.0 / 200.0), 0.0, 199.0));" +
-                    "highp float value = redCurveValues[index];" +
-                    "pixel.r = value;" +
-                    "index = int(clamp(pixel.g / (1.0 / 200.0), 0.0, 199.0));" +
-                    "value = greenCurveValues[index];" +
-                    "pixel.g = clamp(value, 0.0, 1.0);" +
-                    "index = int(clamp(pixel.b / (1.0 / 200.0), 0.0, 199.0));" +
-                    "value = blueCurveValues[index];" +
-                    "pixel.b = clamp(value, 0.0, 1.0);" +
-                    "return pixel;" +
-                "}" +
-                "highp vec3 fadeAdjust(highp vec3 color, highp float fadeVal) {" +
-                    "highp vec3 co1 = vec3(-0.9772);" +
-                    "highp vec3 co2 = vec3(1.708);" +
-                    "highp vec3 co3 = vec3(-0.1603);" +
-                    "highp vec3 co4 = vec3(0.2878);" +
-                    "highp vec3 comp1 = co1 * pow(vec3(color), vec3(3.0));" +
-                    "highp vec3 comp2 = co2 * pow(vec3(color), vec3(2.0));" +
-                    "highp vec3 comp3 = co3 * vec3(color);" +
-                    "highp vec3 comp4 = co4;" +
-                    "highp vec3 finalComponent = comp1 + comp2 + comp3 + comp4;" +
-                    "highp vec3 difference = finalComponent - color;" +
-                    "highp vec3 scalingValue = vec3(0.9);" +
-                    "highp vec3 faded = color + (difference * scalingValue);" +
-                    "return (color * (1.0 - fadeVal)) + (faded * fadeVal);" +
-                "}" +
-                "lowp vec3 tintRaiseShadowsCurve(lowp vec3 color) {" +
-                    "highp vec3 co1 = vec3(-0.003671);" +
-                    "highp vec3 co2 = vec3(0.3842);" +
-                    "highp vec3 co3 = vec3(0.3764);" +
-                    "highp vec3 co4 = vec3(0.2515);" +
-                    "highp vec3 comp1 = co1 * pow(color, vec3(3.0));" +
-                    "highp vec3 comp2 = co2 * pow(color, vec3(2.0));" +
-                    "highp vec3 comp3 = co3 * color;" +
-                    "highp vec3 comp4 = co4;" +
-                    "return comp1 + comp2 + comp3 + comp4;" +
-                "}" +
-                "lowp vec3 tintShadows(lowp vec3 texel, lowp vec3 tintColor, lowp float tintAmount) {" +
-                    "highp vec3 raisedShadows = tintRaiseShadowsCurve(texel);" +
-                    "highp vec3 tintedShadows = mix(texel, raisedShadows, tintColor);" +
-                    "highp vec3 tintedShadowsWithAmount = mix(texel, tintedShadows, tintAmount);" +
-                    "return clamp(tintedShadowsWithAmount, 0.0, 1.0);" +
-                "} " +
-                "lowp vec3 tintHighlights(lowp vec3 texel, lowp vec3 tintColor, lowp float tintAmount) {" +
-                    "lowp vec3 loweredHighlights = vec3(1.0) - tintRaiseShadowsCurve(vec3(1.0) - texel);" +
-                    "lowp vec3 tintedHighlights = mix(texel, loweredHighlights, (vec3(1.0) - tintColor));" +
-                    "lowp vec3 tintedHighlightsWithAmount = mix(texel, tintedHighlights, tintAmount);" +
-                    "return clamp(tintedHighlightsWithAmount, 0.0, 1.0);" +
-                "}" +
-                "highp vec4 rnm(in highp vec2 tc) {" +
-                    "highp float noise = sin(dot(tc,vec2(12.9898,78.233))) * 43758.5453;" +
-                    "highp float noiseR = fract(noise)*2.0-1.0;" +
-                    "highp float noiseG = fract(noise*1.2154)*2.0-1.0;" +
-                    "highp float noiseB = fract(noise*1.3453)*2.0-1.0;" +
-                    "highp float noiseA = fract(noise*1.3647)*2.0-1.0;" +
-                    "return vec4(noiseR,noiseG,noiseB,noiseA);" +
-                "}" +
-                "highp float fade(in highp float t) {" +
-                    "return t*t*t*(t*(t*6.0-15.0)+10.0);" +
-                "}" +
-                "highp float pnoise3D(in highp vec3 p) {" +
-                    "highp vec3 pi = permTexUnit*floor(p)+permTexUnitHalf;" +
-                    "highp vec3 pf = fract(p);" +
-                    "highp float perm00 = rnm(pi.xy).a;" +
-                    "highp vec3 grad000 = rnm(vec2(perm00, pi.z)).rgb * 4.0 - 1.0;" +
-                    "highp float n000 = dot(grad000, pf);" +
-                    "highp vec3 grad001 = rnm(vec2(perm00, pi.z + permTexUnit)).rgb * 4.0 - 1.0;" +
-                    "highp float n001 = dot(grad001, pf - vec3(0.0, 0.0, 1.0));" +
-                    "highp float perm01 = rnm(pi.xy + vec2(0.0, permTexUnit)).a;" +
-                    "highp vec3 grad010 = rnm(vec2(perm01, pi.z)).rgb * 4.0 - 1.0;" +
-                    "highp float n010 = dot(grad010, pf - vec3(0.0, 1.0, 0.0));" +
-                    "highp vec3 grad011 = rnm(vec2(perm01, pi.z + permTexUnit)).rgb * 4.0 - 1.0;" +
-                    "highp float n011 = dot(grad011, pf - vec3(0.0, 1.0, 1.0));" +
-                    "highp float perm10 = rnm(pi.xy + vec2(permTexUnit, 0.0)).a;" +
-                    "highp vec3 grad100 = rnm(vec2(perm10, pi.z)).rgb * 4.0 - 1.0;" +
-                    "highp float n100 = dot(grad100, pf - vec3(1.0, 0.0, 0.0));" +
-                    "highp vec3 grad101 = rnm(vec2(perm10, pi.z + permTexUnit)).rgb * 4.0 - 1.0;" +
-                    "highp float n101 = dot(grad101, pf - vec3(1.0, 0.0, 1.0));" +
-                    "highp float perm11 = rnm(pi.xy + vec2(permTexUnit, permTexUnit)).a;" +
-                    "highp vec3 grad110 = rnm(vec2(perm11, pi.z)).rgb * 4.0 - 1.0;" +
-                    "highp float n110 = dot(grad110, pf - vec3(1.0, 1.0, 0.0));" +
-                    "highp vec3 grad111 = rnm(vec2(perm11, pi.z + permTexUnit)).rgb * 4.0 - 1.0;" +
-                    "highp float n111 = dot(grad111, pf - vec3(1.0, 1.0, 1.0));" +
-                    "highp vec4 n_x = mix(vec4(n000, n001, n010, n011), vec4(n100, n101, n110, n111), fade(pf.x));" +
-                    "highp vec2 n_xy = mix(n_x.xy, n_x.zw, fade(pf.y));" +
-                    "highp float n_xyz = mix(n_xy.x, n_xy.y, fade(pf.z));" +
-                    "return n_xyz;" +
-                "}" +
-                "lowp vec2 coordRot(in lowp vec2 tc, in lowp float angle) {" +
-                    "lowp float rotX = ((tc.x * 2.0 - 1.0) * cos(angle)) - ((tc.y * 2.0 - 1.0) * sin(angle));" +
-                    "lowp float rotY = ((tc.y * 2.0 - 1.0) * cos(angle)) + ((tc.x * 2.0 - 1.0) * sin(angle));" +
-                    "rotX = rotX * 0.5 + 0.5;" +
-                    "rotY = rotY * 0.5 + 0.5;" +
-                    "return vec2(rotX,rotY);" +
-                "}" +
-                "void main() {" +
-                    "lowp vec4 source = texture2D(sourceImage, texCoord);" +
-                    "lowp vec4 result = source;" +
-                    "const lowp float toolEpsilon = 0.005;" +
-                    "if (skipTone < toolEpsilon) {" +
-                        "result = vec4(applyRGBCurve(hslToRgb(applyLuminanceCurve(rgbToHsl(result.rgb)))), result.a);" +
-                    "}" +
-                    "mediump float hsLuminance = dot(result.rgb, hsLuminanceWeighting);" +
-                    "mediump float shadow = clamp((pow(hsLuminance, 1.0 / shadows) + (-0.76) * pow(hsLuminance, 2.0 / shadows)) - hsLuminance, 0.0, 1.0);" +
-                    "mediump float highlight = clamp((1.0 - (pow(1.0 - hsLuminance, 1.0 / (2.0 - highlights)) + (-0.8) * pow(1.0 - hsLuminance, 2.0 / (2.0 - highlights)))) - hsLuminance, -1.0, 0.0);" +
-                    "lowp vec3 hsresult = vec3(0.0, 0.0, 0.0) + ((hsLuminance + shadow + highlight) - 0.0) * ((result.rgb - vec3(0.0, 0.0, 0.0)) / (hsLuminance - 0.0));" +
-                    "mediump float contrastedLuminance = ((hsLuminance - 0.5) * 1.5) + 0.5;" +
-                    "mediump float whiteInterp = contrastedLuminance * contrastedLuminance * contrastedLuminance;" +
-                    "mediump float whiteTarget = clamp(highlights, 1.0, 2.0) - 1.0;" +
-                    "hsresult = mix(hsresult, vec3(1.0), whiteInterp * whiteTarget);" +
-                    "mediump float invContrastedLuminance = 1.0 - contrastedLuminance;" +
-                    "mediump float blackInterp = invContrastedLuminance * invContrastedLuminance * invContrastedLuminance;" +
-                    "mediump float blackTarget = 1.0 - clamp(shadows, 0.0, 1.0);" +
-                    "hsresult = mix(hsresult, vec3(0.0), blackInterp * blackTarget);" +
-                    "result = vec4(hsresult.rgb, result.a);" +
-                    "result = vec4(clamp(((result.rgb - vec3(0.5)) * contrast + vec3(0.5)), 0.0, 1.0), result.a);" +
-                    "if (abs(fadeAmount) > toolEpsilon) {" +
-                        "result.rgb = fadeAdjust(result.rgb, fadeAmount);" +
-                    "}" +
-                    "lowp float satLuminance = dot(result.rgb, satLuminanceWeighting);" +
-                    "lowp vec3 greyScaleColor = vec3(satLuminance);" +
-                    "result = vec4(clamp(mix(greyScaleColor, result.rgb, saturation), 0.0, 1.0), result.a);" +
-                    "if (abs(shadowsTintIntensity) > toolEpsilon) {" +
-                        "result.rgb = tintShadows(result.rgb, shadowsTintColor, shadowsTintIntensity * 2.0);" +
-                    "}" +
-                    "if (abs(highlightsTintIntensity) > toolEpsilon) {" +
-                        "result.rgb = tintHighlights(result.rgb, highlightsTintColor, highlightsTintIntensity * 2.0);" +
-                    "}" +
-                    "if (abs(exposure) > toolEpsilon) {" +
-                        "mediump float mag = exposure * 1.045;" +
-                        "mediump float exppower = 1.0 + abs(mag);" +
-                        "if (mag < 0.0) {" +
-                            "exppower = 1.0 / exppower;" +
-                        "}" +
-                        "result.r = 1.0 - pow((1.0 - result.r), exppower);" +
-                        "result.g = 1.0 - pow((1.0 - result.g), exppower);" +
-                        "result.b = 1.0 - pow((1.0 - result.b), exppower);" +
-                    "}" +
-                    "if (abs(warmth) > toolEpsilon) {" +
-                        "highp vec3 yuvVec;" +
-                        "if (warmth > 0.0 ) {" +
-                            "yuvVec = vec3(0.1765, -0.1255, 0.0902);" +
-                        "} else {" +
-                            "yuvVec = -vec3(0.0588, 0.1569, -0.1255);" +
-                        "}" +
-                        "highp vec3 yuvColor = rgbToYuv(result.rgb);" +
-                        "highp float luma = yuvColor.r;" +
-                        "highp float curveScale = sin(luma * 3.14159);" +
-                        "yuvColor += 0.375 * warmth * curveScale * yuvVec;" +
-                        "result.rgb = yuvToRgb(yuvColor);" +
-                    "}" +
-                    "if (abs(grain) > toolEpsilon) {" +
-                        "highp vec3 rotOffset = vec3(1.425, 3.892, 5.835);" +
-                        "highp vec2 rotCoordsR = coordRot(texCoord, rotOffset.x);" +
-                        "highp vec3 noise = vec3(pnoise3D(vec3(rotCoordsR * vec2(width / grainsize, height / grainsize),0.0)));" +
-                        "lowp vec3 lumcoeff = vec3(0.299,0.587,0.114);" +
-                        "lowp float luminance = dot(result.rgb, lumcoeff);" +
-                        "lowp float lum = smoothstep(0.2, 0.0, luminance);" +
-                        "lum += luminance;" +
-                        "noise = mix(noise,vec3(0.0),pow(lum,4.0));" +
-                        "result.rgb = result.rgb + noise * grain;" +
-                    "}" +
-                    "if (abs(vignette) > toolEpsilon) {" +
-                        "const lowp float midpoint = 0.7;" +
-                        "const lowp float fuzziness = 0.62;" +
-                        "lowp float radDist = length(texCoord - 0.5) / sqrt(0.5);" +
-                        "lowp float mag = easeInOutSigmoid(radDist * midpoint, fuzziness) * vignette * 0.645;" +
-                        "result.rgb = mix(pow(result.rgb, vec3(1.0 / (1.0 - mag))), vec3(0.0), mag * mag);" +
-                    "}" +
-                    "gl_FragColor = result;" +
-                "}";
-         */
-
         private static final String toolsFragmentShaderCode =
                 "varying highp vec2 texCoord;" +
                 "uniform sampler2D sourceImage;" +
@@ -1194,7 +843,9 @@ public class PhotoFilterView extends FrameLayout {
             int[] compileStatus = new int[1];
             GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
             if (compileStatus[0] == 0) {
-                FileLog.e("tmessages", GLES20.glGetShaderInfoLog(shader));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e(GLES20.glGetShaderInfoLog(shader));
+                }
                 GLES20.glDeleteShader(shader);
                 shader = 0;
             }
@@ -1206,14 +857,18 @@ public class PhotoFilterView extends FrameLayout {
 
             eglDisplay = egl10.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
             if (eglDisplay == EGL10.EGL_NO_DISPLAY) {
-                FileLog.e("tmessages", "eglGetDisplay failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglGetDisplay failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
 
             int[] version = new int[2];
             if (!egl10.eglInitialize(eglDisplay, version)) {
-                FileLog.e("tmessages", "eglInitialize failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglInitialize failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
@@ -1231,13 +886,17 @@ public class PhotoFilterView extends FrameLayout {
                     EGL10.EGL_NONE
             };
             if (!egl10.eglChooseConfig(eglDisplay, configSpec, configs, 1, configsCount)) {
-                FileLog.e("tmessages", "eglChooseConfig failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglChooseConfig failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             } else if (configsCount[0] > 0) {
                 eglConfig = configs[0];
             } else {
-                FileLog.e("tmessages", "eglConfig not initialized");
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglConfig not initialized");
+                }
                 finish();
                 return false;
             }
@@ -1245,7 +904,9 @@ public class PhotoFilterView extends FrameLayout {
             int[] attrib_list = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE };
             eglContext = egl10.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
             if (eglContext == null) {
-                FileLog.e("tmessages", "eglCreateContext failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglCreateContext failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
@@ -1258,12 +919,16 @@ public class PhotoFilterView extends FrameLayout {
             }
 
             if (eglSurface == null || eglSurface == EGL10.EGL_NO_SURFACE) {
-                FileLog.e("tmessages", "createWindowSurface failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("createWindowSurface failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
             if (!egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-                FileLog.e("tmessages", "eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                }
                 finish();
                 return false;
             }
@@ -1325,7 +990,7 @@ public class PhotoFilterView extends FrameLayout {
                 GLES20.glGetProgramiv(toolsShaderProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
                 if (linkStatus[0] == 0) {
                     /*String infoLog = GLES20.glGetProgramInfoLog(toolsShaderProgram);
-                    FileLog.e("tmessages", "link error = " + infoLog);*/
+                    FileLog.e("link error = " + infoLog);*/
                     GLES20.glDeleteProgram(toolsShaderProgram);
                     toolsShaderProgram = 0;
                 } else {
@@ -1552,7 +1217,7 @@ public class PhotoFilterView extends FrameLayout {
                 return false;
             }
 
-            if (currentBitmap != null) {
+            if (currentBitmap != null && !currentBitmap.isRecycled()) {
                 loadTexture(currentBitmap);
             }
 
@@ -1606,7 +1271,7 @@ public class PhotoFilterView extends FrameLayout {
                     buffer = ByteBuffer.allocateDirect(PGPhotoEnhanceSegments * PGPhotoEnhanceSegments * PGPhotoEnhanceHistogramBins * 4);
                     Utilities.calcCDT(hsvBuffer, renderBufferWidth, renderBufferHeight, buffer);
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
 
                 GLES20.glBindTexture(GL10.GL_TEXTURE_2D, enhanceTextures[1]);
@@ -1808,7 +1473,9 @@ public class PhotoFilterView extends FrameLayout {
 
                 if (!eglContext.equals(egl10.eglGetCurrentContext()) || !eglSurface.equals(egl10.eglGetCurrentSurface(EGL10.EGL_DRAW))) {
                     if (!egl10.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-                        FileLog.e("tmessages", "eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.e("eglMakeCurrent failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
+                        }
                         return;
                     }
                 }
@@ -1849,24 +1516,21 @@ public class PhotoFilterView extends FrameLayout {
             if (!initied) {
                 return null;
             }
-            final Semaphore semaphore = new Semaphore(0);
+            final CountDownLatch countDownLatch = new CountDownLatch(1);
             final Bitmap object[] = new Bitmap[1];
             try {
-                postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[1]);
-                        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[blured ? 0 : 1], 0);
-                        GLES20.glClear(0);
-                        object[0] = getRenderBufferBitmap();
-                        semaphore.release();
-                        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-                        GLES20.glClear(0);
-                    }
+                postRunnable(() -> {
+                    GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[1]);
+                    GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[blured ? 0 : 1], 0);
+                    GLES20.glClear(0);
+                    object[0] = getRenderBufferBitmap();
+                    countDownLatch.countDown();
+                    GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+                    GLES20.glClear(0);
                 });
-                semaphore.acquire();
+                countDownLatch.await();
             } catch (Exception e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
             return object[0];
         }
@@ -1932,15 +1596,12 @@ public class PhotoFilterView extends FrameLayout {
         }
 
         public void shutdown() {
-            postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    finish();
-                    currentBitmap = null;
-                    Looper looper = Looper.myLooper();
-                    if (looper != null) {
-                        looper.quit();
-                    }
+            postRunnable(() -> {
+                finish();
+                currentBitmap = null;
+                Looper looper = Looper.myLooper();
+                if (looper != null) {
+                    looper.quit();
                 }
             });
         }
@@ -1957,35 +1618,60 @@ public class PhotoFilterView extends FrameLayout {
         }
 
         public void requestRender(final boolean updateBlur) {
-            postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    if (!needUpdateBlurTexture) {
-                        needUpdateBlurTexture = updateBlur;
-                    }
-                    long newTime = System.currentTimeMillis();
-                    if (Math.abs(lastRenderCallTime - newTime) > 30) {
-                        lastRenderCallTime = newTime;
-                        drawRunnable.run();
-                        //cancelRunnable(drawRunnable);
-                        //postRunnable(drawRunnable, 30);
-                    }
+            requestRender(updateBlur, false);
+        }
+
+        public void requestRender(final boolean updateBlur, final boolean force) {
+            postRunnable(() -> {
+                if (!needUpdateBlurTexture) {
+                    needUpdateBlurTexture = updateBlur;
+                }
+                long newTime = System.currentTimeMillis();
+                if (force || Math.abs(lastRenderCallTime - newTime) > 30) {
+                    lastRenderCallTime = newTime;
+                    drawRunnable.run();
+                    //cancelRunnable(drawRunnable);
+                    //postRunnable(drawRunnable, 30);
                 }
             });
         }
     }
 
-    public PhotoFilterView(Context context, Bitmap bitmap, int rotation) {
+    public PhotoFilterView(Context context, Bitmap bitmap, int rotation, MediaController.SavedFilterState state) {
         super(context);
 
+        if (state != null) {
+            enhanceValue = state.enhanceValue;
+            exposureValue = state.exposureValue;
+            contrastValue = state.contrastValue;
+            warmthValue = state.warmthValue;
+            saturationValue = state.saturationValue;
+            fadeValue = state.fadeValue;
+            tintShadowsColor = state.tintShadowsColor;
+            tintHighlightsColor = state.tintHighlightsColor;
+            highlightsValue = state.highlightsValue;
+            shadowsValue = state.shadowsValue;
+            vignetteValue = state.vignetteValue;
+            grainValue = state.grainValue;
+            blurType = state.blurType;
+            sharpenValue = state.sharpenValue;
+            curvesToolValue = state.curvesToolValue;
+            blurExcludeSize = state.blurExcludeSize;
+            blurExcludePoint = state.blurExcludePoint;
+            blurExcludeBlurSize = state.blurExcludeBlurSize;
+            blurAngle = state.blurAngle;
+            lastState = state;
+        } else {
+            curvesToolValue = new CurvesToolValue();
+            blurExcludeSize = 0.35f;
+            blurExcludePoint = new Point(0.5f, 0.5f);
+            blurExcludeBlurSize = 0.15f;
+            blurAngle = (float) Math.PI / 2.0f;
+        }
         bitmapToEdit = bitmap;
         orientation = rotation;
 
         textureView = new TextureView(context);
-        if (Build.VERSION.SDK_INT == 14 || Build.VERSION.SDK_INT == 15) {
-            //setLayerType(LAYER_TYPE_HARDWARE, null);
-            //textureView.setLayerType(LAYER_TYPE_HARDWARE, null);
-        }
         addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         textureView.setVisibility(INVISIBLE);
         textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
@@ -1994,7 +1680,7 @@ public class PhotoFilterView extends FrameLayout {
                 if (eglThread == null && surface != null) {
                     eglThread = new EGLThread(surface, bitmapToEdit);
                     eglThread.setSurfaceTextureSize(width, height);
-                    eglThread.requestRender(true);
+                    eglThread.requestRender(true, true);
                 }
             }
 
@@ -2002,13 +1688,10 @@ public class PhotoFilterView extends FrameLayout {
             public void onSurfaceTextureSizeChanged(SurfaceTexture surface, final int width, final int height) {
                 if (eglThread != null) {
                     eglThread.setSurfaceTextureSize(width, height);
-                    eglThread.requestRender(false);
-                    eglThread.postRunnable(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (eglThread != null) {
-                                eglThread.requestRender(false);
-                            }
+                    eglThread.requestRender(false, true);
+                    eglThread.postRunnable(() -> {
+                        if (eglThread != null) {
+                            eglThread.requestRender(false, true);
                         }
                     });
                 }
@@ -2032,44 +1715,38 @@ public class PhotoFilterView extends FrameLayout {
         blurControl = new PhotoFilterBlurControl(context);
         blurControl.setVisibility(INVISIBLE);
         addView(blurControl, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
-        blurControl.setDelegate(new PhotoFilterBlurControl.PhotoFilterLinearBlurControlDelegate() {
-            @Override
-            public void valueChanged(Point centerPoint, float falloff, float size, float angle) {
-                blurExcludeSize = size;
-                blurExcludePoint = centerPoint;
-                blurExcludeBlurSize = falloff;
-                blurAngle = angle;
-                if (eglThread != null) {
-                    eglThread.requestRender(false);
-                }
+        blurControl.setDelegate((centerPoint, falloff, size, angle) -> {
+            blurExcludeSize = size;
+            blurExcludePoint = centerPoint;
+            blurExcludeBlurSize = falloff;
+            blurAngle = angle;
+            if (eglThread != null) {
+                eglThread.requestRender(false);
             }
         });
 
         curvesControl = new PhotoFilterCurvesControl(context, curvesToolValue);
-        curvesControl.setDelegate(new PhotoFilterCurvesControl.PhotoFilterCurvesControlDelegate() {
-            @Override
-            public void valueChanged() {
-                if (eglThread != null) {
-                    eglThread.requestRender(false);
-                }
+        curvesControl.setDelegate(() -> {
+            if (eglThread != null) {
+                eglThread.requestRender(false);
             }
         });
         curvesControl.setVisibility(INVISIBLE);
         addView(curvesControl, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
 
         toolsView = new FrameLayout(context);
-        addView(toolsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 126, Gravity.LEFT | Gravity.BOTTOM));
+        addView(toolsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 186, Gravity.LEFT | Gravity.BOTTOM));
 
         FrameLayout frameLayout = new FrameLayout(context);
-        frameLayout.setBackgroundColor(0xff1a1a1a);
+        frameLayout.setBackgroundColor(0xff000000);
         toolsView.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT));
 
         cancelTextView = new TextView(context);
         cancelTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         cancelTextView.setTextColor(0xffffffff);
         cancelTextView.setGravity(Gravity.CENTER);
-        cancelTextView.setBackgroundResource(R.drawable.bar_selector_picker);
-        cancelTextView.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
+        cancelTextView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, 0));
+        cancelTextView.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
         cancelTextView.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
         cancelTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         frameLayout.addView(cancelTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
@@ -2078,447 +1755,257 @@ public class PhotoFilterView extends FrameLayout {
         doneTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         doneTextView.setTextColor(0xff51bdf3);
         doneTextView.setGravity(Gravity.CENTER);
-        doneTextView.setBackgroundResource(R.drawable.bar_selector_picker);
-        doneTextView.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
+        doneTextView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, 0));
+        doneTextView.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
         doneTextView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
         doneTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         frameLayout.addView(doneTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
 
+        LinearLayout linearLayout = new LinearLayout(context);
+        frameLayout.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_HORIZONTAL));
+
+        tuneItem = new ImageView(context);
+        tuneItem.setScaleType(ImageView.ScaleType.CENTER);
+        tuneItem.setImageResource(R.drawable.photo_tools);
+        tuneItem.setColorFilter(new PorterDuffColorFilter(0xff6cc3ff, PorterDuff.Mode.MULTIPLY));
+        tuneItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
+        linearLayout.addView(tuneItem, LayoutHelper.createLinear(56, 48));
+        tuneItem.setOnClickListener(v -> {
+            selectedTool = 0;
+            tuneItem.setColorFilter(new PorterDuffColorFilter(0xff6cc3ff, PorterDuff.Mode.MULTIPLY));
+            blurItem.setColorFilter(null);
+            curveItem.setColorFilter(null);
+            switchMode();
+        });
+
+        blurItem = new ImageView(context);
+        blurItem.setScaleType(ImageView.ScaleType.CENTER);
+        blurItem.setImageResource(R.drawable.tool_blur);
+        blurItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
+        linearLayout.addView(blurItem, LayoutHelper.createLinear(56, 48));
+        blurItem.setOnClickListener(v -> {
+            selectedTool = 1;
+            tuneItem.setColorFilter(null);
+            blurItem.setColorFilter(new PorterDuffColorFilter(0xff6cc3ff, PorterDuff.Mode.MULTIPLY));
+            curveItem.setColorFilter(null);
+            switchMode();
+        });
+
+        curveItem = new ImageView(context);
+        curveItem.setScaleType(ImageView.ScaleType.CENTER);
+        curveItem.setImageResource(R.drawable.tool_curve);
+        curveItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
+        linearLayout.addView(curveItem, LayoutHelper.createLinear(56, 48));
+        curveItem.setOnClickListener(v -> {
+            selectedTool = 2;
+            tuneItem.setColorFilter(null);
+            blurItem.setColorFilter(null);
+            curveItem.setColorFilter(new PorterDuffColorFilter(0xff6cc3ff, PorterDuff.Mode.MULTIPLY));
+            switchMode();
+        });
+
         recyclerListView = new RecyclerListView(context);
         LinearLayoutManager layoutManager = new LinearLayoutManager(context);
-        layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
+        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         recyclerListView.setLayoutManager(layoutManager);
         recyclerListView.setClipToPadding(false);
-        if (Build.VERSION.SDK_INT >= 9) {
-            recyclerListView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
-        }
-        recyclerListView.setAdapter(toolsAdapter = new ToolsAdapter(context));
-        toolsView.addView(recyclerListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.LEFT | Gravity.TOP));
-        recyclerListView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                selectedTool = position;
-                if (position == enhanceTool) {
-                    previousValue = enhanceValue;
-                    valueSeekBar.setMinMax(0, 100);
-                    paramTextView.setText(LocaleController.getString("Enhance", R.string.Enhance));
-                } else if (position == highlightsTool) {
-                    previousValue = highlightsValue;
-                    valueSeekBar.setMinMax(-100, 100);
-                    paramTextView.setText(LocaleController.getString("Highlights", R.string.Highlights));
-                } else if (position == contrastTool) {
-                    previousValue = contrastValue;
-                    valueSeekBar.setMinMax(-100, 100);
-                    paramTextView.setText(LocaleController.getString("Contrast", R.string.Contrast));
-                } else if (position == exposureTool) {
-                    previousValue = exposureValue;
-                    valueSeekBar.setMinMax(-100, 100);
-                    paramTextView.setText(LocaleController.getString("Exposure", R.string.Exposure));
-                } else if (position == warmthTool) {
-                    previousValue = warmthValue;
-                    valueSeekBar.setMinMax(-100, 100);
-                    paramTextView.setText(LocaleController.getString("Warmth", R.string.Warmth));
-                } else if (position == saturationTool) {
-                    previousValue = saturationValue;
-                    valueSeekBar.setMinMax(-100, 100);
-                    paramTextView.setText(LocaleController.getString("Saturation", R.string.Saturation));
-                } else if (position == vignetteTool) {
-                    previousValue = vignetteValue;
-                    valueSeekBar.setMinMax(0, 100);
-                    paramTextView.setText(LocaleController.getString("Vignette", R.string.Vignette));
-                } else if (position == shadowsTool) {
-                    previousValue = shadowsValue;
-                    valueSeekBar.setMinMax(-100, 100);
-                    paramTextView.setText(LocaleController.getString("Shadows", R.string.Shadows));
-                } else if (position == grainTool) {
-                    previousValue = grainValue;
-                    valueSeekBar.setMinMax(0, 100);
-                    paramTextView.setText(LocaleController.getString("Grain", R.string.Grain));
-                } else if (position == fadeTool) {
-                    previousValue = fadeValue;
-                    valueSeekBar.setMinMax(0, 100);
-                    paramTextView.setText(LocaleController.getString("Fade", R.string.Fade));
-                } else if (position == sharpenTool) {
-                    previousValue = sharpenValue;
-                    valueSeekBar.setMinMax(0, 100);
-                    paramTextView.setText(LocaleController.getString("Sharpen", R.string.Sharpen));
-                } else if (position == blurTool) {
-                    previousValueInt = blurType;
-                } else if (position == tintTool) {
-                    previousValueInt = tintShadowsColor;
-                    previousValueInt2 = tintHighlightsColor;
-                } else if (position == curvesTool) {
-                    curvesToolValue.luminanceCurve.saveValues();
-                    curvesToolValue.redCurve.saveValues();
-                    curvesToolValue.greenCurve.saveValues();
-                    curvesToolValue.blueCurve.saveValues();
-                }
-                valueSeekBar.setProgress((int) previousValue, false);
-                updateValueTextView();
-                switchToOrFromEditMode();
-            }
-        });
-
-        editView = new FrameLayout(context);
-        editView.setVisibility(GONE);
-        addView(editView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 126, Gravity.LEFT | Gravity.BOTTOM));
-
-        frameLayout = new FrameLayout(context);
-        frameLayout.setBackgroundColor(0xff1a1a1a);
-        editView.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT));
-
-        ImageView imageView = new ImageView(context);
-        imageView.setImageResource(R.drawable.edit_cancel);
-        imageView.setBackgroundResource(R.drawable.bar_selector_picker);
-        imageView.setPadding(AndroidUtilities.dp(22), 0, AndroidUtilities.dp(22), 0);
-        frameLayout.addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-        imageView.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (selectedTool == enhanceTool) {
-                    enhanceValue = previousValue;
-                } else if (selectedTool == highlightsTool) {
-                    highlightsValue = previousValue;
-                } else if (selectedTool == contrastTool) {
-                    contrastValue = previousValue;
-                } else if (selectedTool == exposureTool) {
-                    exposureValue = previousValue;
-                } else if (selectedTool == warmthTool) {
-                    warmthValue = previousValue;
-                } else if (selectedTool == saturationTool) {
-                    saturationValue = previousValue;
-                } else if (selectedTool == vignetteTool) {
-                    vignetteValue = previousValue;
-                } else if (selectedTool == shadowsTool) {
-                    shadowsValue = previousValue;
-                } else if (selectedTool == grainTool) {
-                    grainValue = previousValue;
-                } else if (selectedTool == sharpenTool) {
-                    sharpenValue = previousValue;
-                } else if (selectedTool == fadeTool) {
-                    fadeValue = previousValue;
-                } else if (selectedTool == blurTool) {
-                    blurType = previousValueInt;
-                } else if (selectedTool == tintTool) {
-                    tintShadowsColor = previousValueInt;
-                    tintHighlightsColor = previousValueInt2;
-                } else if (selectedTool == curvesTool) {
-                    curvesToolValue.luminanceCurve.restoreValues();
-                    curvesToolValue.redCurve.restoreValues();
-                    curvesToolValue.greenCurve.restoreValues();
-                    curvesToolValue.blueCurve.restoreValues();
-                }
-                if (eglThread != null) {
-                    eglThread.requestRender(selectedTool != blurTool);
-                }
-                switchToOrFromEditMode();
-            }
-        });
-
-        imageView = new ImageView(context);
-        imageView.setImageResource(R.drawable.edit_doneblue);
-        imageView.setBackgroundResource(R.drawable.bar_selector_picker);
-        imageView.setPadding(AndroidUtilities.dp(22), AndroidUtilities.dp(1), AndroidUtilities.dp(22), 0);
-        frameLayout.addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
-        imageView.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                toolsAdapter.notifyDataSetChanged();
-                switchToOrFromEditMode();
-            }
-        });
-
-        infoTextView = new TextView(context);
-        infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        infoTextView.setTextColor(0xffffffff);
-        frameLayout.addView(infoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 9, 0, 0));
-
-        paramTextView = new TextView(context);
-        paramTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        paramTextView.setTextColor(0xff808080);
-        frameLayout.addView(paramTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 26, 0, 0));
-
-        valueTextView = new TextView(context);
-        valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        valueTextView.setTextColor(0xffffffff);
-        frameLayout.addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 3, 0, 0));
-
-        valueSeekBar = new PhotoEditorSeekBar(context);
-        valueSeekBar.setDelegate(new PhotoEditorSeekBar.PhotoEditorSeekBarDelegate() {
-            @Override
-            public void onProgressChanged() {
-                int progress = valueSeekBar.getProgress();
-                if (selectedTool == enhanceTool) {
-                    enhanceValue = progress;
-                } else if (selectedTool == highlightsTool) {
-                    highlightsValue = progress;
-                } else if (selectedTool == contrastTool) {
-                    contrastValue = progress;
-                } else if (selectedTool == exposureTool) {
-                    exposureValue = progress;
-                } else if (selectedTool == warmthTool) {
-                    warmthValue = progress;
-                } else if (selectedTool == saturationTool) {
-                    saturationValue = progress;
-                } else if (selectedTool == vignetteTool) {
-                    vignetteValue = progress;
-                } else if (selectedTool == shadowsTool) {
-                    shadowsValue = progress;
-                } else if (selectedTool == grainTool) {
-                    grainValue = progress;
-                } else if (selectedTool == sharpenTool) {
-                    sharpenValue = progress;
-                }  else if (selectedTool == fadeTool) {
-                    fadeValue = progress;
-                }
-                updateValueTextView();
-                if (eglThread != null) {
-                    eglThread.requestRender(true);
-                }
-            }
-        });
-        editView.addView(valueSeekBar, LayoutHelper.createFrame(AndroidUtilities.isTablet() ? 498 : LayoutHelper.MATCH_PARENT, 60, AndroidUtilities.isTablet() ? Gravity.CENTER_HORIZONTAL | Gravity.TOP : Gravity.LEFT | Gravity.TOP, 14, 10, 14, 0));
+        recyclerListView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
+        recyclerListView.setAdapter(new ToolsAdapter(context));
+        toolsView.addView(recyclerListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 120, Gravity.LEFT | Gravity.TOP));
 
         curveLayout = new FrameLayout(context);
-        editView.addView(curveLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 78, Gravity.CENTER_HORIZONTAL));
+        curveLayout.setVisibility(INVISIBLE);
+        toolsView.addView(curveLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 78, Gravity.CENTER_HORIZONTAL, 0, 40, 0, 0));
 
         LinearLayout curveTextViewContainer = new LinearLayout(context);
         curveTextViewContainer.setOrientation(LinearLayout.HORIZONTAL);
-        curveLayout.addView(curveTextViewContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.CENTER_HORIZONTAL));
+        curveLayout.addView(curveTextViewContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
 
         for (int a = 0; a < 4; a++) {
-            curveTextView[a] = new TextView(context);
-            curveTextView[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            curveTextView[a].setGravity(Gravity.CENTER_VERTICAL);
-            curveTextView[a].setTag(a);
+            FrameLayout frameLayout1 = new FrameLayout(context);
+            frameLayout1.setTag(a);
+
+            curveRadioButton[a] = new RadioButton(context);
+            curveRadioButton[a].setSize(AndroidUtilities.dp(20));
+            frameLayout1.addView(curveRadioButton[a], LayoutHelper.createFrame(30, 30, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
+
+            TextView curveTextView = new TextView(context);
+            curveTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+            curveTextView.setGravity(Gravity.CENTER_VERTICAL);
             if (a == 0) {
-                curveTextView[a].setText(LocaleController.getString("CurvesAll", R.string.CurvesAll).toUpperCase());
+                String str = LocaleController.getString("CurvesAll", R.string.CurvesAll);
+                curveTextView.setText(str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase());
+                curveTextView.setTextColor(0xffffffff);
+                curveRadioButton[a].setColor(0xffffffff, 0xffffffff);
             } else if (a == 1) {
-                curveTextView[a].setText(LocaleController.getString("CurvesRed", R.string.CurvesRed).toUpperCase());
+                String str = LocaleController.getString("CurvesRed", R.string.CurvesRed);
+                curveTextView.setText(str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase());
+                curveTextView.setTextColor(0xffe64d4d);
+                curveRadioButton[a].setColor(0xffe64d4d, 0xffe64d4d);
             } else if (a == 2) {
-                curveTextView[a].setText(LocaleController.getString("CurvesGreen", R.string.CurvesGreen).toUpperCase());
+                String str = LocaleController.getString("CurvesGreen", R.string.CurvesGreen);
+                curveTextView.setText(str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase());
+                curveTextView.setTextColor(0xff5abb5f);
+                curveRadioButton[a].setColor(0xff5abb5f, 0xff5abb5f);
             } else if (a == 3) {
-                curveTextView[a].setText(LocaleController.getString("CurvesBlue", R.string.CurvesBlue).toUpperCase());
+                String str = LocaleController.getString("CurvesBlue", R.string.CurvesBlue);
+                curveTextView.setText(str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase());
+                curveTextView.setTextColor(0xff3dadee);
+                curveRadioButton[a].setColor(0xff3dadee, 0xff3dadee);
             }
-            curveTextView[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            curveTextViewContainer.addView(curveTextView[a], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 28, a == 0 ? 0 : 30, 0, 0, 0));
-            curveTextView[a].setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    int num = (Integer) v.getTag();
-                    for (int a = 0; a < 4; a++) {
-                        curveTextView[a].setTextColor(a == num ? 0xffffffff : 0xff808080);
-                    }
-                    curvesToolValue.activeType = num;
-                    curvesControl.invalidate();
+            frameLayout1.addView(curveTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 38, 0, 0));
+
+            curveTextViewContainer.addView(frameLayout1, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, a == 0 ? 0 : 30, 0, 0, 0));
+            frameLayout1.setOnClickListener(v -> {
+                int num = (Integer) v.getTag();
+                curvesToolValue.activeType = num;
+                for (int a1 = 0; a1 < 4; a1++) {
+                    curveRadioButton[a1].setChecked(a1 == num, true);
                 }
-            });
-        }
-
-        tintLayout = new FrameLayout(context);
-        editView.addView(tintLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 78, Gravity.CENTER_HORIZONTAL));
-
-        LinearLayout tintTextViewContainer = new LinearLayout(context);
-        tintTextViewContainer.setOrientation(LinearLayout.HORIZONTAL);
-        tintLayout.addView(tintTextViewContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.CENTER_HORIZONTAL));
-
-        tintShadowsButton = new TextView(context);
-        tintShadowsButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        tintShadowsButton.setGravity(Gravity.CENTER_VERTICAL);
-        tintShadowsButton.setText(LocaleController.getString("TintShadows", R.string.TintShadows).toUpperCase());
-        tintShadowsButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        tintTextViewContainer.addView(tintShadowsButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 28));
-        tintShadowsButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                selectedTintMode = 0;
-                updateSelectedTintButton(true);
-            }
-        });
-
-        tintHighlightsButton = new TextView(context);
-        tintHighlightsButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        tintHighlightsButton.setGravity(Gravity.CENTER_VERTICAL);
-        tintHighlightsButton.setText(LocaleController.getString("TintHighlights", R.string.TintHighlights).toUpperCase());
-        tintHighlightsButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        tintTextViewContainer.addView(tintHighlightsButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 28, 100, 0, 0, 0));
-        tintHighlightsButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                selectedTintMode = 1;
-                updateSelectedTintButton(true);
-            }
-        });
-
-        tintButtonsContainer = new LinearLayout(context);
-        tintButtonsContainer.setOrientation(LinearLayout.HORIZONTAL);
-        tintButtonsContainer.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
-        tintLayout.addView(tintButtonsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.LEFT | Gravity.TOP, 0, 24, 0, 0));
-        for (int a = 0; a < tintShadowColors.length; a++) {
-            RadioButton radioButton = new RadioButton(context);
-            radioButton.setSize(AndroidUtilities.dp(20));
-            radioButton.setTag(a);
-            tintButtonsContainer.addView(radioButton, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f / tintShadowColors.length));
-            radioButton.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    RadioButton radioButton = (RadioButton) v;
-                    if (selectedTintMode == 0) {
-                        tintShadowsColor = tintShadowColors[(Integer) radioButton.getTag()];
-                    } else {
-                        tintHighlightsColor = tintHighlighsColors[(Integer) radioButton.getTag()];
-                    }
-                    updateSelectedTintButton(true);
-                    if (eglThread != null) {
-                        eglThread.requestRender(false);
-                    }
-                }
+                curvesControl.invalidate();
             });
         }
 
         blurLayout = new FrameLayout(context);
-        editView.addView(blurLayout, LayoutHelper.createFrame(280, 60, Gravity.CENTER_HORIZONTAL, 0, 10, 0, 0));
+        blurLayout.setVisibility(INVISIBLE);
+        toolsView.addView(blurLayout, LayoutHelper.createFrame(280, 60, Gravity.CENTER_HORIZONTAL, 0, 40, 0, 0));
 
         blurOffButton = new TextView(context);
-        blurOffButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_off_active, 0, 0);
         blurOffButton.setCompoundDrawablePadding(AndroidUtilities.dp(2));
         blurOffButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        blurOffButton.setTextColor(0xff51bdf3);
         blurOffButton.setGravity(Gravity.CENTER_HORIZONTAL);
         blurOffButton.setText(LocaleController.getString("BlurOff", R.string.BlurOff));
         blurLayout.addView(blurOffButton, LayoutHelper.createFrame(80, 60));
-        blurOffButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                blurType = 0;
-                updateSelectedBlurType();
-                blurControl.setVisibility(INVISIBLE);
-                if (eglThread != null) {
-                    eglThread.requestRender(false);
-                }
+        blurOffButton.setOnClickListener(v -> {
+            blurType = 0;
+            updateSelectedBlurType();
+            blurControl.setVisibility(INVISIBLE);
+            if (eglThread != null) {
+                eglThread.requestRender(false);
             }
         });
 
         blurRadialButton = new TextView(context);
-        blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_radial, 0, 0);
         blurRadialButton.setCompoundDrawablePadding(AndroidUtilities.dp(2));
         blurRadialButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        blurRadialButton.setTextColor(0xffffffff);
         blurRadialButton.setGravity(Gravity.CENTER_HORIZONTAL);
         blurRadialButton.setText(LocaleController.getString("BlurRadial", R.string.BlurRadial));
         blurLayout.addView(blurRadialButton, LayoutHelper.createFrame(80, 80, Gravity.LEFT | Gravity.TOP, 100, 0, 0, 0));
-        blurRadialButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                blurType = 1;
-                updateSelectedBlurType();
-                blurControl.setVisibility(VISIBLE);
-                blurControl.setType(1);
-                if (eglThread != null) {
-                    eglThread.requestRender(false);
-                }
+        blurRadialButton.setOnClickListener(v -> {
+            blurType = 1;
+            updateSelectedBlurType();
+            blurControl.setVisibility(VISIBLE);
+            blurControl.setType(1);
+            if (eglThread != null) {
+                eglThread.requestRender(false);
             }
         });
 
         blurLinearButton = new TextView(context);
-        blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_linear, 0, 0);
         blurLinearButton.setCompoundDrawablePadding(AndroidUtilities.dp(2));
         blurLinearButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        blurLinearButton.setTextColor(0xffffffff);
         blurLinearButton.setGravity(Gravity.CENTER_HORIZONTAL);
         blurLinearButton.setText(LocaleController.getString("BlurLinear", R.string.BlurLinear));
         blurLayout.addView(blurLinearButton, LayoutHelper.createFrame(80, 80, Gravity.LEFT | Gravity.TOP, 200, 0, 0, 0));
-        blurLinearButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                blurType = 2;
-                updateSelectedBlurType();
-                blurControl.setVisibility(VISIBLE);
-                blurControl.setType(0);
-                if (eglThread != null) {
-                    eglThread.requestRender(false);
-                }
+        blurLinearButton.setOnClickListener(v -> {
+            blurType = 2;
+            updateSelectedBlurType();
+            blurControl.setVisibility(VISIBLE);
+            blurControl.setType(0);
+            if (eglThread != null) {
+                eglThread.requestRender(false);
             }
         });
+
+        updateSelectedBlurType();
+
+        if (Build.VERSION.SDK_INT >= 21) {
+            ((LayoutParams) textureView.getLayoutParams()).topMargin = AndroidUtilities.statusBarHeight;
+            ((LayoutParams) curvesControl.getLayoutParams()).topMargin = AndroidUtilities.statusBarHeight;
+        }
     }
 
     private void updateSelectedBlurType() {
         if (blurType == 0) {
-            blurOffButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_off_active, 0, 0);
+            Drawable drawable = blurOffButton.getContext().getResources().getDrawable(R.drawable.blur_off).mutate();
+            drawable.setColorFilter(new PorterDuffColorFilter(0xff51bdf3, PorterDuff.Mode.MULTIPLY));
+            blurOffButton.setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null);
             blurOffButton.setTextColor(0xff51bdf3);
+
             blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_radial, 0, 0);
             blurRadialButton.setTextColor(0xffffffff);
+
             blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_linear, 0, 0);
             blurLinearButton.setTextColor(0xffffffff);
         } else if (blurType == 1) {
             blurOffButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_off, 0, 0);
             blurOffButton.setTextColor(0xffffffff);
-            blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_radial_active, 0, 0);
+
+            Drawable drawable = blurOffButton.getContext().getResources().getDrawable(R.drawable.blur_radial).mutate();
+            drawable.setColorFilter(new PorterDuffColorFilter(0xff51bdf3, PorterDuff.Mode.MULTIPLY));
+            blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null);
             blurRadialButton.setTextColor(0xff51bdf3);
+
             blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_linear, 0, 0);
             blurLinearButton.setTextColor(0xffffffff);
         } else if (blurType == 2) {
             blurOffButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_off, 0, 0);
             blurOffButton.setTextColor(0xffffffff);
+
             blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_radial, 0, 0);
             blurRadialButton.setTextColor(0xffffffff);
-            blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_linear_active, 0, 0);
+
+            Drawable drawable = blurOffButton.getContext().getResources().getDrawable(R.drawable.blur_linear).mutate();
+            drawable.setColorFilter(new PorterDuffColorFilter(0xff51bdf3, PorterDuff.Mode.MULTIPLY));
+            blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null);
             blurLinearButton.setTextColor(0xff51bdf3);
         }
     }
 
-    private void updateSelectedTintButton(boolean animated) {
-        tintHighlightsButton.setTextColor(selectedTintMode == 1 ? 0xffffffff : 0xff808080);
-        tintShadowsButton.setTextColor(selectedTintMode == 1 ? 0xff808080 : 0xffffffff);
-        int childCount = tintButtonsContainer.getChildCount();
-        for (int a = 0; a < childCount; a++) {
-            View child = tintButtonsContainer.getChildAt(a);
-            if (child instanceof RadioButton) {
-                RadioButton radioButton = (RadioButton) child;
-                int num = (Integer) radioButton.getTag();
-                int color1 = selectedTintMode == 0 ? tintShadowsColor : tintHighlightsColor;
-                int color2 = selectedTintMode == 0 ? tintShadowColors[num] : tintHighlighsColors[num];
-                radioButton.setChecked(color1 == color2, animated);
-                radioButton.setColor(num == 0 ? 0xffffffff : (selectedTintMode == 0 ? tintShadowColors[num] : tintHighlighsColors[num]), num == 0 ? 0xffffffff : (selectedTintMode == 0 ? tintShadowColors[num] : tintHighlighsColors[num]));
-            }
-        }
-    }
-
-    private void updateValueTextView() {
-        int value = 0;
-        if (selectedTool == enhanceTool) {
-            value = (int) enhanceValue;
-        } else if (selectedTool == highlightsTool) {
-            value = (int) highlightsValue;
-        } else if (selectedTool == contrastTool) {
-            value = (int) contrastValue;
-        } else if (selectedTool == exposureTool) {
-            value = (int) exposureValue;
-        } else if (selectedTool == warmthTool) {
-            value = (int) warmthValue;
-        } else if (selectedTool == saturationTool) {
-            value = (int) saturationValue;
-        } else if (selectedTool == vignetteTool) {
-            value = (int) vignetteValue;
-        } else if (selectedTool == shadowsTool) {
-            value = (int) shadowsValue;
-        } else if (selectedTool == grainTool) {
-            value = (int) grainValue;
-        } else if (selectedTool == sharpenTool) {
-            value = (int) sharpenValue;
-        }  else if (selectedTool == fadeTool) {
-            value = (int) fadeValue;
-        }
-        if (value > 0) {
-            valueTextView.setText("+" + value);
-        } else {
-            valueTextView.setText("" + value);
-        }
+    public MediaController.SavedFilterState getSavedFilterState() {
+        MediaController.SavedFilterState state = new MediaController.SavedFilterState();
+        state.enhanceValue = enhanceValue;
+        state.exposureValue = exposureValue;
+        state.contrastValue = contrastValue;
+        state.warmthValue = warmthValue;
+        state.saturationValue = saturationValue;
+        state.fadeValue = fadeValue;
+        state.tintShadowsColor = tintShadowsColor;
+        state.tintHighlightsColor = tintHighlightsColor;
+        state.highlightsValue = highlightsValue;
+        state.shadowsValue = shadowsValue;
+        state.vignetteValue = vignetteValue;
+        state.grainValue = grainValue;
+        state.blurType = blurType;
+        state.sharpenValue = sharpenValue;
+        state.curvesToolValue = curvesToolValue;
+        state.blurExcludeSize = blurExcludeSize;
+        state.blurExcludePoint = blurExcludePoint;
+        state.blurExcludeBlurSize = blurExcludeBlurSize;
+        state.blurAngle = blurAngle;
+        return state;
     }
 
     public boolean hasChanges() {
-        return enhanceValue != 0 || contrastValue != 0 || highlightsValue != 0 || exposureValue != 0 || warmthValue != 0 || saturationValue != 0 || vignetteValue != 0 ||
-                shadowsValue != 0 || grainValue != 0 || sharpenValue != 0 || fadeValue != 0 || tintHighlightsColor != 0 || tintShadowsColor != 0 || !curvesToolValue.shouldBeSkipped();
+        if (lastState != null) {
+            return enhanceValue != lastState.enhanceValue ||
+                    contrastValue != lastState.contrastValue ||
+                    highlightsValue != lastState.highlightsValue ||
+                    exposureValue != lastState.exposureValue ||
+                    warmthValue != lastState.warmthValue ||
+                    saturationValue != lastState.saturationValue ||
+                    vignetteValue != lastState.vignetteValue ||
+                    shadowsValue != lastState.shadowsValue ||
+                    grainValue != lastState.grainValue ||
+                    sharpenValue != lastState.sharpenValue ||
+                    fadeValue != lastState.fadeValue ||
+                    tintHighlightsColor != lastState.tintHighlightsColor ||
+                    tintShadowsColor != lastState.tintShadowsColor ||
+                    !curvesToolValue.shouldBeSkipped();
+        } else {
+            return enhanceValue != 0 || contrastValue != 0 || highlightsValue != 0 || exposureValue != 0 || warmthValue != 0 || saturationValue != 0 || vignetteValue != 0 ||
+                    shadowsValue != 0 || grainValue != 0 || sharpenValue != 0 || fadeValue != 0 || tintHighlightsColor != 0 || tintShadowsColor != 0 || !curvesToolValue.shouldBeSkipped();
+        }
     }
 
     public void onTouch(MotionEvent event) {
@@ -2542,89 +2029,36 @@ public class PhotoFilterView extends FrameLayout {
         }
     }
 
-    public void switchToOrFromEditMode() {
-        final View viewFrom;
-        final View viewTo;
-        if (editView.getVisibility() == GONE) {
-            viewFrom = toolsView;
-            viewTo = editView;
-
-            if (selectedTool == blurTool || selectedTool == tintTool || selectedTool == curvesTool) {
-                blurLayout.setVisibility(selectedTool == blurTool ? VISIBLE : INVISIBLE);
-                tintLayout.setVisibility(selectedTool == tintTool ? VISIBLE : INVISIBLE);
-                curveLayout.setVisibility(selectedTool == curvesTool ? VISIBLE : INVISIBLE);
-                if (selectedTool == blurTool) {
-                    infoTextView.setText(LocaleController.getString("Blur", R.string.Blur));
-                    if (blurType != 0) {
-                        blurControl.setVisibility(VISIBLE);
-                    }
-                } else if (selectedTool == curvesTool) {
-                    infoTextView.setText(LocaleController.getString("Curves", R.string.Curves));
-                    curvesControl.setVisibility(VISIBLE);
-                    curvesToolValue.activeType = 0;
-                    for (int a = 0; a < 4; a++) {
-                        curveTextView[a].setTextColor(a == 0 ? 0xffffffff : 0xff808080);
-                    }
-                } else {
-                    selectedTintMode = 0;
-                    updateSelectedTintButton(false);
-                    infoTextView.setText(LocaleController.getString("Tint", R.string.Tint));
-                }
-                infoTextView.setVisibility(VISIBLE);
-                valueSeekBar.setVisibility(INVISIBLE);
-                paramTextView.setVisibility(INVISIBLE);
-                valueTextView.setVisibility(INVISIBLE);
-                updateSelectedBlurType();
-            } else {
-                tintLayout.setVisibility(INVISIBLE);
-                curveLayout.setVisibility(INVISIBLE);
-                blurLayout.setVisibility(INVISIBLE);
-                valueSeekBar.setVisibility(VISIBLE);
-                infoTextView.setVisibility(INVISIBLE);
-                paramTextView.setVisibility(VISIBLE);
-                valueTextView.setVisibility(VISIBLE);
-                blurControl.setVisibility(INVISIBLE);
-                curvesControl.setVisibility(INVISIBLE);
-            }
-        } else {
-            selectedTool = -1;
-            viewFrom = editView;
-            viewTo = toolsView;
+    public void switchMode() {
+        if (selectedTool == 0) {
             blurControl.setVisibility(INVISIBLE);
+            blurLayout.setVisibility(INVISIBLE);
+            curveLayout.setVisibility(INVISIBLE);
             curvesControl.setVisibility(INVISIBLE);
-        }
 
-        AnimatorSetProxy animatorSet = new AnimatorSetProxy();
-        animatorSet.playTogether(
-                ObjectAnimatorProxy.ofFloat(viewFrom, "translationY", 0, AndroidUtilities.dp(126))
-        );
-        animatorSet.addListener(new AnimatorListenerAdapterProxy() {
-            @Override
-            public void onAnimationEnd(Object animation) {
-                viewFrom.clearAnimation();
-                viewFrom.setVisibility(GONE);
-                viewTo.setVisibility(VISIBLE);
-                ViewProxy.setTranslationY(viewTo, AndroidUtilities.dp(126));
+            recyclerListView.setVisibility(VISIBLE);
+        } else if (selectedTool == 1) {
+            recyclerListView.setVisibility(INVISIBLE);
+            curveLayout.setVisibility(INVISIBLE);
+            curvesControl.setVisibility(INVISIBLE);
 
-                AnimatorSetProxy animatorSet = new AnimatorSetProxy();
-                animatorSet.playTogether(
-                        ObjectAnimatorProxy.ofFloat(viewTo, "translationY", 0)
-                );
-                animatorSet.addListener(new AnimatorListenerAdapterProxy() {
-                    @Override
-                    public void onAnimationEnd(Object animation) {
-                        viewTo.clearAnimation();
-                        if (selectedTool == enhanceTool) {
-                            checkEnhance();
-                        }
-                    }
-                });
-                animatorSet.setDuration(200);
-                animatorSet.start();
+            blurLayout.setVisibility(VISIBLE);
+            if (blurType != 0) {
+                blurControl.setVisibility(VISIBLE);
             }
-        });
-        animatorSet.setDuration(200);
-        animatorSet.start();
+            updateSelectedBlurType();
+        } else if (selectedTool == 2) {
+            recyclerListView.setVisibility(INVISIBLE);
+            blurLayout.setVisibility(INVISIBLE);
+            blurControl.setVisibility(INVISIBLE);
+
+            curveLayout.setVisibility(VISIBLE);
+            curvesControl.setVisibility(VISIBLE);
+            curvesToolValue.activeType = 0;
+            for (int a = 0; a < 4; a++) {
+                curveRadioButton[a].setChecked(a == 0, false);
+            }
+        }
     }
 
     public void shutdown() {
@@ -2649,7 +2083,7 @@ public class PhotoFilterView extends FrameLayout {
         }
 
         viewWidth -= AndroidUtilities.dp(28);
-        viewHeight -= AndroidUtilities.dp(14 + 140);
+        viewHeight -= AndroidUtilities.dp(14 + 140 + 60) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
 
         float bitmapW;
         float bitmapH;
@@ -2671,24 +2105,21 @@ public class PhotoFilterView extends FrameLayout {
         }
 
         int bitmapX = (int) Math.ceil((viewWidth - bitmapW) / 2 + AndroidUtilities.dp(14));
-        int bitmapY = (int) Math.ceil((viewHeight - bitmapH) / 2 + AndroidUtilities.dp(14));
+        int bitmapY = (int) Math.ceil((viewHeight - bitmapH) / 2 + AndroidUtilities.dp(14) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0));
 
         LayoutParams layoutParams = (LayoutParams) textureView.getLayoutParams();
         layoutParams.leftMargin = bitmapX;
         layoutParams.topMargin = bitmapY;
         layoutParams.width = (int) bitmapW;
         layoutParams.height = (int) bitmapH;
-        textureView.setLayoutParams(layoutParams);
-        curvesControl.setActualArea(bitmapX, bitmapY, layoutParams.width, layoutParams.height);
+        curvesControl.setActualArea(bitmapX, bitmapY - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0), layoutParams.width, layoutParams.height);
 
         blurControl.setActualAreaSize(layoutParams.width, layoutParams.height);
         layoutParams = (LayoutParams) blurControl.getLayoutParams();
-        layoutParams.height = viewHeight + AndroidUtilities.dp(28);
-        blurControl.setLayoutParams(layoutParams);
+        layoutParams.height = viewHeight + AndroidUtilities.dp(38);
 
         layoutParams = (LayoutParams) curvesControl.getLayoutParams();
         layoutParams.height = viewHeight + AndroidUtilities.dp(28);
-        curvesControl.setLayoutParams(layoutParams);
 
         if (AndroidUtilities.isTablet()) {
             int total = AndroidUtilities.dp(86) * 10;
@@ -2700,7 +2131,6 @@ public class PhotoFilterView extends FrameLayout {
                 layoutParams.width = LayoutHelper.MATCH_PARENT;
                 layoutParams.leftMargin = 0;
             }
-            recyclerListView.setLayoutParams(layoutParams);
         }
     }
 
@@ -2772,10 +2202,6 @@ public class PhotoFilterView extends FrameLayout {
         return toolsView;
     }
 
-    public FrameLayout getEditView() {
-        return editView;
-    }
-
     public TextView getDoneTextView() {
         return doneTextView;
     }
@@ -2784,37 +2210,9 @@ public class PhotoFilterView extends FrameLayout {
         return cancelTextView;
     }
 
-    public void setEditViewFirst() {
-        selectedTool = 0;
-        previousValue = enhanceValue;
-        enhanceValue = 50;
-        valueSeekBar.setMinMax(0, 100);
-        paramTextView.setText(LocaleController.getString("Enhance", R.string.Enhance));
-        editView.setVisibility(VISIBLE);
-        toolsView.setVisibility(GONE);
-        valueSeekBar.setProgress(50, false);
-        updateValueTextView();
-    }
-
-    private void checkEnhance() {
-        if (enhanceValue == 0) {
-            AnimatorSetProxy animatorSetProxy = new AnimatorSetProxy();
-            animatorSetProxy.setDuration(200);
-            animatorSetProxy.playTogether(ObjectAnimatorProxy.ofInt(valueSeekBar, "progress", 50));
-            animatorSetProxy.start();
-        }
-    }
-
-    public class ToolsAdapter extends RecyclerView.Adapter {
+    public class ToolsAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context mContext;
-
-        private class Holder extends RecyclerView.ViewHolder {
-
-            public Holder(View itemView) {
-                super(itemView);
-            }
-        }
 
         public ToolsAdapter(Context context) {
             mContext = context;
@@ -2822,7 +2220,7 @@ public class PhotoFilterView extends FrameLayout {
 
         @Override
         public int getItemCount() {
-            return 14;
+            return 13;
         }
 
         @Override
@@ -2832,48 +2230,111 @@ public class PhotoFilterView extends FrameLayout {
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
-            PhotoEditToolCell view = new PhotoEditToolCell(mContext);
-            return new Holder(view);
+            View view;
+            if (i == 0) {
+                PhotoEditToolCell cell = new PhotoEditToolCell(mContext);
+                view = cell;
+                cell.setSeekBarDelegate((i1, progress) -> {
+                    if (i1 == enhanceTool) {
+                        enhanceValue = progress;
+                    } else if (i1 == highlightsTool) {
+                        highlightsValue = progress;
+                    } else if (i1 == contrastTool) {
+                        contrastValue = progress;
+                    } else if (i1 == exposureTool) {
+                        exposureValue = progress;
+                    } else if (i1 == warmthTool) {
+                        warmthValue = progress;
+                    } else if (i1 == saturationTool) {
+                        saturationValue = progress;
+                    } else if (i1 == vignetteTool) {
+                        vignetteValue = progress;
+                    } else if (i1 == shadowsTool) {
+                        shadowsValue = progress;
+                    } else if (i1 == grainTool) {
+                        grainValue = progress;
+                    } else if (i1 == sharpenTool) {
+                        sharpenValue = progress;
+                    }  else if (i1 == fadeTool) {
+                        fadeValue = progress;
+                    }
+                    if (eglThread != null) {
+                        eglThread.requestRender(true);
+                    }
+                });
+            } else {
+                view = new PhotoEditRadioCell(mContext);
+                view.setOnClickListener(v -> {
+                    PhotoEditRadioCell cell = (PhotoEditRadioCell) v;
+                    Integer row = (Integer) cell.getTag();
+                    if (row == tintShadowsTool) {
+                        tintShadowsColor = cell.getCurrentColor();
+                    } else {
+                        tintHighlightsColor = cell.getCurrentColor();
+                    }
+                    if (eglThread != null) {
+                        eglThread.requestRender(false);
+                    }
+                });
+            }
+            return new RecyclerListView.Holder(view);
         }
 
         @Override
-        public void onBindViewHolder(RecyclerView.ViewHolder viewHolder, int i) {
-            Holder holder = (Holder) viewHolder;
-            if (i == enhanceTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_enhance, LocaleController.getString("Enhance", R.string.Enhance), enhanceValue);
-            } else if (i == highlightsTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_highlights, LocaleController.getString("Highlights", R.string.Highlights), highlightsValue);
-            } else if (i == contrastTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_contrast, LocaleController.getString("Contrast", R.string.Contrast), contrastValue);
-            } else if (i == exposureTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_brightness, LocaleController.getString("Exposure", R.string.Exposure), exposureValue);
-            } else if (i == warmthTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_warmth, LocaleController.getString("Warmth", R.string.Warmth), warmthValue);
-            } else if (i == saturationTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_saturation, LocaleController.getString("Saturation", R.string.Saturation), saturationValue);
-            } else if (i == vignetteTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_vignette, LocaleController.getString("Vignette", R.string.Vignette), vignetteValue);
-            } else if (i == shadowsTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_shadows, LocaleController.getString("Shadows", R.string.Shadows), shadowsValue);
-            } else if (i == grainTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_grain, LocaleController.getString("Grain", R.string.Grain), grainValue);
-            } else if (i == sharpenTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_details, LocaleController.getString("Sharpen", R.string.Sharpen), sharpenValue);
-            } else if (i == tintTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_tint, LocaleController.getString("Tint", R.string.Tint), tintHighlightsColor != 0 || tintShadowsColor != 0 ? "◆" : "");
-            } else if (i == fadeTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_fade, LocaleController.getString("Fade", R.string.Fade), fadeValue);
-            } else if (i == curvesTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_curve, LocaleController.getString("Curves", R.string.Curves), curvesToolValue.shouldBeSkipped() ? "" : "◆");
-            } else if (i == blurTool) {
-                String value = "";
-                if (blurType == 1) {
-                    value = "R";
-                } else if (blurType == 2) {
-                    value = "L";
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return false;
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int i) {
+            switch (holder.getItemViewType()) {
+                case 0: {
+                    PhotoEditToolCell cell = (PhotoEditToolCell) holder.itemView;
+                    cell.setTag(i);
+                    if (i == enhanceTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("Enhance", R.string.Enhance), enhanceValue, 0, 100);
+                    } else if (i == highlightsTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("Highlights", R.string.Highlights), highlightsValue, -100, 100);
+                    } else if (i == contrastTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("Contrast", R.string.Contrast), contrastValue, -100, 100);
+                    } else if (i == exposureTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("Exposure", R.string.Exposure), exposureValue, -100, 100);
+                    } else if (i == warmthTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("Warmth", R.string.Warmth), warmthValue, -100, 100);
+                    } else if (i == saturationTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("Saturation", R.string.Saturation), saturationValue, -100, 100);
+                    } else if (i == vignetteTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("Vignette", R.string.Vignette), vignetteValue, 0, 100);
+                    } else if (i == shadowsTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("Shadows", R.string.Shadows), shadowsValue, -100, 100);
+                    } else if (i == grainTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("Grain", R.string.Grain), grainValue, 0, 100);
+                    } else if (i == sharpenTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("Sharpen", R.string.Sharpen), sharpenValue, 0, 100);
+                    } else if (i == fadeTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("Fade", R.string.Fade), fadeValue, 0, 100);
+                    }
+                    break;
                 }
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_blur, LocaleController.getString("Blur", R.string.Blur), value);
+                case 1: {
+                    PhotoEditRadioCell cell = (PhotoEditRadioCell) holder.itemView;
+                    cell.setTag(i);
+                    if (i == tintShadowsTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("TintShadows", R.string.TintShadows), 0, tintShadowsColor);
+                    } else if (i == tintHighlightsTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("TintHighlights", R.string.TintHighlights), 0, tintHighlightsColor);
+                    }
+                    break;
+                }
             }
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            if (position == tintShadowsTool || position == tintHighlightsTool) {
+                return 1;
+            }
+            return 0;
         }
     }
 }

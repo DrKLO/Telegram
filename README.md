@@ -3,7 +3,7 @@
 [Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
 This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
 
-##Creating your Telegram Application
+## Creating your Telegram Application
 
 We welcome all developers to use our API and source code to create applications on our platform.
 There are several things we require from **all developers** for the moment.
@@ -29,4 +29,4 @@ Import the root folder into your IDE (tested on Android Studio), then run projec
 
 ### Localization
 
-We moved all translations to https://www.transifex.com/projects/p/telegram/. Please use it.
+We moved all translations to https://translations.telegram.org/en/android/. Please use it.

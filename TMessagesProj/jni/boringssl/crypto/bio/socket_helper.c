@@ -26,13 +26,14 @@
 #include <netdb.h>
 #include <unistd.h>
 #else
-#pragma warning(push, 3)
+OPENSSL_MSVC_PRAGMA(warning(push, 3))
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#pragma warning(pop)
+OPENSSL_MSVC_PRAGMA(warning(pop))
 #endif
 
 #include "internal.h"
+#include "../internal.h"
 
 
 int bio_ip_and_port_to_socket_and_addr(int *out_sock,
@@ -45,7 +46,7 @@ int bio_ip_and_port_to_socket_and_addr(int *out_sock,
 
   *out_sock = -1;
 
-  memset(&hint, 0, sizeof(hint));
+  OPENSSL_memset(&hint, 0, sizeof(hint));
   hint.ai_family = AF_UNSPEC;
   hint.ai_socktype = SOCK_STREAM;
 
@@ -59,16 +60,16 @@ int bio_ip_and_port_to_socket_and_addr(int *out_sock,
   ret = 0;
 
   for (cur = result; cur; cur = cur->ai_next) {
-    if (cur->ai_addrlen > sizeof(struct sockaddr_storage)) {
+    if ((size_t) cur->ai_addrlen > sizeof(struct sockaddr_storage)) {
       continue;
     }
-    memset(out_addr, 0, sizeof(struct sockaddr_storage));
-    memcpy(out_addr, cur->ai_addr, cur->ai_addrlen);
+    OPENSSL_memset(out_addr, 0, sizeof(struct sockaddr_storage));
+    OPENSSL_memcpy(out_addr, cur->ai_addr, cur->ai_addrlen);
     *out_addr_length = cur->ai_addrlen;
 
     *out_sock = socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
     if (*out_sock < 0) {
-      OPENSSL_PUT_SYSTEM_ERROR(socket);
+      OPENSSL_PUT_SYSTEM_ERROR();
       goto out;
     }
 

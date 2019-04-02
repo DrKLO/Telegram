@@ -489,7 +489,7 @@ public class FastDateParser implements DateParser, Serializable {
      * A <code>Pattern</code> to parse the user supplied SimpleDateFormat pattern
      */
     private static final Pattern formatPattern = Pattern.compile(
-            "D+|E+|F+|G+|H+|K+|M+|S+|W+|Z+|a+|d+|h+|k+|m+|s+|w+|y+|z+|''|'[^']++(''[^']*+)*+'|[^'A-Za-z]++");
+            "D+|E+|F+|G+|H+|K+|M+|L+|S+|W+|Z+|a+|d+|h+|k+|m+|s+|w+|y+|z+|''|'[^']++(''[^']*+)*+'|[^'A-Za-z]++");
 
     /**
      * Obtain a Strategy given a field from a SimpleDateFormat pattern
@@ -520,6 +520,7 @@ public class FastDateParser implements DateParser, Serializable {
             case 'K':
                 return HOUR_STRATEGY;
             case 'M':
+            case 'L':
                 return formatField.length() >= 3 ? getLocaleSpecificStrategy(Calendar.MONTH, definingCalendar) : NUMBER_MONTH_STRATEGY;
             case 'S':
                 return MILLISECOND_STRATEGY;

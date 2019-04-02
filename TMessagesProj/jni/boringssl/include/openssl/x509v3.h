@@ -57,11 +57,21 @@
 
 #include <openssl/bio.h>
 #include <openssl/conf.h>
+#include <openssl/lhash.h>
 #include <openssl/x509.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/* Legacy X.509 library.
+ *
+ * This header is part of OpenSSL's X.509 implementation. It is retained for
+ * compatibility but otherwise underdocumented and not actively maintained. In
+ * the future, a replacement library will be available. Meanwhile, minimize
+ * dependencies on this header where possible. */
+
 
 /* Forward reference */
 struct v3_ext_method;
@@ -137,7 +147,7 @@ void *db;
 
 typedef struct v3_ext_method X509V3_EXT_METHOD;
 
-DECLARE_STACK_OF(X509V3_EXT_METHOD)
+DEFINE_STACK_OF(X509V3_EXT_METHOD)
 
 /* ext_flags values */
 #define X509V3_EXT_DYNAMIC	0x1
@@ -146,10 +156,10 @@ DECLARE_STACK_OF(X509V3_EXT_METHOD)
 
 typedef BIT_STRING_BITNAME ENUMERATED_NAMES;
 
-typedef struct BASIC_CONSTRAINTS_st {
+struct BASIC_CONSTRAINTS_st {
 int ca;
 ASN1_INTEGER *pathlen;
-} BASIC_CONSTRAINTS;
+};
 
 
 typedef struct PKEY_USAGE_PERIOD_st {
@@ -201,22 +211,24 @@ union {
 } d;
 } GENERAL_NAME;
 
+DEFINE_STACK_OF(GENERAL_NAME)
+DECLARE_ASN1_SET_OF(GENERAL_NAME)
+
 typedef STACK_OF(GENERAL_NAME) GENERAL_NAMES;
+
+DEFINE_STACK_OF(GENERAL_NAMES)
 
 typedef struct ACCESS_DESCRIPTION_st {
 	ASN1_OBJECT *method;
 	GENERAL_NAME *location;
 } ACCESS_DESCRIPTION;
 
+DEFINE_STACK_OF(ACCESS_DESCRIPTION)
+DECLARE_ASN1_SET_OF(ACCESS_DESCRIPTION)
+
 typedef STACK_OF(ACCESS_DESCRIPTION) AUTHORITY_INFO_ACCESS;
 
 typedef STACK_OF(ASN1_OBJECT) EXTENDED_KEY_USAGE;
-
-DECLARE_STACK_OF(GENERAL_NAME)
-DECLARE_ASN1_SET_OF(GENERAL_NAME)
-
-DECLARE_STACK_OF(ACCESS_DESCRIPTION)
-DECLARE_ASN1_SET_OF(ACCESS_DESCRIPTION)
 
 typedef struct DIST_POINT_NAME_st {
 int type;
@@ -230,7 +242,7 @@ X509_NAME *dpname;
 /* All existing reasons */
 #define CRLDP_ALL_REASONS	0x807f
 
-#define CRL_REASON_NONE				-1
+#define CRL_REASON_NONE				(-1)
 #define CRL_REASON_UNSPECIFIED			0
 #define CRL_REASON_KEY_COMPROMISE		1
 #define CRL_REASON_CA_COMPROMISE		2
@@ -251,7 +263,7 @@ int dp_reasons;
 
 typedef STACK_OF(DIST_POINT) CRL_DIST_POINTS;
 
-DECLARE_STACK_OF(DIST_POINT)
+DEFINE_STACK_OF(DIST_POINT)
 DECLARE_ASN1_SET_OF(DIST_POINT)
 
 struct AUTHORITY_KEYID_st {
@@ -267,7 +279,7 @@ typedef struct SXNET_ID_st {
 	ASN1_OCTET_STRING *user;
 } SXNETID;
 
-DECLARE_STACK_OF(SXNETID)
+DEFINE_STACK_OF(SXNETID)
 DECLARE_ASN1_SET_OF(SXNETID)
 
 typedef struct SXNET_st {
@@ -294,7 +306,7 @@ typedef struct POLICYQUALINFO_st {
 	} d;
 } POLICYQUALINFO;
 
-DECLARE_STACK_OF(POLICYQUALINFO)
+DEFINE_STACK_OF(POLICYQUALINFO)
 DECLARE_ASN1_SET_OF(POLICYQUALINFO)
 
 typedef struct POLICYINFO_st {
@@ -304,7 +316,7 @@ typedef struct POLICYINFO_st {
 
 typedef STACK_OF(POLICYINFO) CERTIFICATEPOLICIES;
 
-DECLARE_STACK_OF(POLICYINFO)
+DEFINE_STACK_OF(POLICYINFO)
 DECLARE_ASN1_SET_OF(POLICYINFO)
 
 typedef struct POLICY_MAPPING_st {
@@ -312,7 +324,7 @@ typedef struct POLICY_MAPPING_st {
 	ASN1_OBJECT *subjectDomainPolicy;
 } POLICY_MAPPING;
 
-DECLARE_STACK_OF(POLICY_MAPPING)
+DEFINE_STACK_OF(POLICY_MAPPING)
 
 typedef STACK_OF(POLICY_MAPPING) POLICY_MAPPINGS;
 
@@ -322,7 +334,7 @@ typedef struct GENERAL_SUBTREE_st {
 	ASN1_INTEGER *maximum;
 } GENERAL_SUBTREE;
 
-DECLARE_STACK_OF(GENERAL_SUBTREE)
+DEFINE_STACK_OF(GENERAL_SUBTREE)
 
 struct NAME_CONSTRAINTS_st {
 	STACK_OF(GENERAL_SUBTREE) *permittedSubtrees;
@@ -376,8 +388,8 @@ struct ISSUING_DIST_POINT_st
 /* onlysomereasons present */
 #define IDP_REASONS	0x40
 
-#define X509V3_conf_err(val) ERR_add_error_data(6, "section:", val->section, \
-",name:", val->name, ",value:", val->value);
+#define X509V3_conf_err(val) ERR_add_error_data(6, "section:", (val)->section, \
+",name:", (val)->name, ",value:", (val)->value);
 
 #define X509V3_set_ctx_test(ctx) \
 			X509V3_set_ctx(ctx, NULL, NULL, NULL, NULL, CTX_TEST)
@@ -389,7 +401,7 @@ struct ISSUING_DIST_POINT_st
 			(X509V3_EXT_I2V)i2v_ASN1_BIT_STRING, \
 			(X509V3_EXT_V2I)v2i_ASN1_BIT_STRING, \
 			NULL, NULL, \
-			(void *)table}
+			(void *)(table)}
 
 #define EXT_IA5STRING(nid) { nid, 0, ASN1_ITEM_ref(ASN1_IA5STRING), \
 			0,0,0,0, \
@@ -501,7 +513,7 @@ typedef struct x509_purpose_st {
 #define X509V3_ADD_DELETE		5L
 #define X509V3_ADD_SILENT		0x10
 
-DECLARE_STACK_OF(X509_PURPOSE)
+DEFINE_STACK_OF(X509_PURPOSE)
 
 DECLARE_ASN1_FUNCTIONS(BASIC_CONSTRAINTS)
 
@@ -600,6 +612,7 @@ OPENSSL_EXPORT GENERAL_NAME *v2i_GENERAL_NAME_ex(GENERAL_NAME *out,
 				  X509V3_CTX *ctx, CONF_VALUE *cnf, int is_nc);
 OPENSSL_EXPORT void X509V3_conf_free(CONF_VALUE *val);
 
+OPENSSL_EXPORT X509_EXTENSION *X509V3_EXT_conf_nid(LHASH_OF(CONF_VALUE) *conf, X509V3_CTX *ctx, int ext_nid, char *value);
 OPENSSL_EXPORT X509_EXTENSION *X509V3_EXT_nconf_nid(CONF *conf, X509V3_CTX *ctx, int ext_nid, char *value);
 OPENSSL_EXPORT X509_EXTENSION *X509V3_EXT_nconf(CONF *conf, X509V3_CTX *ctx, char *name, char *value);
 OPENSSL_EXPORT int X509V3_EXT_add_nconf_sk(CONF *conf, X509V3_CTX *ctx, char *section, STACK_OF(X509_EXTENSION) **sk);
@@ -646,6 +659,7 @@ OPENSSL_EXPORT int X509V3_add_standard_extensions(void);
 OPENSSL_EXPORT STACK_OF(CONF_VALUE) *X509V3_parse_list(const char *line);
 OPENSSL_EXPORT void *X509V3_EXT_d2i(X509_EXTENSION *ext);
 OPENSSL_EXPORT void *X509V3_get_d2i(STACK_OF(X509_EXTENSION) *x, int nid, int *crit, int *idx);
+OPENSSL_EXPORT int X509V3_EXT_free(int nid, void *ext_data);
 
 
 OPENSSL_EXPORT X509_EXTENSION *X509V3_EXT_i2d(int ext_nid, int crit, void *ext_struc);
@@ -719,18 +733,32 @@ OPENSSL_EXPORT int X509V3_NAME_from_section(X509_NAME *nm, STACK_OF(CONF_VALUE)*
 						unsigned long chtype);
 
 OPENSSL_EXPORT void X509_POLICY_NODE_print(BIO *out, X509_POLICY_NODE *node, int indent);
-DECLARE_STACK_OF(X509_POLICY_NODE)
+DEFINE_STACK_OF(X509_POLICY_NODE)
 
 /* BEGIN ERROR CODES */
 /* The following lines are auto generated by the script mkerr.pl. Any changes
  * made after this point may be overwritten when the script is next run.
  */
-void ERR_load_X509V3_strings(void);
 
 
 #ifdef  __cplusplus
 }
+
+extern "C++" {
+
+namespace bssl {
+
+BORINGSSL_MAKE_DELETER(AUTHORITY_KEYID, AUTHORITY_KEYID_free)
+BORINGSSL_MAKE_DELETER(BASIC_CONSTRAINTS, BASIC_CONSTRAINTS_free)
+BORINGSSL_MAKE_DELETER(DIST_POINT, DIST_POINT_free)
+BORINGSSL_MAKE_DELETER(GENERAL_NAME, GENERAL_NAME_free)
+BORINGSSL_MAKE_DELETER(POLICYINFO, POLICYINFO_free)
+
+}  // namespace bssl
+
+}  /* extern C++ */
 #endif
+
 #define X509V3_R_BAD_IP_ADDRESS 100
 #define X509V3_R_BAD_OBJECT 101
 #define X509V3_R_BN_DEC2BN_ERROR 102

@@ -33,7 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Best case:  O(n)   for an already sorted array            */
 /* Worst case: O(n^2) for an inversely sorted array          */
 /*                                                           */
-/* Shell short:    http://en.wikipedia.org/wiki/Shell_sort   */
+/* Shell short:    https://en.wikipedia.org/wiki/Shell_sort  */
 
 #include "SigProc_FIX.h"
 
@@ -48,9 +48,9 @@ void silk_insertion_sort_increasing(
     opus_int        i, j;
 
     /* Safety checks */
-    silk_assert( K >  0 );
-    silk_assert( L >  0 );
-    silk_assert( L >= K );
+    celt_assert( K >  0 );
+    celt_assert( L >  0 );
+    celt_assert( L >= K );
 
     /* Write start indices in index vector */
     for( i = 0; i < K; i++ ) {
@@ -96,9 +96,9 @@ void silk_insertion_sort_decreasing_int16(
     opus_int value;
 
     /* Safety checks */
-    silk_assert( K >  0 );
-    silk_assert( L >  0 );
-    silk_assert( L >= K );
+    celt_assert( K >  0 );
+    celt_assert( L >  0 );
+    celt_assert( L >= K );
 
     /* Write start indices in index vector */
     for( i = 0; i < K; i++ ) {
@@ -141,7 +141,7 @@ void silk_insertion_sort_increasing_all_values_int16(
     opus_int    i, j;
 
     /* Safety checks */
-    silk_assert( L >  0 );
+    celt_assert( L >  0 );
 
     /* Sort vector elements by value, increasing order */
     for( i = 1; i < L; i++ ) {

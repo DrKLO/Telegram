@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -11,14 +11,16 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.View;
 
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.SecureDocument;
 import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
 
 public class BackupImageView extends View {
 
@@ -45,43 +47,55 @@ public class BackupImageView extends View {
         imageReceiver = new ImageReceiver(this);
     }
 
-    public void setImage(TLObject path, String filter, String ext, Drawable thumb) {
-        setImage(path, null, filter, thumb, null, null, null, ext, 0);
+    public void setImage(SecureDocument path, String filter) {
+        setImage(path, filter, null, null, null, null, null, 0, null);
     }
 
-    public void setImage(TLObject path, String filter, Drawable thumb) {
-        setImage(path, null, filter, thumb, null, null, null, null, 0);
+    public void setImage(TLObject path, String filter, String ext, Drawable thumb, Object parentObject) {
+        setImage(path, filter, thumb, null, null, null, ext, 0, parentObject);
     }
 
-    public void setImage(TLObject path, String filter, Bitmap thumb) {
-        setImage(path, null, filter, null, thumb, null, null, null, 0);
+    public void setImage(TLObject path, String filter, Drawable thumb, Object parentObject) {
+        setImage(path, filter, thumb, null, null, null, null, 0, parentObject);
     }
 
-    public void setImage(TLObject path, String filter, Drawable thumb, int size) {
-        setImage(path, null, filter, thumb, null, null, null, null, size);
+    public void setImage(TLObject path, String filter, Bitmap thumb, Object parentObject) {
+        setImage(path, filter, null, thumb, null, null, null, 0, parentObject);
     }
 
-    public void setImage(TLObject path, String filter, Bitmap thumb, int size) {
-        setImage(path, null, filter, null, thumb, null, null, null, size);
+    public void setImage(TLObject path, String filter, Drawable thumb, int size, Object parentObject) {
+        setImage(path, filter, thumb, null, null, null, null, size, parentObject);
     }
 
-    public void setImage(TLObject path, String filter, TLRPC.FileLocation thumb, int size) {
-        setImage(path, null, filter, null, null, thumb, null, null, size);
+    public void setImage(TLObject path, String filter, Bitmap thumb, int size, Object parentObject) {
+        setImage(path, filter, null, thumb, null, null, null, size, parentObject);
+    }
+
+    public void setImage(TLObject path, String filter, TLObject thumb, int size, Object parentObject) {
+        setImage(path, filter, null, null, thumb, null, null, size, parentObject);
     }
 
     public void setImage(String path, String filter, Drawable thumb) {
-        setImage(null, path, filter, thumb, null, null, null, null, 0);
+        setImage(path, filter, thumb, null, null, null, null, 0, null);
+    }
+
+    public void setImage(String path, String filter, String thumbPath, String thumbFilter) {
+        setImage(path, filter, null, null, thumbPath, thumbFilter, null, 0, null);
     }
 
     public void setOrientation(int angle, boolean center) {
         imageReceiver.setOrientation(angle, center);
     }
 
-    public void setImage(TLObject path, String httpUrl, String filter, Drawable thumb, Bitmap thumbBitmap, TLRPC.FileLocation thumbLocation, String thumbFilter, String ext, int size) {
+    public void setImage(Object path, String filter, Drawable thumb, Bitmap thumbBitmap, Object thumbLocation, String thumbFilter, String ext, int size, Object parentObject) {
         if (thumbBitmap != null) {
             thumb = new BitmapDrawable(null, thumbBitmap);
         }
-        imageReceiver.setImage(path, httpUrl, filter, thumb, thumbLocation, thumbFilter, size, ext, false);
+        imageReceiver.setImage(path, filter, thumb, thumbLocation, thumbFilter, size, ext, parentObject, 0);
+    }
+
+    public void setImage(TLObject path, String filter, TLObject thumbLocation, String thumbFilter, String ext, int size, int cacheType, Object parentObject) {
+        imageReceiver.setImage(path, filter, null, thumbLocation, thumbFilter, size, ext, parentObject, cacheType);
     }
 
     public void setImageBitmap(Bitmap bitmap) {
@@ -89,7 +103,18 @@ public class BackupImageView extends View {
     }
 
     public void setImageResource(int resId) {
-        imageReceiver.setImageBitmap(getResources().getDrawable(resId));
+        Drawable drawable = getResources().getDrawable(resId);
+        imageReceiver.setImageBitmap(drawable);
+        invalidate();
+    }
+
+    public void setImageResource(int resId, int color) {
+        Drawable drawable = getResources().getDrawable(resId);
+        if (drawable != null) {
+            drawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+        }
+        imageReceiver.setImageBitmap(drawable);
+        invalidate();
     }
 
     public void setImageDrawable(Drawable drawable) {
@@ -98,6 +123,11 @@ public class BackupImageView extends View {
 
     public void setRoundRadius(int value) {
         imageReceiver.setRoundRadius(value);
+        invalidate();
+    }
+
+    public int getRoundRadius() {
+        return imageReceiver.getRoundRadius();
     }
 
     public void setAspectFit(boolean value) {

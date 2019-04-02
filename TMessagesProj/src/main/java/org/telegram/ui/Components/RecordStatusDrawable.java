@@ -1,37 +1,27 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x
+ * This is the source code of Telegram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
-import android.graphics.Paint;
 import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
-public class RecordStatusDrawable extends Drawable {
+public class RecordStatusDrawable extends StatusDrawable {
 
     private boolean isChat = false;
-    private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private long lastUpdateTime = 0;
     private boolean started = false;
     private RectF rect = new RectF();
     private float progress;
-
-    public RecordStatusDrawable() {
-        super();
-        paint.setColor(0xffd7e8f7);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(AndroidUtilities.dp(2));
-        paint.setStrokeCap(Paint.Cap.ROUND);
-    }
 
     public void setIsChat(boolean value) {
         isChat = value;
@@ -44,7 +34,7 @@ public class RecordStatusDrawable extends Drawable {
         if (dt > 50) {
             dt = 50;
         }
-        progress += dt / 300.0f;
+        progress += dt / 800.0f;
         while (progress > 1.0f) {
             progress -= 1.0f;
         }
@@ -67,15 +57,15 @@ public class RecordStatusDrawable extends Drawable {
         canvas.translate(0, getIntrinsicHeight() / 2 + AndroidUtilities.dp(isChat ? 1 : 2));
         for (int a = 0; a < 4; a++) {
             if (a == 0) {
-                paint.setAlpha((int) (255 * progress));
+                Theme.chat_statusRecordPaint.setAlpha((int) (255 * progress));
             } else if (a == 3) {
-                paint.setAlpha((int) (255 * (1.0f - progress)));
+                Theme.chat_statusRecordPaint.setAlpha((int) (255 * (1.0f - progress)));
             } else {
-                paint.setAlpha(255);
+                Theme.chat_statusRecordPaint.setAlpha(255);
             }
             float side = AndroidUtilities.dp(4) * a + AndroidUtilities.dp(4) * progress;
             rect.set(-side, -side, side, side);
-            canvas.drawArc(rect, -15, 30, false, paint);
+            canvas.drawArc(rect, -15, 30, false, Theme.chat_statusRecordPaint);
         }
         canvas.restore();
         if (started) {

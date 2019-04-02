@@ -1,9 +1,9 @@
 /*
- * This is the source code of tgnet library v. 1.0
+ * This is the source code of tgnet library v. 1.1
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2015.
+ * Copyright Nikolai Kudashov, 2015-2018.
  */
 
 #include <stdlib.h>
@@ -19,7 +19,7 @@ ByteArray::ByteArray() {
 ByteArray::ByteArray(uint32_t len) {
     bytes = new uint8_t[len];
     if (bytes == nullptr) {
-        DEBUG_E("unable to allocate byte buffer %u", len);
+        if (LOGS_ENABLED) DEBUG_E("unable to allocate byte buffer %u", len);
         exit(1);
     }
     length = len;
@@ -29,7 +29,7 @@ ByteArray::ByteArray(uint32_t len) {
 ByteArray::ByteArray(ByteArray *byteArray) {
     bytes = new uint8_t[byteArray->length];
     if (bytes == nullptr) {
-        DEBUG_E("unable to allocate byte buffer %u", byteArray->length);
+        if (LOGS_ENABLED) DEBUG_E("unable to allocate byte buffer %u", byteArray->length);
         exit(1);
     }
     length = byteArray->length;
@@ -39,7 +39,7 @@ ByteArray::ByteArray(ByteArray *byteArray) {
 ByteArray::ByteArray(uint8_t *buffer, uint32_t len) {
     bytes = new uint8_t[len];
     if (bytes == nullptr) {
-        DEBUG_E("unable to allocate byte buffer %u", len);
+        if (LOGS_ENABLED) DEBUG_E("unable to allocate byte buffer %u", len);
         exit(1);
     }
     length = len;
@@ -60,7 +60,7 @@ void ByteArray::alloc(uint32_t len) {
     }
     bytes = new uint8_t[len];
     if (bytes == nullptr) {
-        DEBUG_E("unable to allocate byte buffer %u", len);
+        if (LOGS_ENABLED) DEBUG_E("unable to allocate byte buffer %u", len);
         exit(1);
     }
     length = len;

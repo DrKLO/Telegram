@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x
+ * This is the source code of Telegram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -22,6 +22,7 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
     private int keyboardHeight;
     private SizeNotifierFrameLayoutPhotoDelegate delegate;
     private WindowManager windowManager;
+    private boolean withoutWindow;
 
     public interface SizeNotifierFrameLayoutPhotoDelegate {
         void onSizeChanged(int keyboardHeight, boolean isWidthGreater);
@@ -31,8 +32,12 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
         super(context);
     }
 
-    public void setDelegate(SizeNotifierFrameLayoutPhotoDelegate delegate) {
-        this.delegate = delegate;
+    public void setDelegate(SizeNotifierFrameLayoutPhotoDelegate sizeNotifierFrameLayoutPhotoDelegate) {
+        delegate = sizeNotifierFrameLayoutPhotoDelegate;
+    }
+
+    public void setWithoutWindow(boolean value) {
+        withoutWindow = value;
     }
 
     @Override
@@ -43,16 +48,19 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
 
     public int getKeyboardHeight() {
         View rootView = getRootView();
-        int usableViewHeight = rootView.getHeight() - AndroidUtilities.getViewInset(rootView);
         getWindowVisibleDisplayFrame(rect);
-        int top = rect.top;
-        int size = (rect.bottom - rect.top);
-
-        size = AndroidUtilities.displaySize.y - top - usableViewHeight;
-        if (size <= AndroidUtilities.dp(10)) {
-            size = 0;
+        if (withoutWindow) {
+            int usableViewHeight = rootView.getHeight() - (rect.top != 0 ? AndroidUtilities.statusBarHeight : 0) - AndroidUtilities.getViewInset(rootView);
+            return usableViewHeight - (rect.bottom - rect.top);
+        } else {
+            int usableViewHeight = rootView.getHeight() - AndroidUtilities.getViewInset(rootView);
+            int top = rect.top;
+            int size = AndroidUtilities.displaySize.y - top - usableViewHeight;
+            if (size <= Math.max(AndroidUtilities.dp(10), AndroidUtilities.statusBarHeight)) {
+                size = 0;
+            }
+            return size;
         }
-        return size;
     }
 
     public void notifyHeightChanged() {

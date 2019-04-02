@@ -43,6 +43,9 @@
 961;LB;Lebanon
 960;MV;Maldives;XXX XXXX
 886;TW;Taiwan;XXX XXX XXX
+883;GO;International Networks
+882;GO;International Networks
+881;GO;Global Mobile Satellite
 880;BD;Bangladesh
 856;LA;Laos;XX XX XXX XXX
 855;KH;Cambodia
@@ -98,6 +101,7 @@
 387;BA;Bosnia & Herzegovina;XX XXX XXX
 386;SI;Slovenia;XX XXX XXX
 385;HR;Croatia
+383;XK;Kosovo;XXXX XXXX
 382;ME;Montenegro
 381;RS;Serbia;XX XXX XXXX
 380;UA;Ukraine;XX XXX XX XX
@@ -206,7 +210,7 @@
 52;MX;Mexico
 51;PE;Peru;XXX XXX XXX
 49;DE;Germany
-48;PL;Poland;XX XXX XXXX
+48;PL;Poland;XXX XXX XXX
 47;NO;Norway;XXXX XXXX
 46;SE;Sweden;XX XXX XXXX
 45;DK;Denmark;XXXX XXXX

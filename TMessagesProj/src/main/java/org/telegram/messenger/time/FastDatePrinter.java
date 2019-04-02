@@ -16,6 +16,9 @@
  */
 package org.telegram.messenger.time;
 
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
@@ -165,12 +168,14 @@ public class FastDatePrinter implements DatePrinter, Serializable {
      * @return a {@code List} of Rule objects
      * @throws IllegalArgumentException if pattern is invalid
      */
+
     protected List<Rule> parsePattern() {
         final DateFormatSymbols symbols = new DateFormatSymbols(mLocale);
         final List<Rule> rules = new ArrayList<Rule>();
 
         final String[] ERAs = symbols.getEras();
         final String[] months = symbols.getMonths();
+
         final String[] shortMonths = symbols.getShortMonths();
         final String[] weekdays = symbols.getWeekdays();
         final String[] shortWeekdays = symbols.getShortWeekdays();
@@ -201,6 +206,17 @@ public class FastDatePrinter implements DatePrinter, Serializable {
                         rule = TwoDigitYearField.INSTANCE;
                     } else {
                         rule = selectNumberRule(Calendar.YEAR, tokenLen < 4 ? 4 : tokenLen);
+                    }
+                    break;
+                case 'L': // month in year (text and number)
+                    if (tokenLen >= 4) {
+                        rule = new TextField(Calendar.MONTH, months);
+                    } else if (tokenLen == 3) {
+                        rule = new TextField(Calendar.MONTH, shortMonths);
+                    } else if (tokenLen == 2) {
+                        rule = TwoDigitMonthField.INSTANCE;
+                    } else {
+                        rule = UnpaddedMonthField.INSTANCE;
                     }
                     break;
                 case 'M': // month in year (text and number)

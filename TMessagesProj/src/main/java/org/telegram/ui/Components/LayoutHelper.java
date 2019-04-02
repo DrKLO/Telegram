@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x
+ * This is the source code of Telegram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -24,8 +24,17 @@ public class LayoutHelper {
         return (int) (size < 0 ? size : AndroidUtilities.dp(size));
     }
 
-    public static FrameLayout.LayoutParams createScroll(int width, int height, int gravity) {
+    public static ScrollView.LayoutParams createScroll(int width, int height, int gravity) {
         return new ScrollView.LayoutParams(getSize(width), getSize(height), gravity);
+    }
+
+    public static ScrollView.LayoutParams createScroll(int width, int height, int gravity, float leftMargin, float topMargin, float rightMargin, float bottomMargin) {
+        ScrollView.LayoutParams layoutParams = new ScrollView.LayoutParams(getSize(width), getSize(height), gravity);
+        layoutParams.leftMargin = AndroidUtilities.dp(leftMargin);
+        layoutParams.topMargin = AndroidUtilities.dp(topMargin);
+        layoutParams.rightMargin = AndroidUtilities.dp(rightMargin);
+        layoutParams.bottomMargin = AndroidUtilities.dp(bottomMargin);
+        return layoutParams;
     }
 
     public static FrameLayout.LayoutParams createFrame(int width, float height, int gravity, float leftMargin, float topMargin, float rightMargin, float bottomMargin) {

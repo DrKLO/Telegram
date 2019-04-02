@@ -10,7 +10,7 @@
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific languag`e governing permissions and
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
@@ -24,23 +24,23 @@ import android.view.View;
  */
 class LayoutState {
 
-    final static String TAG = "LayoutState";
+    static final String TAG = "LayoutState";
 
-    final static int LAYOUT_START = -1;
+    static final int LAYOUT_START = -1;
 
-    final static int LAYOUT_END = 1;
+    static final int LAYOUT_END = 1;
 
-    final static int INVALID_LAYOUT = Integer.MIN_VALUE;
+    static final int INVALID_LAYOUT = Integer.MIN_VALUE;
 
-    final static int ITEM_DIRECTION_HEAD = -1;
+    static final int ITEM_DIRECTION_HEAD = -1;
 
-    final static int ITEM_DIRECTION_TAIL = 1;
+    static final int ITEM_DIRECTION_TAIL = 1;
 
     /**
      * We may not want to recycle children in some cases (e.g. layout)
      */
     boolean mRecycle = true;
-    
+
     /**
      * Number of pixels that we should fill, in the layout direction.
      */
@@ -104,13 +104,13 @@ class LayoutState {
 
     @Override
     public String toString() {
-        return "LayoutState{" +
-                "mAvailable=" + mAvailable +
-                ", mCurrentPosition=" + mCurrentPosition +
-                ", mItemDirection=" + mItemDirection +
-                ", mLayoutDirection=" + mLayoutDirection +
-                ", mStartLine=" + mStartLine +
-                ", mEndLine=" + mEndLine +
-                '}';
+        return "LayoutState{"
+                + "mAvailable=" + mAvailable
+                + ", mCurrentPosition=" + mCurrentPosition
+                + ", mItemDirection=" + mItemDirection
+                + ", mLayoutDirection=" + mLayoutDirection
+                + ", mStartLine=" + mStartLine
+                + ", mEndLine=" + mEndLine
+                + '}';
     }
 }

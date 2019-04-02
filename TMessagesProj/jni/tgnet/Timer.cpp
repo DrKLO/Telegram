@@ -1,9 +1,9 @@
 /*
- * This is the source code of tgnet library v. 1.0
+ * This is the source code of tgnet library v. 1.1
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2015.
+ * Copyright Nikolai Kudashov, 2015-2018.
  */
 
 #include "Timer.h"
@@ -11,8 +11,9 @@
 #include "EventObject.h"
 #include "ConnectionsManager.h"
 
-Timer::Timer(std::function<void()> function) {
+Timer::Timer(int32_t instance, std::function<void()> function) {
     eventObject = new EventObject(this, EventObjectTypeTimer);
+    instanceNum = instance;
     callback = function;
 }
 
@@ -29,7 +30,7 @@ void Timer::start() {
         return;
     }
     started = true;
-    ConnectionsManager::getInstance().scheduleEvent(eventObject, timeout);
+    ConnectionsManager::getInstance(instanceNum).scheduleEvent(eventObject, timeout);
 }
 
 void Timer::stop() {
@@ -37,7 +38,7 @@ void Timer::stop() {
         return;
     }
     started = false;
-    ConnectionsManager::getInstance().removeEvent(eventObject);
+    ConnectionsManager::getInstance(instanceNum).removeEvent(eventObject);
 }
 
 void Timer::setTimeout(uint32_t ms, bool repeat) {
@@ -47,15 +48,15 @@ void Timer::setTimeout(uint32_t ms, bool repeat) {
     repeatable = repeat;
     timeout = ms;
     if (started) {
-        ConnectionsManager::getInstance().removeEvent(eventObject);
-        ConnectionsManager::getInstance().scheduleEvent(eventObject, timeout);
+        ConnectionsManager::getInstance(instanceNum).removeEvent(eventObject);
+        ConnectionsManager::getInstance(instanceNum).scheduleEvent(eventObject, timeout);
     }
 }
 
 void Timer::onEvent() {
     callback();
-    DEBUG_D("timer(%p) call", this);
+    if (LOGS_ENABLED) DEBUG_D("timer(%p) call", this);
     if (started && repeatable && timeout != 0) {
-        ConnectionsManager::getInstance().scheduleEvent(eventObject, timeout);
+        ConnectionsManager::getInstance(instanceNum).scheduleEvent(eventObject, timeout);
     }
 }

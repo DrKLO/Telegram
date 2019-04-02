@@ -1,4 +1,3 @@
-/* crypto/x509/x509_vfy.h */
 /* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
@@ -65,32 +64,19 @@
 #ifndef HEADER_X509_VFY_H
 #define HEADER_X509_VFY_H
 
-#include <openssl/bio.h>
-#include <openssl/lhash.h>
 #include <openssl/thread.h>
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
-#if 0
-/* Outer object */
-typedef struct x509_hash_dir_st
-	{
-	int num_dirs;
-	char **dirs;
-	int *dirs_type;
-	int num_dirs_alloced;
-	} X509_HASH_DIR_CTX;
-#endif
+/* Legacy X.509 library.
+ *
+ * This header is part of OpenSSL's X.509 implementation. It is retained for
+ * compatibility but otherwise underdocumented and not actively maintained. In
+ * the future, a replacement library will be available. Meanwhile, minimize
+ * dependencies on this header where possible. */
 
-typedef struct x509_file_st
-	{
-	int num_paths;	/* number of paths to files or directories */
-	int num_alloced;
-	char **paths;	/* the list of paths or directories */
-	int *path_type;
-	} X509_CERT_FILE_CTX;
 
 /*******************************/
 /*
@@ -110,8 +96,6 @@ The X509_STORE then calls a function to actually verify the
 certificate chain.
 */
 
-#define X509_LU_RETRY		-1
-#define X509_LU_FAIL		0
 #define X509_LU_X509		1
 #define X509_LU_CRL		2
 #define X509_LU_PKEY		3
@@ -128,10 +112,8 @@ typedef struct x509_object_st
 		} data;
 	} X509_OBJECT;
 
-typedef struct x509_lookup_st X509_LOOKUP;
-
-DECLARE_STACK_OF(X509_LOOKUP)
-DECLARE_STACK_OF(X509_OBJECT)
+DEFINE_STACK_OF(X509_LOOKUP)
+DEFINE_STACK_OF(X509_OBJECT)
 
 /* This is a static that defines the function interface */
 typedef struct x509_lookup_method_st
@@ -161,7 +143,7 @@ typedef struct X509_VERIFY_PARAM_ID_st X509_VERIFY_PARAM_ID;
  * parameters used can be customized
  */
 
-typedef struct X509_VERIFY_PARAM_st
+struct X509_VERIFY_PARAM_st
 	{
 	char *name;
 	time_t check_time;	/* Time to use */
@@ -172,9 +154,9 @@ typedef struct X509_VERIFY_PARAM_st
 	int depth;		/* Verify depth */
 	STACK_OF(ASN1_OBJECT) *policies;	/* Permissible policies */
 	X509_VERIFY_PARAM_ID *id;	/* opaque ID data */
-	} X509_VERIFY_PARAM;
+	};
 
-DECLARE_STACK_OF(X509_VERIFY_PARAM)
+DEFINE_STACK_OF(X509_VERIFY_PARAM)
 
 /* This is used to hold everything.  It is used for all certificate
  * validation.  Once we have a certificate chain, the 'verify'
@@ -185,6 +167,7 @@ struct x509_store_st
 	int cache; 	/* if true, stash any hits */
 	STACK_OF(X509_OBJECT) *objs;	/* Cache of all objects */
 	CRYPTO_MUTEX objs_lock;
+	STACK_OF(X509) *additional_untrusted;
 
 	/* These are external lookup methods */
 	STACK_OF(X509_LOOKUP) *get_cert_methods;
@@ -229,7 +212,6 @@ struct x509_lookup_st
 struct x509_store_ctx_st      /* X509_STORE_CTX */
 	{
 	X509_STORE *ctx;
-	int current_method;	/* used when looking up certs */
 
 	/* The following are set by the caller */
 	X509 *cert;		/* The cert to check */
@@ -293,7 +275,7 @@ OPENSSL_EXPORT void X509_STORE_CTX_set_depth(X509_STORE_CTX *ctx, int depth);
 		X509_LOOKUP_ctrl((x),X509_L_ADD_DIR,(name),(long)(type),NULL)
 
 #define		X509_V_OK					0
-/* illegal error (for uninitialized values, to avoid X509_V_OK): 1 */
+#define		X509_V_ERR_UNSPECIFIED				1
 
 #define		X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT		2
 #define		X509_V_ERR_UNABLE_TO_GET_CRL			3
@@ -348,6 +330,7 @@ OPENSSL_EXPORT void X509_STORE_CTX_set_depth(X509_STORE_CTX *ctx, int depth);
 #define		X509_V_ERR_PERMITTED_VIOLATION			47
 #define		X509_V_ERR_EXCLUDED_VIOLATION			48
 #define		X509_V_ERR_SUBTREE_MINMAX			49
+#define		X509_V_ERR_APPLICATION_VERIFICATION		50
 #define		X509_V_ERR_UNSUPPORTED_CONSTRAINT_TYPE		51
 #define		X509_V_ERR_UNSUPPORTED_CONSTRAINT_SYNTAX	52
 #define		X509_V_ERR_UNSUPPORTED_NAME_SYNTAX		53
@@ -366,8 +349,10 @@ OPENSSL_EXPORT void X509_STORE_CTX_set_depth(X509_STORE_CTX *ctx, int depth);
 #define		X509_V_ERR_EMAIL_MISMATCH			63
 #define		X509_V_ERR_IP_ADDRESS_MISMATCH			64
 
-/* The application is not happy */
-#define		X509_V_ERR_APPLICATION_VERIFICATION		50
+/* Caller error */
+#define		X509_V_ERR_INVALID_CALL				65
+/* Issuer lookup error */
+#define		X509_V_ERR_STORE_LOOKUP				66
 
 /* Certificate verify flags */
 
@@ -413,6 +398,11 @@ OPENSSL_EXPORT void X509_STORE_CTX_set_depth(X509_STORE_CTX *ctx, int depth);
 /* Allow partial chains if at least one certificate is in trusted store */
 #define X509_V_FLAG_PARTIAL_CHAIN		0x80000
 
+/* If the initial chain is not trusted, do not attempt to build an alternative
+ * chain. Alternate chain checking was introduced in 1.0.2b. Setting this flag
+ * will force the behaviour to match that of previous versions. */
+#define X509_V_FLAG_NO_ALT_CHAINS		0x100000
+
 #define X509_VP_FLAG_DEFAULT			0x1
 #define X509_VP_FLAG_OVERWRITE			0x2
 #define X509_VP_FLAG_RESET_FLAGS		0x4
@@ -429,17 +419,27 @@ OPENSSL_EXPORT int X509_OBJECT_idx_by_subject(STACK_OF(X509_OBJECT) *h, int type
 	     X509_NAME *name);
 OPENSSL_EXPORT X509_OBJECT *X509_OBJECT_retrieve_by_subject(STACK_OF(X509_OBJECT) *h,int type,X509_NAME *name);
 OPENSSL_EXPORT X509_OBJECT *X509_OBJECT_retrieve_match(STACK_OF(X509_OBJECT) *h, X509_OBJECT *x);
-OPENSSL_EXPORT void X509_OBJECT_up_ref_count(X509_OBJECT *a);
+OPENSSL_EXPORT int X509_OBJECT_up_ref_count(X509_OBJECT *a);
 OPENSSL_EXPORT void X509_OBJECT_free_contents(X509_OBJECT *a);
+OPENSSL_EXPORT int X509_OBJECT_get_type(const X509_OBJECT *a);
+OPENSSL_EXPORT X509 *X509_OBJECT_get0_X509(const X509_OBJECT *a);
 OPENSSL_EXPORT X509_STORE *X509_STORE_new(void );
+OPENSSL_EXPORT int X509_STORE_up_ref(X509_STORE *store);
 OPENSSL_EXPORT void X509_STORE_free(X509_STORE *v);
 
+OPENSSL_EXPORT STACK_OF(X509_OBJECT) *X509_STORE_get0_objects(X509_STORE *st);
 OPENSSL_EXPORT STACK_OF(X509)* X509_STORE_get1_certs(X509_STORE_CTX *st, X509_NAME *nm);
 OPENSSL_EXPORT STACK_OF(X509_CRL)* X509_STORE_get1_crls(X509_STORE_CTX *st, X509_NAME *nm);
 OPENSSL_EXPORT int X509_STORE_set_flags(X509_STORE *ctx, unsigned long flags);
 OPENSSL_EXPORT int X509_STORE_set_purpose(X509_STORE *ctx, int purpose);
 OPENSSL_EXPORT int X509_STORE_set_trust(X509_STORE *ctx, int trust);
 OPENSSL_EXPORT int X509_STORE_set1_param(X509_STORE *ctx, X509_VERIFY_PARAM *pm);
+OPENSSL_EXPORT X509_VERIFY_PARAM *X509_STORE_get0_param(X509_STORE *ctx);
+/* X509_STORE_set0_additional_untrusted sets a stack of additional, untrusted
+ * certificates that are available for chain building. This function does not
+ * take ownership of the stack. */
+OPENSSL_EXPORT void X509_STORE_set0_additional_untrusted(
+    X509_STORE *ctx, STACK_OF(X509) *untrusted);
 
 OPENSSL_EXPORT void X509_STORE_set_verify_cb(X509_STORE *ctx,
 				  int (*verify_cb)(int, X509_STORE_CTX *));
@@ -451,6 +451,7 @@ OPENSSL_EXPORT X509_STORE_CTX *X509_STORE_CTX_new(void);
 
 OPENSSL_EXPORT int X509_STORE_CTX_get1_issuer(X509 **issuer, X509_STORE_CTX *ctx, X509 *x);
 
+OPENSSL_EXPORT void X509_STORE_CTX_zero(X509_STORE_CTX *ctx);
 OPENSSL_EXPORT void X509_STORE_CTX_free(X509_STORE_CTX *ctx);
 OPENSSL_EXPORT int X509_STORE_CTX_init(X509_STORE_CTX *ctx, X509_STORE *store,
 			 X509 *x509, STACK_OF(X509) *chain);
@@ -499,8 +500,8 @@ OPENSSL_EXPORT int	X509_STORE_load_locations (X509_STORE *ctx,
 OPENSSL_EXPORT int	X509_STORE_set_default_paths(X509_STORE *ctx);
 #endif
 
-OPENSSL_EXPORT int X509_STORE_CTX_get_ex_new_index(long argl, void *argp, CRYPTO_EX_new *new_func,
-	CRYPTO_EX_dup *dup_func, CRYPTO_EX_free *free_func);
+OPENSSL_EXPORT int X509_STORE_CTX_get_ex_new_index(long argl, void *argp, CRYPTO_EX_unused *unused,
+	CRYPTO_EX_dup *dup_unused, CRYPTO_EX_free *free_func);
 OPENSSL_EXPORT int	X509_STORE_CTX_set_ex_data(X509_STORE_CTX *ctx,int idx,void *data);
 OPENSSL_EXPORT void *	X509_STORE_CTX_get_ex_data(X509_STORE_CTX *ctx,int idx);
 OPENSSL_EXPORT int	X509_STORE_CTX_get_error(X509_STORE_CTX *ctx);
@@ -514,6 +515,8 @@ OPENSSL_EXPORT STACK_OF(X509) *X509_STORE_CTX_get_chain(X509_STORE_CTX *ctx);
 OPENSSL_EXPORT STACK_OF(X509) *X509_STORE_CTX_get1_chain(X509_STORE_CTX *ctx);
 OPENSSL_EXPORT void	X509_STORE_CTX_set_cert(X509_STORE_CTX *c,X509 *x);
 OPENSSL_EXPORT void	X509_STORE_CTX_set_chain(X509_STORE_CTX *c,STACK_OF(X509) *sk);
+OPENSSL_EXPORT STACK_OF(X509) *
+    X509_STORE_CTX_get0_untrusted(X509_STORE_CTX *ctx);
 OPENSSL_EXPORT void	X509_STORE_CTX_set0_crls(X509_STORE_CTX *c,STACK_OF(X509_CRL) *sk);
 OPENSSL_EXPORT int X509_STORE_CTX_set_purpose(X509_STORE_CTX *ctx, int purpose);
 OPENSSL_EXPORT int X509_STORE_CTX_set_trust(X509_STORE_CTX *ctx, int trust);
@@ -609,4 +612,3 @@ OPENSSL_EXPORT const X509_POLICY_NODE *
 }
 #endif
 #endif
-

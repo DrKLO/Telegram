@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -34,7 +34,7 @@ public class SpannableStringLight extends SpannableString {
             mSpanDataOverride = (int[]) mSpanDataField.get(this);
             mSpanCountOverride = (int) mSpanCountField.get(this);
         } catch (Throwable e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 
@@ -50,7 +50,7 @@ public class SpannableStringLight extends SpannableString {
             mSpanDataField.set(this, mSpanDataOverride);
             mSpanCountField.set(this, mSpanCountOverride);
         } catch (Throwable e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 
@@ -66,7 +66,7 @@ public class SpannableStringLight extends SpannableString {
                 mSpanCountField = SpannableString.class.getSuperclass().getDeclaredField("mSpanCount");
                 mSpanCountField.setAccessible(true);
             } catch (Throwable e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
             fieldsAvailable = true;
         }

@@ -63,11 +63,11 @@
 #if !defined(OPENSSL_WINDOWS)
 #include <unistd.h>
 #else
-#pragma warning(push, 3)
+OPENSSL_MSVC_PRAGMA(warning(push, 3))
 #include <winsock2.h>
-#pragma warning(pop)
+OPENSSL_MSVC_PRAGMA(warning(pop))
 
-#pragma comment(lib, "Ws2_32.lib")
+OPENSSL_MSVC_PRAGMA(comment(lib, "Ws2_32.lib"))
 #endif
 
 #include "internal.h"
@@ -110,7 +110,11 @@ static int sock_read(BIO *b, char *out, int outl) {
   }
 
   bio_clear_socket_error();
+#if defined(OPENSSL_WINDOWS)
   ret = recv(b->num, out, outl, 0);
+#else
+  ret = read(b->num, out, outl);
+#endif
   BIO_clear_retry_flags(b);
   if (ret <= 0) {
     if (bio_fd_should_retry(ret)) {
@@ -124,7 +128,11 @@ static int sock_write(BIO *b, const char *in, int inl) {
   int ret;
 
   bio_clear_socket_error();
+#if defined(OPENSSL_WINDOWS)
   ret = send(b->num, in, inl, 0);
+#else
+  ret = write(b->num, in, inl);
+#endif
   BIO_clear_retry_flags(b);
   if (ret <= 0) {
     if (bio_fd_should_retry(ret)) {
@@ -132,10 +140,6 @@ static int sock_write(BIO *b, const char *in, int inl) {
     }
   }
   return ret;
-}
-
-static int sock_puts(BIO *bp, const char *str) {
-  return sock_write(bp, str, strlen(str));
 }
 
 static long sock_ctrl(BIO *b, int cmd, long num, void *ptr) {
@@ -177,8 +181,11 @@ static long sock_ctrl(BIO *b, int cmd, long num, void *ptr) {
 }
 
 static const BIO_METHOD methods_sockp = {
-    BIO_TYPE_SOCKET,  "socket",  sock_write, sock_read, sock_puts,
-    NULL /* gets, */, sock_ctrl, sock_new,   sock_free, NULL,
+    BIO_TYPE_SOCKET, "socket",
+    sock_write,      sock_read,
+    NULL /* puts */, NULL /* gets, */,
+    sock_ctrl,       sock_new,
+    sock_free,       NULL /* callback_ctrl */,
 };
 
 const BIO_METHOD *BIO_s_socket(void) { return &methods_sockp; }

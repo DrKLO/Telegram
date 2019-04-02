@@ -72,6 +72,9 @@ public class PhoneFormat {
     }
 
     public static String stripExceptNumbers(String str, boolean includePlus) {
+        if (str == null) {
+            return null;
+        }
         StringBuilder res = new StringBuilder(str);
         String phoneChars = "0123456789";
         if (includePlus) {
@@ -120,14 +123,14 @@ public class PhoneFormat {
                     bos.close();
                 }
             } catch (Exception e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
             try {
                 if (stream != null) {
                     stream.close();
                 }
             } catch (Exception e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
         }
 
@@ -182,41 +185,47 @@ public class PhoneFormat {
         if (!initialzed) {
             return orig;
         }
-        String str = strip(orig);
+        try {
+            String str = strip(orig);
 
-        if (str.startsWith("+")) {
-            String rest = str.substring(1);
-            CallingCodeInfo info = findCallingCodeInfo(rest);
-            if (info != null) {
-                String phone = info.format(rest);
-                return "+" +  phone;
-            } else {
-                return orig;
-            }
-        } else {
-            CallingCodeInfo info = callingCodeInfo(defaultCallingCode);
-            if (info == null) {
-                return orig;
-            }
-
-            String accessCode = info.matchingAccessCode(str);
-            if (accessCode != null) {
-                String rest = str.substring(accessCode.length());
-                String phone = rest;
-                CallingCodeInfo info2 = findCallingCodeInfo(rest);
-                if (info2 != null) {
-                    phone = info2.format(rest);
-                }
-
-                if (phone.length() == 0) {
-                    return accessCode;
+            if (str.startsWith("+")) {
+                String rest = str.substring(1);
+                CallingCodeInfo info = findCallingCodeInfo(rest);
+                if (info != null) {
+                    String phone = info.format(rest);
+                    return "+" + phone;
                 } else {
-                    return String.format("%s %s", accessCode, phone);
+                    return orig;
                 }
             } else {
-                return info.format(str);
+                CallingCodeInfo info = callingCodeInfo(defaultCallingCode);
+                if (info == null) {
+                    return orig;
+                }
+
+                String accessCode = info.matchingAccessCode(str);
+                if (accessCode != null) {
+                    String rest = str.substring(accessCode.length());
+                    String phone = rest;
+                    CallingCodeInfo info2 = findCallingCodeInfo(rest);
+                    if (info2 != null) {
+                        phone = info2.format(rest);
+                    }
+
+                    if (phone.length() == 0) {
+                        return accessCode;
+                    } else {
+                        return String.format("%s %s", accessCode, phone);
+                    }
+                } else {
+                    return info.format(str);
+                }
             }
+        } catch (Exception e) {
+            FileLog.e(e);
+            return orig;
         }
+
     }
 
     public boolean isPhoneNumberValid(String phoneNumber) {

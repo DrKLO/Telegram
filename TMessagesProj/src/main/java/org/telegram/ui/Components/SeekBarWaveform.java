@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -21,13 +21,13 @@ public class SeekBarWaveform {
 
     private static Paint paintInner;
     private static Paint paintOuter;
-    public int thumbX = 0;
-    public int thumbDX = 0;
+    private int thumbX = 0;
+    private int thumbDX = 0;
     private float startX;
     private boolean startDraging = false;
     private boolean pressed = false;
-    public int width;
-    public int height;
+    private int width;
+    private int height;
     private SeekBar.SeekBarDelegate delegate;
     private byte[] waveformBytes;
     private MessageObject messageObject;
@@ -103,7 +103,7 @@ public class SeekBarWaveform {
                     }
                 }
                 if (startX != -1 && Math.abs(x - startX) > AndroidUtilities.getPixelsInCM(0.2f, true)) {
-                    if (parentView != null) {
+                    if (parentView != null && parentView.getParent() != null) {
                         parentView.getParent().requestDisallowInterceptTouchEvent(true);
                     }
                     startDraging = true;
@@ -128,6 +128,11 @@ public class SeekBarWaveform {
         return pressed;
     }
 
+    public void setSize(int w, int h) {
+        width = w;
+        height = h;
+    }
+
     public void draw(Canvas canvas) {
         if (waveformBytes == null || width == 0) {
             return;
@@ -142,7 +147,7 @@ public class SeekBarWaveform {
         float barCounter = 0;
         int nextBarNum = 0;
 
-        paintInner.setColor(messageObject != null && !messageObject.isOutOwner() && messageObject.isContentUnread() && messageObject.messageOwner.to_id.channel_id == 0 ? outerColor : (selected ? selectedColor : innerColor));
+        paintInner.setColor(messageObject != null && !messageObject.isOutOwner() && messageObject.isContentUnread() ? outerColor : (selected ? selectedColor : innerColor));
         paintOuter.setColor(outerColor);
 
         int y = (height - AndroidUtilities.dp(14)) / 2;
@@ -168,7 +173,7 @@ public class SeekBarWaveform {
             int currentByteCount = 8 - byteBitOffset;
             int nextByteRest = 5 - currentByteCount;
             value = (byte) ((waveformBytes[byteNum] >> byteBitOffset) & ((2 << (Math.min(5, currentByteCount) - 1)) - 1));
-            if (nextByteRest > 0) {
+            if (nextByteRest > 0 && byteNum + 1 < waveformBytes.length) {
                 value <<= nextByteRest;
                 value |= waveformBytes[byteNum + 1] & ((2 << (nextByteRest - 1)) - 1);
             }

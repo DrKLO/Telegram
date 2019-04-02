@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x
+ * This is the source code of Telegram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.os.Build;
 import android.view.MotionEvent;
 import android.widget.FrameLayout;
 
@@ -82,6 +83,7 @@ public class PhotoFilterBlurControl extends FrameLayout {
 
     public void setType(int blurType) {
         type = blurType;
+        invalidate();
     }
 
     public void setDelegate(PhotoFilterLinearBlurControlDelegate delegate) {
@@ -486,7 +488,7 @@ public class PhotoFilterBlurControl extends FrameLayout {
     }
 
     private Point getActualCenterPoint() {
-        return new Point((getWidth() - actualAreaSize.width) / 2 + centerPoint.x * actualAreaSize.width, (getHeight() - actualAreaSize.height) / 2 - (actualAreaSize.width - actualAreaSize.height) / 2 + centerPoint.y * actualAreaSize.width);
+        return new Point((getWidth() - actualAreaSize.width) / 2 + centerPoint.x * actualAreaSize.width, (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0) + (getHeight() - actualAreaSize.height) / 2 - (actualAreaSize.width - actualAreaSize.height) / 2 + centerPoint.y * actualAreaSize.width);
     }
 
     private float getActualInnerRadius() {

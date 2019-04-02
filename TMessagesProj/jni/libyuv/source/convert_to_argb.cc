@@ -23,7 +23,7 @@ namespace libyuv {
 extern "C" {
 #endif
 
-// Convert camera sample to I420 with cropping, rotation and vertical flip.
+// Convert camera sample to ARGB with cropping, rotation and vertical flip.
 // src_width is used for source stride computation
 // src_height is used to compute location of planes, and indicate inversion
 // sample_size is measured in bytes and is the size of the frame.
@@ -51,8 +51,8 @@ int ConvertToARGB(const uint8* sample, size_t sample_size,
   // also enable temporary buffer.
   LIBYUV_BOOL need_buf = (rotation && format != FOURCC_ARGB) ||
       crop_argb == sample;
-  uint8* tmp_argb = crop_argb;
-  int tmp_argb_stride = argb_stride;
+  uint8* dest_argb = crop_argb;
+  int dest_argb_stride = argb_stride;
   uint8* rotate_buffer = NULL;
   int abs_crop_height = (crop_height < 0) ? -crop_height : crop_height;
 
@@ -66,13 +66,13 @@ int ConvertToARGB(const uint8* sample, size_t sample_size,
   }
 
   if (need_buf) {
-    int argb_size = crop_width * abs_crop_height * 4;
+    int argb_size = crop_width * 4 * abs_crop_height;
     rotate_buffer = (uint8*)malloc(argb_size);
     if (!rotate_buffer) {
       return 1;  // Out of memory runtime error.
     }
     crop_argb = rotate_buffer;
-    argb_stride = crop_width;
+    argb_stride = crop_width * 4;
   }
 
   switch (format) {
@@ -176,7 +176,6 @@ int ConvertToARGB(const uint8* sample, size_t sample_size,
       break;
     // Triplanar formats
     case FOURCC_I420:
-    case FOURCC_YU12:
     case FOURCC_YV12: {
       const uint8* src_y = sample + (src_width * crop_y + crop_x);
       const uint8* src_u;
@@ -291,7 +290,7 @@ int ConvertToARGB(const uint8* sample, size_t sample_size,
   if (need_buf) {
     if (!r) {
       r = ARGBRotate(crop_argb, argb_stride,
-                     tmp_argb, tmp_argb_stride,
+                     dest_argb, dest_argb_stride,
                      crop_width, abs_crop_height, rotation);
     }
     free(rotate_buffer);

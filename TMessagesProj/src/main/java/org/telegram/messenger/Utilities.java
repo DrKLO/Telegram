@@ -1,15 +1,18 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.messenger;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,13 +25,13 @@ import java.util.regex.Pattern;
 
 public class Utilities {
 
-    public static Pattern pattern = Pattern.compile("[0-9]+");
+    public static Pattern pattern = Pattern.compile("[\\-0-9]+");
     public static SecureRandom random = new SecureRandom();
 
     public static volatile DispatchQueue stageQueue = new DispatchQueue("stageQueue");
     public static volatile DispatchQueue globalQueue = new DispatchQueue("globalQueue");
     public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
-    public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("photoBookQueue");
+    public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("phoneBookQueue");
 
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -41,22 +44,52 @@ public class Utilities {
             sUrandomIn.close();
             random.setSeed(buffer);
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 
-    public native static void loadBitmap(String path, Bitmap bitmap, int scale, int width, int height, int stride);
     public native static int pinBitmap(Bitmap bitmap);
-    public native static int unpinBitmap(Bitmap bitmap);
+    public native static void unpinBitmap(Bitmap bitmap);
     public native static void blurBitmap(Object bitmap, int radius, int unpin, int width, int height, int stride);
+    public native static int needInvert(Object bitmap, int unpin, int width, int height, int stride);
     public native static void calcCDT(ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer);
     public native static boolean loadWebpImage(Bitmap bitmap, ByteBuffer buffer, int len, BitmapFactory.Options options, boolean unpin);
     public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding, int swap);
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
+    public native static void aesCtrDecryption(ByteBuffer buffer, byte[] key, byte[] iv, int offset, int length);
+    public native static void aesCtrDecryptionByteArray(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n);
+    private native static void aesCbcEncryptionByteArray(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n, int encrypt);
+    public native static void aesCbcEncryption(ByteBuffer buffer, byte[] key, byte[] iv, int offset, int length, int encrypt);
     public native static String readlink(String path);
+    public native static long getDirSize(String path, int docType);
+    public native static void clearDir(String path, int docType, long time);
+    private native static int pbkdf2(byte[] password, byte[] salt, byte[] dst, int iterations);
+    public native static int argon2(int iterations);
+    public static native void stackBlurBitmap(Bitmap bitmap, int radius);
+
+    public static Bitmap blurWallpaper(Bitmap src) {
+        if (src == null) {
+            return null;
+        }
+        Bitmap b;
+        if (src.getHeight() > src.getWidth()) {
+            b = Bitmap.createBitmap(Math.round(450f * src.getWidth() / src.getHeight()), 450, Bitmap.Config.ARGB_8888);
+        } else {
+            b = Bitmap.createBitmap(450, Math.round(450f * src.getHeight() / src.getWidth()), Bitmap.Config.ARGB_8888);
+        }
+        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        Rect rect = new Rect(0, 0, b.getWidth(), b.getHeight());
+        new Canvas(b).drawBitmap(src, null, rect, paint);
+        stackBlurBitmap(b, 12);
+        return b;
+    }
 
     public static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, boolean changeIv, int offset, int length) {
         aesIgeEncryption(buffer, key, changeIv ? iv : iv.clone(), encrypt, offset, length);
+    }
+
+    public static void aesCbcEncryptionByteArraySafe(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n, int encrypt) {
+        aesCbcEncryptionByteArray(buffer, key, iv.clone(), offset, length, n, encrypt);
     }
 
     public static Integer parseInt(String value) {
@@ -71,7 +104,7 @@ public class Utilities {
                 val = Integer.parseInt(num);
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return val;
     }
@@ -88,7 +121,7 @@ public class Utilities {
                 val = Long.parseLong(num);
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return val;
     }
@@ -178,11 +211,11 @@ public class Utilities {
     }
 
     public static boolean isGoodGaAndGb(BigInteger g_a, BigInteger p) {
-        return !(g_a.compareTo(BigInteger.valueOf(1)) != 1 || g_a.compareTo(p.subtract(BigInteger.valueOf(1))) != -1);
+        return !(g_a.compareTo(BigInteger.valueOf(1)) <= 0 || g_a.compareTo(p.subtract(BigInteger.valueOf(1))) >= 0);
     }
 
     public static boolean arraysEquals(byte[] arr1, int offset1, byte[] arr2, int offset2) {
-        if (arr1 == null || arr2 == null || offset1 < 0 || offset2 < 0 || arr1.length - offset1 != arr2.length - offset2 || arr1.length - offset1 < 0 || arr2.length - offset2 < 0) {
+        if (arr1 == null || arr2 == null || offset1 < 0 || offset2 < 0 || arr1.length - offset1 > arr2.length - offset2 || arr1.length - offset1 < 0 || arr2.length - offset2 < 0) {
             return false;
         }
         boolean result = true;
@@ -200,7 +233,7 @@ public class Utilities {
             md.update(convertme, offset, len);
             return md.digest();
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return new byte[20];
     }
@@ -215,7 +248,7 @@ public class Utilities {
             md.update(convertme);
             return md.digest();
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         } finally {
             convertme.limit(oldl);
             convertme.position(oldp);
@@ -231,20 +264,102 @@ public class Utilities {
         return computeSHA1(convertme, 0, convertme.length);
     }
 
+    public static byte[] computeSHA256(byte[] convertme) {
+        return computeSHA256(convertme, 0, convertme.length);
+    }
+
     public static byte[] computeSHA256(byte[] convertme, int offset, int len) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             md.update(convertme, offset, len);
             return md.digest();
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
-        return null;
+        return new byte[32];
+    }
+
+    public static byte[] computeSHA256(byte[]... args) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            for (int a = 0; a < args.length; a++) {
+                md.update(args[a], 0, args[a].length);
+            }
+            return md.digest();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return new byte[32];
+    }
+
+    public static byte[] computeSHA512(byte[] convertme) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
+            md.update(convertme, 0, convertme.length);
+            return md.digest();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return new byte[64];
+    }
+
+    public static byte[] computeSHA512(byte[] convertme, byte[] convertme2) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
+            md.update(convertme, 0, convertme.length);
+            md.update(convertme2, 0, convertme2.length);
+            return md.digest();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return new byte[64];
+    }
+
+    public static byte[] computePBKDF2(byte[] password, byte[] salt) {
+        byte[] dst = new byte[64];
+        Utilities.pbkdf2(password, salt, dst, 100000);
+        return dst;
+    }
+
+    public static byte[] computeSHA512(byte[] convertme, byte[] convertme2, byte[] convertme3) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
+            md.update(convertme, 0, convertme.length);
+            md.update(convertme2, 0, convertme2.length);
+            md.update(convertme3, 0, convertme3.length);
+            return md.digest();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return new byte[64];
+    }
+
+    public static byte[] computeSHA256(byte[] b1, int o1, int l1, ByteBuffer b2, int o2, int l2) {
+        int oldp = b2.position();
+        int oldl = b2.limit();
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(b1, o1, l1);
+            b2.position(o2);
+            b2.limit(l2);
+            md.update(b2);
+            return md.digest();
+        } catch (Exception e) {
+            FileLog.e(e);
+        } finally {
+            b2.limit(oldl);
+            b2.position(oldp);
+        }
+        return new byte[32];
     }
 
     public static long bytesToLong(byte[] bytes) {
         return ((long) bytes[7] << 56) + (((long) bytes[6] & 0xFF) << 48) + (((long) bytes[5] & 0xFF) << 40) + (((long) bytes[4] & 0xFF) << 32)
                 + (((long) bytes[3] & 0xFF) << 24) + (((long) bytes[2] & 0xFF) << 16) + (((long) bytes[1] & 0xFF) << 8) + ((long) bytes[0] & 0xFF);
+    }
+
+    public static int bytesToInt(byte[] bytes) {
+        return (((int) bytes[3] & 0xFF) << 24) + (((int) bytes[2] & 0xFF) << 16) + (((int) bytes[1] & 0xFF) << 8) + ((int) bytes[0] & 0xFF);
     }
 
     public static String MD5(String md5) {
@@ -253,14 +368,14 @@ public class Utilities {
         }
         try {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-            byte[] array = md.digest(md5.getBytes());
+            byte[] array = md.digest(AndroidUtilities.getStringBytes(md5));
             StringBuilder sb = new StringBuilder();
-            for (byte anArray : array) {
-                sb.append(Integer.toHexString((anArray & 0xFF) | 0x100).substring(1, 3));
+            for (int a = 0; a < array.length; a++) {
+                sb.append(Integer.toHexString((array[a] & 0xFF) | 0x100).substring(1, 3));
             }
             return sb.toString();
         } catch (java.security.NoSuchAlgorithmException e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return null;
     }

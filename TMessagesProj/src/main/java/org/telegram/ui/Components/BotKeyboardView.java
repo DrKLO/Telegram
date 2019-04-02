@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -18,8 +18,8 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
-import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 
@@ -32,9 +32,10 @@ public class BotKeyboardView extends LinearLayout {
     private boolean isFullSize;
     private int buttonHeight;
     private ArrayList<TextView> buttonViews = new ArrayList<>();
+    private ScrollView scrollView;
 
     public interface BotKeyboardViewDelegate {
-        void didPressedButton(CharSequence text);
+        void didPressedButton(TLRPC.KeyboardButton button);
     }
 
     public BotKeyboardView(Context context) {
@@ -42,13 +43,14 @@ public class BotKeyboardView extends LinearLayout {
 
         setOrientation(VERTICAL);
 
-        ScrollView scrollView = new ScrollView(context);
+        scrollView = new ScrollView(context);
         addView(scrollView);
         container = new LinearLayout(context);
         container.setOrientation(VERTICAL);
         scrollView.addView(container);
+        AndroidUtilities.setScrollViewEdgeEffectColor(scrollView, Theme.getColor(Theme.key_chat_emojiPanelBackground));
 
-        setBackgroundColor(0xfff5f6f7);
+        setBackgroundColor(Theme.getColor(Theme.key_chat_emojiPanelBackground));
     }
 
     public void setDelegate(BotKeyboardViewDelegate botKeyboardViewDelegate) {
@@ -86,6 +88,7 @@ public class BotKeyboardView extends LinearLayout {
         botButtons = buttons;
         container.removeAllViews();
         buttonViews.clear();
+        scrollView.scrollTo(0, 0);
 
         if (buttons != null && botButtons.rows.size() != 0) {
             isFullSize = !buttons.resize;
@@ -99,19 +102,20 @@ public class BotKeyboardView extends LinearLayout {
 
                 float weight = 1.0f / row.buttons.size();
                 for (int b = 0; b < row.buttons.size(); b++) {
-                    TLRPC.TL_keyboardButton button = row.buttons.get(b);
+                    TLRPC.KeyboardButton button = row.buttons.get(b);
                     TextView textView = new TextView(getContext());
-                    textView.setTextColor(0xff36474f);
+                    textView.setTag(button);
+                    textView.setTextColor(Theme.getColor(Theme.key_chat_botKeyboardButtonText));
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     textView.setGravity(Gravity.CENTER);
-                    textView.setBackgroundResource(R.drawable.bot_keyboard_states);
+                    textView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_chat_botKeyboardButtonBackground), Theme.getColor(Theme.key_chat_botKeyboardButtonBackgroundPressed)));
                     textView.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
                     textView.setText(Emoji.replaceEmoji(button.text, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false));
                     layout.addView(textView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, weight, 0, 0, b != row.buttons.size() - 1 ? 10 : 0, 0));
                     textView.setOnClickListener(new OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            delegate.didPressedButton(((TextView) v).getText());
+                            delegate.didPressedButton((TLRPC.KeyboardButton) v.getTag());
                         }
                     });
                     buttonViews.add(textView);

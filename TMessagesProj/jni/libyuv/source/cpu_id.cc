@@ -10,12 +10,12 @@
 
 #include "libyuv/cpu_id.h"
 
-#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_MSC_VER)
 #include <intrin.h>  // For __cpuidex()
 #endif
 #if !defined(__pnacl__) && !defined(__CLR_VER) && \
     !defined(__native_client__) && (defined(_M_IX86) || defined(_M_X64)) && \
-    defined(_MSC_VER) && !defined(__clang__) && (_MSC_FULL_VER >= 160040219)
+    defined(_MSC_FULL_VER) && (_MSC_FULL_VER >= 160040219)
 #include <immintrin.h>  // For _xgetbv()
 #endif
 
@@ -36,7 +36,8 @@ extern "C" {
 
 // For functions that use the stack and have runtime checks for overflow,
 // use SAFEBUFFERS to avoid additional check.
-#if (defined(_MSC_VER) && !defined(__clang__)) && (_MSC_FULL_VER >= 160040219)
+#if defined(_MSC_FULL_VER) && (_MSC_FULL_VER >= 160040219) && \
+    !defined(__clang__)
 #define SAFEBUFFERS __declspec(safebuffers)
 #else
 #define SAFEBUFFERS
@@ -48,9 +49,9 @@ extern "C" {
     !defined(__pnacl__) && !defined(__CLR_VER)
 LIBYUV_API
 void CpuId(uint32 info_eax, uint32 info_ecx, uint32* cpu_info) {
-#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_MSC_VER)
 // Visual C version uses intrinsic or inline x86 assembly.
-#if (_MSC_FULL_VER >= 160040219)
+#if defined(_MSC_FULL_VER) && (_MSC_FULL_VER >= 160040219)
   __cpuidex((int*)(cpu_info), info_eax, info_ecx);
 #elif defined(_M_IX86)
   __asm {
@@ -71,7 +72,7 @@ void CpuId(uint32 info_eax, uint32 info_ecx, uint32* cpu_info) {
   }
 #endif
 // GCC version uses inline x86 assembly.
-#else  // defined(_MSC_VER) && !defined(__clang__)
+#else  // defined(_MSC_VER)
   uint32 info_ebx, info_edx;
   asm volatile (
 #if defined( __i386__) && defined(__PIC__)
@@ -89,7 +90,7 @@ void CpuId(uint32 info_eax, uint32 info_ecx, uint32* cpu_info) {
   cpu_info[1] = info_ebx;
   cpu_info[2] = info_ecx;
   cpu_info[3] = info_edx;
-#endif  // defined(_MSC_VER) && !defined(__clang__)
+#endif  // defined(_MSC_VER)
 }
 #else  // (defined(_M_IX86) || defined(_M_X64) ...
 LIBYUV_API
@@ -117,7 +118,7 @@ void CpuId(uint32 eax, uint32 ecx, uint32* cpu_info) {
 // X86 CPUs have xgetbv to detect OS saves high parts of ymm registers.
 int GetXCR0() {
   uint32 xcr0 = 0u;
-#if (_MSC_FULL_VER >= 160040219)
+#if defined(_MSC_FULL_VER) && (_MSC_FULL_VER >= 160040219)
   xcr0 = (uint32)(_xgetbv(0));  // VS2010 SP1 required.
 #elif defined(__i386__) || defined(__x86_64__)
   asm(".byte 0x0f, 0x01, 0xd0" : "=a" (xcr0) : "c" (0) : "%edx");
@@ -251,15 +252,11 @@ int InitCpuFlags(void) {
 #endif
 #if defined(__mips__) && defined(__linux__)
 #if defined(__mips_dspr2)
-  cpu_info |= kCpuHasMIPS_DSPR2;
+  cpu_info |= kCpuHasDSPR2;
 #endif
   cpu_info |= kCpuHasMIPS;
-
-  if (getenv("LIBYUV_DISABLE_MIPS")) {
-    cpu_info &= ~kCpuHasMIPS;
-  }
-  if (getenv("LIBYUV_DISABLE_MIPS_DSPR2")) {
-    cpu_info &= ~kCpuHasMIPS_DSPR2;
+  if (getenv("LIBYUV_DISABLE_DSPR2")) {
+    cpu_info &= ~kCpuHasDSPR2;
   }
 #endif
 #if defined(__arm__) || defined(__aarch64__)

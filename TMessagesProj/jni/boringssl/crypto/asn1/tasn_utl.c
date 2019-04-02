@@ -56,6 +56,7 @@
 
 #include <openssl/asn1.h>
 
+#include <assert.h>
 #include <string.h>
 
 #include <openssl/asn1t.h>
@@ -70,7 +71,7 @@
 /* Utility functions for manipulating fields and offsets */
 
 /* Add 'offset' to 'addr' */
-#define offset2ptr(addr, offset) (void *)(((char *) addr) + offset)
+#define offset2ptr(addr, offset) (void *)(((char *)(addr)) + (offset))
 
 /* Given an ASN1_ITEM CHOICE type return the selector value */
 int asn1_get_choice_selector(ASN1_VALUE **pval, const ASN1_ITEM *it) {
@@ -134,6 +135,8 @@ void asn1_enc_init(ASN1_VALUE **pval, const ASN1_ITEM *it) {
   if (enc) {
     enc->enc = NULL;
     enc->len = 0;
+    enc->alias_only = 0;
+    enc->alias_only_on_next_parse = 0;
     enc->modified = 1;
   }
 }
@@ -142,11 +145,13 @@ void asn1_enc_free(ASN1_VALUE **pval, const ASN1_ITEM *it) {
   ASN1_ENCODING *enc;
   enc = asn1_get_enc_ptr(pval, it);
   if (enc) {
-    if (enc->enc) {
+    if (enc->enc && !enc->alias_only) {
       OPENSSL_free(enc->enc);
     }
     enc->enc = NULL;
     enc->len = 0;
+    enc->alias_only = 0;
+    enc->alias_only_on_next_parse = 0;
     enc->modified = 1;
   }
 }
@@ -159,14 +164,23 @@ int asn1_enc_save(ASN1_VALUE **pval, const unsigned char *in, int inlen,
     return 1;
   }
 
-  if (enc->enc) {
+  if (!enc->alias_only) {
     OPENSSL_free(enc->enc);
   }
-  enc->enc = OPENSSL_malloc(inlen);
-  if (!enc->enc) {
-    return 0;
+
+  enc->alias_only = enc->alias_only_on_next_parse;
+  enc->alias_only_on_next_parse = 0;
+
+  if (enc->alias_only) {
+    enc->enc = (uint8_t *) in;
+  } else {
+    enc->enc = OPENSSL_malloc(inlen);
+    if (!enc->enc) {
+      return 0;
+    }
+    OPENSSL_memcpy(enc->enc, in, inlen);
   }
-  memcpy(enc->enc, in, inlen);
+
   enc->len = inlen;
   enc->modified = 0;
 
@@ -181,7 +195,7 @@ int asn1_enc_restore(int *len, unsigned char **out, ASN1_VALUE **pval,
     return 0;
   }
   if (out) {
-    memcpy(*out, enc->enc, enc->len);
+    OPENSSL_memcpy(*out, enc->enc, enc->len);
     *out += enc->len;
   }
   if (len) {
@@ -222,7 +236,7 @@ const ASN1_TEMPLATE *asn1_do_adb(ASN1_VALUE **pval, const ASN1_TEMPLATE *tt,
   sfld = offset2ptr(*pval, adb->offset);
 
   /* Check if NULL */
-  if (!sfld) {
+  if (*sfld == NULL) {
     if (!adb->null_tt) {
       goto err;
     }

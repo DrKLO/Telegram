@@ -39,12 +39,13 @@ int ConvertToI420(const uint8* sample,
   int aligned_src_width = (src_width + 1) & ~1;
   const uint8* src;
   const uint8* src_uv;
-  int abs_src_height = (src_height < 0) ? -src_height : src_height;
-  int inv_crop_height = (crop_height < 0) ? -crop_height : crop_height;
+  const int abs_src_height = (src_height < 0) ? -src_height : src_height;
+  // TODO(nisse): Why allow crop_height < 0?
+  const int abs_crop_height = (crop_height < 0) ? -crop_height : crop_height;
   int r = 0;
   LIBYUV_BOOL need_buf = (rotation && format != FOURCC_I420 &&
       format != FOURCC_NV12 && format != FOURCC_NV21 &&
-      format != FOURCC_YU12 && format != FOURCC_YV12) || y == sample;
+      format != FOURCC_YV12) || y == sample;
   uint8* tmp_y = y;
   uint8* tmp_u = u;
   uint8* tmp_v = v;
@@ -52,15 +53,13 @@ int ConvertToI420(const uint8* sample,
   int tmp_u_stride = u_stride;
   int tmp_v_stride = v_stride;
   uint8* rotate_buffer = NULL;
-  int abs_crop_height = (crop_height < 0) ? -crop_height : crop_height;
+  const int inv_crop_height =
+      (src_height < 0) ? -abs_crop_height : abs_crop_height;
 
   if (!y || !u || !v || !sample ||
       src_width <= 0 || crop_width <= 0  ||
       src_height == 0 || crop_height == 0) {
     return -1;
-  }
-  if (src_height < 0) {
-    inv_crop_height = -inv_crop_height;
   }
 
   // One pass rotation is available for some formats. For the rest, convert
@@ -214,7 +213,6 @@ int ConvertToI420(const uint8* sample,
       break;
     // Triplanar formats
     case FOURCC_I420:
-    case FOURCC_YU12:
     case FOURCC_YV12: {
       const uint8* src_y = sample + (src_width * crop_y + crop_x);
       const uint8* src_u;

@@ -1,22 +1,22 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.tgnet;
 
+import android.util.SparseArray;
+
 import org.telegram.messenger.FileLog;
 
-import java.util.HashMap;
-
 public class TLClassStore {
-    private HashMap<Integer, Class> classStore;
+    private SparseArray<Class> classStore;
 
     public TLClassStore() {
-        classStore = new HashMap<>();
+        classStore = new SparseArray<>();
 
         classStore.put(TLRPC.TL_error.constructor, TLRPC.TL_error.class);
         classStore.put(TLRPC.TL_decryptedMessageService.constructor, TLRPC.TL_decryptedMessageService.class);
@@ -24,9 +24,11 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_config.constructor, TLRPC.TL_config.class);
         classStore.put(TLRPC.TL_decryptedMessageLayer.constructor, TLRPC.TL_decryptedMessageLayer.class);
         classStore.put(TLRPC.TL_decryptedMessage_layer17.constructor, TLRPC.TL_decryptedMessage.class);
+        classStore.put(TLRPC.TL_decryptedMessage_layer45.constructor, TLRPC.TL_decryptedMessage_layer45.class);
         classStore.put(TLRPC.TL_decryptedMessageService_layer8.constructor, TLRPC.TL_decryptedMessageService_layer8.class);
         classStore.put(TLRPC.TL_decryptedMessage_layer8.constructor, TLRPC.TL_decryptedMessage_layer8.class);
         classStore.put(TLRPC.TL_message_secret.constructor, TLRPC.TL_message_secret.class);
+        classStore.put(TLRPC.TL_message_secret_layer72.constructor, TLRPC.TL_message_secret_layer72.class);
         classStore.put(TLRPC.TL_message_secret_old.constructor, TLRPC.TL_message_secret_old.class);
         classStore.put(TLRPC.TL_messageEncryptedAction.constructor, TLRPC.TL_messageEncryptedAction.class);
         classStore.put(TLRPC.TL_null.constructor, TLRPC.TL_null.class);
@@ -56,7 +58,7 @@ public class TLClassStore {
             try {
                 response = (TLObject) objClass.newInstance();
             } catch (Throwable e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
                 return null;
             }
             response.readParams(stream, exception);

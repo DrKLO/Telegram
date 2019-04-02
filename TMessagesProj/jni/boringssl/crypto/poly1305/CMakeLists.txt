@@ -1,4 +1,4 @@
-include_directories(. .. ../../include)
+include_directories(../../include)
 
 if (${ARCH} STREQUAL "arm")
   set(

@@ -255,11 +255,11 @@ void MirrorPlane(const uint8* src_y, int src_stride_y,
   }
 #endif
 // TODO(fbarchard): Mirror on mips handle unaligned memory.
-#if defined(HAS_MIRRORROW_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) &&
+#if defined(HAS_MIRRORROW_DSPR2)
+  if (TestCpuFlag(kCpuHasDSPR2) &&
       IS_ALIGNED(src_y, 4) && IS_ALIGNED(src_stride_y, 4) &&
       IS_ALIGNED(dst_y, 4) && IS_ALIGNED(dst_stride_y, 4)) {
-    MirrorRow = MirrorRow_MIPS_DSPR2;
+    MirrorRow = MirrorRow_DSPR2;
   }
 #endif
 
@@ -677,7 +677,7 @@ int I420Blend(const uint8* src_y0, int src_stride_y0,
 
 #if defined(HAS_BLENDPLANEROW_SSSE3)
   if (TestCpuFlag(kCpuHasSSSE3)) {
-  BlendPlaneRow = BlendPlaneRow_Any_SSSE3;
+    BlendPlaneRow = BlendPlaneRow_Any_SSSE3;
     if (IS_ALIGNED(halfwidth, 8)) {
       BlendPlaneRow = BlendPlaneRow_SSSE3;
     }
@@ -685,33 +685,45 @@ int I420Blend(const uint8* src_y0, int src_stride_y0,
 #endif
 #if defined(HAS_BLENDPLANEROW_AVX2)
   if (TestCpuFlag(kCpuHasAVX2)) {
-  BlendPlaneRow = BlendPlaneRow_Any_AVX2;
+    BlendPlaneRow = BlendPlaneRow_Any_AVX2;
     if (IS_ALIGNED(halfwidth, 32)) {
       BlendPlaneRow = BlendPlaneRow_AVX2;
     }
   }
 #endif
+  if (!IS_ALIGNED(width, 2)) {
+    ScaleRowDown2 = ScaleRowDown2Box_Odd_C;
+  }
 #if defined(HAS_SCALEROWDOWN2_NEON)
   if (TestCpuFlag(kCpuHasNEON)) {
-    ScaleRowDown2 = ScaleRowDown2Box_Any_NEON;
-    if (IS_ALIGNED(halfwidth, 16)) {
-      ScaleRowDown2 = ScaleRowDown2Box_NEON;
+    ScaleRowDown2 = ScaleRowDown2Box_Odd_NEON;
+    if (IS_ALIGNED(width, 2)) {
+      ScaleRowDown2 = ScaleRowDown2Box_Any_NEON;
+      if (IS_ALIGNED(halfwidth, 16)) {
+        ScaleRowDown2 = ScaleRowDown2Box_NEON;
+      }
     }
   }
 #endif
 #if defined(HAS_SCALEROWDOWN2_SSSE3)
   if (TestCpuFlag(kCpuHasSSSE3)) {
-    ScaleRowDown2 = ScaleRowDown2Box_Any_SSSE3;
-    if (IS_ALIGNED(halfwidth, 16)) {
-      ScaleRowDown2 = ScaleRowDown2Box_SSSE3;
+    ScaleRowDown2 = ScaleRowDown2Box_Odd_SSSE3;
+    if (IS_ALIGNED(width, 2)) {
+      ScaleRowDown2 = ScaleRowDown2Box_Any_SSSE3;
+      if (IS_ALIGNED(halfwidth, 16)) {
+        ScaleRowDown2 = ScaleRowDown2Box_SSSE3;
+      }
     }
   }
 #endif
 #if defined(HAS_SCALEROWDOWN2_AVX2)
   if (TestCpuFlag(kCpuHasAVX2)) {
-    ScaleRowDown2 = ScaleRowDown2Box_Any_AVX2;
-    if (IS_ALIGNED(halfwidth, 32)) {
-      ScaleRowDown2 = ScaleRowDown2Box_AVX2;
+    ScaleRowDown2 = ScaleRowDown2Box_Odd_AVX2;
+    if (IS_ALIGNED(width, 2)) {
+      ScaleRowDown2 = ScaleRowDown2Box_Any_AVX2;
+      if (IS_ALIGNED(halfwidth, 32)) {
+        ScaleRowDown2 = ScaleRowDown2Box_AVX2;
+      }
     }
   }
 #endif
@@ -974,13 +986,13 @@ static int I422ToRGBAMatrix(const uint8* src_y, int src_stride_y,
     }
   }
 #endif
-#if defined(HAS_I422TORGBAROW_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) && IS_ALIGNED(width, 4) &&
+#if defined(HAS_I422TORGBAROW_DSPR2)
+  if (TestCpuFlag(kCpuHasDSPR2) && IS_ALIGNED(width, 4) &&
       IS_ALIGNED(src_y, 4) && IS_ALIGNED(src_stride_y, 4) &&
       IS_ALIGNED(src_u, 2) && IS_ALIGNED(src_stride_u, 2) &&
       IS_ALIGNED(src_v, 2) && IS_ALIGNED(src_stride_v, 2) &&
       IS_ALIGNED(dst_rgba, 4) && IS_ALIGNED(dst_stride_rgba, 4)) {
-    I422ToRGBARow = I422ToRGBARow_MIPS_DSPR2;
+    I422ToRGBARow = I422ToRGBARow_DSPR2;
   }
 #endif
 
@@ -1894,19 +1906,18 @@ int InterpolatePlane(const uint8* src0, int src_stride0,
     }
   }
 #endif
-#if defined(HAS_INTERPOLATEROW_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) &&
+#if defined(HAS_INTERPOLATEROW_DSPR2)
+  if (TestCpuFlag(kCpuHasDSPR2) &&
       IS_ALIGNED(src0, 4) && IS_ALIGNED(src_stride0, 4) &&
       IS_ALIGNED(src1, 4) && IS_ALIGNED(src_stride1, 4) &&
       IS_ALIGNED(dst, 4) && IS_ALIGNED(dst_stride, 4) &&
       IS_ALIGNED(width, 4)) {
-    InterpolateRow = InterpolateRow_MIPS_DSPR2;
+    InterpolateRow = InterpolateRow_DSPR2;
   }
 #endif
 
   for (y = 0; y < height; ++y) {
-    InterpolateRow(dst, src0, src1 - src0,
-                   width, interpolation);
+    InterpolateRow(dst, src0, src1 - src0, width, interpolation);
     src0 += src_stride0;
     src1 += src_stride1;
     dst += dst_stride;
@@ -2363,6 +2374,49 @@ int ARGBCopyAlpha(const uint8* src_argb, int src_stride_argb,
   return 0;
 }
 
+// Extract just the alpha channel from ARGB.
+LIBYUV_API
+int ARGBExtractAlpha(const uint8* src_argb, int src_stride,
+                     uint8* dst_a, int dst_stride,
+                     int width, int height) {
+  if (!src_argb || !dst_a || width <= 0 || height == 0) {
+    return -1;
+  }
+  // Negative height means invert the image.
+  if (height < 0) {
+    height = -height;
+    src_argb += (height - 1) * src_stride;
+    src_stride = -src_stride;
+  }
+  // Coalesce rows.
+  if (src_stride == width * 4 && dst_stride == width) {
+    width *= height;
+    height = 1;
+    src_stride = dst_stride = 0;
+  }
+  void (*ARGBExtractAlphaRow)(const uint8 *src_argb, uint8 *dst_a, int width) =
+      ARGBExtractAlphaRow_C;
+#if defined(HAS_ARGBEXTRACTALPHAROW_SSE2)
+  if (TestCpuFlag(kCpuHasSSE2)) {
+    ARGBExtractAlphaRow = IS_ALIGNED(width, 8) ? ARGBExtractAlphaRow_SSE2
+                                               : ARGBExtractAlphaRow_Any_SSE2;
+  }
+#endif
+#if defined(HAS_ARGBEXTRACTALPHAROW_NEON)
+  if (TestCpuFlag(kCpuHasNEON)) {
+    ARGBExtractAlphaRow = IS_ALIGNED(width, 16) ? ARGBExtractAlphaRow_NEON
+                                                : ARGBExtractAlphaRow_Any_NEON;
+  }
+#endif
+
+  for (int y = 0; y < height; ++y) {
+    ARGBExtractAlphaRow(src_argb, dst_a, width);
+    src_argb += src_stride;
+    dst_a += dst_stride;
+  }
+  return 0;
+}
+
 // Copy a planar Y channel to the alpha channel of a destination ARGB image.
 LIBYUV_API
 int ARGBCopyYToAlpha(const uint8* src_y, int src_stride_y,
@@ -2411,6 +2465,9 @@ int ARGBCopyYToAlpha(const uint8* src_y, int src_stride_y,
   }
   return 0;
 }
+
+// TODO(fbarchard): Consider if width is even Y channel can be split
+// directly. A SplitUVRow_Odd function could copy the remaining chroma.
 
 LIBYUV_API
 int YUY2ToNV12(const uint8* src_yuy2, int src_stride_yuy2,
@@ -2486,22 +2543,24 @@ int YUY2ToNV12(const uint8* src_yuy2, int src_stride_yuy2,
 
   {
     int awidth = halfwidth * 2;
-    // 2 rows of uv
-    align_buffer_64(rows, awidth * 2);
+    // row of y and 2 rows of uv
+    align_buffer_64(rows, awidth * 3);
 
     for (y = 0; y < height - 1; y += 2) {
       // Split Y from UV.
-      SplitUVRow(src_yuy2, dst_y, rows, awidth);
-      SplitUVRow(src_yuy2 + src_stride_yuy2, dst_y + dst_stride_y,
-                 rows + awidth, awidth);
-      InterpolateRow(dst_uv, rows, awidth, awidth, 128);
+      SplitUVRow(src_yuy2, rows, rows + awidth, awidth);
+      memcpy(dst_y, rows, width);
+      SplitUVRow(src_yuy2 + src_stride_yuy2, rows, rows + awidth * 2, awidth);
+      memcpy(dst_y + dst_stride_y, rows, width);
+      InterpolateRow(dst_uv, rows + awidth, awidth, awidth, 128);
       src_yuy2 += src_stride_yuy2 * 2;
       dst_y += dst_stride_y * 2;
       dst_uv += dst_stride_uv;
     }
     if (height & 1) {
       // Split Y from UV.
-      SplitUVRow(src_yuy2, dst_y, dst_uv, awidth);
+      SplitUVRow(src_yuy2, rows, dst_uv, awidth);
+      memcpy(dst_y, rows, width);
     }
     free_aligned_buffer_64(rows);
   }
@@ -2582,22 +2641,24 @@ int UYVYToNV12(const uint8* src_uyvy, int src_stride_uyvy,
 
   {
     int awidth = halfwidth * 2;
-    // 2 rows of uv
-    align_buffer_64(rows, awidth * 2);
+    // row of y and 2 rows of uv
+    align_buffer_64(rows, awidth * 3);
 
     for (y = 0; y < height - 1; y += 2) {
       // Split Y from UV.
-      SplitUVRow(src_uyvy, rows, dst_y, awidth);
-      SplitUVRow(src_uyvy + src_stride_uyvy, rows + awidth,
-                 dst_y + dst_stride_y, awidth);
-      InterpolateRow(dst_uv, rows, awidth, awidth, 128);
+      SplitUVRow(src_uyvy, rows + awidth, rows, awidth);
+      memcpy(dst_y, rows, width);
+      SplitUVRow(src_uyvy + src_stride_uyvy, rows + awidth * 2, rows, awidth);
+      memcpy(dst_y + dst_stride_y, rows, width);
+      InterpolateRow(dst_uv, rows + awidth, awidth, awidth, 128);
       src_uyvy += src_stride_uyvy * 2;
       dst_y += dst_stride_y * 2;
       dst_uv += dst_stride_uv;
     }
     if (height & 1) {
       // Split Y from UV.
-      SplitUVRow(src_uyvy, dst_uv, dst_y, awidth);
+      SplitUVRow(src_uyvy, dst_uv, rows, awidth);
+      memcpy(dst_y, rows, width);
     }
     free_aligned_buffer_64(rows);
   }

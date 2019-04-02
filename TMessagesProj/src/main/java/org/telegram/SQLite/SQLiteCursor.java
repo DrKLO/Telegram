@@ -1,17 +1,16 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.SQLite;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.NativeByteBuffer;
-
-import java.nio.ByteBuffer;
 
 public class SQLiteCursor {
 
@@ -21,8 +20,8 @@ public class SQLiteCursor {
 	public static final int FIELD_TYPE_BYTEARRAY = 4;
 	public static final int FIELD_TYPE_NULL = 5;
 
-	SQLitePreparedStatement preparedStatement;
-	boolean inRow = false;
+	private SQLitePreparedStatement preparedStatement;
+	private boolean inRow = false;
 
 	public SQLiteCursor(SQLitePreparedStatement stmt) {
 		preparedStatement = stmt;
@@ -43,10 +42,10 @@ public class SQLiteCursor {
 		return columnDoubleValue(preparedStatement.getStatementHandle(), columnIndex);
 	}
 
-    public long longValue(int columnIndex) throws SQLiteException {
-        checkRow();
-        return columnLongValue(preparedStatement.getStatementHandle(), columnIndex);
-    }
+	public long longValue(int columnIndex) throws SQLiteException {
+		checkRow();
+		return columnLongValue(preparedStatement.getStatementHandle(), columnIndex);
+	}
 
 	public String stringValue(int columnIndex) throws SQLiteException {
 		checkRow();
@@ -58,19 +57,13 @@ public class SQLiteCursor {
 		return columnByteArrayValue(preparedStatement.getStatementHandle(), columnIndex);
 	}
 
-    public int byteArrayLength(int columnIndex) throws SQLiteException {
-        checkRow();
-        return columnByteArrayLength(preparedStatement.getStatementHandle(), columnIndex);
-    }
-
-    public int byteBufferValue(int columnIndex, ByteBuffer buffer) throws SQLiteException {
-        checkRow();
-        return columnByteBufferValue(preparedStatement.getStatementHandle(), columnIndex, buffer);
-    }
-
-	public int byteBufferValue(int columnIndex, NativeByteBuffer buffer) throws SQLiteException {
+	public NativeByteBuffer byteBufferValue(int columnIndex) throws SQLiteException {
 		checkRow();
-		return columnByteBufferValue(preparedStatement.getStatementHandle(), columnIndex, buffer.buffer);
+		long ptr = columnByteBufferValue(preparedStatement.getStatementHandle(), columnIndex);
+		if (ptr != 0) {
+			return NativeByteBuffer.wrap(ptr);
+		}
+		return null;
 	}
 
 	public int getTypeOf(int columnIndex) throws SQLiteException {
@@ -80,29 +73,31 @@ public class SQLiteCursor {
 
 	public boolean next() throws SQLiteException {
 		int res = preparedStatement.step(preparedStatement.getStatementHandle());
-		if(res == -1) {
-            int repeatCount = 6;
-            while (repeatCount-- != 0) {
-                try {
-                    FileLog.e("tmessages", "sqlite busy, waiting...");
-                    Thread.sleep(500);
-                    res = preparedStatement.step();
-                    if (res == 0) {
-                        break;
-                    }
-                } catch (Exception e) {
-                    FileLog.e("tmessages", e);
-                }
-            }
-            if (res == -1) {
-                throw new SQLiteException("sqlite busy");
-            }
-        }
+		if (res == -1) {
+			int repeatCount = 6;
+			while (repeatCount-- != 0) {
+				try {
+					if (BuildVars.LOGS_ENABLED) {
+						FileLog.d("sqlite busy, waiting...");
+					}
+					Thread.sleep(500);
+					res = preparedStatement.step();
+					if (res == 0) {
+						break;
+					}
+				} catch (Exception e) {
+					FileLog.e(e);
+				}
+			}
+			if (res == -1) {
+				throw new SQLiteException("sqlite busy");
+			}
+		}
 		inRow = (res == 0);
 		return inRow;
 	}
 
-	public int getStatementHandle() {
+	public long getStatementHandle() {
 		return preparedStatement.getStatementHandle();
 	}
 
@@ -116,13 +111,12 @@ public class SQLiteCursor {
 		}
 	}
 
-	native int columnType(int statementHandle, int columnIndex);
-	native int columnIsNull(int statementHandle, int columnIndex);
-	native int columnIntValue(int statementHandle, int columnIndex);
-    native long columnLongValue(int statementHandle, int columnIndex);
-	native double columnDoubleValue(int statementHandle, int columnIndex);
-	native String columnStringValue(int statementHandle, int columnIndex);
-	native byte[] columnByteArrayValue(int statementHandle, int columnIndex);
-    native int columnByteArrayLength(int statementHandle, int columnIndex);
-    native int columnByteBufferValue(int statementHandle, int columnIndex, ByteBuffer buffer);
+	native int columnType(long statementHandle, int columnIndex);
+	native int columnIsNull(long statementHandle, int columnIndex);
+	native int columnIntValue(long statementHandle, int columnIndex);
+	native long columnLongValue(long statementHandle, int columnIndex);
+	native double columnDoubleValue(long statementHandle, int columnIndex);
+	native String columnStringValue(long statementHandle, int columnIndex);
+	native byte[] columnByteArrayValue(long statementHandle, int columnIndex);
+	native long columnByteBufferValue(long statementHandle, int columnIndex);
 }

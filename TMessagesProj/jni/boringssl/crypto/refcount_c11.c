@@ -25,7 +25,7 @@
 #include <openssl/type_check.h>
 
 
-/* See comment above the typedef of CRYPTO_refcount_t about these tests. */
+// See comment above the typedef of CRYPTO_refcount_t about these tests.
 static_assert(alignof(CRYPTO_refcount_t) == alignof(_Atomic CRYPTO_refcount_t),
               "_Atomic alters the needed alignment of a reference count");
 static_assert(sizeof(CRYPTO_refcount_t) == sizeof(_Atomic CRYPTO_refcount_t),
@@ -64,4 +64,4 @@ int CRYPTO_refcount_dec_and_test_zero(CRYPTO_refcount_t *in_count) {
   }
 }
 
-#endif  /* OPENSSL_C11_ATOMIC */
+#endif  // OPENSSL_C11_ATOMIC

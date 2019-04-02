@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.ui.Components;
@@ -36,6 +36,14 @@ public class IdenticonDrawable extends Drawable {
         if (data == null) {
             encryptedChat.key_hash = data = AndroidUtilities.calcAuthKeyHash(encryptedChat.auth_key);
         }
+        invalidateSelf();
+    }
+
+    public void setColors(int[] value) {
+        if (colors.length != 4) {
+            throw new IllegalArgumentException("colors must have length of 4");
+        }
+        colors = value;
         invalidateSelf();
     }
 

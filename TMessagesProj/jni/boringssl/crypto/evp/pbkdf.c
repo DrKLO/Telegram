@@ -59,71 +59,82 @@
 
 #include <openssl/hmac.h>
 
+#include "../internal.h"
+
 
 int PKCS5_PBKDF2_HMAC(const char *password, size_t password_len,
                       const uint8_t *salt, size_t salt_len, unsigned iterations,
                       const EVP_MD *digest, size_t key_len, uint8_t *out_key) {
-  uint8_t digest_tmp[EVP_MAX_MD_SIZE], *p, itmp[4];
-  size_t cplen, mdlen, tkeylen, k;
-  unsigned j;
+  // See RFC 8018, section 5.2.
+  int ret = 0;
+  size_t md_len = EVP_MD_size(digest);
   uint32_t i = 1;
-  HMAC_CTX hctx_tpl, hctx;
+  HMAC_CTX hctx;
+  HMAC_CTX_init(&hctx);
 
-  mdlen = EVP_MD_size(digest);
-  HMAC_CTX_init(&hctx_tpl);
-  p = out_key;
-  tkeylen = key_len;
-  if (!HMAC_Init_ex(&hctx_tpl, password, password_len, digest, NULL)) {
-    HMAC_CTX_cleanup(&hctx_tpl);
-    return 0;
+  if (!HMAC_Init_ex(&hctx, password, password_len, digest, NULL)) {
+    goto err;
   }
-  while (tkeylen) {
-    if (tkeylen > mdlen) {
-      cplen = mdlen;
-    } else {
-      cplen = tkeylen;
+
+  while (key_len > 0) {
+    size_t todo = md_len;
+    if (todo > key_len) {
+      todo = key_len;
     }
-    /* We are unlikely to ever use more than 256 blocks (5120 bits!)
-     * but just in case... */
-    itmp[0] = (uint8_t)((i >> 24) & 0xff);
-    itmp[1] = (uint8_t)((i >> 16) & 0xff);
-    itmp[2] = (uint8_t)((i >> 8) & 0xff);
-    itmp[3] = (uint8_t)(i & 0xff);
-    if (!HMAC_CTX_copy(&hctx, &hctx_tpl)) {
-      HMAC_CTX_cleanup(&hctx_tpl);
-      return 0;
-    }
-    if (!HMAC_Update(&hctx, salt, salt_len) ||
-        !HMAC_Update(&hctx, itmp, 4) ||
+
+    uint8_t i_buf[4];
+    i_buf[0] = (uint8_t)((i >> 24) & 0xff);
+    i_buf[1] = (uint8_t)((i >> 16) & 0xff);
+    i_buf[2] = (uint8_t)((i >> 8) & 0xff);
+    i_buf[3] = (uint8_t)(i & 0xff);
+
+    // Compute U_1.
+    uint8_t digest_tmp[EVP_MAX_MD_SIZE];
+    if (!HMAC_Init_ex(&hctx, NULL, 0, NULL, NULL) ||
+        !HMAC_Update(&hctx, salt, salt_len) ||
+        !HMAC_Update(&hctx, i_buf, 4) ||
         !HMAC_Final(&hctx, digest_tmp, NULL)) {
-      HMAC_CTX_cleanup(&hctx_tpl);
-      HMAC_CTX_cleanup(&hctx);
-      return 0;
+      goto err;
     }
-    HMAC_CTX_cleanup(&hctx);
-    memcpy(p, digest_tmp, cplen);
-    for (j = 1; j < iterations; j++) {
-      if (!HMAC_CTX_copy(&hctx, &hctx_tpl)) {
-        HMAC_CTX_cleanup(&hctx_tpl);
-        return 0;
-      }
-      if (!HMAC_Update(&hctx, digest_tmp, mdlen) ||
+
+    OPENSSL_memcpy(out_key, digest_tmp, todo);
+    for (unsigned j = 1; j < iterations; j++) {
+      // Compute the remaining U_* values and XOR.
+      if (!HMAC_Init_ex(&hctx, NULL, 0, NULL, NULL) ||
+          !HMAC_Update(&hctx, digest_tmp, md_len) ||
           !HMAC_Final(&hctx, digest_tmp, NULL)) {
-        HMAC_CTX_cleanup(&hctx_tpl);
-        HMAC_CTX_cleanup(&hctx);
-        return 0;
+        goto err;
       }
-      HMAC_CTX_cleanup(&hctx);
-      for (k = 0; k < cplen; k++) {
-        p[k] ^= digest_tmp[k];
+      for (size_t k = 0; k < todo; k++) {
+        out_key[k] ^= digest_tmp[k];
       }
     }
-    tkeylen -= cplen;
+
+    key_len -= todo;
+    out_key += todo;
     i++;
-    p += cplen;
   }
-  HMAC_CTX_cleanup(&hctx_tpl);
-  return 1;
+
+  // RFC 8018 describes iterations (c) as being a "positive integer", so a
+  // value of 0 is an error.
+  //
+  // Unfortunately not all consumers of PKCS5_PBKDF2_HMAC() check their return
+  // value, expecting it to succeed and unconditionally using |out_key|.  As a
+  // precaution for such callsites in external code, the old behavior of
+  // iterations < 1 being treated as iterations == 1 is preserved, but
+  // additionally an error result is returned.
+  //
+  // TODO(eroman): Figure out how to remove this compatibility hack, or change
+  // the default to something more sensible like 2048.
+  if (iterations == 0) {
+    goto err;
+  }
+
+  ret = 1;
+
+err:
+  HMAC_CTX_cleanup(&hctx);
+  return ret;
 }
 
 int PKCS5_PBKDF2_HMAC_SHA1(const char *password, size_t password_len,

@@ -118,89 +118,78 @@ extern "C" {
 #endif
 
 
-/* ex_data is a mechanism for associating arbitrary extra data with objects.
- * For each type of object that supports ex_data, different users can be
- * assigned indexes in which to store their data. Each index has callback
- * functions that are called when a new object of that type is created, freed
- * and duplicated. */
+// ex_data is a mechanism for associating arbitrary extra data with objects.
+// For each type of object that supports ex_data, different users can be
+// assigned indexes in which to store their data. Each index has callback
+// functions that are called when an object of that type is freed or
+// duplicated.
 
 
 typedef struct crypto_ex_data_st CRYPTO_EX_DATA;
 
 
-/* Type-specific functions.
- *
- * Each type that supports ex_data provides three functions: */
+// Type-specific functions.
+//
+// Each type that supports ex_data provides three functions:
 
-#if 0 /* Sample */
+#if 0  // Sample
 
-/* TYPE_get_ex_new_index allocates a new index for |TYPE|. See the
- * descriptions of the callback typedefs for details of when they are
- * called. Any of the callback arguments may be NULL. The |argl| and |argp|
- * arguments are opaque values that are passed to the callbacks. It returns the
- * new index or a negative number on error.
- *
- * TODO(fork): this should follow the standard calling convention. */
+// TYPE_get_ex_new_index allocates a new index for |TYPE|. An optional
+// |free_func| argument may be provided which is called when the owning object
+// is destroyed. See |CRYPTO_EX_free| for details. The |argl| and |argp|
+// arguments are opaque values that are passed to the callback. It returns the
+// new index or a negative number on error.
 OPENSSL_EXPORT int TYPE_get_ex_new_index(long argl, void *argp,
-                                         CRYPTO_EX_new *new_func,
-                                         CRYPTO_EX_dup *dup_func,
+                                         CRYPTO_EX_unused *unused,
+                                         CRYPTO_EX_dup *dup_unused,
                                          CRYPTO_EX_free *free_func);
 
-/* TYPE_set_ex_data sets an extra data pointer on |t|. The |index| argument
- * should have been returned from a previous call to |TYPE_get_ex_new_index|. */
+// TYPE_set_ex_data sets an extra data pointer on |t|. The |index| argument
+// should have been returned from a previous call to |TYPE_get_ex_new_index|.
 OPENSSL_EXPORT int TYPE_set_ex_data(TYPE *t, int index, void *arg);
 
-/* TYPE_get_ex_data returns an extra data pointer for |t|, or NULL if no such
- * pointer exists. The |index| argument should have been returned from a
- * previous call to |TYPE_get_ex_new_index|. */
+// TYPE_get_ex_data returns an extra data pointer for |t|, or NULL if no such
+// pointer exists. The |index| argument should have been returned from a
+// previous call to |TYPE_get_ex_new_index|.
 OPENSSL_EXPORT void *TYPE_get_ex_data(const TYPE *t, int index);
 
-#endif /* Sample */
+#endif  // Sample
 
 
-/* Callback types. */
+// Callback types.
 
-/* CRYPTO_EX_new is the type of a callback function that is called whenever a
- * new object of a given class is created. For example, if this callback has
- * been passed to |SSL_get_ex_new_index| then it'll be called each time an SSL*
- * is created.
- *
- * The callback is passed the new object (i.e. the SSL*) in |parent|. The
- * arguments |argl| and |argp| contain opaque values that were given to
- * |CRYPTO_get_ex_new_index|. The callback should return one on success, but
- * the value is ignored.
- *
- * TODO(fork): the |ptr| argument is always NULL, no? */
-typedef int CRYPTO_EX_new(void *parent, void *ptr, CRYPTO_EX_DATA *ad,
-                          int index, long argl, void *argp);
-
-/* CRYPTO_EX_free is a callback function that is called when an object of the
- * class is being destroyed. See |CRYPTO_EX_new| for a discussion of the
- * arguments.
- *
- * If |CRYPTO_get_ex_new_index| was called after the creation of objects of the
- * class that this applies to then, when those those objects are destroyed,
- * this callback will be called with a NULL value for |ptr|. */
+// CRYPTO_EX_free is a callback function that is called when an object of the
+// class with extra data pointers is being destroyed. For example, if this
+// callback has been passed to |SSL_get_ex_new_index| then it may be called each
+// time an |SSL*| is destroyed.
+//
+// The callback is passed the new object (i.e. the |SSL*|) in |parent|. The
+// arguments |argl| and |argp| contain opaque values that were given to
+// |CRYPTO_get_ex_new_index|. The callback should return one on success, but
+// the value is ignored.
+//
+// This callback may be called with a NULL value for |ptr| if |parent| has no
+// value set for this index. However, the callbacks may also be skipped entirely
+// if no extra data pointers are set on |parent| at all.
 typedef void CRYPTO_EX_free(void *parent, void *ptr, CRYPTO_EX_DATA *ad,
                             int index, long argl, void *argp);
 
-/* CRYPTO_EX_dup is a callback function that is called when an object of the
- * class is being copied and thus the ex_data linked to it also needs to be
- * copied. On entry, |*from_d| points to the data for this index from the
- * original object. When the callback returns, |*from_d| will be set as the
- * data for this index in |to|.
- *
- * If |CRYPTO_get_ex_new_index| was called after the creation of objects of the
- * class that this applies to then, when those those objects are copies, this
- * callback will be called with a NULL value for |*from_d|. */
+
+// Deprecated functions.
+
+// CRYPTO_cleanup_all_ex_data does nothing.
+OPENSSL_EXPORT void CRYPTO_cleanup_all_ex_data(void);
+
+// CRYPTO_EX_dup is a legacy callback function type which is ignored.
 typedef int CRYPTO_EX_dup(CRYPTO_EX_DATA *to, const CRYPTO_EX_DATA *from,
                           void **from_d, int index, long argl, void *argp);
 
 
-/* Deprecated functions. */
+// Private structures.
 
-/* CRYPTO_cleanup_all_ex_data does nothing. */
-OPENSSL_EXPORT void CRYPTO_cleanup_all_ex_data(void);
+// CRYPTO_EX_unused is a placeholder for an unused callback. It is aliased to
+// int to ensure non-NULL callers fail to compile rather than fail silently.
+typedef int CRYPTO_EX_unused;
 
 struct crypto_ex_data_st {
   STACK_OF(void) *sk;
@@ -208,7 +197,7 @@ struct crypto_ex_data_st {
 
 
 #if defined(__cplusplus)
-}  /* extern C */
+}  // extern C
 #endif
 
-#endif  /* OPENSSL_HEADER_EX_DATA_H */
+#endif  // OPENSSL_HEADER_EX_DATA_H

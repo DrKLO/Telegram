@@ -1,23 +1,25 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2018.
  */
 
 package org.telegram.SQLite;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ApplicationLoader;
 
 public class SQLiteDatabase {
-	private final int sqliteHandle;
 
-	private boolean isOpen = false;
-    private boolean inTransaction = false;
+	private final long sqliteHandle;
 
-	public int getSQLiteHandle() {
+	private boolean isOpen;
+    private boolean inTransaction;
+
+	public long getSQLiteHandle() {
 		return sqliteHandle;
 	}
 
@@ -60,7 +62,9 @@ public class SQLiteDatabase {
                 commitTransaction();
 				closedb(sqliteHandle);
 			} catch (SQLiteException e) {
-                FileLog.e("tmessages", e.getMessage(), e);
+				if (BuildVars.LOGS_ENABLED) {
+					FileLog.e(e.getMessage(), e);
+				}
 			}
 			isOpen = false;
 		}
@@ -77,7 +81,6 @@ public class SQLiteDatabase {
 		close();
 	}
 
-    private StackTraceElement[] temp;
     public void beginTransaction() throws SQLiteException {
         if (inTransaction) {
             throw new SQLiteException("database already in transaction");
@@ -94,8 +97,8 @@ public class SQLiteDatabase {
         commitTransaction(sqliteHandle);
     }
 
-	native int opendb(String fileName, String tempDir) throws SQLiteException;
-	native void closedb(int sqliteHandle) throws SQLiteException;
-    native void beginTransaction(int sqliteHandle);
-    native void commitTransaction(int sqliteHandle);
+	native long opendb(String fileName, String tempDir) throws SQLiteException;
+	native void closedb(long sqliteHandle) throws SQLiteException;
+    native void beginTransaction(long sqliteHandle);
+    native void commitTransaction(long sqliteHandle);
 }

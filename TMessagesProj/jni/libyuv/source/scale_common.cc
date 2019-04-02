@@ -103,6 +103,28 @@ void ScaleRowDown2Box_C(const uint8* src_ptr, ptrdiff_t src_stride,
   }
 }
 
+void ScaleRowDown2Box_Odd_C(const uint8* src_ptr, ptrdiff_t src_stride,
+                            uint8* dst, int dst_width) {
+  const uint8* s = src_ptr;
+  const uint8* t = src_ptr + src_stride;
+  int x;
+  dst_width -= 1;
+  for (x = 0; x < dst_width - 1; x += 2) {
+    dst[0] = (s[0] + s[1] + t[0] + t[1] + 2) >> 2;
+    dst[1] = (s[2] + s[3] + t[2] + t[3] + 2) >> 2;
+    dst += 2;
+    s += 4;
+    t += 4;
+  }
+  if (dst_width & 1) {
+    dst[0] = (s[0] + s[1] + t[0] + t[1] + 2) >> 2;
+    dst += 1;
+    s += 2;
+    t += 2;
+  }
+  dst[0] = (s[0] + t[0] + 1) >> 1;
+}
+
 void ScaleRowDown2Box_16_C(const uint16* src_ptr, ptrdiff_t src_stride,
                            uint16* dst, int dst_width) {
   const uint16* s = src_ptr;
@@ -900,13 +922,13 @@ void ScalePlaneVertical(int src_height,
     }
   }
 #endif
-#if defined(HAS_INTERPOLATEROW_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) &&
+#if defined(HAS_INTERPOLATEROW_DSPR2)
+  if (TestCpuFlag(kCpuHasDSPR2) &&
       IS_ALIGNED(src_argb, 4) && IS_ALIGNED(src_stride, 4) &&
       IS_ALIGNED(dst_argb, 4) && IS_ALIGNED(dst_stride, 4)) {
-    InterpolateRow = InterpolateRow_Any_MIPS_DSPR2;
+    InterpolateRow = InterpolateRow_Any_DSPR2;
     if (IS_ALIGNED(dst_width_bytes, 4)) {
-      InterpolateRow = InterpolateRow_MIPS_DSPR2;
+      InterpolateRow = InterpolateRow_DSPR2;
     }
   }
 #endif
@@ -974,13 +996,13 @@ void ScalePlaneVertical_16(int src_height,
     }
   }
 #endif
-#if defined(HAS_INTERPOLATEROW_16_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) &&
+#if defined(HAS_INTERPOLATEROW_16_DSPR2)
+  if (TestCpuFlag(kCpuHasDSPR2) &&
       IS_ALIGNED(src_argb, 4) && IS_ALIGNED(src_stride, 4) &&
       IS_ALIGNED(dst_argb, 4) && IS_ALIGNED(dst_stride, 4)) {
-    InterpolateRow = InterpolateRow_Any_16_MIPS_DSPR2;
+    InterpolateRow = InterpolateRow_Any_16_DSPR2;
     if (IS_ALIGNED(dst_width_bytes, 4)) {
-      InterpolateRow = InterpolateRow_16_MIPS_DSPR2;
+      InterpolateRow = InterpolateRow_16_DSPR2;
     }
   }
 #endif
