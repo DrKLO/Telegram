@@ -45,7 +45,7 @@
         android:allowBackup="false"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
         android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@drawable/ic_launcher"
+        android:label="@string/AppName"
         android:largeHeap="true"
         android:theme="@style/Theme.TMessages.Start">
 
