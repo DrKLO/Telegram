@@ -17,7 +17,9 @@ ByteArray::ByteArray() {
 }
 
 ByteArray::ByteArray(uint32_t len) {
-    bytes = new uint8_t[len];
+
+	//using malloc(), as the ::operator new() throws.
+    bytes = (uint8_t*)malloc(len);
     if (bytes == nullptr) {
         if (LOGS_ENABLED) DEBUG_E("unable to allocate byte buffer %u", len);
         exit(1);
@@ -27,7 +29,7 @@ ByteArray::ByteArray(uint32_t len) {
 
 
 ByteArray::ByteArray(ByteArray *byteArray) {
-    bytes = new uint8_t[byteArray->length];
+    bytes = (uint8_t*)malloc(byteArray->length);
     if (bytes == nullptr) {
         if (LOGS_ENABLED) DEBUG_E("unable to allocate byte buffer %u", byteArray->length);
         exit(1);
@@ -37,33 +39,19 @@ ByteArray::ByteArray(ByteArray *byteArray) {
 }
 
 ByteArray::ByteArray(uint8_t *buffer, uint32_t len) {
-    bytes = new uint8_t[len];
-    if (bytes == nullptr) {
-        if (LOGS_ENABLED) DEBUG_E("unable to allocate byte buffer %u", len);
-        exit(1);
-    }
-    length = len;
-    memcpy(bytes, buffer, length);
+	ByteArray temp{buffer,len};
+	(ByteArray)(&temp);
 }
 
 ByteArray::~ByteArray() {
-    if (bytes != nullptr) {
-        delete[] bytes;
-        bytes = nullptr;
-    }
+
+	//freeing nullptr is a no-op.
+	free(bytes);
 }
 
 void ByteArray::alloc(uint32_t len) {
-    if (bytes != nullptr) {
-        delete[] bytes;
-        bytes = nullptr;
-    }
-    bytes = new uint8_t[len];
-    if (bytes == nullptr) {
-        if (LOGS_ENABLED) DEBUG_E("unable to allocate byte buffer %u", len);
-        exit(1);
-    }
-    length = len;
+    this->~ByteArray();
+    (ByteArray)(len);
 }
 
 bool ByteArray::isEqualTo(ByteArray *byteArray) {
