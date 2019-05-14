@@ -15,7 +15,7 @@
  */
 package com.google.android.exoplayer2.metadata;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /**
  * Decodes metadata from binary data.

@@ -25,11 +25,10 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -48,6 +47,9 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Locale;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class PhonebookShareActivity extends BaseFragment {
 
@@ -609,7 +611,7 @@ public class PhonebookShareActivity extends BaseFragment {
                             } else if (item.type == 2) {
                                 ContentValues row = new ContentValues();
                                 row.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE);
-                                String args[] = item.getRawValue();
+                                String[] args = item.getRawValue();
                                 if (args.length > 0) {
                                     row.put(ContactsContract.CommonDataKinds.StructuredPostal.POBOX, args[0]);
                                 }
@@ -790,11 +792,7 @@ public class PhonebookShareActivity extends BaseFragment {
         avatarDrawable.setInfo(5, currentUser.first_name, currentUser.last_name, false);
         avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundInProfileBlue));
 
-        TLRPC.FileLocation photo = null;
-        if (currentUser.photo != null) {
-            photo = currentUser.photo.photo_small;
-        }
-        avatarImage.setImage(photo, "50_50", avatarDrawable, currentUser);
+        avatarImage.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
         nameTextView.setText(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
 
         return fragmentView;

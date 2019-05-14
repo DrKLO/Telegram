@@ -7,7 +7,7 @@ import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
-import android.support.annotation.Keep;
+import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;
 
@@ -25,6 +25,8 @@ public class AnimatedArrowDrawable extends Drawable {
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(AndroidUtilities.dp(2));
         paint.setColor(color);
+        paint.setStrokeCap(Paint.Cap.ROUND);
+        paint.setStrokeJoin(Paint.Join.ROUND);
         isSmall = small;
 
         updatePath();
@@ -44,9 +46,9 @@ public class AnimatedArrowDrawable extends Drawable {
             path.lineTo(AndroidUtilities.dp(8), AndroidUtilities.dp(6) + AndroidUtilities.dp(2) * p);
             path.lineTo(AndroidUtilities.dp(13), AndroidUtilities.dp(6) - AndroidUtilities.dp(2) * p);
         } else {
-            path.moveTo(AndroidUtilities.dp(3), AndroidUtilities.dp(12) - AndroidUtilities.dp(4) * p);
+            path.moveTo(AndroidUtilities.dp(4.5f), AndroidUtilities.dp(12) - AndroidUtilities.dp(4) * p);
             path.lineTo(AndroidUtilities.dp(13), AndroidUtilities.dp(12) + AndroidUtilities.dp(4) * p);
-            path.lineTo(AndroidUtilities.dp(23), AndroidUtilities.dp(12) - AndroidUtilities.dp(4) * p);
+            path.lineTo(AndroidUtilities.dp(21.5f), AndroidUtilities.dp(12) - AndroidUtilities.dp(4) * p);
         }
     }
 

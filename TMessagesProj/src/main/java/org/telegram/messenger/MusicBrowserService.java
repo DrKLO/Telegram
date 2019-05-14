@@ -276,7 +276,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
                     TLRPC.User user = users.get(did);
                     if (user != null) {
                         builder.setTitle(ContactsController.formatName(user.first_name, user.last_name));
-                        if (user.photo != null && user.photo.photo_small instanceof TLRPC.TL_fileLocation) {
+                        if (user.photo != null && !(user.photo.photo_small instanceof TLRPC.TL_fileLocationUnavailable)) {
                             avatar = user.photo.photo_small;
                         }
                     } else {
@@ -286,7 +286,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
                     TLRPC.Chat chat = chats.get(-did);
                     if (chat != null) {
                         builder.setTitle(chat.title);
-                        if (chat.photo != null && chat.photo.photo_small instanceof TLRPC.TL_fileLocation) {
+                        if (chat.photo != null && !(chat.photo.photo_small instanceof TLRPC.TL_fileLocationUnavailable)) {
                             avatar = chat.photo.photo_small;
                         }
                     } else {
@@ -470,7 +470,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
         long position = PlaybackState.PLAYBACK_POSITION_UNKNOWN;
         MessageObject playingMessageObject = MediaController.getInstance().getPlayingMessageObject();
         if (playingMessageObject != null) {
-            position = playingMessageObject.audioProgressSec * 1000;
+            position = playingMessageObject.audioProgressSec * 1000L;
         }
 
         PlaybackState.Builder stateBuilder = new PlaybackState.Builder().setActions(getAvailableActions());

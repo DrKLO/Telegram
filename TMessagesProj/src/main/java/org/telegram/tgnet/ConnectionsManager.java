@@ -42,8 +42,8 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConnectionsManager {
@@ -102,12 +102,7 @@ public class ConnectionsManager {
         }
     }
 
-    private static ThreadLocal<HashMap<String, ResolvedDomain>> dnsCache = new ThreadLocal<HashMap<String, ResolvedDomain>>() {
-        @Override
-        protected HashMap<String, ResolvedDomain> initialValue() {
-            return new HashMap<>();
-        }
-    };
+    private static ConcurrentHashMap<String, ResolvedDomain> dnsCache = new ConcurrentHashMap<>();
 
     private static int lastClassGuid = 1;
 
@@ -492,70 +487,14 @@ public class ConnectionsManager {
         AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needShowAlert, 3));
     }
 
-    public static String getHostByName(String domain, final int currentAccount) {
-        HashMap<String, ResolvedDomain> cache = dnsCache.get();
-        ResolvedDomain resolvedDomain = cache.get(domain);
+    public static void getHostByName(String hostName, long address) {
+        ResolvedDomain resolvedDomain = dnsCache.get(hostName);
         if (resolvedDomain != null && SystemClock.elapsedRealtime() - resolvedDomain.ttl < 5 * 60 * 1000) {
-            return resolvedDomain.getAddress();
+            native_onHostNameResolved(hostName, address, resolvedDomain.getAddress());
+        } else {
+            ResolveHostByNameTask task = new ResolveHostByNameTask(address, hostName);
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
         }
-
-        ByteArrayOutputStream outbuf = null;
-        InputStream httpConnectionStream = null;
-        try {
-            URL downloadUrl = new URL("https://www.google.com/resolve?name=" + domain + "&type=A");
-            URLConnection httpConnection = downloadUrl.openConnection();
-            httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/10.0 Mobile/14A5297c Safari/602.1");
-            httpConnection.addRequestProperty("Host", "dns.google.com");
-            httpConnection.setConnectTimeout(1000);
-            httpConnection.setReadTimeout(2000);
-            httpConnection.connect();
-            httpConnectionStream = httpConnection.getInputStream();
-
-            outbuf = new ByteArrayOutputStream();
-
-            byte[] data = new byte[1024 * 32];
-            while (true) {
-                int read = httpConnectionStream.read(data);
-                if (read > 0) {
-                    outbuf.write(data, 0, read);
-                } else if (read == -1) {
-                    break;
-                } else {
-                    break;
-                }
-            }
-
-            JSONObject jsonObject = new JSONObject(new String(outbuf.toByteArray()));
-            JSONArray array = jsonObject.getJSONArray("Answer");
-            int len = array.length();
-            if (len > 0) {
-                ArrayList<String> addresses = new ArrayList<>(len);
-                for (int a = 0; a < len; a++) {
-                    addresses.add(array.getJSONObject(a).getString("data"));
-                }
-                ResolvedDomain newResolvedDomain = new ResolvedDomain(addresses, SystemClock.elapsedRealtime());
-                cache.put(domain, newResolvedDomain);
-                return newResolvedDomain.getAddress();
-            }
-        } catch (Throwable e) {
-            FileLog.e(e);
-        } finally {
-            try {
-                if (httpConnectionStream != null) {
-                    httpConnectionStream.close();
-                }
-            } catch (Throwable e) {
-                FileLog.e(e);
-            }
-            try {
-                if (outbuf != null) {
-                    outbuf.close();
-                }
-            } catch (Exception ignore) {
-
-            }
-        }
-        return "";
     }
 
     public static void onBytesReceived(int amount, int networkType, final int currentAccount) {
@@ -635,7 +574,10 @@ public class ConnectionsManager {
     public static native void native_setPushConnectionEnabled(int currentAccount, boolean value);
     public static native void native_applyDnsConfig(int currentAccount, long address, String phone);
     public static native long native_checkProxy(int currentAccount, String address, int port, String username, String password, String secret, RequestTimeDelegate requestTimeDelegate);
+    public static native void native_onHostNameResolved(String host, long address, String ip);
 
+
+    //void onHostNameResolved(JNIEnv *env, jclass c, jlong address, jstring ip)
     public static int generateClassGuid() {
         return lastClassGuid++;
     }
@@ -725,6 +667,95 @@ public class ConnectionsManager {
         return false;
     }
 
+    private static class ResolveHostByNameTask extends AsyncTask<Void, Void, String> {
+
+        private long currentAddress;
+        private String currentHostName;
+
+        public ResolveHostByNameTask(long address, String hostName) {
+            super();
+            currentAddress = address;
+            currentHostName = hostName;
+        }
+
+        protected String doInBackground(Void... voids) {
+            ByteArrayOutputStream outbuf = null;
+            InputStream httpConnectionStream = null;
+            boolean done = false;
+            try {
+                URL downloadUrl = new URL("https://www.google.com/resolve?name=" + currentHostName + "&type=A");
+                URLConnection httpConnection = downloadUrl.openConnection();
+                httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/10.0 Mobile/14A5297c Safari/602.1");
+                httpConnection.addRequestProperty("Host", "dns.google.com");
+                httpConnection.setConnectTimeout(1000);
+                httpConnection.setReadTimeout(2000);
+                httpConnection.connect();
+                httpConnectionStream = httpConnection.getInputStream();
+
+                outbuf = new ByteArrayOutputStream();
+
+                byte[] data = new byte[1024 * 32];
+                while (true) {
+                    int read = httpConnectionStream.read(data);
+                    if (read > 0) {
+                        outbuf.write(data, 0, read);
+                    } else if (read == -1) {
+                        break;
+                    } else {
+                        break;
+                    }
+                }
+
+                JSONObject jsonObject = new JSONObject(new String(outbuf.toByteArray()));
+                if (jsonObject.has("Answer")) {
+                    JSONArray array = jsonObject.getJSONArray("Answer");
+                    int len = array.length();
+                    if (len > 0) {
+                        ArrayList<String> addresses = new ArrayList<>(len);
+                        for (int a = 0; a < len; a++) {
+                            addresses.add(array.getJSONObject(a).getString("data"));
+                        }
+                        ResolvedDomain newResolvedDomain = new ResolvedDomain(addresses, SystemClock.elapsedRealtime());
+                        dnsCache.put(currentHostName, newResolvedDomain);
+                        return newResolvedDomain.getAddress();
+                    }
+                }
+                done = true;
+            } catch (Throwable e) {
+                FileLog.e(e);
+            } finally {
+                try {
+                    if (httpConnectionStream != null) {
+                        httpConnectionStream.close();
+                    }
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                }
+                try {
+                    if (outbuf != null) {
+                        outbuf.close();
+                    }
+                } catch (Exception ignore) {
+
+                }
+            }
+            if (!done) {
+                try {
+                    InetAddress address = InetAddress.getByName(currentHostName);
+                    return address.getHostAddress();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
+            return "";
+        }
+
+        @Override
+        protected void onPostExecute(final String result) {
+            native_onHostNameResolved(currentHostName, currentAddress, result);
+        }
+    }
+
     private static class DnsTxtLoadTask extends AsyncTask<Void, Void, NativeByteBuffer> {
 
         private int currentAccount;
@@ -781,7 +812,7 @@ public class ConnectionsManager {
                         }
                     }
 
-                    JSONObject jsonObject = new JSONObject(new String(outbuf.toByteArray(), "UTF-8"));
+                    JSONObject jsonObject = new JSONObject(new String(outbuf.toByteArray()));
                     JSONArray array = jsonObject.getJSONArray("Answer");
                     len = array.length();
                     ArrayList<String> arrayList = new ArrayList<>(len);

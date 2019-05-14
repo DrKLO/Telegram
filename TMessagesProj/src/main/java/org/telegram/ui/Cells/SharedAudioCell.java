@@ -9,6 +9,7 @@ import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -24,14 +25,14 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.CheckBox;
+import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MediaActionDrawable;
 import org.telegram.ui.Components.RadialProgress2;
 
 public class SharedAudioCell extends FrameLayout implements DownloadController.FileDownloadProgressListener {
 
-    private CheckBox checkBox;
+    private CheckBox2 checkBox;
 
     private boolean needDivider;
 
@@ -57,6 +58,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
     public SharedAudioCell(Context context) {
         super(context);
+        setFocusable(true);
 
         radialProgress = new RadialProgress2(this);
         radialProgress.setColors(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
@@ -64,10 +66,13 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
         setWillNotDraw(false);
 
-        checkBox = new CheckBox(context, R.drawable.round_check2);
+        checkBox = new CheckBox2(context);
         checkBox.setVisibility(INVISIBLE);
-        checkBox.setColor(Theme.getColor(Theme.key_checkbox), Theme.getColor(Theme.key_checkboxCheck));
-        addView(checkBox, LayoutHelper.createFrame(20, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 40, 34, LocaleController.isRTL ? 40 : 0, 0));
+        checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
+        checkBox.setSize(21);
+        checkBox.setDrawUnchecked(false);
+        checkBox.setDrawBackgroundAsArc(3);
+        addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 38, 32, LocaleController.isRTL ? 39 : 0, 0));
     }
 
     @SuppressLint("DrawAllocation")
@@ -113,13 +118,13 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
         TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90) : null;
         if (thumb instanceof TLRPC.TL_photoSize) {
-            radialProgress.setImageOverlay(thumb, messageObject);
+            radialProgress.setImageOverlay(thumb, document, messageObject);
         } else {
             String artworkUrl = messageObject.getArtworkUrl(true);
             if (!TextUtils.isEmpty(artworkUrl)) {
                 radialProgress.setImageOverlay(artworkUrl);
             } else {
-                radialProgress.setImageOverlay(null, null);
+                radialProgress.setImageOverlay(null, null, null);
             }
         }
         updateButtonState(false, false);
@@ -392,7 +397,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
     @Override
     public void onSuccessDownload(String fileName) {
         radialProgress.setProgress(1, true);
-        updateButtonState(false,true);
+        updateButtonState(false, true);
     }
 
     @Override
@@ -421,6 +426,20 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
     protected boolean needPlayMessage(MessageObject messageObject) {
         return false;
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (currentMessageObject.isMusic()) {
+            info.setText(LocaleController.formatString("AccDescrMusicInfo", R.string.AccDescrMusicInfo, currentMessageObject.getMusicAuthor(), currentMessageObject.getMusicTitle()));
+        } else { // voice message
+            info.setText(titleLayout.getText() + ", " + descriptionLayout.getText());
+        }
+        if (checkBox.isChecked()) {
+            info.setCheckable(true);
+            info.setChecked(true);
+        }
     }
 }
 

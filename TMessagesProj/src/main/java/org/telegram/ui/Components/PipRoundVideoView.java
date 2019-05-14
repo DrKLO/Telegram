@@ -27,7 +27,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.os.Build;
-import android.support.annotation.Keep;
+import androidx.annotation.Keep;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.TextureView;
@@ -174,6 +174,7 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
                     Theme.chat_roundVideoShadow.draw(canvas);
 
                     Theme.chat_docBackPaint.setColor(Theme.getColor(Theme.key_chat_inBubble));
+                    Theme.chat_docBackPaint.setAlpha((int) (getAlpha() * 255));
                     canvas.drawCircle(AndroidUtilities.dp(3 + 60), AndroidUtilities.dp(3 + 60), AndroidUtilities.dp(59.5f), Theme.chat_docBackPaint);
                 }
             }
@@ -380,9 +381,9 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
         }
         hideShowAnimation = new AnimatorSet();
         hideShowAnimation.playTogether(
-                ObjectAnimator.ofFloat(windowView, "alpha", show ? 1.0f : 0.0f),
-                ObjectAnimator.ofFloat(windowView, "scaleX", show ? 1.0f : 0.8f),
-                ObjectAnimator.ofFloat(windowView, "scaleY", show ? 1.0f : 0.8f));
+                ObjectAnimator.ofFloat(windowView, View.ALPHA, show ? 1.0f : 0.0f),
+                ObjectAnimator.ofFloat(windowView, View.SCALE_X, show ? 1.0f : 0.8f),
+                ObjectAnimator.ofFloat(windowView, View.SCALE_Y, show ? 1.0f : 0.8f));
         hideShowAnimation.setDuration(150);
         if (decelerateInterpolator == null) {
             decelerateInterpolator = new DecelerateInterpolator();
@@ -405,9 +406,9 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
         }
         hideShowAnimation = new AnimatorSet();
         hideShowAnimation.playTogether(
-                ObjectAnimator.ofFloat(windowView, "alpha", show ? 1.0f : 0.0f),
-                ObjectAnimator.ofFloat(windowView, "scaleX", show ? 1.0f : 0.8f),
-                ObjectAnimator.ofFloat(windowView, "scaleY", show ? 1.0f : 0.8f));
+                ObjectAnimator.ofFloat(windowView, View.ALPHA, show ? 1.0f : 0.0f),
+                ObjectAnimator.ofFloat(windowView, View.SCALE_X, show ? 1.0f : 0.8f),
+                ObjectAnimator.ofFloat(windowView, View.SCALE_Y, show ? 1.0f : 0.8f));
         hideShowAnimation.setDuration(150);
         if (decelerateInterpolator == null) {
             decelerateInterpolator = new DecelerateInterpolator();
@@ -449,7 +450,7 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
             }
             editor.putInt("sidex", 0);
             if (windowView.getAlpha() != 1.0f) {
-                animators.add(ObjectAnimator.ofFloat(windowView, "alpha", 1.0f));
+                animators.add(ObjectAnimator.ofFloat(windowView, View.ALPHA, 1.0f));
             }
             animators.add(ObjectAnimator.ofInt(this, "x", startX));
         } else if (Math.abs(endX - windowLayoutParams.x) <= maxDiff || windowLayoutParams.x > AndroidUtilities.displaySize.x - videoWidth && windowLayoutParams.x < AndroidUtilities.displaySize.x - videoWidth / 4 * 3) {
@@ -458,7 +459,7 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
             }
             editor.putInt("sidex", 1);
             if (windowView.getAlpha() != 1.0f) {
-                animators.add(ObjectAnimator.ofFloat(windowView, "alpha", 1.0f));
+                animators.add(ObjectAnimator.ofFloat(windowView, View.ALPHA, 1.0f));
             }
             animators.add(ObjectAnimator.ofInt(this, "x", endX));
         } else if (windowView.getAlpha() != 1.0f) {
@@ -502,7 +503,7 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
             animatorSet.setInterpolator(decelerateInterpolator);
             animatorSet.setDuration(150);
             if (slideOut) {
-                animators.add(ObjectAnimator.ofFloat(windowView, "alpha", 0.0f));
+                animators.add(ObjectAnimator.ofFloat(windowView, View.ALPHA, 0.0f));
                 animatorSet.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {

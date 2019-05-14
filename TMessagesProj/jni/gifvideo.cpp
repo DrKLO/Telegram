@@ -13,6 +13,7 @@
 
 extern "C" {
 #include <libavformat/avformat.h>
+#include <libavformat/isom.h>
 #include <libavutil/eval.h>
 #include <libswscale/swscale.h>
     
@@ -67,11 +68,10 @@ typedef struct VideoInfo {
             }
             stream = nullptr;
         }
-        /*if (ioBuffer) { TODO memleak?
-            av_free(ioBuffer);
-            ioBuffer = nullptr;
-        }*/
         if (ioContext != nullptr) {
+            if (ioContext->buffer) {
+                av_freep(&ioContext->buffer);
+            }
             avio_context_free(&ioContext);
             ioContext = nullptr;
         }
@@ -88,12 +88,14 @@ typedef struct VideoInfo {
 
         video_stream_idx = -1;
         video_stream = nullptr;
+        audio_stream = nullptr;
     }
 
     AVFormatContext *fmt_ctx = nullptr;
     char *src = nullptr;
     int video_stream_idx = -1;
     AVStream *video_stream = nullptr;
+    AVStream *audio_stream = nullptr;
     AVCodecContext *video_dec_ctx = nullptr;
     AVFrame *frame = nullptr;
     bool has_decoded_frames = false;
@@ -248,6 +250,94 @@ int64_t seekCallback(void *opaque, int64_t offset, int whence) {
     return 0;
 }
 
+enum PARAM_NUM {
+    PARAM_NUM_IS_AVC = 0,
+    PARAM_NUM_WIDTH = 1,
+    PARAM_NUM_HEIGHT = 2,
+    PARAM_NUM_BITRATE = 3,
+    PARAM_NUM_DURATION = 4,
+    PARAM_NUM_AUDIO_FRAME_SIZE = 5,
+    PARAM_NUM_VIDEO_FRAME_SIZE = 6,
+    PARAM_NUM_FRAMERATE = 7,
+    PARAM_NUM_ROTATION = 8,
+    PARAM_NUM_COUNT = 9
+};
+
+void Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *env, jclass clazz, jstring src, jintArray data) {
+    VideoInfo *info = new VideoInfo();
+
+    char const *srcString = env->GetStringUTFChars(src, 0);
+    size_t len = strlen(srcString);
+    info->src = new char[len + 1];
+    memcpy(info->src, srcString, len);
+    info->src[len] = '\0';
+    if (srcString != 0) {
+        env->ReleaseStringUTFChars(src, srcString);
+    }
+
+    int ret;
+    if ((ret = avformat_open_input(&info->fmt_ctx, info->src, NULL, NULL)) < 0) {
+        LOGE("can't open source file %s, %s", info->src, av_err2str(ret));
+        delete info;
+        return;
+    }
+
+    if ((ret = avformat_find_stream_info(info->fmt_ctx, NULL)) < 0) {
+        LOGE("can't find stream information %s, %s", info->src, av_err2str(ret));
+        delete info;
+        return;
+    }
+
+    if ((ret = av_find_best_stream(info->fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0)) >= 0) {
+        info->video_stream = info->fmt_ctx->streams[ret];
+    }
+
+    if ((ret = av_find_best_stream(info->fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0)) >= 0) {
+        info->audio_stream = info->fmt_ctx->streams[ret];
+    }
+
+    if (info->video_stream == nullptr) {
+        LOGE("can't find video stream in the input, aborting %s", info->src);
+        delete info;
+        return;
+    }
+
+    jint *dataArr = env->GetIntArrayElements(data, 0);
+    if (dataArr != nullptr) {
+        dataArr[PARAM_NUM_IS_AVC] = info->video_stream->codecpar->codec_id == AV_CODEC_ID_H264;
+        if (strstr(info->fmt_ctx->iformat->name, "mov") != 0 && dataArr[PARAM_NUM_IS_AVC]) {
+            MOVStreamContext *mov = (MOVStreamContext *) info->video_stream->priv_data;
+            dataArr[PARAM_NUM_VIDEO_FRAME_SIZE] = (jint) mov->data_size;
+
+            if (info->audio_stream != nullptr) {
+                mov = (MOVStreamContext *) info->audio_stream->priv_data;
+                dataArr[PARAM_NUM_AUDIO_FRAME_SIZE] = (jint) mov->data_size;
+            }
+        }
+        dataArr[PARAM_NUM_BITRATE] = (jint) info->video_stream->codecpar->bit_rate;
+        dataArr[PARAM_NUM_WIDTH] = info->video_stream->codecpar->width;
+        dataArr[PARAM_NUM_HEIGHT] = info->video_stream->codecpar->height;
+        AVDictionaryEntry *rotate_tag = av_dict_get(info->video_stream->metadata, "rotate", NULL, 0);
+        if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0")) {
+            char *tail;
+            dataArr[PARAM_NUM_ROTATION] = (jint) av_strtod(rotate_tag->value, &tail);
+            if (*tail) {
+                dataArr[PARAM_NUM_ROTATION] = 0;
+            }
+        } else {
+            dataArr[PARAM_NUM_ROTATION] = 0;
+        }
+        if (info->video_stream->codecpar->codec_id == AV_CODEC_ID_H264) {
+            dataArr[PARAM_NUM_FRAMERATE] = (jint) av_q2d(info->video_stream->avg_frame_rate);
+        } else {
+            dataArr[PARAM_NUM_FRAMERATE] = (jint) av_q2d(info->video_stream->r_frame_rate);
+        }
+        dataArr[PARAM_NUM_DURATION] = (int32_t) (info->fmt_ctx->duration * 1000 / AV_TIME_BASE);
+        env->ReleaseIntArrayElements(data, dataArr, 0);
+        delete info;
+    }
+}
+
 jlong Java_org_telegram_ui_Components_AnimatedFileDrawable_createDecoder(JNIEnv *env, jclass clazz, jstring src, jintArray data, jint account, jlong streamFileSize, jobject stream) {
     VideoInfo *info = new VideoInfo();
     
@@ -305,7 +395,7 @@ jlong Java_org_telegram_ui_Components_AnimatedFileDrawable_createDecoder(JNIEnv 
         info->video_stream = info->fmt_ctx->streams[info->video_stream_idx];
     }
 
-    if (info->video_stream <= 0) {
+    if (info->video_stream == nullptr) {
         LOGE("can't find video stream in the input, aborting %s", info->src);
         delete info;
         return 0;
@@ -442,12 +532,7 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_seekToMs(JNIEnv *env, 
             }
             if (got_frame) {
                 if (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_BGRA || info->frame->format == AV_PIX_FMT_YUVJ420P) {
-                    int64_t pkt_pts;
-                    if (info->frame->pts != AV_NOPTS_VALUE) {
-                        pkt_pts = info->frame->pts;
-                    } else {
-                        pkt_pts = info->frame->pkt_dts;
-                    }
+                    int64_t pkt_pts = info->frame->best_effort_timestamp;
                     if (pkt_pts >= pts) {
                         return;
                     }
@@ -524,11 +609,7 @@ jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *
                 if (dataArr != nullptr) {
                     wantedWidth = dataArr[0];
                     wantedHeight = dataArr[1];
-                    if (info->frame->pts != AV_NOPTS_VALUE) {
-                        dataArr[3] = (jint) (1000 * info->frame->pts * av_q2d(info->video_stream->time_base));
-                    } else {
-                        dataArr[3] = (jint) (1000 * info->frame->pkt_dts * av_q2d(info->video_stream->time_base));
-                    }
+                    dataArr[3] = (jint) (1000 * info->frame->best_effort_timestamp * av_q2d(info->video_stream->time_base));
                     env->ReleaseIntArrayElements(data, dataArr, 0);
                 } else {
                     AndroidBitmapInfo bitmapInfo;

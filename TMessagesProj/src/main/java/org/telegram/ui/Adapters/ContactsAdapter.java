@@ -17,7 +17,6 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
@@ -34,6 +33,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
+import androidx.recyclerview.widget.RecyclerView;
+
 public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
 
     private int currentAccount = UserConfig.selectedAccount;
@@ -46,13 +47,15 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
     private boolean scrolling;
     private boolean isAdmin;
     private int sortType;
+    private boolean isChannel;
 
-    public ContactsAdapter(Context context, int onlyUsersType, boolean arg2, SparseArray<TLRPC.User> arg3, boolean arg4) {
+    public ContactsAdapter(Context context, int onlyUsersType, boolean arg2, SparseArray<TLRPC.User> arg3, int arg4) {
         mContext = context;
         onlyUsers = onlyUsersType;
         needPhonebook = arg2;
         ignoreUsers = arg3;
-        isAdmin = arg4;
+        isAdmin = arg4 != 0;
+        isChannel = arg4 == 2;
     }
 
     public void setSortType(int value) {
@@ -76,6 +79,9 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
     }
 
     public void sortOnlineContacts() {
+        if (onlineContacts == null) {
+            return;
+        }
         try {
             int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
             MessagesController messagesController = MessagesController.getInstance(currentAccount);
@@ -355,10 +361,14 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                     if (needPhonebook) {
                         textCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite, false);
                     } else if (isAdmin) {
-                        textCell.setTextAndIcon(LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink), R.drawable.profile_link, false);
+                        if (isChannel) {
+                            textCell.setTextAndIcon(LocaleController.getString("ChannelInviteViaLink", R.string.ChannelInviteViaLink), R.drawable.profile_link, false);
+                        } else {
+                            textCell.setTextAndIcon(LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink), R.drawable.profile_link, false);
+                        }
                     } else {
                         if (position == 0) {
-                            textCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup, false);
+                            textCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_groups, false);
                         } else if (position == 1) {
                             textCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret, false);
                         } else if (position == 2) {

@@ -23,6 +23,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MessageObject;
@@ -123,7 +124,6 @@ public class SharingLiveLocationCell extends FrameLayout {
         }
         currentAccount = messageObject.currentAccount;
         String address = null;
-        TLRPC.FileLocation photo = null;
         String name;
         if (!TextUtils.isEmpty(messageObject.messageOwner.media.address)) {
             address = messageObject.messageOwner.media.address;
@@ -142,29 +142,21 @@ public class SharingLiveLocationCell extends FrameLayout {
         } else {
             name = "";
             avatarDrawable = null;
-            Object parentObject = null;
             if (fromId > 0) {
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(fromId);
                 if (user != null) {
-                    if (user.photo != null) {
-                        photo = user.photo.photo_small;
-                    }
                     avatarDrawable = new AvatarDrawable(user);
                     name = UserObject.getUserName(user);
-                    parentObject = user;
+                    avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable,  user);
                 }
             } else {
                 TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-fromId);
                 if (chat != null) {
-                    if (chat.photo != null) {
-                        photo = chat.photo.photo_small;
-                    }
                     avatarDrawable = new AvatarDrawable(chat);
                     name = chat.title;
-                    parentObject = chat;
+                    avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable,  chat);
                 }
             }
-            avatarImageView.setImage(photo, null, avatarDrawable, parentObject);
         }
         nameTextView.setText(name);
 
@@ -197,27 +189,19 @@ public class SharingLiveLocationCell extends FrameLayout {
     public void setDialog(LocationActivity.LiveLocation info, Location userLocation) {
         liveLocation = info;
         int lower_id = info.id;
-        TLRPC.FileLocation photo = null;
-        Object parentObject = null;
         if (lower_id > 0) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
-            avatarDrawable.setInfo(user);
             if (user != null) {
+                avatarDrawable.setInfo(user);
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
-                if (user.photo != null && user.photo.photo_small != null) {
-                    photo = user.photo.photo_small;
-                }
-                parentObject = user;
+                avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable,  user);
             }
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
             if (chat != null) {
                 avatarDrawable.setInfo(chat);
                 nameTextView.setText(chat.title);
-                if (chat.photo != null && chat.photo.photo_small != null) {
-                    photo = chat.photo.photo_small;
-                }
-                parentObject = chat;
+                avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable,  chat);
             }
         }
 
@@ -236,37 +220,26 @@ public class SharingLiveLocationCell extends FrameLayout {
         } else {
             distanceTextView.setText(time);
         }
-
-        avatarImageView.setImage(photo, null, avatarDrawable, parentObject);
     }
 
     public void setDialog(LocationController.SharingLocationInfo info) {
         currentInfo = info;
         int lower_id = (int) info.did;
-        TLRPC.FileLocation photo = null;
-        Object parentObject = null;
         if (lower_id > 0) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
             if (user != null) {
                 avatarDrawable.setInfo(user);
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
-                if (user.photo != null && user.photo.photo_small != null) {
-                    photo = user.photo.photo_small;
-                }
-                parentObject = user;
+                avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable,  user);
             }
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
             if (chat != null) {
                 avatarDrawable.setInfo(chat);
                 nameTextView.setText(chat.title);
-                if (chat.photo != null && chat.photo.photo_small != null) {
-                    photo = chat.photo.photo_small;
-                }
-                parentObject = chat;
+                avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable,  chat);
             }
         }
-        avatarImageView.setImage(photo, null, avatarDrawable,  parentObject);
     }
 
     @Override

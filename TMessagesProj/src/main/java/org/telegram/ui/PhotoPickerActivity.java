@@ -43,8 +43,6 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
-import org.telegram.messenger.support.widget.GridLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -65,6 +63,9 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class PhotoPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -88,13 +89,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     private AnimatorSet hintAnimation;
 
     private boolean searching;
-    private boolean bingSearchEndReached = true;
-    private boolean giphySearchEndReached = true;
+    private boolean imageSearchEndReached = true;
     private String lastSearchString;
     private String nextImagesSearchOffset;
     private boolean loadingRecent;
-    private int nextGiphySearchOffset;
-    private int giphyReqId;
     private int imageReqId;
     private int lastSearchToken;
     private boolean allowCaption;
@@ -132,7 +130,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview) {
             PhotoPickerPhotoCell cell = getCellForIndex(index);
             if (cell != null) {
-                int coords[] = new int[2];
+                int[] coords = new int[2];
                 cell.photoImage.getLocationInWindow(coords);
                 PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
                 object.viewX = coords[0];
@@ -413,10 +411,6 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     public void onFragmentDestroy() {
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.closeChats);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.recentImagesDidLoad);
-        if (giphyReqId != 0) {
-            ConnectionsManager.getInstance(currentAccount).cancelRequest(giphyReqId, true);
-            giphyReqId = 0;
-        }
         if (imageReqId != 0) {
             ConnectionsManager.getInstance(currentAccount).cancelRequest(imageReqId, true);
             imageReqId = 0;
@@ -467,16 +461,11 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                         searchResult.clear();
                         searchResultKeys.clear();
                         lastSearchString = null;
-                        bingSearchEndReached = true;
-                        giphySearchEndReached = true;
+                        imageSearchEndReached = true;
                         searching = false;
                         if (imageReqId != 0) {
                             ConnectionsManager.getInstance(currentAccount).cancelRequest(imageReqId, true);
                             imageReqId = 0;
-                        }
-                        if (giphyReqId != 0) {
-                            ConnectionsManager.getInstance(currentAccount).cancelRequest(giphyReqId, true);
-                            giphyReqId = 0;
                         }
                         emptyView.setText("");
                         /*if (type == 0) {
@@ -623,10 +612,8 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     if (visibleItemCount > 0) {
                         int totalItemCount = layoutManager.getItemCount();
                         if (visibleItemCount != 0 && firstVisibleItem + visibleItemCount > totalItemCount - 2 && !searching) {
-                            if (type == 0 && !bingSearchEndReached) {
-                                searchImages(lastSearchString, nextImagesSearchOffset, true);
-                            } else if (type == 1 && !giphySearchEndReached) {
-                                searchGiphyImages(searchItem.getSearchField().getText().toString(), nextGiphySearchOffset);
+                            if (!imageSearchEndReached) {
+                                searchImages(type == 1, lastSearchString, nextImagesSearchOffset, true);
                             }
                         }
                     }
@@ -649,12 +636,14 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             imageOrderToggleButton = new ImageView(context);
             imageOrderToggleButton.setScaleType(ImageView.ScaleType.CENTER);
             imageOrderToggleButton.setImageResource(R.drawable.photos_group);
+            imageOrderToggleButton.setContentDescription(SharedConfig.groupPhotosEnabled ? LocaleController.getString("GroupPhotosHelp", R.string.GroupPhotosHelp) : LocaleController.getString("SinglePhotosHelp", R.string.SinglePhotosHelp));
             pickerBottomLayout.addView(imageOrderToggleButton, LayoutHelper.createFrame(48, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
             imageOrderToggleButton.setOnClickListener(v -> {
                 SharedConfig.toggleGroupPhotosEnabled();
                 imageOrderToggleButton.setColorFilter(SharedConfig.groupPhotosEnabled ? new PorterDuffColorFilter(0xff66bffa, PorterDuff.Mode.MULTIPLY) : null);
                 showHint(false, SharedConfig.groupPhotosEnabled);
                 updateCheckedPhotoIndices();
+                imageOrderToggleButton.setContentDescription(SharedConfig.groupPhotosEnabled ? LocaleController.getString("GroupPhotosHelp", R.string.GroupPhotosHelp) : LocaleController.getString("SinglePhotosHelp", R.string.SinglePhotosHelp));
             });
             imageOrderToggleButton.setColorFilter(SharedConfig.groupPhotosEnabled ? new PorterDuffColorFilter(0xff66bffa, PorterDuff.Mode.MULTIPLY) : null);
         }
@@ -743,14 +732,8 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         }
         searchResult.clear();
         searchResultKeys.clear();
-        bingSearchEndReached = true;
-        giphySearchEndReached = true;
-        if (type == 0) {
-            searchImages(editText.getText().toString(), "", true);
-        } else if (type == 1) {
-            nextGiphySearchOffset = 0;
-            searchGiphyImages(editText.getText().toString(), 0);
-        }
+        imageSearchEndReached = true;
+        searchImages(type == 1, editText.getText().toString(), "", true);
         lastSearchString = editText.getText().toString();
         if (lastSearchString.length() == 0) {
             lastSearchString = null;
@@ -945,93 +928,13 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         }
     }
 
-    private void searchGiphyImages(final String query, int offset) {
-        if (searching) {
-            searching = false;
-            if (giphyReqId != 0) {
-                ConnectionsManager.getInstance(currentAccount).cancelRequest(giphyReqId, true);
-                giphyReqId = 0;
-            }
-            if (imageReqId != 0) {
-                ConnectionsManager.getInstance(currentAccount).cancelRequest(imageReqId, true);
-                imageReqId = 0;
-            }
-        }
-        searching = true;
-        TLRPC.TL_messages_searchGifs req = new TLRPC.TL_messages_searchGifs();
-        req.q = query;
-        req.offset = offset;
-        final int token = ++lastSearchToken;
-        giphyReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            if (token != lastSearchToken) {
-                return;
-            }
-            int addedCount = 0;
-            int oldCount = searchResult.size();
-            if (response != null) {
-                TLRPC.TL_messages_foundGifs res = (TLRPC.TL_messages_foundGifs) response;
-                nextGiphySearchOffset = res.next_offset;
-                for (int a = 0; a < res.results.size(); a++) {
-                    TLRPC.FoundGif gif = res.results.get(a);
-                    if (searchResultKeys.containsKey(gif.url)) {
-                        continue;
-                    }
-                    MediaController.SearchImage bingImage = new MediaController.SearchImage();
-                    bingImage.id = gif.url;
-                    if (gif.document != null) {
-                        for (int b = 0; b < gif.document.attributes.size(); b++) {
-                            TLRPC.DocumentAttribute attribute = gif.document.attributes.get(b);
-                            if (attribute instanceof TLRPC.TL_documentAttributeImageSize || attribute instanceof TLRPC.TL_documentAttributeVideo) {
-                                bingImage.width = attribute.w;
-                                bingImage.height = attribute.h;
-                                break;
-                            }
-                        }
-                    } else {
-                        bingImage.width = gif.w;
-                        bingImage.height = gif.h;
-                    }
-                    bingImage.size = 0;
-                    bingImage.imageUrl = gif.content_url;
-                    bingImage.thumbUrl = gif.thumb_url;
-                    bingImage.localUrl = gif.url + "|" + query;
-                    bingImage.document = gif.document;
-                    if (gif.photo != null && gif.document != null) {
-                        TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(gif.photo.sizes, itemWidth, true);
-                        if (size != null) {
-                            gif.document.thumbs.add(size);
-                            gif.document.flags |= 1;
-                        }
-                    }
-                    bingImage.type = 1;
-                    searchResult.add(bingImage);
-                    addedCount++;
-                    searchResultKeys.put(bingImage.id, bingImage);
-                }
-                giphySearchEndReached = oldCount == searchResult.size();
-            }
-            searching = false;
-            if (addedCount != 0) {
-                listAdapter.notifyItemRangeInserted(oldCount, addedCount);
-            } else if (giphySearchEndReached) {
-                listAdapter.notifyItemRemoved(searchResult.size() - 1);
-            }
-            if (searching && searchResult.isEmpty() || loadingRecent && lastSearchString == null) {
-                emptyView.showProgress();
-            } else {
-                emptyView.showTextView();
-            }
-        }));
-        ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(giphyReqId, classGuid);
-    }
-
-    private void searchBotUser() {
+    private void searchBotUser(boolean gif) {
         if (searchingUser) {
             return;
         }
         searchingUser = true;
         TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
-        req.username = MessagesController.getInstance(currentAccount).imageSearchBot;
+        req.username = gif ? MessagesController.getInstance(currentAccount).gifSearchBot : MessagesController.getInstance(currentAccount).imageSearchBot;
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
             if (response != null) {
                 AndroidUtilities.runOnUIThread(() -> {
@@ -1041,19 +944,15 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     MessagesStorage.getInstance(currentAccount).putUsersAndChats(res.users, res.chats, true, true);
                     String str = lastSearchImageString;
                     lastSearchImageString = null;
-                    searchImages(str, "", false);
+                    searchImages(gif, str, "", false);
                 });
             }
         });
     }
 
-    private void searchImages(final String query, final String offset, boolean searchUser) {
+    private void searchImages(boolean gif, final String query, final String offset, boolean searchUser) {
         if (searching) {
             searching = false;
-            if (giphyReqId != 0) {
-                ConnectionsManager.getInstance(currentAccount).cancelRequest(giphyReqId, true);
-                giphyReqId = 0;
-            }
             if (imageReqId != 0) {
                 ConnectionsManager.getInstance(currentAccount).cancelRequest(imageReqId, true);
                 imageReqId = 0;
@@ -1063,10 +962,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         lastSearchImageString = query;
         searching = true;
 
-        TLObject object = MessagesController.getInstance(currentAccount).getUserOrChat(MessagesController.getInstance(currentAccount).imageSearchBot);
+        TLObject object = MessagesController.getInstance(currentAccount).getUserOrChat(gif ? MessagesController.getInstance(currentAccount).gifSearchBot : MessagesController.getInstance(currentAccount).imageSearchBot);
         if (!(object instanceof TLRPC.User)) {
             if (searchUser) {
-                searchBotUser();
+                searchBotUser(gif);
             }
             return;
         }
@@ -1103,26 +1002,45 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
                 for (int a = 0, count = res.results.size(); a < count; a++) {
                     TLRPC.BotInlineResult result = res.results.get(a);
-                    if (!"photo".equals(result.type)) {
+                    if (!gif && !"photo".equals(result.type) || gif && !"gif".equals(result.type)) {
                         continue;
                     }
                     if (searchResultKeys.containsKey(result.id)) {
                         continue;
                     }
 
-                    MediaController.SearchImage bingImage = new MediaController.SearchImage();
-                    if (result.photo != null) {
+                    MediaController.SearchImage image = new MediaController.SearchImage();
+
+                    if (gif && result.document != null) {
+                        for (int b = 0; b < result.document.attributes.size(); b++) {
+                            TLRPC.DocumentAttribute attribute = result.document.attributes.get(b);
+                            if (attribute instanceof TLRPC.TL_documentAttributeImageSize || attribute instanceof TLRPC.TL_documentAttributeVideo) {
+                                image.width = attribute.w;
+                                image.height = attribute.h;
+                                break;
+                            }
+                        }
+                        image.document = result.document;
+                        image.size = 0;
+                        if (result.photo != null && result.document != null) {
+                            TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(result.photo.sizes, itemWidth, true);
+                            if (size != null) {
+                                result.document.thumbs.add(size);
+                                result.document.flags |= 1;
+                            }
+                        }
+                    } else if (!gif && result.photo != null) {
                         TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(result.photo.sizes, AndroidUtilities.getPhotoSize());
                         TLRPC.PhotoSize size2 = FileLoader.getClosestPhotoSizeWithSize(result.photo.sizes, 320);
                         if (size == null) {
                             continue;
                         }
-                        bingImage.width = size.w;
-                        bingImage.height = size.h;
-                        bingImage.photoSize = size;
-                        bingImage.photo = result.photo;
-                        bingImage.size = size.size;
-                        bingImage.thumbPhotoSize = size2;
+                        image.width = size.w;
+                        image.height = size.h;
+                        image.photoSize = size;
+                        image.photo = result.photo;
+                        image.size = size.size;
+                        image.thumbPhotoSize = size2;
                     } else {
                         if (result.content == null) {
                             continue;
@@ -1130,35 +1048,35 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                         for (int b = 0; b < result.content.attributes.size(); b++) {
                             TLRPC.DocumentAttribute attribute = result.content.attributes.get(b);
                             if (attribute instanceof TLRPC.TL_documentAttributeImageSize) {
-                                bingImage.width = attribute.w;
-                                bingImage.height = attribute.h;
+                                image.width = attribute.w;
+                                image.height = attribute.h;
                                 break;
                             }
                         }
                         if (result.thumb != null) {
-                            bingImage.thumbUrl = result.thumb.url;
+                            image.thumbUrl = result.thumb.url;
                         } else {
-                            bingImage.thumbUrl = null;
+                            image.thumbUrl = null;
                         }
-                        bingImage.imageUrl = result.content.url;
-                        bingImage.size = result.content.size;
+                        image.imageUrl = result.content.url;
+                        image.size = gif ? 0 : result.content.size;
                     }
 
-                    bingImage.id = result.id;
-                    bingImage.type = 0;
-                    bingImage.localUrl = "";
+                    image.id = result.id;
+                    image.type = gif ? 1 : 0;
+                    image.localUrl = "";
 
-                    searchResult.add(bingImage);
+                    searchResult.add(image);
 
-                    searchResultKeys.put(bingImage.id, bingImage);
+                    searchResultKeys.put(image.id, image);
                     addedCount++;
                 }
-                bingSearchEndReached = oldCount == searchResult.size() || nextImagesSearchOffset == null;
+                imageSearchEndReached = oldCount == searchResult.size() || nextImagesSearchOffset == null;
             }
             searching = false;
             if (addedCount != 0) {
                 listAdapter.notifyItemRangeInserted(oldCount, addedCount);
-            } else if (bingSearchEndReached) {
+            } else if (imageSearchEndReached) {
                 listAdapter.notifyItemRemoved(searchResult.size() - 1);
             }
             if (searching && searchResult.isEmpty() || loadingRecent && lastSearchString == null) {
@@ -1260,10 +1178,8 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             if (selectedAlbum == null) {
                 if (searchResult.isEmpty() && lastSearchString == null) {
                     return recentImages.size();
-                } else if (type == 0) {
-                    return searchResult.size() + (bingSearchEndReached ? 0 : 1);
-                } else if (type == 1) {
-                    return searchResult.size() + (giphySearchEndReached ? 0 : 1);
+                } else {
+                    return searchResult.size() + (imageSearchEndReached ? 0 : 1);
                 }
             }
             return selectedAlbum.photos.size();
@@ -1348,9 +1264,11 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                                 int minutes = photoEntry.duration / 60;
                                 int seconds = photoEntry.duration - minutes * 60;
                                 cell.videoTextView.setText(String.format("%d:%02d", minutes, seconds));
+                                cell.setContentDescription(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatCallDuration(photoEntry.duration));
                                 imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, mContext.getResources().getDrawable(R.drawable.nophotos));
                             } else {
                                 cell.videoInfoContainer.setVisibility(View.INVISIBLE);
+                                cell.setContentDescription(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
                                 imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, mContext.getResources().getDrawable(R.drawable.nophotos));
                             }
                         } else {

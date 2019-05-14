@@ -14,7 +14,6 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
@@ -38,10 +37,9 @@ import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.FileLog;
@@ -69,6 +67,9 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class GroupCreateFinalActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ImageUpdater.ImageUpdaterDelegate {
 
@@ -109,7 +110,6 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         avatarDrawable = new AvatarDrawable();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public boolean onFragmentCreate() {
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
@@ -218,6 +218,8 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
         SizeNotifierFrameLayout sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
 
+            private boolean ignoreLayout;
+
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 int widthSize = MeasureSpec.getSize(widthMeasureSpec);
@@ -229,8 +231,13 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
 
                 int keyboardSize = getKeyboardHeight();
-                int childCount = getChildCount();
+                if (keyboardSize > AndroidUtilities.dp(20)) {
+                    ignoreLayout = true;
+                    editText.hideEmojiView();
+                    ignoreLayout = false;
+                }
 
+                int childCount = getChildCount();
                 for (int i = 0; i < childCount; i++) {
                     View child = getChildAt(i);
                     if (child == null || child.getVisibility() == GONE || child == actionBar) {
@@ -318,6 +325,14 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
                 notifyHeightChanged();
             }
+
+            @Override
+            public void requestLayout() {
+                if (ignoreLayout) {
+                    return;
+                }
+                super.requestLayout();
+            }
         };
         fragmentView = sizeNotifierFrameLayout;
         fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -363,6 +378,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         avatarImage.setRoundRadius(AndroidUtilities.dp(32));
         avatarDrawable.setInfo(5, null, null, chatType == ChatObject.CHAT_TYPE_BROADCAST);
         avatarImage.setImageDrawable(avatarDrawable);
+        avatarImage.setContentDescription(LocaleController.getString("ChoosePhoto", R.string.ChoosePhoto));
         editTextContainer.addView(avatarImage, LayoutHelper.createFrame(64, 64, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 16, 16, LocaleController.isRTL ? 16 : 0, 16));
 
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -383,7 +399,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             avatarBig = null;
             uploadedAvatar = null;
             showAvatarProgress(false, true);
-            avatarImage.setImage(avatar, "50_50", avatarDrawable, null);
+            avatarImage.setImage(null, null, avatarDrawable, null);
             avatarEditor.setImageResource(R.drawable.actions_setphoto);
         }));
 
@@ -420,7 +436,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
         showAvatarProgress(false, false);
 
-        editText = new EditTextEmoji((Activity) context, sizeNotifierFrameLayout, this);
+        editText = new EditTextEmoji(context, sizeNotifierFrameLayout, this, EditTextEmoji.STYLE_FRAGMENT);
         editText.setHint(chatType == ChatObject.CHAT_TYPE_CHAT ? LocaleController.getString("EnterGroupNamePlaceholder", R.string.EnterGroupNamePlaceholder) : LocaleController.getString("EnterListName", R.string.EnterListName));
         if (nameToSet != null) {
             editText.setText(nameToSet);
@@ -504,6 +520,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         floatingButtonIcon.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
         floatingButtonIcon.setImageResource(R.drawable.checkbig);
         floatingButtonIcon.setPadding(0, AndroidUtilities.dp(2), 0, 0);
+        floatingButtonContainer.setContentDescription(LocaleController.getString("Done", R.string.Done));
         floatingButtonContainer.addView(floatingButtonIcon, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60));
 
         progressView = new ContextProgressView(context, 1);
@@ -529,7 +546,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             } else {
                 avatar = smallSize.location;
                 avatarBig = bigSize.location;
-                avatarImage.setImage(avatar, "50_50", avatarDrawable, null);
+                avatarImage.setImage(ImageLocation.getForLocal(avatar), "50_50", avatarDrawable, null);
                 showAvatarProgress(true, false);
             }
         });

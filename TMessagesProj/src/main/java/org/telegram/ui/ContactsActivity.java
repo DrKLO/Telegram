@@ -30,6 +30,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.SparseArray;
 import android.util.TypedValue;
@@ -54,8 +55,6 @@ import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -84,6 +83,9 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class ContactsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -116,7 +118,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean needForwardCount = true;
     private boolean needFinishFragment = true;
     private int channelId;
-    private int chat_id;
+    private int chatId;
     private String selectAlertString = null;
     private SparseArray<TLRPC.User> ignoreUsers;
     private boolean allowUsernameSearch = true;
@@ -138,7 +140,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         super(args);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
@@ -158,7 +159,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             allowBots = arguments.getBoolean("allowBots", true);
             channelId = arguments.getInt("channelId", 0);
             needFinishFragment = arguments.getBoolean("needFinishFragment", true);
-            chat_id = arguments.getInt("chat_id", 0);
+            chatId = arguments.getInt("chat_id", 0);
         } else {
             needPhonebook = true;
         }
@@ -277,17 +278,22 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             }
         });
         item.setSearchFieldHint(LocaleController.getString("Search", R.string.Search));
+        item.setContentDescription(LocaleController.getString("Search", R.string.Search));
         if (!createSecretChat && !returnAsResult) {
             sortItem = menu.addItem(sort_button, sortByName ? R.drawable.contacts_sort_time : R.drawable.contacts_sort_name);
+            sortItem.setContentDescription(LocaleController.getString("AccDescrContactSorting", R.string.AccDescrContactSorting));
         }
 
         searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch, false, false, allowBots, 0);
-        boolean inviteViaLink;
-        if (chat_id != 0) {
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chat_id);
-            inviteViaLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE);
+        int inviteViaLink;
+        if (chatId != 0) {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
+            inviteViaLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE) ? 1 : 0;
+        } else if (channelId != 0) {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(channelId);
+            inviteViaLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE) && TextUtils.isEmpty(chat.username) ? 2 : 0;
         } else {
-            inviteViaLink = false;
+            inviteViaLink = 0;
         }
         listViewAdapter = new ContactsAdapter(context, onlyUsers ? 1 : 0, needPhonebook, ignoreUsers, inviteViaLink) {
             @Override
@@ -374,14 +380,14 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 if (row < 0 || section < 0) {
                     return;
                 }
-                if ((!onlyUsers || chat_id != 0 && inviteViaLink) && section == 0) {
+                if ((!onlyUsers || inviteViaLink != 0) && section == 0) {
                     if (needPhonebook) {
                         if (row == 0) {
                             presentFragment(new InviteContactsActivity());
                         }
-                    } else if (chat_id != 0) {
+                    } else if (inviteViaLink != 0) {
                         if (row == 0) {
-                            presentFragment(new GroupInviteActivity(chat_id));
+                            presentFragment(new GroupInviteActivity(chatId != 0 ? chatId : channelId));
                         }
                     } else {
                         if (row == 0) {
@@ -523,6 +529,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             floatingButton.setBackgroundDrawable(drawable);
             floatingButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
             floatingButton.setImageResource(R.drawable.add_contact_new);
+            floatingButtonContainer.setContentDescription(LocaleController.getString("CreateNewContact", R.string.CreateNewContact));
             if (Build.VERSION.SDK_INT >= 21) {
                 StateListAnimator animator = new StateListAnimator();
                 animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButton, View.TRANSLATION_Z, AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
@@ -741,14 +748,12 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 if (grantResults.length <= a) {
                     continue;
                 }
-                switch (permissions[a]) {
-                    case Manifest.permission.READ_CONTACTS:
-                        if (grantResults[a] == PackageManager.PERMISSION_GRANTED) {
-                            ContactsController.getInstance(currentAccount).forceImportContacts();
-                        } else {
-                            MessagesController.getGlobalNotificationsSettings().edit().putBoolean("askAboutContacts", askAboutContacts = false).commit();
-                        }
-                        break;
+                if (Manifest.permission.READ_CONTACTS.equals(permissions[a])) {
+                    if (grantResults[a] == PackageManager.PERMISSION_GRANTED) {
+                        ContactsController.getInstance(currentAccount).forceImportContacts();
+                    } else {
+                        MessagesController.getGlobalNotificationsSettings().edit().putBoolean("askAboutContacts", askAboutContacts = false).commit();
+                    }
                 }
             }
         }

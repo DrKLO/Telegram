@@ -26,16 +26,17 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.support.widget.GridLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.StickerEmojiCell;
-import org.telegram.ui.StickerPreviewViewer;
+import org.telegram.ui.ContentPreviewViewer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 @SuppressWarnings("unchecked")
 public class StickerMasksView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
@@ -46,8 +47,8 @@ public class StickerMasksView extends FrameLayout implements NotificationCenter.
     }
 
     private int currentAccount = UserConfig.selectedAccount;
-    private ArrayList<TLRPC.TL_messages_stickerSet> stickerSets[] = new ArrayList[] {new ArrayList<>(), new ArrayList<>()};
-    private ArrayList<TLRPC.Document> recentStickers[] = new ArrayList[] {new ArrayList<>(), new ArrayList<>()};
+    private ArrayList<TLRPC.TL_messages_stickerSet>[] stickerSets = new ArrayList[]{new ArrayList<>(), new ArrayList<>()};
+    private ArrayList<TLRPC.Document>[] recentStickers = new ArrayList[]{new ArrayList<>(), new ArrayList<>()};
     private int currentType = DataQuery.TYPE_MASK;
 
     private Listener listener;
@@ -73,7 +74,7 @@ public class StickerMasksView extends FrameLayout implements NotificationCenter.
         stickersGridView = new RecyclerListView(context) {
             @Override
             public boolean onInterceptTouchEvent(MotionEvent event) {
-                boolean result = StickerPreviewViewer.getInstance().onInterceptTouchEvent(event, stickersGridView, StickerMasksView.this.getMeasuredHeight(), null);
+                boolean result = ContentPreviewViewer.getInstance().onInterceptTouchEvent(event, stickersGridView, StickerMasksView.this.getMeasuredHeight(), null);
                 return super.onInterceptTouchEvent(event) || result;
             }
         };
@@ -91,12 +92,12 @@ public class StickerMasksView extends FrameLayout implements NotificationCenter.
         stickersGridView.setPadding(0, AndroidUtilities.dp(4), 0, 0);
         stickersGridView.setClipToPadding(false);
         stickersGridView.setAdapter(stickersGridAdapter = new StickersGridAdapter(context));
-        stickersGridView.setOnTouchListener((v, event) -> StickerPreviewViewer.getInstance().onTouch(event, stickersGridView, StickerMasksView.this.getMeasuredHeight(), stickersOnItemClickListener, null));
+        stickersGridView.setOnTouchListener((v, event) -> ContentPreviewViewer.getInstance().onTouch(event, stickersGridView, StickerMasksView.this.getMeasuredHeight(), stickersOnItemClickListener, null));
         stickersOnItemClickListener = (view, position) -> {
             if (!(view instanceof StickerEmojiCell)) {
                 return;
             }
-            StickerPreviewViewer.getInstance().reset();
+            ContentPreviewViewer.getInstance().reset();
             StickerEmojiCell cell = (StickerEmojiCell) view;
             if (cell.isDisabled()) {
                 return;
@@ -220,7 +221,8 @@ public class StickerMasksView extends FrameLayout implements NotificationCenter.
         }
         for (int a = 0; a < stickerSets[currentType].size(); a++) {
             TLRPC.TL_messages_stickerSet set = stickerSets[currentType].get(a);
-            scrollSlidingTabStrip.addStickerTab(set.documents.get(0), set);
+            TLRPC.Document document = set.documents.get(0);
+            scrollSlidingTabStrip.addStickerTab(document, document, set);
         }
         scrollSlidingTabStrip.updateTabStyles();
         if (lastPosition != 0) {
@@ -267,10 +269,10 @@ public class StickerMasksView extends FrameLayout implements NotificationCenter.
         if (stickersGridAdapter != null) {
             stickersGridAdapter.notifyDataSetChanged();
         }
-        if (StickerPreviewViewer.getInstance().isVisible()) {
-            StickerPreviewViewer.getInstance().close();
+        if (ContentPreviewViewer.getInstance().isVisible()) {
+            ContentPreviewViewer.getInstance().close();
         }
-        StickerPreviewViewer.getInstance().reset();
+        ContentPreviewViewer.getInstance().reset();
     }
 
     public void setListener(Listener value) {
@@ -321,7 +323,6 @@ public class StickerMasksView extends FrameLayout implements NotificationCenter.
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.stickersDidLoad) {

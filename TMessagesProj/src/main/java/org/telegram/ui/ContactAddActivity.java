@@ -26,6 +26,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.MessagesController;
@@ -219,12 +220,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         }
         nameTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
         onlineTextView.setText(LocaleController.formatUserStatus(currentAccount, user));
-
-        TLRPC.FileLocation photo = null;
-        if (user.photo != null) {
-            photo = user.photo.photo_small;
-        }
-        avatarImage.setImage(photo, "50_50", avatarDrawable = new AvatarDrawable(user), user);
+        avatarImage.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable = new AvatarDrawable(user), user);
     }
 
     public void didReceivedNotification(int id, int account, Object... args) {

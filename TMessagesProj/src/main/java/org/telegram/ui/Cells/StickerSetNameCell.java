@@ -33,17 +33,20 @@ public class StickerSetNameCell extends FrameLayout {
     private TextView urlTextView;
     private ImageView buttonView;
     private boolean empty;
+    private boolean isEmoji;
 
-    public StickerSetNameCell(Context context) {
+    public StickerSetNameCell(Context context, boolean emoji) {
         super(context);
+
+        isEmoji = emoji;
 
         textView = new TextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelStickerSetName));
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setSingleLine(true);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 17, 4, 57, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, emoji ? 15 : 17, 4, 57, 0));
 
         urlTextView = new TextView(context);
         urlTextView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelStickerSetName));
@@ -63,7 +66,7 @@ public class StickerSetNameCell extends FrameLayout {
         if (text != null) {
             SpannableStringBuilder builder = new SpannableStringBuilder(text);
             try {
-                builder.setSpan(new ColorSpanUnderline(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), 0, searchLength, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                builder.setSpan(new ColorSpanUnderline(Theme.getColor(Theme.key_chat_emojiPanelStickerSetNameHighlight)), 0, searchLength, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE); //TODO
                 builder.setSpan(new ColorSpanUnderline(Theme.getColor(Theme.key_chat_emojiPanelStickerSetName)), searchLength, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } catch (Exception ignore) {
 
@@ -88,7 +91,7 @@ public class StickerSetNameCell extends FrameLayout {
             if (searchLength != 0) {
                 SpannableStringBuilder builder = new SpannableStringBuilder(text);
                 try {
-                    builder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), index, index + searchLength, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    builder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_chat_emojiPanelStickerSetNameHighlight)), index, index + searchLength, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 } catch (Exception ignore) {
 
                 }
@@ -120,7 +123,7 @@ public class StickerSetNameCell extends FrameLayout {
         if (empty) {
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(1, MeasureSpec.EXACTLY));
         } else {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(24), MeasureSpec.EXACTLY));
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(isEmoji ? 28 : 24), MeasureSpec.EXACTLY));
         }
     }
 }

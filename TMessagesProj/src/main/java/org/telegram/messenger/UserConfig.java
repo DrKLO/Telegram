@@ -36,25 +36,19 @@ public class UserConfig {
     public int lastContactsSyncTime;
     public int lastHintsSyncTime;
     public boolean draftsLoaded;
-    public boolean pinnedDialogsLoaded = true;
     public boolean unreadDialogsLoaded = true;
     public TLRPC.TL_account_tmpPassword tmpPassword;
     public int ratingLoadTime;
     public int botRatingLoadTime;
     public boolean contactsReimported;
+    public boolean hasValidDialogLoadIds;
     public int migrateOffsetId = -1;
     public int migrateOffsetDate = -1;
     public int migrateOffsetUserId = -1;
     public int migrateOffsetChatId = -1;
     public int migrateOffsetChannelId = -1;
     public long migrateOffsetAccess = -1;
-    public int totalDialogsLoadCount = 0;
-    public int dialogsLoadOffsetId = 0;
-    public int dialogsLoadOffsetDate = 0;
-    public int dialogsLoadOffsetUserId = 0;
-    public int dialogsLoadOffsetChatId = 0;
-    public int dialogsLoadOffsetChannelId = 0;
-    public long dialogsLoadOffsetAccess = 0;
+
     public boolean notificationsSettingsLoaded;
     public boolean notificationsSignUpSettingsLoaded;
     public boolean syncContacts = true;
@@ -117,13 +111,7 @@ public class UserConfig {
     public void saveConfig(boolean withFile, File oldFile) {
         synchronized (sync) {
             try {
-                SharedPreferences preferences;
-                if (currentAccount == 0) {
-                    preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
-                } else {
-                    preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfig" + currentAccount, Context.MODE_PRIVATE);
-                }
-                SharedPreferences.Editor editor = preferences.edit();
+                SharedPreferences.Editor editor = getPreferences().edit();
                 if (currentAccount == 0) {
                     editor.putInt("selectedAccount", selectedAccount);
                 }
@@ -135,7 +123,6 @@ public class UserConfig {
                 editor.putInt("lastContactsSyncTime", lastContactsSyncTime);
                 editor.putInt("lastHintsSyncTime", lastHintsSyncTime);
                 editor.putBoolean("draftsLoaded", draftsLoaded);
-                editor.putBoolean("pinnedDialogsLoaded", pinnedDialogsLoaded);
                 editor.putBoolean("unreadDialogsLoaded", unreadDialogsLoaded);
                 editor.putInt("ratingLoadTime", ratingLoadTime);
                 editor.putInt("botRatingLoadTime", botRatingLoadTime);
@@ -147,14 +134,15 @@ public class UserConfig {
                 editor.putBoolean("notificationsSettingsLoaded3", notificationsSettingsLoaded);
                 editor.putBoolean("notificationsSignUpSettingsLoaded", notificationsSignUpSettingsLoaded);
                 editor.putLong("autoDownloadConfigLoadTime", autoDownloadConfigLoadTime);
+                editor.putBoolean("hasValidDialogLoadIds", hasValidDialogLoadIds);
 
-                editor.putInt("3migrateOffsetId", migrateOffsetId);
+                editor.putInt("6migrateOffsetId", migrateOffsetId);
                 if (migrateOffsetId != -1) {
-                    editor.putInt("3migrateOffsetDate", migrateOffsetDate);
-                    editor.putInt("3migrateOffsetUserId", migrateOffsetUserId);
-                    editor.putInt("3migrateOffsetChatId", migrateOffsetChatId);
-                    editor.putInt("3migrateOffsetChannelId", migrateOffsetChannelId);
-                    editor.putLong("3migrateOffsetAccess", migrateOffsetAccess);
+                    editor.putInt("6migrateOffsetDate", migrateOffsetDate);
+                    editor.putInt("6migrateOffsetUserId", migrateOffsetUserId);
+                    editor.putInt("6migrateOffsetChatId", migrateOffsetChatId);
+                    editor.putInt("6migrateOffsetChannelId", migrateOffsetChannelId);
+                    editor.putLong("6migrateOffsetAccess", migrateOffsetAccess);
                 }
 
                 if (unacceptedTermsOfService != null) {
@@ -189,14 +177,6 @@ public class UserConfig {
                         editor.remove("appUpdate");
                     }
                 }
-
-                editor.putInt("2totalDialogsLoadCount", totalDialogsLoadCount);
-                editor.putInt("2dialogsLoadOffsetId", dialogsLoadOffsetId);
-                editor.putInt("2dialogsLoadOffsetDate", dialogsLoadOffsetDate);
-                editor.putInt("2dialogsLoadOffsetUserId", dialogsLoadOffsetUserId);
-                editor.putInt("2dialogsLoadOffsetChatId", dialogsLoadOffsetChatId);
-                editor.putInt("2dialogsLoadOffsetChannelId", dialogsLoadOffsetChannelId);
-                editor.putLong("2dialogsLoadOffsetAccess", dialogsLoadOffsetAccess);
 
                 SharedConfig.saveConfig();
 
@@ -268,12 +248,9 @@ public class UserConfig {
             if (configLoaded) {
                 return;
             }
-            SharedPreferences preferences;
+            SharedPreferences preferences = getPreferences();
             if (currentAccount == 0) {
-                preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                 selectedAccount = preferences.getInt("selectedAccount", 0);
-            } else {
-                preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfig" + currentAccount, Context.MODE_PRIVATE);
             }
             registeredForPush = preferences.getBoolean("registeredForPush", false);
             lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
@@ -283,7 +260,6 @@ public class UserConfig {
             lastContactsSyncTime = preferences.getInt("lastContactsSyncTime", (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60);
             lastHintsSyncTime = preferences.getInt("lastHintsSyncTime", (int) (System.currentTimeMillis() / 1000) - 25 * 60 * 60);
             draftsLoaded = preferences.getBoolean("draftsLoaded", false);
-            pinnedDialogsLoaded = preferences.getBoolean("pinnedDialogsLoaded", false);
             unreadDialogsLoaded = preferences.getBoolean("unreadDialogsLoaded", false);
             contactsReimported = preferences.getBoolean("contactsReimported", false);
             ratingLoadTime = preferences.getInt("ratingLoadTime", 0);
@@ -295,6 +271,7 @@ public class UserConfig {
             notificationsSettingsLoaded = preferences.getBoolean("notificationsSettingsLoaded3", false);
             notificationsSignUpSettingsLoaded = preferences.getBoolean("notificationsSignUpSettingsLoaded", false);
             autoDownloadConfigLoadTime = preferences.getLong("autoDownloadConfigLoadTime", 0);
+            hasValidDialogLoadIds = preferences.contains("2dialogsLoadOffsetId") || preferences.getBoolean("hasValidDialogLoadIds", false);
 
             try {
                 String terms = preferences.getString("terms", null);
@@ -342,22 +319,14 @@ public class UserConfig {
                 }
             }
 
-            migrateOffsetId = preferences.getInt("3migrateOffsetId", 0);
+            migrateOffsetId = preferences.getInt("6migrateOffsetId", 0);
             if (migrateOffsetId != -1) {
-                migrateOffsetDate = preferences.getInt("3migrateOffsetDate", 0);
-                migrateOffsetUserId = preferences.getInt("3migrateOffsetUserId", 0);
-                migrateOffsetChatId = preferences.getInt("3migrateOffsetChatId", 0);
-                migrateOffsetChannelId = preferences.getInt("3migrateOffsetChannelId", 0);
-                migrateOffsetAccess = preferences.getLong("3migrateOffsetAccess", 0);
+                migrateOffsetDate = preferences.getInt("6migrateOffsetDate", 0);
+                migrateOffsetUserId = preferences.getInt("6migrateOffsetUserId", 0);
+                migrateOffsetChatId = preferences.getInt("6migrateOffsetChatId", 0);
+                migrateOffsetChannelId = preferences.getInt("6migrateOffsetChannelId", 0);
+                migrateOffsetAccess = preferences.getLong("6migrateOffsetAccess", 0);
             }
-
-            dialogsLoadOffsetId = preferences.getInt("2dialogsLoadOffsetId", -1);
-            totalDialogsLoadCount = preferences.getInt("2totalDialogsLoadCount", 0);
-            dialogsLoadOffsetDate = preferences.getInt("2dialogsLoadOffsetDate", -1);
-            dialogsLoadOffsetUserId = preferences.getInt("2dialogsLoadOffsetUserId", -1);
-            dialogsLoadOffsetChatId = preferences.getInt("2dialogsLoadOffsetChatId", -1);
-            dialogsLoadOffsetChannelId = preferences.getInt("2dialogsLoadOffsetChannelId", -1);
-            dialogsLoadOffsetAccess = preferences.getLong("2dialogsLoadOffsetAccess", -1);
 
             String string = preferences.getString("tmpPassword", null);
             if (string != null) {
@@ -414,7 +383,17 @@ public class UserConfig {
         }
     }
 
+    private SharedPreferences getPreferences() {
+        if (currentAccount == 0) {
+            return ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
+        } else {
+            return ApplicationLoader.applicationContext.getSharedPreferences("userconfig" + currentAccount, Context.MODE_PRIVATE);
+        }
+    }
+
     public void clearConfig() {
+        getPreferences().edit().clear().commit();
+
         currentUser = null;
         clientUserId = 0;
         registeredForPush = false;
@@ -430,21 +409,14 @@ public class UserConfig {
         migrateOffsetChatId = -1;
         migrateOffsetChannelId = -1;
         migrateOffsetAccess = -1;
-        dialogsLoadOffsetId = 0;
-        totalDialogsLoadCount = 0;
-        dialogsLoadOffsetDate = 0;
-        dialogsLoadOffsetUserId = 0;
-        dialogsLoadOffsetChatId = 0;
-        dialogsLoadOffsetChannelId = 0;
-        dialogsLoadOffsetAccess = 0;
         ratingLoadTime = 0;
         botRatingLoadTime = 0;
         draftsLoaded = true;
         contactsReimported = true;
         syncContacts = true;
         suggestContacts = true;
-        pinnedDialogsLoaded = false;
         unreadDialogsLoaded = true;
+        hasValidDialogLoadIds = true;
         unacceptedTermsOfService = null;
         pendingAppUpdate = null;
         hasSecureData = false;
@@ -463,5 +435,52 @@ public class UserConfig {
             SharedConfig.clearConfig();
         }
         saveConfig(true);
+    }
+
+    public boolean isPinnedDialogsLoaded(int folderId) {
+        return getPreferences().getBoolean("2pinnedDialogsLoaded" + folderId, false);
+    }
+
+    public void setPinnedDialogsLoaded(int folderId, boolean loaded) {
+        getPreferences().edit().putBoolean("2pinnedDialogsLoaded" + folderId, loaded).commit();
+    }
+
+    public static final int i_dialogsLoadOffsetId = 0;
+    public static final int i_dialogsLoadOffsetDate = 1;
+    public static final int i_dialogsLoadOffsetUserId = 2;
+    public static final int i_dialogsLoadOffsetChatId = 3;
+    public static final int i_dialogsLoadOffsetChannelId = 4;
+    public static final int i_dialogsLoadOffsetAccess_1 = 5;
+    public static final int i_dialogsLoadOffsetAccess_2 = 6;
+
+    public int getTotalDialogsCount(int folderId) {
+        return getPreferences().getInt("2totalDialogsLoadCount" + (folderId == 0 ? "" : folderId), 0);
+    }
+
+    public void setTotalDialogsCount(int folderId, int totalDialogsLoadCount) {
+        getPreferences().edit().putInt("2totalDialogsLoadCount" + (folderId == 0 ? "" : folderId), totalDialogsLoadCount).commit();
+    }
+
+    public int[] getDialogLoadOffsets(int folderId) {
+        SharedPreferences preferences = getPreferences();
+        int dialogsLoadOffsetId = preferences.getInt("2dialogsLoadOffsetId" + (folderId == 0 ? "" : folderId), hasValidDialogLoadIds ? 0 : -1);
+        int dialogsLoadOffsetDate = preferences.getInt("2dialogsLoadOffsetDate" + (folderId == 0 ? "" : folderId), hasValidDialogLoadIds ? 0 : -1);
+        int dialogsLoadOffsetUserId = preferences.getInt("2dialogsLoadOffsetUserId" + (folderId == 0 ? "" : folderId), hasValidDialogLoadIds ? 0 : -1);
+        int dialogsLoadOffsetChatId = preferences.getInt("2dialogsLoadOffsetChatId" + (folderId == 0 ? "" : folderId), hasValidDialogLoadIds ? 0 : -1);
+        int dialogsLoadOffsetChannelId = preferences.getInt("2dialogsLoadOffsetChannelId" + (folderId == 0 ? "" : folderId), hasValidDialogLoadIds ? 0 : -1);
+        long dialogsLoadOffsetAccess = preferences.getLong("2dialogsLoadOffsetAccess" + (folderId == 0 ? "" : folderId), hasValidDialogLoadIds ? 0 : -1);
+        return new int[]{dialogsLoadOffsetId, dialogsLoadOffsetDate, dialogsLoadOffsetUserId, dialogsLoadOffsetChatId, dialogsLoadOffsetChannelId, (int) dialogsLoadOffsetAccess, (int) (dialogsLoadOffsetAccess >> 32)};
+    }
+
+    public void setDialogsLoadOffset(int folderId, int dialogsLoadOffsetId, int dialogsLoadOffsetDate, int dialogsLoadOffsetUserId, int dialogsLoadOffsetChatId, int dialogsLoadOffsetChannelId, long dialogsLoadOffsetAccess) {
+        SharedPreferences.Editor editor = getPreferences().edit();
+        editor.putInt("2dialogsLoadOffsetId" + (folderId == 0 ? "" : folderId), dialogsLoadOffsetId);
+        editor.putInt("2dialogsLoadOffsetDate" + (folderId == 0 ? "" : folderId), dialogsLoadOffsetDate);
+        editor.putInt("2dialogsLoadOffsetUserId" + (folderId == 0 ? "" : folderId), dialogsLoadOffsetUserId);
+        editor.putInt("2dialogsLoadOffsetChatId" + (folderId == 0 ? "" : folderId), dialogsLoadOffsetChatId);
+        editor.putInt("2dialogsLoadOffsetChannelId" + (folderId == 0 ? "" : folderId), dialogsLoadOffsetChannelId);
+        editor.putLong("2dialogsLoadOffsetAccess" + (folderId == 0 ? "" : folderId), dialogsLoadOffsetAccess);
+        editor.putBoolean("hasValidDialogLoadIds", true);
+        editor.commit();
     }
 }

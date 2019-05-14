@@ -15,11 +15,13 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserObject;
@@ -52,7 +54,7 @@ public class UserCell extends FrameLayout {
     private TLRPC.EncryptedChat encryptedChat;
 
     private CharSequence currentName;
-    private CharSequence currrntStatus;
+    private CharSequence currentStatus;
     private int currentId;
     private int currentDrawable;
 
@@ -113,6 +115,7 @@ public class UserCell extends FrameLayout {
             adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon));
             addView(adminTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 23 : 0, 15, LocaleController.isRTL ? 0 : 23, 0));
         }
+        setFocusable(true);
     }
 
     public void setAvatarPadding(int padding) {
@@ -165,7 +168,7 @@ public class UserCell extends FrameLayout {
 
     public void setData(TLObject object, TLRPC.EncryptedChat ec, CharSequence name, CharSequence status, int resId, boolean divider) {
         if (object == null && name == null && status == null) {
-            currrntStatus = null;
+            currentStatus = null;
             currentName = null;
             currentObject = null;
             nameTextView.setText("");
@@ -174,7 +177,7 @@ public class UserCell extends FrameLayout {
             return;
         }
         encryptedChat = ec;
-        currrntStatus = status;
+        currentStatus = status;
         currentName = name;
         currentObject = object;
         currentDrawable = resId;
@@ -383,9 +386,9 @@ public class UserCell extends FrameLayout {
             }
             nameTextView.setText(lastName);
         }
-        if (currrntStatus != null) {
+        if (currentStatus != null) {
             statusTextView.setTextColor(statusColor);
-            statusTextView.setText(currrntStatus);
+            statusTextView.setText(currentStatus);
         } else if (currentUser != null) {
             if (currentUser.bot) {
                 statusTextView.setTextColor(statusColor);
@@ -409,7 +412,13 @@ public class UserCell extends FrameLayout {
             imageView.setVisibility(currentDrawable == 0 ? GONE : VISIBLE);
             imageView.setImageResource(currentDrawable);
         }
-        avatarImageView.setImage(photo, "50_50", avatarDrawable, currentObject);
+
+        lastAvatar = photo;
+        if (currentUser != null) {
+            avatarImageView.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
+        } else if (currentChat != null) {
+            avatarImageView.setImage(ImageLocation.getForChat(currentChat, false), "50_50", avatarDrawable, currentChat);
+        }
     }
 
     @Override
@@ -421,6 +430,20 @@ public class UserCell extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(68), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(68) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+        }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (checkBoxBig != null && checkBoxBig.getVisibility() == VISIBLE) {
+            info.setCheckable(true);
+            info.setChecked(checkBoxBig.isChecked());
+            info.setClassName("android.widget.CheckBox");
+        } else if (checkBox != null && checkBox.getVisibility() == VISIBLE) {
+            info.setCheckable(true);
+            info.setChecked(checkBox.isChecked());
+            info.setClassName("android.widget.CheckBox");
         }
     }
 }

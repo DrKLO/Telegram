@@ -11,15 +11,11 @@ package org.telegram.ui;
 import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.database.DataSetObserver;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.BitmapDrawable;
@@ -30,15 +26,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.os.Parcelable;
-import android.support.v4.view.PagerAdapter;
-import android.support.v4.view.ViewPager;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ScrollView;
@@ -56,6 +51,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.BottomPagesView;
 import org.telegram.ui.Components.LayoutHelper;
 
 import javax.microedition.khronos.egl.EGL10;
@@ -67,60 +63,6 @@ import javax.microedition.khronos.opengles.GL;
 import javax.microedition.khronos.opengles.GL10;
 
 public class IntroActivity extends Activity implements NotificationCenter.NotificationCenterDelegate {
-
-    private class BottomPagesView extends View {
-
-        private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private float progress;
-        private int scrollPosition;
-        private int currentPage;
-        private DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator();
-        private RectF rect = new RectF();
-        private float animatedProgress;
-
-        public BottomPagesView(Context context) {
-            super(context);
-        }
-
-        public void setPageOffset(int position, float offset) {
-            progress = offset;
-            scrollPosition = position;
-            invalidate();
-        }
-
-        public void setCurrentPage(int page) {
-            currentPage = page;
-            invalidate();
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            float d = AndroidUtilities.dp(5);
-            paint.setColor(0xffbbbbbb);
-            int x;
-            currentPage = viewPager.getCurrentItem();
-            for (int a = 0; a < 6; a++) {
-                if (a == currentPage) {
-                    continue;
-                }
-                x = a * AndroidUtilities.dp(11);
-                rect.set(x, 0, x + AndroidUtilities.dp(5), AndroidUtilities.dp(5));
-                canvas.drawRoundRect(rect, AndroidUtilities.dp(2.5f), AndroidUtilities.dp(2.5f), paint);
-            }
-            paint.setColor(0xff2ca5e0);
-            x = currentPage * AndroidUtilities.dp(11);
-            if (progress != 0) {
-                if (scrollPosition >= currentPage) {
-                    rect.set(x, 0, x + AndroidUtilities.dp(5) + AndroidUtilities.dp(11) * progress, AndroidUtilities.dp(5));
-                } else {
-                    rect.set(x - AndroidUtilities.dp(11) * (1.0f - progress), 0, x + AndroidUtilities.dp(5), AndroidUtilities.dp(5));
-                }
-            } else {
-                rect.set(x, 0, x + AndroidUtilities.dp(5), AndroidUtilities.dp(5));
-            }
-            canvas.drawRoundRect(rect, AndroidUtilities.dp(2.5f), AndroidUtilities.dp(2.5f), paint);
-        }
-    }
 
     private int currentAccount = UserConfig.selectedAccount;
 
@@ -284,7 +226,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             });
         }
 
-        bottomPages = new BottomPagesView(this);
+        bottomPages = new BottomPagesView(this, viewPager, 6);
         frameLayout.addView(bottomPages, LayoutHelper.createFrame(66, 5, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 350, 0, 0));
 
         textView = new TextView(this);
@@ -378,7 +320,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             if (info.shortName.equals("en")) {
                 englishInfo = info;
             }
-            if (info.shortName.replace("_", "-").equals(systemLang) || info.shortName.equals(arg) || alias != null && info.shortName.equals(alias)) {
+            if (info.shortName.replace("_", "-").equals(systemLang) || info.shortName.equals(arg) || info.shortName.equals(alias)) {
                 systemInfo = info;
             }
             if (englishInfo != null && systemInfo != null) {
@@ -500,7 +442,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         private EGLSurface eglSurface;
         private GL gl;
         private boolean initied;
-        private int textures[] = new int[23];
+        private int[] textures = new int[23];
 
         private int surfaceWidth;
         private int surfaceHeight;

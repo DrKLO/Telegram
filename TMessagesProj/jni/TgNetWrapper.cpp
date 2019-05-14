@@ -4,7 +4,7 @@
 #include "tgnet/NativeByteBuffer.h"
 #include "tgnet/ConnectionsManager.h"
 #include "tgnet/MTProtoScheme.h"
-#include "tgnet/FileLoadOperation.h"
+#include "tgnet/ConnectionSocket.h"
 
 JavaVM *java;
 jclass jclass_RequestDelegateInternal;
@@ -18,11 +18,6 @@ jmethodID jclass_QuickAckDelegate_run;
 
 jclass jclass_WriteToSocketDelegate;
 jmethodID jclass_WriteToSocketDelegate_run;
-
-jclass jclass_FileLoadOperationDelegate;
-jmethodID jclass_FileLoadOperationDelegate_onFinished;
-jmethodID jclass_FileLoadOperationDelegate_onFailed;
-jmethodID jclass_FileLoadOperationDelegate_onProgressChanged;
 
 jclass jclass_ConnectionsManager;
 jmethodID jclass_ConnectionsManager_onUnparsedMessageReceived;
@@ -40,93 +35,6 @@ jmethodID jclass_ConnectionsManager_getHostByName;
 jmethodID jclass_ConnectionsManager_getInitFlags;
 
 bool check_utf8(const char *data, size_t len);
-
-/*jint createLoadOpetation(JNIEnv *env, jclass c, jint dc_id, jlong id, jlong volume_id, jlong access_hash, jint local_id, jbyteArray encKey, jbyteArray encIv, jstring extension, jint version, jint size, jstring dest, jstring temp, jobject delegate) {
-    if (encKey != nullptr && encIv == nullptr || encKey == nullptr && encIv != nullptr || extension == nullptr || dest == nullptr || temp == nullptr) {
-        return 0;
-    }
-    FileLoadOperation *loadOperation = nullptr;
-    bool error = false;
-
-    const char *extensionStr = env->GetStringUTFChars(extension, NULL);
-    const char *destStr = env->GetStringUTFChars(dest, NULL);
-    const char *tempStr = env->GetStringUTFChars(temp, NULL);
-
-    if (extensionStr == nullptr || destStr == nullptr || tempStr == nullptr) {
-        error = true;
-    }
-
-    jbyte *keyBuff = nullptr;
-    jbyte *ivBuff = nullptr;
-
-    if (!error && encKey != nullptr) {
-        keyBuff = env->GetByteArrayElements(encKey, NULL);
-        ivBuff = env->GetByteArrayElements(encIv, NULL);
-        if (keyBuff == nullptr || ivBuff == nullptr) {
-            error = true;
-        }
-    }
-    if (!error) {
-        if (delegate != nullptr) {
-            delegate = env->NewGlobalRef(delegate);
-        }
-        loadOperation = new FileLoadOperation(dc_id, id, volume_id, access_hash, local_id, (uint8_t *) keyBuff, (uint8_t *) ivBuff, extensionStr, version, size, destStr, tempStr);
-        loadOperation->setDelegate([delegate](std::string path) {
-            jstring pathText = jniEnv->NewStringUTF(path.c_str());
-            if (delegate != nullptr) {
-                jniEnv->CallVoidMethod(delegate, jclass_FileLoadOperationDelegate_onFinished, pathText);
-            }
-            if (pathText != nullptr) {
-                jniEnv->DeleteLocalRef(pathText);
-            }
-        }, [delegate](FileLoadFailReason reason) {
-            if (delegate != nullptr) {
-                jniEnv->CallVoidMethod(delegate, jclass_FileLoadOperationDelegate_onFailed, reason);
-            }
-        }, [delegate](float progress) {
-            if (delegate != nullptr) {
-                jniEnv->CallVoidMethod(delegate, jclass_FileLoadOperationDelegate_onProgressChanged, progress);
-            }
-        });
-        loadOperation->ptr1 = delegate;
-    }
-    if (keyBuff != nullptr) {
-        env->ReleaseByteArrayElements(encKey, keyBuff, JNI_ABORT);
-    }
-    if (ivBuff != nullptr) {
-        env->ReleaseByteArrayElements(encIv, ivBuff, JNI_ABORT);
-    }
-    if (extensionStr != nullptr) {
-        env->ReleaseStringUTFChars(extension, extensionStr);
-    }
-    if (destStr != nullptr) {
-        env->ReleaseStringUTFChars(dest, destStr);
-    }
-    if (tempStr != nullptr) {
-        env->ReleaseStringUTFChars(temp, tempStr);
-    }
-
-    return (jint) loadOperation;
-}
-
-void startLoadOperation(JNIEnv *env, jclass c, jint address) {
-    if (address != 0) {
-        ((FileLoadOperation *) address)->start();
-    }
-}
-
-void cancelLoadOperation(JNIEnv *env, jclass c, jint address) {
-    if (address != 0) {
-        ((FileLoadOperation *) address)->cancel();
-    }
-}
-
-static const char *FileLoadOperationClassPathName = "org/telegram/tgnet/FileLoadOperation";
-static JNINativeMethod FileLoadOperationMethods[] = {
-        {"native_createLoadOpetation", "(IJJJI[B[BLjava/lang/String;IILjava/lang/String;Ljava/lang/String;Ljava/lang/Object;)I", (void *) createLoadOpetation},
-        {"native_startLoadOperation", "(I)V", (void *) startLoadOperation},
-        {"native_cancelLoadOperation", "(I)V", (void *) cancelLoadOperation}
-};*/
 
 jlong getFreeBuffer(JNIEnv *env, jclass c, jint length) {
     return (jlong) (intptr_t) BuffersStorage::getInstance().getFreeBuffer((uint32_t) length);
@@ -400,23 +308,31 @@ class Delegate : public ConnectiosManagerDelegate {
         jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_onProxyError);
     }
 
-    std::string getHostByName(std::string domain, int32_t instanceNum) {
+    void getHostByName(std::string domain, int32_t instanceNum, ConnectionSocket *socket) {
         jstring domainName = jniEnv[instanceNum]->NewStringUTF(domain.c_str());
-        jstring address = (jstring) jniEnv[instanceNum]->CallStaticObjectMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_getHostByName, domainName, instanceNum);
-        const char *addressStr = jniEnv[instanceNum]->GetStringUTFChars(address, 0);
-        std::string result = std::string(addressStr);
-        if (addressStr != 0) {
-            jniEnv[instanceNum]->ReleaseStringUTFChars(address, addressStr);
-        }
+        jniEnv[instanceNum]->CallStaticVoidMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_getHostByName, domainName, (jlong) (intptr_t) socket);
         jniEnv[instanceNum]->DeleteLocalRef(domainName);
-        jniEnv[instanceNum]->DeleteLocalRef(address);
-        return result;
     }
 
     int32_t getInitFlags(int32_t instanceNum) {
         return (int32_t) jniEnv[instanceNum]->CallStaticIntMethod(jclass_ConnectionsManager, jclass_ConnectionsManager_getInitFlags);
     }
 };
+
+void onHostNameResolved(JNIEnv *env, jclass c, jstring host, jlong address, jstring ip) {
+    const char *ipStr = env->GetStringUTFChars(ip, 0);
+    const char *hostStr = env->GetStringUTFChars(host, 0);
+    std::string i = std::string(ipStr);
+    std::string h = std::string(hostStr);
+    if (ipStr != 0) {
+        env->ReleaseStringUTFChars(ip, ipStr);
+    }
+    if (hostStr != 0) {
+        env->ReleaseStringUTFChars(host, hostStr);
+    }
+    ConnectionSocket *socket = (ConnectionSocket *) (intptr_t) address;
+    socket->onHostNameResolved(h, i, false);
+}
 
 void setLangCode(JNIEnv *env, jclass c, jint instanceNum, jstring langCode) {
     const char *langCodeStr = env->GetStringUTFChars(langCode, 0);
@@ -506,7 +422,8 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_setPushConnectionEnabled", "(IZ)V", (void *) setPushConnectionEnabled},
         {"native_setJava", "(Z)V", (void *) setJava},
         {"native_applyDnsConfig", "(IJLjava/lang/String;)V", (void *) applyDnsConfig},
-        {"native_checkProxy", "(ILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/telegram/tgnet/RequestTimeDelegate;)J", (void *) checkProxy}
+        {"native_checkProxy", "(ILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/telegram/tgnet/RequestTimeDelegate;)J", (void *) checkProxy},
+        {"native_onHostNameResolved", "(Ljava/lang/String;JLjava/lang/String;)V", (void *) onHostNameResolved}
 };
 
 inline int registerNativeMethods(JNIEnv *env, const char *className, JNINativeMethod *methods, int methodsCount) {
@@ -527,10 +444,6 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     if (!registerNativeMethods(env, NativeByteBufferClassPathName, NativeByteBufferMethods, sizeof(NativeByteBufferMethods) / sizeof(NativeByteBufferMethods[0]))) {
         return JNI_FALSE;
     }
-
-    //if (!registerNativeMethods(env, FileLoadOperationClassPathName, FileLoadOperationMethods, sizeof(FileLoadOperationMethods) / sizeof(FileLoadOperationMethods[0]))) {
-    //    return JNI_FALSE;
-    //}
     
     if (!registerNativeMethods(env, ConnectionsManagerClassPathName, ConnectionsManagerMethods, sizeof(ConnectionsManagerMethods) / sizeof(ConnectionsManagerMethods[0]))) {
         return JNI_FALSE;
@@ -571,27 +484,6 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     if (jclass_WriteToSocketDelegate_run == 0) {
         return JNI_FALSE;
     }
-
-    jclass_FileLoadOperationDelegate = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/FileLoadOperationDelegate"));
-    if (jclass_FileLoadOperationDelegate == 0) {
-        return JNI_FALSE;
-    }
-
-    jclass_FileLoadOperationDelegate_onFinished = env->GetMethodID(jclass_FileLoadOperationDelegate, "onFinished", "(Ljava/lang/String;)V");
-    if (jclass_FileLoadOperationDelegate_onFinished == 0) {
-        return JNI_FALSE;
-    }
-
-    jclass_FileLoadOperationDelegate_onFailed = env->GetMethodID(jclass_FileLoadOperationDelegate, "onFailed", "(I)V");
-    if (jclass_FileLoadOperationDelegate_onFailed == 0) {
-        return JNI_FALSE;
-    }
-
-    jclass_FileLoadOperationDelegate_onProgressChanged = env->GetMethodID(jclass_FileLoadOperationDelegate, "onProgressChanged", "(F)V");
-    if (jclass_FileLoadOperationDelegate_onProgressChanged == 0) {
-        return JNI_FALSE;
-    }
-
     jclass_ConnectionsManager = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/ConnectionsManager"));
     if (jclass_ConnectionsManager == 0) {
         return JNI_FALSE;
@@ -640,7 +532,7 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     if (jclass_ConnectionsManager_onProxyError == 0) {
         return JNI_FALSE;
     }
-    jclass_ConnectionsManager_getHostByName = env->GetStaticMethodID(jclass_ConnectionsManager, "getHostByName", "(Ljava/lang/String;I)Ljava/lang/String;");
+    jclass_ConnectionsManager_getHostByName = env->GetStaticMethodID(jclass_ConnectionsManager, "getHostByName", "(Ljava/lang/String;J)V");
     if (jclass_ConnectionsManager_getHostByName == 0) {
         return JNI_FALSE;
     }

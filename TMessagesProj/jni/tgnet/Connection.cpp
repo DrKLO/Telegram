@@ -288,6 +288,7 @@ void Connection::connect() {
     if (connectionState == TcpConnectionStageConnected || connectionState == TcpConnectionStageConnecting) {
         return;
     }
+    connectionInProcess = true;
     connectionState = TcpConnectionStageConnecting;
     isMediaConnection = false;
     uint32_t ipv6 = ConnectionsManager::getInstance(currentDatacenter->instanceNum).isIpv6Enabled() ? TcpAddressFlagIpv6 : 0;
@@ -369,6 +370,7 @@ void Connection::connect() {
             setTimeout(12);
         }
     }
+    connectionInProcess = false;
 }
 
 void Connection::reconnect() {
@@ -643,7 +645,7 @@ inline void Connection::encryptKeyWithSecret(uint8_t *bytes, uint8_t secretType)
     SHA256_Final(bytes, &sha256Ctx);
 }
 
-void Connection::onDisconnected(int32_t reason, int32_t error) {
+void Connection::onDisconnectedInternal(int32_t reason, int32_t error) {
     reconnectTimer->stop();
     if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) disconnected with reason %d", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType, reason);
     bool switchToNextPort = reason == 2 && wasConnected && (!hasSomeDataSinceLastConnect || currentDatacenter->isCustomPort(currentAddressFlags)) || forceNextPort;
@@ -677,7 +679,7 @@ void Connection::onDisconnected(int32_t reason, int32_t error) {
                 willRetryConnectCount = 1;
             }
         }
-        if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).isNetworkAvailable()) {
+        if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).isNetworkAvailable() && connectionType != ConnectionTypeProxy) {
             isTryingNextPort = true;
             if (failedConnectionCount > willRetryConnectCount || switchToNextPort) {
                 currentDatacenter->nextAddressOrPort(currentAddressFlags);
@@ -704,6 +706,16 @@ void Connection::onDisconnected(int32_t reason, int32_t error) {
         }
     }
     usefullData = false;
+}
+
+void Connection::onDisconnected(int32_t reason, int32_t error) {
+    if (connectionInProcess) {
+        ConnectionsManager::getInstance(currentDatacenter->instanceNum).scheduleTask([&, reason, error] {
+            onDisconnectedInternal(reason, error);
+        });
+    } else {
+        onDisconnectedInternal(reason, error);
+    }
 }
 
 void Connection::onConnected() {

@@ -4,6 +4,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.ColorDrawable;
 import android.util.Property;
 
+import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.PhotoViewer;
 
 public class AnimationProperties {
@@ -34,7 +35,6 @@ public class AnimationProperties {
         final public void set(T object, Integer value) {
             setValue(object, value);
         }
-
     }
 
     public static final Property<Paint, Integer> PAINT_ALPHA = new IntProperty<Paint>("alpha") {
@@ -82,6 +82,18 @@ public class AnimationProperties {
         @Override
         public Float get(PhotoViewer object) {
             return object.getAnimationValue();
+        }
+    };
+
+    public static final Property<DialogCell, Float> CLIP_DIALOG_CELL_PROGRESS = new FloatProperty<DialogCell>("clipProgress") {
+        @Override
+        public void setValue(DialogCell object, float value) {
+            object.setClipProgress(value);
+        }
+
+        @Override
+        public Float get(DialogCell object) {
+            return object.getClipProgress();
         }
     };
 }

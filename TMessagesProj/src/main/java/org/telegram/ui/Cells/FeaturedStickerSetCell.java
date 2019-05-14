@@ -32,6 +32,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -227,12 +228,13 @@ public class FeaturedStickerSetCell extends FrameLayout {
         valueTextView.setText(LocaleController.formatPluralString("Stickers", set.set.count));
         TLRPC.PhotoSize thumb = set.cover != null ? FileLoader.getClosestPhotoSizeWithSize(set.cover.thumbs, 90) : null;
         if (thumb != null && thumb.location != null) {
-            imageView.setImage(thumb, null, "webp", null, set);
+            imageView.setImage(ImageLocation.getForDocument(thumb, set.cover), null, "webp", null, set);
+        } else if (!set.covers.isEmpty()) {
+            TLRPC.Document document = set.covers.get(0);
+            thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+            imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", null, set);
         } else {
-            thumb = !set.covers.isEmpty() ? FileLoader.getClosestPhotoSizeWithSize(set.covers.get(0).thumbs, 90) : null;
-            if (thumb != null) {
-                imageView.setImage(thumb, null, "webp", null, set);
-            }
+            imageView.setImage(null, null, "webp", null, set);
         }
 
         if (sameSet) {

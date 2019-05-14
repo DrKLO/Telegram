@@ -245,7 +245,7 @@ public class EmbedBottomSheet extends BottomSheet {
 
     @SuppressLint("SetJavaScriptEnabled")
     private EmbedBottomSheet(Context context, String title, String description, String originalUrl, final String url, int w, int h) {
-        super(context, false);
+        super(context, false, 0);
         fullWidth = true;
         setApplyTopPadding(false);
         setApplyBottomPadding(false);

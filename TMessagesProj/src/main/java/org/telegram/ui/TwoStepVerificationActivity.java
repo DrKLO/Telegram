@@ -43,8 +43,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.browser.Browser;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLRPC;
@@ -67,6 +65,9 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.math.BigInteger;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class TwoStepVerificationActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -859,7 +860,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         }
         int dot = text.lastIndexOf('.');
         int dog = text.lastIndexOf('@');
-        return !(dot < 0 || dog < 0 || dot < dog);
+        return !(dog < 0 || dot < dog);
     }
 
     private void showAlertWithText(String title, String text) {
@@ -1139,7 +1140,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 needShowProgress();
                 Utilities.globalQueue.postRunnable(() -> {
                     final TLRPC.TL_account_getPasswordSettings req = new TLRPC.TL_account_getPasswordSettings();
-                    final byte x_bytes[];
+                    final byte[] x_bytes;
                     if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
                         TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
                         x_bytes = SRPHelper.getX(oldPasswordBytes, algo);

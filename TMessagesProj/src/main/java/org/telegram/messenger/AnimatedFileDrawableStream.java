@@ -14,6 +14,7 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     private volatile boolean canceled;
     private final Object sync = new Object();
     private int lastOffset;
+    private boolean waitingForLoad;
 
     public AnimatedFileDrawableStream(TLRPC.Document d, Object p, int a) {
         document = d;
@@ -46,7 +47,9 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
                             countDownLatch = new CountDownLatch(1);
                         }
                         FileLoader.getInstance(currentAccount).setLoadingVideo(document, false, true);
+                        waitingForLoad = true;
                         countDownLatch.await();
+                        waitingForLoad = false;
                     }
                 }
                 lastOffset = offset + availableLength;
@@ -89,6 +92,10 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
 
     public int getCurrentAccount() {
         return currentAccount;
+    }
+
+    public boolean isWaitingForLoad() {
+        return waitingForLoad;
     }
 
     @Override

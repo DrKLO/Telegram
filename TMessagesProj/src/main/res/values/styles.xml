@@ -55,6 +55,18 @@
         <item name="android:windowActionBar">false</item>
     </style>
 
+    <style name="scrollbarShapeStyle">
+        <item name="android:scrollbarAlwaysDrawVerticalTrack">true</item>
+        <item name="android:scrollbarStyle">insideInset</item>
+        <item name="android:scrollbars">vertical</item>
+        <item name="android:fadeScrollbars">true</item>
+        <item name="android:scrollbarThumbVertical">@drawable/scrollbar_vertical_thumb_inset</item>
+        <item name="android:scrollbarTrackVertical">@null</item>
+        <item name="android:scrollbarSize">8dp</item>
+        <item name="android:scrollbarFadeDuration">250</item>
+        <item name="android:scrollbarDefaultDelayBeforeFade">400</item>
+    </style>
+
     <!-- TextView -->
 
     <style name="MyTextViewStyle" parent="android:Widget.Holo.Light.TextView">
@@ -66,6 +78,10 @@
     <style name="PopupAnimation" parent="android:Animation" mce_bogus="1">
         <item name="android:windowEnterAnimation">@anim/popup_in</item>
         <item name="android:windowExitAnimation">@anim/popup_out</item>
+    </style>
+
+    <style name="PopupContextAnimation" parent="android:Animation" mce_bogus="1">
+        <item name="android:windowEnterAnimation">@anim/popup_context_in</item>
     </style>
 
     <!--ACTION BAR-->

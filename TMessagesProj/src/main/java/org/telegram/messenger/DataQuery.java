@@ -61,6 +61,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 @SuppressWarnings("unchecked")
 public class DataQuery {
@@ -183,6 +184,8 @@ public class DataQuery {
         loadingRecentGifs = false;
         recentGifsLoaded = false;
 
+        currentFetchingEmoji.clear();
+
         loading = false;
         loaded = false;
         hints.clear();
@@ -240,6 +243,7 @@ public class DataQuery {
                     recentStickers[type].add(0, image);
                 }
                 found = true;
+                break;
             }
         }
         if (!found && !remove) {
@@ -291,7 +295,7 @@ public class DataQuery {
         if (!remove) {
             ArrayList<TLRPC.Document> arrayList = new ArrayList<>();
             arrayList.add(document);
-            processLoadedRecentDocuments(type, arrayList, false, date);
+            processLoadedRecentDocuments(type, arrayList, false, date, false);
         }
         if (type == TYPE_FAVE) {
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recentDocumentsDidLoad, false, type);
@@ -327,6 +331,18 @@ public class DataQuery {
         });
     }
 
+    public boolean hasRecentGif(TLRPC.Document document) {
+        for (int a = 0; a < recentGifs.size(); a++) {
+            TLRPC.Document image = recentGifs.get(a);
+            if (image.id == document.id) {
+                recentGifs.remove(a);
+                recentGifs.add(0, image);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void addRecentGif(TLRPC.Document document, int date) {
         boolean found = false;
         for (int a = 0; a < recentGifs.size(); a++) {
@@ -335,6 +351,7 @@ public class DataQuery {
                 recentGifs.remove(a);
                 recentGifs.add(0, image);
                 found = true;
+                break;
             }
         }
         if (!found) {
@@ -352,7 +369,7 @@ public class DataQuery {
         }
         ArrayList<TLRPC.Document> arrayList = new ArrayList<>();
         arrayList.add(document);
-        processLoadedRecentDocuments(0, arrayList, true, date);
+        processLoadedRecentDocuments(0, arrayList, true, date, false);
     }
 
     public boolean isLoadingStickers(int type) {
@@ -526,6 +543,19 @@ public class DataQuery {
         return unreadStickerSets;
     }
 
+    public boolean areAllTrendingStickerSetsUnread() {
+        for (int a = 0, N = featuredStickerSets.size(); a < N; a++) {
+            TLRPC.StickerSetCovered pack = featuredStickerSets.get(a);
+            if (DataQuery.getInstance(currentAccount).isStickerPackInstalled(pack.set.id) || pack.covers.isEmpty() && pack.cover == null) {
+                continue;
+            }
+            if (!unreadStickerSets.contains(pack.set.id)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public boolean isStickerPackInstalled(long id) {
         return installedStickerSetsById.indexOfKey(id) >= 0;
     }
@@ -655,7 +685,7 @@ public class DataQuery {
                         TLRPC.TL_messages_savedGifs res = (TLRPC.TL_messages_savedGifs) response;
                         arrayList = res.gifs;
                     }
-                    processLoadedRecentDocuments(type, arrayList, gif, 0);
+                    processLoadedRecentDocuments(type, arrayList, gif, 0, true);
                 });
             } else {
                 TLObject request;
@@ -682,13 +712,13 @@ public class DataQuery {
                             arrayList = res.stickers;
                         }
                     }
-                    processLoadedRecentDocuments(type, arrayList, gif, 0);
+                    processLoadedRecentDocuments(type, arrayList, gif, 0, true);
                 });
             }
         }
     }
 
-    protected void processLoadedRecentDocuments(final int type, final ArrayList<TLRPC.Document> documents, final boolean gif, final int date) {
+    protected void processLoadedRecentDocuments(final int type, final ArrayList<TLRPC.Document> documents, final boolean gif, final int date, boolean replace) {
         if (documents != null) {
             MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
                 try {
@@ -704,6 +734,7 @@ public class DataQuery {
                         }
                     }
                     database.beginTransaction();
+
                     SQLitePreparedStatement state = database.executeFast("REPLACE INTO web_recent_v3 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                     int count = documents.size();
                     int cacheType;
@@ -715,6 +746,9 @@ public class DataQuery {
                         cacheType = 4;
                     } else {
                         cacheType = 5;
+                    }
+                    if (replace) {
+                        database.executeFast("DELETE FROM web_recent_v3 WHERE type = " + cacheType).stepThis().dispose();
                     }
                     for (int a = 0; a < count; a++) {
                         if (a == maxCount) {
@@ -1132,6 +1166,7 @@ public class DataQuery {
                         for (int a1 = 0; a1 < newStickerArray.size(); a1++) {
                             if (newStickerArray.get(a1) == null) {
                                 newStickerArray.remove(a1);
+                                a1--;
                             }
                         }
                         processLoadedStickers(type, newStickerArray, false, (int) (System.currentTimeMillis() / 1000), res.hash);
@@ -1273,6 +1308,19 @@ public class DataQuery {
             }
         }
         return -1;
+    }
+
+    public static TLRPC.InputStickerSet getInputStickerSet(TLRPC.Document document) {
+        for (int a = 0; a < document.attributes.size(); a++) {
+            TLRPC.DocumentAttribute attribute = document.attributes.get(a);
+            if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
+                if (attribute.stickerset instanceof TLRPC.TL_inputStickerSetEmpty) {
+                    return null;
+                }
+                return attribute.stickerset;
+            }
+        }
+        return null;
     }
 
     private static int calcStickersHash(ArrayList<TLRPC.TL_messages_stickerSet> sets) {
@@ -1695,6 +1743,7 @@ public class DataQuery {
             int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
                 if (error == null) {
                     final TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
+                    MessagesController.getInstance(currentAccount).removeDeletedMessagesFromArray(uid, res.messages);
                     processLoadedMedia(res, uid, count, max_id, type, 0, classGuid, isChannel, res.messages.size() == 0);
                 }
             });
@@ -2816,7 +2865,7 @@ public class DataQuery {
                         Canvas canvas = new Canvas(result);
                         if (selfUser) {
                             AvatarDrawable avatarDrawable = new AvatarDrawable(user);
-                            avatarDrawable.setSavedMessages(1);
+                            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
                             avatarDrawable.setBounds(0, 0, size, size);
                             avatarDrawable.draw(canvas);
                         } else {
@@ -4043,4 +4092,282 @@ public class DataQuery {
     }
 
     //---------------- BOT END ----------------
+
+    //---------------- EMOJI START ----------------
+
+    public static class KeywordResult {
+        public String emoji;
+        public String keyword;
+    }
+
+    public interface KeywordResultCallback {
+        void run(ArrayList<KeywordResult> param, String alias);
+    }
+
+    private HashMap<String, Boolean> currentFetchingEmoji = new HashMap<>();
+
+    public void fetchNewEmojiKeywords(String[] langCodes) {
+        if (langCodes == null) {
+            return;
+        }
+        for (int a = 0; a < langCodes.length; a++) {
+            String langCode = langCodes[a];
+            if (TextUtils.isEmpty(langCode)) {
+                return;
+            }
+            if (currentFetchingEmoji.get(langCode) != null) {
+                return;
+            }
+            currentFetchingEmoji.put(langCode, true);
+            MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
+                int version = -1;
+                String alias = null;
+                long date = 0;
+                try {
+                    SQLiteCursor cursor = MessagesStorage.getInstance(currentAccount).getDatabase().queryFinalized("SELECT alias, version, date FROM emoji_keywords_info_v2 WHERE lang = ?", langCode);
+                    if (cursor.next()) {
+                        alias = cursor.stringValue(0);
+                        version = cursor.intValue(1);
+                        date = cursor.longValue(2);
+                    }
+                    cursor.dispose();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                if (!BuildVars.DEBUG_VERSION && Math.abs(System.currentTimeMillis() - date) < 60 * 60 * 1000) {
+                    AndroidUtilities.runOnUIThread(() -> currentFetchingEmoji.remove(langCode));
+                    return;
+                }
+                TLObject request;
+                if (version == -1) {
+                    TLRPC.TL_messages_getEmojiKeywords req = new TLRPC.TL_messages_getEmojiKeywords();
+                    req.lang_code = langCode;
+                    request = req;
+                } else {
+                    TLRPC.TL_messages_getEmojiKeywordsDifference req = new TLRPC.TL_messages_getEmojiKeywordsDifference();
+                    req.lang_code = langCode;
+                    req.from_version = version;
+                    request = req;
+                }
+                String aliasFinal = alias;
+                int versionFinal = version;
+                ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> {
+                    if (response != null) {
+                        TLRPC.TL_emojiKeywordsDifference res = (TLRPC.TL_emojiKeywordsDifference) response;
+                        if (versionFinal != -1 && !res.lang_code.equals(aliasFinal)) {
+                            MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
+                                try {
+                                    SQLitePreparedStatement deleteState = MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("DELETE FROM emoji_keywords_info_v2 WHERE lang = ?");
+                                    deleteState.bindString(1, langCode);
+                                    deleteState.step();
+                                    deleteState.dispose();
+
+                                    AndroidUtilities.runOnUIThread(() -> {
+                                        currentFetchingEmoji.remove(langCode);
+                                        fetchNewEmojiKeywords(new String[]{langCode});
+                                    });
+                                } catch (Exception e) {
+                                    FileLog.e(e);
+                                }
+                            });
+                        } else {
+                            putEmojiKeywords(langCode, res);
+                        }
+                    } else {
+                        AndroidUtilities.runOnUIThread(() -> currentFetchingEmoji.remove(langCode));
+                    }
+                });
+            });
+        }
+    }
+
+    private void putEmojiKeywords(String lang, TLRPC.TL_emojiKeywordsDifference res) {
+        if (res == null) {
+            return;
+        }
+        MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
+            try {
+                if (!res.keywords.isEmpty()) {
+                    SQLitePreparedStatement insertState = MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("REPLACE INTO emoji_keywords_v2 VALUES(?, ?, ?)");
+                    SQLitePreparedStatement deleteState = MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("DELETE FROM emoji_keywords_v2 WHERE lang = ? AND keyword = ? AND emoji = ?");
+                    MessagesStorage.getInstance(currentAccount).getDatabase().beginTransaction();
+                    for (int a = 0, N = res.keywords.size(); a < N; a++) {
+                        TLRPC.EmojiKeyword keyword = res.keywords.get(a);
+                        if (keyword instanceof TLRPC.TL_emojiKeyword) {
+                            TLRPC.TL_emojiKeyword emojiKeyword = (TLRPC.TL_emojiKeyword) keyword;
+                            String key = emojiKeyword.keyword.toLowerCase();
+                            for (int b = 0, N2 = emojiKeyword.emoticons.size(); b < N2; b++) {
+                                insertState.requery();
+                                insertState.bindString(1, res.lang_code);
+                                insertState.bindString(2, key);
+                                insertState.bindString(3, emojiKeyword.emoticons.get(b));
+                                insertState.step();
+                            }
+                        } else if (keyword instanceof TLRPC.TL_emojiKeywordDeleted) {
+                            TLRPC.TL_emojiKeywordDeleted keywordDeleted = (TLRPC.TL_emojiKeywordDeleted) keyword;
+                            String key = keywordDeleted.keyword.toLowerCase();
+                            for (int b = 0, N2 = keywordDeleted.emoticons.size(); b < N2; b++) {
+                                deleteState.requery();
+                                deleteState.bindString(1, res.lang_code);
+                                deleteState.bindString(2, key);
+                                deleteState.bindString(3, keywordDeleted.emoticons.get(b));
+                                deleteState.step();
+                            }
+                        }
+                    }
+                    MessagesStorage.getInstance(currentAccount).getDatabase().commitTransaction();
+                    insertState.dispose();
+                    deleteState.dispose();
+                }
+
+                SQLitePreparedStatement infoState = MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("REPLACE INTO emoji_keywords_info_v2 VALUES(?, ?, ?, ?)");
+                infoState.bindString(1, lang);
+                infoState.bindString(2, res.lang_code);
+                infoState.bindInteger(3, res.version);
+                infoState.bindLong(4, System.currentTimeMillis());
+                infoState.step();
+                infoState.dispose();
+
+                AndroidUtilities.runOnUIThread(() -> {
+                    currentFetchingEmoji.remove(lang);
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.newEmojiSuggestionsAvailable, lang);
+                });
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+    }
+
+    public void getEmojiSuggestions(String[] langCodes, String keyword, boolean fullMatch, KeywordResultCallback callback) {
+        getEmojiSuggestions(langCodes, keyword, fullMatch, callback, null);
+    }
+
+    public void getEmojiSuggestions(String[] langCodes, String keyword, boolean fullMatch, KeywordResultCallback callback, CountDownLatch sync) {
+        if (callback == null) {
+            return;
+        }
+        if (TextUtils.isEmpty(keyword) || langCodes == null) {
+            callback.run(new ArrayList<>(), null);
+            return;
+        }
+        ArrayList<String> recentEmoji = new ArrayList<>(Emoji.recentEmoji);
+        MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
+            ArrayList<KeywordResult> result = new ArrayList();
+            HashMap<String, Boolean> resultMap = new HashMap<>();
+            String alias = null;
+            try {
+                SQLiteCursor cursor;
+                boolean hasAny = false;
+                for (int a = 0; a < langCodes.length; a++) {
+                    cursor = MessagesStorage.getInstance(currentAccount).getDatabase().queryFinalized("SELECT alias FROM emoji_keywords_info_v2 WHERE lang = ?", langCodes[a]);
+                    if (cursor.next()) {
+                        alias = cursor.stringValue(0);
+                    }
+                    cursor.dispose();
+                    if (alias != null) {
+                        hasAny = true;
+                    }
+                }
+                if (!hasAny) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        for (int a = 0; a < langCodes.length; a++) {
+                            if (currentFetchingEmoji.get(langCodes[a]) != null) {
+                                return;
+                            }
+                        }
+                        callback.run(result, null);
+                    });
+                    return;
+                }
+
+                String key = keyword.toLowerCase();
+                for (int a = 0; a < 2; a++) {
+                    if (a == 1) {
+                        String translitKey = LocaleController.getInstance().getTranslitString(key, false, false);
+                        if (translitKey.equals(key)) {
+                            continue;
+                        }
+                        key = translitKey;
+                    }
+                    String key2 = null;
+                    StringBuilder nextKey = new StringBuilder(key);
+                    int pos = nextKey.length();
+                    while (pos > 0) {
+                        pos--;
+                        char value = nextKey.charAt(pos);
+                        value++;
+                        nextKey.setCharAt(pos, value);
+                        if (value != 0) {
+                            key2 = nextKey.toString();
+                            break;
+                        }
+                    }
+
+                    if (fullMatch) {
+                        cursor = MessagesStorage.getInstance(currentAccount).getDatabase().queryFinalized("SELECT emoji, keyword FROM emoji_keywords_v2 WHERE keyword = ?", key);
+                    } else if (key2 != null) {
+                        cursor = MessagesStorage.getInstance(currentAccount).getDatabase().queryFinalized("SELECT emoji, keyword FROM emoji_keywords_v2 WHERE keyword >= ? AND keyword < ?", key, key2);
+                    } else {
+                        key += "%";
+                        cursor = MessagesStorage.getInstance(currentAccount).getDatabase().queryFinalized("SELECT emoji, keyword FROM emoji_keywords_v2 WHERE keyword LIKE ?", key);
+                    }
+                    while (cursor.next()) {
+                        String value = cursor.stringValue(0).replace("\ufe0f", "");
+                        if (resultMap.get(value) != null) {
+                            continue;
+                        }
+                        resultMap.put(value, true);
+                        KeywordResult keywordResult = new KeywordResult();
+                        keywordResult.emoji = value;
+                        keywordResult.keyword = cursor.stringValue(1);
+                        result.add(keywordResult);
+                    }
+                    cursor.dispose();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            Collections.sort(result, (o1, o2) -> {
+                int idx1 = recentEmoji.indexOf(o1.emoji);
+                if (idx1 < 0) {
+                    idx1 = Integer.MAX_VALUE;
+                }
+                int idx2 = recentEmoji.indexOf(o2.emoji);
+                if (idx2 < 0) {
+                    idx2 = Integer.MAX_VALUE;
+                }
+                if (idx1 < idx2) {
+                    return -1;
+                } else if (idx1 > idx2) {
+                    return 1;
+                } else {
+                    int len1 = o1.keyword.length();
+                    int len2 = o2.keyword.length();
+
+                    if (len1 < len2) {
+                        return -1;
+                    } else if (len1 > len2) {
+                        return 1;
+                    }
+                    return 0;
+                }
+            });
+            String aliasFinal = alias;
+            if (sync != null) {
+                callback.run(result, aliasFinal);
+                sync.countDown();
+            } else {
+                AndroidUtilities.runOnUIThread(() -> callback.run(result, aliasFinal));
+            }
+        });
+        if (sync != null) {
+            try {
+                sync.await();
+            } catch (Throwable ignore) {
+
+            }
+        }
+    }
+
+    //---------------- EMOJI END ----------------
 }

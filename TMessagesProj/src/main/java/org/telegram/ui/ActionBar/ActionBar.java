@@ -32,6 +32,7 @@ import android.widget.ImageView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.Components.FireworksEffect;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SnowflakesEffect;
@@ -56,6 +57,7 @@ public class ActionBar extends FrameLayout {
     private View actionModeTop;
     private ActionBarMenu menu;
     private ActionBarMenu actionMode;
+    private boolean ignoreLayoutRequest;
     private boolean occupyStatusBar = Build.VERSION.SDK_INT >= 21;
     private boolean actionModeVisible;
     private boolean addToContainer = true;
@@ -63,6 +65,10 @@ public class ActionBar extends FrameLayout {
     private boolean interceptTouches = true;
     private int extraHeight;
     private AnimatorSet actionModeAnimation;
+    private View actionModeExtraView;
+    private View actionModeTranslationView;
+    private View actionModeShowingView;
+    private View[] actionModeHidingViews;
 
     private boolean supportsHolidayImage;
     private SnowflakesEffect snowflakesEffect;
@@ -92,6 +98,9 @@ public class ActionBar extends FrameLayout {
     public ActionBar(Context context) {
         super(context);
         setOnClickListener(v -> {
+            if (isSearchFieldVisible()) {
+                return;
+            }
             if (titleActionRunnable != null) {
                 titleActionRunnable.run();
             }
@@ -120,6 +129,7 @@ public class ActionBar extends FrameLayout {
                 actionBarMenuOnItemClick.onItemClick(-1);
             }
         });
+        backButtonImageView.setContentDescription(LocaleController.getString("AccDescrGoBack", R.string.AccDescrGoBack));
     }
 
     public void setBackButtonDrawable(Drawable drawable) {
@@ -133,6 +143,12 @@ public class ActionBar extends FrameLayout {
             backDrawable.setRotation(isActionModeShowed() ? 1 : 0, false);
             backDrawable.setRotatedColor(itemsActionModeColor);
             backDrawable.setColor(itemsColor);
+        }
+    }
+
+    public void setBackButtonContentDescription(CharSequence description) {
+        if (backButtonImageView != null) {
+            backButtonImageView.setContentDescription(description);
         }
     }
 
@@ -296,9 +312,9 @@ public class ActionBar extends FrameLayout {
         subtitleTextView.setTextColor(color);
     }
 
-    public void setPopupItemsColor(int color) {
+    public void setPopupItemsColor(int color, boolean icon) {
         if (menu != null) {
-            menu.setPopupItemsColor(color);
+            menu.setPopupItemsColor(color, icon);
         }
     }
 
@@ -388,14 +404,35 @@ public class ActionBar extends FrameLayout {
     }
 
     public void showActionMode() {
+        showActionMode(null, null, null, null, null, 0);
+    }
+
+    public void showActionMode(View extraView, View showingView, View[] hidingViews, boolean[] hideView, View translationView, int translation) {
         if (actionMode == null || actionModeVisible) {
             return;
         }
         actionModeVisible = true;
         ArrayList<Animator> animators = new ArrayList<>();
-        animators.add(ObjectAnimator.ofFloat(actionMode, "alpha", 0.0f, 1.0f));
+        animators.add(ObjectAnimator.ofFloat(actionMode, View.ALPHA, 0.0f, 1.0f));
+        if (hidingViews != null) {
+            for (int a = 0; a < hidingViews.length; a++) {
+                if (hidingViews[a] != null) {
+                    animators.add(ObjectAnimator.ofFloat(hidingViews[a], View.ALPHA, 1.0f, 0.0f));
+                }
+            }
+        }
+        if (showingView != null) {
+            animators.add(ObjectAnimator.ofFloat(showingView, View.ALPHA, 0.0f, 1.0f));
+        }
+        if (translationView != null) {
+            animators.add(ObjectAnimator.ofFloat(translationView, View.TRANSLATION_Y, translation));
+            actionModeTranslationView = translationView;
+        }
+        actionModeExtraView = extraView;
+        actionModeShowingView = showingView;
+        actionModeHidingViews = hidingViews;
         if (occupyStatusBar && actionModeTop != null) {
-            animators.add(ObjectAnimator.ofFloat(actionModeTop, "alpha", 0.0f, 1.0f));
+            animators.add(ObjectAnimator.ofFloat(actionModeTop, View.ALPHA, 0.0f, 1.0f));
         }
         if (actionModeAnimation != null) {
             actionModeAnimation.cancel();
@@ -425,6 +462,15 @@ public class ActionBar extends FrameLayout {
                     if (menu != null) {
                         menu.setVisibility(INVISIBLE);
                     }
+                    if (actionModeHidingViews != null) {
+                        for (int a = 0; a < actionModeHidingViews.length; a++) {
+                            if (actionModeHidingViews[a] != null) {
+                                if (hideView == null || a >= hideView.length || hideView[a]) {
+                                    actionModeHidingViews[a].setVisibility(INVISIBLE);
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -449,11 +495,27 @@ public class ActionBar extends FrameLayout {
         if (actionMode == null || !actionModeVisible) {
             return;
         }
+        actionMode.hideAllPopupMenus();
         actionModeVisible = false;
         ArrayList<Animator> animators = new ArrayList<>();
-        animators.add(ObjectAnimator.ofFloat(actionMode, "alpha", 0.0f));
+        animators.add(ObjectAnimator.ofFloat(actionMode, View.ALPHA, 0.0f));
+        if (actionModeHidingViews != null) {
+            for (int a = 0; a < actionModeHidingViews.length; a++) {
+                if (actionModeHidingViews != null) {
+                    actionModeHidingViews[a].setVisibility(VISIBLE);
+                    animators.add(ObjectAnimator.ofFloat(actionModeHidingViews[a], View.ALPHA, 1.0f));
+                }
+            }
+        }
+        if (actionModeTranslationView != null) {
+            animators.add(ObjectAnimator.ofFloat(actionModeTranslationView, View.TRANSLATION_Y, 0.0f));
+            actionModeTranslationView = null;
+        }
+        if (actionModeShowingView != null) {
+            animators.add(ObjectAnimator.ofFloat(actionModeShowingView, View.ALPHA, 0.0f));
+        }
         if (occupyStatusBar && actionModeTop != null) {
-            animators.add(ObjectAnimator.ofFloat(actionModeTop, "alpha", 0.0f));
+            animators.add(ObjectAnimator.ofFloat(actionModeTop, View.ALPHA, 0.0f));
         }
         if (actionModeAnimation != null) {
             actionModeAnimation.cancel();
@@ -469,6 +531,9 @@ public class ActionBar extends FrameLayout {
                     actionMode.setVisibility(INVISIBLE);
                     if (occupyStatusBar && actionModeTop != null) {
                         actionModeTop.setVisibility(INVISIBLE);
+                    }
+                    if (actionModeExtraView != null) {
+                        actionModeExtraView.setVisibility(INVISIBLE);
                     }
                 }
             }
@@ -545,8 +610,10 @@ public class ActionBar extends FrameLayout {
             subtitleTextView.setVisibility(visible ? INVISIBLE : VISIBLE);
         }
         Drawable drawable = backButtonImageView.getDrawable();
-        if (drawable != null && drawable instanceof MenuDrawable) {
-            ((MenuDrawable) drawable).setRotation(visible ? 1 : 0, true);
+        if (drawable instanceof MenuDrawable) {
+            MenuDrawable menuDrawable = (MenuDrawable) drawable;
+            menuDrawable.setRotateToBack(true);
+            menuDrawable.setRotation(visible ? 1 : 0, true);
         }
     }
 
@@ -596,11 +663,29 @@ public class ActionBar extends FrameLayout {
     }
 
     @Override
+    public void requestLayout() {
+        if (ignoreLayoutRequest) {
+            return;
+        }
+        super.requestLayout();
+    }
+
+    @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
         int actionBarHeight = getCurrentActionBarHeight();
         int actionBarHeightSpec = MeasureSpec.makeMeasureSpec(actionBarHeight, MeasureSpec.EXACTLY);
+
+        ignoreLayoutRequest = true;
+        if (actionModeTop != null) {
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) actionModeTop.getLayoutParams();
+            layoutParams.height = AndroidUtilities.statusBarHeight;
+        }
+        if (actionMode != null) {
+            actionMode.setPadding(0, occupyStatusBar ? AndroidUtilities.statusBarHeight : 0, 0, 0);
+        }
+        ignoreLayoutRequest = false;
 
         setMeasuredDimension(width, actionBarHeight + (occupyStatusBar ? AndroidUtilities.statusBarHeight : 0) + extraHeight);
 
@@ -738,6 +823,9 @@ public class ActionBar extends FrameLayout {
     }
 
     public void onMenuButtonPressed() {
+        if (isActionModeShowed()) {
+            return;
+        }
         if (menu != null) {
             menu.onMenuButtonPressed();
         }

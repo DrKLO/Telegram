@@ -24,8 +24,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
@@ -46,15 +44,22 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 public class PrivacySettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private ListAdapter listAdapter;
     private RecyclerListView listView;
     private AlertDialog progressDialog;
+    @SuppressWarnings("FieldCanBeLocal")
+    private LinearLayoutManager layoutManager;
 
     private int privacySectionRow;
     private int blockedRow;
     private int lastSeenRow;
+    private int profilePhotoRow;
+    private int forwardsRow;
     private int callsRow;
     private int p2pRow;
     private int groupsRow;
@@ -89,7 +94,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private boolean currentSuggest;
     private boolean newSuggest;
 
-    private boolean clear[] = new boolean[2];
+    private boolean[] clear = new boolean[2];
 
     @Override
     public boolean onFragmentCreate() {
@@ -156,7 +161,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         listView = new RecyclerListView(context);
-        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
+        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
             @Override
             public boolean supportsPredictiveItemAnimations() {
                 return false;
@@ -238,6 +243,10 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 presentFragment(new PrivacyControlActivity(2));
             } else if (position == p2pRow) {
                 presentFragment(new PrivacyControlActivity(3));
+            } else if (position == profilePhotoRow) {
+                presentFragment(new PrivacyControlActivity(4));
+            } else if (position == forwardsRow) {
+                presentFragment(new PrivacyControlActivity(5));
             } else if (position == passwordRow) {
                 presentFragment(new TwoStepVerificationActivity(0));
             } else if (position == passcodeRow) {
@@ -386,8 +395,10 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         privacySectionRow = rowCount++;
         blockedRow = rowCount++;
         lastSeenRow = rowCount++;
-        callsRow = rowCount++;
+        profilePhotoRow = rowCount++;
+        forwardsRow = rowCount++;
         p2pRow = rowCount++;
+        callsRow = rowCount++;
         groupsRow = rowCount++;
         groupsDetailRow = rowCount++;
         securitySectionRow = rowCount++;
@@ -549,6 +560,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     position == lastSeenRow && !ContactsController.getInstance(currentAccount).getLoadingPrivicyInfo(0) ||
                     position == callsRow && !ContactsController.getInstance(currentAccount).getLoadingPrivicyInfo(2) ||
                     position == p2pRow && !ContactsController.getInstance(currentAccount).getLoadingPrivicyInfo(3) ||
+                    position == profilePhotoRow && !ContactsController.getInstance(currentAccount).getLoadingPrivicyInfo(4) ||
+                    position == forwardsRow && !ContactsController.getInstance(currentAccount).getLoadingPrivicyInfo(5) ||
                     position == deleteAccountRow && !ContactsController.getInstance(currentAccount).getLoadingDeleteInfo() ||
                     position == paymentsClearRow || position == secretMapRow || position == contactsSyncRow || position == passportRow || position == contactsDeleteRow || position == contactsSuggestRow;
         }
@@ -629,6 +642,22 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                             value = formatRulesString(3);
                         }
                         textCell.setTextAndValue(LocaleController.getString("PrivacyP2P", R.string.PrivacyP2P), value, true);
+                    } else if (position == profilePhotoRow) {
+                        String value;
+                        if (ContactsController.getInstance(currentAccount).getLoadingPrivicyInfo(4)) {
+                            value = LocaleController.getString("Loading", R.string.Loading);
+                        } else {
+                            value = formatRulesString(4);
+                        }
+                        textCell.setTextAndValue(LocaleController.getString("PrivacyProfilePhoto", R.string.PrivacyProfilePhoto), value, true);
+                    } else if (position == forwardsRow) {
+                        String value;
+                        if (ContactsController.getInstance(currentAccount).getLoadingPrivicyInfo(5)) {
+                            value = LocaleController.getString("Loading", R.string.Loading);
+                        } else {
+                            value = formatRulesString(5);
+                        }
+                        textCell.setTextAndValue(LocaleController.getString("PrivacyForwards", R.string.PrivacyForwards), value, true);
                     } else if (position == passportRow) {
                         textCell.setText(LocaleController.getString("TelegramPassport", R.string.TelegramPassport), true);
                     } else if (position == deleteAccountRow) {

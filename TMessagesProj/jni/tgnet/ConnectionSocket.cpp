@@ -51,7 +51,8 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
     isIpv6 = ipv6;
     currentAddress = address;
     currentPort = port;
-    int epolFd = ConnectionsManager::getInstance(instanceNum).epolFd;
+    waitingForHostResolve = "";
+    adjustWriteOpAfterResolve = false;
     ConnectionsManager::getInstance(instanceNum).attachConnection(this);
 
     memset(&socketAddress, 0, sizeof(sockaddr_in));
@@ -96,32 +97,28 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
                 continueCheckAddress = false;
             }
             if (continueCheckAddress) {
-                std::string host = ConnectionsManager::getInstance(instanceNum).delegate->getHostByName(*proxyAddress, instanceNum);
-                if (host.empty() || inet_pton(AF_INET, host.c_str(), &socketAddress.sin_addr.s_addr) != 1) {
-                    continueCheckAddress = true;
-                    if (LOGS_ENABLED) DEBUG_E("connection(%p) can't resolve host %s address via delegate", this, proxyAddress->c_str());
+#ifdef USE_DELEGATE_HOST_RESOLVE
+                waitingForHostResolve = *proxyAddress;
+                ConnectionsManager::getInstance(instanceNum).delegate->getHostByName(*proxyAddress, instanceNum, this);
+                return;
+#else
+                struct hostent *he;
+                if ((he = gethostbyname(proxyAddress->c_str())) == nullptr) {
+                    if (LOGS_ENABLED) DEBUG_E("connection(%p) can't resolve host %s address", this, proxyAddress->c_str());
+                    closeSocket(1, -1);
+                    return;
+                }
+                struct in_addr **addr_list = (struct in_addr **) he->h_addr_list;
+                if (addr_list[0] != nullptr) {
+                    socketAddress.sin_addr.s_addr = addr_list[0]->s_addr;
+                    if (LOGS_ENABLED) DEBUG_D("connection(%p) resolved host %s address %x", this, proxyAddress->c_str(), addr_list[0]->s_addr);
+                    ipv6 = false;
                 } else {
-                    continueCheckAddress = false;
-                    if (LOGS_ENABLED) DEBUG_D("connection(%p) resolved host %s address %x via delegate", this, proxyAddress->c_str(), socketAddress.sin_addr.s_addr);
+                    if (LOGS_ENABLED) DEBUG_E("connection(%p) can't resolve host %s address", this, proxyAddress->c_str());
+                    closeSocket(1, -1);
+                    return;
                 }
-                if (continueCheckAddress) {
-                    struct hostent *he;
-                    if ((he = gethostbyname(proxyAddress->c_str())) == nullptr) {
-                        if (LOGS_ENABLED) DEBUG_E("connection(%p) can't resolve host %s address", this, proxyAddress->c_str());
-                        closeSocket(1, -1);
-                        return;
-                    }
-                    struct in_addr **addr_list = (struct in_addr **) he->h_addr_list;
-                    if (addr_list[0] != nullptr) {
-                        socketAddress.sin_addr.s_addr = addr_list[0]->s_addr;
-                        if (LOGS_ENABLED) DEBUG_D("connection(%p) resolved host %s address %x", this, proxyAddress->c_str(), addr_list[0]->s_addr);
-                        ipv6 = false;
-                    } else {
-                        if (LOGS_ENABLED) DEBUG_E("connection(%p) can't resolve host %s address", this, proxyAddress->c_str());
-                        closeSocket(1, -1);
-                        return;
-                    }
-                }
+#endif
             }
         }
     } else {
@@ -150,6 +147,11 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
         }
     }
 
+    openConnectionInternal(ipv6);
+}
+
+void ConnectionSocket::openConnectionInternal(bool ipv6) {
+    int epolFd = ConnectionsManager::getInstance(instanceNum).epolFd;
     int yes = 1;
     if (setsockopt(socketFd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(int))) {
         if (LOGS_ENABLED) DEBUG_E("connection(%p) set TCP_NODELAY failed", this);
@@ -170,6 +172,9 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
             if (LOGS_ENABLED) DEBUG_E("connection(%p) epoll_ctl, adding socket failed", this);
             closeSocket(1, -1);
         }
+    }
+    if (adjustWriteOpAfterResolve) {
+        adjustWriteOp();
     }
 }
 
@@ -198,6 +203,8 @@ void ConnectionSocket::closeSocket(int32_t reason, int32_t error) {
         }
         socketFd = -1;
     }
+    waitingForHostResolve = "";
+    adjustWriteOpAfterResolve = false;
     proxyAuthState = 0;
     onConnectedSent = false;
     outgoingByteStream->clean();
@@ -401,6 +408,10 @@ void ConnectionSocket::writeBuffer(NativeByteBuffer *buffer) {
 }
 
 void ConnectionSocket::adjustWriteOp() {
+    if (!waitingForHostResolve.empty()) {
+        adjustWriteOpAfterResolve = true;
+        return;
+    }
     eventMask.events = EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLET;
     if (proxyAuthState == 0 && (outgoingByteStream->hasData() || !onConnectedSent) || proxyAuthState == 1 || proxyAuthState == 3 || proxyAuthState == 5) {
         eventMask.events |= EPOLLOUT;
@@ -433,6 +444,10 @@ void ConnectionSocket::checkTimeout(int64_t now) {
     }
 }
 
+void ConnectionSocket::resetLastEventTime() {
+    lastEventTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMonotonicMillis();
+}
+
 bool ConnectionSocket::isDisconnected() {
     return socketFd < 0;
 }
@@ -447,4 +462,19 @@ void ConnectionSocket::setOverrideProxy(std::string address, uint16_t port, std:
     overrideProxyUser = username;
     overrideProxyPassword = password;
     overrideProxySecret = secret;
+}
+
+void ConnectionSocket::onHostNameResolved(std::string host, std::string ip, bool ipv6) {
+    ConnectionsManager::getInstance(instanceNum).scheduleTask([&, host, ip, ipv6] {
+        if (waitingForHostResolve == host) {
+            waitingForHostResolve = "";
+            if (ip.empty() || inet_pton(AF_INET, ip.c_str(), &socketAddress.sin_addr.s_addr) != 1) {
+                if (LOGS_ENABLED) DEBUG_E("connection(%p) can't resolve host %s address via delegate", this, host.c_str());
+                closeSocket(1, -1);
+                return;
+            }
+            if (LOGS_ENABLED) DEBUG_D("connection(%p) resolved host %s address %x via delegate", this, ip.c_str(), socketAddress.sin_addr.s_addr);
+            openConnectionInternal(ipv6);
+        }
+    });
 }

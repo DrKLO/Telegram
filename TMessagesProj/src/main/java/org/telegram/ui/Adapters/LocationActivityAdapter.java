@@ -19,7 +19,6 @@ import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.LocationCell;
@@ -32,6 +31,8 @@ import org.telegram.ui.LocationActivity;
 
 import java.util.ArrayList;
 import java.util.Locale;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 public class LocationActivityAdapter extends BaseLocationAdapter {
 

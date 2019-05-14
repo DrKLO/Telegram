@@ -32,11 +32,13 @@ public:
     bool isDisconnected();
     void dropConnection();
     void setOverrideProxy(std::string address, uint16_t port, std::string username, std::string password, std::string secret);
+    void onHostNameResolved(std::string host, std::string ip, bool ipv6);
 
 protected:
     int32_t instanceNum;
     void onEvent(uint32_t events);
     void checkTimeout(int64_t now);
+    void resetLastEventTime();
     virtual void onReceivedData(NativeByteBuffer *buffer) = 0;
     virtual void onDisconnected(int32_t reason, int32_t error) = 0;
     virtual void onConnected() = 0;
@@ -63,12 +65,16 @@ private:
     std::string currentAddress;
     uint16_t currentPort;
 
+    std::string waitingForHostResolve;
+    bool adjustWriteOpAfterResolve;
+
     uint8_t buffer[1024];
 
     uint8_t proxyAuthState;
 
     int32_t checkSocketError(int32_t *error);
     void closeSocket(int32_t reason, int32_t error);
+    void openConnectionInternal(bool ipv6);
     void adjustWriteOp();
 
     friend class EventObject;

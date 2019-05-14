@@ -20,13 +20,15 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.annotation.Keep;
+import androidx.annotation.Keep;
+import android.view.DisplayCutout;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
+import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ListView;
@@ -57,6 +59,11 @@ public class DrawerLayoutContainer extends FrameLayout {
     private int paddingTop;
 
     private Paint scrimPaint = new Paint();
+    private Paint backgroundPaint = new Paint();
+
+    private int behindKeyboardColor;
+
+    private boolean hasCutout;
 
     private Object lastInsets;
     private boolean inLayout;
@@ -80,10 +87,18 @@ public class DrawerLayoutContainer extends FrameLayout {
             setFitsSystemWindows(true);
             setOnApplyWindowInsetsListener((v, insets) -> {
                 final DrawerLayoutContainer drawerLayout = (DrawerLayoutContainer) v;
+                if (AndroidUtilities.statusBarHeight != insets.getSystemWindowInsetTop()) {
+                    drawerLayout.requestLayout();
+                }
                 AndroidUtilities.statusBarHeight = insets.getSystemWindowInsetTop();
                 lastInsets = insets;
                 drawerLayout.setWillNotDraw(insets.getSystemWindowInsetTop() <= 0 && getBackground() == null);
-                drawerLayout.requestLayout();
+
+                if (Build.VERSION.SDK_INT >= 28) {
+                    DisplayCutout cutout = insets.getDisplayCutout();
+                    hasCutout = cutout != null && cutout.getBoundingRects().size() != 0;
+                }
+                invalidate();
                 return insets.consumeSystemWindowInsets();
             });
             setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
@@ -220,6 +235,15 @@ public class DrawerLayoutContainer extends FrameLayout {
                 ((ListView) drawerLayout).setSelectionFromTop(0, 0);
             }
         }
+        if (Build.VERSION.SDK_INT >= 19) {
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                if (child != drawerLayout) {
+                    child.setImportantForAccessibility(opened ? View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS : View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+                }
+            }
+        }
+        sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED);
     }
 
     private void setScrimOpacity(float value) {
@@ -300,7 +324,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                     float dx = (int) (ev.getX() - startedTrackingX);
                     float dy = Math.abs((int) ev.getY() - startedTrackingY);
                     velocityTracker.addMovement(ev);
-                    if (maybeStartTracking && !startedTracking && (dx > 0 && dx / 3.0f > Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.getPixelsInCM(0.2f, true) || dx < 0 && Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.getPixelsInCM(0.4f, true))) {
+                    if (maybeStartTracking && !startedTracking && (dx > 0 && dx / 3.0f > Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.getPixelsInCM(0.2f, true) || drawerOpened && dx < 0 && Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.getPixelsInCM(0.4f, true))) {
                         prepareForDrawerOpen(ev);
                         startedTrackingX = (int) ev.getX();
                         requestDisallowInterceptTouchEvent(true);
@@ -372,7 +396,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                 if (drawerLayout != child) {
                     child.layout(lp.leftMargin, lp.topMargin + getPaddingTop(), lp.leftMargin + child.getMeasuredWidth(), lp.topMargin + child.getMeasuredHeight() + getPaddingTop());
                 } else {
-                    child.layout(-child.getMeasuredWidth(), lp.topMargin + getPaddingTop(), 0, lp.topMargin + child.getMeasuredHeight() +  + getPaddingTop());
+                    child.layout(-child.getMeasuredWidth(), lp.topMargin + getPaddingTop(), 0, lp.topMargin + child.getMeasuredHeight() + +getPaddingTop());
                 }
             } else {
                 try {
@@ -458,6 +482,11 @@ public class DrawerLayoutContainer extends FrameLayout {
         }
     }
 
+    public void setBehindKeyboardColor(int color) {
+        behindKeyboardColor = color;
+        invalidate();
+    }
+
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
         if (!allowDrawContent) {
@@ -480,7 +509,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                     continue;
                 }
 
-                final int vright = v.getRight();
+                final int vright = (int) v.getX() + v.getMeasuredWidth();
                 if (vright > clipLeft) {
                     clipLeft = vright;
                 }
@@ -509,7 +538,40 @@ public class DrawerLayoutContainer extends FrameLayout {
     }
 
     @Override
+    protected void onDraw(Canvas canvas) {
+        if (Build.VERSION.SDK_INT >= 21 && lastInsets != null) {
+            WindowInsets insets = (WindowInsets) lastInsets;
+
+            int bottomInset = insets.getSystemWindowInsetBottom();
+            if (bottomInset > 0) {
+                backgroundPaint.setColor(behindKeyboardColor);
+                canvas.drawRect(0, getMeasuredHeight() - bottomInset, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
+            }
+
+            if (hasCutout) {
+                backgroundPaint.setColor(0xff000000);
+                int left = insets.getSystemWindowInsetLeft();
+                if (left != 0) {
+                    canvas.drawRect(0, 0, left, getMeasuredHeight(), backgroundPaint);
+                }
+                int right = insets.getSystemWindowInsetRight();
+                if (right != 0) {
+                    canvas.drawRect(right, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
+                }
+            }
+        }
+    }
+
+    @Override
     public boolean hasOverlappingRendering() {
         return false;
+    }
+
+    @Override
+    public boolean onRequestSendAccessibilityEvent(View child, AccessibilityEvent event) {
+        if (drawerOpened && child != drawerLayout) {
+            return false;
+        }
+        return super.onRequestSendAccessibilityEvent(child, event);
     }
 }

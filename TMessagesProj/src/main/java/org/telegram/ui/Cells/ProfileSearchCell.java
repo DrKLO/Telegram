@@ -15,10 +15,12 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -250,7 +252,7 @@ public class ProfileSearchCell extends BaseCell {
                 } else {
                     nameLeft = AndroidUtilities.dp(11);
                 }
-                if (user.bot) {
+                if (user.bot && !MessagesController.isSupportUser(user)) {
                     drawNameBot = true;
                     if (!LocaleController.isRTL) {
                         nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
@@ -311,7 +313,7 @@ public class ProfileSearchCell extends BaseCell {
         onlineWidth -= getPaddingLeft() + getPaddingRight();
 
         if (drawCount) {
-            TLRPC.TL_dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
+            TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
             if (dialog != null && dialog.unread_count != 0) {
                 lastUnreadCount = dialog.unread_count;
                 String countString = String.format("%d", dialog.unread_count);
@@ -350,7 +352,9 @@ public class ProfileSearchCell extends BaseCell {
             if (subLabel != null) {
                 onlineString = subLabel;
             } else if (user != null) {
-                if (user.bot) {
+                if (MessagesController.isSupportUser(user)) {
+                    onlineString = LocaleController.getString("SupportStatus", R.string.SupportStatus);
+                } else if (user.bot) {
                     onlineString = LocaleController.getString("Bot", R.string.Bot);
                 } else if (user.id == 333000 || user.id == 777000) {
                     onlineString = LocaleController.getString("ServiceNotifications", R.string.ServiceNotifications);
@@ -437,29 +441,32 @@ public class ProfileSearchCell extends BaseCell {
 
     public void update(int mask) {
         TLRPC.FileLocation photo = null;
-        Object parentObject = null;
         if (user != null) {
             avatarDrawable.setInfo(user);
             if (savedMessages) {
-                avatarDrawable.setSavedMessages(1);
-            } else if (user.photo != null) {
-                photo = user.photo.photo_small;
+                avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
+                avatarImage.setImage(null, null, avatarDrawable, null, null, 0);
+            } else {
+                if (user.photo != null) {
+                    photo = user.photo.photo_small;
+                }
+                avatarImage.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, null, user, 0);
             }
-            parentObject = user;
         } else if (chat != null) {
             if (chat.photo != null) {
                 photo = chat.photo.photo_small;
             }
             avatarDrawable.setInfo(chat);
-            parentObject = chat;
+            avatarImage.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, null, chat, 0);
         } else {
             avatarDrawable.setInfo(0, null, null, false);
+            avatarImage.setImage(null, null, avatarDrawable, null, null, 0);
         }
 
         if (mask != 0) {
             boolean continueUpdate = false;
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 && user != null || (mask & MessagesController.UPDATE_MASK_CHAT_AVATAR) != 0 && chat != null) {
-                if (lastAvatar != null && photo == null || lastAvatar == null && photo != null && lastAvatar != null && photo != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
+                if (lastAvatar != null && photo == null || lastAvatar == null && photo != null || lastAvatar != null && photo != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
                     continueUpdate = true;
                 }
             }
@@ -484,7 +491,7 @@ public class ProfileSearchCell extends BaseCell {
                 }
             }
             if (!continueUpdate && drawCount && (mask & MessagesController.UPDATE_MASK_READ_DIALOG_MESSAGE) != 0) {
-                TLRPC.TL_dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
+                TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
                 if (dialog != null && dialog.unread_count != lastUnreadCount) {
                     continueUpdate = true;
                 }
@@ -507,7 +514,6 @@ public class ProfileSearchCell extends BaseCell {
         }
 
         lastAvatar = photo;
-        avatarImage.setImage(photo, "50_50", avatarDrawable, null, parentObject, 0);
 
         if (getMeasuredWidth() != 0 || getMeasuredHeight() != 0) {
             buildLayout();
@@ -587,5 +593,11 @@ public class ProfileSearchCell extends BaseCell {
         }
 
         avatarImage.draw(canvas);
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setText(nameLayout.getText() + ", " + subLabel);
     }
 }

@@ -69,6 +69,7 @@ private:
 
     inline void encryptKeyWithSecret(uint8_t *array, uint8_t secretType);
     inline std::string *getCurrentSecret(uint8_t secretType);
+    void onDisconnectedInternal(int32_t reason, int32_t error);
 
     ProtocolType currentProtocolType = ProtocolTypeEE;
 
@@ -94,6 +95,7 @@ private:
     bool forceNextPort = false;
     bool isMediaConnection = false;
     bool waitForReconnectTimer = false;
+    bool connectionInProcess = false;
     uint32_t lastReconnectTimeout = 100;
     int64_t usefullDataReceiveTime;
     uint32_t currentTimeout = 4;

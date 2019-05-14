@@ -24,6 +24,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
@@ -147,9 +148,7 @@ public class StickerSetCell extends FrameLayout {
             valueTextView.setText(LocaleController.formatPluralString("Stickers", documents.size()));
             TLRPC.Document document = documents.get(0);
             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-            if (thumb != null) {
-                imageView.setImage(thumb, null, "webp", null, set);
-            }
+            imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", null, set);
         } else {
             valueTextView.setText(LocaleController.formatPluralString("Stickers", 0));
         }

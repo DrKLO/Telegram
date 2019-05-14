@@ -18,7 +18,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PowerManager;
@@ -41,6 +40,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DownloadController;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesController;
@@ -889,15 +889,13 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                             photoExist = false;
                         }
                     }
-                    if (messageObject.needDrawBluredPreview()) {
-                        imageView.setImage(null, "100_100_b2", thumb, currentPhotoObject.size, messageObject);
-                    } else {
+                    if (!messageObject.needDrawBluredPreview()) {
                         if (photoExist || DownloadController.getInstance(messageObject.currentAccount).canDownloadMedia(messageObject)) {
-                            imageView.setImage(currentPhotoObject, "100_100", thumb, currentPhotoObject.size, messageObject);
+                            imageView.setImage(ImageLocation.getForObject(currentPhotoObject, messageObject.photoThumbsObject), "100_100", ImageLocation.getForObject(thumb, messageObject.photoThumbsObject), "100_100_b", currentPhotoObject.size, messageObject);
                             photoSet = true;
                         } else {
                             if (thumb != null) {
-                                imageView.setImage(thumb, null, (Drawable) null, messageObject);
+                                imageView.setImage(ImageLocation.getForObject(thumb, messageObject.photoThumbsObject), "100_100_b", null, null, messageObject);
                                 photoSet = true;
                             }
                         }
@@ -921,7 +919,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 double lon = geoPoint._long;
 
                 if (MessagesController.getInstance(messageObject.currentAccount).mapProvider == 2) {
-                    imageView.setImage(WebFile.createWithGeoPoint(geoPoint, 100, 100, 15, Math.min(2, (int) Math.ceil(AndroidUtilities.density))), null, (Drawable) null, messageObject);
+                    imageView.setImage(ImageLocation.getForWebFile(WebFile.createWithGeoPoint(geoPoint, 100, 100, 15, Math.min(2, (int) Math.ceil(AndroidUtilities.density)))), null, null, null, messageObject);
                 } else {
                     String currentUrl = AndroidUtilities.formapMapUrl(messageObject.currentAccount, lat, lon, 100, 100, true, 15);
                     imageView.setImage(currentUrl, null, null);
@@ -1331,32 +1329,26 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         if (currentMessageObject == null) {
             return;
         }
-        TLRPC.FileLocation newPhoto = null;
-        AvatarDrawable avatarDrawable = null;
-        Object parentObject = null;
         if (currentChat != null) {
             TLRPC.Chat chat = MessagesController.getInstance(currentMessageObject.currentAccount).getChat(currentChat.id);
             if (chat == null) {
                 return;
             }
-            parentObject = currentChat = chat;
-            if (currentChat.photo != null) {
-                newPhoto = currentChat.photo.photo_small;
+            currentChat = chat;
+            if (avatarImageView != null) {
+                AvatarDrawable avatarDrawable = new AvatarDrawable(currentChat);
+                avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, chat);
             }
-            avatarDrawable = new AvatarDrawable(currentChat);
         } else if (currentUser != null) {
             TLRPC.User user = MessagesController.getInstance(currentMessageObject.currentAccount).getUser(currentUser.id);
             if (user == null) {
                 return;
             }
-            parentObject = currentUser = user;
-            if (currentUser.photo != null) {
-                newPhoto = currentUser.photo.photo_small;
+            currentUser = user;
+            if (avatarImageView != null) {
+                AvatarDrawable avatarDrawable = new AvatarDrawable(currentUser);
+                avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
             }
-            avatarDrawable = new AvatarDrawable(currentUser);
-        }
-        if (avatarImageView != null) {
-            avatarImageView.setImage(newPhoto, "50_50", avatarDrawable, parentObject);
         }
     }
 

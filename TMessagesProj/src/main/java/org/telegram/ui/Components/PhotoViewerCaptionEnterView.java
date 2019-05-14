@@ -13,6 +13,7 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -41,7 +42,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.lang.reflect.Field;
@@ -107,7 +107,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         textFieldContainer.addView(frameLayout, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
 
         emojiButton = new ImageView(context);
-        emojiButton.setImageResource(R.drawable.ic_smile_w);
+        emojiButton.setImageResource(R.drawable.input_smile);
         emojiButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         emojiButton.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(1), 0, 0);
         frameLayout.addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT));
@@ -118,6 +118,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                 openKeyboardInternal();
             }
         });
+        emojiButton.setContentDescription(LocaleController.getString("Emoji", R.string.Emoji));
 
         lengthTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
         lengthTextPaint.setTextSize(AndroidUtilities.dp(13));
@@ -283,14 +284,17 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
             }
         });
 
+        Drawable drawable = Theme.createCircleDrawable(AndroidUtilities.dp(16), 0xff66bffa);
+        Drawable checkDrawable = context.getResources().getDrawable(R.drawable.input_done).mutate();
+        CombinedDrawable combinedDrawable = new CombinedDrawable(drawable, checkDrawable, 0, AndroidUtilities.dp(1));
+        combinedDrawable.setCustomSize(AndroidUtilities.dp(32), AndroidUtilities.dp(32));
+
         ImageView doneButton = new ImageView(context);
         doneButton.setScaleType(ImageView.ScaleType.CENTER);
-        doneButton.setImageResource(R.drawable.ic_done);
+        doneButton.setImageDrawable(combinedDrawable);
         textFieldContainer.addView(doneButton, LayoutHelper.createLinear(48, 48, Gravity.BOTTOM));
-        if (Build.VERSION.SDK_INT >= 21) {
-            doneButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
-        }
         doneButton.setOnClickListener(view -> delegate.onCaptionEnter());
+        doneButton.setContentDescription(LocaleController.getString("Done", R.string.Done));
     }
 
     float animationProgress = 0.0f;
@@ -437,9 +441,8 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         if (emojiView != null) {
             return;
         }
-        emojiView = new EmojiView(false, false, getContext(), null);
-        emojiView.setListener(new EmojiView.Listener() {
-
+        emojiView = new EmojiView(false, false, getContext(), false, null);
+        emojiView.setDelegate(new EmojiView.EmojiViewDelegate() {
             @Override
             public boolean onBackspace() {
                 if (messageEditText.length() == 0) {
@@ -469,71 +472,6 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                 } finally {
                     innerTextChange = false;
                 }
-            }
-
-            @Override
-            public void onStickerSelected(TLRPC.Document sticker, Object parent) {
-
-            }
-
-            @Override
-            public void onStickersSettingsClick() {
-
-            }
-
-            @Override
-            public void onGifSelected(TLRPC.Document gif, Object parent) {
-
-            }
-
-            @Override
-            public void onGifTab(boolean opened) {
-
-            }
-
-            @Override
-            public void onStickersTab(boolean opened) {
-
-            }
-
-            @Override
-            public void onClearEmojiRecent() {
-
-            }
-
-            @Override
-            public void onShowStickerSet(TLRPC.StickerSet stickerSet, TLRPC.InputStickerSet inputStickerSet) {
-
-            }
-
-            @Override
-            public void onStickerSetAdd(TLRPC.StickerSetCovered stickerSet) {
-
-            }
-
-            @Override
-            public void onStickerSetRemove(TLRPC.StickerSetCovered stickerSet) {
-
-            }
-
-            @Override
-            public void onStickersGroupClick(int chatId) {
-
-            }
-
-            @Override
-            public void onSearchOpenClose(boolean open) {
-
-            }
-
-            @Override
-            public boolean isSearchOpened() {
-                return false;
-            }
-
-            @Override
-            public boolean isExpanded() {
-                return false;
             }
         });
         sizeNotifierLayout.addView(emojiView);
@@ -623,12 +561,12 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
             if (sizeNotifierLayout != null) {
                 emojiPadding = currentHeight;
                 sizeNotifierLayout.requestLayout();
-                emojiButton.setImageResource(R.drawable.ic_keyboard_w);
+                emojiButton.setImageResource(R.drawable.input_keyboard);
                 onWindowSizeChanged();
             }
         } else {
             if (emojiButton != null) {
-                emojiButton.setImageResource(R.drawable.ic_smile_w);
+                emojiButton.setImageResource(R.drawable.input_smile);
             }
             if (emojiView != null) {
                 emojiView.setVisibility(GONE);

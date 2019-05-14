@@ -159,7 +159,7 @@ int ConnectionsManager::callEvents(int64_t now) {
     if (!networkPaused) {
         return 1000;
     }
-    int32_t timeToPushPing = (int32_t) ((sendingPushPing ? 30000 : 60000 * 3) - llabs(now - lastPushPingTime));
+    int32_t timeToPushPing = (int32_t) ((sendingPushPing ? 30000 : nextPingTimeOffset) - llabs(now - lastPushPingTime));
     if (timeToPushPing <= 0) {
         return 1000;
     }
@@ -168,12 +168,18 @@ int ConnectionsManager::callEvents(int64_t now) {
 }
 
 void ConnectionsManager::checkPendingTasks() {
+    int32_t count = INT_MAX;
     while (true) {
         std::function<void()> task;
         pthread_mutex_lock(&mutex);
-        if (pendingTasks.empty()) {
+        if (pendingTasks.empty() || count <= 0) {
             pthread_mutex_unlock(&mutex);
             return;
+        }
+        if (count == INT_MAX) {
+            count = (int32_t) pendingTasks.size();
+        } else {
+            count--;
         }
         task = pendingTasks.front();
         pendingTasks.pop();
@@ -199,7 +205,7 @@ void ConnectionsManager::select() {
 
     Datacenter *datacenter = getDatacenterWithId(currentDatacenterId);
     if (pushConnectionEnabled) {
-        if ((sendingPushPing && llabs(now - lastPushPingTime) >= 30000) || llabs(now - lastPushPingTime) >= 60000 * 3 + 10000) {
+        if ((sendingPushPing && llabs(now - lastPushPingTime) >= 30000) || llabs(now - lastPushPingTime) >= nextPingTimeOffset + 10000) {
             lastPushPingTime = 0;
             sendingPushPing = false;
             if (datacenter != nullptr) {
@@ -210,9 +216,12 @@ void ConnectionsManager::select() {
             }
             if (LOGS_ENABLED) DEBUG_D("push ping timeout");
         }
-        if (llabs(now - lastPushPingTime) >= 60000 * 3) {
+        if (llabs(now - lastPushPingTime) >= nextPingTimeOffset) {
             if (LOGS_ENABLED) DEBUG_D("time for push ping");
             lastPushPingTime = now;
+            uint8_t offset;
+            RAND_bytes(&offset, 1);
+            nextPingTimeOffset = 60000 * 3 + (offset % 40) - 20;
             if (datacenter != nullptr) {
                 sendPing(datacenter, true);
             }
@@ -669,35 +678,33 @@ void ConnectionsManager::onConnectionClosed(Connection *connection, int reason) 
     } else if (connection->getConnectionType() == ConnectionTypePush) {
         if (LOGS_ENABLED) DEBUG_D("connection(%p) push connection closed", connection);
         sendingPushPing = false;
-        lastPushPingTime = getCurrentTimeMonotonicMillis() - 60000 * 3 + 4000;
+        lastPushPingTime = getCurrentTimeMonotonicMillis() - nextPingTimeOffset + 4000;
     } else if (connection->getConnectionType() == ConnectionTypeProxy) {
-        scheduleTask([&, connection] {
-            for (std::vector<std::unique_ptr<ProxyCheckInfo>>::iterator iter = proxyActiveChecks.begin(); iter != proxyActiveChecks.end(); iter++) {
-                ProxyCheckInfo *proxyCheckInfo = iter->get();
-                if (proxyCheckInfo->connectionNum == connection->getConnectionNum()) {
-                    bool found = false;
-                    for (requestsIter iter2 = runningRequests.begin(); iter2 != runningRequests.end(); iter2++) {
-                        Request *request = iter2->get();
-                        if (connection->getConnectionToken() == request->connectionToken && request->requestToken == proxyCheckInfo->requestToken && (request->connectionType & 0x0000ffff) == ConnectionTypeProxy) {
-                            request->completed = true;
-                            runningRequests.erase(iter2);
-                            proxyCheckInfo->onRequestTime(-1);
-                            found = true;
-                            break;
-                        }
+        for (std::vector<std::unique_ptr<ProxyCheckInfo>>::iterator iter = proxyActiveChecks.begin(); iter != proxyActiveChecks.end(); iter++) {
+            ProxyCheckInfo *proxyCheckInfo = iter->get();
+            if (proxyCheckInfo->connectionNum == connection->getConnectionNum()) {
+                bool found = false;
+                for (requestsIter iter2 = runningRequests.begin(); iter2 != runningRequests.end(); iter2++) {
+                    Request *request = iter2->get();
+                    if (connection->getConnectionToken() == request->connectionToken && request->requestToken == proxyCheckInfo->requestToken && (request->connectionType & 0x0000ffff) == ConnectionTypeProxy) {
+                        request->completed = true;
+                        runningRequests.erase(iter2);
+                        proxyCheckInfo->onRequestTime(-1);
+                        found = true;
+                        break;
                     }
-                    if (found) {
-                        proxyActiveChecks.erase(iter);
-                        if (!proxyCheckQueue.empty()) {
-                            proxyCheckInfo = proxyCheckQueue[0].release();
-                            proxyCheckQueue.erase(proxyCheckQueue.begin());
-                            checkProxyInternal(proxyCheckInfo);
-                        }
-                    }
-                    break;
                 }
+                if (found) {
+                    proxyActiveChecks.erase(iter);
+                    if (!proxyCheckQueue.empty()) {
+                        proxyCheckInfo = proxyCheckQueue[0].release();
+                        proxyCheckQueue.erase(proxyCheckQueue.begin());
+                        checkProxyInternal(proxyCheckInfo);
+                    }
+                }
+                break;
             }
-        });
+        }
     }
 }
 
@@ -2365,7 +2372,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                 } else {
                     currentCount = 0;
                 }
-                if (!networkAvailable || currentCount >= 6) {
+                if (!networkAvailable || currentCount >= 10) {
                     iter++;
                     continue;
                 }
@@ -2427,6 +2434,9 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
         networkMessage->invokeAfter = (request->requestFlags & RequestFlagInvokeAfter) != 0;
         networkMessage->needQuickAck = (request->requestFlags & RequestFlagNeedQuickAck) != 0;
 
+        if (!hasPendingRequestsForConnection(connection)) {
+            connection->resetLastEventTime();
+        }
         runningRequests.push_back(std::move(*iter));
 
         switch (request->connectionType & 0x0000ffff) {
@@ -3202,7 +3212,7 @@ void ConnectionsManager::checkProxyInternal(ProxyCheckInfo *proxyCheckInfo) {
         } else {
             ConnectionType connectionType = (ConnectionType) (ConnectionTypeProxy | (freeConnectionNum << 16));
             Datacenter *datacenter = getDatacenterWithId(DEFAULT_DATACENTER_ID);
-            Connection *connection = datacenter->getConnectionByType(connectionType, true, 1);
+            Connection *connection = datacenter->getProxyConnection((uint8_t) freeConnectionNum, true, false);
             if (connection != nullptr) {
                 connection->setOverrideProxy(proxyCheckInfo->address, proxyCheckInfo->port, proxyCheckInfo->username, proxyCheckInfo->password, proxyCheckInfo->secret);
                 connection->suspendConnection();

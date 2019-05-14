@@ -21,18 +21,19 @@ import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.CheckBox;
+import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LetterDrawable;
 import org.telegram.ui.Components.LinkPath;
@@ -45,7 +46,9 @@ public class SharedLinkCell extends FrameLayout {
 
     public interface SharedLinkCellDelegate {
         void needOpenWebView(TLRPC.WebPage webPage);
+
         boolean canPerformActions();
+
         void onLinkLongPress(final String urlFinal);
     }
 
@@ -109,7 +112,7 @@ public class SharedLinkCell extends FrameLayout {
     private ImageReceiver linkImageView;
     private boolean drawLinkImageView;
     private LetterDrawable letterDrawable;
-    private CheckBox checkBox;
+    private CheckBox2 checkBox;
 
     private SharedLinkCellDelegate delegate;
 
@@ -135,6 +138,7 @@ public class SharedLinkCell extends FrameLayout {
 
     public SharedLinkCell(Context context) {
         super(context);
+        setFocusable(true);
 
         urlPath = new LinkPath();
         urlPath.setUseRoundRect(true);
@@ -153,10 +157,13 @@ public class SharedLinkCell extends FrameLayout {
         linkImageView.setRoundRadius(AndroidUtilities.dp(4));
         letterDrawable = new LetterDrawable();
 
-        checkBox = new CheckBox(context, R.drawable.round_check2);
+        checkBox = new CheckBox2(context);
         checkBox.setVisibility(INVISIBLE);
-        checkBox.setColor(Theme.getColor(Theme.key_checkbox), Theme.getColor(Theme.key_checkboxCheck));
-        addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 44, 44, LocaleController.isRTL ? 44 : 0, 0));
+        checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
+        checkBox.setSize(21);
+        checkBox.setDrawUnchecked(false);
+        checkBox.setDrawBackgroundAsArc(2);
+        addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 44, 44, LocaleController.isRTL ? 44 : 0, 0));
     }
 
     @SuppressLint("DrawAllocation")
@@ -330,7 +337,8 @@ public class SharedLinkCell extends FrameLayout {
             linkImageView.setImageCoords(x, AndroidUtilities.dp(11), maxPhotoWidth, maxPhotoWidth);
             String fileName = FileLoader.getAttachFileName(currentPhotoObject);
             String filter = String.format(Locale.US, "%d_%d", maxPhotoWidth, maxPhotoWidth);
-            linkImageView.setImage(currentPhotoObject, filter, currentPhotoObjectThumb, String.format(Locale.US, "%d_%d_b", maxPhotoWidth, maxPhotoWidth), 0, null, message, 0);
+            String thumbFilter = String.format(Locale.US, "%d_%d_b", maxPhotoWidth, maxPhotoWidth);
+            linkImageView.setImage(ImageLocation.getForObject(currentPhotoObject, message.photoThumbsObject), filter, ImageLocation.getForObject(currentPhotoObjectThumb, message.photoThumbsObject), thumbFilter, 0, null, message, 0);
             drawLinkImageView = true;
         }
 
@@ -353,7 +361,7 @@ public class SharedLinkCell extends FrameLayout {
                 height += layout.getLineBottom(layout.getLineCount() - 1);
             }
         }
-        checkBox.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(22), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(22), MeasureSpec.EXACTLY));
+        checkBox.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(24), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(24), MeasureSpec.EXACTLY));
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), Math.max(AndroidUtilities.dp(76), height + AndroidUtilities.dp(17)) + (needDivider ? 1 : 0));
     }
 
@@ -523,6 +531,27 @@ public class SharedLinkCell extends FrameLayout {
             } else {
                 canvas.drawLine(AndroidUtilities.dp(AndroidUtilities.leftBaseline), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
             }
+        }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        StringBuilder sb = new StringBuilder();
+        if (titleLayout != null) {
+            sb.append(titleLayout.getText());
+        }
+        if (descriptionLayout != null) {
+            sb.append(", ");
+            sb.append(descriptionLayout.getText());
+        }
+        if (descriptionLayout2 != null) {
+            sb.append(", ");
+            sb.append(descriptionLayout2.getText());
+        }
+        if (checkBox.isChecked()) {
+            info.setChecked(true);
+            info.setCheckable(true);
         }
     }
 }

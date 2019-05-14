@@ -16,7 +16,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
-import android.support.annotation.Keep;
+import androidx.annotation.Keep;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;

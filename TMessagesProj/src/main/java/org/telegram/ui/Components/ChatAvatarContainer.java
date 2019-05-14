@@ -20,6 +20,7 @@ import android.widget.ImageView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -81,6 +82,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             timeItem.setImageDrawable(timerDrawable = new TimerDrawable(context));
             addView(timeItem);
             timeItem.setOnClickListener(v -> parentFragment.showDialog(AlertsCreator.createTTLAlert(getContext(), parentFragment.getCurrentEncryptedChat()).create()));
+            timeItem.setContentDescription(LocaleController.getString("SetTimer", R.string.SetTimer));
         }
 
         if (parentFragment != null) {
@@ -185,18 +187,28 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         timerDrawable.setTime(value);
     }
 
-    public void setTitleIcons(int leftIcon, int rightIcon) {
-        titleTextView.setLeftDrawable(leftIcon);
-        titleTextView.setRightDrawable(rightIcon);
-    }
-
     public void setTitleIcons(Drawable leftIcon, Drawable rightIcon) {
         titleTextView.setLeftDrawable(leftIcon);
-        titleTextView.setRightDrawable(rightIcon);
+        if (!(titleTextView.getRightDrawable() instanceof ScamDrawable)) {
+            titleTextView.setRightDrawable(rightIcon);
+        }
     }
 
     public void setTitle(CharSequence value) {
+        setTitle(value, false);
+    }
+
+    public void setTitle(CharSequence value, boolean scam) {
         titleTextView.setText(value);
+        if (scam) {
+            if (!(titleTextView.getRightDrawable() instanceof ScamDrawable)) {
+                ScamDrawable drawable = new ScamDrawable(11);
+                drawable.setColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
+                titleTextView.setRightDrawable(drawable);
+            }
+        } else if (titleTextView.getRightDrawable() instanceof ScamDrawable) {
+            titleTextView.setRightDrawable(null);
+        }
     }
 
     public void setSubtitle(CharSequence value) {
@@ -272,7 +284,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                                 newSubtitle = LocaleController.formatPluralString("Members", info.participants_count);
                             }
                         } else {
-                            int result[] = new int[1];
+                            int[] result = new int[1];
                             String shortNumber = LocaleController.formatShortNumber(info.participants_count, result);
                             if (chat.megagroup) {
                                 newSubtitle = LocaleController.formatPluralString("Members", result[0]).replace(String.format("%d", result[0]), shortNumber);
@@ -341,13 +353,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     }
 
     public void setChatAvatar(TLRPC.Chat chat) {
-        TLRPC.FileLocation newPhoto = null;
-        if (chat.photo != null) {
-            newPhoto = chat.photo.photo_small;
-        }
         avatarDrawable.setInfo(chat);
         if (avatarImageView != null) {
-            avatarImageView.setImage(newPhoto, "50_50", avatarDrawable, chat);
+            avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, chat);
         }
     }
 
@@ -355,13 +363,14 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         TLRPC.FileLocation newPhoto = null;
         avatarDrawable.setInfo(user);
         if (UserObject.isUserSelf(user)) {
-            avatarDrawable.setSavedMessages(2);
-        } else if (user.photo != null) {
-            newPhoto = user.photo.photo_small;
-        }
-
-        if (avatarImageView != null) {
-            avatarImageView.setImage(newPhoto, "50_50", avatarDrawable, user);
+            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED_SMALL);
+            if (avatarImageView != null) {
+                avatarImageView.setImage(null, null, avatarDrawable, user);
+            }
+        } else {
+            if (avatarImageView != null) {
+                avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+            }
         }
     }
 
@@ -369,27 +378,25 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (parentFragment == null) {
             return;
         }
-        TLRPC.FileLocation newPhoto = null;
-        Object parentObject = null;
         TLRPC.User user = parentFragment.getCurrentUser();
         TLRPC.Chat chat = parentFragment.getCurrentChat();
         if (user != null) {
             avatarDrawable.setInfo(user);
             if (UserObject.isUserSelf(user)) {
-                avatarDrawable.setSavedMessages(2);
-            } else if (user.photo != null) {
-                newPhoto = user.photo.photo_small;
+                avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED_SMALL);
+                if (avatarImageView != null) {
+                    avatarImageView.setImage(null, null, avatarDrawable, user);
+                }
+            } else {
+                if (avatarImageView != null) {
+                    avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+                }
             }
-            parentObject = user;
         } else if (chat != null) {
-            if (chat.photo != null) {
-                newPhoto = chat.photo.photo_small;
-            }
             avatarDrawable.setInfo(chat);
-            parentObject = chat;
-        }
-        if (avatarImageView != null) {
-            avatarImageView.setImage(newPhoto, "50_50", avatarDrawable, parentObject);
+            if (avatarImageView != null) {
+                avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, chat);
+            }
         }
     }
 

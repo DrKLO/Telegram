@@ -63,6 +63,8 @@ public class SQLitePreparedStatement {
                 bindDouble(sqliteStatementHandle, i, (Double) obj);
             } else if (obj instanceof String) {
                 bindString(sqliteStatementHandle, i, (String) obj);
+            } else if (obj instanceof Long) {
+                bindLong(sqliteStatementHandle, i, (Long) obj);
             } else {
                 throw new IllegalArgumentException();
             }

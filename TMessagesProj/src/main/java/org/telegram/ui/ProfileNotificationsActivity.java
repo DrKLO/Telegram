@@ -40,8 +40,6 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -63,6 +61,9 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class ProfileNotificationsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -152,7 +153,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
         int lower_id = (int) dialog_id;
         if (lower_id < 0) {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
-            isChannel = chat != null && ChatObject.isChannel(chat) && !chat.megagroup;
+            isChannel = ChatObject.isChannel(chat) && !chat.megagroup;
         } else {
             isChannel = false;
         }
@@ -231,7 +232,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     editor.putBoolean("custom_" + dialog_id, true);
 
 
-                    TLRPC.TL_dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
+                    TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(dialog_id);
                     if (notificationsEnabled) {
                         editor.putInt("notify2_" + dialog_id, 0);
                         MessagesStorage.getInstance(currentAccount).setDialogFlags(dialog_id, 0);
@@ -350,6 +351,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
                             SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                             Uri currentSound = null;
@@ -379,6 +381,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_RINGTONE);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
+                            tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true);
                             tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE));
                             SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                             Uri currentSound = null;
@@ -454,19 +457,18 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
 
                             @Override
                             public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-                                View view = new TextView(context1) {
+                                TextView textView = new TextView(context1) {
                                     @Override
                                     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                                         super.onMeasure(MeasureSpec.makeMeasureSpec(widthMeasureSpec, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
                                     }
                                 };
-                                TextView textView = (TextView) view;
                                 textView.setGravity(Gravity.CENTER);
                                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
                                 textView.setSingleLine(true);
                                 textView.setEllipsize(TextUtils.TruncateAt.END);
                                 textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                                return new RecyclerListView.Holder(view);
+                                return new RecyclerListView.Holder(textView);
                             }
 
                             @Override

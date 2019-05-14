@@ -28,6 +28,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
@@ -216,7 +217,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
     @Override
     protected void onDialogDismiss(Dialog dialog) {
         if (Build.VERSION.SDK_INT >= 23 && dialog == permissionsDialog && !permissionsItems.isEmpty()) {
-            getParentActivity().requestPermissions(permissionsItems.toArray(new String[permissionsItems.size()]), 6);
+            getParentActivity().requestPermissions(permissionsItems.toArray(new String[0]), 6);
         }
         if (dialog == errorDialog) {
             finishFragment();
@@ -409,7 +410,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
                 try {
                     @SuppressLint("HardwareIds") String number = tm.getLine1Number();
                     if (!TextUtils.isEmpty(number)) {
-                        req.settings.current_number = phone.contains(number) || number.contains(phone);
+                        req.settings.current_number = PhoneNumberUtils.compare(phone, number);
                         if (!req.settings.current_number) {
                             req.settings.allow_flashcall = false;
                         }
@@ -1199,6 +1200,6 @@ public class CancelAccountDeletionActivity extends BaseFragment {
         arrayList.add(new ThemeDescription(smsView4.blackImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         arrayList.add(new ThemeDescription(smsView4.blueImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chats_actionBackground));
 
-        return arrayList.toArray(new ThemeDescription[arrayList.size()]);
+        return arrayList.toArray(new ThemeDescription[0]);
     }
 }

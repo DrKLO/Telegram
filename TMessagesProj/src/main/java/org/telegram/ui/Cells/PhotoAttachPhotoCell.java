@@ -14,17 +14,23 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Rect;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.BackupImageView;
@@ -73,6 +79,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         videoTextView = new TextView(context);
         videoTextView.setTextColor(0xffffffff);
         videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        videoTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         videoInfoContainer.addView(videoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 18, -0.7f, 0, 0));
 
         checkBox = new CheckBox(context, R.drawable.checkbig);
@@ -82,6 +89,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         checkBox.setColor(0xff3ccaef, 0xffffffff);
         addView(checkBox, LayoutHelper.createFrame(30, 30, Gravity.LEFT | Gravity.TOP, 46, 4, 0, 0));
         checkBox.setVisibility(VISIBLE);
+        setFocusable(true);
     }
 
     public void setIsVertical(boolean value) {
@@ -214,6 +222,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
                 getParent().requestDisallowInterceptTouchEvent(true);
                 pressed = false;
                 playSoundEffect(SoundEffectConstants.CLICK);
+                sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
                 delegate.onCheckClick(this);
                 invalidate();
             } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
@@ -231,5 +240,31 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         }
 
         return result;
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setEnabled(true);
+        if (photoEntry.isVideo) {
+            info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatCallDuration(photoEntry.duration));
+        } else {
+            info.setText(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
+        }
+        if (checkBox.isChecked())
+            info.setSelected(true);
+        if (Build.VERSION.SDK_INT >= 21) {
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_photo, LocaleController.getString("Open", R.string.Open)));
+        }
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if (action == R.id.acc_action_open_photo) {
+            View parent = (View)getParent();
+            parent.dispatchTouchEvent(MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), MotionEvent.ACTION_DOWN, getLeft(), getTop() + getHeight() - 1, 0));
+            parent.dispatchTouchEvent(MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, getLeft(), getTop() + getHeight() - 1, 0));
+        }
+        return super.performAccessibilityAction(action, arguments);
     }
 }

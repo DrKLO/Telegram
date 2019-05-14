@@ -206,6 +206,7 @@ void TL_config::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &
         tmp_sessions = stream->readInt32(&error);
     }
     pinned_dialogs_count_max = stream->readInt32(&error);
+    pinned_infolder_count_max = stream->readInt32(&error);
     call_receive_timeout_ms = stream->readInt32(&error);
     call_ring_timeout_ms = stream->readInt32(&error);
     call_connect_timeout_ms = stream->readInt32(&error);
@@ -277,6 +278,7 @@ void TL_config::serializeToStream(NativeByteBuffer *stream) {
         stream->writeInt32(tmp_sessions);
     }
     stream->writeInt32(pinned_dialogs_count_max);
+    stream->writeInt32(pinned_infolder_count_max);
     stream->writeInt32(call_receive_timeout_ms);
     stream->writeInt32(call_ring_timeout_ms);
     stream->writeInt32(call_connect_timeout_ms);
@@ -570,14 +572,8 @@ void TL_userStatusRecently::serializeToStream(NativeByteBuffer *stream) {
 FileLocation *FileLocation::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     FileLocation *result = nullptr;
     switch (constructor) {
-        case 0x91d11eb:
-            result = new TL_fileLocation();
-            break;
-        case 0x7c596b46:
-            result = new TL_fileLocationUnavailable();
-            break;
-        case 0x55555554:
-            result = new TL_fileEncryptedLocation();
+        case 0xbc7fc6cd:
+            result = new TL_fileLocationToBeDeprecated();
             break;
         default:
             error = true;
@@ -588,53 +584,15 @@ FileLocation *FileLocation::TLdeserialize(NativeByteBuffer *stream, uint32_t con
     return result;
 }
 
-void TL_fileLocation::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    dc_id = stream->readInt32(&error);
+void TL_fileLocationToBeDeprecated::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
     volume_id = stream->readInt64(&error);
     local_id = stream->readInt32(&error);
-    secret = stream->readInt64(&error);
-    file_reference = std::unique_ptr<ByteArray>(stream->readByteArray(&error));
 }
 
-void TL_fileLocation::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-    stream->writeInt32(dc_id);
-    stream->writeInt64(volume_id);
-    stream->writeInt32(local_id);
-    stream->writeInt64(secret);
-    stream->writeByteArray(file_reference.get());
-}
-
-void TL_fileLocationUnavailable::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    volume_id = stream->readInt64(&error);
-    local_id = stream->readInt32(&error);
-    secret = stream->readInt64(&error);
-}
-
-void TL_fileLocationUnavailable::serializeToStream(NativeByteBuffer *stream) {
+void TL_fileLocationToBeDeprecated::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     stream->writeInt64(volume_id);
     stream->writeInt32(local_id);
-    stream->writeInt64(secret);
-}
-
-void TL_fileEncryptedLocation::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    dc_id = stream->readInt32(&error);
-    volume_id = stream->readInt64(&error);
-    local_id = stream->readInt32(&error);
-    secret = stream->readInt64(&error);
-    key = std::unique_ptr<ByteArray>(stream->readByteArray(&error));
-    iv = std::unique_ptr<ByteArray>(stream->readByteArray(&error));
-}
-
-void TL_fileEncryptedLocation::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-    stream->writeInt32(dc_id);
-    stream->writeInt64(volume_id);
-    stream->writeInt32(local_id);
-    stream->writeInt64(secret);
-    stream->writeByteArray(key.get());
-    stream->writeByteArray(iv.get());
 }
 
 UserProfilePhoto *UserProfilePhoto::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
@@ -643,7 +601,7 @@ UserProfilePhoto *UserProfilePhoto::TLdeserialize(NativeByteBuffer *stream, uint
         case 0x4f11bae1:
             result = new TL_userProfilePhotoEmpty();
             break;
-        case 0xd559d8c8:
+        case 0xecd75d8c:
             result = new TL_userProfilePhoto();
             break;
         default:
@@ -663,6 +621,7 @@ void TL_userProfilePhoto::readParams(NativeByteBuffer *stream, int32_t instanceN
     photo_id = stream->readInt64(&error);
     photo_small = std::unique_ptr<FileLocation>(FileLocation::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
     photo_big = std::unique_ptr<FileLocation>(FileLocation::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+    dc_id = stream->readInt32(&error);
 }
 
 void TL_userProfilePhoto::serializeToStream(NativeByteBuffer *stream) {
@@ -670,263 +629,9 @@ void TL_userProfilePhoto::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt64(photo_id);
     photo_small->serializeToStream(stream);
     photo_big->serializeToStream(stream);
-}
-
-auth_SentCode *auth_SentCode::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
-    auth_SentCode *result = nullptr;
-    switch (constructor) {
-        case 0xe325edcf:
-            result = new TL_auth_sentAppCode();
-            break;
-        case 0xefed51d9:
-            result = new TL_auth_sentCode();
-            break;
-        default:
-            error = true;
-            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in auth_SentCode", constructor);
-            return nullptr;
-    }
-    result->readParams(stream, instanceNum, error);
-    return result;
-}
-
-void TL_auth_sentAppCode::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    phone_registered = stream->readBool(&error);
-    phone_code_hash = stream->readString(&error);
-    send_call_timeout = stream->readInt32(&error);
-    is_password = stream->readBool(&error);
-}
-
-void TL_auth_sentAppCode::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-    stream->writeBool(phone_registered);
-    stream->writeString(phone_code_hash);
-    stream->writeInt32(send_call_timeout);
-    stream->writeBool(is_password);
-}
-
-void TL_auth_sentCode::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    phone_registered = stream->readBool(&error);
-    phone_code_hash = stream->readString(&error);
-    send_call_timeout = stream->readInt32(&error);
-    is_password = stream->readBool(&error);
-}
-
-void TL_auth_sentCode::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-    stream->writeBool(phone_registered);
-    stream->writeString(phone_code_hash);
-    stream->writeInt32(send_call_timeout);
-    stream->writeBool(is_password);
-}
-
-TLObject *TL_auth_sendCode::deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
-    return auth_SentCode::TLdeserialize(stream, constructor, instanceNum, error);
-}
-
-void TL_auth_sendCode::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-    stream->writeString(phone_number);
-    stream->writeInt32(sms_type);
-    stream->writeInt32(api_id);
-    stream->writeString(api_hash);
-    stream->writeString(lang_code);
+    stream->writeInt32(dc_id);
 }
 
 void TL_updatesTooLong::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
-}
-
-TL_upload_file *TL_upload_file::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
-    if (TL_upload_file::constructor != constructor) {
-        error = true;
-        FileLog::e("can't parse magic %x in TL_upload_file", constructor);
-        return nullptr;
-    }
-    TL_upload_file *result = new TL_upload_file();
-    result->readParams(stream, instanceNum, error);
-    return result;
-}
-
-TL_upload_file::~TL_upload_file() {
-    if (bytes != nullptr) {
-        bytes->reuse();
-        bytes = nullptr;
-    }
-}
-
-void TL_upload_file::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    type = std::unique_ptr<storage_FileType>(storage_FileType::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
-    mtime = stream->readInt32(&error);
-    bytes = stream->readByteBuffer(true, &error);
-}
-
-InputFileLocation *InputFileLocation::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
-    InputFileLocation *result = nullptr;
-    switch (constructor) {
-        case 0x430f0724:
-            result = new TL_inputDocumentFileLocation();
-            break;
-        case 0x14637196:
-            result = new TL_inputFileLocation();
-            break;
-        case 0xf5235d55:
-            result = new TL_inputEncryptedFileLocation();
-            break;
-        default:
-            error = true;
-            FileLog::e("can't parse magic %x in InputFileLocation", constructor);
-            return nullptr;
-    }
-    result->readParams(stream, instanceNum, error);
-    return result;
-}
-
-void TL_inputDocumentFileLocation::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    id = stream->readInt64(&error);
-    access_hash = stream->readInt64(&error);
-    version = stream->readInt32(&error);
-}
-
-void TL_inputDocumentFileLocation::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-    stream->writeInt64(id);
-    stream->writeInt64(access_hash);
-    stream->writeInt32(version);
-}
-
-void TL_inputFileLocation::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    volume_id = stream->readInt64(&error);
-    local_id = stream->readInt32(&error);
-    secret = stream->readInt64(&error);
-}
-
-void TL_inputFileLocation::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-    stream->writeInt64(volume_id);
-    stream->writeInt32(local_id);
-    stream->writeInt64(secret);
-}
-
-void TL_inputEncryptedFileLocation::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
-    id = stream->readInt64(&error);
-    access_hash = stream->readInt64(&error);
-}
-
-void TL_inputEncryptedFileLocation::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-    stream->writeInt64(id);
-    stream->writeInt64(access_hash);
-}
-
-storage_FileType *storage_FileType::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
-    storage_FileType *result = nullptr;
-    switch (constructor) {
-        case 0xaa963b05:
-            result = new TL_storage_fileUnknown();
-            break;
-        case 0xb3cea0e4:
-            result = new TL_storage_fileMp4();
-            break;
-        case 0x1081464c:
-            result = new TL_storage_fileWebp();
-            break;
-        case 0xa4f63c0:
-            result = new TL_storage_filePng();
-            break;
-        case 0xcae1aadf:
-            result = new TL_storage_fileGif();
-            break;
-        case 0xae1e508d:
-            result = new TL_storage_filePdf();
-            break;
-        case 0x528a0677:
-            result = new TL_storage_fileMp3();
-            break;
-        case 0x7efe0e:
-            result = new TL_storage_fileJpeg();
-            break;
-        case 0x4b09ebbc:
-            result = new TL_storage_fileMov();
-            break;
-        case 0x40bc6f52:
-            result = new TL_storage_filePartial();
-            break;
-        default:
-            error = true;
-            FileLog::e("can't parse magic %x in storage_FileType", constructor);
-            return nullptr;
-    }
-    result->readParams(stream, instanceNum, error);
-    return result;
-}
-
-void TL_storage_fileUnknown::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-}
-
-void TL_storage_fileMp4::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-}
-
-void TL_storage_fileWebp::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-}
-
-void TL_storage_filePng::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-}
-
-void TL_storage_fileGif::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-}
-
-void TL_storage_filePdf::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-}
-
-void TL_storage_fileMp3::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-}
-
-void TL_storage_fileJpeg::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-}
-
-void TL_storage_fileMov::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-}
-
-void TL_storage_filePartial::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-}
-
-TLObject *TL_upload_saveFilePart::deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
-    return Bool::TLdeserialize(stream, constructor, instanceNum, error);
-}
-
-void TL_upload_saveFilePart::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-    stream->writeInt64(file_id);
-    stream->writeInt32(file_part);
-    stream->writeByteArray(bytes.get());
-}
-
-bool TL_upload_saveFilePart::isNeedLayer() {
-    return true;
-}
-
-TLObject *TL_upload_getFile::deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
-    return TL_upload_file::TLdeserialize(stream, constructor, instanceNum, error);
-}
-
-void TL_upload_getFile::serializeToStream(NativeByteBuffer *stream) {
-    stream->writeInt32(constructor);
-    location->serializeToStream(stream);
-    stream->writeInt32(offset);
-    stream->writeInt32(limit);
-}
-
-bool TL_upload_getFile::isNeedLayer() {
-    return true;
 }

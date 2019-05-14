@@ -23,7 +23,8 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.SystemClock;
 import android.os.Vibrator;
-import android.support.v4.os.CancellationSignal;
+import androidx.annotation.IdRes;
+import androidx.core.os.CancellationSignal;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -36,6 +37,7 @@ import android.view.HapticFeedbackConstants;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -420,6 +422,21 @@ public class PasscodeView extends FrameLayout {
     private final static int id_fingerprint_textview = 1000;
     private final static int id_fingerprint_imageview = 1001;
 
+    private static final @IdRes
+    int[] ids = {
+            R.id.passcode_btn_0,
+            R.id.passcode_btn_1,
+            R.id.passcode_btn_2,
+            R.id.passcode_btn_3,
+            R.id.passcode_btn_4,
+            R.id.passcode_btn_5,
+            R.id.passcode_btn_6,
+            R.id.passcode_btn_7,
+            R.id.passcode_btn_8,
+            R.id.passcode_btn_9,
+            R.id.passcode_btn_backspace
+    };
+
     public PasscodeView(final Context context) {
         super(context);
 
@@ -555,6 +572,7 @@ public class PasscodeView extends FrameLayout {
         layoutParams.rightMargin = AndroidUtilities.dp(10);
         layoutParams.gravity = Gravity.BOTTOM | Gravity.RIGHT;
         checkImage.setLayoutParams(layoutParams);
+        checkImage.setContentDescription(LocaleController.getString("Done", R.string.Done));
         checkImage.setOnClickListener(v -> processDone(false));
 
         FrameLayout lineFrameLayout = new FrameLayout(context);
@@ -591,6 +609,7 @@ public class PasscodeView extends FrameLayout {
             layoutParams.height = AndroidUtilities.dp(50);
             layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             textView.setLayoutParams(layoutParams);
+            textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             numberTextViews.add(textView);
 
             textView = new TextView(context);
@@ -603,6 +622,7 @@ public class PasscodeView extends FrameLayout {
             layoutParams.height = AndroidUtilities.dp(20);
             layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             textView.setLayoutParams(layoutParams);
+            textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             switch (a) {
                 case 0:
                     textView.setText("+");
@@ -646,7 +666,13 @@ public class PasscodeView extends FrameLayout {
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         eraseView.setLayoutParams(layoutParams);
         for (int a = 0; a < 11; a++) {
-            FrameLayout frameLayout = new FrameLayout(context);
+            FrameLayout frameLayout = new FrameLayout(context) {
+                @Override
+                public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                    super.onInitializeAccessibilityNodeInfo(info);
+                    info.setClassName("android.widget.Button");
+                }
+            };
             frameLayout.setBackgroundResource(R.drawable.bar_selector_lock);
             frameLayout.setTag(a);
             if (a == 10) {
@@ -655,7 +681,19 @@ public class PasscodeView extends FrameLayout {
                     passwordEditText2.eraseAllCharacters(true);
                     return true;
                 });
+                frameLayout.setContentDescription(LocaleController.getString("AccDescrBackspace", R.string.AccDescrBackspace));
+                setNextFocus(frameLayout, R.id.passcode_btn_1);
+            } else {
+                frameLayout.setContentDescription(a + "");
+                if (a == 0) {
+                    setNextFocus(frameLayout, R.id.passcode_btn_backspace);
+                } else if (a == 9) {
+                    setNextFocus(frameLayout, R.id.passcode_btn_0);
+                } else {
+                    setNextFocus(frameLayout, ids[a + 1]);
+                }
             }
+            frameLayout.setId(ids[a]);
             frameLayout.setOnClickListener(v -> {
                 int tag = (Integer) v.getTag();
                 switch (tag) {
@@ -707,6 +745,13 @@ public class PasscodeView extends FrameLayout {
             layoutParams.height = AndroidUtilities.dp(100);
             layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             frameLayout.setLayoutParams(layoutParams);
+        }
+    }
+
+    private void setNextFocus(View view, @IdRes int nextId) {
+        view.setNextFocusForwardId(nextId);
+        if (Build.VERSION.SDK_INT >= 22) {
+            view.setAccessibilityTraversalBefore(nextId);
         }
     }
 

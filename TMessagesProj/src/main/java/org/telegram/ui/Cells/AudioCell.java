@@ -129,6 +129,7 @@ public class AudioCell extends FrameLayout {
         CombinedDrawable combinedDrawable = new CombinedDrawable(circle, drawable);
         combinedDrawable.setCustomSize(AndroidUtilities.dp(46), AndroidUtilities.dp(46));
         playButton.setBackgroundDrawable(combinedDrawable);
+        playButton.setContentDescription(play ? LocaleController.getString("AccActionPause", R.string.AccActionPause) : LocaleController.getString("AccActionPlay", R.string.AccActionPlay));
     }
 
     public ImageView getPlayButton() {

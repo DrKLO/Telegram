@@ -31,10 +31,9 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.FileLog;
@@ -50,6 +49,7 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -57,6 +57,9 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.Map;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class NotificationsSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -70,9 +73,15 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private RecyclerListView listView;
     private boolean reseting = false;
     private ListAdapter adapter;
+    @SuppressWarnings("FieldCanBeLocal")
+    private LinearLayoutManager layoutManager;
     private ArrayList<NotificationException> exceptionUsers = null;
     private ArrayList<NotificationException> exceptionChats = null;
     private ArrayList<NotificationException> exceptionChannels = null;
+
+    private int accountsSectionRow;
+    private int accountsAllRow;
+    private int accountsInfoRow;
 
     private int notificationsServiceRow;
     private int notificationsServiceConnectionRow;
@@ -115,6 +124,16 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     public boolean onFragmentCreate() {
         MessagesController.getInstance(currentAccount).loadSignUpNotificationsSettings();
         loadExceptions();
+
+        if (UserConfig.getActivatedAccountsCount() > 1) {
+            accountsSectionRow = rowCount++;
+            accountsAllRow = rowCount++;
+            accountsInfoRow = rowCount++;
+        } else {
+            accountsSectionRow = -1;
+            accountsAllRow = -1;
+            accountsInfoRow = -1;
+        }
 
         notificationsSectionRow = rowCount++;
         privateRow = rowCount++;
@@ -338,7 +357,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         listView = new RecyclerListView(context);
         listView.setItemAnimator(null);
         listView.setLayoutAnimation(null);
-        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
+        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
             @Override
             public boolean supportsPredictiveItemAnimations() {
                 return false;
@@ -382,6 +401,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                     tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_RINGTONE);
                     tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
+                    tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true);
                     tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE));
                     Uri currentSound = null;
 
@@ -520,6 +540,24 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     ConnectionsManager.getInstance(currentAccount).setPushConnectionEnabled(true);
                 } else {
                     ConnectionsManager.getInstance(currentAccount).setPushConnectionEnabled(false);
+                }
+            } else if (position == accountsAllRow) {
+                SharedPreferences preferences = MessagesController.getGlobalNotificationsSettings();
+                enabled = preferences.getBoolean("AllAccounts", true);
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putBoolean("AllAccounts", !enabled);
+                editor.commit();
+                SharedConfig.showNotificationsForAllAccounts = !enabled;
+                for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                    if (SharedConfig.showNotificationsForAllAccounts) {
+                        NotificationsController.getInstance(a).showNotifications();
+                    } else {
+                        if (a == currentAccount) {
+                            NotificationsController.getInstance(a).showNotifications();
+                        } else {
+                            NotificationsController.getInstance(a).hideNotifications();
+                        }
+                    }
                 }
             } else if (position == notificationsServiceRow) {
                 SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
@@ -688,7 +726,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
             return !(position == notificationsSectionRow || position == notificationsSection2Row || position == inappSectionRow ||
                     position == eventsSectionRow || position == otherSectionRow || position == resetSectionRow ||
                     position == badgeNumberSection || position == otherSection2Row || position == resetSection2Row ||
-                    position == callsSection2Row || position == callsSectionRow || position == badgeNumberSection2Row);
+                    position == callsSection2Row || position == callsSectionRow || position == badgeNumberSection2Row ||
+                    position == accountsSectionRow || position == accountsInfoRow);
         }
 
         @Override
@@ -720,9 +759,13 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     view = new ShadowSectionCell(mContext);
                     break;
                 case 5:
-                default:
                     view = new TextSettingsCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
+                case 6:
+                default:
+                    view = new TextInfoPrivacyCell(mContext);
+                    view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -747,6 +790,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         headerCell.setText(LocaleController.getString("VoipNotificationSettings", R.string.VoipNotificationSettings));
                     } else if (position == badgeNumberSection) {
                         headerCell.setText(LocaleController.getString("BadgeNumber", R.string.BadgeNumber));
+                    } else if (position == accountsSectionRow) {
+                        headerCell.setText(LocaleController.getString("ShowNotificationsFor", R.string.ShowNotificationsFor));
                     }
                     break;
                 }
@@ -781,6 +826,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         checkCell.setTextAndCheck(LocaleController.getString("InChatSound", R.string.InChatSound), preferences.getBoolean("EnableInChatSound", true), true);
                     } else if (position == callsVibrateRow) {
                         checkCell.setTextAndCheck(LocaleController.getString("Vibrate", R.string.Vibrate), preferences.getBoolean("EnableCallVibrate", true), true);
+                    } else if (position == accountsAllRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("AllAccounts", R.string.AllAccounts), MessagesController.getGlobalNotificationsSettings().getBoolean("AllAccounts", true), false);
                     }
                     break;
                 }
@@ -841,7 +888,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     checkCell.setTextAndValueAndCheck(text, builder, enabled, iconType, position != channelsRow);
                     break;
                 }
-                case 5:
+                case 5: {
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
                     if (position == callsRingtoneRow) {
@@ -879,6 +926,14 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         textCell.setTextAndValue(LocaleController.getString("RepeatNotifications", R.string.RepeatNotifications), value, false);
                     }
                     break;
+                }
+                case 6: {
+                    TextInfoPrivacyCell textCell = (TextInfoPrivacyCell) holder.itemView;
+                    if (position == accountsInfoRow) {
+                        textCell.setText(LocaleController.getString("ShowNotificationsForInfo", R.string.ShowNotificationsForInfo));
+                    }
+                    break;
+                }
             }
         }
 
@@ -886,13 +941,13 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         public int getItemViewType(int position) {
             if (position == eventsSectionRow || position == otherSectionRow || position == resetSectionRow ||
                     position == callsSectionRow || position == badgeNumberSection || position == inappSectionRow ||
-                    position == notificationsSectionRow) {
+                    position == notificationsSectionRow || position == accountsSectionRow) {
                 return 0;
             } else if (position == inappSoundRow || position == inappVibrateRow || position == notificationsServiceConnectionRow ||
                     position == inappPreviewRow || position == contactJoinedRow || position == pinnedMessageRow ||
                     position == notificationsServiceRow || position == badgeNumberMutedRow || position == badgeNumberMessagesRow ||
                     position == badgeNumberShowRow || position == inappPriorityRow || position == inchatSoundRow ||
-                    position == androidAutoAlertRow) {
+                    position == androidAutoAlertRow || position == accountsAllRow) {
                 return 1;
             } else if (position == resetNotificationsRow) {
                 return 2;
@@ -901,6 +956,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
             } else if (position == eventsSection2Row || position == notificationsSection2Row || position == otherSection2Row ||
                     position == resetSection2Row || position == callsSection2Row || position == badgeNumberSection2Row) {
                 return 4;
+            } else if (position == accountsInfoRow) {
+                return 6;
             } else {
                 return 5;
             }
@@ -942,6 +999,10 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
 
                 new ThemeDescription(listView, 0, new Class[]{TextDetailSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{TextDetailSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+                new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4),
+                new ThemeDescription(listView, ThemeDescription.FLAG_LINKCOLOR, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteLinkText),
         };
     }
 }

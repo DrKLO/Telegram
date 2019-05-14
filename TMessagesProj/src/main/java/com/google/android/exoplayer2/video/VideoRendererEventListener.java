@@ -17,7 +17,7 @@ package com.google.android.exoplayer2.video;
 
 import android.os.Handler;
 import android.os.SystemClock;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.view.Surface;
 import android.view.TextureView;
 import com.google.android.exoplayer2.Format;

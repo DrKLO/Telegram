@@ -55,11 +55,13 @@ public class ContactsController {
 
     private int loadingDeleteInfo;
     private int deleteAccountTTL;
-    private int[] loadingPrivacyInfo = new int[4];
+    private int[] loadingPrivacyInfo = new int[6];
     private ArrayList<TLRPC.PrivacyRule> privacyRules;
     private ArrayList<TLRPC.PrivacyRule> groupPrivacyRules;
     private ArrayList<TLRPC.PrivacyRule> callPrivacyRules;
     private ArrayList<TLRPC.PrivacyRule> p2pPrivacyRules;
+    private ArrayList<TLRPC.PrivacyRule> profilePhotoPrivacyRules;
+    private ArrayList<TLRPC.PrivacyRule> forwardsPrivacyRules;
 
     private class MyContentObserver extends ContentObserver {
 
@@ -246,6 +248,8 @@ public class ContactsController {
         groupPrivacyRules = null;
         callPrivacyRules = null;
         p2pPrivacyRules = null;
+        profilePhotoPrivacyRules = null;
+        forwardsPrivacyRules = null;
 
         Utilities.globalQueue.postRunnable(() -> {
             migratingContacts = false;
@@ -1566,6 +1570,10 @@ public class ContactsController {
         });
     }
 
+    public boolean isContact(int uid) {
+        return contactsDict.get(uid) != null;
+    }
+
     private void reloadContactsStatusesMaybe() {
         try {
             SharedPreferences preferences = MessagesController.getMainSettings(currentAccount);
@@ -2300,8 +2308,14 @@ public class ContactsController {
                     req.key = new TLRPC.TL_inputPrivacyKeyPhoneCall();
                     break;
                 case 3:
-                default:
                     req.key = new TLRPC.TL_inputPrivacyKeyPhoneP2P();
+                    break;
+                case 4:
+                    req.key = new TLRPC.TL_inputPrivacyKeyProfilePhoto();
+                    break;
+                case 5:
+                default:
+                    req.key = new TLRPC.TL_inputPrivacyKeyForwards();
                     break;
             }
 
@@ -2321,8 +2335,14 @@ public class ContactsController {
                             callPrivacyRules = rules.rules;
                             break;
                         case 3:
-                        default:
                             p2pPrivacyRules = rules.rules;
+                            break;
+                        case 4:
+                            profilePhotoPrivacyRules = rules.rules;
+                            break;
+                        case 5:
+                        default:
+                            forwardsPrivacyRules = rules.rules;
                             break;
                     }
 
@@ -2353,7 +2373,11 @@ public class ContactsController {
     }
 
     public ArrayList<TLRPC.PrivacyRule> getPrivacyRules(int type) {
-        if (type == 3) {
+        if (type == 5) {
+            return forwardsPrivacyRules;
+        } else if (type == 4) {
+            return profilePhotoPrivacyRules;
+        } else if (type == 3) {
             return p2pPrivacyRules;
         } else if (type == 2) {
             return callPrivacyRules;
@@ -2365,7 +2389,11 @@ public class ContactsController {
     }
 
     public void setPrivacyRules(ArrayList<TLRPC.PrivacyRule> rules, int type) {
-        if (type == 3) {
+        if (type == 5) {
+            forwardsPrivacyRules = rules;
+        } else if (type == 4) {
+            profilePhotoPrivacyRules = rules;
+        } else if (type == 3) {
             p2pPrivacyRules = rules;
         } else if (type == 2) {
             callPrivacyRules = rules;

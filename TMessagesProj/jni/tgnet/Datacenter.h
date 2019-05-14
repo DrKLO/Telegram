@@ -59,7 +59,7 @@ public:
     void resetInitVersion();
 
     Connection *getDownloadConnection(uint8_t num, bool create);
-    Connection *getProxyConnection(uint8_t num, bool create);
+    Connection *getProxyConnection(uint8_t num, bool create, bool connect);
     Connection *getUploadConnection(uint8_t num, bool create);
     Connection *getGenericConnection(bool create, int32_t allowPendingKey);
     Connection *getGenericMediaConnection(bool create, int32_t allowPendingKey);

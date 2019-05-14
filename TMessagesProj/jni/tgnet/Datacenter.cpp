@@ -1255,13 +1255,16 @@ Connection *Datacenter::createConnectionByType(uint32_t connectionType) {
     }
 }
 
-Connection *Datacenter::getProxyConnection(uint8_t num, bool create) {
+Connection *Datacenter::getProxyConnection(uint8_t num, bool create, bool connect) {
     ByteArray *authKey = getAuthKey(ConnectionTypeProxy, false, nullptr, 1);
     if (authKey == nullptr) {
         return nullptr;
     }
     if (create) {
-        createProxyConnection(num)->connect();
+        Connection *connection = createProxyConnection(num);
+        if (connect) {
+            connection->connect();
+        }
     }
     return proxyConnection[num];
 }
@@ -1349,7 +1352,7 @@ Connection *Datacenter::getConnectionByType(uint32_t connectionType, bool create
         case ConnectionTypeTemp:
             return getTempConnection(create);
         case ConnectionTypeProxy:
-            return getProxyConnection(connectionNum, create);
+            return getProxyConnection(connectionNum, create, create);
         default:
             return nullptr;
     }

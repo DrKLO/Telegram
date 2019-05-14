@@ -171,8 +171,10 @@ public class WebviewActivity extends BaseFragment {
                 if (id == -1) {
                     finishFragment();
                 } else if (id == share) {
-                    currentMessageObject.messageOwner.with_my_score = false;
-                    showDialog(ShareAlert.createShareAlert(getParentActivity(), currentMessageObject, null, false, linkToCopy, false));
+                    if (currentMessageObject != null) {
+                        currentMessageObject.messageOwner.with_my_score = false;
+                        showDialog(ShareAlert.createShareAlert(getParentActivity(), currentMessageObject, null, false, linkToCopy, false));
+                    }
                 } else if (id == open_in) {
                     openGameInBrowser(currentUrl, currentMessageObject, getParentActivity(), short_param, currentBot);
                 }
@@ -182,7 +184,7 @@ public class WebviewActivity extends BaseFragment {
         progressItem = menu.addItemWithWidth(share, R.drawable.share, AndroidUtilities.dp(54));
         if (type == TYPE_GAME) {
             ActionBarMenuItem menuItem = menu.addItem(0, R.drawable.ic_ab_other);
-            menuItem.addSubItem(open_in, LocaleController.getString("OpenInExternalApp", R.string.OpenInExternalApp));
+            menuItem.addSubItem(open_in, R.drawable.msg_openin, LocaleController.getString("OpenInExternalApp", R.string.OpenInExternalApp));
 
             actionBar.setTitle(currentGame);
             actionBar.setSubtitle("@" + currentBot);
@@ -208,6 +210,7 @@ public class WebviewActivity extends BaseFragment {
             progressView.setScaleY(1.0f);
             progressView.setVisibility(View.VISIBLE);
             progressItem.getImageView().setVisibility(View.GONE);
+            progressItem.setEnabled(false);
         }
 
         webView = new WebView(context);
@@ -349,6 +352,7 @@ public class WebviewActivity extends BaseFragment {
         TLRPC.TL_messages_getStatsURL req = new TLRPC.TL_messages_getStatsURL();
         req.peer = MessagesController.getInstance(currentAccount).getInputPeer((int) currentDialogId);
         req.params = params != null ? params : "";
+        req.dark = Theme.getCurrentTheme().isDark();
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             loadStats = false;
             if (response != null) {
@@ -413,6 +417,7 @@ public class WebviewActivity extends BaseFragment {
                     new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
                     new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUBACKGROUND, null, null, null, null, Theme.key_actionBarDefaultSubmenuBackground),
                     new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM, null, null, null, null, Theme.key_actionBarDefaultSubmenuItem),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM | ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_actionBarDefaultSubmenuItemIcon),
 
                     new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressInner2),
                     new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressOuter2),
@@ -428,6 +433,7 @@ public class WebviewActivity extends BaseFragment {
                     new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_player_actionBarSelector),
                     new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUBACKGROUND, null, null, null, null, Theme.key_actionBarDefaultSubmenuBackground),
                     new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM, null, null, null, null, Theme.key_actionBarDefaultSubmenuItem),
+                    new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM | ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_actionBarDefaultSubmenuItemIcon),
 
                     new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressInner4),
                     new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressOuter4),

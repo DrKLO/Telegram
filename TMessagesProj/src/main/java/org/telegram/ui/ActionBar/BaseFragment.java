@@ -15,11 +15,20 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityManager;
 
+import org.telegram.messenger.AccountInstance;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 
@@ -289,6 +298,13 @@ public class BaseFragment {
         return null;
     }
 
+    protected void setParentActivityTitle(CharSequence title) {
+        Activity activity = getParentActivity();
+        if (activity != null) {
+            activity.setTitle(title);
+        }
+    }
+
     public void startActivityForResult(final Intent intent, final int requestCode) {
         if (parentLayout != null) {
             parentLayout.startActivityForResult(intent, requestCode);
@@ -308,6 +324,10 @@ public class BaseFragment {
     }
 
     public boolean dismissDialogOnPause(Dialog dialog) {
+        return true;
+    }
+
+    public boolean canBeginSlide() {
         return true;
     }
 
@@ -334,7 +354,16 @@ public class BaseFragment {
     }
 
     protected void onBecomeFullyVisible() {
-
+        AccessibilityManager mgr = (AccessibilityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACCESSIBILITY_SERVICE);
+        if (mgr.isEnabled()) {
+            ActionBar actionBar = getActionBar();
+            if (actionBar != null) {
+                String title = actionBar.getTitle();
+                if (!TextUtils.isEmpty(title)) {
+                    setParentActivityTitle(title);
+                }
+            }
+        }
     }
 
     protected void onBecomeFullyHidden() {
@@ -405,5 +434,37 @@ public class BaseFragment {
 
     public ThemeDescription[] getThemeDescriptions() {
         return new ThemeDescription[0];
+    }
+
+    protected AccountInstance getAccountInstance() {
+        return AccountInstance.getInstance(currentAccount);
+    }
+
+    protected MessagesController getMessagesController() {
+        return getAccountInstance().getMessagesController();
+    }
+
+    protected ContactsController getContactsController() {
+        return getAccountInstance().getContactsController();
+    }
+
+    protected DataQuery getDataQuery() {
+        return getAccountInstance().getDataQuery();
+    }
+
+    protected ConnectionsManager getConnectionsManager() {
+        return getAccountInstance().getConnectionsManager();
+    }
+
+    protected NotificationsController getNotificationsController() {
+        return getAccountInstance().getNotificationsController();
+    }
+
+    public NotificationCenter getNotificationCenter() {
+        return getAccountInstance().getNotificationCenter();
+    }
+
+    public UserConfig getUserConfig() {
+        return getAccountInstance().getUserConfig();
     }
 }

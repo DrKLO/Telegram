@@ -30,7 +30,10 @@ import android.graphics.Shader;
 import android.graphics.SweepGradient;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.annotation.Keep;
+import androidx.annotation.Keep;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -53,8 +56,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -157,7 +158,7 @@ public class ThemeEditorView {
 
             private Bitmap colorWheelBitmap;
 
-            private EditTextBoldCursor colorEditText[] = new EditTextBoldCursor[4];
+            private EditTextBoldCursor[] colorEditText = new EditTextBoldCursor[4];
 
             private int colorWheelRadius;
 
@@ -348,8 +349,8 @@ public class ThemeEditorView {
 
                 int colorCount = 12;
                 int colorAngleStep = 360 / 12;
-                int colors[] = new int[colorCount + 1];
-                float hsv[] = new float[] { 0.0f, 1.0f, 1.0f };
+                int[] colors = new int[colorCount + 1];
+                float[] hsv = new float[]{0.0f, 1.0f, 1.0f};
                 for (int i = 0; i < colors.length; i++) {
                     hsv[0] = (i * colorAngleStep + 180) % 360;
                     colors[i] = Color.HSVToColor(hsv);
@@ -493,7 +494,7 @@ public class ThemeEditorView {
         }
 
         public EditorAlert(final Context context, ThemeDescription[] items) {
-            super(context, true);
+            super(context, true, 0);
 
             shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow).mutate();
 

@@ -16,7 +16,7 @@
 package com.google.android.exoplayer2.offline;
 
 import android.net.Uri;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
 import java.io.ByteArrayInputStream;

@@ -27,6 +27,7 @@ import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
@@ -130,14 +131,18 @@ public class WallpaperCell extends FrameLayout {
                     int size = image != null ? image.size : wallPaper.document.size;
                     if (wallPaper.pattern) {
                         imageView.setBackgroundColor(0xff000000 | wallPaper.settings.background_color);
-                        imageView.setImage(image, "100_100", thumb, null, "jpg", size, 1, wallPaper);
+                        imageView.setImage(ImageLocation.getForDocument(image, wallPaper.document), "100_100", ImageLocation.getForDocument(thumb, wallPaper.document), null, "jpg", size, 1, wallPaper);
                         imageView.getImageReceiver().setColorFilter(new PorterDuffColorFilter(AndroidUtilities.getPatternColor(wallPaper.settings.background_color), PorterDuff.Mode.SRC_IN));
                         imageView.getImageReceiver().setAlpha(wallPaper.settings.intensity / 100.0f);
                     } else {
                         /*if (wallPaper.settings != null && wallPaper.settings.blur) {
                             imageView.setImage(null, "100_100", thumb, "100_100_b", "jpg", size, 1, wallPaper);
                         } else {*/
-                        imageView.setImage(image != null ? image : wallPaper.document, "100_100", thumb, "100_100_b", "jpg", size, 1, wallPaper);
+                        if (image != null) {
+                            imageView.setImage(ImageLocation.getForDocument(image, wallPaper.document), "100_100", ImageLocation.getForDocument(thumb, wallPaper.document), "100_100_b", "jpg", size, 1, wallPaper);
+                        } else {
+                            imageView.setImage(ImageLocation.getForDocument(wallPaper.document), "100_100", ImageLocation.getForDocument(thumb, wallPaper.document), "100_100_b", "jpg", size, 1, wallPaper);
+                        }
                         //}
                     }
                 } else if (object instanceof WallpapersListActivity.ColorWallpaper) {
@@ -170,7 +175,7 @@ public class WallpaperCell extends FrameLayout {
                             image = null;
                         }
                         int size = image != null ? image.size : 0;
-                        imageView.setImage(image, "100_100", thumb, "100_100_b", "jpg", size, 1, wallPaper);
+                        imageView.setImage(ImageLocation.getForPhoto(image, wallPaper.photo), "100_100", ImageLocation.getForPhoto(thumb, wallPaper.photo), "100_100_b", "jpg", size, 1, wallPaper);
                     } else {
                         imageView.setImage(wallPaper.thumbUrl, "100_100", null);
                     }

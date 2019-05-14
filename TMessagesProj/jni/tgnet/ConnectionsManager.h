@@ -146,6 +146,7 @@ private:
     int32_t currentPingTime = 0;
     bool registeringForPush = false;
     int64_t lastPushPingTime = 0;
+    int32_t nextPingTimeOffset = 60000 * 3;
     bool sendingPushPing = false;
     bool sendingPing = false;
     bool updatingDcSettings = false;
@@ -233,7 +234,6 @@ private:
     friend class TL_message;
     friend class TL_rpc_result;
     friend class Config;
-    friend class FileLoadOperation;
     friend class FileLog;
     friend class Handshake;
 };

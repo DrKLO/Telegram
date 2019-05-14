@@ -54,6 +54,7 @@ import org.telegram.messenger.Bitmaps;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
@@ -527,7 +528,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
 
         if (canRetry) {
             try {
-                if (httpConnection != null && httpConnection instanceof HttpURLConnection) {
+                if (httpConnection instanceof HttpURLConnection) {
                     int code = ((HttpURLConnection) httpConnection).getResponseCode();
                     if (code != HttpURLConnection.HTTP_OK && code != HttpURLConnection.HTTP_ACCEPTED && code != HttpURLConnection.HTTP_NOT_MODIFIED) {
                         //canRetry = false;
@@ -2203,7 +2204,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         if (thumb != null) {
             TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(thumb.sizes, 80, true);
             if (photoSize != null) {
-                controlsView.imageReceiver.setImage(null, null, thumb, "80_80_b", 0, null, parentObject, 1);
+                controlsView.imageReceiver.setImage(null, null, ImageLocation.getForPhoto(photoSize, thumb), "80_80_b", 0, null, parentObject, 1);
                 drawImage = true;
             }
         } else {

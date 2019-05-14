@@ -16,15 +16,19 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
@@ -102,12 +106,7 @@ public class GroupCreateSpan extends View {
             textWidth = (int) Math.ceil(nameLayout.getLineWidth(0));
             textX = -nameLayout.getLineLeft(0);
         }
-
-        TLRPC.FileLocation photo = null;
-        if (user != null && user.photo != null) {
-            photo = user.photo.photo_small;
-        }
-        imageReceiver.setImage(photo, "50_50", avatarDrawable, null, null, 0, null, user, 1);
+        imageReceiver.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, 0, null, user, 1);
         updateColors();
     }
 
@@ -211,5 +210,13 @@ public class GroupCreateSpan extends View {
         canvas.translate(textX + AndroidUtilities.dp(32 + 9), AndroidUtilities.dp(8));
         nameLayout.draw(canvas);
         canvas.restore();
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setText(nameLayout.getText());
+        if (isDeleting() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK.getId(), LocaleController.getString("Delete", R.string.Delete)));
     }
 }

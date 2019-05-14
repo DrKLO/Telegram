@@ -28,6 +28,8 @@ import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -85,6 +87,7 @@ public class DrawerProfileCell extends FrameLayout {
 
         arrowView = new ImageView(context);
         arrowView.setScaleType(ImageView.ScaleType.CENTER);
+        arrowView.setContentDescription(accountsShowed ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts) : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
         addView(arrowView, LayoutHelper.createFrame(59, 59, Gravity.RIGHT | Gravity.BOTTOM));
 
         if (Theme.getEventType() == 0) {
@@ -171,6 +174,7 @@ public class DrawerProfileCell extends FrameLayout {
             accountsShowed = !accountsShowed;
             arrowView.setImageResource(accountsShowed ? R.drawable.collapse_up : R.drawable.collapse_down);
             onClickListener.onClick(DrawerProfileCell.this);
+            arrowView.setContentDescription(accountsShowed ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts) : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
         });
     }
 
@@ -178,16 +182,12 @@ public class DrawerProfileCell extends FrameLayout {
         if (user == null) {
             return;
         }
-        TLRPC.FileLocation photo = null;
-        if (user.photo != null) {
-            photo = user.photo.photo_small;
-        }
         accountsShowed = accounts;
         arrowView.setImageResource(accountsShowed ? R.drawable.collapse_up : R.drawable.collapse_down);
         nameTextView.setText(UserObject.getUserName(user));
         phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
         avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundInProfileBlue));
-        avatarImageView.setImage(photo, "50_50", avatarDrawable, user);
+        avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
     }
 }

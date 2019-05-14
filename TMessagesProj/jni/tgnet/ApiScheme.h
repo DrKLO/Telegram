@@ -98,7 +98,7 @@ public:
 class TL_config : public TLObject {
 
 public:
-    static const uint32_t constructor = 0xe6ca25f6;
+    static const uint32_t constructor = 0x330b4067;
 
     int32_t flags;
     int32_t date;
@@ -128,6 +128,7 @@ public:
     int32_t channels_read_media_period;
     int32_t tmp_sessions;
     int32_t pinned_dialogs_count_max;
+    int32_t pinned_infolder_count_max;
     int32_t call_receive_timeout_ms;
     int32_t call_ring_timeout_ms;
     int32_t call_connect_timeout_ms;
@@ -234,39 +235,16 @@ public:
 class FileLocation : public TLObject {
 
 public:
-    int32_t dc_id;
     int64_t volume_id;
     int32_t local_id;
-    int64_t secret;
-    std::unique_ptr<ByteArray> file_reference;
-    std::unique_ptr<ByteArray> key;
-    std::unique_ptr<ByteArray> iv;
 
     static FileLocation *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
 };
 
-class TL_fileLocation : public FileLocation {
+class TL_fileLocationToBeDeprecated : public FileLocation {
 
 public:
-    static const uint32_t constructor = 0x91d11eb;
-
-    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_fileEncryptedLocation : public FileLocation {
-
-public:
-    static const uint32_t constructor = 0x55555554;
-
-    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_fileLocationUnavailable : public FileLocation {
-
-public:
-    static const uint32_t constructor = 0x7c596b46;
+    static const uint32_t constructor = 0xbc7fc6cd;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
@@ -278,6 +256,7 @@ public:
     int64_t photo_id;
     std::unique_ptr<FileLocation> photo_small;
     std::unique_ptr<FileLocation> photo_big;
+    int32_t dc_id;
 
     static UserProfilePhoto *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
 };
@@ -293,7 +272,7 @@ public:
 class TL_userProfilePhoto : public UserProfilePhoto {
 
 public:
-    static const uint32_t constructor = 0xd559d8c8;
+    static const uint32_t constructor = 0xecd75d8c;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
@@ -387,224 +366,11 @@ public:
     void serializeToStream(NativeByteBuffer *stream);
 };
 
-class auth_SentCode : public TLObject {
-
-public:
-    bool phone_registered;
-    std::string phone_code_hash;
-    int32_t send_call_timeout;
-    bool is_password;
-
-    static auth_SentCode *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
-};
-
-class TL_auth_sentAppCode : public auth_SentCode {
-
-public:
-    static const uint32_t constructor = 0xe325edcf;
-
-    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_auth_sentCode : public auth_SentCode {
-
-public:
-    static const uint32_t constructor = 0xefed51d9;
-
-    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_auth_sendCode : public TLObject {
-
-public:
-    static const uint32_t constructor = 0x768d5f4d;
-
-    std::string phone_number;
-    int32_t sms_type;
-    int32_t api_id;
-    std::string api_hash;
-    std::string lang_code;
-
-    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
 class TL_updatesTooLong : public TLObject {
 
 public:
     static const uint32_t constructor = 0xe317af7e;
 
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class storage_FileType : public TLObject {
-
-public:
-
-    static storage_FileType *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
-};
-
-class TL_storage_fileUnknown : public storage_FileType {
-
-public:
-    static const uint32_t constructor = 0xaa963b05;
-
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_storage_fileMp4 : public storage_FileType {
-
-public:
-    static const uint32_t constructor = 0xb3cea0e4;
-
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_storage_fileWebp : public storage_FileType {
-
-public:
-    static const uint32_t constructor = 0x1081464c;
-
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_storage_filePng : public storage_FileType {
-
-public:
-    static const uint32_t constructor = 0xa4f63c0;
-
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_storage_fileGif : public storage_FileType {
-
-public:
-    static const uint32_t constructor = 0xcae1aadf;
-
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_storage_filePdf : public storage_FileType {
-
-public:
-    static const uint32_t constructor = 0xae1e508d;
-
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_storage_fileMp3 : public storage_FileType {
-
-public:
-    static const uint32_t constructor = 0x528a0677;
-
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_storage_fileJpeg : public storage_FileType {
-
-public:
-    static const uint32_t constructor = 0x7efe0e;
-
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_storage_fileMov : public storage_FileType {
-
-public:
-    static const uint32_t constructor = 0x4b09ebbc;
-
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_storage_filePartial : public storage_FileType {
-
-public:
-    static const uint32_t constructor = 0x40bc6f52;
-
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class InputFileLocation : public TLObject {
-
-public:
-    int64_t id;
-    int64_t access_hash;
-    int32_t version;
-    int64_t volume_id;
-    int32_t local_id;
-    int64_t secret;
-
-    static InputFileLocation *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
-};
-
-class TL_inputDocumentFileLocation : public InputFileLocation {
-
-public:
-    static const uint32_t constructor = 0x430f0724;
-
-    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_inputFileLocation : public InputFileLocation {
-
-public:
-    static const uint32_t constructor = 0x14637196;
-
-    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_inputEncryptedFileLocation : public InputFileLocation {
-
-public:
-    static const uint32_t constructor = 0xf5235d55;
-
-    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_upload_saveFilePart : public TLObject {
-
-public:
-    static const uint32_t constructor = 0xb304a621;
-
-    int64_t file_id;
-    int32_t file_part;
-    std::unique_ptr<ByteArray> bytes;
-
-    bool isNeedLayer();
-    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
-    void serializeToStream(NativeByteBuffer *stream);
-};
-
-class TL_upload_file : public TLObject {
-
-public:
-    static const uint32_t constructor = 0x96a18d5;
-
-    std::unique_ptr<storage_FileType> type;
-    int32_t mtime;
-    NativeByteBuffer *bytes = nullptr;
-
-    ~TL_upload_file();
-    static TL_upload_file *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
-    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
-};
-
-class TL_upload_getFile : public TLObject {
-
-public:
-    static const uint32_t constructor = 0xe3a6cfb5;
-
-    InputFileLocation *location;
-    int32_t offset;
-    int32_t limit;
-
-    bool isNeedLayer();
-    TLObject *deserializeResponse(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
 };
 

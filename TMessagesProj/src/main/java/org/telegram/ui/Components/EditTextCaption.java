@@ -28,6 +28,7 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 
@@ -348,6 +349,17 @@ public class EditTextCaption extends EditTextBoldCursor {
             }
         } catch (Exception e) {
             FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (!TextUtils.isEmpty(caption)) {
+            if (Build.VERSION.SDK_INT >= 26)
+				info.setHintText(caption);
+            else
+                info.setText(info.getText()+", "+caption);
         }
     }
 }

@@ -102,7 +102,7 @@ public class FileLoadOperation {
     private boolean started;
     private int datacenterId;
     private int initialDatacenterId;
-    private TLRPC.InputFileLocation location;
+    protected TLRPC.InputFileLocation location;
     private TLRPC.InputWebFileLocation webLocation;
     private WebFile webFile;
     private volatile int state = stateIdle;
@@ -165,30 +165,63 @@ public class FileLoadOperation {
         void didChangedLoadProgress(FileLoadOperation operation, float progress);
     }
 
-    public FileLoadOperation(TLRPC.FileLocation photoLocation, Object parent, String extension, int size) {
+    public FileLoadOperation(ImageLocation imageLocation, Object parent, String extension, int size) {
         parentObject = parent;
-        if (photoLocation instanceof TLRPC.TL_fileEncryptedLocation) {
+        if (imageLocation.isEncrypted()) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
-            location.id = photoLocation.volume_id;
-            location.volume_id = photoLocation.volume_id;
-            location.access_hash = photoLocation.secret;
-            location.local_id = photoLocation.local_id;
+            location.id = imageLocation.location.volume_id;
+            location.volume_id = imageLocation.location.volume_id;
+            location.local_id = imageLocation.location.local_id;
+            location.access_hash = imageLocation.access_hash;
             iv = new byte[32];
-            System.arraycopy(photoLocation.iv, 0, iv, 0, iv.length);
-            key = photoLocation.key;
-            initialDatacenterId = datacenterId = photoLocation.dc_id;
-        } else if (photoLocation instanceof TLRPC.TL_fileLocation) {
-            location = new TLRPC.TL_inputFileLocation();
-            location.volume_id = photoLocation.volume_id;
-            location.secret = photoLocation.secret;
-            location.local_id = photoLocation.local_id;
-            location.file_reference = photoLocation.file_reference;
+            System.arraycopy(imageLocation.iv, 0, iv, 0, iv.length);
+            key = imageLocation.key;
+        } else if (imageLocation.photoPeer != null) {
+            location = new TLRPC.TL_inputPeerPhotoFileLocation();
+            location.id = imageLocation.location.volume_id;
+            location.volume_id = imageLocation.location.volume_id;
+            location.local_id = imageLocation.location.local_id;
+            location.big = imageLocation.photoPeerBig;
+            location.peer = imageLocation.photoPeer;
+        } else if (imageLocation.stickerSet != null) {
+            location = new TLRPC.TL_inputStickerSetThumb();
+            location.id = imageLocation.location.volume_id;
+            location.volume_id = imageLocation.location.volume_id;
+            location.local_id = imageLocation.location.local_id;
+            location.stickerset = imageLocation.stickerSet;
+        } else if (imageLocation.thumbSize != null) {
+            if (imageLocation.photoId != 0) {
+                location = new TLRPC.TL_inputPhotoFileLocation();
+                location.id = imageLocation.photoId;
+                location.volume_id = imageLocation.location.volume_id;
+                location.local_id = imageLocation.location.local_id;
+                location.access_hash = imageLocation.access_hash;
+                location.file_reference = imageLocation.file_reference;
+                location.thumb_size = imageLocation.thumbSize;
+            } else {
+                location = new TLRPC.TL_inputDocumentFileLocation();
+                location.id = imageLocation.documentId;
+                location.volume_id = imageLocation.location.volume_id;
+                location.local_id = imageLocation.location.local_id;
+                location.access_hash = imageLocation.access_hash;
+                location.file_reference = imageLocation.file_reference;
+                location.thumb_size = imageLocation.thumbSize;
+            }
             if (location.file_reference == null) {
                 location.file_reference = new byte[0];
             }
-            initialDatacenterId = datacenterId = photoLocation.dc_id;
+        } else {
+            location = new TLRPC.TL_inputFileLocation();
+            location.volume_id = imageLocation.location.volume_id;
+            location.local_id = imageLocation.location.local_id;
+            location.secret = imageLocation.access_hash;
+            location.file_reference = imageLocation.file_reference;
+            if (location.file_reference == null) {
+                location.file_reference = new byte[0];
+            }
             allowDisordererFileSave = true;
         }
+        initialDatacenterId = datacenterId = imageLocation.dc_id;
         currentType = ConnectionsManager.FileTypePhoto;
         totalBytesCount = size;
         ext = extension != null ? extension : "jpg";
@@ -241,6 +274,7 @@ public class FileLoadOperation {
                 location.id = documentLocation.id;
                 location.access_hash = documentLocation.access_hash;
                 location.file_reference = documentLocation.file_reference;
+                location.thumb_size = "";
                 if (location.file_reference == null) {
                     location.file_reference = new byte[0];
                 }

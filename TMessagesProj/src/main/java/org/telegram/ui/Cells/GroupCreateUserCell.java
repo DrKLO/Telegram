@@ -13,6 +13,7 @@ import android.view.Gravity;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -165,7 +166,7 @@ public class GroupCreateUserCell extends FrameLayout {
             }
         }
 
-        avatarImageView.setImage(photo, "50_50", avatarDrawable, currentUser);
+        avatarImageView.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
     }
 
     @Override

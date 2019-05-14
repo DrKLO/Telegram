@@ -1,6 +1,6 @@
 package org.telegram.messenger;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.text.TextUtils;
 
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -104,7 +104,7 @@ public class WearDataLayerListenerService extends WearableListenerService {
 								@Override
 								public void run() {
 									NotificationCenter.getInstance(currentAccount).addObserver(listener, NotificationCenter.fileDidLoad);
-									FileLoader.getInstance(currentAccount).loadFile(user.photo.photo_small, user, null, 0, 1, 1);
+									FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForUser(user, false), user, null, 1, 1);
 								}
 							});
 							try {

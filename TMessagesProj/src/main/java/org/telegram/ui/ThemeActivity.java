@@ -30,7 +30,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
-import android.support.v4.content.FileProvider;
+import androidx.core.content.FileProvider;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.text.InputType;
 import android.text.TextPaint;
 import android.util.TypedValue;
@@ -58,9 +62,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.support.widget.DefaultItemAnimator;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.time.SunDate;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -72,6 +73,7 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.BrightnessControlCell;
+import org.telegram.ui.Cells.ChatListCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.HeaderCell;
@@ -101,6 +103,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
     private ListAdapter listAdapter;
     private RecyclerListView listView;
+    @SuppressWarnings("FieldCanBeLocal")
+    private LinearLayoutManager layoutManager;
 
     private int backgroundRow;
     private int textSizeHeaderRow;
@@ -138,6 +142,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int preferedHeaderRow;
     private int newThemeInfoRow;
     private int themeHeaderRow;
+    private int chatListHeaderRow;
+    private int chatListRow;
+    private int chatListInfoRow;
     private int themeStartRow;
     private int themeEndRow;
     private int themeInfoRow;
@@ -418,6 +425,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         automaticBrightnessInfoRow = -1;
         textSizeHeaderRow = -1;
         themeHeaderRow = -1;
+        chatListHeaderRow = -1;
+        chatListRow = -1;
+        chatListInfoRow = -1;
 
         textSizeRow = -1;
         backgroundRow = -1;
@@ -443,6 +453,10 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             rowCount += Theme.themes.size();
             themeEndRow = rowCount;
             themeInfoRow = rowCount++;
+
+            chatListHeaderRow = rowCount++;
+            chatListRow = rowCount++;
+            chatListInfoRow = rowCount++;
 
             settingsRow = rowCount++;
             customTabsRow = rowCount++;
@@ -567,7 +581,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             actionBar.setTitle(LocaleController.getString("ChatSettings", R.string.ChatSettings));
             ActionBarMenu menu = actionBar.createMenu();
             ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
-            item.addSubItem(create_theme, LocaleController.getString("CreateNewThemeMenu", R.string.CreateNewThemeMenu));
+            item.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
+            item.addSubItem(create_theme, R.drawable.menu_palette, LocaleController.getString("CreateNewThemeMenu", R.string.CreateNewThemeMenu));
         } else {
             actionBar.setTitle(LocaleController.getString("AutoNightTheme", R.string.AutoNightTheme));
         }
@@ -598,7 +613,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         fragmentView = frameLayout;
 
         listView = new RecyclerListView(context);
-        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         listView.setVerticalScrollBarEnabled(false);
         listView.setAdapter(listAdapter);
         ((DefaultItemAnimator) listView.getItemAnimator()).setDelayAnimations(false);
@@ -673,7 +688,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 if (getParentActivity() == null) {
                     return;
                 }
-                final boolean maskValues[] = new boolean[2];
+                final boolean[] maskValues = new boolean[2];
                 BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
 
                 builder.setApplyTopPadding(false);
@@ -929,7 +944,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (lastKnownLocation == null) {
                 lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            } else if (lastKnownLocation == null) {
+            }
+            if (lastKnownLocation == null) {
                 lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
             }
         } catch (Exception e) {
@@ -943,7 +959,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         }
         Theme.autoNightLocationLatitude = lastKnownLocation.getLatitude();
         Theme.autoNightLocationLongitude = lastKnownLocation.getLongitude();
-        int time[] = SunDate.calculateSunriseSunset(Theme.autoNightLocationLatitude, Theme.autoNightLocationLongitude);
+        int[] time = SunDate.calculateSunriseSunset(Theme.autoNightLocationLatitude, Theme.autoNightLocationLongitude);
         Theme.autoNightSunriseTime = time[0];
         Theme.autoNightSunsetTime = time[1];
         Theme.autoNightCityName = null;
@@ -1215,8 +1231,17 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 8:
-                default:
                     view = new TextSizeCell(mContext);
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
+                case 9:
+                default:
+                    view = new ChatListCell(mContext) {
+                        @Override
+                        protected void didSelectChatType(boolean threeLines) {
+                            SharedConfig.setUseThreeLinesLayout(threeLines);
+                        }
+                    };
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
 
@@ -1308,6 +1333,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         headerCell.setText(LocaleController.getString("ColorTheme", R.string.ColorTheme));
                     } else if (position == textSizeHeaderRow) {
                         headerCell.setText(LocaleController.getString("TextSizeHeader", R.string.TextSizeHeader));
+                    } else if (position == chatListHeaderRow) {
+                        headerCell.setText(LocaleController.getString("ChatList", R.string.ChatList));
                     }
                     break;
                 }
@@ -1362,12 +1389,14 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             } else if (position == automaticBrightnessInfoRow || position == scheduleLocationInfoRow) {
                 return 2;
             } else if (position == themeInfoRow || position == nightTypeInfoRow || position == scheduleFromToInfoRow ||
-                    position == stickersSection2Row || position == settings2Row || position == newThemeInfoRow) {
+                    position == stickersSection2Row || position == settings2Row || position == newThemeInfoRow ||
+                    position == chatListInfoRow) {
                 return 3;
             } else if (position == nightDisabledRow || position == nightScheduledRow || position == nightAutomaticRow) {
                 return 4;
             } else if (position == scheduleHeaderRow || position == automaticHeaderRow || position == preferedHeaderRow ||
-                    position == settingsRow || position == themeHeaderRow || position == textSizeHeaderRow) {
+                    position == settingsRow || position == themeHeaderRow || position == textSizeHeaderRow ||
+                    position == chatListHeaderRow) {
                 return 5;
             } else if (position == automaticBrightnessRow) {
                 return 6;
@@ -1377,6 +1406,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 return 7;
             } else if (position == textSizeRow) {
                 return 8;
+            } else if (position == chatListRow) {
+                return 9;
             }
             return 0;
         }
@@ -1385,7 +1416,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public ThemeDescription[] getThemeDescriptions() {
         return new ThemeDescription[]{
-                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextSettingsCell.class, TextCheckCell.class, HeaderCell.class, BrightnessControlCell.class, ThemeTypeCell.class, ThemeCell.class, TextSizeCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextSettingsCell.class, TextCheckCell.class, HeaderCell.class, BrightnessControlCell.class, ThemeTypeCell.class, ThemeCell.class, TextSizeCell.class, ChatListCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
                 new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray),
 
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
@@ -1393,6 +1424,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUBACKGROUND, null, null, null, null, Theme.key_actionBarDefaultSubmenuBackground),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM, null, null, null, null, Theme.key_actionBarDefaultSubmenuItem),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM | ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_actionBarDefaultSubmenuItemIcon),
 
                 new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
 
@@ -1426,6 +1460,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
                 new ThemeDescription(listView, ThemeDescription.FLAG_PROGRESSBAR, new Class[]{TextSizeCell.class}, new String[]{"sizeBar"}, null, null, null, Theme.key_player_progress),
                 new ThemeDescription(listView, 0, new Class[]{TextSizeCell.class}, new String[]{"sizeBar"}, null, null, null, Theme.key_player_progressBackground),
+
+                new ThemeDescription(listView, 0, new Class[]{ChatListCell.class}, null, null, null, Theme.key_radioBackground),
+                new ThemeDescription(listView, 0, new Class[]{ChatListCell.class}, null, null, null, Theme.key_radioBackgroundChecked),
 
                 new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgInDrawable, Theme.chat_msgInMediaDrawable}, null, Theme.key_chat_inBubble),
                 new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgInSelectedDrawable, Theme.chat_msgInMediaSelectedDrawable}, null, Theme.key_chat_inBubbleSelected),

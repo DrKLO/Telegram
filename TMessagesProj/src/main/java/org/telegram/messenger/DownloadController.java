@@ -76,20 +76,6 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         public boolean lessCallData;
         public boolean enabled;
 
-        public Preset(int m, int p, int v, int f, boolean pv, boolean pm, boolean e, boolean l) {
-            for (int a = 0; a < mask.length; a++) {
-                mask[a] = m;
-            }
-            sizes[PRESET_SIZE_NUM_PHOTO] = p;
-            sizes[PRESET_SIZE_NUM_VIDEO] = v;
-            sizes[PRESET_SIZE_NUM_DOCUMENT] = f;
-            sizes[PRESET_SIZE_NUM_AUDIO] = 512 * 1024;
-            preloadVideo = pv;
-            preloadMusic = pm;
-            lessCallData = l;
-            enabled = e;
-        }
-
         public Preset(int[] m, int p, int v, int f, boolean pv, boolean pm, boolean e, boolean l) {
             System.arraycopy(m, 0, mask, 0, mask.length);
             sizes[PRESET_SIZE_NUM_PHOTO] = p;
@@ -182,6 +168,15 @@ public class DownloadController implements NotificationCenter.NotificationCenter
                     sizes[3] == obj.sizes[3] &&
                     preloadVideo == obj.preloadVideo &&
                     preloadMusic == obj.preloadMusic;
+        }
+
+        public boolean isEnabled() {
+            for (int a = 0; a < mask.length; a++) {
+                if (mask[a] != 0) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -476,8 +471,10 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         } else {
             for (int a = 0; a < photoDownloadQueue.size(); a++) {
                 DownloadObject downloadObject = photoDownloadQueue.get(a);
-                if (downloadObject.object instanceof TLRPC.PhotoSize) {
-                    FileLoader.getInstance(currentAccount).cancelLoadFile((TLRPC.PhotoSize) downloadObject.object);
+                if (downloadObject.object instanceof TLRPC.Photo) {
+                    TLRPC.Photo photo = (TLRPC.Photo) downloadObject.object;
+                    TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, AndroidUtilities.getPhotoSize());
+                    FileLoader.getInstance(currentAccount).cancelLoadFile(photoSize);
                 } else if (downloadObject.object instanceof TLRPC.Document) {
                     FileLoader.getInstance(currentAccount).cancelLoadFile((TLRPC.Document) downloadObject.object);
                 }
@@ -542,16 +539,21 @@ public class DownloadController implements NotificationCenter.NotificationCenter
     }
 
     public int canDownloadMedia(TLRPC.Message message) {
+        if (message == null) {
+            return 0;
+        }
         int type;
         boolean isVideo;
-        if ((isVideo = MessageObject.isVideoMessage(message)) || MessageObject.isGifMessage(message) || MessageObject.isRoundVideoMessage(message)) {
+        if ((isVideo = MessageObject.isVideoMessage(message)) || MessageObject.isGifMessage(message) || MessageObject.isRoundVideoMessage(message) || MessageObject.isGameMessage(message)) {
             type = AUTODOWNLOAD_TYPE_VIDEO;
         } else if (MessageObject.isVoiceMessage(message)) {
             type = AUTODOWNLOAD_TYPE_AUDIO;
         } else if (MessageObject.isPhoto(message) || MessageObject.isStickerMessage(message)) {
             type = AUTODOWNLOAD_TYPE_PHOTO;
-        } else {
+        } else if (MessageObject.getDocument(message) != null) {
             type = AUTODOWNLOAD_TYPE_DOCUMENT;
+        } else {
+            return 0;
         }
         int mask;
         int index;
@@ -714,19 +716,32 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         for (int a = 0; a < objects.size(); a++) {
             DownloadObject downloadObject = objects.get(a);
             String path;
+            TLRPC.PhotoSize photoSize = null;
             if (downloadObject.object instanceof TLRPC.Document) {
                 TLRPC.Document document = (TLRPC.Document) downloadObject.object;
                 path = FileLoader.getAttachFileName(document);
-            } else {
+            } else if (downloadObject.object instanceof TLRPC.Photo) {
                 path = FileLoader.getAttachFileName(downloadObject.object);
+                TLRPC.Photo photo = (TLRPC.Photo) downloadObject.object;
+                photoSize = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, AndroidUtilities.getPhotoSize());
+            } else {
+                path = null;
             }
-            if (downloadQueueKeys.containsKey(path)) {
+            if (path == null || downloadQueueKeys.containsKey(path)) {
                 continue;
             }
-
             boolean added = true;
-            if (downloadObject.object instanceof TLRPC.PhotoSize) {
-                FileLoader.getInstance(currentAccount).loadFile((TLRPC.PhotoSize) downloadObject.object, null, downloadObject.secret ? 2 : 0);
+            if (photoSize != null) {
+                TLRPC.Photo photo = (TLRPC.Photo) downloadObject.object;
+                int cacheType;
+                if (downloadObject.secret) {
+                    cacheType = 2;
+                } else if (downloadObject.forceCache) {
+                    cacheType = 1;
+                } else {
+                    cacheType = 0;
+                }
+                FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForPhoto(photoSize, photo), downloadObject.parent, null, 0, cacheType);
             } else if (downloadObject.object instanceof TLRPC.Document) {
                 TLRPC.Document document = (TLRPC.Document) downloadObject.object;
                 FileLoader.getInstance(currentAccount).loadFile(document, downloadObject.parent, 0, downloadObject.secret ? 2 : 0);
@@ -966,7 +981,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
                                         MessagesController.getInstance(currentAccount).sendTyping(dialog_id, 9, 0);
                                     } else if (delayedMessage.obj.getDocument() != null) {
                                         MessagesController.getInstance(currentAccount).sendTyping(dialog_id, 3, 0);
-                                    } else if (delayedMessage.location != null) {
+                                    } else if (delayedMessage.photoSize != null) {
                                         MessagesController.getInstance(currentAccount).sendTyping(dialog_id, 4, 0);
                                     }
                                     typingTimes.put(dialog_id, System.currentTimeMillis());

@@ -8,7 +8,7 @@
 
 package org.telegram.messenger;
 
-import android.support.annotation.UiThread;
+import androidx.annotation.UiThread;
 import android.util.SparseArray;
 
 import java.util.ArrayList;
@@ -42,6 +42,7 @@ public class NotificationCenter {
     public static final int messagesReadEncrypted = totalEvents++;
     public static final int encryptedChatCreated = totalEvents++;
     public static final int dialogPhotosLoaded = totalEvents++;
+    public static final int folderBecomeEmpty = totalEvents++;
     public static final int removeAllMessagesFromDialog = totalEvents++;
     public static final int notificationsSettingsUpdated = totalEvents++;
     public static final int blockedUsersDidLoad = totalEvents++;
@@ -131,6 +132,8 @@ public class NotificationCenter {
     public static final int configLoaded = totalEvents++;
 
     public static final int needDeleteDialog = totalEvents++;
+
+    public static final int newEmojiSuggestionsAvailable = totalEvents++;
 
     //global
     public static final int pushMessagesUpdated = totalEvents++;

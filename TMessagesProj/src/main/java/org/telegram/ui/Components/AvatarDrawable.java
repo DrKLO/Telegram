@@ -19,6 +19,11 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 
+import com.airbnb.lottie.LottieProperty;
+import com.airbnb.lottie.SimpleColorFilter;
+import com.airbnb.lottie.model.KeyPath;
+import com.airbnb.lottie.value.LottieValueCallback;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.TLRPC;
@@ -34,8 +39,14 @@ public class AvatarDrawable extends Drawable {
     private float textLeft;
     private boolean isProfile;
     private boolean drawBrodcast;
-    private int savedMessages;
+    private int avatarType;
+    private float archivedAvatarProgress;
     private StringBuilder stringBuilder = new StringBuilder(5);
+
+    public static final int AVATAR_TYPE_NORMAL = 0;
+    public static final int AVATAR_TYPE_SAVED = 1;
+    public static final int AVATAR_TYPE_SAVED_SMALL = 2;
+    public static final int AVATAR_TYPE_ARCHIVED = 3;
 
     public AvatarDrawable() {
         super();
@@ -114,9 +125,21 @@ public class AvatarDrawable extends Drawable {
         }
     }
 
-    public void setSavedMessages(int value) {
-        savedMessages = value;
-        color = Theme.getColor(Theme.key_avatar_backgroundSaved);
+    public void setAvatarType(int value) {
+        avatarType = value;
+        if (avatarType == AVATAR_TYPE_ARCHIVED) {
+            color = Theme.getColor(Theme.key_avatar_backgroundArchivedHidden);
+        } else {
+            color = Theme.getColor(Theme.key_avatar_backgroundSaved);
+        }
+    }
+
+    public void setArchivedAvatarHiddenProgress(float progress) {
+        archivedAvatarProgress = progress;
+    }
+
+    public int getAvatarType() {
+        return avatarType;
     }
 
     public void setInfo(TLRPC.Chat chat) {
@@ -149,7 +172,7 @@ public class AvatarDrawable extends Drawable {
         }
 
         drawBrodcast = isBroadcast;
-        savedMessages = 0;
+        avatarType = AVATAR_TYPE_NORMAL;
 
         if (firstName == null || firstName.length() == 0) {
             firstName = lastName;
@@ -220,10 +243,35 @@ public class AvatarDrawable extends Drawable {
         canvas.translate(bounds.left, bounds.top);
         canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, Theme.avatar_backgroundPaint);
 
-        if (savedMessages != 0 && Theme.avatar_savedDrawable != null) {
+        if (avatarType == AVATAR_TYPE_ARCHIVED) {
+            if (archivedAvatarProgress != 0) {
+                Theme.avatar_backgroundPaint.setColor(Theme.getColor(Theme.key_avatar_backgroundArchived));
+                canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f * archivedAvatarProgress, Theme.avatar_backgroundPaint);
+                if (Theme.dialogs_archiveAvatarDrawableRecolored) {
+                    Theme.dialogs_archiveAvatarDrawable.addValueCallback(new KeyPath("Arrow1", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(Theme.getColor(Theme.key_avatar_backgroundArchived))));
+                    Theme.dialogs_archiveAvatarDrawable.addValueCallback(new KeyPath("Arrow2", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(Theme.getColor(Theme.key_avatar_backgroundArchived))));
+                    Theme.dialogs_archiveAvatarDrawableRecolored = false;
+                }
+            } else {
+                if (!Theme.dialogs_archiveAvatarDrawableRecolored) {
+                    Theme.dialogs_archiveAvatarDrawable.addValueCallback(new KeyPath("Arrow1", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(Theme.getColor(Theme.key_avatar_backgroundArchivedHidden))));
+                    Theme.dialogs_archiveAvatarDrawable.addValueCallback(new KeyPath("Arrow2", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(Theme.getColor(Theme.key_avatar_backgroundArchivedHidden))));
+                    Theme.dialogs_archiveAvatarDrawableRecolored = true;
+                }
+            }
+            int w = Theme.dialogs_archiveAvatarDrawable.getIntrinsicWidth();
+            int h = Theme.dialogs_archiveAvatarDrawable.getIntrinsicHeight();
+            int x = (size - w) / 2;
+            int y = (size - h) / 2;
+            canvas.save();
+            canvas.translate(x, y);
+            Theme.dialogs_archiveAvatarDrawable.setBounds(x, y, x + w, y + h);
+            Theme.dialogs_archiveAvatarDrawable.draw(canvas);
+            canvas.restore();
+        } else if (avatarType != 0 && Theme.avatar_savedDrawable != null) {
             int w = Theme.avatar_savedDrawable.getIntrinsicWidth();
             int h = Theme.avatar_savedDrawable.getIntrinsicHeight();
-            if (savedMessages == 2) {
+            if (avatarType == AVATAR_TYPE_SAVED_SMALL) {
                 w *= 0.8f;
                 h *= 0.8f;
             }

@@ -19,8 +19,8 @@ import android.content.Context;
 import android.graphics.Point;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Pair;
 import android.util.SparseArray;
@@ -328,7 +328,7 @@ public class DefaultTrackSelector extends MappingTrackSelector {
      */
     public ParametersBuilder setViewportSizeToPhysicalDisplaySize(
         Context context, boolean viewportOrientationMayChange) {
-      // Assume the viewport is fullscreen.
+      // Assume the viewport is isFullscreen.
       Point viewportSize = Util.getPhysicalDisplaySize(context);
       return setViewportSize(viewportSize.x, viewportSize.y, viewportOrientationMayChange);
     }

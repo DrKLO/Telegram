@@ -51,6 +51,10 @@ public class LayoutHelper {
         return new FrameLayout.LayoutParams(getSize(width), getSize(height));
     }
 
+    public static FrameLayout.LayoutParams createFrame(float width, float height, int gravity) {
+        return new FrameLayout.LayoutParams(getSize(width), getSize(height), gravity);
+    }
+
     public static RelativeLayout.LayoutParams createRelative(float width, float height, int leftMargin, int topMargin, int rightMargin, int bottomMargin, int alignParent, int alignRelative, int anchorRelative) {
         RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(getSize(width), getSize(height));
         if (alignParent >= 0) {

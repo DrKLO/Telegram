@@ -29,15 +29,16 @@ import org.telegram.messenger.LocationController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.SharingLiveLocationCell;
-import org.telegram.ui.StickerPreviewViewer;
+import org.telegram.ui.ContentPreviewViewer;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class SharingLocationsAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
 
@@ -58,7 +59,7 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
     }
 
     public SharingLocationsAlert(Context context, SharingLocationsAlertDelegate sharingLocationsAlertDelegate) {
-        super(context, false);
+        super(context, false, 0);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.liveLocationsChanged);
         delegate = sharingLocationsAlertDelegate;
 
@@ -134,7 +135,7 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
         listView = new RecyclerListView(context) {
             @Override
             public boolean onInterceptTouchEvent(MotionEvent event) {
-                boolean result = StickerPreviewViewer.getInstance().onInterceptTouchEvent(event, listView, 0, null);
+                boolean result = ContentPreviewViewer.getInstance().onInterceptTouchEvent(event, listView, 0, null);
                 return super.onInterceptTouchEvent(event) || result;
             }
 
@@ -158,16 +159,13 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
                 updateLayout();
             }
         });
-        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                position -= 1;
-                if (position < 0 || position >= LocationController.getLocationsCount()) {
-                    return;
-                }
-                delegate.didSelectLocation(getLocation(position));
-                dismiss();
+        listView.setOnItemClickListener((view, position) -> {
+            position -= 1;
+            if (position < 0 || position >= LocationController.getLocationsCount()) {
+                return;
             }
+            delegate.didSelectLocation(getLocation(position));
+            dismiss();
         });
         containerView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 48));
 
@@ -181,24 +179,16 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
         pickerBottomLayout.cancelButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
         pickerBottomLayout.cancelButton.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
         pickerBottomLayout.cancelButton.setText(LocaleController.getString("StopAllLocationSharings", R.string.StopAllLocationSharings));
-        pickerBottomLayout.cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                    LocationController.getInstance(a).removeAllLocationSharings();
-                }
-                dismiss();
+        pickerBottomLayout.cancelButton.setOnClickListener(view -> {
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                LocationController.getInstance(a).removeAllLocationSharings();
             }
+            dismiss();
         });
         pickerBottomLayout.doneButtonTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
         pickerBottomLayout.doneButtonTextView.setText(LocaleController.getString("Close", R.string.Close).toUpperCase());
         pickerBottomLayout.doneButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
-        pickerBottomLayout.doneButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                dismiss();
-            }
-        });
+        pickerBottomLayout.doneButton.setOnClickListener(view -> dismiss());
         pickerBottomLayout.doneButtonBadgeTextView.setVisibility(View.GONE);
 
         adapter.notifyDataSetChanged();

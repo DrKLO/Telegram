@@ -27,8 +27,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -42,6 +40,9 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class PhotoAlbumPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -103,7 +104,6 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         super.onFragmentDestroy();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public View createView(Context context) {
         actionBar.setBackgroundColor(Theme.ACTION_BAR_MEDIA_PICKER_COLOR);
@@ -125,7 +125,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        menu.addItem(1, R.drawable.ic_ab_other);
+        menu.addItem(1, R.drawable.ic_ab_other).setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
 
         fragmentView = new FrameLayout(context);
 

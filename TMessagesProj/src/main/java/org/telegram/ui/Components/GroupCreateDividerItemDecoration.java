@@ -13,8 +13,9 @@ import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.ui.ActionBar.Theme;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 public class GroupCreateDividerItemDecoration extends RecyclerView.ItemDecoration {
 

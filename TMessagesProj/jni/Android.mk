@@ -95,6 +95,7 @@ endif
 
 include $(PREBUILT_STATIC_LIBRARY)
 
+TGVOIP_ADDITIONAL_CFLAGS := -DTGVOIP_NO_VIDEO
 include $(MY_LOCAL_PATH)/libtgvoip/Android.mk
 LOCAL_PATH := $(MY_LOCAL_PATH) # restore local path after include
 
@@ -123,7 +124,6 @@ LOCAL_SRC_FILES := \
 ./tgnet/Request.cpp \
 ./tgnet/Timer.cpp \
 ./tgnet/TLObject.cpp \
-./tgnet/FileLoadOperation.cpp \
 ./tgnet/ProxyCheckInfo.cpp \
 ./tgnet/Handshake.cpp \
 ./tgnet/Config.cpp
@@ -547,8 +547,6 @@ LOCAL_SRC_FILES     += \
 ./SqliteWrapper.cpp \
 ./TgNetWrapper.cpp \
 ./NativeLoader.cpp \
-./emoji/emoji_suggestions_data.cpp \
-./emoji/emoji_suggestions.cpp \
 ./exoplayer/flac_jni.cc \
 ./exoplayer/flac_parser.cc \
 ./exoplayer/opus_jni.cc \

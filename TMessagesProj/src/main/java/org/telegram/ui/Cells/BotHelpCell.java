@@ -19,6 +19,7 @@ import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
@@ -71,7 +72,7 @@ public class BotHelpCell extends View {
             setVisibility(GONE);
             return;
         }
-        if (text != null && oldText != null && text.equals(oldText)) {
+        if (text != null && text.equals(oldText)) {
             return;
         }
         oldText = text;
@@ -207,5 +208,11 @@ public class BotHelpCell extends View {
             textLayout.draw(canvas);
         }
         canvas.restore();
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setText(textLayout.getText());
     }
 }

@@ -59,7 +59,7 @@ public class VoIPHelper{
 
 	private static final int VOIP_SUPPORT_ID=4244000;
 
-	public static void startCall(TLRPC.User user, final Activity activity, TLRPC.TL_userFull userFull){
+	public static void startCall(TLRPC.User user, final Activity activity, TLRPC.UserFull userFull){
 		if(userFull!=null && userFull.phone_calls_private){
 			new AlertDialog.Builder(activity)
 					.setTitle(LocaleController.getString("VoipFailed", R.string.VoipFailed))

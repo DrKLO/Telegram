@@ -26,6 +26,7 @@ public class CloseProgressDrawable2 extends Drawable {
     private RectF rect = new RectF();
     private float angle;
     private boolean animating;
+    private int side;
 
     public CloseProgressDrawable2() {
         super();
@@ -33,6 +34,7 @@ public class CloseProgressDrawable2 extends Drawable {
         paint.setStrokeWidth(AndroidUtilities.dp(2));
         paint.setStrokeCap(Paint.Cap.ROUND);
         paint.setStyle(Paint.Style.STROKE);
+        side = AndroidUtilities.dp(8);
     }
 
     public void startAnimation() {
@@ -45,8 +47,16 @@ public class CloseProgressDrawable2 extends Drawable {
         animating = false;
     }
 
+    public boolean isAnimating() {
+        return animating;
+    }
+
     public void setColor(int value) {
         paint.setColor(value);
+    }
+
+    public void setSide(int value) {
+        side = value;
     }
 
     @Override
@@ -98,23 +108,23 @@ public class CloseProgressDrawable2 extends Drawable {
         }
 
         if (progress1 != 0) {
-            canvas.drawLine(0, 0, 0, AndroidUtilities.dp(8) * progress1, paint);
+            canvas.drawLine(0, 0, 0, side * progress1, paint);
         }
         if (progress2 != 0) {
-            canvas.drawLine(-AndroidUtilities.dp(8) * progress2, 0, 0, 0, paint);
+            canvas.drawLine(-side * progress2, 0, 0, 0, paint);
         }
         if (progress3 != 0) {
-            canvas.drawLine(0, -AndroidUtilities.dp(8) * progress3, 0, 0, paint);
+            canvas.drawLine(0, -side * progress3, 0, 0, paint);
         }
         if (progress4 != 1) {
-            canvas.drawLine(AndroidUtilities.dp(8) * progress4, 0, AndroidUtilities.dp(8), 0, paint);
+            canvas.drawLine(side * progress4, 0, side, 0, paint);
         }
 
         canvas.restore();
 
         int cx = getBounds().centerX();
         int cy = getBounds().centerY();
-        rect.set(cx - AndroidUtilities.dp(8), cy - AndroidUtilities.dp(8), cx + AndroidUtilities.dp(8), cy + AndroidUtilities.dp(8));
+        rect.set(cx - side, cy - side, cx + side, cy + side);
         canvas.drawArc(rect, (angle < 360 ? 0 : angle - 360) - 45, (angle < 360 ? angle : 720 - angle), false, paint);
 
         lastFrameTime = newTime;

@@ -16,8 +16,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.Emoji;
-import org.telegram.messenger.EmojiSuggestion;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -75,7 +76,7 @@ public class MentionCell extends LinearLayout {
         }
         avatarDrawable.setInfo(user);
         if (user.photo != null && user.photo.photo_small != null) {
-            imageView.setImage(user.photo.photo_small, "50_50", avatarDrawable, user);
+            imageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
         } else {
             imageView.setImageDrawable(avatarDrawable);
         }
@@ -101,13 +102,13 @@ public class MentionCell extends LinearLayout {
         nameTextView.invalidate();
     }
 
-    public void setEmojiSuggestion(EmojiSuggestion suggestion) {
+    public void setEmojiSuggestion(DataQuery.KeywordResult suggestion) {
         imageView.setVisibility(INVISIBLE);
         usernameTextView.setVisibility(INVISIBLE);
-        StringBuilder stringBuilder = new StringBuilder(suggestion.emoji.length() + suggestion.label.length() + 3);
+        StringBuilder stringBuilder = new StringBuilder(suggestion.emoji.length() + suggestion.keyword.length() + 4);
         stringBuilder.append(suggestion.emoji);
-        stringBuilder.append("   ");
-        stringBuilder.append(suggestion.label);
+        stringBuilder.append("   :");
+        stringBuilder.append(suggestion.keyword);
         nameTextView.setText(Emoji.replaceEmoji(stringBuilder, nameTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false));
     }
 
@@ -116,7 +117,7 @@ public class MentionCell extends LinearLayout {
             imageView.setVisibility(VISIBLE);
             avatarDrawable.setInfo(user);
             if (user.photo != null && user.photo.photo_small != null) {
-                imageView.setImage(user.photo.photo_small, "50_50", avatarDrawable, user);
+                imageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
             } else {
                 imageView.setImageDrawable(avatarDrawable);
             }

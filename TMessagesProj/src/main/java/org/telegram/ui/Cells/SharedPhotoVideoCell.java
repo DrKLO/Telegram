@@ -21,12 +21,15 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
+import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
@@ -35,7 +38,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.CheckBox;
+import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.PhotoViewer;
 
@@ -54,6 +57,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
 
     public interface SharedPhotoVideoCellDelegate {
         void didClickItem(SharedPhotoVideoCell cell, int index, MessageObject messageObject, int a);
+
         boolean didLongClickItem(SharedPhotoVideoCell cell, int index, MessageObject messageObject, int a);
     }
 
@@ -63,7 +67,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
         private TextView videoTextView;
         private FrameLayout videoInfoContainer;
         private View selector;
-        private CheckBox checkBox;
+        private CheckBox2 checkBox;
         private FrameLayout container;
         private AnimatorSet animator;
 
@@ -104,16 +108,20 @@ public class SharedPhotoVideoCell extends FrameLayout {
             videoTextView.setTextColor(0xffffffff);
             videoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+            videoTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             videoInfoContainer.addView(videoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 13, -0.7f, 0, 0));
 
             selector = new View(context);
             selector.setBackgroundDrawable(Theme.getSelectorDrawable(false));
             addView(selector, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-            checkBox = new CheckBox(context, R.drawable.round_check2);
+            checkBox = new CheckBox2(context);
             checkBox.setVisibility(INVISIBLE);
-            checkBox.setColor(Theme.getColor(Theme.key_checkbox), Theme.getColor(Theme.key_checkboxCheck));
-            addView(checkBox, LayoutHelper.createFrame(22, 22, Gravity.RIGHT | Gravity.TOP, 0, 2, 2, 0));
+            checkBox.setColor(null, Theme.key_sharedMedia_photoPlaceholder, Theme.key_checkboxCheck);
+            checkBox.setSize(21);
+            checkBox.setDrawUnchecked(false);
+            checkBox.setDrawBackgroundAsArc(1);
+            addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.TOP, 0, 1, 1, 0));
         }
 
         @Override
@@ -135,8 +143,9 @@ public class SharedPhotoVideoCell extends FrameLayout {
             }
             if (animated) {
                 animator = new AnimatorSet();
-                animator.playTogether(ObjectAnimator.ofFloat(container, "scaleX", checked ? 0.85f : 1.0f),
-                        ObjectAnimator.ofFloat(container, "scaleY", checked ? 0.85f : 1.0f));
+                animator.playTogether(
+                        ObjectAnimator.ofFloat(container, "scaleX", checked ? 0.81f : 1.0f),
+                        ObjectAnimator.ofFloat(container, "scaleY", checked ? 0.81f : 1.0f));
                 animator.setDuration(200);
                 animator.addListener(new AnimatorListenerAdapter() {
                     @Override
@@ -179,7 +188,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
                     qualityThumb = null;
                 }
                 if (thumb != null) {
-                    imageView.setImage(qualityThumb, "100_100", ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, thumb, "b", null, 0, messageObject);
+                    imageView.setImage(ImageLocation.getForDocument(qualityThumb, document), "100_100", ImageLocation.getForDocument(thumb, document), "b", ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, null, 0, messageObject);
                 } else {
                     imageView.setImageResource(R.drawable.photo_placeholder_in);
                 }
@@ -191,9 +200,9 @@ public class SharedPhotoVideoCell extends FrameLayout {
                     if (currentPhotoObject == currentPhotoObjectThumb) {
                         currentPhotoObjectThumb = null;
                     }
-                    imageView.getImageReceiver().setImage(currentPhotoObject, "100_100", currentPhotoObjectThumb, "b", currentPhotoObject.size, null, messageObject, messageObject.shouldEncryptPhotoOrVideo() ? 2 : 0);
+                    imageView.getImageReceiver().setImage(ImageLocation.getForObject(currentPhotoObject, messageObject.photoThumbsObject), "100_100", ImageLocation.getForObject(currentPhotoObjectThumb, messageObject.photoThumbsObject), "b", currentPhotoObject.size, null, messageObject, messageObject.shouldEncryptPhotoOrVideo() ? 2 : 1);
                 } else {
-                    imageView.setImage(null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, currentPhotoObjectThumb, "b", null, 0, messageObject);
+                    imageView.setImage(null, null, ImageLocation.getForObject(currentPhotoObjectThumb, messageObject.photoThumbsObject), "b", ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, null, 0, messageObject);
                 }
             } else {
                 videoInfoContainer.setVisibility(INVISIBLE);
@@ -214,6 +223,20 @@ public class SharedPhotoVideoCell extends FrameLayout {
         protected void onDraw(Canvas canvas) {
             if (checkBox.isChecked() || !imageView.getImageReceiver().hasBitmapImage() || imageView.getImageReceiver().getCurrentAlpha() != 1.0f || PhotoViewer.isShowingImage(currentMessageObject)) {
                 canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
+            }
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            if (currentMessageObject.isVideo()) {
+                info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatCallDuration(currentMessageObject.getDuration()));
+            } else {
+                info.setText(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
+            }
+            if (checkBox.isChecked()) {
+                info.setCheckable(true);
+                info.setChecked(true);
             }
         }
     }
@@ -248,7 +271,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
 
     public void updateCheckboxColor() {
         for (int a = 0; a < 6; a++) {
-            photoVideoViews[a].checkBox.setColor(Theme.getColor(Theme.key_checkbox), Theme.getColor(Theme.key_checkboxCheck));
+            photoVideoViews[a].checkBox.invalidate();
         }
     }
 

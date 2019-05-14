@@ -13,6 +13,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.StateListDrawable;
@@ -25,6 +26,13 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import com.airbnb.lottie.LottieAnimationView;
+import com.airbnb.lottie.LottieDrawable;
+import com.airbnb.lottie.LottieProperty;
+import com.airbnb.lottie.SimpleColorFilter;
+import com.airbnb.lottie.model.KeyPath;
+import com.airbnb.lottie.value.LottieValueCallback;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -42,16 +50,20 @@ import org.telegram.ui.Components.GroupCreateCheckBox;
 import org.telegram.ui.Components.GroupCreateSpan;
 import org.telegram.ui.Components.LetterDrawable;
 import org.telegram.ui.Components.LineProgressView;
+import org.telegram.ui.Components.MessageBackgroundDrawable;
 import org.telegram.ui.Components.NumberTextView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RadioButton;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.ScamDrawable;
 import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.TypefaceSpan;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import androidx.viewpager.widget.ViewPager;
 
 public class ThemeDescription {
 
@@ -93,6 +105,7 @@ public class ThemeDescription {
     private Drawable[] drawablesToUpdate;
     private Class[] listClasses;
     private String currentKey;
+    private String lottieLayerName;
     private ThemeDescriptionDelegate delegate;
     private int previousColor;
     private boolean[] previousIsDefault = new boolean[1];
@@ -136,6 +149,18 @@ public class ThemeDescription {
         }
     }
 
+    public ThemeDescription(View view, int flags, Class[] classes, LottieDrawable[] drawables, String layerName, String key) {
+        currentKey = key;
+        lottieLayerName = layerName;
+        drawablesToUpdate = drawables;
+        viewToInvalidate = view;
+        changeFlags = flags;
+        listClasses = classes;
+        if (viewToInvalidate instanceof EditTextEmoji) {
+            viewToInvalidate = ((EditTextEmoji) viewToInvalidate).getEditText();
+        }
+    }
+
     public ThemeDescription(View view, int flags, Class[] classes, String[] classesFields, Paint[] paint, Drawable[] drawables, ThemeDescriptionDelegate themeDescriptionDelegate, String key) {
         currentKey = key;
         paintToUpdate = paint;
@@ -145,6 +170,20 @@ public class ThemeDescription {
         listClasses = classes;
         listClassesFieldName = classesFields;
         delegate = themeDescriptionDelegate;
+        cachedFields = new HashMap<>();
+        notFoundCachedFields = new HashMap<>();
+        if (viewToInvalidate instanceof EditTextEmoji) {
+            viewToInvalidate = ((EditTextEmoji) viewToInvalidate).getEditText();
+        }
+    }
+
+    public ThemeDescription(View view, int flags, Class[] classes, String[] classesFields, String layerName, String key) {
+        currentKey = key;
+        lottieLayerName = layerName;
+        viewToInvalidate = view;
+        changeFlags = flags;
+        listClasses = classes;
+        listClassesFieldName = classesFields;
         cachedFields = new HashMap<>();
         notFoundCachedFields = new HashMap<>();
         if (viewToInvalidate instanceof EditTextEmoji) {
@@ -191,7 +230,13 @@ public class ThemeDescription {
                 if (drawablesToUpdate[a] == null) {
                     continue;
                 }
-                if (drawablesToUpdate[a] instanceof CombinedDrawable) {
+                if (drawablesToUpdate[a] instanceof ScamDrawable) {
+                    ((ScamDrawable) drawablesToUpdate[a]).setColor(color);
+                } else if (drawablesToUpdate[a] instanceof LottieDrawable) {
+                    if (lottieLayerName != null) {
+                        ((LottieDrawable) drawablesToUpdate[a]).addValueCallback(new KeyPath(lottieLayerName, "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(color)));
+                    }
+                } else if (drawablesToUpdate[a] instanceof CombinedDrawable) {
                     if ((changeFlags & FLAG_BACKGROUNDFILTER) != 0) {
                         ((CombinedDrawable) drawablesToUpdate[a]).getBackground().setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
                     } else {
@@ -207,7 +252,12 @@ public class ThemeDescription {
         if (viewToInvalidate != null && listClasses == null && listClassesFieldName == null) {
             if ((changeFlags & FLAG_CHECKTAG) == 0 || checkTag(currentKey, viewToInvalidate)) {
                 if ((changeFlags & FLAG_BACKGROUND) != 0) {
-                    viewToInvalidate.setBackgroundColor(color);
+                    Drawable background = viewToInvalidate.getBackground();
+                    if (background instanceof MessageBackgroundDrawable) {
+                        ((MessageBackgroundDrawable) background).setColor(color);
+                    } else {
+                        viewToInvalidate.setBackgroundColor(color);
+                    }
                 }
                 if ((changeFlags & FLAG_BACKGROUNDFILTER) != 0) {
                     if ((changeFlags & FLAG_PROGRESSBAR) != 0) {
@@ -268,7 +318,7 @@ public class ThemeDescription {
                 ((ActionBar) viewToInvalidate).setSearchTextColor(color, false);
             }
             if ((changeFlags & FLAG_AB_SUBMENUITEM) != 0) {
-                ((ActionBar) viewToInvalidate).setPopupItemsColor(color);
+                ((ActionBar) viewToInvalidate).setPopupItemsColor(color, (changeFlags & FLAG_IMAGECOLOR) != 0);
             }
             if ((changeFlags & FLAG_AB_SUBMENUBACKGROUND) != 0) {
                 ((ActionBar) viewToInvalidate).setPopupBackgroundColor(color);
@@ -340,12 +390,20 @@ public class ThemeDescription {
                     }
                 } else if (viewToInvalidate instanceof BackupImageView) {
                     //((BackupImageView) viewToInvalidate).setResourceImageColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+                } else if (viewToInvalidate instanceof SimpleTextView) {
+                    SimpleTextView textView = (SimpleTextView) viewToInvalidate;
+                    textView.setSideDrawablesColor(color);
                 }
             }
         }
         if (viewToInvalidate instanceof ScrollView) {
             if ((changeFlags & FLAG_LISTGLOWCOLOR) != 0) {
                 AndroidUtilities.setScrollViewEdgeEffectColor((ScrollView) viewToInvalidate, color);
+            }
+        }
+        if (viewToInvalidate instanceof ViewPager) {
+            if ((changeFlags & FLAG_LISTGLOWCOLOR) != 0) {
+                AndroidUtilities.setViewPagerEdgeEffectColor((ViewPager) viewToInvalidate, color);
             }
         }
         if (viewToInvalidate instanceof RecyclerListView) {
@@ -490,11 +548,20 @@ public class ThemeDescription {
                                 if (object instanceof View) {
                                     ((View) object).invalidate();
                                 }
+                                if (lottieLayerName != null && object instanceof LottieAnimationView) {
+                                    ((LottieAnimationView) object).addValueCallback(new KeyPath(lottieLayerName, "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(color)));
+                                }
                                 if ((changeFlags & FLAG_USEBACKGROUNDDRAWABLE) != 0 && object instanceof View) {
                                     object = ((View) object).getBackground();
                                 }
                                 if ((changeFlags & FLAG_BACKGROUND) != 0 && object instanceof View) {
-                                    ((View) object).setBackgroundColor(color);
+                                    View view = (View) object;
+                                    Drawable background = view.getBackground();
+                                    if (background instanceof MessageBackgroundDrawable) {
+                                        ((MessageBackgroundDrawable) background).setColor(color);
+                                    } else {
+                                        view.setBackgroundColor(color);
+                                    }
                                 } else if (object instanceof EditTextCaption) {
                                     if ((changeFlags & FLAG_HINTTEXTCOLOR) != 0) {
                                         ((EditTextCaption) object).setHintColor(color);
@@ -563,6 +630,8 @@ public class ThemeDescription {
                                         }
                                     } else if (object instanceof StateListDrawable || Build.VERSION.SDK_INT >= 21 && object instanceof RippleDrawable) {
                                         Theme.setSelectorDrawableColor((Drawable) object, color, (changeFlags & FLAG_DRAWABLESELECTEDSTATE) != 0);
+                                    } else if (object instanceof GradientDrawable) {
+                                        ((GradientDrawable) object).setColor(color);
                                     } else {
                                         ((Drawable) object).setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
                                     }

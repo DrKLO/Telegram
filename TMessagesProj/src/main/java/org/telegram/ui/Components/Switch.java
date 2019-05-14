@@ -26,9 +26,10 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
-import android.support.annotation.Keep;
+import androidx.annotation.Keep;
 import android.util.StateSet;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -62,7 +63,7 @@ public class Switch extends View {
     private boolean drawRipple;
     private RippleDrawable rippleDrawable;
     private Paint ripplePaint;
-    private int pressedState[] = new int[] {android.R.attr.state_enabled, android.R.attr.state_pressed};
+    private int pressedState[] = new int[]{android.R.attr.state_enabled, android.R.attr.state_pressed};
     private int colorSet;
 
     private boolean bitmapsCreated;
@@ -148,33 +149,41 @@ public class Switch extends View {
         if (rippleDrawable == null) {
             ripplePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             ripplePaint.setColor(0xffffffff);
-            Drawable maskDrawable = new Drawable() {
-                @Override
-                public void draw(Canvas canvas) {
-                    android.graphics.Rect bounds = getBounds();
-                    canvas.drawCircle(bounds.centerX(), bounds.centerY(), AndroidUtilities.dp(18), ripplePaint);
-                }
+            Drawable maskDrawable;
+            if (Build.VERSION.SDK_INT >= 23) {
+                maskDrawable = null;
+            } else {
+                maskDrawable = new Drawable() {
+                    @Override
+                    public void draw(Canvas canvas) {
+                        android.graphics.Rect bounds = getBounds();
+                        canvas.drawCircle(bounds.centerX(), bounds.centerY(), AndroidUtilities.dp(18), ripplePaint);
+                    }
 
-                @Override
-                public void setAlpha(int alpha) {
+                    @Override
+                    public void setAlpha(int alpha) {
 
-                }
+                    }
 
-                @Override
-                public void setColorFilter(ColorFilter colorFilter) {
+                    @Override
+                    public void setColorFilter(ColorFilter colorFilter) {
 
-                }
+                    }
 
-                @Override
-                public int getOpacity() {
-                    return PixelFormat.UNKNOWN;
-                }
-            };
+                    @Override
+                    public int getOpacity() {
+                        return PixelFormat.UNKNOWN;
+                    }
+                };
+            }
             ColorStateList colorStateList = new ColorStateList(
                     new int[][]{StateSet.WILD_CARD},
                     new int[]{0}
             );
             rippleDrawable = new RippleDrawable(colorStateList, null, maskDrawable);
+            if (Build.VERSION.SDK_INT >= 23) {
+                rippleDrawable.setRadius(AndroidUtilities.dp(18));
+            }
             rippleDrawable.setCallback(this);
         }
         if (isChecked && colorSet != 2 || !isChecked && colorSet != 1) {
@@ -346,7 +355,7 @@ public class Switch extends View {
         int width = AndroidUtilities.dp(31);
         int thumb = AndroidUtilities.dp(20);
         int x = (getMeasuredWidth() - width) / 2;
-        int y = (getMeasuredHeight() - AndroidUtilities.dp(14)) / 2;
+        float y = (getMeasuredHeight() - AndroidUtilities.dpf2(14)) / 2;
         int tx = x + AndroidUtilities.dp(7) + (int) (AndroidUtilities.dp(17) * progress);
         int ty = getMeasuredHeight() / 2;
 
@@ -411,9 +420,9 @@ public class Switch extends View {
             paint.setColor(color);
             paint2.setColor(color);
 
-            rectF.set(x, y, x + width, y + AndroidUtilities.dp(14));
-            canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dp(7), AndroidUtilities.dp(7), paint);
-            canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dp(10), paint);
+            rectF.set(x, y, x + width, y + AndroidUtilities.dpf2(14));
+            canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(7), AndroidUtilities.dpf2(7), paint);
+            canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dpf2(10), paint);
 
             if (a == 0 && rippleDrawable != null) {
                 rippleDrawable.setBounds(tx - AndroidUtilities.dp(18), ty - AndroidUtilities.dp(18), tx + AndroidUtilities.dp(18), ty + AndroidUtilities.dp(18));
@@ -506,5 +515,14 @@ public class Switch extends View {
         if (overrideColorProgress != 0) {
             canvas.drawBitmap(overlayBitmap[1], 0, 0, null);
         }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setClassName("android.widget.Switch");
+        info.setCheckable(true);
+        info.setChecked(isChecked);
+        //info.setContentDescription(isChecked ? LocaleController.getString("NotificationsOn", R.string.NotificationsOn) : LocaleController.getString("NotificationsOff", R.string.NotificationsOff));
     }
 }

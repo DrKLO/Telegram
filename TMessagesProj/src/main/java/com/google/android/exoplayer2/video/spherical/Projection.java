@@ -15,7 +15,7 @@
  */
 package com.google.android.exoplayer2.video.spherical;
 
-import android.support.annotation.IntDef;
+import androidx.annotation.IntDef;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.C.StereoMode;
 import com.google.android.exoplayer2.util.Assertions;

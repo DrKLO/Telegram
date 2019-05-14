@@ -18,7 +18,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
 import android.os.Bundle;
-import android.support.annotation.Keep;
+import androidx.annotation.Keep;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -131,6 +131,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             playbackSpeedButton = new ImageView(context);
             playbackSpeedButton.setScaleType(ImageView.ScaleType.CENTER);
             playbackSpeedButton.setImageResource(R.drawable.voice2x);
+            playbackSpeedButton.setContentDescription(LocaleController.getString("AccDescrPlayerSpeed", R.string.AccDescrPlayerSpeed));
             if (AndroidUtilities.density >= 3.0f) {
                 playbackSpeedButton.setPadding(0, 1, 0, 0);
             }
@@ -345,9 +346,11 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 if (playbackSpeedButton != null) {
                     playbackSpeedButton.setVisibility(VISIBLE);
                 }
+                closeButton.setContentDescription(LocaleController.getString("AccDescrClosePlayer", R.string.AccDescrClosePlayer));
             } else if (style == 2) {
                 playButton.setLayoutParams(LayoutHelper.createFrame(36, 36, Gravity.TOP | Gravity.LEFT, 8, 0, 0, 0));
                 titleTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP, 35 + 16, 0, 36, 0));
+                closeButton.setContentDescription(LocaleController.getString("AccDescrStopLiveLocation", R.string.AccDescrStopLiveLocation));
             }
         } else if (style == 1) {
             titleTextView.setText(LocaleController.getString("ReturnToCall", R.string.ReturnToCall));
@@ -708,8 +711,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             }
             if (MediaController.getInstance().isMessagePaused()) {
                 playButton.setImageResource(R.drawable.miniplayer_play);
+                playButton.setContentDescription(LocaleController.getString("AccActionPlay", R.string.AccActionPlay));
             } else {
                 playButton.setImageResource(R.drawable.miniplayer_pause);
+                playButton.setContentDescription(LocaleController.getString("AccActionPause", R.string.AccActionPause));
             }
             if (lastMessageObject != messageObject || prevStyle != 0) {
                 lastMessageObject = messageObject;

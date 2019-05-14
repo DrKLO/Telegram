@@ -19,7 +19,6 @@ import android.view.ViewGroup;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
@@ -37,6 +36,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 public class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
@@ -138,7 +139,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                 if (search1.equals(search2) || search2.length() == 0) {
                     search2 = null;
                 }
-                String search[] = new String[1 + (search2 != null ? 1 : 0)];
+                String[] search = new String[1 + (search2 != null ? 1 : 0)];
                 search[0] = search1;
                 if (search2 != null) {
                     search[1] = search2;

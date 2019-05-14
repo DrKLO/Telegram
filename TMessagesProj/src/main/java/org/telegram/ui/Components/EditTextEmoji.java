@@ -1,6 +1,6 @@
 package org.telegram.ui.Components;
 
-import android.app.Activity;
+import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.text.Editable;
@@ -22,7 +22,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -32,8 +31,8 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
     private EditTextBoldCursor editText;
     private ImageView emojiButton;
     private EmojiView emojiView;
+    private boolean emojiViewVisible;
     private SizeNotifierFrameLayout sizeNotifierLayout;
-    private Activity parentActivity;
     private BaseFragment parentFragment;
 
     private int keyboardHeight;
@@ -48,6 +47,11 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
     private int innerTextChange;
 
     private EditTextEmojiDelegate delegate;
+
+    private int currentStyle;
+
+    public static final int STYLE_FRAGMENT = 0;
+    public static final int STYLE_DIALOG = 1;
 
     private boolean waitingForKeyboardOpen;
     private Runnable openKeyboardRunnable = new Runnable() {
@@ -66,11 +70,11 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
         void onWindowSizeChanged(int size);
     }
 
-    public EditTextEmoji(Activity context, SizeNotifierFrameLayout parent, BaseFragment fragment) {
+    public EditTextEmoji(Context context, SizeNotifierFrameLayout parent, BaseFragment fragment, int style) {
         super(context);
+        currentStyle = style;
 
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
-        parentActivity = context;
         parentFragment = fragment;
         sizeNotifierLayout = parent;
         sizeNotifierLayout.setDelegate(this);
@@ -90,26 +94,40 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
                 return false;
             }
         };
-        editText.setGravity(Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-        editText.setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
         editText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        editText.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(40) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(40), AndroidUtilities.dp(8));
         editText.setFocusable(editText.isEnabled());
-        editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         editText.setCursorSize(AndroidUtilities.dp(20));
         editText.setCursorWidth(1.5f);
-        editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 11 : 0, 1, LocaleController.isRTL ? 0 : 11, 0));
+        if (style == STYLE_FRAGMENT) {
+            editText.setGravity(Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
+            editText.setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
+            editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+            editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            editText.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(40) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(40), AndroidUtilities.dp(8));
+            addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 11 : 0, 1, LocaleController.isRTL ? 0 : 11, 0));
+        } else {
+            editText.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
+            editText.setHintTextColor(Theme.getColor(Theme.key_dialogTextHint));
+            editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            editText.setBackgroundDrawable(null);
+            editText.setPadding(0, 0, 0, 0);
+            addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 48, 0, 0, 0));
+        }
 
         emojiButton = new ImageView(context);
         emojiButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
         emojiButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        emojiButton.setImageResource(R.drawable.ic_smile_small);
-        emojiButton.setPadding(0, 0, 0, AndroidUtilities.dp(7));
-        addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 0, 0, 0, 0));
+        if (style == STYLE_FRAGMENT) {
+            emojiButton.setPadding(0, 0, 0, AndroidUtilities.dp(7));
+            emojiButton.setImageResource(R.drawable.smiles_tab_smiles);
+            addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 0, 0, 0, 0));
+        } else {
+            emojiButton.setImageResource(R.drawable.input_smile);
+            addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | Gravity.LEFT, 0, 0, 0, 0));
+        }
         emojiButton.setOnClickListener(view -> {
             if (!emojiButton.isEnabled()) {
                 return;
@@ -121,6 +139,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
                 openKeyboardInternal();
             }
         });
+        emojiButton.setContentDescription(LocaleController.getString("Emoji", R.string.Emoji));
     }
 
     @Override
@@ -146,6 +165,12 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
     @Override
     public void setFocusable(boolean focusable) {
         editText.setFocusable(focusable);
+    }
+
+    public void hideEmojiView() {
+        if (!emojiViewVisible && emojiView != null && emojiView.getVisibility() != GONE) {
+            emojiView.setVisibility(GONE);
+        }
     }
 
     public void setDelegate(EditTextEmojiDelegate editTextEmojiDelegate) {
@@ -214,6 +239,9 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
         if (isPopupShowing()) {
             showPopup(0);
         }
+        if (byBackButton) {
+            hideEmojiView();
+        }
     }
 
     public void openKeyboard() {
@@ -225,7 +253,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
     }
 
     public boolean isPopupShowing() {
-        return emojiView != null && emojiView.getVisibility() == VISIBLE;
+        return emojiViewVisible;
     }
 
     public boolean isKeyboardVisible() {
@@ -252,6 +280,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             }
 
             emojiView.setVisibility(VISIBLE);
+            emojiViewVisible = true;
             View currentView = emojiView;
 
             if (keyboardHeight <= 0) {
@@ -279,15 +308,22 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             if (sizeNotifierLayout != null) {
                 emojiPadding = currentHeight;
                 sizeNotifierLayout.requestLayout();
-                emojiButton.setImageResource(R.drawable.ic_msg_panel_kb);
+                emojiButton.setImageResource(R.drawable.input_keyboard);
                 onWindowSizeChanged();
             }
         } else {
             if (emojiButton != null) {
-                emojiButton.setImageResource(R.drawable.ic_smile_small);
+                if (currentStyle == STYLE_FRAGMENT) {
+                    emojiButton.setImageResource(R.drawable.smiles_tab_smiles);
+                } else {
+                    emojiButton.setImageResource(R.drawable.input_smile);
+                }
             }
             if (emojiView != null) {
-                emojiView.setVisibility(GONE);
+                emojiViewVisible = false;
+                if (AndroidUtilities.usingHardwareInput || AndroidUtilities.isInMultiwindow) {
+                    emojiView.setVisibility(GONE);
+                }
             }
             if (sizeNotifierLayout != null) {
                 if (show == 0) {
@@ -313,13 +349,12 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
         if (emojiView != null) {
             return;
         }
-        emojiView = new EmojiView(false, false, parentActivity, null);
+        emojiView = new EmojiView(false, false, getContext(), false, null);
         emojiView.setVisibility(GONE);
         if (AndroidUtilities.isTablet()) {
             emojiView.setForseMultiwindowLayout(true);
         }
-        emojiView.setListener(new EmojiView.Listener() {
-
+        emojiView.setDelegate(new EmojiView.EmojiViewDelegate() {
             @Override
             public boolean onBackspace() {
                 if (editText.length() == 0) {
@@ -349,76 +384,17 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             }
 
             @Override
-            public void onStickerSelected(TLRPC.Document sticker, Object parent) {
-
-            }
-
-            @Override
-            public void onStickersSettingsClick() {
-
-            }
-
-            @Override
-            public void onGifSelected(TLRPC.Document gif, Object parent) {
-
-            }
-
-            @Override
-            public void onGifTab(boolean opened) {
-
-            }
-
-            @Override
-            public void onStickersTab(boolean opened) {
-
-            }
-
-            @Override
             public void onClearEmojiRecent() {
-                if (parentFragment == null || parentActivity == null) {
-                    return;
-                }
-                AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
                 builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                 builder.setMessage(LocaleController.getString("ClearRecentEmoji", R.string.ClearRecentEmoji));
                 builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), (dialogInterface, i) -> emojiView.clearRecentEmoji());
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                parentFragment.showDialog(builder.create());
-            }
-
-            @Override
-            public void onShowStickerSet(TLRPC.StickerSet stickerSet, TLRPC.InputStickerSet inputStickerSet) {
-
-            }
-
-            @Override
-            public void onStickerSetAdd(TLRPC.StickerSetCovered stickerSet) {
-
-            }
-
-            @Override
-            public void onStickerSetRemove(TLRPC.StickerSetCovered stickerSet) {
-
-            }
-
-            @Override
-            public void onStickersGroupClick(int chatId) {
-
-            }
-
-            @Override
-            public void onSearchOpenClose(boolean open) {
-
-            }
-
-            @Override
-            public boolean isSearchOpened() {
-                return false;
-            }
-
-            @Override
-            public boolean isExpanded() {
-                return false;
+                if (parentFragment != null) {
+                    parentFragment.showDialog(builder.create());
+                } else {
+                    builder.show();
+                }
             }
         });
         sizeNotifierLayout.addView(emojiView);

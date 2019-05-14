@@ -18,14 +18,14 @@ public class BuildVars {
     public static boolean LOGS_ENABLED = false;
     public static boolean USE_CLOUD_STRINGS = true;
     public static boolean CHECK_UPDATES = false;
-    public static int BUILD_VERSION = 1517;
-    public static String BUILD_VERSION_STRING = "5.4.0";
+    public static int BUILD_VERSION = 1591;
+    public static String BUILD_VERSION_STRING = "5.6.0";
     public static int APP_ID = 0; //obtain your own APP_ID at https://core.telegram.org/api/obtaining_api_id
     public static String APP_HASH = ""; //obtain your own APP_HASH at https://core.telegram.org/api/obtaining_api_id
     public static String HOCKEY_APP_HASH = "your-hockeyapp-api-key-here";
     public static String HOCKEY_APP_HASH_DEBUG = "your-hockeyapp-api-key-here";
-    public static String PLAYSTORE_APP_URL = "";
     public static String SMS_HASH = ""; //https://developers.google.com/identity/sms-retriever/overview
+    public static String PLAYSTORE_APP_URL = "";
 
     static {
         if (ApplicationLoader.applicationContext != null) {

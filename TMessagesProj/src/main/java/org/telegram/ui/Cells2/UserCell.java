@@ -19,6 +19,7 @@ import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -211,6 +212,7 @@ public class UserCell extends FrameLayout {
                 return;
             }
         }
+        lastAvatar = photo;
 
         if (currentUser != null) {
             avatarDrawable.setInfo(currentUser);
@@ -258,6 +260,7 @@ public class UserCell extends FrameLayout {
                     statusTextView.setText(LocaleController.formatUserStatus(currentAccount, currentUser));
                 }
             }
+            avatarImageView.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
         } else if (currentChat != null) {
             statusTextView.setTextColor(statusColor);
             if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
@@ -277,13 +280,13 @@ public class UserCell extends FrameLayout {
                     statusTextView.setText(LocaleController.getString("MegaPublic", R.string.MegaPublic));
                 }
             }
+            avatarImageView.setImage(ImageLocation.getForChat(currentChat, false), "50_50", avatarDrawable, currentObject);
         }
 
         if (imageView.getVisibility() == VISIBLE && currentDrawable == 0 || imageView.getVisibility() == GONE && currentDrawable != 0) {
             imageView.setVisibility(currentDrawable == 0 ? GONE : VISIBLE);
             imageView.setImageResource(currentDrawable);
         }
-        avatarImageView.setImage(photo, "50_50", avatarDrawable, currentObject);
     }
 
     @Override

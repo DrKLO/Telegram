@@ -20,9 +20,11 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.v4.view.PagerAdapter;
-import android.support.v4.view.ViewPager;
-import android.text.style.CharacterStyle;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -34,13 +36,15 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -216,13 +220,97 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
         };
         page2.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
 
+        messagesAdapter = new MessagesAdapter(context);
+
         actionBar2 = createActionBar(context);
         actionBar2.setBackButtonDrawable(new BackDrawable(false));
-        actionBar2.setTitle("Reinhardt");
-        actionBar2.setSubtitle(LocaleController.formatDateOnline(System.currentTimeMillis() / 1000 - 60 * 60));
+        if (messagesAdapter.showSecretMessages) {
+            actionBar2.setTitle("Telegram Beta Chat");
+            actionBar2.setSubtitle(LocaleController.formatPluralString("Members", 505));
+        } else {
+            actionBar2.setTitle("Reinhardt");
+            actionBar2.setSubtitle(LocaleController.formatDateOnline(System.currentTimeMillis() / 1000 - 60 * 60));
+        }
         page2.addView(actionBar2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        listView2 = new RecyclerListView(context);
+        listView2 = new RecyclerListView(context) {
+            @Override
+            public boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                boolean result = super.drawChild(canvas, child, drawingTime);
+                if (child instanceof ChatMessageCell) {
+                    ChatMessageCell chatMessageCell = (ChatMessageCell) child;
+                    MessageObject message = chatMessageCell.getMessageObject();
+                    ImageReceiver imageReceiver = chatMessageCell.getAvatarImage();
+                    if (imageReceiver != null) {
+                        int top = child.getTop();
+                        if (chatMessageCell.isPinnedBottom()) {
+                            ViewHolder holder = listView2.getChildViewHolder(child);
+                            if (holder != null) {
+                                int p = holder.getAdapterPosition();
+                                int nextPosition;
+                                nextPosition = p - 1;
+                                holder = listView2.findViewHolderForAdapterPosition(nextPosition);
+                                if (holder != null) {
+                                    imageReceiver.setImageY(-AndroidUtilities.dp(1000));
+                                    imageReceiver.draw(canvas);
+                                    return result;
+                                }
+                            }
+                        }
+                        float tx = chatMessageCell.getTranslationX();
+                        int y = child.getTop() + chatMessageCell.getLayoutHeight();
+                        int maxY = listView2.getMeasuredHeight() - listView2.getPaddingBottom();
+                        if (y > maxY) {
+                            y = maxY;
+                        }
+                        if (chatMessageCell.isPinnedTop()) {
+                            ViewHolder holder = listView2.getChildViewHolder(child);
+                            if (holder != null) {
+                                int tries = 0;
+                                while (true) {
+                                    if (tries >= 20) {
+                                        break;
+                                    }
+                                    tries++;
+                                    int p = holder.getAdapterPosition();
+                                    int prevPosition = p + 1;
+                                    holder = listView2.findViewHolderForAdapterPosition(prevPosition);
+                                    if (holder != null) {
+                                        top = holder.itemView.getTop();
+                                        if (y - AndroidUtilities.dp(48) < holder.itemView.getBottom()) {
+                                            tx = Math.min(holder.itemView.getTranslationX(), tx);
+                                        }
+                                        if (holder.itemView instanceof ChatMessageCell) {
+                                            ChatMessageCell cell = (ChatMessageCell) holder.itemView;
+                                            if (!cell.isPinnedTop()) {
+                                                break;
+                                            }
+                                        } else {
+                                            break;
+                                        }
+                                    } else {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (y - AndroidUtilities.dp(48) < top) {
+                            y = top + AndroidUtilities.dp(48);
+                        }
+                        if (tx != 0) {
+                            canvas.save();
+                            canvas.translate(tx, 0);
+                        }
+                        imageReceiver.setImageY(y - AndroidUtilities.dp(44));
+                        imageReceiver.draw(canvas);
+                        if (tx != 0) {
+                            canvas.restore();
+                        }
+                    }
+                }
+                return result;
+            }
+        };
         listView2.setVerticalScrollBarEnabled(true);
         listView2.setItemAnimator(null);
         listView2.setLayoutAnimation(null);
@@ -232,7 +320,6 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
         listView2.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         page2.addView(listView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
 
-        messagesAdapter = new MessagesAdapter(context);
         listView2.setAdapter(messagesAdapter);
 
         fragmentView = new FrameLayout(context);
@@ -393,7 +480,6 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.emojiDidLoad) {
             if (listView == null) {
@@ -536,7 +622,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
 
         @Override
         public int getItemCount() {
-            return dialogs.size() + 1;
+            return dialogs.size();
         }
 
         @Override
@@ -579,6 +665,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
         private Context mContext;
 
         private ArrayList<MessageObject> messages;
+        private boolean showSecretMessages = Utilities.random.nextInt(100) <= (BuildVars.DEBUG_VERSION ? 5 : 1);
 
         public MessagesAdapter(Context context) {
             mContext = context;
@@ -587,130 +674,185 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             int date = (int) (System.currentTimeMillis() / 1000) - 60 * 60;
 
             TLRPC.Message message;
-
-            message = new TLRPC.TL_message();
-            message.message = "Reinhardt, we need to find you some new tunes \uD83C\uDFB6.";
-            message.date = date + 60;
-            message.dialog_id = 1;
-            message.flags = 259;
-            message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
-            message.id = 1;
-            message.media = new TLRPC.TL_messageMediaEmpty();
-            message.out = true;
-            message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = 0;
-            MessageObject replyMessageObject = new MessageObject(currentAccount, message, true);
-
-            message = new TLRPC.TL_message();
-            message.message = "I can't even take you seriously right now.";
-            message.date = date + 960;
-            message.dialog_id = 1;
-            message.flags = 259;
-            message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
-            message.id = 1;
-            message.media = new TLRPC.TL_messageMediaEmpty();
-            message.out = true;
-            message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = 0;
             MessageObject messageObject;
-            messages.add(new MessageObject(currentAccount, message, true));
+            if (showSecretMessages) {
+                TLRPC.TL_user user1 = new TLRPC.TL_user();
+                user1.id = Integer.MAX_VALUE;
+                user1.first_name = "Me";
 
-            message = new TLRPC.TL_message();
-            message.date = date + 130;
-            message.dialog_id = 1;
-            message.flags = 259;
-            message.from_id = 0;
-            message.id = 5;
-            message.media = new TLRPC.TL_messageMediaDocument();
-            message.media.flags |= 3;
-            message.media.document = new TLRPC.TL_document();
-            message.media.document.mime_type = "audio/mp4";
-            message.media.document.file_reference = new byte[0];
-            TLRPC.TL_documentAttributeAudio audio = new TLRPC.TL_documentAttributeAudio();
-            audio.duration = 243;
-            audio.performer = "David Hasselhoff";
-            audio.title = "True Survivor";
-            message.media.document.attributes.add(audio);
-            message.out = false;
-            message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
-            messages.add(new MessageObject(currentAccount, message, true));
+                TLRPC.TL_user user2 = new TLRPC.TL_user();
+                user2.id = Integer.MAX_VALUE - 1;
+                user2.first_name = "Serj";
 
-            message = new TLRPC.TL_message();
-            message.message = "Ah, you kids today with techno music! You should enjoy the classics, like Hasselhoff!";
-            message.date = date + 60;
-            message.dialog_id = 1;
-            message.flags = 257 + 8;
-            message.from_id = 0;
-            message.id = 1;
-            message.reply_to_msg_id = 5;
-            message.media = new TLRPC.TL_messageMediaEmpty();
-            message.out = false;
-            message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
-            messageObject = new MessageObject(currentAccount, message, true);
-            messageObject.customReplyName = "Lucio";
-            messageObject.replyMessageObject = replyMessageObject;
-            messages.add(messageObject);
+                ArrayList<TLRPC.User> users = new ArrayList<>();
+                users.add(user1);
+                users.add(user2);
+                MessagesController.getInstance(currentAccount).putUsers(users, true);
 
-            message = new TLRPC.TL_message();
-            message.date = date + 120;
-            message.dialog_id = 1;
-            message.flags = 259;
-            message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
-            message.id = 1;
-            message.media = new TLRPC.TL_messageMediaDocument();
-            message.media.flags |= 3;
-            message.media.document = new TLRPC.TL_document();
-            message.media.document.mime_type = "audio/ogg";
-            message.media.document.file_reference = new byte[0];
-            audio = new TLRPC.TL_documentAttributeAudio();
-            audio.flags = 1028;
-            audio.duration = 3;
-            audio.voice = true;
-            audio.waveform = new byte[]{0, 4, 17, -50, -93, 86, -103, -45, -12, -26, 63, -25, -3, 109, -114, -54, -4, -1,
+                message = new TLRPC.TL_message();
+                message.message = "Guess why Half-Life 3 was never released.";
+                message.date = date + 960;
+                message.dialog_id = -1;
+                message.flags = 259;
+                message.id = Integer.MAX_VALUE - 1;
+                message.media = new TLRPC.TL_messageMediaEmpty();
+                message.out = false;
+                message.to_id = new TLRPC.TL_peerChat();
+                message.to_id.chat_id = 1;
+                message.from_id = user2.id;
+                messages.add(new MessageObject(currentAccount, message, true));
+
+                message = new TLRPC.TL_message();
+                message.message = "No.\n" +
+                        "And every unnecessary ping of the dev delays the release for 10 days.\n" +
+                        "Every request for ETA delays the release for 2 weeks.";
+                message.date = date + 960;
+                message.dialog_id = -1;
+                message.flags = 259;
+                message.id = 1;
+                message.media = new TLRPC.TL_messageMediaEmpty();
+                message.out = false;
+                message.to_id = new TLRPC.TL_peerChat();
+                message.to_id.chat_id = 1;
+                message.from_id = user2.id;
+                messages.add(new MessageObject(currentAccount, message, true));
+
+                message = new TLRPC.TL_message();
+                message.message = "Is source code for Android coming anytime soon?";
+                message.date = date + 600;
+                message.dialog_id = -1;
+                message.flags = 259;
+                message.id = 1;
+                message.media = new TLRPC.TL_messageMediaEmpty();
+                message.out = false;
+                message.to_id = new TLRPC.TL_peerChat();
+                message.to_id.chat_id = 1;
+                message.from_id = user1.id;
+                messages.add(new MessageObject(currentAccount, message, true));
+            } else {
+                message = new TLRPC.TL_message();
+                message.message = "Reinhardt, we need to find you some new tunes \uD83C\uDFB6.";
+                message.date = date + 60;
+                message.dialog_id = 1;
+                message.flags = 259;
+                message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
+                message.id = 1;
+                message.media = new TLRPC.TL_messageMediaEmpty();
+                message.out = true;
+                message.to_id = new TLRPC.TL_peerUser();
+                message.to_id.user_id = 0;
+                MessageObject replyMessageObject = new MessageObject(currentAccount, message, true);
+
+                message = new TLRPC.TL_message();
+                message.message = "I can't even take you seriously right now.";
+                message.date = date + 960;
+                message.dialog_id = 1;
+                message.flags = 259;
+                message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
+                message.id = 1;
+                message.media = new TLRPC.TL_messageMediaEmpty();
+                message.out = true;
+                message.to_id = new TLRPC.TL_peerUser();
+                message.to_id.user_id = 0;
+                messages.add(new MessageObject(currentAccount, message, true));
+
+                message = new TLRPC.TL_message();
+                message.date = date + 130;
+                message.dialog_id = 1;
+                message.flags = 259;
+                message.from_id = 0;
+                message.id = 5;
+                message.media = new TLRPC.TL_messageMediaDocument();
+                message.media.flags |= 3;
+                message.media.document = new TLRPC.TL_document();
+                message.media.document.mime_type = "audio/mp4";
+                message.media.document.file_reference = new byte[0];
+                TLRPC.TL_documentAttributeAudio audio = new TLRPC.TL_documentAttributeAudio();
+                audio.duration = 243;
+                audio.performer = "David Hasselhoff";
+                audio.title = "True Survivor";
+                message.media.document.attributes.add(audio);
+                message.out = false;
+                message.to_id = new TLRPC.TL_peerUser();
+                message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
+                messages.add(new MessageObject(currentAccount, message, true));
+
+                message = new TLRPC.TL_message();
+                message.message = "Ah, you kids today with techno music! You should enjoy the classics, like Hasselhoff!";
+                message.date = date + 60;
+                message.dialog_id = 1;
+                message.flags = 257 + 8;
+                message.from_id = 0;
+                message.id = 1;
+                message.reply_to_msg_id = 5;
+                message.media = new TLRPC.TL_messageMediaEmpty();
+                message.out = false;
+                message.to_id = new TLRPC.TL_peerUser();
+                message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
+                messageObject = new MessageObject(currentAccount, message, true);
+                messageObject.customReplyName = "Lucio";
+                messageObject.replyMessageObject = replyMessageObject;
+                messages.add(messageObject);
+
+                message = new TLRPC.TL_message();
+                message.date = date + 120;
+                message.dialog_id = 1;
+                message.flags = 259;
+                message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
+                message.id = 1;
+                message.media = new TLRPC.TL_messageMediaDocument();
+                message.media.flags |= 3;
+                message.media.document = new TLRPC.TL_document();
+                message.media.document.mime_type = "audio/ogg";
+                message.media.document.file_reference = new byte[0];
+                audio = new TLRPC.TL_documentAttributeAudio();
+                audio.flags = 1028;
+                audio.duration = 3;
+                audio.voice = true;
+                audio.waveform = new byte[]{0, 4, 17, -50, -93, 86, -103, -45, -12, -26, 63, -25, -3, 109, -114, -54, -4, -1,
                         -1, -1, -1, -29, -1, -1, -25, -1, -1, -97, -43, 57, -57, -108, 1, -91, -4, -47, 21, 99, 10, 97, 43,
                         45, 115, -112, -77, 51, -63, 66, 40, 34, -122, -116, 48, -124, 16, 66, -120, 16, 68, 16, 33, 4, 1};
-            message.media.document.attributes.add(audio);
-            message.out = true;
-            message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = 0;
-            messageObject = new MessageObject(currentAccount, message, true);
-            messageObject.audioProgressSec = 1;
-            messageObject.audioProgress = 0.3f;
-            messageObject.useCustomPhoto = true;
-            messages.add(messageObject);
+                message.media.document.attributes.add(audio);
+                message.out = true;
+                message.to_id = new TLRPC.TL_peerUser();
+                message.to_id.user_id = 0;
+                messageObject = new MessageObject(currentAccount, message, true);
+                messageObject.audioProgressSec = 1;
+                messageObject.audioProgress = 0.3f;
+                messageObject.useCustomPhoto = true;
+                messages.add(messageObject);
 
-            messages.add(replyMessageObject);
+                messages.add(replyMessageObject);
 
-            message = new TLRPC.TL_message();
-            message.date = date + 10;
-            message.dialog_id = 1;
-            message.flags = 257;
-            message.from_id = 0;
-            message.id = 1;
-            message.media = new TLRPC.TL_messageMediaPhoto();
-            message.media.flags |= 3;
-            message.media.photo = new TLRPC.TL_photo();
-            message.media.photo.file_reference = new byte[0];
-            message.media.photo.has_stickers = false;
-            message.media.photo.id = 1;
-            message.media.photo.access_hash = 0;
-            message.media.photo.date = date;
-            TLRPC.TL_photoSize photoSize = new TLRPC.TL_photoSize();
-            photoSize.size = 0;
-            photoSize.w = 500;
-            photoSize.h = 302;
-            photoSize.type = "s";
-            photoSize.location = new TLRPC.TL_fileLocationUnavailable();
-            message.media.photo.sizes.add(photoSize);
-            message.message = "Bring it on! I LIVE for this!";
-            message.out = false;
-            message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
-            messageObject = new MessageObject(currentAccount, message, true);
-            messageObject.useCustomPhoto = true;
-            messages.add(messageObject);
+                message = new TLRPC.TL_message();
+                message.date = date + 10;
+                message.dialog_id = 1;
+                message.flags = 257;
+                message.from_id = 0;
+                message.id = 1;
+                message.media = new TLRPC.TL_messageMediaPhoto();
+                message.media.flags |= 3;
+                message.media.photo = new TLRPC.TL_photo();
+                message.media.photo.file_reference = new byte[0];
+                message.media.photo.has_stickers = false;
+                message.media.photo.id = 1;
+                message.media.photo.access_hash = 0;
+                message.media.photo.date = date;
+                TLRPC.TL_photoSize photoSize = new TLRPC.TL_photoSize();
+                photoSize.size = 0;
+                photoSize.w = 500;
+                photoSize.h = 302;
+                photoSize.type = "s";
+                photoSize.location = new TLRPC.TL_fileLocationUnavailable();
+                message.media.photo.sizes.add(photoSize);
+                message.message = "Bring it on! I LIVE for this!";
+                message.out = false;
+                message.to_id = new TLRPC.TL_peerUser();
+                message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
+                messageObject = new MessageObject(currentAccount, message, true);
+                messageObject.useCustomPhoto = true;
+                messages.add(messageObject);
+            }
 
             message = new TLRPC.TL_message();
             message.message = LocaleController.formatDateChat(date);
@@ -740,118 +882,12 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                 view = new ChatMessageCell(mContext);
                 ChatMessageCell chatMessageCell = (ChatMessageCell) view;
                 chatMessageCell.setDelegate(new ChatMessageCell.ChatMessageCellDelegate() {
-                    @Override
-                    public void didPressShare(ChatMessageCell cell) {
 
-                    }
-
-                    @Override
-                    public boolean needPlayMessage(MessageObject messageObject) {
-                        return false;
-                    }
-
-                    @Override
-                    public void didPressChannelAvatar(ChatMessageCell cell, TLRPC.Chat chat, int postId) {
-
-                    }
-
-                    @Override
-                    public void didPressOther(ChatMessageCell cell) {
-
-                    }
-
-                    @Override
-                    public void didPressUserAvatar(ChatMessageCell cell, TLRPC.User user) {
-
-                    }
-
-                    @Override
-                    public void didPressBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button) {
-
-                    }
-
-                    @Override
-                    public void didPressVoteButton(ChatMessageCell cell, TLRPC.TL_pollAnswer button) {
-
-                    }
-
-                    @Override
-                    public void didPressCancelSendButton(ChatMessageCell cell) {
-
-                    }
-
-                    @Override
-                    public void didLongPress(ChatMessageCell cell) {
-
-                    }
-
-                    @Override
-                    public boolean canPerformActions() {
-                        return false;
-                    }
-
-                    @Override
-                    public void didPressUrl(MessageObject messageObject, final CharacterStyle url, boolean longPress) {
-
-                    }
-
-                    @Override
-                    public void needOpenWebView(String url, String title, String description, String originalUrl, int w, int h) {
-
-                    }
-
-                    @Override
-                    public void didPressReplyMessage(ChatMessageCell cell, int id) {
-
-                    }
-
-                    @Override
-                    public void didPressViaBot(ChatMessageCell cell, String username) {
-
-                    }
-
-                    @Override
-                    public void didPressImage(ChatMessageCell cell) {
-
-                    }
-
-                    @Override
-                    public void didPressInstantButton(ChatMessageCell cell, int type) {
-
-                    }
-
-                    @Override
-                    public boolean isChatAdminCell(int uid) {
-                        return false;
-                    }
                 });
             } else if (viewType == 1) {
                 view = new ChatActionCell(mContext);
                 ((ChatActionCell) view).setDelegate(new ChatActionCell.ChatActionCellDelegate() {
-                    @Override
-                    public void didClickedImage(ChatActionCell cell) {
 
-                    }
-
-                    @Override
-                    public void didLongPressed(ChatActionCell cell) {
-
-                    }
-
-                    @Override
-                    public void needOpenUserProfile(int uid) {
-
-                    }
-
-                    @Override
-                    public void didPressedReplyMessage(ChatActionCell cell, int id) {
-
-                    }
-
-                    @Override
-                    public void didPressedBotButton(MessageObject messageObject, TLRPC.KeyboardButton button) {
-
-                    }
                 });
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
@@ -882,6 +918,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                 } else {
                     pinnedTop = false;
                 }
+                messageCell.isChat = showSecretMessages;
                 messageCell.setFullyDraw(true);
                 messageCell.setMessageObject(message, null, pinnedBotton, pinnedTop);
             } else if (view instanceof ChatActionCell) {

@@ -30,8 +30,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
@@ -51,14 +50,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
     private Context mContext;
-    private Timer searchTimer;
+    private Runnable searchRunnable;
+    private Runnable searchRunnable2;
     private ArrayList<TLObject> searchResult = new ArrayList<>();
     private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
     private ArrayList<MessageObject> searchResultMessages = new ArrayList<>();
@@ -122,7 +123,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             HintDialogCell cell = (HintDialogCell) holder.itemView;
 
             TLRPC.TL_topPeer peer = DataQuery.getInstance(currentAccount).hints.get(position);
-            TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
+            TLRPC.Dialog dialog = new TLRPC.TL_dialog();
             TLRPC.Chat chat = null;
             TLRPC.User user = null;
             int did = 0;
@@ -322,7 +323,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                                 }
                             }
                         }
-                    } else if (dialogsType == 0) {
+                    } else if (dialogsType == 0 || dialogsType == 3) {
                         if (!encryptedToLoad.contains(high_id)) {
                             encryptedToLoad.add(high_id);
                             add = true;
@@ -476,7 +477,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 if (search1.equals(search2) || search2.length() == 0) {
                     search2 = null;
                 }
-                String search[] = new String[1 + (search2 != null ? 1 : 0)];
+                String[] search = new String[1 + (search2 != null ? 1 : 0)];
                 search[0] = search1;
                 if (search2 != null) {
                     search[1] = search2;
@@ -514,7 +515,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                                 }
                             }
                         }
-                    } else if (dialogsType == 0) {
+                    } else if (dialogsType == 0 || dialogsType == 3) {
                         if (!encryptedToLoad.contains(high_id)) {
                             encryptedToLoad.add(high_id);
                         }
@@ -806,13 +807,13 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             return;
         }
         lastSearchText = query;
-        try {
-            if (searchTimer != null) {
-                searchTimer.cancel();
-                searchTimer = null;
-            }
-        } catch (Exception e) {
-            FileLog.e(e);
+        if (searchRunnable != null) {
+            Utilities.searchQueue.cancelRunnable(searchRunnable);
+            searchRunnable = null;
+        }
+        if (searchRunnable2 != null) {
+            AndroidUtilities.cancelRunOnUIThread(searchRunnable2);
+            searchRunnable2 = null;
         }
         if (TextUtils.isEmpty(query)) {
             searchAdapterHelper.unloadRecentHashtags();
@@ -849,26 +850,17 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 notifyDataSetChanged();
             }
             final int searchId = ++lastSearchId;
-            searchTimer = new Timer();
-            searchTimer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    try {
-                        cancel();
-                        searchTimer.cancel();
-                        searchTimer = null;
-                    } catch (Exception e) {
-                        FileLog.e(e);
+            Utilities.globalQueue.postRunnable(searchRunnable = () -> {
+                searchRunnable = null;
+                searchDialogsInternal(query, searchId);
+                AndroidUtilities.runOnUIThread(searchRunnable2 = () -> {
+                    searchRunnable2 = null;
+                    if (needMessagesSearch != 2) {
+                        searchAdapterHelper.queryServerSearch(query, true, true, true, true, 0, 0);
                     }
-                    searchDialogsInternal(query, searchId);
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (needMessagesSearch != 2) {
-                            searchAdapterHelper.queryServerSearch(query, true, true, true, true, 0, 0);
-                        }
-                        searchMessagesInternal(query);
-                    });
-                }
-            }, 200, 300);
+                    searchMessagesInternal(query);
+                });
+            }, 300);
         }
     }
 

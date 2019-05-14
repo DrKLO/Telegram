@@ -19,7 +19,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.annotation.Keep;
+import androidx.annotation.Keep;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,15 +36,18 @@ import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 
 public class ActionBarPopupWindow extends PopupWindow {
 
+    private static Method layoutInScreenMethod;
     private static final Field superListenerField;
     private static final boolean allowAnimation = Build.VERSION.SDK_INT >= 18;
     private static DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator();
     private AnimatorSet windowAnimatorSet;
     private boolean animationEnabled = allowAnimation;
+    private int dismissAnimationDuration = 150;
     static {
         Field f = null;
         try {
@@ -86,7 +89,7 @@ public class ActionBarPopupWindow extends PopupWindow {
         public ActionBarPopupWindowLayout(Context context) {
             super(context);
 
-            backgroundDrawable = getResources().getDrawable(R.drawable.popup_fixed).mutate();
+            backgroundDrawable = getResources().getDrawable(R.drawable.popup_fixed_alert2).mutate();
             backgroundDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
 
             setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
@@ -283,6 +286,19 @@ public class ActionBarPopupWindow extends PopupWindow {
         animationEnabled = value;
     }
 
+    @SuppressWarnings("PrivateAPI")
+    public void setLayoutInScreen(boolean value) {
+        try {
+            if (layoutInScreenMethod == null) {
+                layoutInScreenMethod = PopupWindow.class.getDeclaredMethod("setLayoutInScreenEnabled", boolean.class);
+                layoutInScreenMethod.setAccessible(true);
+            }
+            layoutInScreenMethod.invoke(this, true);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     private void init() {
         if (superListenerField != null) {
             try {
@@ -292,6 +308,10 @@ public class ActionBarPopupWindow extends PopupWindow {
                 mSuperScrollListener = null;
             }
         }
+    }
+
+    public void setDismissAnimationDuration(int value) {
+        dismissAnimationDuration = value;
     }
 
     private void unregisterListener() {
@@ -418,7 +438,7 @@ public class ActionBarPopupWindow extends PopupWindow {
             windowAnimatorSet.playTogether(
                     ObjectAnimator.ofFloat(content, "translationY", AndroidUtilities.dp(content.showedFromBotton ? 5 : -5)),
                     ObjectAnimator.ofFloat(content, "alpha", 0.0f));
-            windowAnimatorSet.setDuration(150);
+            windowAnimatorSet.setDuration(dismissAnimationDuration);
             windowAnimatorSet.addListener(new Animator.AnimatorListener() {
                 @Override
                 public void onAnimationStart(Animator animation) {

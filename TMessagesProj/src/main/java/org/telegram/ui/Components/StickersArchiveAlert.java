@@ -9,7 +9,6 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,8 +19,6 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -30,6 +27,9 @@ import org.telegram.ui.Cells.ArchivedStickerSetCell;
 import org.telegram.ui.StickersActivity;
 
 import java.util.ArrayList;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class StickersArchiveAlert extends AlertDialog.Builder {
 
@@ -78,19 +78,11 @@ public class StickersArchiveAlert extends AlertDialog.Builder {
         listView.setGlowColor(0xfff5f6f7);
         container.addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 10, 0, 0));
 
-        setNegativeButton(LocaleController.getString("Close", R.string.Close), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        });
+        setNegativeButton(LocaleController.getString("Close", R.string.Close), (dialog, which) -> dialog.dismiss());
         if (parentFragment != null) {
-            setPositiveButton(LocaleController.getString("Settings", R.string.Settings), new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    parentFragment.presentFragment(new StickersActivity(currentType));
-                    dialog.dismiss();
-                }
+            setPositiveButton(LocaleController.getString("Settings", R.string.Settings), (dialog, which) -> {
+                parentFragment.presentFragment(new StickersActivity(currentType));
+                dialog.dismiss();
             });
         }
     }

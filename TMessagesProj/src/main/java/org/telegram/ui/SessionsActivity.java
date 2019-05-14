@@ -31,8 +31,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserObject;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -52,6 +50,9 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class SessionsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -200,11 +201,8 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                                 if (error == null && response instanceof TLRPC.TL_boolTrue) {
                                     Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("TerminateAllSessions", R.string.TerminateAllSessions), Toast.LENGTH_SHORT);
                                     toast.show();
-                                } else {
-                                    Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("UnknownError", R.string.UnknownError), Toast.LENGTH_SHORT);
-                                    toast.show();
+                                    finishFragment();
                                 }
-                                finishFragment();
                             });
 
                             for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
@@ -243,7 +241,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                 }
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                 builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                final boolean param[] = new boolean[1];
+                final boolean[] param = new boolean[1];
                 if (currentType == 0) {
                     builder.setMessage(LocaleController.getString("TerminateSessionQuestion", R.string.TerminateSessionQuestion));
                 } else {

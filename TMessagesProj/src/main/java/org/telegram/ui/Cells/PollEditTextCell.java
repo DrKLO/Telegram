@@ -72,6 +72,7 @@ public class PollEditTextCell extends FrameLayout {
             deleteImageView.setImageResource(R.drawable.msg_panel_clear);
             deleteImageView.setOnClickListener(onDelete);
             deleteImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.MULTIPLY));
+            deleteImageView.setContentDescription(LocaleController.getString("Delete", R.string.Delete));
             addView(deleteImageView, LayoutHelper.createFrame(48, 50, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 3 : 0, 0, LocaleController.isRTL ? 0 : 3, 0));
 
             textView2 = new SimpleTextView(getContext());

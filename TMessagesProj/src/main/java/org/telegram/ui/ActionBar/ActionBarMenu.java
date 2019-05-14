@@ -52,7 +52,7 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public ActionBarMenuItem addItem(int id, Drawable drawable) {
-        return addItem(id, 0, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, drawable, AndroidUtilities.dp(48));
+        return addItem(id, 0, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, drawable, AndroidUtilities.dp(48), null);
     }
 
     public ActionBarMenuItem addItem(int id, int icon) {
@@ -60,14 +60,18 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public ActionBarMenuItem addItem(int id, int icon, int backgroundColor) {
-        return addItem(id, icon, backgroundColor, null, AndroidUtilities.dp(48));
+        return addItem(id, icon, backgroundColor, null, AndroidUtilities.dp(48), null);
     }
 
     public ActionBarMenuItem addItemWithWidth(int id, int icon, int width) {
-        return addItem(id, icon, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, null, width);
+        return addItem(id, icon, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, null, width, null);
     }
 
-    public ActionBarMenuItem addItem(int id, int icon, int backgroundColor, Drawable drawable, int width) {
+    public ActionBarMenuItem addItemWithWidth(int id, int icon, int width, CharSequence title) {
+        return addItem(id, icon, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, null, width, title);
+    }
+
+    public ActionBarMenuItem addItem(int id, int icon, int backgroundColor, Drawable drawable, int width, CharSequence title) {
         ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, backgroundColor, isActionMode ? parentActionBar.itemsActionModeColor : parentActionBar.itemsColor);
         menuItem.setTag(id);
         if (drawable != null) {
@@ -88,6 +92,9 @@ public class ActionBarMenu extends LinearLayout {
                 onItemClick((Integer) view.getTag());
             }
         });
+        if (title != null) {
+            menuItem.setContentDescription(title);
+        }
         return menuItem;
     }
 
@@ -101,13 +108,13 @@ public class ActionBarMenu extends LinearLayout {
         }
     }
 
-    protected void setPopupItemsColor(int color) {
+    protected void setPopupItemsColor(int color, boolean icon) {
         int count = getChildCount();
         for (int a = 0; a < count; a++) {
             View view = getChildAt(a);
             if (view instanceof ActionBarMenuItem) {
                 ActionBarMenuItem item = (ActionBarMenuItem) view;
-                item.setPopupItemsColor(color);
+                item.setPopupItemsColor(color, icon);
             }
         }
     }

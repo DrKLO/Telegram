@@ -24,8 +24,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.voip.VoIPController;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -43,10 +41,15 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.voip.VoIPHelper;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 public class DataSettingsActivity extends BaseFragment {
 
     private ListAdapter listAdapter;
     private RecyclerListView listView;
+    @SuppressWarnings("FieldCanBeLocal")
+    private LinearLayoutManager layoutManager;
     private AnimatorSet animatorSet;
 
     private int mediaDownloadSectionRow;
@@ -146,12 +149,14 @@ public class DataSettingsActivity extends BaseFragment {
 
         listView = new RecyclerListView(context);
         listView.setVerticalScrollBarEnabled(false);
-        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position, x, y) -> {
             if (position == mobileRow || position == roamingRow || position == wifiRow) {
                 if (LocaleController.isRTL && x <= AndroidUtilities.dp(76) || !LocaleController.isRTL && x >= view.getMeasuredWidth() - AndroidUtilities.dp(76)) {
+                    boolean wasEnabled = listAdapter.isRowEnabled(resetDownloadRow);
+
                     NotificationsCheckCell cell = (NotificationsCheckCell) view;
                     boolean checked = cell.isChecked();
 
@@ -196,6 +201,9 @@ public class DataSettingsActivity extends BaseFragment {
                     }
                     DownloadController.getInstance(currentAccount).checkAutodownloadSettings();
                     DownloadController.getInstance(currentAccount).savePresetToServer(num);
+                    if (wasEnabled != listAdapter.isRowEnabled(resetDownloadRow)) {
+                        listAdapter.notifyItemChanged(resetDownloadRow);
+                    }
                 } else {
                     int type;
                     if (position == mobileRow) {
@@ -235,6 +243,7 @@ public class DataSettingsActivity extends BaseFragment {
                             key = "roamingPreset";
                         }
                         preset.set(defaultPreset);
+                        preset.enabled = defaultPreset.isEnabled();
                         editor.putInt("currentMobilePreset", DownloadController.getInstance(currentAccount).currentMobilePreset = 3);
                         editor.putInt("currentWifiPreset", DownloadController.getInstance(currentAccount).currentWifiPreset = 3);
                         editor.putInt("currentRoamingPreset", DownloadController.getInstance(currentAccount).currentRoamingPreset = 3);
@@ -253,19 +262,19 @@ public class DataSettingsActivity extends BaseFragment {
                 presentFragment(new CacheControlActivity());
             } else if (position == useLessDataForCallsRow) {
                 final SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                int selected=0;
-                switch(preferences.getInt("VoipDataSaving", VoIPHelper.getDataSavingDefault())){
+                int selected = 0;
+                switch (preferences.getInt("VoipDataSaving", VoIPHelper.getDataSavingDefault())) {
                     case VoIPController.DATA_SAVING_NEVER:
-                        selected=0;
+                        selected = 0;
                         break;
-					case VoIPController.DATA_SAVING_ROAMING:
-						selected=1;
-						break;
+                    case VoIPController.DATA_SAVING_ROAMING:
+                        selected = 1;
+                        break;
                     case VoIPController.DATA_SAVING_MOBILE:
-                        selected=2;
+                        selected = 2;
                         break;
                     case VoIPController.DATA_SAVING_ALWAYS:
-                        selected=3;
+                        selected = 3;
                         break;
                 }
                 Dialog dlg = AlertsCreator.createSingleChoiceDialog(getParentActivity(), new String[]{
@@ -280,7 +289,7 @@ public class DataSettingsActivity extends BaseFragment {
                                     val = VoIPController.DATA_SAVING_NEVER;
                                     break;
                                 case 1:
-                                	val=VoIPController.DATA_SAVING_ROAMING;
+                                    val = VoIPController.DATA_SAVING_ROAMING;
                                     break;
                                 case 2:
                                     val = VoIPController.DATA_SAVING_MOBILE;
@@ -492,20 +501,20 @@ public class DataSettingsActivity extends BaseFragment {
                     }
                     if (preset.enabled && count != 0) {
                         if (photos) {
-                            builder.append(LocaleController.getString("AutoDownloadPhotos", R.string.AutoDownloadPhotos));
+                            builder.append(LocaleController.getString("AutoDownloadPhotosOn", R.string.AutoDownloadPhotosOn));
                         }
                         if (videos) {
                             if (builder.length() > 0) {
                                 builder.append(", ");
                             }
-                            builder.append(LocaleController.getString("AutoDownloadVideos", R.string.AutoDownloadVideos));
+                            builder.append(LocaleController.getString("AutoDownloadVideosOn", R.string.AutoDownloadVideosOn));
                             builder.append(String.format(" (%1$s)", AndroidUtilities.formatFileSize(preset.sizes[DownloadController.typeToIndex(DownloadController.AUTODOWNLOAD_TYPE_VIDEO)], true)));
                         }
                         if (files) {
                             if (builder.length() > 0) {
                                 builder.append(", ");
                             }
-                            builder.append(LocaleController.getString("AutoDownloadFiles", R.string.AutoDownloadFiles));
+                            builder.append(LocaleController.getString("AutoDownloadFilesOn", R.string.AutoDownloadFilesOn));
                             builder.append(String.format(" (%1$s)", AndroidUtilities.formatFileSize(preset.sizes[DownloadController.typeToIndex(DownloadController.AUTODOWNLOAD_TYPE_DOCUMENT)], true)));
                         }
                     } else {
@@ -539,17 +548,20 @@ public class DataSettingsActivity extends BaseFragment {
             }
         }
 
-        @Override
-        public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            int position = holder.getAdapterPosition();
+        public boolean isRowEnabled(int position) {
             if (position == resetDownloadRow) {
                 DownloadController controller = DownloadController.getInstance(currentAccount);
-                return !controller.lowPreset.equals(controller.getCurrentRoamingPreset()) ||
-                        !controller.mediumPreset.equals(controller.getCurrentMobilePreset()) ||
-                        !controller.highPreset.equals(controller.getCurrentWiFiPreset());
+                return !controller.lowPreset.equals(controller.getCurrentRoamingPreset()) || controller.lowPreset.isEnabled() != controller.roamingPreset.enabled ||
+                        !controller.mediumPreset.equals(controller.getCurrentMobilePreset()) || controller.mediumPreset.isEnabled() != controller.mobilePreset.enabled ||
+                        !controller.highPreset.equals(controller.getCurrentWiFiPreset()) || controller.highPreset.isEnabled() != controller.wifiPreset.enabled;
             }
             return position == mobileRow || position == roamingRow || position == wifiRow || position == storageUsageRow || position == useLessDataForCallsRow || position == dataUsageRow || position == proxyRow ||
                     position == enableCacheStreamRow || position == enableStreamRow || position == enableAllStreamRow || position == enableMkvRow || position == quickRepliesRow || position == autoplayVideoRow || position == autoplayGifsRow;
+        }
+
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return isRowEnabled(holder.getAdapterPosition());
         }
 
         @Override

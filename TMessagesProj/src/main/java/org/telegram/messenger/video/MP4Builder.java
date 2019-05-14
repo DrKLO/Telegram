@@ -61,6 +61,7 @@ public class MP4Builder {
     private HashMap<Track, long[]> track2SampleSizes = new HashMap<>();
     private ByteBuffer sizeBuffer = null;
     private boolean splitMdat;
+    private boolean wasFirstVideoFrame;
 
     public MP4Builder createMovie(Mp4Movie mp4Movie, boolean split) throws Exception {
         currentMp4Movie = mp4Movie;
@@ -102,6 +103,34 @@ public class MP4Builder {
             writeNewMdat = false;
         }
 
+        /*if (writeLength && !wasFirstVideoFrame) {
+            wasFirstVideoFrame = true;
+            byte[] buff = new byte[bufferInfo.size];
+            byteBuf.position(bufferInfo.offset);
+            byteBuf.limit(bufferInfo.offset + bufferInfo.size);
+            byteBuf.get(buff);
+
+            ByteBuffer nativeBuffer = ByteBuffer.allocateDirect(bufferInfo.size);
+            nativeBuffer.position(4);
+            int indexOfNal = -1;
+            int totalLen = 0;
+            for (int a = 0, N = buff.length - 3; a < N; a++) {
+                if (buff[a] == 0 && buff[a + 1] == 0 && buff[a + 2] == 0 && buff[a + 3] == 1 || a == N - 1) {
+                    if (indexOfNal != -1) {
+                        int len = a - indexOfNal - 4;
+                        nativeBuffer.put(buff, indexOfNal, len);
+                        totalLen += len;
+                    }
+                    indexOfNal = a;
+                }
+            }
+            nativeBuffer.position(0);
+            nativeBuffer.putInt(totalLen);
+            bufferInfo.offset = 0;
+            bufferInfo.size = totalLen + 4;
+            byteBuf = nativeBuffer;
+        }*/
+
         mdat.setContentSize(mdat.getContentSize() + bufferInfo.size);
         wroteSinceLastMdat += bufferInfo.size;
 
@@ -116,17 +145,20 @@ public class MP4Builder {
         }
 
         currentMp4Movie.addSample(trackIndex, dataOffset, bufferInfo);
-        byteBuf.position(bufferInfo.offset + (!writeLength ? 0 : 4));
-        byteBuf.limit(bufferInfo.offset + bufferInfo.size);
 
         if (writeLength) {
             sizeBuffer.position(0);
             sizeBuffer.putInt(bufferInfo.size - 4);
             sizeBuffer.position(0);
             fc.write(sizeBuffer);
-        }
 
+            byteBuf.position(bufferInfo.offset + 4);
+        } else {
+            byteBuf.position(bufferInfo.offset);
+        }
+        byteBuf.limit(bufferInfo.offset + bufferInfo.size);
         fc.write(byteBuf);
+
         dataOffset += bufferInfo.size;
 
         if (flush) {

@@ -30,7 +30,7 @@ import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
 import android.os.Build;
 import android.os.IBinder;
-import android.support.v4.app.NotificationCompat;
+import androidx.core.app.NotificationCompat;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.RemoteViews;
@@ -49,6 +49,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
     public static final String NOTIFY_PAUSE = "org.telegram.android.musicplayer.pause";
     public static final String NOTIFY_PLAY = "org.telegram.android.musicplayer.play";
     public static final String NOTIFY_NEXT = "org.telegram.android.musicplayer.next";
+    public static final String NOTIFY_SEEK = "org.telegram.android.musicplayer.seek";
 
     private static final int ID_NOTIFICATION = 5;
 
@@ -126,6 +127,15 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                 @Override
                 public void onSkipToPrevious() {
                     MediaController.getInstance().playPreviousMessage();
+                }
+
+                @Override
+                public void onSeekTo(long pos) {
+                    MessageObject object = MediaController.getInstance().getPlayingMessageObject();
+                    if (object != null) {
+                        MediaController.getInstance().seekToProgress(object, pos / 1000 / (float) object.getDuration());
+                        updatePlaybackState(pos);
+                    }
                 }
 
                 @Override
@@ -214,6 +224,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
 
         String artworkUrl = messageObject.getArtworkUrl(true);
         String artworkUrlBig = messageObject.getArtworkUrl(false);
+        long duration = messageObject.getDuration() * 1000;
 
         Bitmap albumArt = audioInfo != null ? audioInfo.getSmallCover() : null;
         Bitmap fullAlbumArt = audioInfo != null ? audioInfo.getCover() : null;
@@ -239,6 +250,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             PendingIntent pendingStop = PendingIntent.getService(getApplicationContext(), 0, new Intent(this, getClass()).setAction(getPackageName() + ".STOP_PLAYER"), PendingIntent.FLAG_CANCEL_CURRENT);
             PendingIntent pendingPlaypause = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(isPlaying ? NOTIFY_PAUSE : NOTIFY_PLAY).setComponent(new ComponentName(this, MusicPlayerReceiver.class)), PendingIntent.FLAG_CANCEL_CURRENT);
             PendingIntent pendingNext = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(NOTIFY_NEXT).setComponent(new ComponentName(this, MusicPlayerReceiver.class)), PendingIntent.FLAG_CANCEL_CURRENT);
+            PendingIntent pendingSeek = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(NOTIFY_SEEK).setComponent(new ComponentName(this, MusicPlayerReceiver.class)), PendingIntent.FLAG_CANCEL_CURRENT);
 
             Notification.Builder bldr = new Notification.Builder(this);
             bldr.setSmallIcon(R.drawable.player)
@@ -273,7 +285,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                 playbackState.setState(isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
                         MediaController.getInstance().getPlayingMessageObject().audioProgressSec * 1000L,
                         isPlaying ? 1 : 0)
-                        .setActions(PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT);
+                        .setActions(PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_SEEK_TO | PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT);
                 bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, "", pendingPrev).build())
                         .addAction(new Notification.Action.Builder(isPlaying ? R.drawable.ic_action_pause : R.drawable.ic_action_play, "", pendingPlaypause).build())
                         .addAction(new Notification.Action.Builder(R.drawable.ic_action_next, "", pendingNext).build());
@@ -283,6 +295,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             MediaMetadata.Builder meta = new MediaMetadata.Builder()
                     .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, fullAlbumArt)
                     .putString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST, authorName)
+                    .putLong(MediaMetadata.METADATA_KEY_DURATION, duration)
                     .putString(MediaMetadata.METADATA_KEY_TITLE, songName)
                     .putString(MediaMetadata.METADATA_KEY_ALBUM, audioInfo != null ? audioInfo.getAlbum() : null);
 
@@ -443,6 +456,22 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                 }
             }
         }
+    }
+
+    private void updatePlaybackState(long seekTo) {
+        if (Build.VERSION.SDK_INT < 21) {
+            return;
+        }
+        boolean isPlaying = !MediaController.getInstance().isMessagePaused();
+        if (MediaController.getInstance().isDownloadingCurrentMessage()) {
+            playbackState.setState(PlaybackState.STATE_BUFFERING, 0, 1).setActions(0);
+        } else {
+            playbackState.setState(isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
+                    seekTo,
+                    isPlaying ? 1 : 0)
+                    .setActions(PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_SEEK_TO | PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT);
+        }
+        mediaSession.setPlaybackState(playbackState.build());
     }
 
     public void setListeners(RemoteViews view) {

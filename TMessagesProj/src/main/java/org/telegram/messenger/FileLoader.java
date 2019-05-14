@@ -453,45 +453,35 @@ public class FileLoader {
         }
     }
 
-    public void loadFile(TLRPC.PhotoSize photo, String ext, int cacheType) {
-        if (photo == null) {
+    public void loadFile(ImageLocation imageLocation, Object parentObject, String ext, int priority, int cacheType) {
+        if (imageLocation == null) {
             return;
         }
-        if (cacheType == 0 && photo != null && (photo.size == 0 || photo.location.key != null)) {
+        if (cacheType == 0 && (imageLocation.isEncrypted() || imageLocation.photoSize != null && imageLocation.getSize() == 0)) {
             cacheType = 1;
         }
-        loadFile(null, null, null, photo.location, null, ext, photo.size, 0, cacheType);
+        loadFile(imageLocation.document, imageLocation.secureDocument, imageLocation.webFile, imageLocation.location, imageLocation, parentObject, ext, imageLocation.getSize(), priority, cacheType);
     }
 
     public void loadFile(SecureDocument secureDocument, int priority) {
         if (secureDocument == null) {
             return;
         }
-        loadFile(null, secureDocument, null, null, null, null, 0, priority, 1);
+        loadFile(null, secureDocument, null, null, null, null, null, 0, priority, 1);
     }
 
     public void loadFile(TLRPC.Document document, Object parentObject, int priority, int cacheType) {
         if (document == null) {
             return;
         }
-        if (cacheType == 0 && document != null && document.key != null) {
+        if (cacheType == 0 && document.key != null) {
             cacheType = 1;
         }
-        loadFile(document, null, null, null, parentObject, null, 0, priority, cacheType);
+        loadFile(document, null, null, null, null, parentObject, null, 0, priority, cacheType);
     }
 
     public void loadFile(WebFile document, int priority, int cacheType) {
-        loadFile(null, null, document, null, null, null, 0, priority, cacheType);
-    }
-
-    public void loadFile(TLRPC.FileLocation location, Object parentObject, String ext, int size, int priority, int cacheType) {
-        if (location == null) {
-            return;
-        }
-        if (cacheType == 0 && (size == 0 || location != null && location.key != null)) {
-            cacheType = 1;
-        }
-        loadFile(null, null, null, location, parentObject, ext, size, priority, cacheType);
+        loadFile(null, null, document, null, null, null, null, 0, priority, cacheType);
     }
 
     private void pauseCurrentFileLoadOperations(FileLoadOperation newOperation) {
@@ -512,7 +502,7 @@ public class FileLoader {
         }
     }
 
-    private FileLoadOperation loadFileInternal(final TLRPC.Document document, final SecureDocument secureDocument, final WebFile webDocument, final TLRPC.FileLocation location, Object parentObject, final String locationExt, final int locationSize, final int priority, final FileLoadOperationStream stream, final int streamOffset, final int cacheType) {
+    private FileLoadOperation loadFileInternal(final TLRPC.Document document, final SecureDocument secureDocument, final WebFile webDocument, TLRPC.TL_fileLocationToBeDeprecated location, final ImageLocation imageLocation, Object parentObject, final String locationExt, final int locationSize, final int priority, final FileLoadOperationStream stream, final int streamOffset, final int cacheType) {
         String fileName = null;
         if (location != null) {
             fileName = getAttachFileName(location, locationExt);
@@ -601,7 +591,7 @@ public class FileLoader {
             operation = new FileLoadOperation(secureDocument);
             type = MEDIA_DIR_DOCUMENT;
         } else if (location != null) {
-            operation = new FileLoadOperation(location, parentObject, locationExt, locationSize);
+            operation = new FileLoadOperation(imageLocation, parentObject, locationExt, locationSize);
             type = MEDIA_DIR_IMAGE;
         } else if (document != null) {
             operation = new FileLoadOperation(document, parentObject);
@@ -698,7 +688,7 @@ public class FileLoader {
                 addOperationToQueue(operation, photoLoadOperationQueue);
             }
         } else {
-            int maxCount = priority > 0 ? 3 : 1;
+            int maxCount = priority > 0 ? 4 : 1;
             int count = currentLoadOperationsCount.get(datacenterId);
             if (stream != null || count < maxCount) {
                 if (operation.start(stream, streamOffset)) {
@@ -732,7 +722,7 @@ public class FileLoader {
         }
     }
 
-    private void loadFile(final TLRPC.Document document, final SecureDocument secureDocument, final WebFile webDocument, final TLRPC.FileLocation location, final Object parentObject, final String locationExt, final int locationSize, final int priority, final int cacheType) {
+    private void loadFile(final TLRPC.Document document, final SecureDocument secureDocument, final WebFile webDocument, TLRPC.TL_fileLocationToBeDeprecated location, final ImageLocation imageLocation, final Object parentObject, final String locationExt, final int locationSize, final int priority, final int cacheType) {
         String fileName;
         if (location != null) {
             fileName = getAttachFileName(location, locationExt);
@@ -746,14 +736,14 @@ public class FileLoader {
         if (cacheType != 10 && !TextUtils.isEmpty(fileName) && !fileName.contains("" + Integer.MIN_VALUE)) {
             loadOperationPathsUI.put(fileName, true);
         }
-        fileLoaderQueue.postRunnable(() -> loadFileInternal(document, secureDocument, webDocument, location, parentObject, locationExt, locationSize, priority, null, 0, cacheType));
+        fileLoaderQueue.postRunnable(() -> loadFileInternal(document, secureDocument, webDocument, location, imageLocation, parentObject, locationExt, locationSize, priority, null, 0, cacheType));
     }
 
     protected FileLoadOperation loadStreamFile(final FileLoadOperationStream stream, final TLRPC.Document document, final Object parentObject, final int offset) {
         final CountDownLatch semaphore = new CountDownLatch(1);
         final FileLoadOperation[] result = new FileLoadOperation[1];
         fileLoaderQueue.postRunnable(() -> {
-            result[0] = loadFileInternal(document, null, null, null, parentObject, null, 0, 1, stream, offset, 0);
+            result[0] = loadFileInternal(document, null, null, null, null, parentObject, null, 0, 1, stream, offset, 0);
             semaphore.countDown();
         });
         try {
@@ -1164,9 +1154,6 @@ public class FileLoader {
             if (attach instanceof TLRPC.TL_fileLocationUnavailable) {
                 return "";
             }
-            TLRPC.FileLocation location = (TLRPC.FileLocation) attach;
-            return location.volume_id + "_" + location.local_id + "." + (ext != null ? ext : "jpg");
-        } else if (attach instanceof TLRPC.Photo) {
             TLRPC.FileLocation location = (TLRPC.FileLocation) attach;
             return location.volume_id + "_" + location.local_id + "." + (ext != null ? ext : "jpg");
         }

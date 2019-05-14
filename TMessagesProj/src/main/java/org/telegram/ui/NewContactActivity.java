@@ -185,6 +185,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
         ActionBarMenu menu = actionBar.createMenu();
         editDoneItem = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        editDoneItem.setContentDescription(LocaleController.getString("Done", R.string.Done));
 
         editDoneItemProgress = new ContextProgressView(context, 1);
         editDoneItem.addView(editDoneItemProgress, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -323,6 +324,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         textView.setText("+");
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        textView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         linearLayout2.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
         codeField = new EditTextBoldCursor(context);

@@ -15,6 +15,7 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -29,8 +30,6 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.StatsController;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -45,6 +44,9 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
 
 import java.util.ArrayList;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class DataUsageActivity extends BaseFragment {
 
@@ -477,9 +479,20 @@ public class DataUsageActivity extends BaseFragment {
                 }
             });
             viewPages[a].listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+
                 @Override
                 public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-
+                    if (newState != RecyclerView.SCROLL_STATE_DRAGGING) {
+                        int scrollY = (int) -actionBar.getTranslationY();
+                        int actionBarHeight = ActionBar.getCurrentActionBarHeight();
+                        if (scrollY != 0 && scrollY != actionBarHeight) {
+                            if (scrollY < actionBarHeight / 2) {
+                                viewPages[0].listView.smoothScrollBy(0, -scrollY);
+                            } else {
+                                viewPages[0].listView.smoothScrollBy(0, actionBarHeight - scrollY);
+                            }
+                        }
+                    }
                 }
 
                 @Override
@@ -830,7 +843,7 @@ public class DataUsageActivity extends BaseFragment {
         public int getItemViewType(int position) {
             if (position == resetSection2Row) {
                 return 3;
-            } else if (position == resetSection2Row || position == callsSection2Row || position == filesSection2Row || position == audiosSection2Row || position == videosSection2Row || position == photosSection2Row || position == messagesSection2Row || position == totalSection2Row) {
+            } else if (position == callsSection2Row || position == filesSection2Row || position == audiosSection2Row || position == videosSection2Row || position == photosSection2Row || position == messagesSection2Row || position == totalSection2Row) {
                 return 0;
             } else if (position == totalSectionRow || position == callsSectionRow || position == filesSectionRow || position == audiosSectionRow || position == videosSectionRow || position == photosSectionRow || position == messagesSectionRow) {
                 return 2;
@@ -853,7 +866,7 @@ public class DataUsageActivity extends BaseFragment {
         arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarDefaultTitle));
         arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarDefaultSubtitle));
         arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarDefaultSelector));
-        arrayList.add(new ThemeDescription(null, 0, null, scrollSlidingTextTabStrip.getRectPaint(), null, null, Theme.key_actionBarDefaultTitle));
+        arrayList.add(new ThemeDescription(null, 0, null, null, new Drawable[]{scrollSlidingTextTabStrip.getSelectorDrawable()}, null, Theme.key_actionBarDefaultTitle));
 
         for (int a = 0; a < viewPages.length; a++) {
             arrayList.add(new ThemeDescription(viewPages[a].listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextSettingsCell.class, HeaderCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
@@ -873,7 +886,7 @@ public class DataUsageActivity extends BaseFragment {
             arrayList.add(new ThemeDescription(viewPages[a].listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
             arrayList.add(new ThemeDescription(viewPages[a].listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteRedText2));
         }
-        
+
         return arrayList.toArray(new ThemeDescription[0]);
     }
 }

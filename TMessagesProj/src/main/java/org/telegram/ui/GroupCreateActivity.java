@@ -23,7 +23,10 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.Keep;
+import androidx.annotation.Keep;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.text.Editable;
 import android.text.InputType;
 import android.text.SpannableStringBuilder;
@@ -52,8 +55,6 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -684,6 +685,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 floatingButton.setScaleY(0.0f);
                 floatingButton.setAlpha(0.0f);
             }
+            floatingButton.setContentDescription(LocaleController.getString("Next", R.string.Next));
         } else {
             ActionBarMenu menu = actionBar.createMenu();
             doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
@@ -1101,7 +1103,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                 if (search1.equals(search2) || search2.length() == 0) {
                                     search2 = null;
                                 }
-                                String search[] = new String[1 + (search2 != null ? 1 : 0)];
+                                String[] search = new String[1 + (search2 != null ? 1 : 0)];
                                 search[0] = search1;
                                 if (search2 != null) {
                                     search[1] = search2;

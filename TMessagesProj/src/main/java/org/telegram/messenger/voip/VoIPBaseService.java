@@ -1046,7 +1046,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			NotificationChannel existingChannel=nm.getNotificationChannel("incoming_calls2"+chanIndex);
 			boolean needCreate=true;
 			if(existingChannel!=null){
-				if(existingChannel.getImportance()<NotificationManager.IMPORTANCE_HIGH || !soundProviderUri.equals(existingChannel.getSound()) || existingChannel.getVibrationPattern()!=null){
+				if(existingChannel.getImportance()<NotificationManager.IMPORTANCE_HIGH || !soundProviderUri.equals(existingChannel.getSound()) || existingChannel.getVibrationPattern()!=null || existingChannel.shouldVibrate()){
 					if(BuildVars.LOGS_ENABLED)
 						FileLog.d("User messed up the notification channel; deleting it and creating a proper one");
 					nm.deleteNotificationChannel("incoming_calls2"+chanIndex);
@@ -1089,7 +1089,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			((SpannableString)answerTitle).setSpan(new ForegroundColorSpan(0xFF00AA00), 0, answerTitle.length(), 0);
 		}
 		PendingIntent answerPendingIntent=PendingIntent.getBroadcast(this, 0, answerIntent, PendingIntent.FLAG_CANCEL_CURRENT);
-		builder.addAction(R.drawable.ic_call_white_24dp, answerTitle, answerPendingIntent);
+		builder.addAction(R.drawable.ic_call, answerTitle, answerPendingIntent);
 		builder.setPriority(Notification.PRIORITY_MAX);
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
 			builder.setShowWhen(false);
@@ -1409,7 +1409,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		PhoneAccountHandle handle=new PhoneAccountHandle(new ComponentName(this, TelegramConnectionService.class), ""+self.id);
 		PhoneAccount account=new PhoneAccount.Builder(handle, ContactsController.formatName(self.first_name, self.last_name))
 				.setCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED)
-				.setIcon(Icon.createWithResource(this, R.drawable.ic_launcher))
+				.setIcon(Icon.createWithResource(this, R.drawable.ic_launcher_dr))
 				.setHighlightColor(0xff2ca5e0)
 				.addSupportedUriScheme("sip")
 				.build();

@@ -11,6 +11,7 @@ package org.telegram.ui.Components;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -18,8 +19,9 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.SystemClock;
-import android.support.annotation.Keep;
+import androidx.annotation.Keep;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -27,10 +29,12 @@ import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 
@@ -45,8 +49,9 @@ public class EditTextBoldCursor extends EditText {
     private static Field mScrollYField;
     private static Method getVerticalOffsetMethod;
     private static Field mCursorDrawableResField;
+    private static Class editorClass;
 
-    private Drawable[] mCursorDrawable;
+    private Drawable mCursorDrawable;
     private Object editor;
 
     private GradientDrawable gradientDrawable;
@@ -63,7 +68,6 @@ public class EditTextBoldCursor extends EditText {
     private StaticLayout hintLayout;
     private StaticLayout errorLayout;
     private CharSequence errorText;
-    private Class editorClass;
     private int hintColor;
     private int headerHintColor;
     private boolean hintVisible = true;
@@ -87,40 +91,73 @@ public class EditTextBoldCursor extends EditText {
     private boolean fixed;
     private ViewTreeObserver.OnPreDrawListener listenerFixer;
 
-    @SuppressLint("PrivateApi")
     public EditTextBoldCursor(Context context) {
         super(context);
+        if (Build.VERSION.SDK_INT >= 26) {
+            setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
+        }
+        init();
+    }
 
+    @TargetApi(Build.VERSION_CODES.O)
+    @Override
+    public int getAutofillType() {
+        return AUTOFILL_TYPE_NONE;
+    }
+
+    @SuppressLint("PrivateApi")
+    private void init() {
         linePaint = new Paint();
         errorPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         errorPaint.setTextSize(AndroidUtilities.dp(11));
+        if (Build.VERSION.SDK_INT >= 26) {
+            setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
+        }
 
-        if (mCursorDrawableField == null) {
-            try {
+        try {
+            if (mScrollYField == null) {
                 mScrollYField = View.class.getDeclaredField("mScrollY");
                 mScrollYField.setAccessible(true);
+            }
+        } catch (Throwable ignore) {
+
+        }
+        try {
+            if (mCursorDrawableResField == null) {
                 mCursorDrawableResField = TextView.class.getDeclaredField("mCursorDrawableRes");
                 mCursorDrawableResField.setAccessible(true);
-                if (editorClass == null) {
-                    mEditor = TextView.class.getDeclaredField("mEditor");
-                    mEditor.setAccessible(true);
-                    editorClass = Class.forName("android.widget.Editor");
-                }
+            }
+        } catch (Throwable ignore) {
+
+        }
+        try {
+            if (editorClass == null) {
+                mEditor = TextView.class.getDeclaredField("mEditor");
+                mEditor.setAccessible(true);
+                editorClass = Class.forName("android.widget.Editor");
                 mShowCursorField = editorClass.getDeclaredField("mShowCursor");
                 mShowCursorField.setAccessible(true);
-                mCursorDrawableField = editorClass.getDeclaredField("mCursorDrawable");
-                mCursorDrawableField.setAccessible(true);
+                if (Build.VERSION.SDK_INT >= 28) {
+                    mCursorDrawableField = editorClass.getDeclaredField("mDrawableForCursor");
+                    mCursorDrawableField.setAccessible(true);
+                } else {
+                    mCursorDrawableField = editorClass.getDeclaredField("mCursorDrawable");
+                    mCursorDrawableField.setAccessible(true);
+                }
                 getVerticalOffsetMethod = TextView.class.getDeclaredMethod("getVerticalOffset", boolean.class);
                 getVerticalOffsetMethod.setAccessible(true);
-            } catch (Throwable ignore) {
-
+                mShowCursorField = editorClass.getDeclaredField("mShowCursor");
+                mShowCursorField.setAccessible(true);
+                getVerticalOffsetMethod = TextView.class.getDeclaredMethod("getVerticalOffset", boolean.class);
+                getVerticalOffsetMethod.setAccessible(true);
             }
+        } catch (Throwable e) {
+            FileLog.e(e);
         }
         try {
             gradientDrawable = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {0xff54a1db, 0xff54a1db});
             editor = mEditor.get(this);
             if (mCursorDrawableField != null) {
-                mCursorDrawable = (Drawable[]) mCursorDrawableField.get(editor);
                 mCursorDrawableResField.set(this, R.drawable.field_carret_empty);
             }
         } catch (Throwable ignore) {
@@ -167,6 +204,7 @@ public class EditTextBoldCursor extends EditText {
 
     public void setAllowDrawCursor(boolean value) {
         allowDrawCursor = value;
+        invalidate();
     }
 
     public void setCursorWidth(float width) {
@@ -420,7 +458,17 @@ public class EditTextBoldCursor extends EditText {
             canvas.restore();
         }
         try {
-            if (allowDrawCursor && mShowCursorField != null && mCursorDrawable != null && mCursorDrawable[0] != null) {
+            if (allowDrawCursor && mShowCursorField != null) {
+                if (mCursorDrawable == null) {
+                    if (Build.VERSION.SDK_INT >= 28) {
+                        mCursorDrawable = (Drawable) mCursorDrawableField.get(editor);
+                    } else {
+                        mCursorDrawable = ((Drawable[]) mCursorDrawableField.get(editor))[0];
+                    }
+                }
+                if (mCursorDrawable == null) {
+                    return;
+                }
                 long mShowCursor = mShowCursorField.getLong(editor);
                 boolean showCursor = (SystemClock.uptimeMillis() - mShowCursor) % (2 * 500) < 500 && isFocused();
                 if (showCursor) {
@@ -433,7 +481,7 @@ public class EditTextBoldCursor extends EditText {
                     Layout layout = getLayout();
                     int line = layout.getLineForOffset(getSelectionStart());
                     int lineCount = layout.getLineCount();
-                    Rect bounds = mCursorDrawable[0].getBounds();
+                    Rect bounds = mCursorDrawable.getBounds();
                     rect.left = bounds.left;
                     rect.right = bounds.left + AndroidUtilities.dp(cursorWidth);
                     rect.bottom = bounds.bottom;
@@ -448,8 +496,8 @@ public class EditTextBoldCursor extends EditText {
                     canvas.restore();
                 }
             }
-        } catch (Throwable e) {
-            //ignore
+        } catch (Throwable ignore) {
+
         }
         if (lineColor != 0 && hintLayout != null) {
             int h;
@@ -471,5 +519,13 @@ public class EditTextBoldCursor extends EditText {
             errorLayout.draw(canvas);
             canvas.restore();
         }*/
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setClassName("android.widget.EditText");
+        if (hintLayout != null)
+			info.setContentDescription(hintLayout.getText());
     }
 }

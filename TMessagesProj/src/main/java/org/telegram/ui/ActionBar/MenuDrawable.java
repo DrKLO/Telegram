@@ -20,18 +20,22 @@ import org.telegram.messenger.AndroidUtilities;
 public class MenuDrawable extends Drawable {
 
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private boolean reverseAngle = false;
+    private boolean reverseAngle;
     private long lastFrameTime;
     private boolean animationInProgress;
     private float finalRotation;
     private float currentRotation;
     private int currentAnimationTime;
+    private boolean rotateToBack = true;
     private DecelerateInterpolator interpolator = new DecelerateInterpolator();
 
     public MenuDrawable() {
         super();
-        paint.setColor(0xffffffff);
         paint.setStrokeWidth(AndroidUtilities.dp(2));
+    }
+
+    public void setRotateToBack(boolean value) {
+        rotateToBack = value;
     }
 
     public void setRotation(float rotation, boolean animated) {
@@ -79,12 +83,29 @@ public class MenuDrawable extends Drawable {
 
         canvas.save();
         canvas.translate(getIntrinsicWidth() / 2, getIntrinsicHeight() / 2);
-        canvas.rotate(currentRotation * (reverseAngle ? -180 : 180));
-        canvas.drawLine(-AndroidUtilities.dp(9), 0, AndroidUtilities.dp(9) - AndroidUtilities.dp(3.0f) * currentRotation, 0, paint);
-        float endYDiff = AndroidUtilities.dp(5) * (1 - Math.abs(currentRotation)) - AndroidUtilities.dp(0.5f) * Math.abs(currentRotation);
-        float endXDiff = AndroidUtilities.dp(9) - AndroidUtilities.dp(2.5f) * Math.abs(currentRotation);
-        float startYDiff = AndroidUtilities.dp(5) + AndroidUtilities.dp(2.0f) * Math.abs(currentRotation);
-        float startXDiff = -AndroidUtilities.dp(9) + AndroidUtilities.dp(7.5f) * Math.abs(currentRotation);
+        float endYDiff;
+        float endXDiff;
+        float startYDiff;
+        float startXDiff;
+        int color1 = Theme.getColor(Theme.key_actionBarDefaultIcon);
+        if (rotateToBack) {
+            canvas.rotate(currentRotation * (reverseAngle ? -180 : 180));
+            paint.setColor(color1);
+            canvas.drawLine(-AndroidUtilities.dp(9), 0, AndroidUtilities.dp(9) - AndroidUtilities.dp(3.0f) * currentRotation, 0, paint);
+            endYDiff = AndroidUtilities.dp(5) * (1 - Math.abs(currentRotation)) - AndroidUtilities.dp(0.5f) * Math.abs(currentRotation);
+            endXDiff = AndroidUtilities.dp(9) - AndroidUtilities.dp(2.5f) * Math.abs(currentRotation);
+            startYDiff = AndroidUtilities.dp(5) + AndroidUtilities.dp(2.0f) * Math.abs(currentRotation);
+            startXDiff = -AndroidUtilities.dp(9) + AndroidUtilities.dp(7.5f) * Math.abs(currentRotation);
+        } else {
+            canvas.rotate(currentRotation * (reverseAngle ? -225 : 135));
+            int color2 = Theme.getColor(Theme.key_actionBarActionModeDefaultIcon);
+            paint.setColor(AndroidUtilities.getOffsetColor(color1, color2, currentRotation, 1.0f));
+            canvas.drawLine(-AndroidUtilities.dp(9) + AndroidUtilities.dp(1) * currentRotation, 0, AndroidUtilities.dp(9) - AndroidUtilities.dp(1) * currentRotation, 0, paint);
+            endYDiff = AndroidUtilities.dp(5) * (1 - Math.abs(currentRotation)) - AndroidUtilities.dp(0.5f) * Math.abs(currentRotation);
+            endXDiff = AndroidUtilities.dp(9) - AndroidUtilities.dp(9) * Math.abs(currentRotation);
+            startYDiff = AndroidUtilities.dp(5) + AndroidUtilities.dp(3.0f) * Math.abs(currentRotation);
+            startXDiff = -AndroidUtilities.dp(9) + AndroidUtilities.dp(9) * Math.abs(currentRotation);
+        }
         canvas.drawLine(startXDiff, -startYDiff, endXDiff, -endYDiff, paint);
         canvas.drawLine(startXDiff, startYDiff, endXDiff, endYDiff, paint);
         canvas.restore();
@@ -97,7 +118,7 @@ public class MenuDrawable extends Drawable {
 
     @Override
     public void setColorFilter(ColorFilter cf) {
-        paint.setColorFilter(cf);
+
     }
 
     @Override

@@ -12,7 +12,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
@@ -41,6 +40,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -219,7 +219,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                     finishFragment();
                 } else if (id == done_button) {
                     if (currentStep == 0) {
-                        if (donePressed) {
+                        if (donePressed || getParentActivity() == null) {
                             return;
                         }
                         if (nameTextView.length() == 0) {
@@ -289,6 +289,8 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
 
             SizeNotifierFrameLayout sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
 
+                private boolean ignoreLayout;
+
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     int widthSize = MeasureSpec.getSize(widthMeasureSpec);
@@ -300,8 +302,13 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                     measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
 
                     int keyboardSize = getKeyboardHeight();
-                    int childCount = getChildCount();
+                    if (keyboardSize > AndroidUtilities.dp(20)) {
+                        ignoreLayout = true;
+                        nameTextView.hideEmojiView();
+                        ignoreLayout = false;
+                    }
 
+                    int childCount = getChildCount();
                     for (int i = 0; i < childCount; i++) {
                         View child = getChildAt(i);
                         if (child == null || child.getVisibility() == GONE || child == actionBar) {
@@ -389,6 +396,14 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
 
                     notifyHeightChanged();
                 }
+
+                @Override
+                public void requestLayout() {
+                    if (ignoreLayout) {
+                        return;
+                    }
+                    super.requestLayout();
+                }
             };
             sizeNotifierFrameLayout.setOnTouchListener((v, event) -> true);
             fragmentView = sizeNotifierFrameLayout;
@@ -442,7 +457,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 avatarBig = null;
                 uploadedAvatar = null;
                 showAvatarProgress(false, true);
-                avatarImage.setImage(avatar, "50_50", avatarDrawable, null);
+                avatarImage.setImage(null, null, avatarDrawable, null);
             }));
 
             avatarEditor = new ImageView(context) {
@@ -471,7 +486,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
 
             showAvatarProgress(false, false);
 
-            nameTextView = new EditTextEmoji((Activity) context, sizeNotifierFrameLayout, this);
+            nameTextView = new EditTextEmoji(context, sizeNotifierFrameLayout, this, EditTextEmoji.STYLE_FRAGMENT);
             nameTextView.setHint(LocaleController.getString("EnterChannelName", R.string.EnterChannelName));
             if (nameToSet != null) {
                 nameTextView.setText(nameToSet);
@@ -759,7 +774,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             } else {
                 avatar = smallSize.location;
                 avatarBig = bigSize.location;
-                avatarImage.setImage(avatar, "50_50", avatarDrawable, null);
+                avatarImage.setImage(ImageLocation.getForLocal(avatar), "50_50", avatarDrawable, null);
                 showAvatarProgress(true, false);
             }
         });

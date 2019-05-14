@@ -23,6 +23,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
@@ -66,6 +67,7 @@ public class PhotoPickerPhotoCell extends FrameLayout {
         videoTextView = new TextView(context);
         videoTextView.setTextColor(0xffffffff);
         videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        videoTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         videoInfoContainer.addView(videoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 18, -0.7f, 0, 0));
 
         checkBox = new CheckBox(context, R.drawable.checkbig);
@@ -74,6 +76,8 @@ public class PhotoPickerPhotoCell extends FrameLayout {
         checkBox.setDrawBackground(true);
         checkBox.setColor(0xff66bffa, 0xffffffff);
         addView(checkBox, LayoutHelper.createFrame(zoom ? 30 : 26, zoom ? 30 : 26, Gravity.RIGHT | Gravity.TOP, 0, 4, 4, 0));
+
+        setFocusable(true);
     }
 
     @Override
@@ -110,16 +114,16 @@ public class PhotoPickerPhotoCell extends FrameLayout {
     public void setImage(MediaController.SearchImage searchImage) {
         Drawable thumb = getResources().getDrawable(R.drawable.nophotos);
         if (searchImage.thumbPhotoSize != null) {
-            photoImage.setImage(searchImage.thumbPhotoSize, null, thumb, searchImage);
+            photoImage.setImage(ImageLocation.getForPhoto(searchImage.thumbPhotoSize, searchImage.photo), null, thumb, searchImage);
         } else if (searchImage.photoSize != null) {
-            photoImage.setImage(searchImage.photoSize, "80_80", thumb, searchImage);
+            photoImage.setImage(ImageLocation.getForPhoto(searchImage.photoSize, searchImage.photo), "80_80", thumb, searchImage);
         } else if (searchImage.thumbPath != null) {
             photoImage.setImage(searchImage.thumbPath, null, thumb);
         } else if (searchImage.thumbUrl != null && searchImage.thumbUrl.length() > 0) {
             photoImage.setImage(searchImage.thumbUrl, null, thumb);
-        } else if (searchImage.document != null && MessageObject.isDocumentHasThumb(searchImage.document)) {
-            TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(searchImage.document.thumbs, 90);
-            photoImage.setImage(photoSize, null, thumb, searchImage);
+        } else if (MessageObject.isDocumentHasThumb(searchImage.document)) {
+            TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(searchImage.document.thumbs, 320);
+            photoImage.setImage(ImageLocation.getForDocument(photoSize, searchImage.document), null, thumb, searchImage);
         } else {
             photoImage.setImageDrawable(thumb);
         }

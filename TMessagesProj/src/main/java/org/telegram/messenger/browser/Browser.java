@@ -168,7 +168,7 @@ public class Browser {
         openUrl(context, Uri.parse(url), allowCustom, tryTelegraph);
     }
 
-    public static void openUrl(final Context context, final Uri uri, final boolean allowCustom, boolean tryTelegraph) {
+    public static void openUrl(final Context context, Uri uri, final boolean allowCustom, boolean tryTelegraph) {
         if (context == null || uri == null) {
             return;
         }
@@ -181,6 +181,7 @@ public class Browser {
                 if (host.equals("telegra.ph") || uri.toString().toLowerCase().contains("telegram.org/faq")) {
                     final AlertDialog progressDialog[] = new AlertDialog[] {new AlertDialog(context, 3)};
 
+                    Uri finalUri = uri;
                     TLRPC.TL_messages_getWebPagePreview req = new TLRPC.TL_messages_getWebPagePreview();
                     req.message = uri.toString();
                     final int reqId = ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
@@ -195,12 +196,12 @@ public class Browser {
                         if (response instanceof TLRPC.TL_messageMediaWebPage) {
                             TLRPC.TL_messageMediaWebPage webPage = (TLRPC.TL_messageMediaWebPage) response;
                             if (webPage.webpage instanceof TLRPC.TL_webPage && webPage.webpage.cached_page != null) {
-                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.openArticle, webPage.webpage, uri.toString());
+                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.openArticle, webPage.webpage, finalUri.toString());
                                 ok = true;
                             }
                         }
                         if (!ok) {
-                            openUrl(context, uri, allowCustom, false);
+                            openUrl(context, finalUri, allowCustom, false);
                         }
                     }));
                     AndroidUtilities.runOnUIThread(() -> {
@@ -222,6 +223,13 @@ public class Browser {
         }
         try {
             String scheme = uri.getScheme() != null ? uri.getScheme().toLowerCase() : "";
+            if ("http".equals(scheme) || "https".equals(scheme)) {
+                try {
+                    uri = uri.normalizeScheme();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
             if (allowCustom && SharedConfig.customTabs && !internalUri && !scheme.equals("tel")) {
                 String browserPackageNames[] = null;
                 try {
@@ -310,6 +318,9 @@ public class Browser {
     }
 
     public static boolean isPassportUrl(String url) {
+        if (url == null) {
+            return false;
+        }
         try {
             url = url.toLowerCase();
             if (url.startsWith("tg:passport") || url.startsWith("tg://passport") || url.startsWith("tg:secureid") || url.contains("resolve") && url.contains("domain=telegrampassport")) {

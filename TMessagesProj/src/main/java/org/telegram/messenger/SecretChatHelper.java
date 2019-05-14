@@ -187,7 +187,7 @@ public class SecretChatHelper {
                 user = usersDict.get(user_id);
             }
             newChat.user_id = user_id;
-            final TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
+            final TLRPC.Dialog dialog = new TLRPC.TL_dialog();
             dialog.id = dialog_id;
             dialog.unread_count = 0;
             dialog.top_message = 0;
@@ -195,14 +195,14 @@ public class SecretChatHelper {
             MessagesController.getInstance(currentAccount).putEncryptedChat(newChat, false);
             AndroidUtilities.runOnUIThread(() -> {
                 MessagesController.getInstance(currentAccount).dialogs_dict.put(dialog.id, dialog);
-                MessagesController.getInstance(currentAccount).dialogs.add(dialog);
+                MessagesController.getInstance(currentAccount).allDialogs.add(dialog);
                 MessagesController.getInstance(currentAccount).sortDialogs(null);
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.dialogsNeedReload);
             });
             MessagesStorage.getInstance(currentAccount).putEncryptedChat(newChat, user, dialog);
             acceptSecretChat(newChat);
         } else if (newChat instanceof TLRPC.TL_encryptedChat) {
-            if (existingChat != null && existingChat instanceof TLRPC.TL_encryptedChatWaiting && (existingChat.auth_key == null || existingChat.auth_key.length == 1)) {
+            if (existingChat instanceof TLRPC.TL_encryptedChatWaiting && (existingChat.auth_key == null || existingChat.auth_key.length == 1)) {
                 newChat.a_or_b = existingChat.a_or_b;
                 newChat.user_id = existingChat.user_id;
                 processAcceptedSecretChat(newChat);
@@ -482,7 +482,7 @@ public class SecretChatHelper {
                 File cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName + ".jpg");
                 File cacheFile2 = FileLoader.getPathToAttach(size);
                 cacheFile.renameTo(cacheFile2);
-                ImageLoader.getInstance().replaceImageInCache(fileName, fileName2, size.location, true);
+                ImageLoader.getInstance().replaceImageInCache(fileName, fileName2, ImageLocation.getForPhoto(size, newMsg.media.photo), true);
                 ArrayList<TLRPC.Message> arr = new ArrayList<>();
                 arr.add(newMsg);
                 MessagesStorage.getInstance(currentAccount).putMessages(arr, false, true, false, 0);
@@ -1076,7 +1076,7 @@ public class SecretChatHelper {
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionFlushHistory) {
                     final long did = ((long) chat.id) << 32;
                     AndroidUtilities.runOnUIThread(() -> {
-                        TLRPC.TL_dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(did);
+                        TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(did);
                         if (dialog != null) {
                             dialog.unread_count = 0;
                             MessagesController.getInstance(currentAccount).dialogMessage.remove(dialog.id);
@@ -1868,13 +1868,13 @@ public class SecretChatHelper {
                             chat.seq_out = 1;
                             chat.a_or_b = salt;
                             MessagesController.getInstance(currentAccount).putEncryptedChat(chat, false);
-                            TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
-                            dialog.id = ((long) chat.id) << 32;
+                            TLRPC.Dialog dialog = new TLRPC.TL_dialog();
+                            dialog.id = DialogObject.makeSecretDialogId(chat.id);
                             dialog.unread_count = 0;
                             dialog.top_message = 0;
                             dialog.last_message_date = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
                             MessagesController.getInstance(currentAccount).dialogs_dict.put(dialog.id, dialog);
-                            MessagesController.getInstance(currentAccount).dialogs.add(dialog);
+                            MessagesController.getInstance(currentAccount).allDialogs.add(dialog);
                             MessagesController.getInstance(currentAccount).sortDialogs(null);
                             MessagesStorage.getInstance(currentAccount).putEncryptedChat(chat, user, dialog);
                             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.dialogsNeedReload);

@@ -44,6 +44,7 @@
         <item name="android:calendarViewStyle">@style/Theme.TMessages.CalendarView</item>
         <item name="android:navigationBarColor">#000000</item>
         <item name="android:textViewStyle">@style/MyTextViewStyle</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 
     <style name="Theme.TMessages.PopupNotification" parent="Theme.TMessages">
@@ -58,6 +59,8 @@
 
     <style name="Theme.TMessages.Dialog.Alert" parent="android:style/Theme.Material.Light.Dialog.Alert">
         <item name="android:colorAccent">#4991cc</item>
+        <item name="android:colorPrimary">#527da3</item>
+        <item name="android:colorControlActivated">#4991cc</item>
     </style>
 
     <style name="Theme.TMessages.Transparent" parent="Theme.TMessages">
