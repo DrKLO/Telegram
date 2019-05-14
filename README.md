@@ -3,6 +3,19 @@
 [Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
 This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
 
+## Getting Started - Accessing the Files 
+
+To access the files on GitHub you can either clone or download. 
+
+To clone the files:
+1. Read up on cloning in Git here: https://git-scm.com/docs/git-clone
+2. Click the green "Clone or Download" button
+3a. If you decide to use GitHub desktop (https://desktop.github.com/), click the "Open in Desktop App"
+3b. If you decide to use command line or a git client like TurtoiseGit (https://tortoisegit.org/) then copy the link and clone using either the client or command line.
+3c. You may also download a zip file of all of the code by clicking the "Download Zip" button
+
+Congratulations you can now start working! 
+
 ## Creating your Telegram Application
 
 We welcome all developers to use our API and source code to create applications on our platform.
