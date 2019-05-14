@@ -8441,4 +8441,6 @@
     <string name="TimezoneHeader">Select your time zone</string>
     <string name="FilterExistingChats">Existing chats</string>
     <string name="FilterNewChats">New chats</string>
+    <!--FORK CLIENT-->
+    <string name="BottomDialogs">Tap here to start a new chat.</string>
 </resources>

@@ -1397,6 +1397,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 floatingButton.setAnimation(R.raw.write_contacts_fab_icon, 52, 52);
             }
             floatingButton.getAnimatedDrawable().setCurrentFrame(floatingButton.getAnimatedDrawable().getFramesCount() - 1);
+
             return null;
         }
         previousFabContainer.setVisibility(View.GONE);
