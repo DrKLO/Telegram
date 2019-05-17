@@ -3008,7 +3008,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 };
                 TLRPC.Chat chat = isChannel ? MessagesController.getInstance(currentAccount).getChat(-dialogId) : null;
                 final boolean canRepost = !DISABLE_STORY_REPOSTING && MessagesController.getInstance(currentAccount).storiesEnabled() && (!isChannel && !UserObject.isService(dialogId) || ChatObject.isPublic(chat));
-                shareAlert = new ShareAlert(storyViewer.fragment.getContext(), null, null, link, null, false, link, null, false, false, canRepost, shareResourceProvider) {
+                shareAlert = new ShareAlert(storyViewer.fragment.getContext(), null, null, link, null, false, link, null, false, false, canRepost, shareResourceProvider, false) {
 
                     @Override
                     public void dismissInternal() {

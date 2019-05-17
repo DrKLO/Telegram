@@ -1042,7 +1042,27 @@ public class UndoView extends FrameLayout {
                 leftImageView.setAnimation(R.raw.contact_check, 36, 36);
                 timeLeft = 3000;
             } else if (currentAction == ACTION_FWD_MESSAGES) {
-                Integer count = (Integer) infoObject;
+                Integer count;
+                String str = "";
+                if (infoObject instanceof org.telegram.ui.Components.ShareAlert.UndoInfo) {
+                    org.telegram.ui.Components.ShareAlert.UndoInfo info = (org.telegram.ui.Components.ShareAlert.UndoInfo)infoObject;
+                    count = (Integer) info.count;
+                    final String and = " & ";
+                    str += info.silent ? "Silently" + and : "";
+                    str += info.asAlbum ? "As Album" + and : "";
+                    str += info.noText ? "No Text" + and : "";
+                    str += info.asCopy ? "As Copy" + and : "";
+                    str += info.replyTo ? "As Reply" + and : "";
+                    final int diff = str.length() - and.length();
+                    if (diff > 0) {
+                        str = str.substring(0, diff);
+                    }
+                    if (str.length() > 0) {
+                        str = "(" + str + ")";
+                    }
+                } else {
+                    count = (Integer) infoObject;
+                }
                 if (infoObject2 == null || infoObject2 instanceof TLRPC.TL_forumTopic) {
                     if (did == UserConfig.getInstance(currentAccount).clientUserId) {
                         if (count == 1) {
@@ -1081,6 +1101,7 @@ public class UndoView extends FrameLayout {
                     leftImageView.setAnimation(R.raw.forward, 30, 30);
                     hapticDelay = 300;
                 }
+                infoTextView.setText(String.format("%s %s", str, infoTextView.getText()));
                 timeLeft = 3000;
             } else if (currentAction == ACTION_SHARE_BACKGROUND) {
                 Integer count = (Integer) infoObject;
