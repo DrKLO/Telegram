@@ -5616,61 +5616,63 @@ public class AlertsCreator {
     }
 
     public static AlertDialog.Builder createTTLAlert(final Context context, final TLRPC.EncryptedChat encryptedChat, Theme.ResourcesProvider resourcesProvider) {
+                final int m = 60;
+        final int h = m * m;
+        final int d = h * 24;
+        final int[] values = new int[39];
+        int i = 0;
+        for (; i < 16; i++) {
+            values[i] = i;
+        }
+        values[i++] = 30;
+        values[i++] = m;
+        values[i++] = m * 2;
+        values[i++] = m * 3;
+        values[i++] = m * 4;
+        values[i++] = m * 5;
+        values[i++] = m * 10;
+        values[i++] = m * 15;
+        values[i++] = m * 20;
+        values[i++] = m * 30;
+        values[i++] = m * 40;
+        values[i++] = h;
+        values[i++] = h * 2;
+        values[i++] = h * 3;
+        values[i++] = h * 5;
+        values[i++] = h * 8;
+        values[i++] = h * 12;
+        values[i++] = h * 16;
+        values[i++] = d;
+        values[i++] = d * 2;
+        values[i++] = d * 3;
+        values[i++] = d * 7;
+        values[i++] = d * 32;
+
         AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
         builder.setTitle(LocaleController.getString("MessageLifetime", R.string.MessageLifetime));
         final NumberPicker numberPicker = new NumberPicker(context);
         numberPicker.setMinValue(0);
-        numberPicker.setMaxValue(20);
-        if (encryptedChat.ttl > 0 && encryptedChat.ttl < 16) {
-            numberPicker.setValue(encryptedChat.ttl);
-        } else if (encryptedChat.ttl == 30) {
-            numberPicker.setValue(16);
-        } else if (encryptedChat.ttl == 60) {
-            numberPicker.setValue(17);
-        } else if (encryptedChat.ttl == 60 * 60) {
-            numberPicker.setValue(18);
-        } else if (encryptedChat.ttl == 60 * 60 * 24) {
-            numberPicker.setValue(19);
-        } else if (encryptedChat.ttl == 60 * 60 * 24 * 7) {
-            numberPicker.setValue(20);
-        } else if (encryptedChat.ttl == 0) {
-            numberPicker.setValue(0);
+        numberPicker.setMaxValue(values.length - 1);
+
+        for (int n = 0; n < values.length; n++) {
+            if (values[n] == encryptedChat.ttl) {
+                numberPicker.setValue(n);
+                break;
+            }
         }
+
         numberPicker.setFormatter(value -> {
             if (value == 0) {
                 return LocaleController.getString("ShortMessageLifetimeForever", R.string.ShortMessageLifetimeForever);
-            } else if (value >= 1 && value < 16) {
-                return LocaleController.formatTTLString(value);
-            } else if (value == 16) {
-                return LocaleController.formatTTLString(30);
-            } else if (value == 17) {
-                return LocaleController.formatTTLString(60);
-            } else if (value == 18) {
-                return LocaleController.formatTTLString(60 * 60);
-            } else if (value == 19) {
-                return LocaleController.formatTTLString(60 * 60 * 24);
-            } else if (value == 20) {
-                return LocaleController.formatTTLString(60 * 60 * 24 * 7);
+            } else {
+                return LocaleController.formatTTLString(values[value]);
             }
-            return "";
         });
         builder.setView(numberPicker);
         builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), (dialog, which) -> {
             int oldValue = encryptedChat.ttl;
             which = numberPicker.getValue();
-            if (which >= 0 && which < 16) {
-                encryptedChat.ttl = which;
-            } else if (which == 16) {
-                encryptedChat.ttl = 30;
-            } else if (which == 17) {
-                encryptedChat.ttl = 60;
-            } else if (which == 18) {
-                encryptedChat.ttl = 60 * 60;
-            } else if (which == 19) {
-                encryptedChat.ttl = 60 * 60 * 24;
-            } else if (which == 20) {
-                encryptedChat.ttl = 60 * 60 * 24 * 7;
-            }
+            encryptedChat.ttl = values[which];
             if (oldValue != encryptedChat.ttl) {
                 SecretChatHelper.getInstance(UserConfig.selectedAccount).sendTTLMessage(encryptedChat, null);
                 MessagesStorage.getInstance(UserConfig.selectedAccount).updateEncryptedChatTTL(encryptedChat);
