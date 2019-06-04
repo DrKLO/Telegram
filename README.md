@@ -1,39 +1,48 @@
-## Telegram messenger for Android
+# Fork Client — Unofficial Telegram Messenger for Android
+![image](https://raw.githubusercontent.com/Forkgram/TelegramAndroid/58938f6bbe4159b90c38d9b94c9a70d57bedf3e0/TMessagesProj/src/main/res/drawable-xxhdpi/ic_launcher.png)  
+Fork Client is a fork of the official Telegram for Android application.  
+[<img src="https://f-droid.org/badge/get-it-on.png"
+      alt="Get it on F-Droid"
+      height="80">](https://f-droid.org/app/org.forkgram.messenger)
 
-[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+![Build Status](https://travis-ci.org//Forkgram/TelegramAndroid.svg?branch=dev)
+[![Github All Releases](https://img.shields.io/github/downloads/Forkgram/TelegramAndroid/total.svg)](https://github.com/Forkgram/TelegramAndroid/releases)
 
-## Creating your Telegram Application
+## Features:
 
-We welcome all developers to use our API and source code to create applications on our platform.
-There are several things we require from **all developers** for the moment.
+- `Delete for everyone` option enabled by default.
+- Removed pencil floating icon.
+- Original message date for forwarded messages.
+- Smaller header in the sidebar.
+- Option to disable in-app camera.
+- Option to keep unmuted unread chats right after pinned dialogs.
+- See the correct full number of subscribers in groups/channels.
+- Option to go to the first message of a chat.
+- Quick share button for every media in private chats.
+- Option to start recording video messages with the rear camera.
+- Unlimited unarchived pinned chats (turns their sync off).
+- Option to disable big emojis.
+- Forward messages without quoting the original sender.
+- Added a lot of self-destruct timer's options in secret chats.
+  - Added 2, 3, 4, 5, 10, 15, 20, 30, 40 minutes.
+  - Added 2, 3, 5, 8, 12, 16 hours.
+  - Added 2, 3, 7 and 32 days.
+- Tap on cloud GIF with pre-written text will send GIF with this text as caption.
+- Tap on sticker with pre-written text will send both.
+- Added upload date for profile photos.
+- Added ability to see the profile info from the dialogs list via context menu.
+- Added ability to see unread count when you want to mark as read multiple dialogs.
 
-1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
-2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
-3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
-3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
-4. Please remember to publish **your** code too in order to comply with the licences.
+### Privacy Features:
 
-### API, Protocol documentation
+- Hidden `Connecting to proxy...` string.
+- Accounts names hidden from the side drawer.
+- Menus to edit username/bio/name moved in the debug menu (two long tap on version section).
+- Option to hide avatar/title of a chat from the dialogs list.
+- Option to not send stickers information in photos.
+- Some features are taken from the [Telegram FOSS](https://github.com/Telegram-FOSS-Team/Telegram-FOSS).
 
-Telegram API manuals: https://core.telegram.org/api
 
-MTproto protocol manuals: https://core.telegram.org/mtproto
 
-### Compilation Guide
-
-**Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
-
-You will require Android Studio 3.4, Android NDK rev. 20 and Android SDK 8.1
-
-1. Download the Telegram source code from https://github.com/DrKLO/Telegram ( git clone https://github.com/DrKLO/Telegram.git )
-2. Copy your release.keystore into TMessagesProj/config
-3. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your  release.keystore
-4.  Go to https://console.firebase.google.com/, create two android apps with application IDs org.telegram.messenger and org.telegram.messenger.beta, turn on firebase messaging and download google-services.json, which should be copied to the same folder as TMessagesProj.
-5. Open the project in the Studio (note that it should be opened, NOT imported).
-6. Fill out values in TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java – there’s a link for each of the variables showing where and which data to obtain.
-7. You are ready to compile Telegram.
-
-### Localization
-
-We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+## Downloads:
+You can download binaries from Releases or from my [Telegram channel Forkgram](https://t.me/forkgram).
