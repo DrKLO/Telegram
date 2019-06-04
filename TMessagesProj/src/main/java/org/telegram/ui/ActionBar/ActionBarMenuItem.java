@@ -579,7 +579,7 @@ public class ActionBarMenuItem extends FrameLayout {
                 }
             };
             searchField.setCursorWidth(1.5f);
-            searchField.setCursorColor(0xffffffff);
+            searchField.setCursorColor(Theme.getColor(Theme.key_actionBarDefaultSearch));
             searchField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             searchField.setHintTextColor(Theme.getColor(Theme.key_actionBarDefaultSearchPlaceholder));
             searchField.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSearch));

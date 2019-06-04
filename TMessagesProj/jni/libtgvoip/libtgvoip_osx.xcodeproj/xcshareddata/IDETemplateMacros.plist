@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>FILEHEADER</key>
+	<string>
+libtgvoip is free and unencumbered public domain software.
+For more information, see http://unlicense.org or the UNLICENSE file
+you should have received with this source code distribution.
+</string>
+</dict>
+</plist>

@@ -102,7 +102,7 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
         selectorDrawable = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, null);
         float rad = AndroidUtilities.dpf2(3);
         selectorDrawable.setCornerRadii(new float[]{rad, rad, rad, rad, 0, 0, 0, 0});
-        selectorDrawable.setColor(Theme.getColor(Theme.key_actionBarDefaultTitle));
+        selectorDrawable.setColor(Theme.getColor(Theme.key_actionBarTabLine));
 
         setFillViewport(true);
         setWillNotDraw(false);
@@ -123,8 +123,8 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
     }
 
     private void setAnimationProgressInernal(TextView newTab, TextView prevTab, float value) {
-        int newColor = Theme.getColor(Theme.key_actionBarDefaultTitle);
-        int prevColor = Theme.getColor(Theme.key_actionBarDefaultSubtitle);
+        int newColor = Theme.getColor(Theme.key_actionBarTabActiveText);
+        int prevColor = Theme.getColor(Theme.key_actionBarTabUnactiveText);
 
         int r1 = Color.red(newColor);
         int g1 = Color.green(newColor);
@@ -207,7 +207,7 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
         TextView tab = new TextView(getContext());
         tab.setGravity(Gravity.CENTER);
         tab.setText(text);
-        tab.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_actionBarDefaultSelector), 3));
+        tab.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_actionBarTabSelector), 3));
         tab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         tab.setSingleLine(true);
         tab.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -254,8 +254,8 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
         int count = tabsContainer.getChildCount();
         for (int a = 0; a < count; a++) {
             TextView tab = (TextView) tabsContainer.getChildAt(a);
-            tab.setTag(currentPosition == a ? Theme.key_actionBarDefaultTitle : Theme.key_actionBarDefaultSubtitle);
-            tab.setTextColor(Theme.getColor(currentPosition == a ? Theme.key_actionBarDefaultTitle : Theme.key_actionBarDefaultSubtitle));
+            tab.setTag(currentPosition == a ? Theme.key_actionBarTabActiveText : Theme.key_actionBarTabUnactiveText);
+            tab.setTextColor(Theme.getColor(currentPosition == a ? Theme.key_actionBarTabActiveText : Theme.key_actionBarTabUnactiveText));
         }
     }
 

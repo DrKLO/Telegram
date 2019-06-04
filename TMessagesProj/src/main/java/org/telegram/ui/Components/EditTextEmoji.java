@@ -86,6 +86,12 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
                     showPopup(AndroidUtilities.usingHardwareInput ? 0 : 2);
                     openKeyboardInternal();
                 }
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    if (!AndroidUtilities.showKeyboard(this)) {
+                        clearFocus();
+                        requestFocus();
+                    }
+                }
                 try {
                     return super.onTouchEvent(event);
                 } catch (Exception e) {
@@ -135,6 +141,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             if (!isPopupShowing()) {
                 showPopup(1);
                 emojiView.onOpen(editText.length() > 0);
+                editText.requestFocus();
             } else {
                 openKeyboardInternal();
             }

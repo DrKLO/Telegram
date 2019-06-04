@@ -43,6 +43,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.WebFile;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
@@ -76,7 +77,7 @@ public class ContentPreviewViewer {
             return true;
         }
 
-        default void sendGif(TLRPC.Document gif) {
+        default void sendGif(Object gif) {
 
         }
 
@@ -217,14 +218,18 @@ public class ContentPreviewViewer {
                 }
 
                 boolean canDelete;
-                if (canDelete = DataQuery.getInstance(currentAccount).hasRecentGif(currentDocument)) {
-                    items.add(LocaleController.formatString("Delete", R.string.Delete));
-                    icons.add(R.drawable.chats_delete);
-                    actions.add(1);
+                if (currentDocument != null) {
+                    if (canDelete = DataQuery.getInstance(currentAccount).hasRecentGif(currentDocument)) {
+                        items.add(LocaleController.formatString("Delete", R.string.Delete));
+                        icons.add(R.drawable.chats_delete);
+                        actions.add(1);
+                    } else {
+                        items.add(LocaleController.formatString("SaveToGIFs", R.string.SaveToGIFs));
+                        icons.add(R.drawable.outline_add_gif);
+                        actions.add(2);
+                    }
                 } else {
-                    items.add(LocaleController.formatString("SaveToGIFs", R.string.SaveToGIFs));
-                    icons.add(R.drawable.outline_add_gif);
-                    actions.add(2);
+                    canDelete = false;
                 }
 
                 int[] ic = new int[icons.size()];
@@ -237,7 +242,7 @@ public class ContentPreviewViewer {
                     }
                     if (actions.get(which) == 0) {
                         if (delegate != null) {
-                            delegate.sendGif(currentDocument);
+                            delegate.sendGif(currentDocument != null ? currentDocument : inlineResult);
                         }
                     } else if (actions.get(which) == 1) {
                         DataQuery.getInstance(currentAccount).removeRecentGif(currentDocument);
@@ -264,6 +269,7 @@ public class ContentPreviewViewer {
 
     private int currentContentType;
     private TLRPC.Document currentDocument;
+    private TLRPC.BotInlineResult inlineResult;
     private TLRPC.InputStickerSet currentStickerSet;
 
     @SuppressLint("StaticFieldLeak")
@@ -406,16 +412,16 @@ public class ContentPreviewViewer {
                             clearsInputField = false;
                             if (currentPreviewCell instanceof StickerEmojiCell) {
                                 StickerEmojiCell stickerEmojiCell = (StickerEmojiCell) currentPreviewCell;
-                                open(stickerEmojiCell.getSticker(), contentType, ((StickerEmojiCell) currentPreviewCell).isRecent());
+                                open(stickerEmojiCell.getSticker(), null, contentType, ((StickerEmojiCell) currentPreviewCell).isRecent());
                                 stickerEmojiCell.setScaled(true);
                             } else if (currentPreviewCell instanceof StickerCell) {
                                 StickerCell stickerCell = (StickerCell) currentPreviewCell;
-                                open(stickerCell.getSticker(), contentType, false);
+                                open(stickerCell.getSticker(), null, contentType, false);
                                 stickerCell.setScaled(true);
                                 clearsInputField = stickerCell.isClearsInputField();
                             } else if (currentPreviewCell instanceof ContextLinkCell) {
                                 ContextLinkCell contextLinkCell = (ContextLinkCell) currentPreviewCell;
-                                open(contextLinkCell.getDocument(), contentType, false);
+                                open(contextLinkCell.getDocument(), contextLinkCell.getBotInlineResult(), contentType, false);
                                 if (contentType != CONTENT_TYPE_GIF) {
                                     contextLinkCell.setScaled(true);
                                 }
@@ -503,16 +509,16 @@ public class ContentPreviewViewer {
                     clearsInputField = false;
                     if (currentPreviewCell instanceof StickerEmojiCell) {
                         StickerEmojiCell stickerEmojiCell = (StickerEmojiCell) currentPreviewCell;
-                        open(stickerEmojiCell.getSticker(), contentTypeFinal, ((StickerEmojiCell) currentPreviewCell).isRecent());
+                        open(stickerEmojiCell.getSticker(), null, contentTypeFinal, ((StickerEmojiCell) currentPreviewCell).isRecent());
                         stickerEmojiCell.setScaled(true);
                     } else if (currentPreviewCell instanceof StickerCell) {
                         StickerCell stickerCell = (StickerCell) currentPreviewCell;
-                        open(stickerCell.getSticker(), contentTypeFinal, false);
+                        open(stickerCell.getSticker(), null, contentTypeFinal, false);
                         stickerCell.setScaled(true);
                         clearsInputField = stickerCell.isClearsInputField();
                     } else if (currentPreviewCell instanceof ContextLinkCell) {
                         ContextLinkCell contextLinkCell = (ContextLinkCell) currentPreviewCell;
-                        open(contextLinkCell.getDocument(), contentTypeFinal, false);
+                        open(contextLinkCell.getDocument(), contextLinkCell.getBotInlineResult(), contentTypeFinal, false);
                         if (contentTypeFinal != CONTENT_TYPE_GIF) {
                             contextLinkCell.setScaled(true);
                         }
@@ -580,12 +586,15 @@ public class ContentPreviewViewer {
         keyboardHeight = height;
     }
 
-    public void open(TLRPC.Document document, int contentType, boolean isRecent) {
-        if (parentActivity == null || document == null || windowView == null) {
+    public void open(TLRPC.Document document, TLRPC.BotInlineResult botInlineResult, int contentType, boolean isRecent) {
+        if (parentActivity == null || windowView == null) {
             return;
         }
         stickerEmojiLayout = null;
         if (contentType == CONTENT_TYPE_STICKER) {
+            if (document == null) {
+                return;
+            }
             if (textPaint == null) {
                 textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
                 textPaint.setTextSize(AndroidUtilities.dp(24));
@@ -626,14 +635,24 @@ public class ContentPreviewViewer {
                 }
             }
         } else {
-            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-            centerImage.setImage(ImageLocation.getForDocument(document), null, ImageLocation.getForDocument(thumb, document), "90_90_b", document.size, null, "gif" + document, 0);
+            if (document != null) {
+                TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+                centerImage.setImage(ImageLocation.getForDocument(document), null, ImageLocation.getForDocument(thumb, document), "90_90_b", document.size, null, "gif" + document, 0);
+            } else if (botInlineResult != null) {
+                if (botInlineResult.content == null) {
+                    return;
+                }
+                centerImage.setImage(ImageLocation.getForWebFile(WebFile.createWithWebDocument(botInlineResult.content)), null, ImageLocation.getForWebFile(WebFile.createWithWebDocument(botInlineResult.thumb)), "90_90_b", botInlineResult.content.size, null, "gif" + botInlineResult, 1);
+            } else {
+                return;
+            }
             AndroidUtilities.cancelRunOnUIThread(showSheetRunnable);
             AndroidUtilities.runOnUIThread(showSheetRunnable, 2000);
         }
 
         currentContentType = contentType;
         currentDocument = document;
+        inlineResult = botInlineResult;
         containerView.invalidate();
 
         if (!isVisible) {

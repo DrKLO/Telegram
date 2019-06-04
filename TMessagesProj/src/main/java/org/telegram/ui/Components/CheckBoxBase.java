@@ -34,6 +34,8 @@ public class CheckBoxBase {
     private Bitmap drawBitmap;
     private Canvas bitmapCanvas;
 
+    private boolean enabled = true;
+
     private boolean attachedToWindow;
 
     private float backgroundAlpha = 1.0f;
@@ -46,6 +48,8 @@ public class CheckBoxBase {
     private String checkColorKey = Theme.key_checkboxCheck;
     private String backgroundColorKey = Theme.key_chat_serviceBackground;
     private String background2ColorKey = Theme.key_chat_serviceBackground;
+
+    private boolean useDefaultCheck;
 
     private boolean drawUnchecked = true;
     private int drawBackgroundAsArc;
@@ -133,10 +137,17 @@ public class CheckBoxBase {
         return isChecked;
     }
 
+    public void setEnabled(boolean value) {
+        enabled = value;
+    }
+
     public void setDrawBackgroundAsArc(int type) {
         drawBackgroundAsArc = type;
-        if (type == 4) {
+        if (type == 4 || type == 5) {
             backgroundPaint.setStrokeWidth(AndroidUtilities.dp(1.9f));
+            if (type == 5) {
+                checkPaint.setStrokeWidth(AndroidUtilities.dp(1.5f));
+            }
         } else if (type == 3) {
             backgroundPaint.setStrokeWidth(AndroidUtilities.dp(1.2f));
         } else if (type != 0) {
@@ -170,6 +181,10 @@ public class CheckBoxBase {
         backgroundColorKey = background;
         background2ColorKey = background2;
         checkColorKey = check;
+    }
+
+    public void setUseDefaultCheck(boolean value) {
+        useDefaultCheck = value;
     }
 
     public void setBackgroundAlpha(float alpha) {
@@ -249,9 +264,9 @@ public class CheckBoxBase {
             if (!drawUnchecked && backgroundColorKey != null) {
                 paint.setColor(Theme.getColor(backgroundColorKey));
             } else {
-                paint.setColor(Theme.getColor(Theme.key_checkbox));
+                paint.setColor(Theme.getColor(enabled ? Theme.key_checkbox : Theme.key_checkboxDisabled));
             }
-            if (checkColorKey != null) {
+            if (!useDefaultCheck && checkColorKey != null) {
                 checkPaint.setColor(Theme.getColor(checkColorKey));
             } else {
                 checkPaint.setColor(Theme.getColor(Theme.key_checkboxCheck));
@@ -265,8 +280,9 @@ public class CheckBoxBase {
             if (checkProgress != 0) {
                 path.reset();
 
-                float checkSide = AndroidUtilities.dp(9) * checkProgress;
-                float smallCheckSide = AndroidUtilities.dp(4) * checkProgress;
+                float scale = drawBackgroundAsArc == 5 ? 0.8f : 1.0f;
+                float checkSide = AndroidUtilities.dp(9 * scale) * checkProgress;
+                float smallCheckSide = AndroidUtilities.dp(4 * scale) * checkProgress;
                 int x = cx - AndroidUtilities.dp(1.5f);
                 int y = cy + AndroidUtilities.dp(4);
                 float side = (float) Math.sqrt(smallCheckSide * smallCheckSide / 2.0f);

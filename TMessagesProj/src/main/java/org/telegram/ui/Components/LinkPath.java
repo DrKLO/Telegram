@@ -91,7 +91,7 @@ public class LinkPath extends Path {
         if (Build.VERSION.SDK_INT >= 28) {
             y2 = bottom;
             if (bottom - top > lineHeight) {
-                y2 -= (bottom != currentLayout.getHeight() ? currentLayout.getSpacingAdd() : 0);
+                y2 = heightOffset + (bottom != currentLayout.getHeight() ? (currentLayout.getLineBottom(currentLine) - currentLayout.getSpacingAdd()) : 0);
             }
         } else {
             y2 = bottom - (bottom != currentLayout.getHeight() ? currentLayout.getSpacingAdd() : 0);

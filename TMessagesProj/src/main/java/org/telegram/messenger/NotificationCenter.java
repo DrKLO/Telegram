@@ -147,6 +147,7 @@ public class NotificationCenter {
     public static final int cameraInitied = totalEvents++;
     public static final int didReplacedPhotoInMemCache = totalEvents++;
     public static final int didSetNewTheme = totalEvents++;
+    public static final int themeListUpdated = totalEvents++;
     public static final int needSetDayNightTheme = totalEvents++;
     public static final int locationPermissionGranted = totalEvents++;
     public static final int reloadInterface = totalEvents++;

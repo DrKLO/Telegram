@@ -8,8 +8,6 @@
 
 package org.telegram.messenger;
 
-import android.graphics.drawable.BitmapDrawable;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -22,8 +20,8 @@ import java.util.LinkedHashMap;
  * framework's implementation. See the framework SDK documentation for a class
  * overview.
  */
-public class LruCache {
-    private final LinkedHashMap<String, BitmapDrawable> map;
+public class LruCache<T> {
+    private final LinkedHashMap<String, T> map;
     private final LinkedHashMap<String, ArrayList<String>> mapFilters;
 
     /** Size of this cache in units. Not necessarily the number of elements. */
@@ -50,12 +48,12 @@ public class LruCache {
      * head of the queue. This returns null if a value is not cached and cannot
      * be created.
      */
-    public final BitmapDrawable get(String key) {
+    public final T get(String key) {
         if (key == null) {
             throw new NullPointerException("key == null");
         }
 
-        BitmapDrawable mapValue;
+        T mapValue;
         synchronized (this) {
             mapValue = map.get(key);
             if (mapValue != null) {
@@ -79,12 +77,12 @@ public class LruCache {
      *
      * @return the previous value mapped by {@code key}.
      */
-    public BitmapDrawable put(String key, BitmapDrawable value) {
+    public T put(String key, T value) {
         if (key == null || value == null) {
             throw new NullPointerException("key == null || value == null");
         }
 
-        BitmapDrawable previous;
+        T previous;
         synchronized (this) {
             size += safeSizeOf(key, value);
             previous = map.put(key, value);
@@ -119,18 +117,18 @@ public class LruCache {
      */
     private void trimToSize(int maxSize, String justAdded) {
         synchronized (this) {
-            Iterator<HashMap.Entry<String, BitmapDrawable>> iterator = map.entrySet().iterator();
+            Iterator<HashMap.Entry<String, T>> iterator = map.entrySet().iterator();
             while (iterator.hasNext()) {
                 if (size <= maxSize || map.isEmpty()) {
                     break;
                 }
-                HashMap.Entry<String, BitmapDrawable> entry = iterator.next();
+                HashMap.Entry<String, T> entry = iterator.next();
 
                 String key = entry.getKey();
                 if (justAdded != null && justAdded.equals(key)) {
                     continue;
                 }
-                BitmapDrawable value = entry.getValue();
+                T value = entry.getValue();
                 size -= safeSizeOf(key, value);
                 iterator.remove();
 
@@ -155,12 +153,12 @@ public class LruCache {
      *
      * @return the previous value mapped by {@code key}.
      */
-    public final BitmapDrawable remove(String key) {
+    public final T remove(String key) {
         if (key == null) {
             throw new NullPointerException("key == null");
         }
 
-        BitmapDrawable previous;
+        T previous;
         synchronized (this) {
             previous = map.remove(key);
             if (previous != null) {
@@ -205,9 +203,9 @@ public class LruCache {
      *     this removal was caused by a {@link #put}. Otherwise it was caused by
      *     an eviction or a {@link #remove}.
      */
-    protected void entryRemoved(boolean evicted, String key, BitmapDrawable oldValue, BitmapDrawable newValue) {}
+    protected void entryRemoved(boolean evicted, String key, T oldValue, T newValue) {}
 
-    private int safeSizeOf(String key, BitmapDrawable value) {
+    private int safeSizeOf(String key, T value) {
         int result = sizeOf(key, value);
         if (result < 0) {
             throw new IllegalStateException("Negative size: " + key + "=" + value);
@@ -222,7 +220,7 @@ public class LruCache {
      *
      * <p>An entry's size must not change while it is in the cache.
      */
-    protected int sizeOf(String key, BitmapDrawable value) {
+    protected int sizeOf(String key, T value) {
         return 1;
     }
 

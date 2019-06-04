@@ -3235,7 +3235,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         textView.setLinkTextColor(0xffffffff);
         textView.setTextColor(0xffffffff);
         textView.setHighlightColor(0x33ffffff);
-        textView.setEllipsize(TextUtils.TruncateAt.END);
+        //textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setGravity(Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setVisibility(View.INVISIBLE);
@@ -5510,6 +5510,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         }
                     } else {
                         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(newMessageObject.messageOwner.to_id.channel_id);
+                        if (ChatObject.isChannel(chat) && chat.megagroup && newMessageObject.isForwardedChannelPost()) {
+                            chat = MessagesController.getInstance(currentAccount).getChat(newMessageObject.messageOwner.fwd_from.channel_id);
+                        }
                         if (chat != null) {
                             nameTextView.setText(chat.title);
                         } else {
@@ -6501,7 +6504,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 pickerViewSendButton.setPadding(AndroidUtilities.dp(4), 0, 0, 0);
                 layoutParams2.bottomMargin = AndroidUtilities.dp(19);
             } else if (sendPhotoType == SELECT_TYPE_AVATAR || sendPhotoType == SELECT_TYPE_WALLPAPER) {
-                pickerViewSendButton.setImageResource(R.drawable.bigcheck);
+                pickerViewSendButton.setImageResource(R.drawable.floating_check);
                 pickerViewSendButton.setPadding(0, AndroidUtilities.dp(1), 0, 0);
                 layoutParams2.bottomMargin = AndroidUtilities.dp(19);
             } else {

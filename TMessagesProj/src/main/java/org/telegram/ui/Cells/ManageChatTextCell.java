@@ -106,7 +106,7 @@ public class ManageChatTextCell extends FrameLayout {
         } else {
             valueTextView.setVisibility(INVISIBLE);
         }
-        imageView.setPadding(0, AndroidUtilities.dp(7), 0, 0);
+        imageView.setPadding(0, AndroidUtilities.dp(5), 0, 0);
         imageView.setImageResource(resId);
         divider = needDivider;
         setWillNotDraw(!divider);

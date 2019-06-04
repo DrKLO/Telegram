@@ -35,6 +35,7 @@ import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 
 import org.telegram.messenger.audioinfo.AudioInfo;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.support.SparseLongArray;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
@@ -1272,6 +1273,36 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 newMsg.fwd_msg_id = msgObj.getId();
                 newMsg.attachPath = msgObj.messageOwner.attachPath;
                 newMsg.entities = msgObj.messageOwner.entities;
+                if (msgObj.messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup) {
+                    newMsg.flags |= 64;
+                    newMsg.reply_markup = new TLRPC.TL_replyInlineMarkup();
+                    for (int b = 0, N = msgObj.messageOwner.reply_markup.rows.size(); b < N; b++) {
+                        TLRPC.TL_keyboardButtonRow oldRow = msgObj.messageOwner.reply_markup.rows.get(b);
+                        TLRPC.TL_keyboardButtonRow newRow = null;
+                        for (int c = 0, N2 = oldRow.buttons.size(); c < N2; c++) {
+                            TLRPC.KeyboardButton button = oldRow.buttons.get(c);
+                            if (button instanceof TLRPC.TL_keyboardButtonUrlAuth || button instanceof TLRPC.TL_keyboardButtonUrl || button instanceof TLRPC.TL_keyboardButtonSwitchInline) {
+                                if (button instanceof TLRPC.TL_keyboardButtonUrlAuth) {
+                                    TLRPC.TL_keyboardButtonUrlAuth auth = new TLRPC.TL_keyboardButtonUrlAuth();
+                                    auth.flags = button.flags;
+                                    if (button.fwd_text != null) {
+                                        auth.text = auth.fwd_text = button.fwd_text;
+                                    } else {
+                                        auth.text = button.text;
+                                    }
+                                    auth.url = button.url;
+                                    auth.button_id = button.button_id;
+                                    button = auth;
+                                }
+                                if (newRow == null) {
+                                    newRow = new TLRPC.TL_keyboardButtonRow();
+                                    newMsg.reply_markup.rows.add(newRow);
+                                }
+                                newRow.buttons.add(button);
+                            }
+                        }
+                    }
+                }
                 if (!newMsg.entities.isEmpty()) {
                     newMsg.flags |= TLRPC.MESSAGE_FLAG_HAS_ENTITIES;
                 }
@@ -1959,7 +1990,10 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         }
         final boolean cacheFinal;
         int type;
-        if (button instanceof TLRPC.TL_keyboardButtonGame) {
+        if (button instanceof TLRPC.TL_keyboardButtonUrlAuth) {
+            cacheFinal = false;
+            type = 3;
+        } else if (button instanceof TLRPC.TL_keyboardButtonGame) {
             cacheFinal = false;
             type = 1;
         } else {
@@ -1973,12 +2007,24 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         final String key = messageObject.getDialogId() + "_" + messageObject.getId() + "_" + Utilities.bytesToHex(button.data) + "_" + type;
         waitingForCallback.put(key, true);
 
+        TLObject[] request = new TLObject[1];
         RequestDelegate requestDelegate = (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             waitingForCallback.remove(key);
             if (cacheFinal && response == null) {
                 sendCallback(false, messageObject, button, parentFragment);
             } else if (response != null) {
-                if (button instanceof TLRPC.TL_keyboardButtonBuy) {
+                if (button instanceof TLRPC.TL_keyboardButtonUrlAuth) {
+                    if (response instanceof TLRPC.TL_urlAuthResultRequest) {
+                        TLRPC.TL_urlAuthResultRequest res = (TLRPC.TL_urlAuthResultRequest) response;
+                        parentFragment.showRequestUrlAlert(res, (TLRPC.TL_messages_requestUrlAuth) request[0], button.url);
+                    } else if (response instanceof TLRPC.TL_urlAuthResultAccepted) {
+                        TLRPC.TL_urlAuthResultAccepted res = (TLRPC.TL_urlAuthResultAccepted) response;
+                        parentFragment.showOpenUrlAlert(res.url, false);
+                    } else if (response instanceof TLRPC.TL_urlAuthResultDefault) {
+                        TLRPC.TL_urlAuthResultDefault res = (TLRPC.TL_urlAuthResultDefault) response;
+                        parentFragment.showOpenUrlAlert(button.url, true);
+                    }
+                } else if (button instanceof TLRPC.TL_keyboardButtonBuy) {
                     if (response instanceof TLRPC.TL_payments_paymentForm) {
                         final TLRPC.TL_payments_paymentForm form = (TLRPC.TL_payments_paymentForm) response;
                         MessagesController.getInstance(currentAccount).putUsers(form.users, false);
@@ -2049,7 +2095,14 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         if (cacheFinal) {
             MessagesStorage.getInstance(currentAccount).getBotCache(key, requestDelegate);
         } else {
-            if (button instanceof TLRPC.TL_keyboardButtonBuy) {
+            if (button instanceof TLRPC.TL_keyboardButtonUrlAuth) {
+                TLRPC.TL_messages_requestUrlAuth req = new TLRPC.TL_messages_requestUrlAuth();
+                req.peer = MessagesController.getInstance(currentAccount).getInputPeer((int) messageObject.getDialogId());
+                req.msg_id = messageObject.getId();
+                req.button_id = button.button_id;
+                request[0] = req;
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, requestDelegate, ConnectionsManager.RequestFlagFailOnServerErrors);
+            } else if (button instanceof TLRPC.TL_keyboardButtonBuy) {
                 if ((messageObject.messageOwner.media.flags & 4) == 0) {
                     TLRPC.TL_payments_getPaymentForm req = new TLRPC.TL_payments_getPaymentForm();
                     req.msg_id = messageObject.getId();
@@ -2078,7 +2131,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             return false;
         }
         int type;
-        if (button instanceof TLRPC.TL_keyboardButtonGame) {
+        if (button instanceof TLRPC.TL_keyboardButtonUrlAuth) {
+            type = 3;
+        } else if (button instanceof TLRPC.TL_keyboardButtonGame) {
             type = 1;
         } else if (button instanceof TLRPC.TL_keyboardButtonBuy) {
             type = 2;

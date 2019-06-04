@@ -139,9 +139,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         int dialogsCount = array.size();
         if (dialogsCount == 0 && (folderId != 0 || MessagesController.getInstance(currentAccount).isLoadingDialogs(folderId))) {
             if (folderId == 1 && showArchiveHint) {
-                return 2;
+                return (currentCount = 2);
             }
-            return 0;
+            return (currentCount = 0);
         }
         int count = dialogsCount;
         if (!MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId) || dialogsCount == 0) {
@@ -151,7 +151,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             count += 2 + MessagesController.getInstance(currentAccount).hintDialogs.size();
         } else if (dialogsType == 0 && dialogsCount == 0 && folderId == 0) {
             if (ContactsController.getInstance(currentAccount).contacts.isEmpty() && ContactsController.getInstance(currentAccount).isLoadingContacts()) {
-                return 0;
+                return (currentCount = 0);
             }
             if (!ContactsController.getInstance(currentAccount).contacts.isEmpty()) {
                 count += ContactsController.getInstance(currentAccount).contacts.size() + 2;
@@ -231,7 +231,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         View view;
         switch (viewType) {
             case 0:
-                view = new DialogCell(mContext, true);
+                view = new DialogCell(mContext, true, false);
                 break;
             case 1:
                 view = new LoadingCell(mContext);

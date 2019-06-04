@@ -741,6 +741,10 @@ public class AlertsCreator {
     }
 
     public static void createClearOrDeleteDialogAlert(BaseFragment fragment, boolean clear, TLRPC.Chat chat, TLRPC.User user, boolean secret, MessagesStorage.BooleanCallback onProcessRunnable) {
+        createClearOrDeleteDialogAlert(fragment, clear, false, false, chat, user, secret, onProcessRunnable);
+    }
+
+    public static void createClearOrDeleteDialogAlert(BaseFragment fragment, boolean clear, boolean admin, boolean second, TLRPC.Chat chat, TLRPC.User user, boolean secret, MessagesStorage.BooleanCallback onProcessRunnable) {
         if (fragment == null || fragment.getParentActivity() == null || chat == null && user == null) {
             return;
         }
@@ -793,7 +797,19 @@ public class AlertsCreator {
                 textView.setText(LocaleController.getString("ClearHistory", R.string.ClearHistory));
             }
         } else {
-            textView.setText(LocaleController.getString("DeleteChatUser", R.string.DeleteChatUser));
+            if (admin) {
+                if (ChatObject.isChannel(chat)) {
+                    if (chat.megagroup) {
+                        textView.setText(LocaleController.getString("DeleteMegaMenu", R.string.DeleteMegaMenu));
+                    } else {
+                        textView.setText(LocaleController.getString("ChannelDeleteMenu", R.string.ChannelDeleteMenu));
+                    }
+                } else {
+                    textView.setText(LocaleController.getString("DeleteMegaMenu", R.string.DeleteMegaMenu));
+                }
+            } else {
+                textView.setText(LocaleController.getString("DeleteChatUser", R.string.DeleteChatUser));
+            }
         }
         frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 21 : 76), 11, (LocaleController.isRTL ? 76 : 21), 0));
         frameLayout.addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 57, 24, 9));
@@ -808,7 +824,7 @@ public class AlertsCreator {
         boolean canDeleteInbox = !secret && user != null && canRevokeInbox && revokeTimeLimit == 0x7fffffff;
         final boolean[] deleteForAll = new boolean[1];
 
-        if (canDeleteInbox) {
+        if (!second && canDeleteInbox) {
             cell[0] = new CheckBoxCell(context, 1);
             cell[0].setBackgroundDrawable(Theme.getSelectorDrawable(false));
             if (clear) {
@@ -835,72 +851,116 @@ public class AlertsCreator {
             }
         } else if (chat != null) {
             avatarDrawable.setInfo(chat);
-            imageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, user);
+            imageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, chat);
         }
 
-        if (clear) {
-            if (user != null) {
-                if (secret) {
-                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithSecretUser", R.string.AreYouSureClearHistoryWithSecretUser, UserObject.getUserName(user))));
-                } else {
-                    if (user.id == selfUserId) {
-                        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("AreYouSureClearHistorySavedMessages", R.string.AreYouSureClearHistorySavedMessages)));
-                    } else {
-                        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithUser", R.string.AreYouSureClearHistoryWithUser, UserObject.getUserName(user))));
-                    }
-                }
-            } else if (chat != null) {
-                if (!ChatObject.isChannel(chat) || chat.megagroup && TextUtils.isEmpty(chat.username)) {
-                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithChat", R.string.AreYouSureClearHistoryWithChat, chat.title)));
-                } else if (chat.megagroup) {
-                    messageTextView.setText(LocaleController.getString("AreYouSureClearHistoryGroup", R.string.AreYouSureClearHistoryGroup));
-                } else {
-                    messageTextView.setText(LocaleController.getString("AreYouSureClearHistoryChannel", R.string.AreYouSureClearHistoryChannel));
-                }
-            }
+        if (second) {
+            messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("DeleteAllMessagesAlert", R.string.DeleteAllMessagesAlert)));
         } else {
-            if (user != null) {
-                if (secret) {
-                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureDeleteThisChatWithSecretUser", R.string.AreYouSureDeleteThisChatWithSecretUser, UserObject.getUserName(user))));
-                } else {
-                    if (user.id == selfUserId) {
-                        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("AreYouSureDeleteThisChatSavedMessages", R.string.AreYouSureDeleteThisChatSavedMessages)));
+            if (clear) {
+                if (user != null) {
+                    if (secret) {
+                        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithSecretUser", R.string.AreYouSureClearHistoryWithSecretUser, UserObject.getUserName(user))));
                     } else {
-                        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureDeleteThisChatWithUser", R.string.AreYouSureDeleteThisChatWithUser, UserObject.getUserName(user))));
+                        if (user.id == selfUserId) {
+                            messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("AreYouSureClearHistorySavedMessages", R.string.AreYouSureClearHistorySavedMessages)));
+                        } else {
+                            messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithUser", R.string.AreYouSureClearHistoryWithUser, UserObject.getUserName(user))));
+                        }
                     }
-                }
-            } else if (ChatObject.isChannel(chat)) {
-                if (chat.megagroup) {
-                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("MegaLeaveAlertWithName", R.string.MegaLeaveAlertWithName, chat.title)));
-                } else {
-                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("ChannelLeaveAlertWithName", R.string.ChannelLeaveAlertWithName, chat.title)));
+                } else if (chat != null) {
+                    if (!ChatObject.isChannel(chat) || chat.megagroup && TextUtils.isEmpty(chat.username)) {
+                        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithChat", R.string.AreYouSureClearHistoryWithChat, chat.title)));
+                    } else if (chat.megagroup) {
+                        messageTextView.setText(LocaleController.getString("AreYouSureClearHistoryGroup", R.string.AreYouSureClearHistoryGroup));
+                    } else {
+                        messageTextView.setText(LocaleController.getString("AreYouSureClearHistoryChannel", R.string.AreYouSureClearHistoryChannel));
+                    }
                 }
             } else {
-                messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureDeleteAndExitName", R.string.AreYouSureDeleteAndExitName, chat.title)));
+                if (admin) {
+                    if (ChatObject.isChannel(chat)) {
+                        if (chat.megagroup) {
+                            messageTextView.setText(LocaleController.getString("MegaDeleteAlert", R.string.MegaDeleteAlert));
+                        } else {
+                            messageTextView.setText(LocaleController.getString("ChannelDeleteAlert", R.string.ChannelDeleteAlert));
+                        }
+                    } else {
+                        messageTextView.setText(LocaleController.getString("AreYouSureDeleteAndExit", R.string.AreYouSureDeleteAndExit));
+                    }
+                } else {
+                    if (user != null) {
+                        if (secret) {
+                            messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureDeleteThisChatWithSecretUser", R.string.AreYouSureDeleteThisChatWithSecretUser, UserObject.getUserName(user))));
+                        } else {
+                            if (user.id == selfUserId) {
+                                messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("AreYouSureDeleteThisChatSavedMessages", R.string.AreYouSureDeleteThisChatSavedMessages)));
+                            } else {
+                                messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureDeleteThisChatWithUser", R.string.AreYouSureDeleteThisChatWithUser, UserObject.getUserName(user))));
+                            }
+                        }
+                    } else if (ChatObject.isChannel(chat)) {
+                        if (chat.megagroup) {
+                            messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("MegaLeaveAlertWithName", R.string.MegaLeaveAlertWithName, chat.title)));
+                        } else {
+                            messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("ChannelLeaveAlertWithName", R.string.ChannelLeaveAlertWithName, chat.title)));
+                        }
+                    } else {
+                        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureDeleteAndExitName", R.string.AreYouSureDeleteAndExitName, chat.title)));
+                    }
+                }
             }
         }
 
         String actionText;
-        if (clear) {
-            if (clearingCache) {
-                actionText = LocaleController.getString("ClearHistoryCache", R.string.ClearHistoryCache);
-            } else {
-                actionText = LocaleController.getString("ClearHistory", R.string.ClearHistory);
-            }
+        if (second) {
+            actionText = LocaleController.getString("DeleteAll", R.string.DeleteAll);
         } else {
-            if (ChatObject.isChannel(chat)) {
-                if (chat.megagroup) {
-                    actionText = LocaleController.getString("LeaveMegaMenu", R.string.LeaveMegaMenu);
+            if (clear) {
+                if (clearingCache) {
+                    actionText = LocaleController.getString("ClearHistoryCache", R.string.ClearHistoryCache);
                 } else {
-                    actionText = LocaleController.getString("LeaveChannelMenu", R.string.LeaveChannelMenu);
+                    actionText = LocaleController.getString("ClearHistory", R.string.ClearHistory);
                 }
             } else {
-                actionText = LocaleController.getString("DeleteChatUser", R.string.DeleteChatUser);
+                if (admin) {
+                    if (ChatObject.isChannel(chat)) {
+                        if (chat.megagroup) {
+                            actionText = LocaleController.getString("DeleteMega", R.string.DeleteMega);
+                        } else {
+                            actionText = LocaleController.getString("ChannelDelete", R.string.ChannelDelete);
+                        }
+                    } else {
+                        actionText = LocaleController.getString("DeleteMega", R.string.DeleteMega);
+                    }
+                } else {
+                    if (ChatObject.isChannel(chat)) {
+                        if (chat.megagroup) {
+                            actionText = LocaleController.getString("LeaveMegaMenu", R.string.LeaveMegaMenu);
+                        } else {
+                            actionText = LocaleController.getString("LeaveChannelMenu", R.string.LeaveChannelMenu);
+                        }
+                    } else {
+                        actionText = LocaleController.getString("DeleteChatUser", R.string.DeleteChatUser);
+                    }
+                }
             }
         }
         builder.setPositiveButton(actionText, (dialogInterface, i) -> {
+            if (user != null && !clearingCache && !second && deleteForAll[0]) {
+                MessagesStorage.getInstance(fragment.getCurrentAccount()).getMessagesCount(user.id, (count) -> {
+                    if (count >= 50) {
+                        createClearOrDeleteDialogAlert(fragment, clear, admin, true, chat, user, secret, onProcessRunnable);
+                    } else {
+                        if (onProcessRunnable != null) {
+                            onProcessRunnable.run(deleteForAll[0]);
+                        }
+                    }
+                });
+                return;
+            }
             if (onProcessRunnable != null) {
-                onProcessRunnable.run(deleteForAll[0]);
+                onProcessRunnable.run(second || deleteForAll[0]);
             }
         });
         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);

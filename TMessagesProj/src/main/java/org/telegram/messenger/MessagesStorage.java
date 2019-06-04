@@ -3835,6 +3835,24 @@ public class MessagesStorage {
         });
     }
 
+    public void getMessagesCount(final long dialog_id, final IntCallback callback) {
+        storageQueue.postRunnable(() -> {
+            try {
+                final int result;
+                SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(mid) FROM messages WHERE uid = %d", dialog_id));
+                if (cursor.next()) {
+                    result = cursor.intValue(0);
+                } else {
+                    result = 0;
+                }
+                cursor.dispose();
+                AndroidUtilities.runOnUIThread(() -> callback.run(result));
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+    }
+
     public void getMessages(final long dialog_id, final int count, final int max_id, final int offset_date, final int minDate, final int classGuid, final int load_type, final boolean isChannel, final int loadIndex) {
         storageQueue.postRunnable(() -> {
             int currentUserId = UserConfig.getInstance(currentAccount).clientUserId;
@@ -4315,7 +4333,7 @@ public class MessagesStorage {
                             if (lower_id == 0 && !cursor.isNull(5)) {
                                 message.random_id = cursor.longValue(5);
                             }
-                            if (MessageObject.isSecretPhotoOrVideo(message)) {
+                            if (MessageObject.isSecretMedia(message)) {
                                 try {
                                     SQLiteCursor cursor2 = database.queryFinalized(String.format(Locale.US, "SELECT date FROM enc_tasks_v2 WHERE mid = %d", message.id));
                                     if (cursor2.next()) {
@@ -5191,7 +5209,7 @@ public class MessagesStorage {
                         } else if (messageMedia.photo != null) {
                             downloadObject.object = messageMedia.photo;
                         }
-                        downloadObject.secret = messageMedia.ttl_seconds != 0;
+                        downloadObject.secret = messageMedia.ttl_seconds > 0 && messageMedia.ttl_seconds <= 60;
                         downloadObject.forceCache = (messageMedia.flags & 0x80000000) != 0;
                     }
                     objects.add(downloadObject);

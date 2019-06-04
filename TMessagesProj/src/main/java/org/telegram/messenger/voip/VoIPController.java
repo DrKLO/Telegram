@@ -323,6 +323,8 @@ public class VoIPController{
 	private native void nativeSendGroupCallKey(long inst, byte[] key);
 	private native void nativeRequestCallUpgrade(long inst);
 	private static native boolean nativeNeedRate(long inst);
+	public static native void nativeSetVideoSource(long arg1, long arg2);
+	public static native void nativeSetVideoRenderer(long arg1, long arg2);
 
 	public static native int getConnectionMaxLayer();
 

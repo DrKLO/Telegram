@@ -78,6 +78,10 @@ public class SearchAdapterHelper {
         allResultsAreGlobal = global;
     }
 
+    public boolean isSearchInProgress() {
+        return reqId != 0 || channelReqId != 0;
+    }
+
     public void queryServerSearch(final String query, final boolean allowUsername, final boolean allowChats, final boolean allowBots, final boolean allowSelf, final int channelId, final int type) {
         if (reqId != 0) {
             ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
@@ -124,8 +128,13 @@ public class SearchAdapterHelper {
                             groupSearch.clear();
                             groupSearchMap.clear();
                             groupSearch.addAll(res.participants);
+                            int currentUserId = UserConfig.getInstance(currentAccount).getClientUserId();
                             for (int a = 0, N = res.participants.size(); a < N; a++) {
                                 TLRPC.ChannelParticipant participant = res.participants.get(a);
+                                if (!allowSelf && participant.user_id == currentUserId) {
+                                    groupSearch.remove(participant);
+                                    continue;
+                                }
                                 groupSearchMap.put(participant.user_id, participant);
                             }
                             if (localSearchResults != null) {

@@ -326,7 +326,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 if (!actionBarLayout.fragmentsStack.isEmpty() && event.getAction() == MotionEvent.ACTION_UP) {
                     float x = event.getX();
                     float y = event.getY();
-                    int location[] = new int[2];
+                    int[] location = new int[2];
                     layersActionBarLayout.getLocationOnScreen(location);
                     int viewX = location[0];
                     int viewY = location[1];
@@ -398,7 +398,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 int id = drawerLayoutAdapter.getId(position);
                 if (id == 2) {
                     Bundle args = new Bundle();
-                    args.putBoolean("showFabButton", true);
                     presentFragment(new GroupCreateActivity(args));
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (id == 3) {
@@ -852,7 +851,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
         }
         int flags = intent.getFlags();
-        final int intentAccount[] = new int[]{intent.getIntExtra("currentAccount", UserConfig.selectedAccount)};
+        final int[] intentAccount = new int[]{intent.getIntExtra("currentAccount", UserConfig.selectedAccount)};
         switchToAccount(intentAccount[0], true);
         if (!fromPassword && (AndroidUtilities.needShowPasscode(true) || SharedConfig.isWaitingForPasscodeEnter)) {
             showPasscodeActivity();
@@ -1218,7 +1217,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         url = url.replace("tg:privatepost", "tg://telegram.org").replace("tg://privatepost", "tg://telegram.org");
                                         data = Uri.parse(url);
                                         messageId = Utilities.parseInt(data.getQueryParameter("post"));
-                                        channelId = Utilities.parseInt(data.getQueryParameter("channel_id"));
+                                        channelId = Utilities.parseInt(data.getQueryParameter("channel"));
                                         if (messageId == 0 || channelId == 0) {
                                             messageId = null;
                                             channelId = null;
@@ -2874,7 +2873,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 return;
             }
 
-            final LocaleController.LocaleInfo infos[] = new LocaleController.LocaleInfo[2];
+            final LocaleController.LocaleInfo[] infos = new LocaleController.LocaleInfo[2];
             String arg = systemLang.contains("-") ? systemLang.split("-")[0] : systemLang;
             String alias;
             if ("in".equals(arg)) {

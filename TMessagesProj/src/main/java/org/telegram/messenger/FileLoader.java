@@ -16,6 +16,10 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -69,7 +73,7 @@ public class FileLoader {
     private ConcurrentHashMap<Integer, Object> parentObjectReferences = new ConcurrentHashMap<>();
 
     private int currentAccount;
-    private static volatile FileLoader Instance[] = new FileLoader[UserConfig.MAX_ACCOUNT_COUNT];
+    private static volatile FileLoader[] Instance = new FileLoader[UserConfig.MAX_ACCOUNT_COUNT];
     public static FileLoader getInstance(int num) {
         FileLoader localInstance = Instance[num];
         if (localInstance == null) {
@@ -476,6 +480,9 @@ public class FileLoader {
         }
         if (cacheType == 0 && document.key != null) {
             cacheType = 1;
+        }
+        if (cacheType == 2) {
+            FileLog.d("test");
         }
         loadFile(document, null, null, null, null, parentObject, null, 0, priority, cacheType);
     }
@@ -1212,5 +1219,17 @@ public class FileLoader {
 
     public static boolean isVideoMimeType(String mime) {
         return "video/mp4".equals(mime) || SharedConfig.streamMkv && "video/x-matroska".equals(mime);
+    }
+
+    public static boolean copyFile(InputStream sourceFile, File destFile) throws IOException {
+        OutputStream out = new FileOutputStream(destFile);
+        byte[] buf = new byte[4096];
+        int len;
+        while ((len = sourceFile.read(buf)) > 0) {
+            Thread.yield();
+            out.write(buf, 0, len);
+        }
+        out.close();
+        return true;
     }
 }

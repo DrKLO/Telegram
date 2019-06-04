@@ -213,14 +213,14 @@ public class VoIPHelper{
 			if(d[0].equals(call.call_id+"")){
 				try{
 					long accessHash=Long.parseLong(d[1]);
-					showRateAlert(context, null, call.call_id, accessHash, UserConfig.selectedAccount);
+					showRateAlert(context, null, call.call_id, accessHash, UserConfig.selectedAccount, true);
 				}catch(Exception x){}
 				return;
 			}
 		}
 	}
 
-	public static void showRateAlert(final Context context, final Runnable onDismiss, final long callID, final long accessHash, final int account){
+	public static void showRateAlert(final Context context, final Runnable onDismiss, final long callID, final long accessHash, final int account, final boolean userInitiative){
 		final File log=getLogFile(callID);
 		final int[] page={0};
 		LinearLayout alertView=new LinearLayout(context);
@@ -398,6 +398,7 @@ public class VoIPHelper{
 					req.peer=new TLRPC.TL_inputPhoneCall();
 					req.peer.access_hash=accessHash;
 					req.peer.id=callID;
+					req.user_initiative=userInitiative;
 					ConnectionsManager.getInstance(account).sendRequest(req, new RequestDelegate(){
 						@Override
 						public void run(TLObject response, TLRPC.TL_error error){

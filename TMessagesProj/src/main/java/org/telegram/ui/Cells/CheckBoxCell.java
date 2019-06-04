@@ -29,6 +29,7 @@ public class CheckBoxCell extends FrameLayout {
     private TextView valueTextView;
     private CheckBoxSquare checkBox;
     private boolean needDivider;
+    private boolean isMultiline;
 
     public CheckBoxCell(Context context, int type) {
         this(context, type, 17);
@@ -39,6 +40,7 @@ public class CheckBoxCell extends FrameLayout {
 
         textView = new TextView(context);
         textView.setTextColor(Theme.getColor(type == 1 ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
+        textView.setLinkTextColor(Theme.getColor(type == 1 ? Theme.key_dialogTextLink : Theme.key_windowBackgroundWhiteLinkText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);
@@ -71,25 +73,58 @@ public class CheckBoxCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(50) + (needDivider ? 1 : 0));
+        if (isMultiline) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+        } else {
+            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(50) + (needDivider ? 1 : 0));
 
-        int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(34);
+            int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(34);
 
-        valueTextView.measure(MeasureSpec.makeMeasureSpec(availableWidth / 2, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
-        textView.measure(MeasureSpec.makeMeasureSpec(availableWidth - valueTextView.getMeasuredWidth() - AndroidUtilities.dp(8), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
-        checkBox.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(18), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(18), MeasureSpec.EXACTLY));
+            valueTextView.measure(MeasureSpec.makeMeasureSpec(availableWidth / 2, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+            textView.measure(MeasureSpec.makeMeasureSpec(availableWidth - valueTextView.getMeasuredWidth() - AndroidUtilities.dp(8), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+            checkBox.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(18), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(18), MeasureSpec.EXACTLY));
+        }
     }
 
     public void setTextColor(int color) {
         textView.setTextColor(color);
     }
 
-    public void setText(String text, String value, boolean checked, boolean divider) {
+    public void setText(CharSequence text, String value, boolean checked, boolean divider) {
         textView.setText(text);
         checkBox.setChecked(checked, false);
         valueTextView.setText(value);
         needDivider = divider;
         setWillNotDraw(!divider);
+    }
+
+    public void setMultiline(boolean value) {
+        isMultiline = value;
+        LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
+        LayoutParams layoutParams1 = (LayoutParams) checkBox.getLayoutParams();
+        if (isMultiline) {
+            textView.setLines(0);
+            textView.setMaxLines(0);
+            textView.setSingleLine(false);
+            textView.setEllipsize(null);
+            textView.setPadding(0, 0, 0, AndroidUtilities.dp(5));
+
+            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.topMargin = AndroidUtilities.dp(10);
+            layoutParams1.topMargin = AndroidUtilities.dp(12);
+        } else {
+            textView.setLines(1);
+            textView.setMaxLines(1);
+            textView.setSingleLine(true);
+            textView.setEllipsize(TextUtils.TruncateAt.END);
+            textView.setPadding(0, 0, 0, 0);
+
+            layoutParams.height = LayoutParams.MATCH_PARENT;
+            layoutParams.topMargin = 0;
+            layoutParams1.topMargin = AndroidUtilities.dp(15);
+        }
+        textView.setLayoutParams(layoutParams);
+        checkBox.setLayoutParams(layoutParams1);
     }
 
     @Override

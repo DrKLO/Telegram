@@ -3049,8 +3049,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 for (int a = 0; a < 5; a++) {
                     boolean enabled;
                     if (a > 2 && editingMessageObject != null && editingMessageObject.hasValidGroupId()) {
-                        attachButtons.get(3 + a).setEnabled(false);
-                        attachButtons.get(3 + a).setAlpha(0.2f);
+                        attachButtons.get(a).setEnabled(false);
+                        attachButtons.get(a).setAlpha(0.2f);
                     } else {
                         AttachButton attachButton = attachButtons.get(a);
                         Integer tag = (Integer) attachButton.getTag();

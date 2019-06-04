@@ -142,7 +142,8 @@ import org.telegram.ui.Components.GroupedPhotosListView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
 import org.telegram.ui.Components.LinkPath;
-import org.telegram.ui.Components.RadialProgress;
+import org.telegram.ui.Components.MediaActionDrawable;
+import org.telegram.ui.Components.RadialProgress2;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.Scroller;
 import org.telegram.ui.Components.SeekBar;
@@ -2770,7 +2771,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         View view = listView[i].getChildAt(a);
                         if (view instanceof BlockAudioCell) {
                             BlockAudioCell cell = (BlockAudioCell) view;
-                            cell.updateButtonState(false);
+                            cell.updateButtonState(true);
                         }
                     }
                 }
@@ -2785,7 +2786,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                             BlockAudioCell cell = (BlockAudioCell) view;
                             MessageObject messageObject = cell.getMessageObject();
                             if (messageObject != null) {
-                                cell.updateButtonState(false);
+                                cell.updateButtonState(true);
                             }
                         }
                     }
@@ -2928,13 +2929,6 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             for (int i = 0; i < listView.length; i++) {
                 listView[i].setGlowColor(0xff141414);
             }
-        }
-
-        for (int a = 0; a < Theme.chat_ivStatesDrawable.length; a++) {
-            Theme.setCombinedDrawableColor(Theme.chat_ivStatesDrawable[a][0], getTextColor(), false);
-            Theme.setCombinedDrawableColor(Theme.chat_ivStatesDrawable[a][0], getTextColor(), true);
-            Theme.setCombinedDrawableColor(Theme.chat_ivStatesDrawable[a][1], getTextColor(), false);
-            Theme.setCombinedDrawableColor(Theme.chat_ivStatesDrawable[a][1], getTextColor(), true);
         }
 
         if (listTextPointerPaint != null) {
@@ -5620,7 +5614,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         private DrawingText captionLayout;
         private DrawingText creditLayout;
         private ImageReceiver imageView;
-        private RadialProgress radialProgress;
+        private RadialProgress2 radialProgress;
         private BlockChannelCell channelCell;
         private int currentType;
         private boolean isFirst;
@@ -5643,6 +5637,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         private TLRPC.Document currentDocument;
         private boolean isGif;
 
+        private boolean autoDownload;
+
         private MessageObject.GroupedMessagePosition groupPosition;
 
         private WebpageAdapter parentAdapter;
@@ -5656,9 +5652,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             imageView.setNeedsQualityThumb(true);
             imageView.setShouldGenerateQualityThumb(true);
             currentType = type;
-            radialProgress = new RadialProgress(this);
-            radialProgress.setAlphaForPrevious(true);
-            radialProgress.setProgressColor(Theme.ARTICLE_VIEWER_MEDIA_PROGRESS_COLOR);
+            radialProgress = new RadialProgress2(this);
+            radialProgress.setProgressColor(0xffffffff);
+            radialProgress.setColors(0x66000000, 0x7f000000, 0xffffffff, 0xffd9d9d9);
             TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
             channelCell = new BlockChannelCell(context, parentAdapter, 1);
             addView(channelCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -5714,8 +5710,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 } else if (buttonPressed == 1) {
                     buttonPressed = 0;
                     playSoundEffect(SoundEffectConstants.CLICK);
-                    didPressedButton(false);
-                    radialProgress.swapBackground(getDrawableForCurrentState());
+                    didPressedButton(true);
                     invalidate();
                 }
             } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
@@ -5800,8 +5795,17 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     imageView.setImageCoords(photoX, (isFirst || currentType == 1 || currentType == 2 || currentBlock.level > 0) ? 0 : AndroidUtilities.dp(8), photoWidth, photoHeight);
 
                     if (isGif) {
-                        imageView.setImage(ImageLocation.getForDocument(currentDocument), null, null, null, ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", null, currentDocument.size, null, currentPage, 1);
+                        autoDownload = DownloadController.getInstance(currentAccount).canDownloadMedia(DownloadController.AUTODOWNLOAD_TYPE_VIDEO, currentDocument.size);
+                        File path = FileLoader.getPathToAttach(currentDocument, true);
+                        if (autoDownload || path.exists()) {
+                            imageView.setStrippedLocation(null);
+                            imageView.setImage(ImageLocation.getForDocument(currentDocument), null, null, null, ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", null, currentDocument.size, null, currentPage, 1);
+                        } else {
+                            imageView.setStrippedLocation(ImageLocation.getForDocument(currentDocument));
+                            imageView.setImage(null, null, null, null, ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", null, currentDocument.size, null, currentPage, 1);
+                        }
                     } else {
+                        imageView.setStrippedLocation(null);
                         imageView.setImage(null, null, ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", 0, null, currentPage, 1);
                     }
                     imageView.setAspectFit(true);
@@ -5870,11 +5874,17 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             }
         }
 
-        private Drawable getDrawableForCurrentState() {
-            if (buttonState >= 0 && buttonState < 4) {
-                return Theme.chat_photoStatesDrawables[buttonState][buttonPressed];
+        private int getIconForCurrentState() {
+            if (buttonState == 0) {
+                return MediaActionDrawable.ICON_DOWNLOAD;
+            } else if (buttonState == 1) {
+                return MediaActionDrawable.ICON_CANCEL;
+            } else if (buttonState == 2) {
+                return MediaActionDrawable.ICON_GIF;
+            } else if (buttonState == 3) {
+                return MediaActionDrawable.ICON_PLAY;
             }
-            return null;
+            return MediaActionDrawable.ICON_NONE;
         }
 
         public void updateButtonState(boolean animated) {
@@ -5882,15 +5892,24 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             File path = FileLoader.getPathToAttach(currentDocument, true);
             boolean fileExists = path.exists();
             if (TextUtils.isEmpty(fileName)) {
-                radialProgress.setBackground(null, false, false);
+                radialProgress.setIcon(MediaActionDrawable.ICON_NONE, false, false);
                 return;
             }
-            if (!fileExists) {
+            if (fileExists) {
+                DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
+                if (!isGif) {
+                    buttonState = 3;
+                } else {
+                    buttonState = -1;
+                }
+                radialProgress.setIcon(getIconForCurrentState(), false, animated);
+                invalidate();
+            } else {
                 DownloadController.getInstance(currentAccount).addLoadingFileObserver(fileName, null, this);
                 float setProgress = 0;
                 boolean progressVisible = false;
                 if (!FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
-                    if (!cancelLoading && isGif) {
+                    if (!cancelLoading && autoDownload && isGif) {
                         progressVisible = true;
                         buttonState = 1;
                     } else {
@@ -5902,17 +5921,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     Float progress = ImageLoader.getInstance().getFileProgress(fileName);
                     setProgress = progress != null ? progress : 0;
                 }
-                radialProgress.setBackground(getDrawableForCurrentState(), progressVisible, animated);
+                radialProgress.setIcon(getIconForCurrentState(), progressVisible, animated);
                 radialProgress.setProgress(setProgress, false);
-                invalidate();
-            } else {
-                DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
-                if (!isGif) {
-                    buttonState = 3;
-                } else {
-                    buttonState = -1;
-                }
-                radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
                 invalidate();
             }
         }
@@ -5922,13 +5932,13 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 cancelLoading = false;
                 radialProgress.setProgress(0, false);
                 if (isGif) {
-                    TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(currentDocument.thumbs, 90);
+                    TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(currentDocument.thumbs, 40);
                     imageView.setImage(ImageLocation.getForDocument(currentDocument), null, ImageLocation.getForDocument(thumb, currentDocument), "80_80_b", currentDocument.size, null, currentPage, 1);
                 } else {
                     FileLoader.getInstance(currentAccount).loadFile(currentDocument, currentPage, 1, 1);
                 }
                 buttonState = 1;
-                radialProgress.setBackground(getDrawableForCurrentState(), true, animated);
+                radialProgress.setIcon(getIconForCurrentState(), true, animated);
                 invalidate();
             } else if (buttonState == 1) {
                 cancelLoading = true;
@@ -5938,13 +5948,13 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     FileLoader.getInstance(currentAccount).cancelLoadFile(currentDocument);
                 }
                 buttonState = 0;
-                radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
+                radialProgress.setIcon(getIconForCurrentState(), false, animated);
                 invalidate();
             } else if (buttonState == 2) {
                 imageView.setAllowStartAnimation(true);
                 imageView.startAnimation();
                 buttonState = -1;
-                radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
+                radialProgress.setIcon(getIconForCurrentState(), false, animated);
             } else if (buttonState == 3) {
                 openPhoto(currentBlock);
             }
@@ -5989,7 +5999,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         public void onProgressDownload(String fileName, float progress) {
             radialProgress.setProgress(progress, true);
             if (buttonState != 1) {
-                updateButtonState(false);
+                updateButtonState(true);
             }
         }
 
@@ -6015,7 +6025,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         private DrawingText captionLayout;
         private DrawingText creditLayout;
-        private RadialProgress radialProgress;
+        private RadialProgress2 radialProgress;
         private SeekBar seekBar;
         private boolean isFirst;
         private boolean isLast;
@@ -6048,10 +6058,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             super(context);
             parentAdapter = adapter;
 
-            radialProgress = new RadialProgress(this);
-            radialProgress.setAlphaForPrevious(true);
-            radialProgress.setDiff(AndroidUtilities.dp(0));
-            radialProgress.setStrokeWidth(AndroidUtilities.dp(2));
+            radialProgress = new RadialProgress2(this);
+            radialProgress.setBackgroundStroke(AndroidUtilities.dp(3));
+            radialProgress.setCircleRadius(AndroidUtilities.dp(24));
             TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
 
             seekBar = new SeekBar(context);
@@ -6107,8 +6116,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 if (buttonPressed == 1) {
                     buttonPressed = 0;
                     playSoundEffect(SoundEffectConstants.CLICK);
-                    didPressedButton(false);
-                    radialProgress.swapBackground(getDrawableForCurrentState());
+                    didPressedButton(true);
                     invalidate();
                 }
             } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
@@ -6131,9 +6139,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     textX = AndroidUtilities.dp(18);
                 }
                 textWidth = width - textX - AndroidUtilities.dp(18);
-                int size = AndroidUtilities.dp(40);
+                int size = AndroidUtilities.dp(44);
                 buttonX = AndroidUtilities.dp(16);
-                buttonY = AndroidUtilities.dp(7);
+                buttonY = AndroidUtilities.dp(5);
                 radialProgress.setProgressRect(buttonX, buttonY, buttonX + size, buttonY + size);
 
                 captionLayout = createLayoutForText(this, null, currentBlock.caption.text, textWidth, currentBlock, parentAdapter);
@@ -6189,6 +6197,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (currentBlock == null) {
                 return;
             }
+            radialProgress.setColors(getTextColor(), getTextColor(), getTextColor(), getTextColor());
             radialProgress.draw(canvas);
             canvas.save();
             canvas.translate(seekBarX, seekBarY);
@@ -6223,8 +6232,15 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             }
         }
 
-        private Drawable getDrawableForCurrentState() {
-            return Theme.chat_ivStatesDrawable[buttonState][buttonPressed != 0 ? 1 : 0];
+        private int getIconForCurrentState() {
+            if (buttonState == 1) {
+                return MediaActionDrawable.ICON_PAUSE;
+            } else if (buttonState == 2) {
+                return MediaActionDrawable.ICON_DOWNLOAD;
+            } else if (buttonState == 3) {
+                return MediaActionDrawable.ICON_CANCEL;
+            }
+            return MediaActionDrawable.ICON_PLAY;
         }
 
         public void updatePlayingMessageProgress() {
@@ -6265,7 +6281,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             File path = FileLoader.getPathToAttach(currentDocument, true);
             boolean fileExists = path.exists();
             if (TextUtils.isEmpty(fileName)) {
-                radialProgress.setBackground(null, false, false);
+                radialProgress.setIcon(MediaActionDrawable.ICON_NONE, false, false);
                 return;
             }
             if (fileExists) {
@@ -6276,13 +6292,13 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 } else {
                     buttonState = 1;
                 }
-                radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
+                radialProgress.setIcon(getIconForCurrentState(), false, animated);
             } else {
                 DownloadController.getInstance(currentAccount).addLoadingFileObserver(fileName, null, this);
                 if (!FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
                     buttonState = 2;
                     radialProgress.setProgress(0, animated);
-                    radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
+                    radialProgress.setIcon(getIconForCurrentState(), false, animated);
                 } else {
                     buttonState = 3;
                     Float progress = ImageLoader.getInstance().getFileProgress(fileName);
@@ -6291,7 +6307,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     } else {
                         radialProgress.setProgress(0, animated);
                     }
-                    radialProgress.setBackground(getDrawableForCurrentState(), true, animated);
+                    radialProgress.setIcon(getIconForCurrentState(), true, animated);
                 }
             }
             updatePlayingMessageProgress();
@@ -6301,26 +6317,26 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (buttonState == 0) {
                 if (MediaController.getInstance().setPlaylist(parentAdapter.audioMessages, currentMessageObject, false)) {
                     buttonState = 1;
-                    radialProgress.setBackground(getDrawableForCurrentState(), false, false);
+                    radialProgress.setIcon(getIconForCurrentState(), false, animated);
                     invalidate();
                 }
             } else if (buttonState == 1) {
                 boolean result = MediaController.getInstance().pauseMessage(currentMessageObject);
                 if (result) {
                     buttonState = 0;
-                    radialProgress.setBackground(getDrawableForCurrentState(), false, false);
+                    radialProgress.setIcon(getIconForCurrentState(), false, animated);
                     invalidate();
                 }
             } else if (buttonState == 2) {
                 radialProgress.setProgress(0, false);
                 FileLoader.getInstance(currentAccount).loadFile(currentDocument, currentPage, 1, 1);
                 buttonState = 3;
-                radialProgress.setBackground(getDrawableForCurrentState(), true, false);
+                radialProgress.setIcon(getIconForCurrentState(), true, animated);
                 invalidate();
             } else if (buttonState == 3) {
                 FileLoader.getInstance(currentAccount).cancelLoadFile(currentDocument);
                 buttonState = 2;
-                radialProgress.setBackground(getDrawableForCurrentState(), false, false);
+                radialProgress.setIcon(getIconForCurrentState(), false, animated);
                 invalidate();
             }
         }
@@ -6357,7 +6373,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         public void onProgressDownload(String fileName, float progress) {
             radialProgress.setProgress(progress, true);
             if (buttonState != 3) {
-                updateButtonState(false);
+                updateButtonState(true);
             }
         }
 
@@ -9154,7 +9170,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         private DrawingText captionLayout;
         private DrawingText creditLayout;
         private ImageReceiver imageView;
-        private RadialProgress radialProgress;
+        private RadialProgress2 radialProgress;
         private BlockChannelCell channelCell;
         private int currentType;
         private boolean isFirst;
@@ -9171,6 +9187,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         private boolean cancelLoading;
 
         private TLRPC.PhotoSize currentPhotoObject;
+        private String currentFilter;
+        private TLRPC.PhotoSize currentPhotoObjectThumb;
+        private String currentThumbFilter;
+        private TLRPC.Photo currentPhoto;
 
         private int TAG;
 
@@ -9179,6 +9199,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         private MessageObject.GroupedMessagePosition groupPosition;
         private Drawable linkDrawable;
+
+        boolean autoDownload;
 
         private WebpageAdapter parentAdapter;
 
@@ -9189,9 +9211,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             setWillNotDraw(false);
             imageView = new ImageReceiver(this);
             channelCell = new BlockChannelCell(context, parentAdapter, 1);
-            radialProgress = new RadialProgress(this);
-            radialProgress.setAlphaForPrevious(true);
-            radialProgress.setProgressColor(Theme.ARTICLE_VIEWER_MEDIA_PROGRESS_COLOR);
+            radialProgress = new RadialProgress2(this);
+            radialProgress.setProgressColor(0xffffffff);
+            radialProgress.setColors(0x66000000, 0x7f000000, 0xffffffff, 0xffd9d9d9);
             TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
             addView(channelCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             currentType = type;
@@ -9244,14 +9266,27 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 return true;
             }
             if (event.getAction() == MotionEvent.ACTION_DOWN && imageView.isInsideImage(x, y)) {
-                photoPressed = true;
-            } else if (event.getAction() == MotionEvent.ACTION_UP && photoPressed) {
-                photoPressed = false;
-                openPhoto(currentBlock);
+                if (buttonState != -1 && x >= buttonX && x <= buttonX + AndroidUtilities.dp(48) && y >= buttonY && y <= buttonY + AndroidUtilities.dp(48) || buttonState == 0) {
+                    buttonPressed = 1;
+                    invalidate();
+                } else {
+                    photoPressed = true;
+                }
+            } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                if (photoPressed) {
+                    photoPressed = false;
+                    openPhoto(currentBlock);
+                } else if (buttonPressed == 1) {
+                    buttonPressed = 0;
+                    playSoundEffect(SoundEffectConstants.CLICK);
+                    didPressedButton(true);
+                    invalidate();
+                }
             } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                 photoPressed = false;
+                buttonPressed = 0;
             }
-            return photoPressed || checkLayoutForLinks(event, this, captionLayout, textX, textY) || checkLayoutForLinks(event, this, creditLayout, textX, textY + creditOffset) || super.onTouchEvent(event);
+            return photoPressed || buttonPressed != 0 || checkLayoutForLinks(event, this, captionLayout, textX, textY) || checkLayoutForLinks(event, this, creditLayout, textX, textY + creditOffset) || super.onTouchEvent(event);
         }
 
         @SuppressLint("NewApi")
@@ -9266,7 +9301,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 height = (int) Math.ceil(groupPosition.ph * Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.5f);
             }
             if (currentBlock != null) {
-                TLRPC.Photo photo = getPhotoWithId(currentBlock.photo_id);
+                currentPhoto = getPhotoWithId(currentBlock.photo_id);
                 int size = AndroidUtilities.dp(48);
                 int photoWidth = width;
                 int photoHeight = height;
@@ -9281,10 +9316,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     textX = AndroidUtilities.dp(18);
                     textWidth = width - AndroidUtilities.dp(36);
                 }
-                if (photo != null && currentPhotoObject != null) {
-                    TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 80, true);
-                    if (currentPhotoObject == thumb) {
-                        thumb = null;
+                if (currentPhoto != null && currentPhotoObject != null) {
+                    currentPhotoObjectThumb = FileLoader.getClosestPhotoSizeWithSize(currentPhoto.sizes, 40, true);
+                    if (currentPhotoObject == currentPhotoObjectThumb) {
+                        currentPhotoObjectThumb = null;
                     }
                     if (currentType == 0) {
                         float scale;
@@ -9316,13 +9351,22 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         }
                     }
                     imageView.setImageCoords(photoX, (isFirst || currentType == 1 || currentType == 2 || currentBlock.level > 0) ? 0 : AndroidUtilities.dp(8), photoWidth, photoHeight);
-                    String filter;
                     if (currentType == 0) {
-                        filter = null;
+                        currentFilter = null;
                     } else {
-                        filter = String.format(Locale.US, "%d_%d", photoWidth, photoHeight);
+                        currentFilter = String.format(Locale.US, "%d_%d", photoWidth, photoHeight);
                     }
-                    imageView.setImage(ImageLocation.getForPhoto(currentPhotoObject, photo), filter, ImageLocation.getForPhoto(thumb, photo), "80_80_b", currentPhotoObject.size, null, currentPage, 1);
+                    currentThumbFilter = "80_80_b";
+
+                    autoDownload = (DownloadController.getInstance(currentAccount).getCurrentDownloadMask() & DownloadController.AUTODOWNLOAD_TYPE_PHOTO) != 0;
+                    File path = FileLoader.getPathToAttach(currentPhotoObject, true);
+                    if (autoDownload || path.exists()) {
+                        imageView.setStrippedLocation(null);
+                        imageView.setImage(ImageLocation.getForPhoto(currentPhotoObject, currentPhoto), currentFilter, ImageLocation.getForPhoto(currentPhotoObjectThumb, currentPhoto), currentThumbFilter, currentPhotoObject.size, null, currentPage, 1);
+                    } else {
+                        imageView.setStrippedLocation(ImageLocation.getForPhoto(currentPhotoObject, currentPhoto));
+                        imageView.setImage(null, currentFilter, ImageLocation.getForPhoto(currentPhotoObjectThumb, currentPhoto), currentThumbFilter, currentPhotoObject.size, null, currentPage, 1);
+                    }
                     buttonX = (int) (imageView.getImageX() + (imageView.getImageWidth() - size) / 2.0f);
                     buttonY = (int) (imageView.getImageY() + (imageView.getImageHeight() - size) / 2.0f);
                     radialProgress.setProgressRect(buttonX, buttonY, buttonX + size, buttonY + size);
@@ -9394,11 +9438,30 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             }
         }
 
-        private Drawable getDrawableForCurrentState() {
-            if (buttonState >= 0 && buttonState < 6) {
-                return Theme.chat_photoStatesDrawables[buttonState][buttonPressed];
+        private int getIconForCurrentState() {
+            if (buttonState == 0) {
+                return MediaActionDrawable.ICON_DOWNLOAD;
+            } else if (buttonState == 1) {
+                return MediaActionDrawable.ICON_CANCEL;
             }
-            return null;
+            return MediaActionDrawable.ICON_NONE;
+        }
+
+        private void didPressedButton(boolean animated) {
+            if (buttonState == 0) {
+                cancelLoading = false;
+                radialProgress.setProgress(0, animated);
+                imageView.setImage(ImageLocation.getForPhoto(currentPhotoObject, currentPhoto), currentFilter, ImageLocation.getForPhoto(currentPhotoObjectThumb, currentPhoto), currentThumbFilter, currentPhotoObject.size, null, currentPage, 1);
+                buttonState = 1;
+                radialProgress.setIcon(getIconForCurrentState(), true, animated);
+                invalidate();
+            } else if (buttonState == 1) {
+                cancelLoading = true;
+                imageView.cancelLoadImage();
+                buttonState = 0;
+                radialProgress.setIcon(getIconForCurrentState(), false, animated);
+                invalidate();
+            }
         }
 
         public void updateButtonState(boolean animated) {
@@ -9406,24 +9469,26 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             File path = FileLoader.getPathToAttach(currentPhotoObject, true);
             boolean fileExists = path.exists();
             if (TextUtils.isEmpty(fileName)) {
-                radialProgress.setBackground(null, false, false);
+                radialProgress.setIcon(MediaActionDrawable.ICON_NONE, false, false);
                 return;
             }
 
             if (fileExists) {
                 DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
                 buttonState = -1;
-                radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
+                radialProgress.setIcon(getIconForCurrentState(), false, animated);
                 invalidate();
             } else {
                 DownloadController.getInstance(currentAccount).addLoadingFileObserver(fileName, null, this);
                 float setProgress = 0;
-                buttonState = 5;
-                if (FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
+                if (autoDownload || FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
+                    buttonState = 1;
                     Float progress = ImageLoader.getInstance().getFileProgress(fileName);
                     setProgress = progress != null ? progress : 0;
+                } else {
+                    buttonState = 0;
                 }
-                radialProgress.setBackground(getDrawableForCurrentState(), true, animated);
+                radialProgress.setIcon(getIconForCurrentState(), true, animated);
                 radialProgress.setProgress(setProgress, false);
                 invalidate();
             }
@@ -9463,7 +9528,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         public void onProgressDownload(String fileName, float progress) {
             radialProgress.setProgress(progress, true);
             if (buttonState != 1) {
-                updateButtonState(false);
+                updateButtonState(true);
             }
         }
 

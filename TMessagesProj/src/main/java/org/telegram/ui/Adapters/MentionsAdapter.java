@@ -93,6 +93,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
     private int channelReqId;
     private boolean isSearchingMentions;
 
+    private final static String punctuationsChars = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~\n";
+
     private Runnable cancelDelayRunnable;
 
     private String searchingContextUsername;
@@ -655,10 +657,13 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                         resultLength = result.length() + 1;
                         break;
                     } else if (ch == ':' && result.length() > 0) {
-                        foundType = 3;
-                        resultStartPosition = a;
-                        resultLength = result.length() + 1;
-                        break;
+                        boolean isNextPunctiationChar = punctuationsChars.indexOf(result.charAt(0)) >= 0;
+                        if (!isNextPunctiationChar || result.length() > 1) {
+                            foundType = 3;
+                            resultStartPosition = a;
+                            resultLength = result.length() + 1;
+                            break;
+                        }
                     }
                 }
                 result.insert(0, ch);

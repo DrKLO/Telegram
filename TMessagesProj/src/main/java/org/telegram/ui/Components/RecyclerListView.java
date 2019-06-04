@@ -927,6 +927,14 @@ public class RecyclerListView extends RecyclerView {
         }
     }
 
+    public void setSelectorDrawableColor(int color) {
+        if (selectorDrawable != null) {
+            selectorDrawable.setCallback(null);
+        }
+        selectorDrawable = Theme.getSelectorDrawable(color, false);
+        selectorDrawable.setCallback(this);
+    }
+
     public void checkSection() {
         if (scrollingByUser && fastScroll != null || sectionsType != 0 && sectionsAdapter != null) {
             LayoutManager layoutManager = getLayoutManager();

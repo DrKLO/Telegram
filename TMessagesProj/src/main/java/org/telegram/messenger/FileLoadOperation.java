@@ -16,6 +16,7 @@ import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 
+import java.io.FileInputStream;
 import java.io.RandomAccessFile;
 import java.io.File;
 import java.nio.channels.FileChannel;
@@ -23,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipException;
 
 public class FileLoadOperation {
 
@@ -157,6 +160,8 @@ public class FileLoadOperation {
     private boolean isForceRequest;
     private int priority;
 
+    private boolean ungzip;
+
     private int currentType;
 
     public interface FileLoadOperationDelegate {
@@ -287,6 +292,7 @@ public class FileLoadOperation {
                     }
                 }
             }
+            ungzip = "application/x-tgsticker".equals(documentLocation.mime_type);
             totalBytesCount = documentLocation.size;
             if (key != null) {
                 int toAdd = 0;
@@ -446,7 +452,7 @@ public class FileLoadOperation {
 
     protected File getCurrentFile() {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
-        final File result[] = new File[1];
+        final File[] result = new File[1];
         Utilities.stageQueue.postRunnable(() -> {
             if (state == stateFinished) {
                 result[0] = cacheFileFinal;
@@ -504,7 +510,7 @@ public class FileLoadOperation {
 
     protected int getDownloadedLengthFromOffset(final int offset, final int length) {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
-        final int result[] = new int[1];
+        final int[] result = new int[1];
         Utilities.stageQueue.postRunnable(() -> {
             result[0] = getDownloadedLengthFromOffsetInternal(notLoadedBytesRanges, offset, length);
             countDownLatch.countDown();
@@ -1058,24 +1064,39 @@ public class FileLoadOperation {
                 cacheFilePreload = null;
             }
             if (cacheFileTemp != null) {
-                boolean renameResult = cacheFileTemp.renameTo(cacheFileFinal);
-                if (!renameResult) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("unable to rename temp = " + cacheFileTemp + " to final = " + cacheFileFinal + " retry = " + renameRetryCount);
+                if (ungzip) {
+                    try {
+                        GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(cacheFileTemp));
+                        FileLoader.copyFile(gzipInputStream, cacheFileFinal);
+                        gzipInputStream.close();
+                        cacheFileTemp.delete();
+                    } catch (ZipException zipException) {
+                        ungzip = false;
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                        FileLog.e("unable to ungzip temp = " + cacheFileTemp + " to final = " + cacheFileFinal);
                     }
-                    renameRetryCount++;
-                    if (renameRetryCount < 3) {
-                        state = stateDownloading;
-                        Utilities.stageQueue.postRunnable(() -> {
-                            try {
-                                onFinishLoadingFile(increment);
-                            } catch (Exception e) {
-                                onFail(false, 0);
-                            }
-                        }, 200);
-                        return;
+                }
+                if (!ungzip) {
+                    boolean renameResult = cacheFileTemp.renameTo(cacheFileFinal);
+                    if (!renameResult) {
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.e("unable to rename temp = " + cacheFileTemp + " to final = " + cacheFileFinal + " retry = " + renameRetryCount);
+                        }
+                        renameRetryCount++;
+                        if (renameRetryCount < 3) {
+                            state = stateDownloading;
+                            Utilities.stageQueue.postRunnable(() -> {
+                                try {
+                                    onFinishLoadingFile(increment);
+                                } catch (Exception e) {
+                                    onFail(false, 0);
+                                }
+                            }, 200);
+                            return;
+                        }
+                        cacheFileFinal = cacheFileTemp;
                     }
-                    cacheFileFinal = cacheFileTemp;
                 }
             }
             if (BuildVars.LOGS_ENABLED) {

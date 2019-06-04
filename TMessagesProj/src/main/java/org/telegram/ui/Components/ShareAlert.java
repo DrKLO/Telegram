@@ -284,7 +284,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 int totalHeight = MeasureSpec.getSize(heightMeasureSpec);
-                if (Build.VERSION.SDK_INT >= 21 && !fullScreen) {
+                if (Build.VERSION.SDK_INT >= 21 && !isFullscreen) {
                     ignoreLayout = true;
                     setPadding(backgroundPaddingLeft, AndroidUtilities.statusBarHeight, backgroundPaddingLeft, 0);
                     ignoreLayout = false;
@@ -456,7 +456,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 int height = getMeasuredHeight() + AndroidUtilities.dp(30) + backgroundPaddingTop;
                 int statusBarHeight = 0;
                 float radProgress = 1.0f;
-                if (!fullScreen && Build.VERSION.SDK_INT >= 21) {
+                if (!isFullscreen && Build.VERSION.SDK_INT >= 21) {
                     top += AndroidUtilities.statusBarHeight;
                     y += AndroidUtilities.statusBarHeight;
                     height -= AndroidUtilities.statusBarHeight;
@@ -502,7 +502,6 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
         frameLayout = new FrameLayout(context);
         frameLayout.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
-        //frameLayout.setOnTouchListener((v, event) -> true);
 
         SearchField searchView = new SearchField(context);
         frameLayout.addView(searchView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
@@ -567,6 +566,20 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 selectedDialogs.put(dialog.id, dialog);
                 cell.setChecked(true, true);
                 updateSelectedCount(2);
+                int selfUserId = UserConfig.getInstance(currentAccount).clientUserId;
+                if (gridView.getAdapter() == searchAdapter) {
+                    TLRPC.Dialog existingDialog = listAdapter.dialogsMap.get(dialog.id);
+                    if (existingDialog == null) {
+                        listAdapter.dialogsMap.put(dialog.id, dialog);
+                        listAdapter.dialogs.add(1, dialog);
+                    } else if (existingDialog.id != selfUserId) {
+                        listAdapter.dialogs.remove(existingDialog);
+                        listAdapter.dialogs.add(1, existingDialog);
+                    }
+                    searchView.searchEditText.setText("");
+                    gridView.setAdapter(listAdapter);
+                    searchView.hideKeyboard();
+                }
             }
         });
         gridView.setOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -943,6 +956,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         private Context context;
         private int currentCount;
         private ArrayList<TLRPC.Dialog> dialogs = new ArrayList<>();
+        private LongSparseArray<TLRPC.Dialog> dialogsMap = new LongSparseArray<>();
 
         public ShareDialogsAdapter(Context context) {
             this.context = context;
@@ -951,9 +965,12 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
         public void fetchDialogs() {
             dialogs.clear();
+            dialogsMap.clear();
             int selfUserId = UserConfig.getInstance(currentAccount).clientUserId;
             if (!MessagesController.getInstance(currentAccount).dialogsForward.isEmpty()) {
-                dialogs.add(MessagesController.getInstance(currentAccount).dialogsForward.get(0));
+                TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogsForward.get(0);
+                dialogs.add(dialog);
+                dialogsMap.put(dialog.id, dialog);
             }
             ArrayList<TLRPC.Dialog> allDialogs = MessagesController.getInstance(currentAccount).getAllDialogs();
             for (int a = 0; a < allDialogs.size(); a++) {
@@ -969,10 +986,12 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 if (lower_id != 0 && high_id != 1) {
                     if (lower_id > 0) {
                         dialogs.add(dialog);
+                        dialogsMap.put(dialog.id, dialog);
                     } else {
                         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
                         if (!(chat == null || ChatObject.isNotInChat(chat) || ChatObject.isChannel(chat) && !chat.creator && (chat.admin_rights == null || !chat.admin_rights.post_messages) && !chat.megagroup)) {
                             dialogs.add(dialog);
+                            dialogsMap.put(dialog.id, dialog);
                         }
                     }
                 }
@@ -1308,7 +1327,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             } else {
                 final int searchId = ++lastSearchId;
                 searchRunnable = () -> searchDialogsInternal(query, searchId);
-                Utilities.globalQueue.postRunnable(searchRunnable, 300);
+                Utilities.searchQueue.postRunnable(searchRunnable, 300);
             }
         }
 

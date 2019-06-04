@@ -52,6 +52,8 @@ public class RadialProgress2 {
     private boolean isPressed;
     private boolean isPressedMini;
 
+    private int backgroundStroke;
+
     private boolean drawBackground = true;
 
     private Bitmap miniDrawBitmap;
@@ -84,6 +86,13 @@ public class RadialProgress2 {
     public void setCircleRadius(int value) {
         circleRadius = value;
         overlayImageView.setRoundRadius(circleRadius);
+    }
+
+    public void setBackgroundStroke(int value) {
+        backgroundStroke = value;
+        circlePaint.setStrokeWidth(value);
+        circlePaint.setStyle(Paint.Style.STROKE);
+        invalidateParent();
     }
 
     public void setImageOverlay(TLRPC.PhotoSize image, TLRPC.Document document, Object parentObject) {
@@ -232,7 +241,15 @@ public class RadialProgress2 {
         int prevIcon = mediaActionDrawable.getPreviousIcon();
 
         float wholeAlpha;
-        if ((currentIcon == MediaActionDrawable.ICON_CANCEL || currentIcon == MediaActionDrawable.ICON_CHECK || currentIcon == MediaActionDrawable.ICON_EMPTY || currentIcon == MediaActionDrawable.ICON_GIF || currentIcon == MediaActionDrawable.ICON_PLAY) && prevIcon == MediaActionDrawable.ICON_NONE) {
+        if (backgroundStroke != 0) {
+            if (currentIcon == MediaActionDrawable.ICON_CANCEL) {
+                wholeAlpha = 1.0f - mediaActionDrawable.getTransitionProgress();
+            } else if (prevIcon == MediaActionDrawable.ICON_CANCEL) {
+                wholeAlpha = mediaActionDrawable.getTransitionProgress();
+            } else {
+                wholeAlpha = 1.0f;
+            }
+        } else if ((currentIcon == MediaActionDrawable.ICON_CANCEL || currentIcon == MediaActionDrawable.ICON_CHECK || currentIcon == MediaActionDrawable.ICON_EMPTY || currentIcon == MediaActionDrawable.ICON_GIF || currentIcon == MediaActionDrawable.ICON_PLAY) && prevIcon == MediaActionDrawable.ICON_NONE) {
             wholeAlpha = mediaActionDrawable.getTransitionProgress();
         } else {
             wholeAlpha = currentIcon != MediaActionDrawable.ICON_NONE ? 1.0f : 1.0f - mediaActionDrawable.getTransitionProgress();
@@ -335,7 +352,11 @@ public class RadialProgress2 {
                 miniDrawCanvas.drawCircle(centerX, centerY, circleRadius, circlePaint);
             } else {
                 if (currentIcon != MediaActionDrawable.ICON_NONE || wholeAlpha != 0) {
-                    canvas.drawCircle(centerX, centerY, circleRadius * wholeAlpha, circlePaint);
+                    if (backgroundStroke != 0) {
+                        canvas.drawCircle(centerX, centerY, (circleRadius - AndroidUtilities.dp(3.5f)), circlePaint);
+                    } else {
+                        canvas.drawCircle(centerX, centerY, circleRadius * wholeAlpha, circlePaint);
+                    }
                 }
             }
         }

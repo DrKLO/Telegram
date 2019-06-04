@@ -454,6 +454,10 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
         return documentAttach;
     }
 
+    public TLRPC.BotInlineResult getBotInlineResult() {
+        return inlineResult;
+    }
+
     public ImageReceiver getPhotoImage() {
         return linkImageView;
     }

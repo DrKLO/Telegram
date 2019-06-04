@@ -63,6 +63,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 public class NotificationsController {
@@ -2202,6 +2203,52 @@ public class NotificationsController {
     }
 
     @TargetApi(26)
+    public void deleteNotificationChannel(long dialogId) {
+        notificationsQueue.postRunnable(() -> {
+            if (Build.VERSION.SDK_INT < 26) {
+                return;
+            }
+            try {
+                SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                String key = "org.telegram.key" + dialogId;
+                String channelId = preferences.getString(key, null);
+                if (channelId != null) {
+                    preferences.edit().remove(key).remove(key + "_s").commit();
+                    systemNotificationManager.deleteNotificationChannel(channelId);
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+    }
+
+    @TargetApi(26)
+    public void deleteAllNotificationChannels() {
+        notificationsQueue.postRunnable(() -> {
+            if (Build.VERSION.SDK_INT < 26) {
+                return;
+            }
+            try {
+                SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                Map<String, ?> values = preferences.getAll();
+                SharedPreferences.Editor editor = preferences.edit();
+                for (Map.Entry<String, ?> entry : values.entrySet()) {
+                    String key = entry.getKey();
+                    if (key.startsWith("org.telegram.key")) {
+                        if (!key.endsWith("_s")) {
+                            systemNotificationManager.deleteNotificationChannel((String) entry.getValue());
+                        }
+                        editor.remove(key);
+                    }
+                }
+                editor.commit();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+    }
+
+    @TargetApi(26)
     private String validateChannelId(long dialogId, String name, long[] vibrationPattern, int ledColor, Uri sound, int importance, long[] configVibrationPattern, Uri configSound, int configImportance) {
         SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
         String key = "org.telegram.key" + dialogId;
@@ -2783,13 +2830,16 @@ public class NotificationsController {
                                 mBuilder.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, AudioManager.STREAM_NOTIFICATION);
                             } else {
                                 if (Build.VERSION.SDK_INT >= 24 && choosenSoundPath.startsWith("file://") && !AndroidUtilities.isInternalUri(Uri.parse(choosenSoundPath))) {
-                                    Uri uri = FileProvider.getUriForFile(ApplicationLoader.applicationContext, BuildConfig.APPLICATION_ID + ".provider", new File(choosenSoundPath.replace("file://", "")));
-                                    ApplicationLoader.applicationContext.grantUriPermission("com.android.systemui", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                    mBuilder.setSound(uri, AudioManager.STREAM_NOTIFICATION);
+                                    try {
+                                        Uri uri = FileProvider.getUriForFile(ApplicationLoader.applicationContext, BuildConfig.APPLICATION_ID + ".provider", new File(choosenSoundPath.replace("file://", "")));
+                                        ApplicationLoader.applicationContext.grantUriPermission("com.android.systemui", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                        mBuilder.setSound(uri, AudioManager.STREAM_NOTIFICATION);
+                                    } catch (Exception e) {
+                                        mBuilder.setSound(Uri.parse(choosenSoundPath), AudioManager.STREAM_NOTIFICATION);
+                                    }
                                 } else {
                                     mBuilder.setSound(Uri.parse(choosenSoundPath), AudioManager.STREAM_NOTIFICATION);
                                 }
-                                mBuilder.setSound(Uri.parse(choosenSoundPath), AudioManager.STREAM_NOTIFICATION);
                             }
                         }
                     }

@@ -45,6 +45,9 @@ public class WebFile extends TLObject {
     }
 
     public static WebFile createWithWebDocument(TLRPC.WebDocument webDocument) {
+        if (!(webDocument instanceof TLRPC.TL_webDocument)) {
+            return null;
+        }
         WebFile webFile = new WebFile();
         TLRPC.TL_webDocument document = (TLRPC.TL_webDocument) webDocument;
         TLRPC.TL_inputWebFileLocation location = new TLRPC.TL_inputWebFileLocation();

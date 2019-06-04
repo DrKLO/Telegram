@@ -1174,7 +1174,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
 
         @Override
         public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
-            if (!exceptions.isEmpty()) {
+            if (exceptions == null || !exceptions.isEmpty()) {
                 return;
             }
             boolean enabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(currentType);

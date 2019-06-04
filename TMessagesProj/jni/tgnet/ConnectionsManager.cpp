@@ -3137,7 +3137,7 @@ void ConnectionsManager::pauseNetwork() {
 }
 
 void ConnectionsManager::setNetworkAvailable(bool value, int32_t type, bool slow) {
-    scheduleTask([&, value, type] {
+    scheduleTask([&, value, type, slow] {
         networkAvailable = value;
         currentNetworkType = type;
         networkSlow = slow;

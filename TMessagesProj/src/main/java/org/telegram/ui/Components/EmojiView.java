@@ -304,7 +304,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
 
         @Override
-        public void sendGif(TLRPC.Document gif) {
+        public void sendGif(Object gif) {
             if (gifGridView.getAdapter() == gifAdapter) {
                 delegate.onGifSelected(gif, "gif");
             } else if (gifGridView.getAdapter() == gifSearchAdapter) {

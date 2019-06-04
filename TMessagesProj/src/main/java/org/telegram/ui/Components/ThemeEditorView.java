@@ -25,7 +25,9 @@ import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.RadialGradient;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.SweepGradient;
 import android.graphics.drawable.Drawable;
@@ -37,9 +39,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -47,6 +54,7 @@ import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -124,11 +132,16 @@ public class ThemeEditorView {
 
         private ColorPicker colorPicker;
         private RecyclerListView listView;
+        private FrameLayout frameLayout;
+        private EmptyTextProgressView searchEmptyView;
+        private SearchField searchField;
         private LinearLayoutManager layoutManager;
         private ListAdapter listAdapter;
+        private SearchAdapter searchAdapter;
         private FrameLayout bottomSaveLayout;
         private FrameLayout bottomLayout;
-        private View shadow;
+        private View[] shadow = new View[2];
+        private AnimatorSet[] shadowAnimation = new AnimatorSet[2];
         private TextView cancelButton;
         private TextView defaultButtom;
         private TextView saveButton;
@@ -144,6 +157,134 @@ public class ThemeEditorView {
         private AnimatorSet colorChangeAnimation;
         private boolean startedColorChange;
         private boolean ignoreTextChange;
+
+        private class SearchField extends FrameLayout {
+
+            private View searchBackground;
+            private ImageView searchIconImageView;
+            private ImageView clearSearchImageView;
+            private CloseProgressDrawable2 progressDrawable;
+            private EditTextBoldCursor searchEditText;
+            private View backgroundView;
+
+            public SearchField(Context context) {
+                super(context);
+
+                searchBackground = new View(context);
+                searchBackground.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(18), 0xfff2f4f5));
+                addView(searchBackground, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP, 14, 11, 14, 0));
+
+                searchIconImageView = new ImageView(context);
+                searchIconImageView.setScaleType(ImageView.ScaleType.CENTER);
+                searchIconImageView.setImageResource(R.drawable.smiles_inputsearch);
+                searchIconImageView.setColorFilter(new PorterDuffColorFilter(0xffa1a8af, PorterDuff.Mode.MULTIPLY));
+                addView(searchIconImageView, LayoutHelper.createFrame(36, 36, Gravity.LEFT | Gravity.TOP, 16, 11, 0, 0));
+
+                clearSearchImageView = new ImageView(context);
+                clearSearchImageView.setScaleType(ImageView.ScaleType.CENTER);
+                clearSearchImageView.setImageDrawable(progressDrawable = new CloseProgressDrawable2());
+                progressDrawable.setSide(AndroidUtilities.dp(7));
+                clearSearchImageView.setScaleX(0.1f);
+                clearSearchImageView.setScaleY(0.1f);
+                clearSearchImageView.setAlpha(0.0f);
+                clearSearchImageView.setColorFilter(new PorterDuffColorFilter(0xffa1a8af, PorterDuff.Mode.MULTIPLY));
+                addView(clearSearchImageView, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 14, 11, 14, 0));
+                clearSearchImageView.setOnClickListener(v -> {
+                    searchEditText.setText("");
+                    AndroidUtilities.showKeyboard(searchEditText);
+                });
+
+                searchEditText = new EditTextBoldCursor(context) {
+                    @Override
+                    public boolean dispatchTouchEvent(MotionEvent event) {
+                        MotionEvent e = MotionEvent.obtain(event);
+                        e.setLocation(e.getRawX(), e.getRawY() - containerView.getTranslationY());
+                        listView.dispatchTouchEvent(e);
+                        e.recycle();
+                        return super.dispatchTouchEvent(event);
+                    }
+                };
+                searchEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                searchEditText.setHintTextColor(0xff98a0a7);
+                searchEditText.setTextColor(0xff222222);
+                searchEditText.setBackgroundDrawable(null);
+                searchEditText.setPadding(0, 0, 0, 0);
+                searchEditText.setMaxLines(1);
+                searchEditText.setLines(1);
+                searchEditText.setSingleLine(true);
+                searchEditText.setImeOptions(EditorInfo.IME_ACTION_SEARCH | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+                searchEditText.setHint(LocaleController.getString("Search", R.string.Search));
+                searchEditText.setCursorColor(0xff50a8eb);
+                searchEditText.setCursorSize(AndroidUtilities.dp(20));
+                searchEditText.setCursorWidth(1.5f);
+                addView(searchEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.LEFT | Gravity.TOP, 16 + 38, 9, 16 + 30, 0));
+                searchEditText.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable s) {
+                        boolean show = searchEditText.length() > 0;
+                        boolean showed = clearSearchImageView.getAlpha() != 0;
+                        if (show != showed) {
+                            clearSearchImageView.animate()
+                                    .alpha(show ? 1.0f : 0.0f)
+                                    .setDuration(150)
+                                    .scaleX(show ? 1.0f : 0.1f)
+                                    .scaleY(show ? 1.0f : 0.1f)
+                                    .start();
+                        }
+                        String text = searchEditText.getText().toString();
+                        if (text.length() != 0) {
+                            if (searchEmptyView != null) {
+                                searchEmptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                            }
+                        } else {
+                            if (listView.getAdapter() != listAdapter) {
+                                int top = getCurrentTop();
+                                searchEmptyView.setText(LocaleController.getString("NoChats", R.string.NoChats));
+                                searchEmptyView.showTextView();
+                                listView.setAdapter(listAdapter);
+                                listAdapter.notifyDataSetChanged();
+                                if (top > 0) {
+                                    layoutManager.scrollToPositionWithOffset(0, -top);
+                                }
+                            }
+                        }
+                        if (searchAdapter != null) {
+                            searchAdapter.searchDialogs(text);
+                        }
+                    }
+                });
+                searchEditText.setOnEditorActionListener((v, actionId, event) -> {
+                    if (event != null && (event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == KeyEvent.KEYCODE_SEARCH || event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                        AndroidUtilities.hideKeyboard(searchEditText);
+                    }
+                    return false;
+                });
+            }
+
+            public void hideKeyboard() {
+                AndroidUtilities.hideKeyboard(searchEditText);
+            }
+
+            public void showKeyboard() {
+                searchEditText.requestFocus();
+                AndroidUtilities.showKeyboard(searchEditText);
+            }
+
+            @Override
+            public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+                super.requestDisallowInterceptTouchEvent(disallowIntercept);
+            }
+        }
 
         private class ColorPicker extends FrameLayout {
 
@@ -379,8 +520,8 @@ public class ThemeEditorView {
                 startedColorChange = start;
                 colorChangeAnimation = new AnimatorSet();
                 colorChangeAnimation.playTogether(
-                        ObjectAnimator.ofInt(backDrawable, "alpha", start ? 0 : 51),
-                        ObjectAnimator.ofFloat(containerView, "alpha", start ? 0.2f : 1.0f));
+                        ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, start ? 0 : 51),
+                        ObjectAnimator.ofFloat(containerView, View.ALPHA, start ? 0.2f : 1.0f));
                 colorChangeAnimation.setDuration(150);
                 colorChangeAnimation.setInterpolator(decelerateInterpolator);
                 colorChangeAnimation.start();
@@ -494,13 +635,14 @@ public class ThemeEditorView {
         }
 
         public EditorAlert(final Context context, ThemeDescription[] items) {
-            super(context, true, 0);
+            super(context, true, 1);
 
-            shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow).mutate();
+            shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
 
             containerView = new FrameLayout(context) {
 
                 private boolean ignoreLayout = false;
+                private RectF rect1 = new RectF();
 
                 @Override
                 public boolean onInterceptTouchEvent(MotionEvent ev) {
@@ -520,22 +662,22 @@ public class ThemeEditorView {
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     int width = MeasureSpec.getSize(widthMeasureSpec);
                     int height = MeasureSpec.getSize(heightMeasureSpec);
-                    if (Build.VERSION.SDK_INT >= 21) {
-                        height -= AndroidUtilities.statusBarHeight;
+                    if (Build.VERSION.SDK_INT >= 21 && !isFullscreen) {
+                        ignoreLayout = true;
+                        setPadding(backgroundPaddingLeft, AndroidUtilities.statusBarHeight, backgroundPaddingLeft, 0);
+                        ignoreLayout = false;
                     }
 
-                    int pickerSize = Math.min(width, height);
+                    int pickerSize = Math.min(width, height - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0));
 
-                    int padding = height - pickerSize;
+                    int padding = height - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.dp(8) - pickerSize;
                     if (listView.getPaddingTop() != padding) {
                         ignoreLayout = true;
                         int previousPadding = listView.getPaddingTop();
                         listView.setPadding(0, padding, 0, AndroidUtilities.dp(48));
                         if (colorPicker.getVisibility() == VISIBLE) {
                             //previousScrollPosition += previousPadding;
-                            scrollOffsetY = listView.getPaddingTop();
-                            listView.setTopGlowOffset(scrollOffsetY);
-                            colorPicker.setTranslationY(scrollOffsetY);
+                            setScrollOffsetY(listView.getPaddingTop());
                             previousScrollPosition = 0;
                         }
                         ignoreLayout = false;
@@ -559,14 +701,66 @@ public class ThemeEditorView {
 
                 @Override
                 protected void onDraw(Canvas canvas) {
-                    shadowDrawable.setBounds(0, scrollOffsetY - backgroundPaddingTop, getMeasuredWidth(), getMeasuredHeight());
+                    int y = scrollOffsetY - backgroundPaddingTop + AndroidUtilities.dp(6);
+                    int top = scrollOffsetY - backgroundPaddingTop - AndroidUtilities.dp(13);
+                    int height = getMeasuredHeight() + AndroidUtilities.dp(30) + backgroundPaddingTop;
+                    int statusBarHeight = 0;
+                    float radProgress = 1.0f;
+                    if (!isFullscreen && Build.VERSION.SDK_INT >= 21) {
+                        top += AndroidUtilities.statusBarHeight;
+                        y += AndroidUtilities.statusBarHeight;
+                        height -= AndroidUtilities.statusBarHeight;
+
+                        if (top + backgroundPaddingTop < AndroidUtilities.statusBarHeight * 2) {
+                            int diff = Math.min(AndroidUtilities.statusBarHeight, AndroidUtilities.statusBarHeight * 2 - top - backgroundPaddingTop);
+                            top -= diff;
+                            height += diff;
+                            radProgress = 1.0f - Math.min(1.0f, (diff * 2) / (float) AndroidUtilities.statusBarHeight);
+                        }
+                        if (top + backgroundPaddingTop < AndroidUtilities.statusBarHeight) {
+                            statusBarHeight = Math.min(AndroidUtilities.statusBarHeight, AndroidUtilities.statusBarHeight - top - backgroundPaddingTop);
+                        }
+                    }
+
+                    shadowDrawable.setBounds(0, top, getMeasuredWidth(), height);
                     shadowDrawable.draw(canvas);
+
+                    if (radProgress != 1.0f) {
+                        Theme.dialogs_onlineCirclePaint.setColor(0xffffffff);
+                        rect1.set(backgroundPaddingLeft, backgroundPaddingTop + top, getMeasuredWidth() - backgroundPaddingLeft, backgroundPaddingTop + top + AndroidUtilities.dp(24));
+                        canvas.drawRoundRect(rect1, AndroidUtilities.dp(12) * radProgress, AndroidUtilities.dp(12) * radProgress, Theme.dialogs_onlineCirclePaint);
+                    }
+
+                    int w = AndroidUtilities.dp(36);
+                    rect1.set((getMeasuredWidth() - w) / 2, y, (getMeasuredWidth() + w) / 2, y + AndroidUtilities.dp(4));
+                    Theme.dialogs_onlineCirclePaint.setColor(0xffe1e4e8);
+                    Theme.dialogs_onlineCirclePaint.setAlpha((int) (255 * listView.getAlpha()));
+                    canvas.drawRoundRect(rect1, AndroidUtilities.dp(2), AndroidUtilities.dp(2), Theme.dialogs_onlineCirclePaint);
+
+                    if (statusBarHeight > 0) {
+                        int color1 = 0xffffffff;
+                        int finalColor = Color.argb(0xff, (int) (Color.red(color1) * 0.8f), (int) (Color.green(color1) * 0.8f), (int) (Color.blue(color1) * 0.8f));
+                        Theme.dialogs_onlineCirclePaint.setColor(finalColor);
+                        canvas.drawRect(backgroundPaddingLeft, AndroidUtilities.statusBarHeight - statusBarHeight, getMeasuredWidth() - backgroundPaddingLeft, AndroidUtilities.statusBarHeight, Theme.dialogs_onlineCirclePaint);
+                    }
                 }
             };
             containerView.setWillNotDraw(false);
             containerView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
 
-            listView = new RecyclerListView(context);
+            frameLayout = new FrameLayout(context);
+            frameLayout.setBackgroundColor(0xffffffff);
+
+            searchField = new SearchField(context);
+            frameLayout.addView(searchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+
+            listView = new RecyclerListView(context) {
+                @Override
+                protected boolean allowSelectChildAtPosition(float x, float y) {
+                    return y >= scrollOffsetY + AndroidUtilities.dp(48) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+                }
+            };
+            listView.setSelectorDrawableColor(0x0f000000);
             listView.setPadding(0, 0, 0, AndroidUtilities.dp(48));
             listView.setClipToPadding(false);
             listView.setLayoutManager(layoutManager = new LinearLayoutManager(getContext()));
@@ -574,11 +768,19 @@ public class ThemeEditorView {
             listView.setVerticalScrollBarEnabled(false);
             containerView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
             listView.setAdapter(listAdapter = new ListAdapter(context, items));
+            searchAdapter = new SearchAdapter(context);
             listView.setGlowColor(0xfff5f6f7);
             listView.setItemAnimator(null);
             listView.setLayoutAnimation(null);
             listView.setOnItemClickListener((view, position) -> {
-                currentThemeDesription = listAdapter.getItem(position);
+                if (position == 0) {
+                    return;
+                }
+                if (listView.getAdapter() == listAdapter) {
+                    currentThemeDesription = listAdapter.getItem(position - 1);
+                } else {
+                    currentThemeDesription = searchAdapter.getItem(position - 1);
+                }
                 currentThemeDesriptionPosition = position;
                 for (int a = 0; a < currentThemeDesription.size(); a++) {
                     ThemeDescription description = currentThemeDesription.get(a);
@@ -600,13 +802,32 @@ public class ThemeEditorView {
                 }
             });
 
+            searchEmptyView = new EmptyTextProgressView(context);
+            searchEmptyView.setShowAtCenter(true);
+            searchEmptyView.showTextView();
+            searchEmptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+            listView.setEmptyView(searchEmptyView);
+            containerView.addView(searchEmptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 52, 0, 0));
+
+            FrameLayout.LayoutParams frameLayoutParams = new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, AndroidUtilities.getShadowHeight(), Gravity.TOP | Gravity.LEFT);
+            frameLayoutParams.topMargin = AndroidUtilities.dp(58);
+            shadow[0] = new View(context);
+            shadow[0].setBackgroundColor(0x12000000);
+            shadow[0].setAlpha(0.0f);
+            shadow[0].setTag(1);
+            containerView.addView(shadow[0], frameLayoutParams);
+
+            containerView.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 58, Gravity.LEFT | Gravity.TOP));
+
             colorPicker = new ColorPicker(context);
             colorPicker.setVisibility(View.GONE);
             containerView.addView(colorPicker, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_HORIZONTAL));
 
-            shadow = new View(context);
-            shadow.setBackgroundResource(R.drawable.header_shadow_reverse);
-            containerView.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 48));
+            frameLayoutParams = new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, AndroidUtilities.getShadowHeight(), Gravity.BOTTOM | Gravity.LEFT);
+            frameLayoutParams.bottomMargin = AndroidUtilities.dp(48);
+            shadow[1] = new View(context);
+            shadow[1].setBackgroundColor(0x12000000);
+            containerView.addView(shadow[1], frameLayoutParams);
 
             bottomSaveLayout = new FrameLayout(context);
             bottomSaveLayout.setBackgroundColor(0xffffffff);
@@ -692,6 +913,40 @@ public class ThemeEditorView {
             saveButton.setOnClickListener(v -> setColorPickerVisible(false));
         }
 
+        private void runShadowAnimation(final int num, final boolean show) {
+            if (show && shadow[num].getTag() != null || !show && shadow[num].getTag() == null) {
+                shadow[num].setTag(show ? null : 1);
+                if (show) {
+                    shadow[num].setVisibility(View.VISIBLE);
+                }
+                if (shadowAnimation[num] != null) {
+                    shadowAnimation[num].cancel();
+                }
+                shadowAnimation[num] = new AnimatorSet();
+                shadowAnimation[num].playTogether(ObjectAnimator.ofFloat(shadow[num], View.ALPHA, show ? 1.0f : 0.0f));
+                shadowAnimation[num].setDuration(150);
+                shadowAnimation[num].addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (shadowAnimation[num] != null && shadowAnimation[num].equals(animation)) {
+                            if (!show) {
+                                shadow[num].setVisibility(View.INVISIBLE);
+                            }
+                            shadowAnimation[num] = null;
+                        }
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Animator animation) {
+                        if (shadowAnimation[num] != null && shadowAnimation[num].equals(animation)) {
+                            shadowAnimation[num] = null;
+                        }
+                    }
+                });
+                shadowAnimation[num].start();
+            }
+        }
+
         private void setColorPickerVisible(boolean visible) {
             if (visible) {
                 animationInProgress = true;
@@ -700,12 +955,16 @@ public class ThemeEditorView {
                 colorPicker.setAlpha(0.0f);
                 bottomLayout.setAlpha(0.0f);
 
+                previousScrollPosition = scrollOffsetY;
                 AnimatorSet animatorSet = new AnimatorSet();
                 animatorSet.playTogether(
-                        ObjectAnimator.ofFloat(colorPicker, "alpha", 1.0f),
-                        ObjectAnimator.ofFloat(bottomLayout, "alpha", 1.0f),
-                        ObjectAnimator.ofFloat(listView, "alpha", 0.0f),
-                        ObjectAnimator.ofFloat(bottomSaveLayout, "alpha", 0.0f),
+                        ObjectAnimator.ofFloat(colorPicker, View.ALPHA, 1.0f),
+                        ObjectAnimator.ofFloat(bottomLayout, View.ALPHA, 1.0f),
+                        ObjectAnimator.ofFloat(listView, View.ALPHA, 0.0f),
+                        ObjectAnimator.ofFloat(frameLayout, View.ALPHA, 0.0f),
+                        ObjectAnimator.ofFloat(shadow[0], View.ALPHA, 0.0f),
+                        ObjectAnimator.ofFloat(searchEmptyView, View.ALPHA, 0.0f),
+                        ObjectAnimator.ofFloat(bottomSaveLayout, View.ALPHA, 0.0f),
                         ObjectAnimator.ofInt(this, "scrollOffsetY", listView.getPaddingTop()));
                 animatorSet.setDuration(150);
                 animatorSet.setInterpolator(decelerateInterpolator);
@@ -713,34 +972,43 @@ public class ThemeEditorView {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         listView.setVisibility(View.INVISIBLE);
+                        searchField.setVisibility(View.INVISIBLE);
                         bottomSaveLayout.setVisibility(View.INVISIBLE);
                         animationInProgress = false;
                     }
                 });
                 animatorSet.start();
-                previousScrollPosition = scrollOffsetY;
             } else {
                 if (parentActivity != null) {
                     ((LaunchActivity) parentActivity).rebuildAllFragments(false);
                 }
                 Theme.saveCurrentTheme(currentThemeName, false);
-                AndroidUtilities.hideKeyboard(getCurrentFocus());
+                if (listView.getAdapter() == listAdapter) {
+                    AndroidUtilities.hideKeyboard(getCurrentFocus());
+                }
                 animationInProgress = true;
                 listView.setVisibility(View.VISIBLE);
                 bottomSaveLayout.setVisibility(View.VISIBLE);
+                searchField.setVisibility(View.VISIBLE);
                 listView.setAlpha(0.0f);
                 AnimatorSet animatorSet = new AnimatorSet();
                 animatorSet.playTogether(
-                        ObjectAnimator.ofFloat(colorPicker, "alpha", 0.0f),
-                        ObjectAnimator.ofFloat(bottomLayout, "alpha", 0.0f),
-                        ObjectAnimator.ofFloat(listView, "alpha", 1.0f),
-                        ObjectAnimator.ofFloat(bottomSaveLayout, "alpha", 1.0f),
+                        ObjectAnimator.ofFloat(colorPicker, View.ALPHA, 0.0f),
+                        ObjectAnimator.ofFloat(bottomLayout, View.ALPHA, 0.0f),
+                        ObjectAnimator.ofFloat(listView, View.ALPHA, 1.0f),
+                        ObjectAnimator.ofFloat(frameLayout, View.ALPHA, 1.0f),
+                        ObjectAnimator.ofFloat(shadow[0], View.ALPHA, shadow[0].getTag() != null ? 0.0f : 1.0f),
+                        ObjectAnimator.ofFloat(searchEmptyView, View.ALPHA, 1.0f),
+                        ObjectAnimator.ofFloat(bottomSaveLayout, View.ALPHA, 1.0f),
                         ObjectAnimator.ofInt(this, "scrollOffsetY", previousScrollPosition));
                 animatorSet.setDuration(150);
                 animatorSet.setInterpolator(decelerateInterpolator);
                 animatorSet.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
+                        if (listView.getAdapter() == searchAdapter) {
+                            searchField.showKeyboard();
+                        }
                         colorPicker.setVisibility(View.GONE);
                         bottomLayout.setVisibility(View.GONE);
                         animationInProgress = false;
@@ -780,7 +1048,14 @@ public class ThemeEditorView {
             } else {
                 top = child.getTop() - AndroidUtilities.dp(8);
             }
-            int newOffset = top > 0 && holder != null && holder.getAdapterPosition() == 0 ? top : 0;
+            int newOffset;
+            if (top > -AndroidUtilities.dp(1) && holder != null && holder.getAdapterPosition() == 0) {
+                newOffset = top;
+                runShadowAnimation(0, false);
+            } else {
+                newOffset = 0;
+                runShadowAnimation(0, true);
+            }
             if (scrollOffsetY != newOffset) {
                 setScrollOffsetY(newOffset);
             }
@@ -793,8 +1068,206 @@ public class ThemeEditorView {
         @Keep
         public void setScrollOffsetY(int value) {
             listView.setTopGlowOffset(scrollOffsetY = value);
+            frameLayout.setTranslationY(scrollOffsetY);
             colorPicker.setTranslationY(scrollOffsetY);
+            searchEmptyView.setTranslationY(scrollOffsetY);
             containerView.invalidate();
+        }
+
+        public class SearchAdapter extends RecyclerListView.SelectionAdapter {
+
+            private Context context;
+            private int lastSearchId;
+            private int currentCount;
+            private ArrayList<ArrayList<ThemeDescription>> searchResult = new ArrayList<>();
+            private ArrayList<CharSequence> searchNames = new ArrayList<>();
+            private Runnable searchRunnable;
+            private String lastSearchText;
+
+            public SearchAdapter(Context context) {
+                this.context = context;
+            }
+
+            public CharSequence generateSearchName(String name, String q) {
+                if (TextUtils.isEmpty(name)) {
+                    return "";
+                }
+                SpannableStringBuilder builder = new SpannableStringBuilder();
+                String wholeString = name.trim();
+                String lower = wholeString.toLowerCase();
+
+                int index;
+                int lastIndex = 0;
+                while ((index = lower.indexOf(q, lastIndex)) != -1) {
+                    int end = q.length() + index;
+
+                    if (lastIndex != 0 && lastIndex != index + 1) {
+                        builder.append(wholeString.substring(lastIndex, index));
+                    } else if (lastIndex == 0 && index != 0) {
+                        builder.append(wholeString.substring(0, index));
+                    }
+
+                    String query = wholeString.substring(index, Math.min(wholeString.length(), end));
+                    if (query.startsWith(" ")) {
+                        builder.append(" ");
+                    }
+                    query = query.trim();
+
+                    int start = builder.length();
+                    builder.append(query);
+                    builder.setSpan(new ForegroundColorSpan(0xff4d83b3), start, start + query.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                    lastIndex = end;
+                }
+
+                if (lastIndex != -1 && lastIndex < wholeString.length()) {
+                    builder.append(wholeString.substring(lastIndex));
+                }
+
+                return builder;
+            }
+
+            private void searchDialogsInternal(final String query, final int searchId) {
+                try {
+                    String search1 = query.trim().toLowerCase();
+                    if (search1.length() == 0) {
+                        lastSearchId = -1;
+                        updateSearchResults(new ArrayList<>(), new ArrayList<>(), lastSearchId);
+                        return;
+                    }
+                    String search2 = LocaleController.getInstance().getTranslitString(search1);
+                    if (search1.equals(search2) || search2.length() == 0) {
+                        search2 = null;
+                    }
+                    String[] search = new String[1 + (search2 != null ? 1 : 0)];
+                    search[0] = search1;
+                    if (search2 != null) {
+                        search[1] = search2;
+                    }
+
+                    ArrayList<ArrayList<ThemeDescription>> searchResults = new ArrayList<>();
+                    ArrayList<CharSequence> names = new ArrayList<>();
+                    for (int a = 0, N = listAdapter.items.size(); a < N; a++) {
+                        ArrayList<ThemeDescription> themeDescriptions = listAdapter.items.get(a);
+                        String name = themeDescriptions.get(0).getCurrentKey().toLowerCase();
+                        int found = 0;
+                        for (String q : search) {
+                            if (name.contains(q)) {
+                                searchResults.add(themeDescriptions);
+                                names.add(generateSearchName(name, q));
+                                break;
+                            }
+                        }
+                    }
+                    updateSearchResults(searchResults, names, searchId);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
+
+            private void updateSearchResults(final ArrayList<ArrayList<ThemeDescription>> result, ArrayList<CharSequence> names, final int searchId) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (searchId != lastSearchId) {
+                        return;
+                    }
+                    if (listView.getAdapter() != searchAdapter) {
+                        topBeforeSwitch = getCurrentTop();
+                        listView.setAdapter(searchAdapter);
+                        searchAdapter.notifyDataSetChanged();
+                    }
+                    boolean becomeEmpty = !searchResult.isEmpty() && result.isEmpty();
+                    boolean isEmpty = searchResult.isEmpty() && result.isEmpty();
+                    if (becomeEmpty) {
+                        topBeforeSwitch = getCurrentTop();
+                    }
+                    searchResult = result;
+                    searchNames = names;
+                    notifyDataSetChanged();
+                    if (!isEmpty && !becomeEmpty && topBeforeSwitch > 0) {
+                        layoutManager.scrollToPositionWithOffset(0, -topBeforeSwitch);
+                        topBeforeSwitch = -1000;
+                    }
+                    searchEmptyView.showTextView();
+                });
+            }
+
+            public void searchDialogs(final String query) {
+                if (query != null && query.equals(lastSearchText)) {
+                    return;
+                }
+                lastSearchText = query;
+                if (searchRunnable != null) {
+                    Utilities.searchQueue.cancelRunnable(searchRunnable);
+                    searchRunnable = null;
+                }
+                if (query == null || query.length() == 0) {
+                    searchResult.clear();
+                    topBeforeSwitch = getCurrentTop();
+                    lastSearchId = -1;
+                    notifyDataSetChanged();
+                } else {
+                    final int searchId = ++lastSearchId;
+                    searchRunnable = () -> searchDialogsInternal(query, searchId);
+                    Utilities.searchQueue.postRunnable(searchRunnable, 300);
+                }
+            }
+
+            @Override
+            public int getItemCount() {
+                return searchResult.isEmpty() ? 0 : (searchResult.size() + 1);
+            }
+
+            public ArrayList<ThemeDescription> getItem(int i) {
+                if (i < 0 || i >= searchResult.size()) {
+                    return null;
+                }
+                return searchResult.get(i);
+            }
+
+            @Override
+            public boolean isEnabled(RecyclerView.ViewHolder holder) {
+                return true;
+            }
+
+            @Override
+            public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+                View view;
+                switch (viewType) {
+                    case 0:
+                        view = new TextColorThemeCell(context);
+                        view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
+                        break;
+                    case 1:
+                    default:
+                        view = new View(context);
+                        view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(56)));
+                        break;
+                }
+                return new RecyclerListView.Holder(view);
+            }
+
+            @Override
+            public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+                if (holder.getItemViewType() == 0) {
+                    ArrayList<ThemeDescription> arrayList = searchResult.get(position - 1);
+                    ThemeDescription description = arrayList.get(0);
+                    int color;
+                    if (description.getCurrentKey().equals(Theme.key_chat_wallpaper)) {
+                        color = 0;
+                    } else {
+                        color = description.getSetColor();
+                    }
+                    ((TextColorThemeCell) holder.itemView).setTextAndColor(searchNames.get(position - 1), color);
+                }
+            }
+
+            @Override
+            public int getItemViewType(int i) {
+                if (i == 0) {
+                    return 1;
+                }
+                return 0;
+            }
         }
 
         private class ListAdapter extends RecyclerListView.SelectionAdapter {
@@ -821,7 +1294,7 @@ public class ThemeEditorView {
 
             @Override
             public int getItemCount() {
-                return items.size();
+                return items.isEmpty() ? 0 : (items.size() + 1);
             }
 
             public ArrayList<ThemeDescription> getItem(int i) {
@@ -838,26 +1311,41 @@ public class ThemeEditorView {
 
             @Override
             public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-                View view = new TextColorThemeCell(context);
-                view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
+                View view;
+                switch (viewType) {
+                    case 0:
+                        view = new TextColorThemeCell(context);
+                        view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
+                        break;
+                    case 1:
+                    default:
+                        view = new View(context);
+                        view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(56)));
+                        break;
+                }
                 return new RecyclerListView.Holder(view);
             }
 
             @Override
             public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-                ArrayList<ThemeDescription> arrayList = items.get(position);
-                ThemeDescription description = arrayList.get(0);
-                int color;
-                if (description.getCurrentKey().equals(Theme.key_chat_wallpaper)) {
-                    color = 0;
-                } else {
-                    color = description.getSetColor();
+                if (holder.getItemViewType() == 0) {
+                    ArrayList<ThemeDescription> arrayList = items.get(position - 1);
+                    ThemeDescription description = arrayList.get(0);
+                    int color;
+                    if (description.getCurrentKey().equals(Theme.key_chat_wallpaper)) {
+                        color = 0;
+                    } else {
+                        color = description.getSetColor();
+                    }
+                    ((TextColorThemeCell) holder.itemView).setTextAndColor(description.getTitle(), color);
                 }
-                ((TextColorThemeCell) holder.itemView).setTextAndColor(description.getTitle(), color);
             }
 
             @Override
             public int getItemViewType(int i) {
+                if (i == 0) {
+                    return 1;
+                }
                 return 0;
             }
         }
@@ -1029,7 +1517,7 @@ public class ThemeEditorView {
 
     private void showWithAnimation() {
         AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(ObjectAnimator.ofFloat(windowView, "alpha", 0.0f, 1.0f),
+        animatorSet.playTogether(ObjectAnimator.ofFloat(windowView, View.ALPHA, 0.0f, 1.0f),
                 ObjectAnimator.ofFloat(windowView, "scaleX", 0.0f, 1.0f),
                 ObjectAnimator.ofFloat(windowView, "scaleY", 0.0f, 1.0f));
         animatorSet.setInterpolator(decelerateInterpolator);
@@ -1064,7 +1552,7 @@ public class ThemeEditorView {
         }
         try {
             AnimatorSet animatorSet = new AnimatorSet();
-            animatorSet.playTogether(ObjectAnimator.ofFloat(windowView, "alpha", 1.0f, 0.0f),
+            animatorSet.playTogether(ObjectAnimator.ofFloat(windowView, View.ALPHA, 1.0f, 0.0f),
                     ObjectAnimator.ofFloat(windowView, "scaleX", 1.0f, 0.0f),
                     ObjectAnimator.ofFloat(windowView, "scaleY", 1.0f, 0.0f));
             animatorSet.setInterpolator(decelerateInterpolator);
@@ -1143,7 +1631,7 @@ public class ThemeEditorView {
             }
             editor.putInt("sidex", 0);
             if (windowView.getAlpha() != 1.0f) {
-                animators.add(ObjectAnimator.ofFloat(windowView, "alpha", 1.0f));
+                animators.add(ObjectAnimator.ofFloat(windowView, View.ALPHA, 1.0f));
             }
             animators.add(ObjectAnimator.ofInt(this, "x", startX));
         } else if (Math.abs(endX - windowLayoutParams.x) <= maxDiff || windowLayoutParams.x > AndroidUtilities.displaySize.x - editorWidth && windowLayoutParams.x < AndroidUtilities.displaySize.x - editorWidth / 4 * 3) {
@@ -1152,7 +1640,7 @@ public class ThemeEditorView {
             }
             editor.putInt("sidex", 1);
             if (windowView.getAlpha() != 1.0f) {
-                animators.add(ObjectAnimator.ofFloat(windowView, "alpha", 1.0f));
+                animators.add(ObjectAnimator.ofFloat(windowView, View.ALPHA, 1.0f));
             }
             animators.add(ObjectAnimator.ofInt(this, "x", endX));
         } else if (windowView.getAlpha() != 1.0f) {
@@ -1196,7 +1684,7 @@ public class ThemeEditorView {
             animatorSet.setInterpolator(decelerateInterpolator);
             animatorSet.setDuration(150);
             if (slideOut) {
-                animators.add(ObjectAnimator.ofFloat(windowView, "alpha", 0.0f));
+                animators.add(ObjectAnimator.ofFloat(windowView, View.ALPHA, 0.0f));
                 animatorSet.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {

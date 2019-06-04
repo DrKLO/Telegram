@@ -120,25 +120,25 @@ public class DataQuery {
     public static final int TYPE_FAVE = 2;
     public static final int TYPE_FEATURED = 3;
 
-    private ArrayList<TLRPC.TL_messages_stickerSet> stickerSets[] = new ArrayList[] {new ArrayList<>(), new ArrayList<>(), new ArrayList(0), new ArrayList()};
+    private ArrayList<TLRPC.TL_messages_stickerSet>[] stickerSets = new ArrayList[]{new ArrayList<>(), new ArrayList<>(), new ArrayList(0), new ArrayList()};
     private LongSparseArray<TLRPC.TL_messages_stickerSet> stickerSetsById = new LongSparseArray<>();
     private LongSparseArray<TLRPC.TL_messages_stickerSet> installedStickerSetsById = new LongSparseArray<>();
     private LongSparseArray<TLRPC.TL_messages_stickerSet> groupStickerSets = new LongSparseArray<>();
     private HashMap<String, TLRPC.TL_messages_stickerSet> stickerSetsByName = new HashMap<>();
-    private boolean loadingStickers[] = new boolean[4];
-    private boolean stickersLoaded[] = new boolean[4];
-    private int loadHash[] = new int[4];
-    private int loadDate[] = new int[4];
+    private boolean[] loadingStickers = new boolean[4];
+    private boolean[] stickersLoaded = new boolean[4];
+    private int[] loadHash = new int[4];
+    private int[] loadDate = new int[4];
 
-    private int archivedStickersCount[] = new int[2];
+    private int[] archivedStickersCount = new int[2];
 
     private LongSparseArray<String> stickersByEmoji = new LongSparseArray<>();
     private HashMap<String, ArrayList<TLRPC.Document>> allStickers = new HashMap<>();
     private HashMap<String, ArrayList<TLRPC.Document>> allStickersFeatured = new HashMap<>();
 
-    private ArrayList<TLRPC.Document> recentStickers[] = new ArrayList[] {new ArrayList<>(), new ArrayList<>(), new ArrayList<>()};
-    private boolean loadingRecentStickers[] = new boolean[3];
-    private boolean recentStickersLoaded[] = new boolean[3];
+    private ArrayList<TLRPC.Document>[] recentStickers = new ArrayList[]{new ArrayList<>(), new ArrayList<>(), new ArrayList<>()};
+    private boolean[] loadingRecentStickers = new boolean[3];
+    private boolean[] recentStickersLoaded = new boolean[3];
 
     private ArrayList<TLRPC.Document> recentGifs = new ArrayList<>();
     private boolean loadingRecentGifs;
@@ -1507,10 +1507,10 @@ public class DataQuery {
     private int mergeReqId;
     private long lastMergeDialogId;
     private int lastReqId;
-    private int messagesSearchCount[] = new int[] {0, 0};
-    private boolean messagesSearchEndReached[] = new boolean[] {false, false};
+    private int[] messagesSearchCount = new int[]{0, 0};
+    private boolean[] messagesSearchEndReached = new boolean[]{false, false};
     private ArrayList<MessageObject> searchResultMessages = new ArrayList<>();
-    private SparseArray<MessageObject> searchResultMessagesMap[] = new SparseArray[] {new SparseArray<>(), new SparseArray<>()};
+    private SparseArray<MessageObject>[] searchResultMessagesMap = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
     private String lastSearchQuery;
     private int lastReturnedNum;
 
@@ -2340,7 +2340,7 @@ public class DataQuery {
                         shortcutIntent.putExtra("chatId", chat_id);
                         did = -chat_id;
                     }
-                    if (user == null && chat == null) {
+                    if ((user == null || UserObject.isDeleted(user)) && chat == null) {
                         continue;
                     }
 
@@ -3495,9 +3495,9 @@ public class DataQuery {
 
     public CharSequence substring(CharSequence source, int start, int end) {
         if (source instanceof SpannableStringBuilder) {
-            return ((SpannableStringBuilder) source).subSequence(start, end);
+            return source.subSequence(start, end);
         } else if (source instanceof SpannedString) {
-            return ((SpannedString) source).subSequence(start, end);
+            return source.subSequence(start, end);
         } else {
             return TextUtils.substring(source, start, end);
         }
@@ -3584,7 +3584,7 @@ public class DataQuery {
 
         if (message[0] instanceof Spanned) {
             Spanned spannable = (Spanned) message[0];
-            TypefaceSpan spans[] = spannable.getSpans(0, message[0].length(), TypefaceSpan.class);
+            TypefaceSpan[] spans = spannable.getSpans(0, message[0].length(), TypefaceSpan.class);
             if (spans != null && spans.length > 0) {
                 for (int a = 0; a < spans.length; a++) {
                     TypefaceSpan span = spans[a];
@@ -3610,7 +3610,7 @@ public class DataQuery {
                 }
             }
 
-            URLSpanUserMention spansMentions[] = spannable.getSpans(0, message[0].length(), URLSpanUserMention.class);
+            URLSpanUserMention[] spansMentions = spannable.getSpans(0, message[0].length(), URLSpanUserMention.class);
             if (spansMentions != null && spansMentions.length > 0) {
                 if (entities == null) {
                     entities = new ArrayList<>();
@@ -3629,7 +3629,7 @@ public class DataQuery {
                 }
             }
 
-            URLSpanReplacement spansUrlReplacement[] = spannable.getSpans(0, message[0].length(), URLSpanReplacement.class);
+            URLSpanReplacement[] spansUrlReplacement = spannable.getSpans(0, message[0].length(), URLSpanReplacement.class);
             if (spansUrlReplacement != null && spansUrlReplacement.length > 0) {
                 if (entities == null) {
                     entities = new ArrayList<>();

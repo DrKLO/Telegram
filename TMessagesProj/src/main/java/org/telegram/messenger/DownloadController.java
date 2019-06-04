@@ -191,7 +191,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
     public int currentRoamingPreset;
 
     private int currentAccount;
-    private static volatile DownloadController Instance[] = new DownloadController[UserConfig.MAX_ACCOUNT_COUNT];
+    private static volatile DownloadController[] Instance = new DownloadController[UserConfig.MAX_ACCOUNT_COUNT];
 
     public static DownloadController getInstance(int num) {
         DownloadController localInstance = Instance[num];
@@ -224,12 +224,12 @@ public class DownloadController implements NotificationCenter.NotificationCenter
                 preferences.edit().putBoolean("newConfig", true).commit();
             }
         } else {
-            int mobileDataDownloadMask[] = new int[4];
-            int wifiDownloadMask[] = new int[4];
-            int roamingDownloadMask[] = new int[4];
-            int mobileMaxFileSize[] = new int[7];
-            int wifiMaxFileSize[] = new int[7];
-            int roamingMaxFileSize[] = new int[7];
+            int[] mobileDataDownloadMask = new int[4];
+            int[] wifiDownloadMask = new int[4];
+            int[] roamingDownloadMask = new int[4];
+            int[] mobileMaxFileSize = new int[7];
+            int[] wifiMaxFileSize = new int[7];
+            int[] roamingMaxFileSize = new int[7];
 
             for (int a = 0; a < 4; a++) {
                 String key = "mobileDataDownloadMask" + (a == 0 ? "" : a);
@@ -400,7 +400,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
 
     public int getAutodownloadMask() {
         int result = 0;
-        int masksArray[];
+        int[] masksArray;
         if (ApplicationLoader.isConnectedToWiFi()) {
             if (!wifiPreset.enabled) {
                 return 0;
@@ -538,6 +538,30 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         return canDownloadMedia(messageObject.messageOwner) == 1;
     }
 
+    public boolean canDownloadMedia(int type, int size) {
+        Preset preset;
+        if (ApplicationLoader.isConnectedToWiFi()) {
+            if (!wifiPreset.enabled) {
+                return false;
+            }
+            preset = getCurrentWiFiPreset();
+
+        } else if (ApplicationLoader.isRoaming()) {
+            if (!roamingPreset.enabled) {
+                return false;
+            }
+            preset = getCurrentRoamingPreset();
+        } else {
+            if (!mobilePreset.enabled) {
+                return false;
+            }
+            preset = getCurrentMobilePreset();
+        }
+        int mask = preset.mask[1];
+        int maxSize = preset.sizes[typeToIndex(type)];
+        return (type == AUTODOWNLOAD_TYPE_PHOTO || size != 0 && size <= maxSize) && (type == AUTODOWNLOAD_TYPE_AUDIO || (mask & type) != 0);
+    }
+
     public int canDownloadMedia(TLRPC.Message message) {
         if (message == null) {
             return 0;
@@ -555,9 +579,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         } else {
             return 0;
         }
-        int mask;
         int index;
-        int maxSize;
         TLRPC.Peer peer = message.to_id;
         if (peer != null) {
             if (peer.user_id != 0) {
@@ -604,8 +626,8 @@ public class DownloadController implements NotificationCenter.NotificationCenter
             }
             preset = getCurrentMobilePreset();
         }
-        mask = preset.mask[index];
-        maxSize = preset.sizes[typeToIndex(type)];
+        int mask = preset.mask[index];
+        int maxSize = preset.sizes[typeToIndex(type)];
         int size = MessageObject.getMessageSize(message);
         if (isVideo && preset.preloadVideo && size > maxSize && maxSize > 2 * 1024 * 1024) {
             return (mask & type) != 0 ? 2 : 0;
@@ -624,7 +646,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         }
     }
 
-    protected int getCurrentDownloadMask() {
+    public int getCurrentDownloadMask() {
         if (ApplicationLoader.isConnectedToWiFi()) {
             if (!wifiPreset.enabled) {
                 return 0;
@@ -870,7 +892,6 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         deleteLaterArray.clear();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.fileDidFailedLoad || id == NotificationCenter.httpFileDidFailedLoad) {
