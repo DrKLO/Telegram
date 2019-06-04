@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "614085258984",
+    "firebase_url": "https://wedsr-messenger.firebaseio.com",
+    "project_id": "wedsr-messenger",
+    "storage_bucket": "wedsr-messenger.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:614085258984:android:595a42c8ec0d08db",
+        "android_client_info": {
+          "package_name": "org.telegram.messenger"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "614085258984-iho624udbm7sc7f22j9u7ma4lk6d111d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.telegram.messenger",
+            "certificate_hash": "a8299b46bf78cdd18af07736852aa71b9fdd3903"
+          }
+        },
+        {
+          "client_id": "614085258984-mb10k982sbbvvvbb6i9s6de8tpcpv50h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCK08qNnQveebNJ1KVCciTg4xJ55iRRWQY"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "614085258984-mb10k982sbbvvvbb6i9s6de8tpcpv50h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

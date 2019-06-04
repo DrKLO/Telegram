@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">WedSR</string>
+    <string name="AppNameBeta">WedSR Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -15,7 +15,7 @@
     <string name="AccountAlreadyLoggedIn">This account is already logged in from this app.</string>
     <string name="AccountSwitch">Switch</string>
     <string name="SyncContacts">Sync Contacts</string>
-    <string name="SyncContactsDeleteInfo">This will remove your contacts from the Telegram servers. If \'Sync Contacts\' is enabled, contacts will be re-synced.</string>
+    <string name="SyncContactsDeleteInfo">This will remove your contacts from the WedSR servers. If \'Sync Contacts\' is enabled, contacts will be re-synced.</string>
     <string name="SyncContactsOn">Contacts from this device will be added to this account.</string>
     <string name="SyncContactsOff">Contacts from this device will not be added to this account.</string>
     <string name="SyncContactsInfoOn">Contacts from this device will be added to your account.</string>
@@ -24,12 +24,12 @@
     <!--code enter view-->
     <string name="YourCode">Phone verification</string>
     <string name="SentSmsCode">We\'ve sent an SMS with an activation code to your phone **%1$s**.</string>
-    <string name="SentAppCode">We\'ve sent the code to the **Telegram** app on your other device.</string>
-    <string name="SentAppCodeTitle">Check your Telegram messages</string>
+    <string name="SentAppCode">We\'ve sent the code to the **WedSR** app on your other device.</string>
+    <string name="SentAppCodeTitle">Check your WedSR messages</string>
     <string name="SentSmsCodeTitle">Enter code</string>
-    <string name="SentCallCode">We\'re calling your phone **%1$s**.\n\nDon\'t accept the call, Telegram will process everything automatically.</string>
+    <string name="SentCallCode">We\'re calling your phone **%1$s**.\n\nDon\'t accept the call, WedSR will process everything automatically.</string>
     <string name="SentCallOnly">We are calling your phone **%1$s** to dictate a code.</string>
-    <string name="CallText">Telegram will call you in %1$d:%2$02d</string>
+    <string name="CallText">WedSR will call you in %1$d:%2$02d</string>
     <string name="SmsText">We will send you an SMS in %1$d:%2$02d</string>
     <string name="Calling">Calling you...</string>
     <string name="SendingSms">Sending SMS...</string>
@@ -38,7 +38,7 @@
     <string name="DidNotGetTheCode">Didn\'t get the code?</string>
     <string name="DidNotGetTheCodeSms">Send the code as an SMS</string>
     <string name="CancelAccountReset">Cancel account reset</string>
-    <string name="CancelAccountResetInfo">Somebody with access to your phone number **%1$s** has requested to delete your Telegram account and reset your 2-Step Verification password.\n\nIf this wasn\'t you, please enter the code we\'ve just sent you via SMS to your number.</string>
+    <string name="CancelAccountResetInfo">Somebody with access to your phone number **%1$s** has requested to delete your WedSR account and reset your 2-Step Verification password.\n\nIf this wasn\'t you, please enter the code we\'ve just sent you via SMS to your number.</string>
     <string name="ResetAccount">Reset account</string>
     <string name="ResetAccountInfo">Since the account **%1$s** is active and protected by a password, we will delete it in 1 week for security purposes.\n\nYou can cancel this process at any time.</string>
     <string name="ResetAccountStatus">You\'ll be able to reset your account in:</string>
@@ -46,7 +46,7 @@
     <string name="ResetAccountButton">RESET ACCOUNT</string>
     <string name="CancelLinkExpired">Link is invalid or expired.</string>
     <string name="CancelLinkSuccess">The deletion process was cancelled for your account %1$s. You may close this window now.</string>
-    <string name="OtherLoginCode">Your login code is **%1$s**. Enter it in the Telegram app where you are trying to log in.\n\nDo not give this code to anyone.</string>
+    <string name="OtherLoginCode">Your login code is **%1$s**. Enter it in the WedSR app where you are trying to log in.\n\nDo not give this code to anyone.</string>
     <!--signup view-->
     <string name="YourName">Your name</string>
     <string name="RegisterText2">Please enter your full name and upload your profile picture.</string>
@@ -102,7 +102,7 @@
     <string name="PaymentFailed">Sorry, the payment was declined.</string>
     <string name="PaymentConnectionFailed">Unable to reach payment server. Please check your internet connection and try again.</string>
     <string name="PaymentWarning">Warning</string>
-    <string name="PaymentWarningText">Neither Telegram, nor %1$s will have access to your credit card information. Credit card details will be handled only by the payment system, %2$s.\n\nPayments will go directly to the developer of %1$s. Telegram cannot provide any guarantees, so proceed at your own risk. In case of problems, please contact the developer of %1$s or your bank.</string>
+    <string name="PaymentWarningText">Neither WedSR, nor %1$s will have access to your credit card information. Credit card details will be handled only by the payment system, %2$s.\n\nPayments will go directly to the developer of %1$s. WedSR cannot provide any guarantees, so proceed at your own risk. In case of problems, please contact the developer of %1$s or your bank.</string>
     <string name="PaymentPassword">Password &amp; Email</string>
     <string name="PaymentPasswordTitle">Password</string>
     <string name="PaymentPasswordEnter">Enter a password</string>
@@ -171,7 +171,7 @@
     <string name="DisappearingPhoto">Secret Photo</string>
     <string name="DisappearingVideo">Secret Video</string>
     <string name="DisappearingGif">Secret GIF</string>
-    <string name="CompatibilityChat">%1$s is using an older version of Telegram, so secret photos will be shown in compatibility mode.\n\nOnce %2$s updates Telegram, photos with timers for 1 minute or less will start working in \'Tap and hold to view\' mode, and you will be notified whenever the other party takes a screenshot.</string>
+    <string name="CompatibilityChat">%1$s is using an older version of WedSR, so secret photos will be shown in compatibility mode.\n\nOnce %2$s updates WedSR, photos with timers for 1 minute or less will start working in \'Tap and hold to view\' mode, and you will be notified whenever the other party takes a screenshot.</string>
     <string name="SearchMessages">Messages</string>
     <string name="Search">Search</string>
     <string name="MuteNotifications">Mute notifications</string>
@@ -201,10 +201,10 @@
     <string name="Italic">Italic</string>
     <string name="Mono">Mono</string>
     <string name="Regular">Regular</string>
-    <string name="ContactsPermissionAlert">**Telegram** needs access to your contacts so that you can connect with your friends across all your devices. Your contacts will be continuously synced with Telegram\'s heavily encrypted cloud servers.</string>
+    <string name="ContactsPermissionAlert">**WedSR** needs access to your contacts so that you can connect with your friends across all your devices. Your contacts will be continuously synced with WedSR\'s heavily encrypted cloud servers.</string>
     <string name="ContactsPermissionAlertNotNow">NOT NOW</string>
     <string name="ContactsPermissionAlertContinue">CONTINUE</string>
-    <string name="YourContacts">Your contacts on Telegram</string>
+    <string name="YourContacts">Your contacts on WedSR</string>
     <string name="ArchiveHintHeader1">This is your Archive</string>
     <string name="ArchiveHintText1">Chats with enabled notifications get unarchived when new messages arrive.</string>
     <string name="ArchiveHintHeader2">Muted chats</string>
@@ -334,7 +334,7 @@
     <string name="ChannelRemoveUserAdmin">Dismiss admin</string>
     <string name="ChannelEditPermissions">Edit permissions</string>
     <string name="ChannelMembersInfo">Only channel administrators can see this list.</string>
-    <string name="ChannelLinkInfo">Anyone who has Telegram installed will be able to join your channel by following this link.</string>
+    <string name="ChannelLinkInfo">Anyone who has WedSR installed will be able to join your channel by following this link.</string>
     <string name="ChannelAdminsInfo">You can add administrators to help you manage your channel. Tap and hold to remove admins.</string>
     <string name="ChannelJoinTo">Do you want to join the channel \'%1$s\'?</string>
     <string name="ChannelCantOpenPrivate">Sorry, this chat is no longer accessible.</string>
@@ -633,7 +633,7 @@
     <string name="SendingGame">playing a game...</string>
     <string name="SendingVideoStatus">sending a video...</string>
     <string name="SendingFile">sending a file...</string>
-    <string name="GotAQuestion">Got a question\nabout Telegram?</string>
+    <string name="GotAQuestion">Got a question\nabout WedSR?</string>
     <string name="ChatGallery">Gallery</string>
     <string name="ChatLocation">Location</string>
     <string name="ChatVideo">Video</string>
@@ -680,7 +680,7 @@
     <string name="SendAsFiles">Send as files</string>
     <string name="OpenUrlAlert">Open url %1$s?</string>
     <string name="CancelSending">Cancel sending</string>
-    <string name="BotPermissionGameAlert">Allow %1$s to pass your Telegram name and id (not your phone number) to pages you open with this bot?</string>
+    <string name="BotPermissionGameAlert">Allow %1$s to pass your WedSR name and id (not your phone number) to pages you open with this bot?</string>
     <string name="ReportSpam">REPORT SPAM</string>
     <string name="ReportSpamAndLeave">REPORT SPAM AND LEAVE</string>
     <string name="AddContactChat">ADD CONTACT</string>
@@ -782,7 +782,7 @@
     <string name="URL">URL</string>
     <string name="MapPreviewProvider">Map Preview Provider</string>
     <string name="ChooseMapPreviewProvider">Choose Map Preview Provider</string>
-    <string name="MapPreviewProviderTelegram">Telegram</string>
+    <string name="MapPreviewProviderTelegram">WedSR</string>
     <string name="MapPreviewProviderGoogle">Google</string>
     <string name="MapPreviewProviderYandex">Yandex</string>
     <string name="MapPreviewProviderNobody">No previews</string>
@@ -844,8 +844,8 @@
     <string name="NotificationGroupKickMember">%1$s removed %3$s from the group %2$s</string>
     <string name="NotificationGroupKickYou">%1$s removed you from the group %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s has left the group %2$s</string>
-    <string name="NotificationContactJoined">%1$s joined Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn\'t you, you can go to Settings - Privacy and Security - Sessions and terminate that session.\n\nIf you think that somebody logged in to your account against your will, you can enable two-step verification in Privacy and Security settings.\n\nSincerely,\nThe Telegram Team</string>
+    <string name="NotificationContactJoined">%1$s joined WedSR!</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn\'t you, you can go to Settings - Privacy and Security - Sessions and terminate that session.\n\nIf you think that somebody logged in to your account against your will, you can enable two-step verification in Privacy and Security settings.\n\nSincerely,\nThe WedSR Team</string>
     <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
     <string name="NotificationInvitedToGroupByLink">%1$s joined to the group %2$s via invite link</string>
     <string name="NotificationGroupFew">%1$s sent %3$s to the group %2$s</string>
@@ -892,12 +892,12 @@
     <string name="NotificationActionPinnedGeoLiveChannel">%1$s pinned a live location</string>
     <string name="NotificationActionPinnedGifChannel">%1$s pinned a GIF</string>
     <string name="NotificationActionPinnedMusicChannel">%1$s pinned an audio file</string>
-    <string name="SecretChatName">Telegram</string>
+    <string name="SecretChatName">WedSR</string>
     <!--contacts view-->
     <string name="SelectContact">Select Contact</string>
     <string name="ContactShare">SHARE CONTACT</string>
     <string name="NoContacts">No contacts yet</string>
-    <string name="InviteText2">Hey, I\'m using Telegram to chat. Join me! Download it here: %1$s</string>
+    <string name="InviteText2">Hey, I\'m using WedSR to chat. Join me! Download it here: %1$s</string>
     <string name="TodayAt">at</string>
     <string name="YesterdayAt">yesterday at</string>
     <string name="TodayAtFormatted">at %1$s</string>
@@ -915,11 +915,11 @@
     <string name="WithinAMonth">last seen within a month</string>
     <string name="ALongTimeAgo">last seen a long time ago</string>
     <string name="NewMessageTitle">New Message</string>
-    <string name="InviteFriendsHelp">Select contacts to invite them to Telegram</string>
-    <string name="InviteToTelegram">INVITE TO TELEGRAM</string>
-    <string name="ShareTelegram">Share Telegram...</string>
+    <string name="InviteFriendsHelp">Select contacts to invite them to WedSR</string>
+    <string name="InviteToTelegram">INVITE TO WEDSR</string>
+    <string name="ShareTelegram">Share WedSR...</string>
     <string name="UpdateContactsTitle">Update contacts?</string>
-    <string name="UpdateContactsMessage">Telegram has detected many unsynced contacts, would you like to sync them now? Choose \'OK\' if you\'re using your own device, SIM card and Google account.</string>
+    <string name="UpdateContactsMessage">WedSR has detected many unsynced contacts, would you like to sync them now? Choose \'OK\' if you\'re using your own device, SIM card and Google account.</string>
     <string name="SortedByName">Sorted by name</string>
     <string name="SortedByLastSeen">Sorted by last seen time</string>
     <!--group create view-->
@@ -946,7 +946,7 @@
     <string name="RevokeLinkAlertChannel">Are you sure you want to revoke the link **%1$s**?\n\nThe channel \"**%2$s**\" will become private.</string>
     <string name="CopyLink">Copy Link</string>
     <string name="ShareLink">Share Link</string>
-    <string name="LinkInfo">Anyone who has Telegram installed will be able to join your group by following this link.</string>
+    <string name="LinkInfo">Anyone who has WedSR installed will be able to join your group by following this link.</string>
     <!--group info view-->
     <string name="GroupMembers">Members</string>
     <string name="SharedMedia">Shared Media</string>
@@ -972,7 +972,7 @@
     <string name="ShareContact">Share</string>
     <string name="AddContact">Add</string>
     <string name="AddContactTitle">Add contact</string>
-    <string name="ContactNotRegistered">%1$s is not on Telegram yet, would you like to invite them to join?</string>
+    <string name="ContactNotRegistered">%1$s is not on WedSR yet, would you like to invite them to join?</string>
     <string name="Invite">Invite</string>
     <string name="BlockContact">Block</string>
     <string name="EditContact">Edit contact</string>
@@ -1001,8 +1001,8 @@
     <string name="MessageLifetimePhoto">If you set a timer, the photo will self-destruct after it was viewed.</string>
     <string name="MessageLifetimeVideo">If you set a timer, the video will self-destruct after it was viewed.</string>
     <string name="ShortMessageLifetimeForever">Off</string>
-    <string name="EncryptionKeyDescription">This image and text were derived from the encryption key for this secret chat with **%1$s**.\n\nIf they look the same on **%2$s\'s** device, end-to-end encryption is guaranteed.\n\nLearn more at telegram.org</string>
-    <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
+    <string name="EncryptionKeyDescription">This image and text were derived from the encryption key for this secret chat with **%1$s**.\n\nIf they look the same on **%2$s\'s** device, end-to-end encryption is guaranteed.\n\nLearn more at http://144.76.80.180/dns</string>
+    <string name="EncryptionKeyLink">http://144.76.80.180/dns#secret-chats</string>
     <string name="NumberUnknown">Unknown</string>
     <string name="PhoneHidden">Unknown</string>
     <string name="Info">Info</string>
@@ -1019,7 +1019,7 @@
     <string name="UsernameInvalidShort">A username must have at least 5 characters.</string>
     <string name="UsernameInvalidLong">The username must not exceed 32 characters.</string>
     <string name="UsernameInvalidStartNumber">Sorry, a username can\'t start with a number.</string>
-    <string name="UsernameHelp">You can choose a username on **Telegram**. If you do, other people will be able to find you by this username and contact you without knowing your phone number.\n\nYou can use **a–z**, **0–9** and underscores. Minimum length is **5** characters.</string>
+    <string name="UsernameHelp">You can choose a username on **WedSR**. If you do, other people will be able to find you by this username and contact you without knowing your phone number.\n\nYou can use **a–z**, **0–9** and underscores. Minimum length is **5** characters.</string>
     <string name="UsernameHelpLink">This link opens a chat with you:\n%1$s</string>
     <string name="UsernameChecking">Checking username...</string>
     <string name="UsernameAvailable">%1$s is available.</string>
@@ -1055,8 +1055,8 @@
     <string name="NoEmojiFound">No emoji found</string>
     <string name="NoMasks">No masks yet</string>
     <string name="EmojiSuggestions">Emoji suggestions</string>
-    <string name="EmojiSuggestionsInfo">**Telegram** lets you find emoji by thousands of keywords, but there is always something missing. If you want to suggest a new emoji replacement, you can help us by visiting:</string>
-    <string name="EmojiSuggestionsUrl">https://translations.telegram.org/%1$s/emoji</string>
+    <string name="EmojiSuggestionsInfo">**WedSR** lets you find emoji by thousands of keywords, but there is always something missing. If you want to suggest a new emoji replacement, you can help us by visiting:</string>
+    <string name="EmojiSuggestionsUrl">https://translations.http://144.76.80.180/dns/%1$s/emoji</string>
     <string name="Masks">Masks</string>
     <string name="MasksInfo">You can add masks to photos you send. To do this, open the photo editor before sending a photo.</string>
     <string name="FeaturedStickers">Trending Stickers</string>
@@ -1064,7 +1064,7 @@
     <string name="SuggestStickersAll">All Sets</string>
     <string name="SuggestStickersInstalled">My Sets</string>
     <string name="SuggestStickersNone">None</string>
-    <string name="FeaturedStickersInfo">These stickers are currently trending on Telegram. You can add custom stickers via the @stickers bot.</string>
+    <string name="FeaturedStickersInfo">These stickers are currently trending on WedSR. You can add custom stickers via the @stickers bot.</string>
     <string name="ArchivedStickers">Archived Stickers</string>
     <string name="ArchivedMasks">Archived Masks</string>
     <string name="ArchivedStickersEmpty">No archived stickers</string>
@@ -1111,7 +1111,7 @@
     <string name="SelectColor">Select color</string>
     <string name="CreateNewThemeMenu">Create new theme</string>
     <string name="CreateNewThemeHelp">Tap on the palette icon to view the list of elements on each screen - and edit them.</string>
-    <string name="CreateNewThemeAlert">You can create your own theme by changing colors within the app.\n\nYou can always switch back to the default Telegram theme here.</string>
+    <string name="CreateNewThemeAlert">You can create your own theme by changing colors within the app.\n\nYou can always switch back to the default WedSR theme here.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
     <string name="ResetNotificationsAlert">Are you sure you want to reset all notification settings to default?</string>
@@ -1140,7 +1140,7 @@
     <string name="NotificationsAndSounds">Notifications and Sounds</string>
     <string name="CustomNotifications">Custom Notifications</string>
     <string name="ProfilePopupNotification">Popup notifications</string>
-    <string name="ProfilePopupNotificationInfo">New messages from this contact will appear on your screen when you are not using Telegram.</string>
+    <string name="ProfilePopupNotificationInfo">New messages from this contact will appear on your screen when you are not using WedSR.</string>
     <string name="NotificationsLed">LED</string>
     <string name="NotificationsLedColor">Color</string>
     <string name="ColorBlue">Blue</string>
@@ -1220,7 +1220,7 @@
     <string name="MessagesSettings">Messages</string>
     <string name="SendByEnter">Send by Enter</string>
     <string name="Events">Events</string>
-    <string name="ContactJoined">Contact joined Telegram</string>
+    <string name="ContactJoined">Contact joined WedSR</string>
     <string name="PinnedMessages">Pinned Messages</string>
     <string name="Language">Language</string>
     <string name="LanguageCustom">Custom</string>
@@ -1231,24 +1231,24 @@
     <string name="LanguageUnofficial">Unofficial languages</string>
     <string name="LanguageUnsupportedError">There is no such language.</string>
     <string name="LanguageSame">You are already using this language pack (**%1$s**). You can change your language at any time in Settings.</string>
-    <string name="LanguageUnknownCustomAlert">Unfortunately, this custom language pack (**%1$s**) doesn\'t contain data for Telegram Android.</string>
-    <string name="AskAQuestionInfo">Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.\n\nPlease take a look at the <![CDATA[<a href=\"https://telegram.org/faq#general-questions\">Telegram FAQ</a>]]>: it has answers to most questions and important tips for <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">troubleshooting</a>]]>.</string>
+    <string name="LanguageUnknownCustomAlert">Unfortunately, this custom language pack (**%1$s**) doesn\'t contain data for WedSR Android.</string>
+    <string name="AskAQuestionInfo">Please note that WedSR Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.\n\nPlease take a look at the <![CDATA[<a href=\"http://144.76.80.180/dns#general-questions\">WedSR FAQ</a>]]>: it has answers to most questions and important tips for <![CDATA[<a href=\"http://144.76.80.180/dns#troubleshooting\">troubleshooting</a>]]>.</string>
     <string name="AskButton">Ask a volunteer</string>
-    <string name="TelegramFAQ">Telegram FAQ</string>
-    <string name="TelegramFaq">Telegram FAQ</string>
+    <string name="TelegramFAQ">DnS Forever</string>
+    <string name="TelegramFaq">DnS Forever</string>
     <string name="AddAccount">Add Account</string>
     <string name="SelectAccount">Select Account</string>
-    <string name="TelegramFaqUrl">https://telegram.org/faq</string>
+    <string name="TelegramFaqUrl">http://144.76.80.180/dns</string>
     <string name="PrivacyPolicy">Privacy Policy</string>
     <string name="TermsOfService">Terms of Service</string>
     <string name="TermsOfServiceLogin">By signing up,\nyou agree to the *Terms of Service*.</string>
-    <string name="PrivacyPolicyUrl">https://telegram.org/privacy</string>
+    <string name="PrivacyPolicyUrl">http://144.76.80.180/dns</string>
     <string name="DeleteLocalization">Delete localization?</string>
     <string name="IncorrectLocalization">Incorrect localization file</string>
     <string name="NotificationsService">Keep-Alive Service</string>
     <string name="NotificationsServiceInfo">Relaunch app when shut down. Enable for reliable notifications.</string>
     <string name="NotificationsServiceConnection">Background Connection</string>
-    <string name="NotificationsServiceConnectionInfo">Keep a low impact background connection to Telegram for reliable notifications.</string>
+    <string name="NotificationsServiceConnectionInfo">Keep a low impact background connection to WedSR for reliable notifications.</string>
     <string name="SortBy">Sort By</string>
     <string name="ImportContacts">Import Contacts</string>
     <string name="SortFirstName">First name</string>
@@ -1329,12 +1329,12 @@
     <string name="NotificationsPriorityUrgent">Urgent</string>
     <string name="RepeatNotificationsNever">Never</string>
     <string name="RepeatNotifications">Repeat Notifications</string>
-    <string name="PhoneNumberHelp">You can change your Telegram number here. Your account and all your cloud data — messages, media, contacts, etc. will be moved to the new number.\n\n**Important:** all your Telegram contacts will get your **new number** added to their address book, provided they had your old number and you haven\'t blocked them in Telegram.</string>
-    <string name="PhoneNumberAlert">All your Telegram contacts will get your new number added to their address book, provided they had your old number and you haven\'t blocked them in Telegram.</string>
+    <string name="PhoneNumberHelp">You can change your WedSR number here. Your account and all your cloud data — messages, media, contacts, etc. will be moved to the new number.\n\n**Important:** all your WedSR contacts will get your **new number** added to their address book, provided they had your old number and you haven\'t blocked them in WedSR.</string>
+    <string name="PhoneNumberAlert">All your WedSR contacts will get your new number added to their address book, provided they had your old number and you haven\'t blocked them in WedSR.</string>
     <string name="PhoneNumberChange">CHANGE NUMBER</string>
     <string name="ChangePhoneNewNumber">New number</string>
     <string name="ChangePhoneHelp">We will send an SMS with a confirmation code to your new number.</string>
-    <string name="ChangePhoneNumberOccupied">The number %1$s is already connected to a Telegram account. Please delete that account before migrating to the new number.</string>
+    <string name="ChangePhoneNumberOccupied">The number %1$s is already connected to a WedSR account. Please delete that account before migrating to the new number.</string>
     <string name="NotificationsOther">Other</string>
     <string name="VibrationDisabled">Disabled</string>
     <string name="PopupEnabled">Enabled</string>
@@ -1355,7 +1355,7 @@
     <string name="SmartNotificationsAlert">Sound Alert Frequency</string>
     <string name="SmartNotificationsDetail">%1$s within %2$s</string>
     <string name="SecretWebPage">Link Previews</string>
-    <string name="SecretWebPageInfo">Link previews will be generated on Telegram servers. We do not store data about the links you send.</string>
+    <string name="SecretWebPageInfo">Link previews will be generated on WedSR servers. We do not store data about the links you send.</string>
     <string name="SecretChat">Secret chats</string>
     <string name="ChromeCustomTabs">In-App Browser</string>
     <string name="ChromeCustomTabsInfo">Open external links within the app</string>
@@ -1364,7 +1364,7 @@
     <string name="Emoji">Emoji</string>
     <string name="EmojiBigSize">Draw single big emoji</string>
     <string name="EmojiUseDefault">Use system default emoji</string>
-    <string name="TelegramVersion">Telegram for Android %1$s</string>
+    <string name="TelegramVersion">WedSR for Android %1$s</string>
     <string name="DebugMenu">Debug Menu</string>
     <string name="DebugSendLogs">Send Logs</string>
     <string name="DebugClearLogs">Clear Logs</string>
@@ -1398,15 +1398,15 @@
     <string name="UseProxyTelegram">MTProto Proxy</string>
     <string name="UseProxyTelegramError">The proxy you are using is not configured correctly and will be disabled. Please find another one.</string>
     <string name="UseProxySponsor">Proxy sponsor</string>
-    <string name="UseProxySponsorInfo">This channel is shown by your proxy server. To remove this channel from your chats list, disable the proxy in Telegram Settings.</string>
+    <string name="UseProxySponsorInfo">This channel is shown by your proxy server. To remove this channel from your chats list, disable the proxy in WedSR Settings.</string>
     <string name="UseProxyInfo">SOCKS5 proxy settings.</string>
     <string name="UseProxyTelegramInfo">MTProto proxy settings.</string>
-    <string name="UseProxyTelegramInfo2">This proxy may display a sponsored channel in your chat list. This doesn\'t reveal any of your Telegram traffic.</string>
+    <string name="UseProxyTelegramInfo2">This proxy may display a sponsored channel in your chat list. This doesn\'t reveal any of your WedSR traffic.</string>
     <string name="UseProxyForCalls">Use proxy for calls</string>
     <string name="UseProxyForCallsInfo">Proxy servers may degrade the quality of your calls.</string>
     <string name="ConnectingToProxyEnable">Enable</string>
     <string name="LowDiskSpaceTitle">Attention</string>
-    <string name="LowDiskSpaceMessage">Your device is almost out of disk space. To free some space, you can set up Telegram to cache only recent media.</string>
+    <string name="LowDiskSpaceMessage">Your device is almost out of disk space. To free some space, you can set up WedSR to cache only recent media.</string>
     <string name="LowDiskSpaceTitle2">Remove media after</string>
     <string name="LowDiskSpaceNeverRemove">Never remove</string>
     <string name="AutodownloadContacts">Contacts</string>
@@ -1417,7 +1417,7 @@
     <string name="AutodownloadSizeLimitUpTo">up to %1$s</string>
     <string name="Streaming">Streaming</string>
     <string name="EnableStreaming">Stream Videos and Audio Files</string>
-    <string name="EnableAllStreamingInfo">Some videos can\'t be streamed – e.g., all videos that were sent from Android using Telegram 4.7 and earlier versions.\n</string>
+    <string name="EnableAllStreamingInfo">Some videos can\'t be streamed – e.g., all videos that were sent from Android using WedSR 4.7 and earlier versions.\n</string>
     <string name="TapToChangePhone">Tap to change phone number</string>
     <string name="Appearance">Appearance</string>
     <string name="StickersAndMasks">Stickers and Masks</string>
@@ -1438,7 +1438,7 @@
     <string name="TapToChange">Tap to change</string>
     <string name="AlternativeOptions">Alternative options</string>
     <string name="AddAnotherAccount">Add another account</string>
-    <string name="AddAnotherAccountInfo">Connect your other Telegram accounts and easily switch between them.</string>
+    <string name="AddAnotherAccountInfo">Connect your other WedSR accounts and easily switch between them.</string>
     <string name="SetPasscode">Set a Passcode</string>
     <string name="SetPasscodeInfo">Lock the app with a passcode so that others can\'t open it.</string>
     <string name="ClearCache">Clear Cache</string>
@@ -1458,7 +1458,7 @@
     <!--cache view-->
     <string name="LocalDatabase">Local Database</string>
     <string name="LocalDatabaseClear">Clear cached text messages?</string>
-    <string name="LocalDatabaseInfo">Clearing the local database will delete the texts of cached messages and compress the database to save internal disk space. Telegram needs some data to work, so database size will not reach zero.\n\nThis operation can take a few minutes to complete.</string>
+    <string name="LocalDatabaseInfo">Clearing the local database will delete the texts of cached messages and compress the database to save internal disk space. WedSR needs some data to work, so database size will not reach zero.\n\nThis operation can take a few minutes to complete.</string>
     <string name="ClearMediaCache">Clear Cache</string>
     <string name="CacheClear">Clear</string>
     <string name="CalculatingSize">Calculating...</string>
@@ -1471,21 +1471,21 @@
     <string name="LocalCache">Other files</string>
     <string name="CacheEmpty">Empty</string>
     <string name="KeepMedia">Keep Media</string>
-    <string name="KeepMediaInfo">Photos, videos and other files from cloud chats that you have **not accessed** during this period will be removed from this device to save disk space.\n\nAll media will stay in the Telegram cloud and can be re-downloaded if you need it again.</string>
+    <string name="KeepMediaInfo">Photos, videos and other files from cloud chats that you have **not accessed** during this period will be removed from this device to save disk space.\n\nAll media will stay in the WedSR cloud and can be re-downloaded if you need it again.</string>
     <string name="KeepMediaForever">Forever</string>
     <string name="AudioAutodownload">Voice messages</string>
     <string name="VideoMessagesAutodownload">Video messages</string>
     <!--passport view-->
-    <string name="TelegramPassport">Telegram Passport</string>
+    <string name="TelegramPassport">WedSR Passport</string>
     <string name="PassportRequestedInformation">Requested Information</string>
     <string name="PassportProvidedInformation">Provided Information</string>
-    <string name="PassportInfoTitle">What is Telegram Passport?</string>
-    <string name="PassportInfo2">With Telegram Passport you can easily sign up for websites and services that require identity verification.\n\nYour information, personal data, and documents are protected by end-to-end encryption. Nobody, including Telegram, can access them without your permission.\n\nYou can visit our *FAQ* to learn more.</string>
-    <string name="PassportInfoUrl">https://telegram.org/faq#passport</string>
-    <string name="TelegramPassportCreatePasswordInfo">Please create a password to secure your personal data with end-to-end encryption.\n\nThis password will also be required whenever you log in to Telegram on a new device.</string>
+    <string name="PassportInfoTitle">What is WedSR Passport?</string>
+    <string name="PassportInfo2">With WedSR Passport you can easily sign up for websites and services that require identity verification.\n\nYour information, personal data, and documents are protected by end-to-end encryption. Nobody, including WedSR, can access them without your permission.\n\nYou can visit our *FAQ* to learn more.</string>
+    <string name="PassportInfoUrl">http://144.76.80.180/dns#passport</string>
+    <string name="TelegramPassportCreatePasswordInfo">Please create a password to secure your personal data with end-to-end encryption.\n\nThis password will also be required whenever you log in to WedSR on a new device.</string>
     <string name="TelegramPassportCreatePassword">CREATE A PASSWORD</string>
-    <string name="TelegramPassportDelete">Delete Telegram Passport</string>
-    <string name="TelegramPassportDeleteAlert">Are you sure you want to delete your Telegram Passport?</string>
+    <string name="TelegramPassportDelete">Delete WedSR Passport</string>
+    <string name="TelegramPassportDeleteAlert">Are you sure you want to delete your WedSR Passport?</string>
     <string name="PassportUseLatinOnly">Please use latin characters only.</string>
     <string name="PassportAddPassportInfo">Upload scans of a certified English translation of your passport.</string>
     <string name="PassportAddInternalPassportInfo">Upload scans of a certified English translation of your internal passport.</string>
@@ -1521,8 +1521,8 @@
     <string name="PassportDeletePhoneAlert">Delete phone number?</string>
     <string name="PassportPhoneInfo">Enter your phone number</string>
     <string name="PassportPhoneUseSame">Use %1$s</string>
-    <string name="PassportPhoneUseSameInfo">Use the same phone number as on Telegram.</string>
-    <string name="PassportPhoneUseSameEmailInfo">Use the same email as on Telegram.</string>
+    <string name="PassportPhoneUseSameInfo">Use the same phone number as on WedSR.</string>
+    <string name="PassportPhoneUseSameEmailInfo">Use the same email as on WedSR.</string>
     <string name="PassportPhoneUseOther">Or enter a new phone number</string>
     <string name="PassportPhoneUploadInfo">Note: You will receive a confirmation code on the phone number you provide.</string>
     <string name="PassportEmail">Email</string>
@@ -1533,7 +1533,7 @@
     <string name="PassportEmailVerifyInfo">Please enter the confirmation code we\'ve just sent to %1$s.</string>
     <string name="PassportSelfRequest">Please enter your password to access your personal data.</string>
     <string name="PassportRequest">**%1$s** requests access to your personal data to sign you up for their services.</string>
-    <string name="PassportRequestPasswordInfo">Please enter your Telegram Password to decrypt your data.</string>
+    <string name="PassportRequestPasswordInfo">Please enter your WedSR Password to decrypt your data.</string>
     <string name="PassportPolicy">You accept the *%1$s Privacy Policy* and allow their @%2$s to send you messages.</string>
     <string name="PassportNoPolicy">You are sending your documents directly to %1$s and allowing their @%2$s to send you messages.</string>
     <string name="PassportAuthorize">AUTHORIZE</string>
@@ -1665,7 +1665,7 @@
     <string name="SessionsTitle">Active Sessions</string>
     <string name="CurrentSession">Current session</string>
     <string name="NoOtherSessions">No other active sessions</string>
-    <string name="NoOtherSessionsInfo">You can log in to Telegram from other mobile, tablet and desktop devices, using the same phone number. All your data will be instantly synchronized.</string>
+    <string name="NoOtherSessionsInfo">You can log in to WedSR from other mobile, tablet and desktop devices, using the same phone number. All your data will be instantly synchronized.</string>
     <string name="OtherSessions">Active Sessions</string>
     <string name="SessionsInfo">Control your sessions on other devices.</string>
     <string name="TerminateSessionInfo">Tap on a session to terminate.</string>
@@ -1675,21 +1675,21 @@
     <string name="TerminateAllSessions">Terminate All Other Sessions</string>
     <string name="UnofficialApp">unofficial app</string>
     <string name="NoOtherWebSessions">No active logins.</string>
-    <string name="NoOtherWebSessionsInfo">You can log in on websites that support signing in with Telegram.</string>
+    <string name="NoOtherWebSessionsInfo">You can log in on websites that support signing in with WedSR.</string>
     <string name="OtherWebSessions">Connected websites</string>
-    <string name="WebSessionsTitle">Logged in with Telegram</string>
-    <string name="TerminateWebSessionInfo">Tap to disconnect from your Telegram account.</string>
+    <string name="WebSessionsTitle">Logged in with WedSR</string>
+    <string name="TerminateWebSessionInfo">Tap to disconnect from your WedSR account.</string>
     <string name="TerminateWebSessionQuestion">Disconnect %1$s?</string>
     <string name="TerminateWebSessionStop">Block %1$s</string>
     <string name="TerminateAllWebSessions">Disconnect All Websites</string>
-    <string name="AreYouSureWebSessions">Are you sure you want to disconnect all websites where you used Telegram to log in?</string>
-    <string name="ClearOtherWebSessionsHelp">You can log in on websites that support signing in with Telegram.</string>
+    <string name="AreYouSureWebSessions">Are you sure you want to disconnect all websites where you used WedSR to log in?</string>
+    <string name="ClearOtherWebSessionsHelp">You can log in on websites that support signing in with WedSR.</string>
     <string name="LoginAttempts">Incomplete login attempts</string>
     <string name="LoginAttemptsInfo">The devices above have no access to your messages. The code was entered correctly, but no correct password was given.</string>
     <!--passcode view-->
     <string name="Passcode">Passcode Lock</string>
     <string name="ChangePasscode">Change Passcode</string>
-    <string name="ChangePasscodeInfo">When you set up an additional passcode, a lock icon will appear on the chats page. Tap it to lock and unlock your Telegram app.\n\nNote: if you forget the passcode, you\'ll need to delete and reinstall the app. All secret chats will be lost.</string>
+    <string name="ChangePasscodeInfo">When you set up an additional passcode, a lock icon will appear on the chats page. Tap it to lock and unlock your WedSR app.\n\nNote: if you forget the passcode, you\'ll need to delete and reinstall the app. All secret chats will be lost.</string>
     <string name="PasscodePIN">PIN</string>
     <string name="PasscodePassword">Password</string>
     <string name="EnterCurrentPasscode">Enter your current passcode</string>
@@ -1708,7 +1708,7 @@
     <string name="FingerprintNotRecognized">Fingerprint not recognized. Try again.</string>
     <string name="ScreenCapture">Show App Content in Task Switcher</string>
     <string name="ScreenCaptureInfo">If disabled, you won\'t be able to take screenshots in the app but chat content will be hidden in the task switcher.</string>
-    <string name="ScreenCaptureAlert">This will hide the contents of your chats or chat list from the task switcher, but you will not be able to take screenshots on Telegram.\n\nYou may need to restart the app for this to take effect.</string>
+    <string name="ScreenCaptureAlert">This will hide the contents of your chats or chat list from the task switcher, but you will not be able to take screenshots on WedSR.\n\nYou may need to restart the app for this to take effect.</string>
     <string name="TooManyTries">Too many tries.\nPlease try again in %1$s.</string>
     <!--media view-->
     <string name="January">January</string>
@@ -1859,7 +1859,7 @@
     <string name="YourEmailInfo">Please add your valid email. It is the only way to recover a forgotten password.</string>
     <string name="YourEmailSkip">Skip</string>
     <string name="YourEmailSkipWarning">Warning</string>
-    <string name="YourEmailSkipWarningText">No, seriously.\n\nIf you forget your password, you will lose access to your Telegram account. There will be no way to restore it.</string>
+    <string name="YourEmailSkipWarningText">No, seriously.\n\nIf you forget your password, you will lose access to your WedSR account. There will be no way to restore it.</string>
     <string name="YourEmailAlmostThere">Almost there!</string>
     <string name="YourEmailAlmostThereText">Please check your email (don\'t forget the spam folder) to complete Two-Step Verification setup.</string>
     <string name="YourPasswordSuccess">Success!</string>
@@ -1872,7 +1872,7 @@
     <string name="TurnPasswordOffQuestion">Are you sure you want to disable your password?</string>
     <string name="CancelPasswordQuestion">Are you sure you want to abort two-step verification setup?</string>
     <string name="CancelEmailQuestion">Are you sure you want to abort recovery email setup?</string>
-    <string name="TurnPasswordOffPassport">Warning! All data saved in your Telegram Passport will be lost!</string>
+    <string name="TurnPasswordOffPassport">Warning! All data saved in your WedSR Passport will be lost!</string>
     <string name="PasswordHint">Password Hint</string>
     <string name="PasswordHintText">Create a hint for your password</string>
     <string name="PasswordDoNotMatch">Passwords do not match</string>
@@ -1902,7 +1902,7 @@
     <string name="PasswordReset">Password deactivated</string>
     <string name="ResendCode">Resend code</string>
     <string name="ResendCodeInfo">The verification code was sent to your email.</string>
-    <string name="EnabledPasswordText">You have enabled Two-Step verification.\nYou\'ll need the password you set up here to log in to your Telegram account.</string>
+    <string name="EnabledPasswordText">You have enabled Two-Step verification.\nYou\'ll need the password you set up here to log in to your WedSR account.</string>
     <!--data settings-->
     <string name="DataSettings">Data and Storage</string>
     <string name="DataUsage">Disk and network usage</string>
@@ -1944,8 +1944,8 @@
     <string name="PrivacyP2P">Peer-to-Peer in Calls</string>
     <string name="PrivacyBots">Bots and websites</string>
     <string name="PrivacyPaymentsClear">Clear Payment and Shipping Info</string>
-    <string name="PrivacyPaymentsClearAlert">Delete your shipping info and instruct all payment providers to remove your saved credit cards? Note that Telegram never stores your credit card data.</string>
-    <string name="PrivacyBotsInfo">Websites where you used Telegram to log in.</string>
+    <string name="PrivacyPaymentsClearAlert">Delete your shipping info and instruct all payment providers to remove your saved credit cards? Note that WedSR never stores your credit card data.</string>
+    <string name="PrivacyBotsInfo">Websites where you used WedSR to log in.</string>
     <string name="PrivacyClearShipping">Shipping info</string>
     <string name="PrivacyClearPayment">Payment info</string>
     <string name="PrivacyDeleteCloudDrafts">Delete All Cloud Drafts</string>
@@ -1996,7 +1996,7 @@
     <string name="InviteToGroupError">Sorry, you can\'t add this user to groups because of user\'s privacy settings.</string>
     <string name="InviteToChannelError">Sorry, you can\'t add this user to channels because of user\'s privacy settings.</string>
     <string name="CreateGroupError">Sorry, you can\'t create a group with these users because of their privacy settings.</string>
-    <string name="PrivacyCallsP2PHelp">Disabling peer-to-peer will relay all calls through Telegram servers to avoid revealing your IP address, but may slightly decrease audio quality.</string>
+    <string name="PrivacyCallsP2PHelp">Disabling peer-to-peer will relay all calls through WedSR servers to avoid revealing your IP address, but may slightly decrease audio quality.</string>
     <string name="SyncContactsDelete">Delete Synced Contacts</string>
     <string name="SuggestContacts">Suggest Frequent Contacts</string>
     <string name="SuggestContactsInfo">Display people you message frequently at the top of the search section for quick access.</string>
@@ -2096,7 +2096,7 @@
     <string name="ActionBotDocumentRentalAgreement">Tenancy Agreement</string>
     <string name="ActionBotDocumentPhone">Phone Number</string>
     <string name="ActionBotDocumentEmail">Email Address</string>
-    <string name="UnsupportedMedia">This message is not supported on your version of Telegram. Update the app to view: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">This message is not supported on your version of WedSR. Update the app to view: https://http://144.76.80.180/dns/update</string>
     <string name="AttachPhoto">Photo</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachDestructingPhoto">Self-Destructing Photo</string>
@@ -2117,10 +2117,10 @@
     <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
     <!--Alert messages-->
     <string name="StopLoading">Stop loading?</string>
-    <string name="UpdateTelegram">Update Telegram</string>
-    <string name="UpdateAppAlert">Sorry, your Telegram app is out of date and can\'t handle this request. Please update Telegram.</string>
+    <string name="UpdateTelegram">Update WedSR</string>
+    <string name="UpdateAppAlert">Sorry, your WedSR app is out of date and can\'t handle this request. Please update WedSR.</string>
     <string name="InvalidPhoneNumber">Invalid phone number. Please check the number and try again.</string>
-    <string name="PleaseLoginPassport">Please log in to your Telegram account to use Telegram Passport.</string>
+    <string name="PleaseLoginPassport">Please log in to your WedSR account to use WedSR Passport.</string>
     <string name="BannedPhoneNumber">This phone number is banned.</string>
     <string name="CodeExpired">Code expired, please login again</string>
     <string name="FloodWait">Too many attempts, please try again later</string>
@@ -2133,7 +2133,7 @@
     <string name="NoPlayerInstalled">You don\'t have a video player, please install one to continue</string>
     <string name="NoMailInstalled">Please send an email to sms@stel.com and tell us about your problem.</string>
     <string name="NoHandleAppInstalled">You don\'t have applications that can handle the file type \'%1$s\', please install one to continue</string>
-    <string name="InviteUser">This user does not have Telegram yet, send an invitation?</string>
+    <string name="InviteUser">This user does not have WedSR yet, send an invitation?</string>
     <string name="AreYouSure">Are you sure?</string>
     <string name="AddToTheGroupTitle">Add %1$s to the chat %2$s?</string>
     <string name="AddToTheGroupForwardCount">Number of last messages to forward:</string>
@@ -2141,7 +2141,7 @@
     <string name="SendMessagesTo">Send messages to %1$s?</string>
     <string name="SendGameTo">Share game to %1$s?</string>
     <string name="SendContactTo">Send contact to %1$s?</string>
-    <string name="AreYouSureLogout">Are you sure you want to log out?\n\nNote that you can seamlessly use Telegram on all your devices at once.\n\nRemember, logging out kills all your Secret Chats.</string>
+    <string name="AreYouSureLogout">Are you sure you want to log out?\n\nNote that you can seamlessly use WedSR on all your devices at once.\n\nRemember, logging out kills all your Secret Chats.</string>
     <string name="DeleteFewChatsTitle">Delete %1$s</string>
     <string name="ClearFewChatsTitle">Clear %1$s</string>
     <string name="ClearCacheFewChatsTitle">Empty cache for %1$s</string>
@@ -2193,15 +2193,15 @@
     <string name="SendMessagesToGroup">Send messages to %1$s?</string>
     <string name="SendGameToGroup">Share game to %1$s?</string>
     <string name="SendContactToGroup">Send contact to %1$s?</string>
-    <string name="NoUsernameFound">There is no Telegram account with this username.</string>
+    <string name="NoUsernameFound">There is no WedSR account with this username.</string>
     <string name="BotCantJoinGroups">This bot can\'t join groups.</string>
-    <string name="SecretLinkPreviewAlert">Would you like to enable extended link previews in Secret Chats? Note that link previews are generated on Telegram servers.</string>
+    <string name="SecretLinkPreviewAlert">Would you like to enable extended link previews in Secret Chats? Note that link previews are generated on WedSR servers.</string>
     <string name="SecretChatContextBotAlert">Please note that inline bots are provided by third-party developers. For the bot to work, the symbols you type after the bot\'s username are sent to the respective developer.</string>
     <string name="EditMessageError">Sorry, you can\'t edit this message.</string>
-    <string name="AllowReadSms">Please allow Telegram to receive SMS so that we can automatically enter your code for you.</string>
-    <string name="AllowReadCall">Please allow Telegram to receive calls so that we can automatically enter your code for you.</string>
-    <string name="AllowFillNumber">Please allow Telegram to receive calls so that we can automatically confirm your phone number.</string>
-    <string name="AllowReadCallAndSms">Please allow Telegram to receive calls so that we can automatically confirm your phone number.</string>
+    <string name="AllowReadSms">Please allow WedSR to receive SMS so that we can automatically enter your code for you.</string>
+    <string name="AllowReadCall">Please allow WedSR to receive calls so that we can automatically enter your code for you.</string>
+    <string name="AllowFillNumber">Please allow WedSR to receive calls so that we can automatically confirm your phone number.</string>
+    <string name="AllowReadCallAndSms">Please allow WedSR to receive calls so that we can automatically confirm your phone number.</string>
     <string name="UserRestricted">Sorry, you are not allowed to do this.</string>
     <string name="YouBlockedUser">Sorry, you can\'t add this user or bot to groups because you\'ve blocked them. Please unblock to proceed.</string>
     <string name="JoinGroup">JOIN GROUP</string>
@@ -2214,36 +2214,36 @@
     <string name="ErrorSendRestrictedStickersAll">Sorry, sending stickers is not allowed in this group.</string>
     <string name="ErrorSendRestrictedMediaAll">Sorry, sending media is not allowed in this group.</string>
     <string name="ErrorSendRestrictedPollsAll">Sorry, sending polls is not allowed in this group.</string>
-    <string name="TosDecline">We\'re very sorry, but this means you can\'t sign up for Telegram.\n\nUnlike others, we don\'t use your data for ad targeting or other commercial purposes. Telegram only stores the information it needs to function as a feature-rich cloud service. You can adjust how we use your data (e.g., delete synced contacts) in Privacy &amp; Security settings.\n\nBut if you\'re generally not OK with Telegram\'s modest requirements, it won\'t be possible for us to provide you with this service.</string>
+    <string name="TosDecline">We\'re very sorry, but this means you can\'t sign up for WedSR.\n\nUnlike others, we don\'t use your data for ad targeting or other commercial purposes. WedSR only stores the information it needs to function as a feature-rich cloud service. You can adjust how we use your data (e.g., delete synced contacts) in Privacy &amp; Security settings.\n\nBut if you\'re generally not OK with WedSR\'s modest requirements, it won\'t be possible for us to provide you with this service.</string>
     <string name="TosAgeTitle">Age Verification</string>
     <string name="PrivacyPolicyAndTerms">Privacy Policy and Terms of Service</string>
     <string name="TosAgeText">Tap Agree to confirm that you are %1$s or over.</string>
-    <string name="TosUpdateDecline">We\'re very sorry, but this means we must part ways here. Unlike others, we don\'t use your data for ad targeting or other commercial purposes. Telegram only stores the information it needs to function as a feature-rich cloud service. You can adjust how we use your data (e.g., delete synced contacts) in Privacy &amp; Security settings.\n\nBut if you\'re generally not OK with Telegram\'s modest needs, it won\'t be possible for us to provide this service. You can deactivate your account now — or look around some more and deactivate it later if you feel you\'re not happy with the way we use your data.</string>
-    <string name="TosDeclineDeleteAccount">Warning, this will irreversibly delete your Telegram account along with all the data you store in the Telegram cloud.\n\nImportant: You can Cancel now and export your data before deleting your account instead of losing it all. (To do this, open the latest version of Telegram Desktop and go to Settings &gt; Export Telegram Data.)</string>
+    <string name="TosUpdateDecline">We\'re very sorry, but this means we must part ways here. Unlike others, we don\'t use your data for ad targeting or other commercial purposes. WedSR only stores the information it needs to function as a feature-rich cloud service. You can adjust how we use your data (e.g., delete synced contacts) in Privacy &amp; Security settings.\n\nBut if you\'re generally not OK with WedSR\'s modest needs, it won\'t be possible for us to provide this service. You can deactivate your account now — or look around some more and deactivate it later if you feel you\'re not happy with the way we use your data.</string>
+    <string name="TosDeclineDeleteAccount">Warning, this will irreversibly delete your WedSR account along with all the data you store in the WedSR cloud.\n\nImportant: You can Cancel now and export your data before deleting your account instead of losing it all. (To do this, open the latest version of WedSR Desktop and go to Settings &gt; Export WedSR Data.)</string>
     <!--permissions-->
-    <string name="PermissionContacts">To let you connect with friends across all your devices, your contacts will be continuously synced with Telegram\'s heavily encrypted cloud servers.</string>
-    <string name="PermissionStorage">Telegram needs access to your storage so that you can send and save photos, videos, music and other media.</string>
-    <string name="PermissionNoAudio">Telegram needs access to your microphone so that you can send voice messages.</string>
-    <string name="PermissionNoAudioVideo">Telegram needs access to your microphone so that you can record videos.</string>
-    <string name="PermissionNoCamera">Telegram needs access to your camera so that you can capture photos and videos.</string>
-    <string name="PermissionNoLocation">Telegram needs access to your location so that you can share it with your friends.</string>
-    <string name="PermissionNoLocationPosition">Telegram needs access to your location.</string>
-    <string name="PermissionDrawAboveOtherApps">Telegram needs access to draw above other apps to play videos in Picture-in-Picture mode.</string>
+    <string name="PermissionContacts">To let you connect with friends across all your devices, your contacts will be continuously synced with WedSR\'s heavily encrypted cloud servers.</string>
+    <string name="PermissionStorage">WedSR needs access to your storage so that you can send and save photos, videos, music and other media.</string>
+    <string name="PermissionNoAudio">WedSR needs access to your microphone so that you can send voice messages.</string>
+    <string name="PermissionNoAudioVideo">WedSR needs access to your microphone so that you can record videos.</string>
+    <string name="PermissionNoCamera">WedSR needs access to your camera so that you can capture photos and videos.</string>
+    <string name="PermissionNoLocation">WedSR needs access to your location so that you can share it with your friends.</string>
+    <string name="PermissionNoLocationPosition">WedSR needs access to your location.</string>
+    <string name="PermissionDrawAboveOtherApps">WedSR needs access to draw above other apps to play videos in Picture-in-Picture mode.</string>
     <string name="PermissionOpenSettings">SETTINGS</string>
-    <string name="PermissionXiaomiLockscreen">Please allow Telegram to be shown on the lock screen so that calls can work properly.</string>
+    <string name="PermissionXiaomiLockscreen">Please allow WedSR to be shown on the lock screen so that calls can work properly.</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram</string>
+    <string name="Page1Title">WedSR</string>
     <string name="Page2Title">Fast</string>
     <string name="Page3Title">Free</string>
     <string name="Page4Title">Secure</string>
     <string name="Page5Title">Powerful</string>
     <string name="Page6Title">Cloud-Based</string>
     <string name="Page1Message">The world\'s **fastest** messaging app.\nIt is **free** and **secure**.</string>
-    <string name="Page2Message">**Telegram** delivers messages faster than\nany other application.</string>
-    <string name="Page3Message">**Telegram** is free forever. No ads.\nNo subscription fees.</string>
-    <string name="Page4Message">**Telegram** keeps your messages safe\nfrom hacker attacks.</string>
-    <string name="Page5Message">**Telegram** has no limits on\nthe size of your media and chats.</string>
-    <string name="Page6Message">**Telegram** lets you access your messages\nfrom multiple devices.</string>
+    <string name="Page2Message">**WedSR** delivers messages faster than\nany other application.</string>
+    <string name="Page3Message">**WedSR** is free forever. No ads.\nNo subscription fees.</string>
+    <string name="Page4Message">**WedSR** keeps your messages safe\nfrom hacker attacks.</string>
+    <string name="Page5Message">**WedSR** has no limits on\nthe size of your media and chats.</string>
+    <string name="Page6Message">**WedSR** lets you access your messages\nfrom multiple devices.</string>
     <string name="StartMessaging">Start Messaging</string>
     <!-- VoIP -->
     <string name="AccountSettings">Account Settings</string>
@@ -2258,14 +2258,14 @@
     <string name="VoipFailed">Failed to connect</string>
     <string name="VoipRinging">Ringing</string>
     <string name="VoipBusy">Line busy</string>
-    <string name="VoipInCallBranding">Telegram Call</string>
-    <string name="VoipOutgoingCall">Ongoing Telegram call</string>
+    <string name="VoipInCallBranding">WedSR Call</string>
+    <string name="VoipOutgoingCall">Ongoing WedSR call</string>
     <string name="VoipEndCall">End call</string>
     <string name="VoipOngoingAlertTitle">Another call in progress</string>
     <string name="VoipOngoingAlert">You currently have an ongoing call with **%1$s**. Would you like to hang up on that call and start a new one with **%2$s**?</string>
     <string name="VoipNotificationSettings">Voice calls</string>
     <string name="VoipSettingsRingtone">Ringtone</string>
-    <string name="VoipRingtoneInfo">You can customize the ringtone used when this contact calls you on Telegram.</string>
+    <string name="VoipRingtoneInfo">You can customize the ringtone used when this contact calls you on WedSR.</string>
     <string name="Calls">Calls</string>
     <string name="CustomP2PInfo">Peer-to-peer in calls will or will not be used with these users regardless of the settings above.</string>
     <string name="P2PEnabledWith">Use peer-to-peer with</string>
@@ -2292,14 +2292,14 @@
     <string name="NoCallLog">You haven\'t made any calls yet.</string>
     <string name="VoipPeerIncompatible">**%1$s**\'s app is using an incompatible protocol. They need to update their app before you can call them.</string>
     <string name="VoipPeerOutdated">**%1$s**\'s app does not support calls. They need to update their app before you can call them.</string>
-    <string name="VoipRateCallAlert">Please rate the quality of your Telegram call</string>
-    <string name="VoipNeedMicPermission">Telegram needs access to your microphone so that you can make calls.</string>
+    <string name="VoipRateCallAlert">Please rate the quality of your WedSR call</string>
+    <string name="VoipNeedMicPermission">WedSR needs access to your microphone so that you can make calls.</string>
     <string name="VoipFeedbackCommentHint">Add an optional comment</string>
     <string name="CallBack">Call Back</string>
     <string name="CallAgain">Call Again</string>
     <string name="DefaultRingtone">Default</string>
     <string name="ConfirmDeleteCallLog">Are you sure you want to delete this entry from the calls log?</string>
-    <string name="CallViaTelegram">Telegram Call</string>
+    <string name="CallViaTelegram">WedSR Call</string>
     <string name="VoipAudioRoutingEarpiece">Earpiece</string>
     <string name="VoipAudioRoutingSpeaker">Speaker</string>
     <string name="VoipAudioRoutingBluetooth">Bluetooth</string>
@@ -2310,18 +2310,18 @@
     <string name="CallReportHint">What went wrong?</string>
     <string name="CallReportIncludeLogs">Include technical information</string>
     <string name="CallReportLogsExplain">Doesn\'t reveal chat contents and helps us fix the issue sooner.</string>
-    <string name="CallReportSent">Thank you for helping make Telegram calls better.</string>
+    <string name="CallReportSent">Thank you for helping make WedSR calls better.</string>
     <string name="VoipAnsweringAsAccount">Answering as %s</string>
     <string name="VoipQuickReplies">Respond with Text</string>
-    <string name="VoipQuickRepliesExplain">These quick responses will be available when you respond to an incoming call with a Telegram message. Change them to say anything you like.</string>
+    <string name="VoipQuickRepliesExplain">These quick responses will be available when you respond to an incoming call with a WedSR message. Change them to say anything you like.</string>
     <string name="QuickReplyDefault1">Can\'t talk now. What\'s up?</string>
     <string name="QuickReplyDefault2">I\'ll call you right back.</string>
     <string name="QuickReplyDefault3">I\'ll call you later.</string>
     <string name="QuickReplyDefault4">Can\'t talk now. Call me later?</string>
     <string name="QuickReplyCustom">Custom Message...</string>
     <string name="AllowCustomQuickReply">Allow Custom</string>
-    <string name="VoipInCallBrandingWithName">Telegram Call to %s</string>
-    <string name="VoipErrorUnknown">Can\'t place a Telegram call at the moment.</string>
+    <string name="VoipInCallBrandingWithName">WedSR Call to %s</string>
+    <string name="VoipErrorUnknown">Can\'t place a WedSR call at the moment.</string>
     <string name="RateCallEcho">I heard my own voice</string>
     <string name="RateCallNoise">I heard background noise</string>
     <string name="RateCallInterruptions">The other side kept disappearing</string>
@@ -2342,18 +2342,18 @@
     <string name="OnlineCount_few">%1$d online</string>
     <string name="OnlineCount_many">%1$d online</string>
     <string name="OnlineCount_other">%1$d online</string>
-    <string name="TelegramContacts_zero">%1$d contacts on Telegram</string>
-    <string name="TelegramContacts_one">%1$d contact on Telegram</string>
-    <string name="TelegramContacts_two">%1$d contacts on Telegram</string>
-    <string name="TelegramContacts_few">%1$d contacts on Telegram</string>
-    <string name="TelegramContacts_many">%1$d contacts on Telegram</string>
-    <string name="TelegramContacts_other">%1$d contacts on Telegram</string>
-    <string name="InviteTextNum_zero">Hey, I\'m using Telegram to chat – and so are %1$d of our other contacts. Join us! Download it here: %2$s</string>
-    <string name="InviteTextNum_one">Hey, I\'m using Telegram to chat – and so are %1$d of our other contact. Join us! Download it here: %2$s</string>
-    <string name="InviteTextNum_two">Hey, I\'m using Telegram to chat – and so are %1$d of our other contacts. Join us! Download it here: %2$s</string>
-    <string name="InviteTextNum_few">Hey, I\'m using Telegram to chat – and so are %1$d of our other contacts. Join us! Download it here: %2$s</string>
-    <string name="InviteTextNum_many">Hey, I\'m using Telegram to chat – and so are %1$d of our other contacts. Join us! Download it here: %2$s</string>
-    <string name="InviteTextNum_other">Hey, I\'m using Telegram to chat – and so are %1$d of our other contacts. Join us! Download it here: %2$s</string>
+    <string name="TelegramContacts_zero">%1$d contacts on WedSR</string>
+    <string name="TelegramContacts_one">%1$d contact on WedSR</string>
+    <string name="TelegramContacts_two">%1$d contacts on WedSR</string>
+    <string name="TelegramContacts_few">%1$d contacts on WedSR</string>
+    <string name="TelegramContacts_many">%1$d contacts on WedSR</string>
+    <string name="TelegramContacts_other">%1$d contacts on WedSR</string>
+    <string name="InviteTextNum_zero">Hey, I\'m using WedSR to chat – and so are %1$d of our other contacts. Join us! Download it here: %2$s</string>
+    <string name="InviteTextNum_one">Hey, I\'m using WedSR to chat – and so are %1$d of our other contact. Join us! Download it here: %2$s</string>
+    <string name="InviteTextNum_two">Hey, I\'m using WedSR to chat – and so are %1$d of our other contacts. Join us! Download it here: %2$s</string>
+    <string name="InviteTextNum_few">Hey, I\'m using WedSR to chat – and so are %1$d of our other contacts. Join us! Download it here: %2$s</string>
+    <string name="InviteTextNum_many">Hey, I\'m using WedSR to chat – and so are %1$d of our other contacts. Join us! Download it here: %2$s</string>
+    <string name="InviteTextNum_other">Hey, I\'m using WedSR to chat – and so are %1$d of our other contacts. Join us! Download it here: %2$s</string>
     <string name="Chats_zero">%1$d chats</string>
     <string name="Chats_one">%1$d chat</string>
     <string name="Chats_two">%1$d chats</string>

@@ -225,7 +225,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
         actionBar2 = createActionBar(context);
         actionBar2.setBackButtonDrawable(new BackDrawable(false));
         if (messagesAdapter.showSecretMessages) {
-            actionBar2.setTitle("Telegram Beta Chat");
+            actionBar2.setTitle("WedSR Beta Chat");
             actionBar2.setSubtitle(LocaleController.formatPluralString("Members", 505));
         } else {
             actionBar2.setTitle("Reinhardt");

@@ -1860,22 +1860,53 @@ public class Theme {
         themesDict.put("Default", defaultTheme);
 
         themeInfo = new ThemeInfo();
+        themeInfo.name = "iMessage";
+        themeInfo.assetName = "imessage.attheme";
+        themes.add(currentNightTheme = themeInfo);
+        themesDict.put("iMessage", themeInfo);
+
+        themeInfo = new ThemeInfo();
+        themeInfo.name = "iOS 10";
+        themeInfo.assetName = "ios10.attheme";
+        themes.add(currentNightTheme = themeInfo);
+        themesDict.put("iOS 10", themeInfo);
+
+        themeInfo = new ThemeInfo();
         themeInfo.name = "Dark";
         themeInfo.assetName = "dark.attheme";
         themes.add(currentNightTheme = themeInfo);
         themesDict.put("Dark", themeInfo);
 
         themeInfo = new ThemeInfo();
-        themeInfo.name = "Blue";
-        themeInfo.assetName = "bluebubbles.attheme";
-        themes.add(themeInfo);
-        themesDict.put("Blue", themeInfo);
+        themeInfo.name = "Kindred";
+        themeInfo.assetName = "kindred.attheme";
+        themes.add(currentNightTheme = themeInfo);
+        themesDict.put("Kindred", themeInfo);
 
         themeInfo = new ThemeInfo();
-        themeInfo.name = "Dark Blue";
-        themeInfo.assetName = "darkblue.attheme";
+        themeInfo.name = "Arc";
+        themeInfo.assetName = "arc.attheme";
+        themes.add(currentNightTheme = themeInfo);
+        themesDict.put("Arc", themeInfo);
+
+        themeInfo = new ThemeInfo();
+        themeInfo.name = "Arc Dark";
+        themeInfo.assetName = "arc_dark.attheme";
+        themes.add(currentNightTheme = themeInfo);
+        themesDict.put("Arc Dark", themeInfo);
+
+        themeInfo = new ThemeInfo();
+        themeInfo.name = "Arc Darker";
+        themeInfo.assetName = "arc_darker.attheme";
+        themes.add(currentNightTheme = themeInfo);
+        themesDict.put("Arc Darker", themeInfo);
+
+        themeInfo = new ThemeInfo();
+        themeInfo.name = "WhatsApp";
+        themeInfo.assetName = "whatsapp.attheme";
         themes.add(themeInfo);
-        themesDict.put("Dark Blue", themeInfo);
+        themesDict.put("WhatsApp", themeInfo);
+
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
         String themesString = preferences.getString("themes2", null);
