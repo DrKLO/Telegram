@@ -1014,16 +1014,6 @@ public class DialogCell extends BaseCell {
                             drawPinBackground = true;
                         }
                         nameString = LocaleController.getString("SavedMessages", R.string.SavedMessages);
-                    } else if (user.id / 1000 != 777 && user.id / 1000 != 333 && ContactsController.getInstance(currentAccount).contactsDict.get(user.id) == null) {
-                        if (ContactsController.getInstance(currentAccount).contactsDict.size() == 0 && (!ContactsController.getInstance(currentAccount).contactsLoaded || ContactsController.getInstance(currentAccount).isLoadingContacts())) {
-                            nameString = UserObject.getUserName(user);
-                        } else {
-                            if (user.phone != null && user.phone.length() != 0) {
-                                nameString = PhoneFormat.getInstance().format("+" + user.phone);
-                            } else {
-                                nameString = UserObject.getUserName(user);
-                            }
-                        }
                     } else {
                         nameString = UserObject.getUserName(user);
                     }

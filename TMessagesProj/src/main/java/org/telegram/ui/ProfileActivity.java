@@ -2682,16 +2682,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (nameTextView[a] == null) {
                     continue;
                 }
-                if (a == 0 && user.id != UserConfig.getInstance(currentAccount).getClientUserId() && user.id / 1000 != 777 && user.id / 1000 != 333 && user.phone != null && user.phone.length() != 0 && ContactsController.getInstance(currentAccount).contactsDict.get(user.id) == null &&
-                        (ContactsController.getInstance(currentAccount).contactsDict.size() != 0 || !ContactsController.getInstance(currentAccount).isLoadingContacts())) {
-                    String phoneString = PhoneFormat.getInstance().format("+" + user.phone);
-                    if (!nameTextView[a].getText().equals(phoneString)) {
-                        nameTextView[a].setText(phoneString);
-                    }
-                } else {
-                    if (!nameTextView[a].getText().equals(newString)) {
-                        nameTextView[a].setText(newString);
-                    }
+                if (!nameTextView[a].getText().equals(newString)) {
+                    nameTextView[a].setText(newString);
                 }
                 if (a == 0 && onlineTextOverride != null) {
                     onlineTextView[a].setText(onlineTextOverride);
