@@ -25,6 +25,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Property;
 import android.util.SparseArray;
+import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -95,6 +96,8 @@ import java.util.HashMap;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.exoplayer2.util.Log;
 
 @SuppressWarnings("unchecked")
 public class MediaActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -1748,11 +1751,21 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         scrollSlidingTextTabStrip.finishAddingTabs();
     }
 
+    SparseIntArray savedPositions = new SparseIntArray();
+
     private void switchToCurrentSelectedMode(boolean animated) {
         for (int a = 0; a < mediaPages.length; a++) {
             mediaPages[a].listView.stopScroll();
         }
+
+        Log.d("kek",mediaPages[0].selectedType + " " + mediaPages[0].layoutManager.findFirstVisibleItemPosition());
+        savedPositions.put(
+                mediaPages[0].selectedType,
+                mediaPages[0].layoutManager.findFirstVisibleItemPosition()
+        );
+
         int a = animated ? 1 : 0;
+
         RecyclerView.Adapter currentAdapter = mediaPages[a].listView.getAdapter();
         if (searching && searchWas) {
             if (animated) {
@@ -1929,9 +1942,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             actionBar.closeSearchField();
         }
 
-        if (actionBar.getTranslationY() != 0) {
-            mediaPages[a].layoutManager.scrollToPositionWithOffset(0, (int) actionBar.getTranslationY());
-        }
+        int pos = Math.max(savedPositions.get(mediaPages[a].selectedType, 0), 0);
+        mediaPages[a].layoutManager.scrollToPositionWithOffset(pos, (int) actionBar.getTranslationY());
+
     }
 
     private boolean onItemLongClick(MessageObject item, View view, int a) {
@@ -2536,12 +2549,12 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             int index = (position - 1) * columnsCount + a;
                             if (index < messageObjects.size()) {
                                 MessageObject messageObject = messageObjects.get(index);
-                                cell.setItem(a, sharedMediaData[0].messages.indexOf(messageObject), messageObject);
                                 if (actionBar.isActionModeShowed()) {
-                                    cell.setChecked(a, selectedFiles[messageObject.getDialogId() == dialog_id ? 0 : 1].indexOfKey(messageObject.getId()) >= 0, !scrolling);
+                                    cell.setChecked(a, selectedFiles[messageObject.getDialogId() == dialog_id ? 0 : 1].indexOfKey(messageObject.getId()) >= 0, !scrolling && cell.getMessageObject(a) == messageObject);
                                 } else {
-                                    cell.setChecked(a, false, !scrolling);
+                                    cell.setChecked(a, false, !scrolling && cell.getMessageObject(a) == messageObject);
                                 }
+                                cell.setItem(a, sharedMediaData[0].messages.indexOf(messageObject), messageObject);
                             } else {
                                 cell.setItem(a, index, null);
                             }
