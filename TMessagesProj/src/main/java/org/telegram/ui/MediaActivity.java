@@ -2134,7 +2134,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         @Override
         public void onLinkLongPress(final String urlFinal) {
             for(int i = 0; i < mediaPages.length; i++){
-                if(mediaPages[i] != null) mediaPages[i].listView.clearSelection();
+                if(mediaPages[i] != null) mediaPages[i].listView.clearSelector();
             }
 
             BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
