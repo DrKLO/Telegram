@@ -2133,6 +2133,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public void onLinkLongPress(final String urlFinal) {
+            for(int i = 0; i < mediaPages.length; i++){
+                if(mediaPages[i] != null) mediaPages[i].listView.clearSelection();
+            }
+
             BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
             builder.setTitle(urlFinal);
             builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {

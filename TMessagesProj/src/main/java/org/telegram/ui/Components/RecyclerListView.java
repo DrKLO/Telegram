@@ -106,6 +106,11 @@ public class RecyclerListView extends RecyclerView {
 
     private boolean hiddenByEmptyView;
 
+    public void clearSelection() {
+        selectorPosition = NO_POSITION;
+        selectorRect.setEmpty();
+    }
+
     public interface OnItemClickListener {
         void onItemClick(View view, int position);
     }
@@ -1385,6 +1390,11 @@ public class RecyclerListView extends RecyclerView {
             child.setEnabled(false);
         }
         super.onChildAttachedToWindow(child);
+    }
+
+    @Override
+    public void refreshDrawableState() {
+        super.refreshDrawableState();
     }
 
     @Override
