@@ -21,7 +21,9 @@ import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -48,6 +50,43 @@ public class AboutLinkCell extends FrameLayout {
     private ClickableSpan pressedLink;
     private LinkPath urlPath = new LinkPath();
 
+    private boolean checkingForLongPress = false;
+    private CheckForLongPress pendingCheckForLongPress = null;
+    private CheckForTap pendingCheckForTap = null;
+
+    private final class CheckForTap implements Runnable {
+        public void run() {
+            if (pendingCheckForLongPress == null) {
+                pendingCheckForLongPress = new CheckForLongPress();
+            }
+            postDelayed(pendingCheckForLongPress, ViewConfiguration.getLongPressTimeout() - ViewConfiguration.getTapTimeout());
+        }
+    }
+
+    class CheckForLongPress implements Runnable {
+        public int currentPressCount;
+
+        public void run() {
+            if (checkingForLongPress && getParent() != null) {
+                checkingForLongPress = false;
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                if (pressedLink != null) {
+                    if (pressedLink instanceof URLSpanNoUnderline) {
+                        String url = ((URLSpanNoUnderline) pressedLink).getURL();
+                        if (url.startsWith("@") || url.startsWith("#") || url.startsWith("/")) {
+                            onLinkLongPress(url);
+                        }
+                    } else if (pressedLink instanceof URLSpan) {
+                        onLinkLongPress(((URLSpan) pressedLink).getURL());
+                    }
+                }
+            }
+            MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
+            onTouchEvent(event);
+            event.recycle();
+        }
+    }
+
     public AboutLinkCell(Context context) {
         super(context);
 
@@ -67,11 +106,27 @@ public class AboutLinkCell extends FrameLayout {
 
     }
 
+    protected void onLinkLongPress(String url) {
+
+    }
+
     private void resetPressedLink() {
         if (pressedLink != null) {
             pressedLink = null;
         }
+        cancelCheckLongPress();
         invalidate();
+    }
+
+
+    protected void cancelCheckLongPress() {
+        checkingForLongPress = false;
+        if (pendingCheckForLongPress != null) {
+            removeCallbacks(pendingCheckForLongPress);
+        }
+        if (pendingCheckForTap != null) {
+            removeCallbacks(pendingCheckForTap);
+        }
     }
 
     public void setText(String text, boolean parseLinks) {
@@ -128,6 +183,7 @@ public class AboutLinkCell extends FrameLayout {
                                 } catch (Exception e) {
                                     FileLog.e(e);
                                 }
+                                startCheckLongPress();
                             } else {
                                 resetPressedLink();
                             }
@@ -163,6 +219,17 @@ public class AboutLinkCell extends FrameLayout {
             }
         }
         return result || super.onTouchEvent(event);
+    }
+
+    private void startCheckLongPress() {
+        if (checkingForLongPress) {
+            return;
+        }
+        checkingForLongPress = true;
+        if (pendingCheckForTap == null) {
+            pendingCheckForTap = new CheckForTap();
+        }
+        postDelayed(pendingCheckForTap, ViewConfiguration.getTapTimeout());
     }
 
     @SuppressLint("DrawAllocation")

@@ -65,6 +65,7 @@ import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -77,6 +78,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
+import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.AboutLinkCell;
@@ -3014,6 +3016,27 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                     }
                                 }
                             }
+                        }
+
+                        @Override
+                        protected void onLinkLongPress(final String urlFinal) {
+                            listView.clearSelector();
+                            BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+                            builder.setTitle(urlFinal);
+                            builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                                if (which == 0) {
+                                    didPressUrl(urlFinal);
+                                } else if (which == 1) {
+                                    String url = urlFinal;
+                                    if (url.startsWith("mailto:")) {
+                                        url = url.substring(7);
+                                    } else if (url.startsWith("tel:")) {
+                                        url = url.substring(4);
+                                    }
+                                    AndroidUtilities.addToClipboard(url);
+                                }
+                            });
+                            showDialog(builder.create());
                         }
                     };
                     break;
