@@ -4401,12 +4401,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (pressedLink instanceof URLSpanMono) {
             delegate.didPressUrl(currentMessageObject, pressedLink, true);
             return;
-        } else if (pressedLink instanceof URLSpanNoUnderline) {
-            URLSpanNoUnderline url = (URLSpanNoUnderline) pressedLink;
-            if (url.getURL().startsWith("/")) {
-                delegate.didPressUrl(currentMessageObject, pressedLink, true);
-                return;
-            }
         } else if (pressedLink instanceof URLSpan) {
             delegate.didPressUrl(currentMessageObject, pressedLink, true);
             return;
