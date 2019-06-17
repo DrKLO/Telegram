@@ -99,6 +99,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.exoplayer2.util.Log;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 @SuppressWarnings("unchecked")
 public class MediaActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -228,9 +230,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     object.imageReceiver = imageView.getImageReceiver();
                     object.thumb = object.imageReceiver.getBitmapSafe();
                     object.parentView.getLocationInWindow(coords);
-                    object.clipTopAddition = (int) (actionBar.getHeight() + actionBar.getTranslationY());
+                    object.clipTopAddition = (int) (actionBar.getHeight() + actionBar.getTranslationY() + mediaPages[0].listView.getPinnedHeader().getHeight());
                     if (fragmentContextView != null && fragmentContextView.getVisibility() == View.VISIBLE) {
-                        object.clipTopAddition += AndroidUtilities.dp(36);
+                        object.clipTopAddition += dp(36);
                     }
                     return object;
                 }
@@ -449,7 +451,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         if (TextUtils.isEmpty(actionBar.getTitle())) {
             actionBar.setTitle(LocaleController.getString("SharedContentTitle", R.string.SharedContentTitle));
         }
-        actionBar.setExtraHeight(AndroidUtilities.dp(44));
+        actionBar.setExtraHeight(dp(44));
         actionBar.setAllowOverlayTitle(false);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -719,10 +721,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
 
         if ((int) dialog_id != 0) {
-            actionModeViews.add(gotoItem = actionMode.addItemWithWidth(gotochat, R.drawable.msg_message, AndroidUtilities.dp(54), LocaleController.getString("AccDescrGoToMessage", R.string.AccDescrGoToMessage)));
-            actionModeViews.add(actionMode.addItemWithWidth(forward, R.drawable.msg_forward, AndroidUtilities.dp(54), LocaleController.getString("Forward", R.string.Forward)));
+            actionModeViews.add(gotoItem = actionMode.addItemWithWidth(gotochat, R.drawable.msg_message, dp(54), LocaleController.getString("AccDescrGoToMessage", R.string.AccDescrGoToMessage)));
+            actionModeViews.add(actionMode.addItemWithWidth(forward, R.drawable.msg_forward, dp(54), LocaleController.getString("Forward", R.string.Forward)));
         }
-        actionModeViews.add(actionMode.addItemWithWidth(delete, R.drawable.msg_delete, AndroidUtilities.dp(54), LocaleController.getString("Delete", R.string.Delete)));
+        actionModeViews.add(actionMode.addItemWithWidth(delete, R.drawable.msg_delete, dp(54), LocaleController.getString("Delete", R.string.Delete)));
 
         photoVideoAdapter = new SharedPhotoVideoAdapter(context);
         documentsAdapter = new SharedDocumentsAdapter(context, 1);
@@ -796,7 +798,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         continue;
                     }
                     if (mediaPages[a].listView != null) {
-                        mediaPages[a].listView.setPadding(0, actionBarHeight + additionalPadding, 0, AndroidUtilities.dp(4));
+                        mediaPages[a].listView.setPadding(0, actionBarHeight + additionalPadding, 0, dp(4));
                     }
                     if (mediaPages[a].emptyView != null) {
                         mediaPages[a].emptyView.setPadding(0, actionBarHeight + additionalPadding, 0, 0);
@@ -844,7 +846,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         mediaPages[a].progressView.setPadding(0, actionBarHeight + additionalPadding, 0, 0);
                     }
                     if (mediaPages[a].listView != null) {
-                        mediaPages[a].listView.setPadding(0, actionBarHeight + additionalPadding, 0, AndroidUtilities.dp(4));
+                        mediaPages[a].listView.setPadding(0, actionBarHeight + additionalPadding, 0, dp(4));
                         mediaPages[a].listView.checkSection();
                     }
                 }
@@ -1256,7 +1258,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             mediaPages[a].emptyTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
             mediaPages[a].emptyTextView.setGravity(Gravity.CENTER);
             mediaPages[a].emptyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-            mediaPages[a].emptyTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), AndroidUtilities.dp(128));
+            mediaPages[a].emptyTextView.setPadding(dp(40), 0, dp(40), dp(128));
             mediaPages[a].emptyView.addView(mediaPages[a].emptyTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 24, 0, 0));
 
             mediaPages[a].progressView = new LinearLayout(context) {
@@ -1742,7 +1744,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             actionBar.setExtraHeight(0);
         } else {
             scrollSlidingTextTabStrip.setVisibility(View.VISIBLE);
-            actionBar.setExtraHeight(AndroidUtilities.dp(44));
+            actionBar.setExtraHeight(dp(44));
         }
         int id = scrollSlidingTextTabStrip.getCurrentTabId();
         if (id >= 0) {
@@ -1803,7 +1805,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     }
                     if (searchItemState != 2 && mediaPages[a].emptyTextView != null) {
                         mediaPages[a].emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
-                        mediaPages[a].emptyTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), AndroidUtilities.dp(30));
+                        mediaPages[a].emptyTextView.setPadding(dp(40), 0, dp(40), dp(30));
                         mediaPages[a].emptyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                         mediaPages[a].emptyImageView.setVisibility(View.GONE);
                     }
@@ -1832,7 +1834,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 }
                 if (searchItemState != 2 && mediaPages[a].emptyTextView != null) {
                     mediaPages[a].emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
-                    mediaPages[a].emptyTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), AndroidUtilities.dp(30));
+                    mediaPages[a].emptyTextView.setPadding(dp(40), 0, dp(40), dp(30));
                     mediaPages[a].emptyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                     mediaPages[a].emptyImageView.setVisibility(View.GONE);
                 }
@@ -1900,7 +1902,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     mediaPages[a].emptyTextView.setText(LocaleController.getString("NoSharedAudio", R.string.NoSharedAudio));
                 }
             }
-            mediaPages[a].emptyTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), AndroidUtilities.dp(128));
+            mediaPages[a].emptyTextView.setPadding(dp(40), 0, dp(40), dp(128));
             if (mediaPages[a].selectedType == 0 || mediaPages[a].selectedType == 2) {
                 if (animated) {
                     searchItemState = 2;
@@ -2118,14 +2120,14 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
         if (AndroidUtilities.isTablet()) {
             columnsCount = 4;
-            mediaPages[num].emptyTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), AndroidUtilities.dp(128));
+            mediaPages[num].emptyTextView.setPadding(dp(40), 0, dp(40), dp(128));
         } else {
             if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {
                 columnsCount = 6;
-                mediaPages[num].emptyTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), 0);
+                mediaPages[num].emptyTextView.setPadding(dp(40), 0, dp(40), 0);
             } else {
                 columnsCount = 4;
-                mediaPages[num].emptyTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), AndroidUtilities.dp(128));
+                mediaPages[num].emptyTextView.setPadding(dp(40), 0, dp(40), dp(128));
             }
         }
         if (num == 0) {
@@ -2228,7 +2230,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     break;
                 case 2:
                 default:
-                    view = new LoadingCell(mContext, AndroidUtilities.dp(32), AndroidUtilities.dp(54));
+                    view = new LoadingCell(mContext, dp(32), dp(54));
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -2342,7 +2344,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     view = new SharedDocumentCell(mContext);
                     break;
                 case 2:
-                    view = new LoadingCell(mContext, AndroidUtilities.dp(32), AndroidUtilities.dp(54));
+                    view = new LoadingCell(mContext, dp(32), dp(54));
                     break;
                 case 3:
                 default:
@@ -2524,7 +2526,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     break;
                 case 2:
                 default:
-                    view = new LoadingCell(mContext, AndroidUtilities.dp(32), AndroidUtilities.dp(74));
+                    view = new LoadingCell(mContext, dp(32), dp(74));
                     break;
             }
             return new RecyclerListView.Holder(view);
