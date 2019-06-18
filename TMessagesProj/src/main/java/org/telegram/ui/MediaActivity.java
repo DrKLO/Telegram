@@ -603,6 +603,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 if (mediaPages[0].selectedType == id) {
                     return;
                 }
+
                 swipeBackEnabled = id == scrollSlidingTextTabStrip.getFirstTabId();
                 mediaPages[1].selectedType = id;
                 mediaPages[1].setVisibility(View.VISIBLE);
@@ -748,9 +749,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
             private boolean prepareForMoving(MotionEvent ev, boolean forward) {
                 int id = scrollSlidingTextTabStrip.getNextPageId(forward);
-                if (id < 0) {
-                    return false;
-                }
                 if (searchItemState != 0) {
                     if (searchItemState == 2) {
                         searchItem.setAlpha(1.0f);
@@ -760,15 +758,22 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     }
                     searchItemState = 0;
                 }
+
+                if (id < 0) {
+                    return false;
+                }
+                
                 getParent().requestDisallowInterceptTouchEvent(true);
                 maybeStartTracking = false;
+                swipeBackEnabled = false;
                 startedTracking = true;
-                startedTrackingX = (int) ev.getX();
+                startedTrackingX = (int) (ev.getX() + additionalOffset);
                 actionBar.setEnabled(false);
                 scrollSlidingTextTabStrip.setEnabled(false);
                 mediaPages[1].selectedType = id;
                 mediaPages[1].setVisibility(View.VISIBLE);
                 animatingForward = forward;
+
                 switchToCurrentSelectedMode(true);
                 if (forward) {
                     mediaPages[1].setTranslationX(mediaPages[0].getMeasuredWidth());
@@ -905,9 +910,47 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 canvas.drawRect(0, actionBar.getMeasuredHeight() + actionBar.getTranslationY(), getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
             }
 
+            float additionalOffset = 0f;
+
             @Override
             public boolean onTouchEvent(MotionEvent ev) {
-                if (!parentLayout.checkTransitionAnimation() && !checkTabsAnimationInProgress()) {
+                if (!parentLayout.checkTransitionAnimation()) {
+                    if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && checkTabsAnimationInProgress()) {
+                        startedTrackingX = (int) ev.getX();
+                        if (animatingForward) {
+                            if (startedTrackingX < mediaPages[0].getMeasuredWidth() + mediaPages[0].getTranslationX()) {
+                                additionalOffset = mediaPages[0].getTranslationX();
+                            } else {
+                                MediaPage page = mediaPages[0];
+                                mediaPages[0] = mediaPages[1];
+                                mediaPages[1] = page;
+                                animatingForward = false;
+                                additionalOffset = mediaPages[0].getTranslationX();
+                                scrollSlidingTextTabStrip.selectTabWithId(mediaPages[0].selectedType, 1f);
+                                scrollSlidingTextTabStrip.selectTabWithId(mediaPages[1].selectedType, additionalOffset / mediaPages[0].getMeasuredWidth());
+                                switchToCurrentSelectedMode(true);
+                            }
+                        } else {
+                            if (startedTrackingX < mediaPages[1].getMeasuredWidth() + mediaPages[1].getTranslationX()) {
+                                MediaPage page = mediaPages[0];
+                                mediaPages[0] = mediaPages[1];
+                                mediaPages[1] = page;
+                                animatingForward = true;
+                                additionalOffset = mediaPages[0].getTranslationX();
+                                scrollSlidingTextTabStrip.selectTabWithId(mediaPages[0].selectedType, 1f);
+                                scrollSlidingTextTabStrip.selectTabWithId(mediaPages[1].selectedType, -additionalOffset / mediaPages[0].getMeasuredWidth());
+                                switchToCurrentSelectedMode(true);
+                            } else {
+                                additionalOffset = mediaPages[0].getTranslationX();
+                            }
+                        }
+                        tabsAnimation.removeAllListeners();
+                        tabsAnimation.cancel();
+                        tabsAnimationInProgress = false;
+
+                    } else if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN) {
+                        additionalOffset = 0;
+                    }
                     if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
                         startedTrackingPointerId = ev.getPointerId(0);
                         maybeStartTracking = true;
@@ -920,7 +963,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         if (velocityTracker == null) {
                             velocityTracker = VelocityTracker.obtain();
                         }
-                        int dx = (int) (ev.getX() - startedTrackingX);
+
+                        int dx = (int) (ev.getX() - startedTrackingX + additionalOffset);
                         int dy = Math.abs((int) ev.getY() - startedTrackingY);
                         velocityTracker.addMovement(ev);
                         if (startedTracking && (animatingForward && dx > 0 || !animatingForward && dx < 0)) {
@@ -937,7 +981,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         }
                         if (maybeStartTracking && !startedTracking) {
                             float touchSlop = AndroidUtilities.getPixelsInCM(0.3f, true);
-                            if (Math.abs(dx) >= touchSlop && Math.abs(dx) / 3 > dy) {
+                            int dxLocal = (int) (ev.getX() - startedTrackingX);
+                            if (Math.abs(dxLocal) >= touchSlop && Math.abs(dxLocal) / 3 > dy) {
                                 prepareForMoving(ev, dx < 0);
                             }
                         } else if (startedTracking) {
@@ -972,25 +1017,27 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             tabsAnimation = new AnimatorSet();
                             float velX = velocityTracker.getXVelocity();
                             float velY = velocityTracker.getYVelocity();
-                            backAnimation = Math.abs(x) < mediaPages[0].getMeasuredWidth() / 3.0f && (Math.abs(velX) < 3500 || Math.abs(velX) < Math.abs(velY));
-                            float distToMove;
+
+
+                            if(additionalOffset != 0){
+                                if (Math.abs(velX) > 300){
+                                    backAnimation = animatingForward ? velX > 0 : velX < 0;
+                                } else {
+
+                                }
+                            } else {
+                                backAnimation = Math.abs(x) < mediaPages[0].getMeasuredWidth() / 3.0f && (Math.abs(velX) < 3500 || Math.abs(velX) < Math.abs(velY));
+                            }
+
                             float dx;
                             if (backAnimation) {
                                 dx = Math.abs(x);
                                 if (animatingForward) {
-                                    /*tabsAnimation.playTogether(
-                                            FastAnimator.ofView(mediaPages[0]).translationX(0),
-                                            FastAnimator.ofView(mediaPages[1]).translationX(mediaPages[1].getMeasuredWidth())
-                                    );*/
                                     tabsAnimation.playTogether(
                                             ObjectAnimator.ofFloat(mediaPages[0], View.TRANSLATION_X, 0),
                                             ObjectAnimator.ofFloat(mediaPages[1], View.TRANSLATION_X, mediaPages[1].getMeasuredWidth())
                                     );
                                 } else {
-                                    /*tabsAnimation.playTogether(
-                                            FastAnimator.ofView(mediaPages[0]).translationX(0),
-                                            FastAnimator.ofView(mediaPages[1]).translationX(-mediaPages[1].getMeasuredWidth())
-                                    );*/
                                     tabsAnimation.playTogether(
                                             ObjectAnimator.ofFloat(mediaPages[0], View.TRANSLATION_X, 0),
                                             ObjectAnimator.ofFloat(mediaPages[1], View.TRANSLATION_X, -mediaPages[1].getMeasuredWidth())
@@ -999,19 +1046,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             } else {
                                 dx = mediaPages[0].getMeasuredWidth() - Math.abs(x);
                                 if (animatingForward) {
-                                    /*tabsAnimation.playTogether(
-                                            FastAnimator.ofView(mediaPages[0]).translationX(-mediaPages[0].getMeasuredWidth()),
-                                            FastAnimator.ofView(mediaPages[1]).translationX(0)
-                                    );*/
                                     tabsAnimation.playTogether(
                                             ObjectAnimator.ofFloat(mediaPages[0], View.TRANSLATION_X, -mediaPages[0].getMeasuredWidth()),
                                             ObjectAnimator.ofFloat(mediaPages[1], View.TRANSLATION_X, 0)
                                     );
                                 } else {
-                                    /*tabsAnimation.playTogether(
-                                            FastAnimator.ofView(mediaPages[0]).translationX(mediaPages[0].getMeasuredWidth()),
-                                            FastAnimator.ofView(mediaPages[1]).translationX(0)
-                                    );*/
                                     tabsAnimation.playTogether(
                                             ObjectAnimator.ofFloat(mediaPages[0], View.TRANSLATION_X, mediaPages[0].getMeasuredWidth()),
                                             ObjectAnimator.ofFloat(mediaPages[1], View.TRANSLATION_X, 0)
@@ -1057,6 +1096,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                                             searchItem.setVisibility(View.INVISIBLE);
                                         }
                                         searchItemState = 0;
+
                                         swipeBackEnabled = mediaPages[0].selectedType == scrollSlidingTextTabStrip.getFirstTabId();
                                         scrollSlidingTextTabStrip.selectTabWithId(mediaPages[0].selectedType, 1.0f);
                                     }
@@ -1070,6 +1110,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             tabsAnimation.start();
                             tabsAnimationInProgress = true;
                         } else {
+                            swipeBackEnabled = mediaPages[0].selectedType == scrollSlidingTextTabStrip.getFirstTabId();
                             maybeStartTracking = false;
                             startedTracking = false;
                             actionBar.setEnabled(true);
@@ -1760,8 +1801,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             mediaPages[a].listView.stopScroll();
         }
 
-        Log.d("kek",mediaPages[0].selectedType + " " + mediaPages[0].layoutManager.findFirstVisibleItemPosition());
-        savedPositions.put(
+       savedPositions.put(
                 mediaPages[0].selectedType,
                 mediaPages[0].layoutManager.findFirstVisibleItemPosition()
         );
@@ -1946,7 +1986,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
         int pos = Math.max(savedPositions.get(mediaPages[a].selectedType, 0), 0);
         mediaPages[a].layoutManager.scrollToPositionWithOffset(pos, (int) actionBar.getTranslationY());
-
     }
 
     private boolean onItemLongClick(MessageObject item, View view, int a) {
@@ -2148,8 +2187,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public void onLinkLongPress(final String urlFinal) {
-            for(int i = 0; i < mediaPages.length; i++){
-                if(mediaPages[i] != null) mediaPages[i].listView.clearSelector();
+            for (int i = 0; i < mediaPages.length; i++) {
+                if (mediaPages[i] != null) mediaPages[i].listView.clearSelector();
             }
 
             BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
