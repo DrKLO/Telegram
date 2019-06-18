@@ -1163,13 +1163,17 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (which == 0) {
                 Browser.openUrl(parentActivity, urlFinal);
             } else if (which == 1) {
-                String url = urlFinal;
-                if (url.startsWith("mailto:")) {
-                    url = url.substring(7);
-                } else if (url.startsWith("tel:")) {
-                    url = url.substring(4);
+                String copyText = urlFinal;
+                String toastText = LocaleController.getString("LinkCopied", R.string.LinkCopied);
+                if (copyText.startsWith("mailto:")) {
+                    copyText = copyText.substring(7);
+                    toastText = LocaleController.getString("EmailCopied", R.string.EmailCopied);
+                } else if (copyText.startsWith("tel:")) {
+                    copyText = copyText.substring(4);
+                    toastText = LocaleController.getString("PhoneCopied", R.string.PhoneCopied);
                 }
-                AndroidUtilities.addToClipboard(url);
+                AndroidUtilities.addToClipboard(copyText);
+                Toast.makeText(parentActivity, toastText, Toast.LENGTH_SHORT).show();
             }
         });
         BottomSheet sheet = builder.create();
