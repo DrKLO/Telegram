@@ -117,6 +117,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         public MediaPage(Context context) {
             super(context);
         }
+
+        public boolean searchEnabled() {
+            return !(selectedType == 0 || selectedType == 2);
+        }
     }
 
     private SharedPhotoVideoAdapter photoVideoAdapter;
@@ -166,6 +170,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     private boolean tabsAnimationInProgress;
     private boolean animatingForward;
     private boolean backAnimation;
+    private boolean startedTracking;
 
     private long dialog_id;
     private int columnsCount = 4;
@@ -623,20 +628,16 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     mediaPages[0].setTranslationX(progress * mediaPages[0].getMeasuredWidth());
                     mediaPages[1].setTranslationX(progress * mediaPages[0].getMeasuredWidth() - mediaPages[0].getMeasuredWidth());
                 }
-                if (searchItemState == 1) {
-                    searchItem.setAlpha(progress);
-                } else if (searchItemState == 2) {
-                    searchItem.setAlpha(1.0f - progress);
+
+                if (!startedTracking) {
+                    updateSearchItemView(progress);
                 }
+
                 if (progress == 1) {
                     MediaPage tempPage = mediaPages[0];
                     mediaPages[0] = mediaPages[1];
                     mediaPages[1] = tempPage;
                     mediaPages[1].setVisibility(View.GONE);
-                    if (searchItemState == 2) {
-                        searchItem.setVisibility(View.INVISIBLE);
-                    }
-                    searchItemState = 0;
                 }
             }
         });
@@ -701,7 +702,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         searchItem.setSearchFieldHint(LocaleController.getString("Search", R.string.Search));
         searchItem.setContentDescription(LocaleController.getString("Search", R.string.Search));
         searchItem.setVisibility(View.INVISIBLE);
-        searchItemState = 0;
         hasOwnBackground = true;
 
         final ActionBarMenu actionMode = actionBar.createActionMode(false);
@@ -740,7 +740,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         fragmentView = frameLayout = new FrameLayout(context) {
 
             private int startedTrackingPointerId;
-            private boolean startedTracking;
             private boolean maybeStartTracking;
             private int startedTrackingX;
             private int startedTrackingY;
@@ -749,20 +748,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
             private boolean prepareForMoving(MotionEvent ev, boolean forward) {
                 int id = scrollSlidingTextTabStrip.getNextPageId(forward);
-                if (searchItemState != 0) {
-                    if (searchItemState == 2) {
-                        searchItem.setAlpha(1.0f);
-                    } else if (searchItemState == 1) {
-                        searchItem.setAlpha(0.0f);
-                        searchItem.setVisibility(View.INVISIBLE);
-                    }
-                    searchItemState = 0;
-                }
 
                 if (id < 0) {
                     return false;
                 }
-                
+
                 getParent().requestDisallowInterceptTouchEvent(true);
                 maybeStartTracking = false;
                 swipeBackEnabled = false;
@@ -993,11 +983,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                                 mediaPages[1].setTranslationX(dx - mediaPages[0].getMeasuredWidth());
                             }
                             float scrollProgress = Math.abs(dx) / (float) mediaPages[0].getMeasuredWidth();
-                            if (searchItemState == 2) {
-                                searchItem.setAlpha(1.0f - scrollProgress);
-                            } else if (searchItemState == 1) {
-                                searchItem.setAlpha(scrollProgress);
-                            }
                             scrollSlidingTextTabStrip.selectTabWithId(mediaPages[1].selectedType, scrollProgress);
                         }
                     } else if (ev != null && ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
@@ -1019,11 +1004,15 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             float velY = velocityTracker.getYVelocity();
 
 
-                            if(additionalOffset != 0){
-                                if (Math.abs(velX) > 300){
+                            if (additionalOffset != 0) {
+                                if (Math.abs(velX) > 1500) {
                                     backAnimation = animatingForward ? velX > 0 : velX < 0;
                                 } else {
-
+                                    if(animatingForward) {
+                                        backAnimation = (mediaPages[1].getX() > (mediaPages[0].getMeasuredWidth() >> 1));
+                                    } else {
+                                        backAnimation = (mediaPages[0].getX() < (mediaPages[0].getMeasuredWidth() >> 1));
+                                    }
                                 }
                             } else {
                                 backAnimation = Math.abs(x) < mediaPages[0].getMeasuredWidth() / 3.0f && (Math.abs(velX) < 3500 || Math.abs(velX) < Math.abs(velY));
@@ -1078,28 +1067,22 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                                 @Override
                                 public void onAnimationEnd(Animator animator) {
                                     tabsAnimation = null;
+
                                     if (backAnimation) {
                                         mediaPages[1].setVisibility(View.GONE);
-                                        if (searchItemState == 2) {
-                                            searchItem.setAlpha(1.0f);
-                                        } else if (searchItemState == 1) {
-                                            searchItem.setAlpha(0.0f);
-                                            searchItem.setVisibility(View.INVISIBLE);
-                                        }
-                                        searchItemState = 0;
+                                        updateSearchItemView(0f);
                                     } else {
+                                        updateSearchItemView(1f);
                                         MediaPage tempPage = mediaPages[0];
                                         mediaPages[0] = mediaPages[1];
                                         mediaPages[1] = tempPage;
                                         mediaPages[1].setVisibility(View.GONE);
-                                        if (searchItemState == 2) {
-                                            searchItem.setVisibility(View.INVISIBLE);
-                                        }
-                                        searchItemState = 0;
 
                                         swipeBackEnabled = mediaPages[0].selectedType == scrollSlidingTextTabStrip.getFirstTabId();
                                         scrollSlidingTextTabStrip.selectTabWithId(mediaPages[0].selectedType, 1.0f);
                                     }
+
+
                                     tabsAnimationInProgress = false;
                                     maybeStartTracking = false;
                                     startedTracking = false;
@@ -1151,16 +1134,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 @Override
                 public void setTranslationX(float translationX) {
                     super.setTranslationX(translationX);
-                    if (tabsAnimationInProgress) {
-                        if (mediaPages[0] == this) {
-                            float scrollProgress = Math.abs(mediaPages[0].getTranslationX()) / (float) mediaPages[0].getMeasuredWidth();
-                            scrollSlidingTextTabStrip.selectTabWithId(mediaPages[1].selectedType, scrollProgress);
-                            if (searchItemState == 2) {
-                                searchItem.setAlpha(1.0f - scrollProgress);
-                            } else if (searchItemState == 1) {
-                                searchItem.setAlpha(scrollProgress);
-                            }
-                        }
+                    if (mediaPages[0] == this && startedTracking) {
+                        float scrollProgress = Math.abs(mediaPages[0].getTranslationX()) / (float) mediaPages[0].getMeasuredWidth();
+                        scrollSlidingTextTabStrip.selectTabWithId(mediaPages[1].selectedType, scrollProgress);
+                        updateSearchItemView(scrollProgress);
                     }
                 }
             };
@@ -1330,9 +1307,30 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
         updateTabs();
         switchToCurrentSelectedMode(false);
+        updateSearchItemView(0f);
         swipeBackEnabled = scrollSlidingTextTabStrip.getCurrentTabId() == scrollSlidingTextTabStrip.getFirstTabId();
 
         return fragmentView;
+    }
+
+    private void updateSearchItemView(float progress) {
+        if (progress >= 1f) {
+            searchItem.setAlpha(mediaPages[1].searchEnabled() ? 1f : 0f);
+        } else {
+            if (mediaPages[1].searchEnabled() && !mediaPages[0].searchEnabled()) {
+                searchItem.setAlpha(progress);
+            } else if (!mediaPages[1].searchEnabled() && mediaPages[0].searchEnabled()) {
+                searchItem.setAlpha(1f - progress);
+            } else {
+                searchItem.setAlpha(mediaPages[1].searchEnabled() ? 1f : 0f);
+            }
+        }
+
+        if (actionBar.isSearchFieldVisible()) {
+            searchItem.setVisibility(View.GONE);
+        } else {
+            searchItem.setVisibility(searchItem.getAlpha() == 0f ? View.INVISIBLE : View.VISIBLE);
+        }
     }
 
     private void setScrollY(float value) {
@@ -1801,7 +1799,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             mediaPages[a].listView.stopScroll();
         }
 
-       savedPositions.put(
+        savedPositions.put(
                 mediaPages[0].selectedType,
                 mediaPages[0].layoutManager.findFirstVisibleItemPosition()
         );
@@ -1843,7 +1841,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             }
                         }
                     }
-                    if (searchItemState != 2 && mediaPages[a].emptyTextView != null) {
+                    if (mediaPages[a].searchEnabled() && mediaPages[a].emptyTextView != null) {
                         mediaPages[a].emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
                         mediaPages[a].emptyTextView.setPadding(dp(40), 0, dp(40), dp(30));
                         mediaPages[a].emptyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
@@ -1872,7 +1870,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         audioSearchAdapter.notifyDataSetChanged();
                     }
                 }
-                if (searchItemState != 2 && mediaPages[a].emptyTextView != null) {
+                if (mediaPages[a].searchEnabled() && mediaPages[a].emptyTextView != null) {
                     mediaPages[a].emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
                     mediaPages[a].emptyTextView.setPadding(dp(40), 0, dp(40), dp(30));
                     mediaPages[a].emptyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
@@ -1943,28 +1941,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
             mediaPages[a].emptyTextView.setPadding(dp(40), 0, dp(40), dp(128));
-            if (mediaPages[a].selectedType == 0 || mediaPages[a].selectedType == 2) {
-                if (animated) {
-                    searchItemState = 2;
-                } else {
-                    searchItemState = 0;
-                    searchItem.setVisibility(View.INVISIBLE);
-                }
-            } else {
-                if (animated) {
-                    if (searchItem.getVisibility() == View.INVISIBLE && !actionBar.isSearchFieldVisible()) {
-                        searchItemState = 1;
-                        searchItem.setVisibility(View.VISIBLE);
-                        searchItem.setAlpha(0.0f);
-                    } else {
-                        searchItemState = 0;
-                    }
-                } else if (searchItem.getVisibility() == View.INVISIBLE) {
-                    searchItemState = 0;
-                    searchItem.setAlpha(1.0f);
-                    searchItem.setVisibility(View.VISIBLE);
-                }
-            }
+
             if (!sharedMediaData[mediaPages[a].selectedType].loading && !sharedMediaData[mediaPages[a].selectedType].endReached[0] && sharedMediaData[mediaPages[a].selectedType].messages.isEmpty()) {
                 sharedMediaData[mediaPages[a].selectedType].loading = true;
                 DataQuery.getInstance(currentAccount).loadMedia(dialog_id, 50, 0, mediaPages[a].selectedType, 1, classGuid);
@@ -1979,7 +1956,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             }
             mediaPages[a].listView.setVisibility(View.VISIBLE);
         }
-        if (searchItemState == 2 && actionBar.isSearchFieldVisible()) {
+        if (!mediaPages[a].searchEnabled() && actionBar.isSearchFieldVisible()) {
             ignoreSearchCollapse = true;
             actionBar.closeSearchField();
         }
