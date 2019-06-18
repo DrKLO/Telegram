@@ -13829,6 +13829,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                             openUsername(username);
                                         } else if (which == 1) {
                                             AndroidUtilities.addToClipboard(str);
+                                            Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
                                         }
                                     });
                                     showDialog(builder.create());
@@ -13844,6 +13845,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                             openHashtag(str);
                                         } else if (which == 1) {
                                             AndroidUtilities.addToClipboard(str);
+                                            Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
                                         }
                                     });
                                     showDialog(builder.create());
@@ -13867,13 +13869,17 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     if (which == 0) {
                                         Browser.openUrl(getParentActivity(), urlFinal, inlineReturn == 0, false);
                                     } else if (which == 1) {
-                                        String url1 = urlFinal;
-                                        if (url1.startsWith("mailto:")) {
-                                            url1 = url1.substring(7);
-                                        } else if (url1.startsWith("tel:")) {
-                                            url1 = url1.substring(4);
+                                        String copyText = urlFinal;
+                                        String toastText = LocaleController.getString("LinkCopied", R.string.LinkCopied);
+                                        if (copyText.startsWith("mailto:")) {
+                                            copyText = copyText.substring(7);
+                                            toastText = LocaleController.getString("EmailCopied", R.string.EmailCopied);
+                                        } else if (copyText.startsWith("tel:")) {
+                                            copyText = copyText.substring(4);
+                                            toastText = LocaleController.getString("PhoneCopied", R.string.PhoneCopied);
                                         }
-                                        AndroidUtilities.addToClipboard(url1);
+                                        AndroidUtilities.addToClipboard(copyText);
+                                        Toast.makeText(getParentActivity(), toastText, Toast.LENGTH_SHORT).show();
                                     }
                                 });
                                 showDialog(builder.create());
