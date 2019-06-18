@@ -4449,7 +4449,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                                 resultsMap.put(result.id, result);
                                 addedCount++;
                             }
-                            searchEndReached = oldCount == results.size();
+                            searchEndReached = TextUtils.isEmpty(res.next_offset);
                             if (addedCount != 0) {
                                 if (oldCount != 0) {
                                     notifyItemChanged(oldCount);
