@@ -32,6 +32,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+
 import androidx.annotation.Keep;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -65,7 +66,6 @@ import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -156,6 +156,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int extraHeight;
     private int initialAnimationExtraHeight;
     private float animationProgress;
+    private int bottomOffset = 0;
+    private int lastKnownListHeight = 0;
 
     private boolean isBot;
 
@@ -197,6 +199,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int notificationsDividerRow;
     private int notificationsRow;
     private int infoSectionRow;
+    private int bottomOffsetRow;
 
     private int settingsTimerRow;
     private int settingsKeyRow;
@@ -1417,6 +1420,26 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (top >= 0 && holder != null && holder.getAdapterPosition() == 0) {
             newOffset = top;
         }
+
+        int childCount = listView.getChildCount();
+        if(listView.getMeasuredHeight() != lastKnownListHeight){
+            bottomOffset = 0;
+            lastKnownListHeight = listView.getMeasuredHeight();
+        }
+        if (rowCount - 1 == childCount) {
+            bottomOffset = 0;
+            for (int i = 0; i < childCount; i++) {
+                View localChild = listView.getChildAt(i);
+                bottomOffset += localChild.getMeasuredHeight();
+                if (listView.getLayoutManager().getItemViewType(localChild) == bottomOffsetRow) {
+                    bottomOffset = listView.getMeasuredHeight();
+                    break;
+                }
+            }
+            bottomOffset = listView.getMeasuredHeight() - bottomOffset;
+        }
+        if(bottomOffset < 0) bottomOffset = 0;
+
         if (extraHeight != newOffset) {
             extraHeight = newOffset;
             topView.invalidate();
@@ -2622,6 +2645,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 addMemberRow = rowCount++;
             }
         }
+
+        bottomOffsetRow = rowCount++;
     }
 
     private Drawable getScamDrawable() {
@@ -3064,6 +3089,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 case 11: {
                     view = new EmptyCell(mContext, 36);
+                    break;
+                }
+                case 12: {
+                    view = new View(mContext) {
+                        @Override
+                        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                            setMeasuredDimension(0, bottomOffset);
+                        }
+                    };
+                    break;
                 }
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
@@ -3351,6 +3386,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return 8;
             } else if (i == emptyRow) {
                 return 11;
+            } else if (i == bottomOffsetRow) {
+                return 12;
             }
             return 0;
         }
