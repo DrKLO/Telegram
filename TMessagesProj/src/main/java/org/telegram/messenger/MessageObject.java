@@ -2857,7 +2857,7 @@ public class MessageObject {
             if (useManualParse) {
                 if (containsUrls(caption)) {
                     try {
-                        Linkify.addLinks((Spannable) caption, Linkify.WEB_URLS | Linkify.PHONE_NUMBERS);
+                        Linkify.addLinks((Spannable) caption, Linkify.WEB_URLS | Linkify.PHONE_NUMBERS | Linkify.EMAIL_ADDRESSES);
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
@@ -3006,7 +3006,7 @@ public class MessageObject {
         if (messageText instanceof Spannable && containsUrls(messageText)) {
             if (messageText.length() < 1000) {
                 try {
-                    Linkify.addLinks((Spannable) messageText, Linkify.WEB_URLS | Linkify.PHONE_NUMBERS);
+                    Linkify.addLinks((Spannable) messageText, Linkify.WEB_URLS | Linkify.PHONE_NUMBERS | Linkify.EMAIL_ADDRESSES);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
