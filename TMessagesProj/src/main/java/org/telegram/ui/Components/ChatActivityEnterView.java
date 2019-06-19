@@ -201,6 +201,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private ImageView expandStickersButton;
     private EmojiView emojiView;
     private boolean emojiViewVisible;
+    private boolean botKeyboardViewVisible;
     private TextView recordTimeText;
     private FrameLayout audioVideoButtonContainer;
     private AnimatorSet audioVideoButtonAnimation;
@@ -3514,9 +3515,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 emojiViewVisible = true;
                 if (botKeyboardView != null && botKeyboardView.getVisibility() != GONE) {
                     botKeyboardView.setVisibility(GONE);
+                    botKeyboardViewVisible = false;
                 }
                 currentView = emojiView;
             } else if (contentType == 1) {
+                botKeyboardViewVisible = true;
                 if (emojiView != null && emojiView.getVisibility() != GONE) {
                     emojiView.setVisibility(GONE);
                     emojiViewVisible = false;
@@ -3564,7 +3567,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
             }
             if (botKeyboardView != null) {
-                botKeyboardView.setVisibility(GONE);
+                botKeyboardViewVisible = false;
+                if (AndroidUtilities.usingHardwareInput || AndroidUtilities.isInMultiwindow) {
+                    botKeyboardView.setVisibility(GONE);
+                }
             }
             if (sizeNotifierLayout != null) {
                 if (show == 0) {
@@ -3717,7 +3723,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     public boolean isPopupShowing() {
-        return emojiViewVisible || botKeyboardView != null && botKeyboardView.getVisibility() == VISIBLE;
+        return emojiViewVisible || botKeyboardViewVisible;
     }
 
     public boolean isKeyboardVisible() {
