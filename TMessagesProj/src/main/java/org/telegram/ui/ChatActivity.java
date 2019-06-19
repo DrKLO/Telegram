@@ -6952,6 +6952,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (object != null) {
             int index = messages.indexOf(object);
             if (index != -1) {
+                chatListView.stopScroll();
                 removeSelectedMessageHighlight();
                 if (select) {
                     highlightMessageId = id;
@@ -8466,6 +8467,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     yOffset = scrollToMessagePosition;
                                 }
                                 if (!messages.isEmpty()) {
+                                    chatListView.stopScroll();
                                     if (chatAdapter.loadingUpRow != -1 && !messages.isEmpty() && (messages.get(messages.size() - 1) == scrollToMessage || messages.get(messages.size() - 2) == scrollToMessage)) {
                                         chatLayoutManager.scrollToPositionWithOffset(chatAdapter.loadingUpRow, yOffset, bottom);
                                     } else {
