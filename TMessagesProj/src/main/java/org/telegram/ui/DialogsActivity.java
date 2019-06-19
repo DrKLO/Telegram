@@ -1945,7 +1945,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
                         showDialog(permissionDialog = builder.create());
                     } else {
-                        askForPermissons(true);
+                        if (Build.VERSION.SDK_INT >= 24) {
+                            askForPermissons(true);
+                        } else {
+                            parentLayout.getViewTreeObserver().addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
+                                @Override
+                                public void onDraw() {
+                                    parentLayout.post(() -> {
+                                        parentLayout.getViewTreeObserver().removeOnDrawListener(this);
+                                        askForPermissons(true);
+                                    });
+                                }
+                            });
+                        }
                     }
                 }
             }
