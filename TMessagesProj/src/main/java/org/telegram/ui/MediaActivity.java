@@ -905,6 +905,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             @Override
             public boolean onTouchEvent(MotionEvent ev) {
                 if (!parentLayout.checkTransitionAnimation()) {
+                    if(ev != null && ev.getAction() == MotionEvent.ACTION_DOWN){
+                        startedTrackingX = (int) ev.getX();
+                        startedTrackingY = (int) ev.getY();
+                    }
                     if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && checkTabsAnimationInProgress()) {
                         startedTrackingX = (int) ev.getX();
                         if (animatingForward) {
@@ -942,10 +946,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         additionalOffset = 0;
                     }
                     if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
-                        startedTrackingPointerId = ev.getPointerId(0);
                         maybeStartTracking = true;
-                        startedTrackingX = (int) ev.getX();
-                        startedTrackingY = (int) ev.getY();
+                        startedTrackingPointerId = ev.getPointerId(0);
                         if (velocityTracker != null) {
                             velocityTracker.clear();
                         }
@@ -1614,7 +1616,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         return actionBar.isEnabled();
     }
 
-    private void updateSections(ViewGroup listView, boolean checkBottom) {
+    private void updateSections(RecyclerView listView, boolean checkBottom) {
         int count = listView.getChildCount();
         int minPositionDateHolder = Integer.MAX_VALUE;
         View minDateChild = null;
@@ -1650,7 +1652,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
         }
-        if (checkBottom && maxBottom != 0 && maxBottom < (listView.getMeasuredHeight() - listView.getPaddingBottom())) {
+        if (checkBottom && maxBottom != 0 && maxBottom <= (listView.getMeasuredHeight() - listView.getPaddingBottom())) {
             resetScroll();
         }
     }
