@@ -434,6 +434,59 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     showDialog(builder.create());
                     return true;
                 }
+                if (position == numberRow) {
+                    TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
+                    if (user == null || TextUtils.isEmpty(user.phone)) {
+                        return false;
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setItems(new CharSequence[]{LocaleController.getString("Call", R.string.Call), LocaleController.getString("Copy", R.string.Copy)}, (dialogInterface, which) -> {
+                        if (which == 0) {
+                            try {
+                                Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:+" + user.phone));
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                getParentActivity().startActivityForResult(intent, 500);
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                        } else if (which == 1) {
+                            try {
+                                AndroidUtilities.addToClipboard("+" + user.phone);
+                                Toast.makeText(getParentActivity(), LocaleController.getString("PhoneCopied", R.string.PhoneCopied), Toast.LENGTH_SHORT).show();
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                        }
+                    });
+                    showDialog(builder.create());
+                    return true;
+                }
+                if (position == usernameRow) {
+                    TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
+                    if (user == null || TextUtils.isEmpty(user.username)) {
+                        return false;
+                    }
+                    try {
+                        AndroidUtilities.addToClipboard("@" + user.username);
+                        Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    return true;
+                }
+                if (position == bioRow) {
+                    String about = userInfo != null ? userInfo.about: null;
+                    if (TextUtils.isEmpty(about)) {
+                        return false;
+                    }
+                    try {
+                        AndroidUtilities.addToClipboard(about);
+                        Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    return true;
+                }
                 if (position == versionRow) {
                     pressCount++;
                     if (pressCount >= 2 || BuildVars.DEBUG_PRIVATE_VERSION) {
