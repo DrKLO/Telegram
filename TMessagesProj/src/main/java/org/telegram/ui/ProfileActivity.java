@@ -152,7 +152,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private boolean openAnimationInProgress;
     private boolean recreateMenuAfterAnimation;
     private boolean playProfileAnimation;
-    private boolean allowProfileAnimation = true;
     private int extraHeight;
     private int initialAnimationExtraHeight;
     private float animationProgress;
@@ -1443,9 +1442,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (extraHeight != newOffset) {
             extraHeight = newOffset;
             topView.invalidate();
-            if (playProfileAnimation) {
-                allowProfileAnimation = extraHeight != 0;
-            }
             needLayout();
         }
     }
@@ -1982,7 +1978,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
-        if (!backward && playProfileAnimation && allowProfileAnimation) {
+        if (!backward && playProfileAnimation) {
             openAnimationInProgress = true;
         }
         NotificationCenter.getInstance(currentAccount).setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats, NotificationCenter.mediaCountDidLoad, NotificationCenter.mediaCountsDidLoad});
@@ -1991,7 +1987,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
-        if (isOpen && !backward && playProfileAnimation && allowProfileAnimation) {
+        if (isOpen && !backward && playProfileAnimation) {
             openAnimationInProgress = false;
             if (recreateMenuAfterAnimation) {
                 createActionBarMenu();
@@ -2200,7 +2196,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     protected AnimatorSet onCustomTransitionAnimation(final boolean isOpen, final Runnable callback) {
-        if (playProfileAnimation && allowProfileAnimation) {
+        if (playProfileAnimation) {
             final AnimatorSet animatorSet = new AnimatorSet();
             animatorSet.setDuration(180);
             listView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
