@@ -2990,7 +2990,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     } else {
                         allowFocus = true;
                     }
-                    if (allowFocus && messageEditText != null) {
+                    if (allowFocus && messageEditText != null && messageEditText.getVisibility() == VISIBLE) {
                         try {
                             messageEditText.requestFocus();
                         } catch (Exception e) {

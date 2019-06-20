@@ -11382,15 +11382,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         fixLayout();
         applyDraftMaybe(false);
-        if (bottomOverlayChat != null && bottomOverlayChat.getVisibility() != View.VISIBLE && !actionBar.isSearchFieldVisible()) {
+        if (bottomOverlayChat != null && bottomOverlayChat.getVisibility() != View.VISIBLE && !actionBar.isSearchFieldVisible() && ChatObject.canWriteToChat(currentChat)) {
             chatActivityEnterView.setFieldFocused(true);
         }
         if (chatActivityEnterView != null) {
             chatActivityEnterView.onResume();
-            if(ChatObject.canWriteToChat(currentChat)) {
-                EditTextCaption editTextCaption = chatActivityEnterView.getEditField();
-                editTextCaption.clearFocus();
-            }
         }
         if (currentUser != null) {
             chatEnterTime = System.currentTimeMillis();
