@@ -11832,8 +11832,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         cantDeleteMessagesCount = 0;
         canEditMessagesCount = 0;
         cantForwardMessagesCount = 0;
-        boolean canWriteToChannel = ChatObject.isChannel(currentChat) && (currentChat.creator || currentChat.admin_rights != null && currentChat.admin_rights.post_messages) && !currentChat.megagroup;
-        if (chatActivityEnterView != null && canWriteToChannel) {
+
+        if (chatActivityEnterView != null && ChatObject.canWriteToChat(currentChat)) {
             EditTextCaption editTextCaption = chatActivityEnterView.getEditField();
             editTextCaption.requestFocus();
             editTextCaption.setAllowDrawCursor(true);

@@ -34,6 +34,7 @@ import android.os.PowerManager;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.inputmethod.EditorInfoCompat;
 import androidx.core.view.inputmethod.InputConnectionCompat;
 import androidx.core.os.BuildCompat;
@@ -247,6 +248,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private Paint dotPaint;
     private Drawable playDrawable;
     private Drawable pauseDrawable;
+    private ReplacableIconDrawable botButtonDrawable;
     private int searchingType;
 
     private boolean destroyed;
@@ -1077,7 +1079,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
             botButton = new ImageView(context);
             botButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
-            botButton.setImageResource(R.drawable.input_bot2);
+
+            botButtonDrawable = new ReplacableIconDrawable(context);
+            botButtonDrawable.setIcon(R.drawable.input_bot2, false);
+
+            botButton.setImageDrawable(botButtonDrawable);
             botButton.setScaleType(ImageView.ScaleType.CENTER);
             botButton.setVisibility(GONE);
             attachLayout.addView(botButton, LayoutHelper.createLinear(48, 48));
@@ -3028,14 +3034,14 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
             if (botReplyMarkup != null) {
                 if (isPopupShowing() && currentPopupContentType == 1) {
-                    botButton.setImageResource(R.drawable.input_keyboard);
+                    botButtonDrawable.setIcon(R.drawable.input_keyboard, isAttachedToWindow());
                     botButton.setContentDescription(LocaleController.getString("AccDescrShowKeyboard", R.string.AccDescrShowKeyboard));
                 } else {
-                    botButton.setImageResource(R.drawable.input_bot2);
+                    botButtonDrawable.setIcon(R.drawable.input_bot2, isAttachedToWindow());
                     botButton.setContentDescription(LocaleController.getString("AccDescrBotKeyboard", R.string.AccDescrBotKeyboard));
                 }
             } else {
-                botButton.setImageResource(R.drawable.input_bot1);
+                botButtonDrawable.setIcon(R.drawable.input_bot1, isAttachedToWindow());
                 botButton.setContentDescription(LocaleController.getString("AccDescrBotCommands", R.string.AccDescrBotCommands));
             }
         } else {
