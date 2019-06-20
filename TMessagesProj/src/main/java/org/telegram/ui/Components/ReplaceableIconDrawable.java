@@ -19,7 +19,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
-public class ReplacableIconDrawable extends Drawable implements Animator.AnimatorListener {
+public class ReplaceableIconDrawable extends Drawable implements Animator.AnimatorListener {
 
     private Context context;
     private ColorFilter colorFilter;
@@ -31,7 +31,7 @@ public class ReplacableIconDrawable extends Drawable implements Animator.Animato
     private ValueAnimator animation;
     private float progress = 1f;
 
-    public ReplacableIconDrawable(Context context) {
+    public ReplaceableIconDrawable(Context context) {
         this.context = context;
     }
 

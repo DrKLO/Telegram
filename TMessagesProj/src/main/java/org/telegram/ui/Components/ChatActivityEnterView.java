@@ -34,7 +34,6 @@ import android.os.PowerManager;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.core.view.inputmethod.EditorInfoCompat;
 import androidx.core.view.inputmethod.InputConnectionCompat;
 import androidx.core.os.BuildCompat;
@@ -248,7 +247,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private Paint dotPaint;
     private Drawable playDrawable;
     private Drawable pauseDrawable;
-    private ReplacableIconDrawable botButtonDrawable;
+    private ReplaceableIconDrawable botButtonDrawable;
     private int searchingType;
 
     private boolean destroyed;
@@ -1080,7 +1079,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             botButton = new ImageView(context);
             botButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
 
-            botButtonDrawable = new ReplacableIconDrawable(context);
+            botButtonDrawable = new ReplaceableIconDrawable(context);
             botButtonDrawable.setIcon(R.drawable.input_bot2, false);
 
             botButton.setImageDrawable(botButtonDrawable);
