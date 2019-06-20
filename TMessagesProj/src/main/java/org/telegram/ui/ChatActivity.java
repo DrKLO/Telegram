@@ -11386,6 +11386,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             chatActivityEnterView.setFieldFocused(true);
         }
         if (chatActivityEnterView != null) {
+            EditTextCaption editTextCaption = chatActivityEnterView.getEditField();
+            editTextCaption.clearFocus();
             chatActivityEnterView.onResume();
         }
         if (currentUser != null) {
@@ -11836,6 +11838,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             EditTextCaption editTextCaption = chatActivityEnterView.getEditField();
             editTextCaption.requestFocus();
             editTextCaption.setAllowDrawCursor(true);
+        } else if (chatActivityEnterView != null) {
+            EditTextCaption editTextCaption = chatActivityEnterView.getEditField();
+            editTextCaption.clearFocus();
         }
     }
 
