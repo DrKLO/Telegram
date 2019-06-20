@@ -11832,7 +11832,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         cantDeleteMessagesCount = 0;
         canEditMessagesCount = 0;
         cantForwardMessagesCount = 0;
-
         if (chatActivityEnterView != null && ChatObject.canWriteToChat(currentChat)) {
             EditTextCaption editTextCaption = chatActivityEnterView.getEditField();
             editTextCaption.requestFocus();
@@ -13886,6 +13885,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     private boolean isHashTag(String str){
                         return str.startsWith("@") || str.startsWith("#") || str.startsWith("$");
                     }
+
                     private void openHashTag(String str) {
                         if (str.startsWith("@")) {
                             String username = str.substring(1).toLowerCase();

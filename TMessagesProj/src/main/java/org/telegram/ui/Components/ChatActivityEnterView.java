@@ -1078,10 +1078,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
             botButton = new ImageView(context);
             botButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
-
             botButtonDrawable = new ReplaceableIconDrawable(context);
             botButtonDrawable.setIcon(R.drawable.input_bot2, false);
-
             botButton.setImageDrawable(botButtonDrawable);
             botButton.setScaleType(ImageView.ScaleType.CENTER);
             botButton.setVisibility(GONE);

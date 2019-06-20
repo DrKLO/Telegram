@@ -1388,11 +1388,6 @@ public class RecyclerListView extends RecyclerView {
     }
 
     @Override
-    public void refreshDrawableState() {
-        super.refreshDrawableState();
-    }
-
-    @Override
     protected void drawableStateChanged() {
         super.drawableStateChanged();
         updateSelectorState();

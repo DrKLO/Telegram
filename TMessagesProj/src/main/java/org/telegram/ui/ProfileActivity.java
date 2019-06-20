@@ -1419,7 +1419,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (top >= 0 && holder != null && holder.getAdapterPosition() == 0) {
             newOffset = top;
         }
-
         int childCount = listView.getChildCount();
         if(listView.getMeasuredHeight() != lastKnownListHeight){
             bottomOffset = 0;
@@ -1438,7 +1437,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             bottomOffset = listView.getMeasuredHeight() - bottomOffset;
         }
         if(bottomOffset < 0) bottomOffset = 0;
-
         if (extraHeight != newOffset) {
             extraHeight = newOffset;
             topView.invalidate();
@@ -2641,7 +2639,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 addMemberRow = rowCount++;
             }
         }
-
         bottomOffsetRow = rowCount++;
     }
 
