@@ -87,8 +87,9 @@ public class DrawerProfileCell extends FrameLayout {
 
         arrowView = new ImageView(context);
         arrowView.setScaleType(ImageView.ScaleType.CENTER);
-        arrowView.setContentDescription(accountsShowed ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts) : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
+        arrowView.setImageResource(R.drawable.collapse_down);
         addView(arrowView, LayoutHelper.createFrame(59, 59, Gravity.RIGHT | Gravity.BOTTOM));
+        setArrowState(false);
 
         if (Theme.getEventType() == 0) {
             snowflakesEffect = new SnowflakesEffect();
@@ -170,25 +171,12 @@ public class DrawerProfileCell extends FrameLayout {
         }
     }
 
-    public boolean isAccountsShowed() {
-        return accountsShowed;
-    }
-
-    public void setAccountsShowed(boolean value) {
+    public void setAccountsShowed(boolean value, boolean animated) {
         if (accountsShowed == value) {
             return;
         }
         accountsShowed = value;
-        arrowView.setImageResource(accountsShowed ? R.drawable.collapse_up : R.drawable.collapse_down);
-    }
-
-    public void setOnArrowClickListener(final OnClickListener onClickListener) {
-        arrowView.setOnClickListener(v -> {
-            accountsShowed = !accountsShowed;
-            arrowView.setImageResource(accountsShowed ? R.drawable.collapse_up : R.drawable.collapse_down);
-            onClickListener.onClick(DrawerProfileCell.this);
-            arrowView.setContentDescription(accountsShowed ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts) : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
-        });
+        setArrowState(animated);
     }
 
     public void setUser(TLRPC.User user, boolean accounts) {
@@ -196,7 +184,7 @@ public class DrawerProfileCell extends FrameLayout {
             return;
         }
         accountsShowed = accounts;
-        arrowView.setImageResource(accountsShowed ? R.drawable.collapse_up : R.drawable.collapse_down);
+        setArrowState(false);
         nameTextView.setText(UserObject.getUserName(user));
         phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
@@ -215,4 +203,18 @@ public class DrawerProfileCell extends FrameLayout {
         }
         return backgroundKey;
     }
+
+    private void setArrowState(boolean animated) {
+        final float rotation = accountsShowed ? 180f : 0f;
+        if (animated) {
+            arrowView.animate().rotation(rotation);
+        } else {
+            arrowView.animate().cancel();
+            arrowView.setRotation(rotation);
+        }
+        arrowView.setContentDescription(accountsShowed
+                ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts)
+                : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
+    }
+
 }
