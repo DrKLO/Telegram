@@ -162,6 +162,8 @@ public class SearchAdapterHelper {
                 final int currentReqId = ++lastReqId;
                 reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (currentReqId == lastReqId) {
+                        reqId = 0;
+
                         if (error == null) {
                             TLRPC.TL_contacts_found res = (TLRPC.TL_contacts_found) response;
                             globalSearch.clear();
@@ -248,7 +250,6 @@ public class SearchAdapterHelper {
                             delegate.onDataSetChanged();
                         }
                     }
-                    reqId = 0;
                 }), ConnectionsManager.RequestFlagFailOnServerErrors);
             } else {
                 globalSearch.clear();

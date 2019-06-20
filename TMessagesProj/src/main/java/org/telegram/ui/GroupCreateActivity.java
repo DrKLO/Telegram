@@ -1078,6 +1078,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
                 @Override
                 public void onDataSetChanged() {
+                    if (searching && !searchAdapterHelper.isSearchInProgress()) {
+                        emptyView.showTextView();
+                    }
                     notifyDataSetChanged();
                 }
 
