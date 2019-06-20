@@ -11386,9 +11386,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             chatActivityEnterView.setFieldFocused(true);
         }
         if (chatActivityEnterView != null) {
-            EditTextCaption editTextCaption = chatActivityEnterView.getEditField();
-            editTextCaption.clearFocus();
             chatActivityEnterView.onResume();
+            if(ChatObject.canWriteToChat(currentChat)) {
+                EditTextCaption editTextCaption = chatActivityEnterView.getEditField();
+                editTextCaption.clearFocus();
+            }
         }
         if (currentUser != null) {
             chatEnterTime = System.currentTimeMillis();
