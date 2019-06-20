@@ -19,4 +19,6 @@
     <string name="CX_CustomEmojiDesc">Use custom emoji font instead of telegram emoji</string>
     <string name="CX_SetCustomEmojiFont">Set custom emoji font</string>
     <string name="CX_InvalidCustomEmojiTypeface">Invalid custom emoji typeface!</string>
+    <string name="CX_InvalidAccessToken">Invalid bot token</string>
+    <string name="CX_BotLogin">Bot login</string>
 </resources>
