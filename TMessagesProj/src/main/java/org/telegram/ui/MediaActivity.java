@@ -94,6 +94,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
+import androidx.core.view.ViewConfigurationCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -145,6 +146,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     private FragmentContextView fragmentContextView;
     private ScrollSlidingTextTabStrip scrollSlidingTextTabStrip;
     private View actionModeBackground;
+    private int touchSlop;
 
     private int maximumVelocity;
 
@@ -417,6 +419,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         }
 
         ViewConfiguration configuration = ViewConfiguration.get(context);
+        touchSlop = configuration.getScaledPagingTouchSlop();
         maximumVelocity = configuration.getScaledMaximumFlingVelocity();
 
         searching = false;
@@ -966,7 +969,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             }
                         }
                         if (maybeStartTracking && !startedTracking) {
-                            float touchSlop = AndroidUtilities.getPixelsInCM(0.3f, true);
                             int dxLocal = (int) (ev.getX() - startedTrackingX);
                             if (Math.abs(dxLocal) >= touchSlop && Math.abs(dxLocal) / 3 > dy) {
                                 prepareForMoving(ev, dx < 0);

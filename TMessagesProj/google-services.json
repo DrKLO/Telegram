@@ -8,9 +8,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:823609734831:android:f6afd7b67eae3860",
+        "mobilesdk_app_id": "1:823609734831:android:baf81f2616d79df4",
         "android_client_info": {
-          "package_name": "org.telegram.messenger"
+          "package_name": "org.telegram.messenger.isamorodov"
         }
       },
       "oauth_client": [
@@ -37,9 +37,9 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:823609734831:android:dc022572c167a16c",
+        "mobilesdk_app_id": "1:823609734831:android:547d2085fa4b94f6",
         "android_client_info": {
-          "package_name": "org.telegram.messenger.beta"
+          "package_name": "org.telegram.messenger.isamorodov.beta"
         }
       },
       "oauth_client": [
