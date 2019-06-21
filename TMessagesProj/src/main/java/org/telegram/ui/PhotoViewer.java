@@ -7311,6 +7311,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (object != null) {
             object.imageReceiver.setVisible(true, true);
         }
+
+        parentActivity.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
     }
 
     private void redraw(final int count) {
