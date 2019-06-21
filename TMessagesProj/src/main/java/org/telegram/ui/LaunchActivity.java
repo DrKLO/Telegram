@@ -42,6 +42,7 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BringAppForegroundService;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
@@ -846,7 +847,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             return true;
         }
         if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
-            if (intent == null || !Intent.ACTION_MAIN.equals(intent.getAction())) {
+            final String action = intent == null ? null : intent.getAction();
+            if (!Intent.ACTION_MAIN.equals(action) && !BringAppForegroundService.ACTION_BRING_TO_FRONT.equals(action)) {
                 PhotoViewer.getInstance().closePhoto(false, true);
             }
         }
