@@ -2998,9 +2998,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             drawPhotoImage = true;
 
                             if (type != null && type.equals("video") && duration != 0) {
-                                int minutes = duration / 60;
-                                int seconds = duration - minutes * 60;
-                                String str = String.format("%d:%02d", minutes, seconds);
+                                String str = AndroidUtilities.formatShortDuration(duration);
                                 durationWidth = (int) Math.ceil(Theme.chat_durationPaint.measureText(str));
                                 videoInfoLayout = new StaticLayout(str, Theme.chat_durationPaint, durationWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                             } else if (hasGamePreview) {
