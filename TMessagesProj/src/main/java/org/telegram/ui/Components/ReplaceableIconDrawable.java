@@ -40,8 +40,8 @@ public class ReplaceableIconDrawable extends Drawable implements Animator.Animat
         if (currentResId == resId) {
             return;
         }
-        currentResId = resId;
         setIcon(ContextCompat.getDrawable(context, resId), animated);
+        currentResId = resId;
     }
 
     public void setIcon(Drawable drawable, boolean animated) {
@@ -56,6 +56,7 @@ public class ReplaceableIconDrawable extends Drawable implements Animator.Animat
             return;
         }
 
+        currentResId = 0;
         outDrawable = currentDrawable;
         currentDrawable = drawable;
         currentDrawable.setColorFilter(colorFilter);
@@ -70,6 +71,7 @@ public class ReplaceableIconDrawable extends Drawable implements Animator.Animat
         }
 
         if (!animated) {
+            progress = 1f;
             outDrawable = null;
             return;
         }

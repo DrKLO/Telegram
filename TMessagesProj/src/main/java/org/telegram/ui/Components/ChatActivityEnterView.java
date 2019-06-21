@@ -3029,16 +3029,17 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             if (botButton.getVisibility() != VISIBLE) {
                 botButton.setVisibility(VISIBLE);
             }
+            boolean botButtonShowed = botButton.getMeasuredHeight() != 0;
             if (botReplyMarkup != null) {
                 if (isPopupShowing() && currentPopupContentType == 1) {
-                    botButtonDrawable.setIcon(R.drawable.input_keyboard, isAttachedToWindow());
+                    botButtonDrawable.setIcon(R.drawable.input_keyboard, botButtonShowed);
                     botButton.setContentDescription(LocaleController.getString("AccDescrShowKeyboard", R.string.AccDescrShowKeyboard));
                 } else {
-                    botButtonDrawable.setIcon(R.drawable.input_bot2, isAttachedToWindow());
+                    botButtonDrawable.setIcon(R.drawable.input_bot2, botButtonShowed);
                     botButton.setContentDescription(LocaleController.getString("AccDescrBotKeyboard", R.string.AccDescrBotKeyboard));
                 }
             } else {
-                botButtonDrawable.setIcon(R.drawable.input_bot1, isAttachedToWindow());
+                botButtonDrawable.setIcon(R.drawable.input_bot1, botButtonShowed);
                 botButton.setContentDescription(LocaleController.getString("AccDescrBotCommands", R.string.AccDescrBotCommands));
             }
         } else {
