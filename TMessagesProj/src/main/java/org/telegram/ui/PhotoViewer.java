@@ -3458,7 +3458,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     duration = 0;
                 }
                 duration /= 1000;
-                int size = (int) Math.ceil(videoPlayerTime.getPaint().measureText(String.format("%02d:%02d / %02d:%02d", duration / 60, duration % 60, duration / 60, duration % 60)));
+                int size = (int) Math.ceil(videoPlayerTime.getPaint().measureText(AndroidUtilities.formatVideoDuration((int) duration, (int) duration)));
                 videoPlayerSeekbar.setSize(getMeasuredWidth() - AndroidUtilities.dp(48 + 16) - size, getMeasuredHeight());
             }
 
@@ -3628,7 +3628,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private void updateVideoPlayerTime() {
         String newText;
         if (videoPlayer == null) {
-            newText = String.format("%02d:%02d / %02d:%02d", 0, 0, 0, 0);
+            newText = AndroidUtilities.formatVideoDuration(0, 0);
         } else {
             long current = videoPlayer.getCurrentPosition();
             if (current < 0) {
@@ -3638,6 +3638,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (total < 0) {
                 total = 0;
             }
+
             if (total != C.TIME_UNSET && current != C.TIME_UNSET) {
                 if (!inPreview && videoTimelineView.getVisibility() == View.VISIBLE) {
                     total *= (videoTimelineView.getRightProgress() - videoTimelineView.getLeftProgress());
@@ -3646,11 +3647,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         current = total;
                     }
                 }
-                current /= 1000;
-                total /= 1000;
-                newText = String.format("%02d:%02d / %02d:%02d", current / 60, current % 60, total / 60, total % 60);
+                newText = AndroidUtilities.formatVideoDuration((int) (current / 1000), (int) (total / 1000));
             } else {
-                newText = String.format("%02d:%02d / %02d:%02d", 0, 0, 0, 0);
+                newText = AndroidUtilities.formatVideoDuration(0, 0);
             }
         }
         videoPlayerTime.setText(newText);
@@ -3734,6 +3733,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 pipAvailable = true;
                 pipItem.setEnabled(true);
                 pipItem.setAlpha(1.0f);
+            }
+            if (videoPlayerControlFrameLayout != null) {
+                videoPlayerControlFrameLayout.requestLayout();
             }
             playerWasReady = true;
             if (currentMessageObject != null && currentMessageObject.isVideo()) {
@@ -8602,9 +8604,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
 
         String videoDimension = String.format("%dx%d", width, height);
-        int minutes = (int) (estimatedDuration / 1000 / 60);
-        int seconds = (int) Math.ceil(estimatedDuration / 1000) - minutes * 60;
-        String videoTimeSize = String.format("%d:%02d, ~%s", minutes, seconds, AndroidUtilities.formatFileSize(estimatedSize));
+        String videoTimeSize = String.format("%s, ~%s", AndroidUtilities.formatShortDuration((int) (estimatedDuration / 1000)), AndroidUtilities.formatFileSize(estimatedSize));
         currentSubtitle = String.format("%s, %s", videoDimension, videoTimeSize);
         actionBar.setSubtitle(muteVideo ? null : currentSubtitle);
     }
@@ -9049,9 +9049,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             imageView.setOrientation(photoEntry.orientation, true);
                             if (photoEntry.isVideo) {
                                 cell.videoInfoContainer.setVisibility(View.VISIBLE);
-                                int minutes = photoEntry.duration / 60;
-                                int seconds = photoEntry.duration - minutes * 60;
-                                cell.videoTextView.setText(String.format("%d:%02d", minutes, seconds));
+                                cell.videoTextView.setText(AndroidUtilities.formatShortDuration(photoEntry.duration));
                                 imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, mContext.getResources().getDrawable(R.drawable.nophotos));
                             } else {
                                 imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, mContext.getResources().getDrawable(R.drawable.nophotos));

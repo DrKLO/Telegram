@@ -1052,7 +1052,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             }
             if (lastTime != messageObject.audioProgressSec) {
                 lastTime = messageObject.audioProgressSec;
-                timeTextView.setText(String.format("%d:%02d", messageObject.audioProgressSec / 60, messageObject.audioProgressSec % 60));
+                timeTextView.setText(AndroidUtilities.formatShortDuration(messageObject.audioProgressSec));
             }
         }
     }
@@ -1140,7 +1140,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
             if (durationTextView != null) {
                 int duration = messageObject.getDuration();
-                durationTextView.setText(duration != 0 ? String.format("%d:%02d", duration / 60, duration % 60) : "-:--");
+                durationTextView.setText(duration != 0 ? AndroidUtilities.formatShortDuration(duration) : "-:--");
             }
         }
     }
