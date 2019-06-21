@@ -260,6 +260,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     private Object lastInsets;
     private boolean padImageForHorizontalInsets;
+    private int lastDuration;
 
     private boolean doneButtonPressed;
 
@@ -3458,6 +3459,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     duration = 0;
                 }
                 duration /= 1000;
+                if (duration == 0 && lastDuration > 0) {
+                    duration = lastDuration;
+                }
                 int size = (int) Math.ceil(videoPlayerTime.getPaint().measureText(AndroidUtilities.formatVideoDuration((int) duration, (int) duration)));
                 videoPlayerSeekbar.setSize(getMeasuredWidth() - AndroidUtilities.dp(48 + 16) - size, getMeasuredHeight());
             }
@@ -3636,21 +3640,17 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             long total = videoPlayer.getDuration();
             if (total < 0) {
-                total = 0;
+                total = lastDuration > 0? ((long) lastDuration * 1000): 0;
             }
 
-            if (total != C.TIME_UNSET && current != C.TIME_UNSET) {
-                if (!inPreview && videoTimelineView.getVisibility() == View.VISIBLE) {
-                    total *= (videoTimelineView.getRightProgress() - videoTimelineView.getLeftProgress());
-                    current -= videoTimelineView.getLeftProgress() * total;
-                    if (current > total) {
-                        current = total;
-                    }
+            if (!inPreview && videoTimelineView.getVisibility() == View.VISIBLE) {
+                total *= (videoTimelineView.getRightProgress() - videoTimelineView.getLeftProgress());
+                current -= videoTimelineView.getLeftProgress() * total;
+                if (current > total) {
+                    current = total;
                 }
-                newText = AndroidUtilities.formatVideoDuration((int) (current / 1000), (int) (total / 1000));
-            } else {
-                newText = AndroidUtilities.formatVideoDuration(0, 0);
             }
+            newText = AndroidUtilities.formatVideoDuration((int) (current / 1000), (int) (total / 1000));
         }
         videoPlayerTime.setText(newText);
     }
@@ -3733,9 +3733,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 pipAvailable = true;
                 pipItem.setEnabled(true);
                 pipItem.setAlpha(1.0f);
-            }
-            if (videoPlayerControlFrameLayout != null) {
-                videoPlayerControlFrameLayout.requestLayout();
             }
             playerWasReady = true;
             if (currentMessageObject != null && currentMessageObject.isVideo()) {
@@ -6611,6 +6608,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             return false;
         }
         lastInsets = null;
+        lastDuration = messageObject != null? messageObject.getDuration(): 0;
+
         WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
         if (attachedToWindow) {
             try {
