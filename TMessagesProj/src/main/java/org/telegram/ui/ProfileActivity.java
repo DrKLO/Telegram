@@ -38,6 +38,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.text.TextUtils;
+import android.text.style.URLSpan;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -66,6 +67,7 @@ import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -3033,6 +3035,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                         ((ChatActivity) previousFragment).chatActivityEnterView.setCommand(null, url, false, false);
                                     }
                                 }
+                            } else {
+                                Browser.openUrl(getContext(), (url));
                             }
                         }
 
