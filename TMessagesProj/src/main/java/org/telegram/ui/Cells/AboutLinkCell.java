@@ -11,11 +11,13 @@ package org.telegram.ui.Cells;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.os.Build;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
@@ -166,7 +168,8 @@ public class AboutLinkCell extends FrameLayout {
         if (parseLinks) {
             MessageObject.addLinks(false, stringBuilder, false);
         }
-        Emoji.replaceEmoji(stringBuilder, Theme.profile_aboutTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
+        TextPaint paint = getAboutPaint();
+        Emoji.replaceEmoji(stringBuilder, paint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
         if (TextUtils.isEmpty(value)) {
             valueTextView.setVisibility(GONE);
         } else {
@@ -232,19 +235,28 @@ public class AboutLinkCell extends FrameLayout {
         return result || super.onTouchEvent(event);
     }
 
+    private TextPaint getAboutPaint() {
+        if (Theme.profile_aboutTextPaint != null) {
+            return Theme.profile_aboutTextPaint;
+        } else {
+            return Theme.settings_aboutTextPaint;
+        }
+    }
+
     @SuppressLint("DrawAllocation")
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (stringBuilder != null) {
             int maxWidth = MeasureSpec.getSize(widthMeasureSpec) - AndroidUtilities.dp(23 + 23);
+            TextPaint paint = getAboutPaint();
             if (Build.VERSION.SDK_INT >= 24) {
-                textLayout = StaticLayout.Builder.obtain(stringBuilder, 0, stringBuilder.length(), Theme.profile_aboutTextPaint, maxWidth)
+                textLayout = StaticLayout.Builder.obtain(stringBuilder, 0, stringBuilder.length(), paint, maxWidth)
                         .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
                         .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
                         .setAlignment(LocaleController.isRTL ? Layout.Alignment.ALIGN_RIGHT : Layout.Alignment.ALIGN_LEFT)
                         .build();
             } else {
-                textLayout = new StaticLayout(stringBuilder, Theme.profile_aboutTextPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                textLayout = new StaticLayout(stringBuilder, paint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             }
         }
         int height = (textLayout != null ? textLayout.getHeight() : AndroidUtilities.dp(20)) + AndroidUtilities.dp(16);
