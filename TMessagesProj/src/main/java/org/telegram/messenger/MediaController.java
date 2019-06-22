@@ -102,7 +102,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             bufferBytes = new byte[capacity];
         }
 
-
         ByteBuffer buffer;
         byte[] bufferBytes;
         int size;
@@ -3558,7 +3557,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             videoPlayer.pause();
         }
     }
-
 
     public void onAppResumed() {
         if (videoPlayer != null) {
