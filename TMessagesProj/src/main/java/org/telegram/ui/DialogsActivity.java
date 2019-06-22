@@ -728,6 +728,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         searching = false;
         searchWas = false;
         pacmanAnimation = null;
+        floatingHidden = false;
 
         AndroidUtilities.runOnUIThread(() -> Theme.createChatResources(context, false));
 
