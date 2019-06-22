@@ -1883,6 +1883,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         if (!floatingHidden) {
                             floatingButtonContainer.setTranslationY(floatingButtonContainer.getTranslationY() + additionalFloatingTranslation - diff);
                         }
+                        listView.setPadding(0, 0, 0, Math.round(diff));
                         additionalFloatingTranslation = diff;
                     }
                 }
