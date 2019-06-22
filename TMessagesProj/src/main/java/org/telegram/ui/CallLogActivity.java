@@ -327,7 +327,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			args.putBoolean("returnAsResult", true);
 			args.putBoolean("onlyUsers", true);
 			ContactsActivity contactsFragment = new ContactsActivity(args);
-			contactsFragment.setDelegate((user, param, activity) -> VoIPHelper.startCall(user, getParentActivity(), null));
+			contactsFragment.setDelegate((user, param, activity) -> VoIPHelper.startCall(lastCallUser = user, getParentActivity(), null));
 			presentFragment(contactsFragment);
 		});
 
