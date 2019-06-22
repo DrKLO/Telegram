@@ -1463,6 +1463,8 @@ public class ContactsController {
                 final HashMap<String, TLRPC.TL_contact> contactsByPhonesDictFinal = contactsByPhonesDict;
                 final HashMap<String, TLRPC.TL_contact> contactsByPhonesShortDictFinal = contactsByPhonesShortDict;
 
+                final int selfId = UserConfig.getInstance(currentAccount).clientUserId;
+
                 for (int a = 0; a < contactsArr.size(); a++) {
                     TLRPC.TL_contact value = contactsArr.get(a);
                     TLRPC.User user = usersDict.get(value.user_id);
@@ -1488,21 +1490,24 @@ public class ContactsController {
                     if (replace != null) {
                         key = replace;
                     }
-                    ArrayList<TLRPC.TL_contact> arr = sectionsDict.get(key);
-                    if (arr == null) {
-                        arr = new ArrayList<>();
-                        sectionsDict.put(key, arr);
-                        sortedSectionsArray.add(key);
-                    }
-                    arr.add(value);
-                    if (user.mutual_contact) {
-                        arr = sectionsDictMutual.get(key);
+                    if (value.user_id != selfId) {
+                        ArrayList<TLRPC.TL_contact> arr = sectionsDict.get(key);
                         if (arr == null) {
                             arr = new ArrayList<>();
-                            sectionsDictMutual.put(key, arr);
-                            sortedSectionsArrayMutual.add(key);
+                            sectionsDict.put(key, arr);
+                            sortedSectionsArray.add(key);
                         }
                         arr.add(value);
+
+                        if (user.mutual_contact) {
+                            arr = sectionsDictMutual.get(key);
+                            if (arr == null) {
+                                arr = new ArrayList<>();
+                                sectionsDictMutual.put(key, arr);
+                                sortedSectionsArrayMutual.add(key);
+                            }
+                            arr.add(value);
+                        }
                     }
                 }
 

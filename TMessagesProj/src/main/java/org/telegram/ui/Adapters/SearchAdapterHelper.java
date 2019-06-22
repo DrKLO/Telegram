@@ -237,6 +237,9 @@ public class SearchAdapterHelper {
                                         localServerSearch.add(chat);
                                         globalSearchMap.put(-chat.id, chat);
                                     } else if (user != null) {
+                                        if (!allowBots && user.bot || !allowSelf && user.self) {
+                                            continue;
+                                        }
                                         localServerSearch.add(user);
                                         globalSearchMap.put(user.id, user);
                                     }
