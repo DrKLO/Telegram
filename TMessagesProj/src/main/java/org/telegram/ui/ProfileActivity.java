@@ -64,7 +64,7 @@ import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserObject;
-import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -77,6 +77,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
+import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.AboutLinkCell;
@@ -2961,6 +2962,55 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    AboutLinkCell.AboutLinkCellDelegate aboutLinkCellDelegate = new AboutLinkCell.AboutLinkCellDelegate() {
+        @Override
+        public void onLinkPress(final String url) {
+            if (url.startsWith("@")) {
+                MessagesController.getInstance(currentAccount).openByUserName(url.substring(1), ProfileActivity.this, 0);
+            } else if (url.startsWith("#")) {
+                DialogsActivity fragment = new DialogsActivity(null);
+                fragment.setSearchString(url);
+                presentFragment(fragment);
+            } else if (url.startsWith("/")) {
+                if (parentLayout.fragmentsStack.size() > 1) {
+                    BaseFragment previousFragment = parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 2);
+                    if (previousFragment instanceof ChatActivity) {
+                        finishFragment();
+                        ((ChatActivity) previousFragment).chatActivityEnterView.setCommand(null, url, false, false);
+                    }
+                }
+            } else {
+                Browser.openUrl(getParentActivity(), url);
+            }
+        }
+
+        @Override
+        public void onLinkLongPress(final String url) {
+            BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+            builder.setTitle(url);
+            builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                if (which == 0) {
+                    onLinkPress(url);
+                } else if (which == 1) {
+                    String copyText = url;
+                    String toastText = LocaleController.getString("LinkCopied", R.string.LinkCopied);
+                    if (url.startsWith("mailto:")) {
+                        copyText = url.substring(7);
+                        toastText = LocaleController.getString("EmailCopied", R.string.EmailCopied);
+                    } else if (url.startsWith("tel:")) {
+                        copyText = url.substring(4);
+                        toastText = LocaleController.getString("PhoneCopied", R.string.PhoneCopied);
+                    } else if (url.startsWith("@") || url.startsWith("/") || url.startsWith("#")) {
+                        toastText = LocaleController.getString("TextCopied", R.string.TextCopied);
+                    }
+                    AndroidUtilities.addToClipboard(copyText);
+                    Toast.makeText(getParentActivity(), toastText, Toast.LENGTH_SHORT).show();
+                }
+            });
+            showDialog(builder.create());
+        }
+    };
+
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context mContext;
@@ -2982,26 +3032,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     break;
                 }
                 case 3: {
-                    view = new AboutLinkCell(mContext) {
-                        @Override
-                        protected void didPressUrl(String url) {
-                            if (url.startsWith("@")) {
-                                MessagesController.getInstance(currentAccount).openByUserName(url.substring(1), ProfileActivity.this, 0);
-                            } else if (url.startsWith("#")) {
-                                DialogsActivity fragment = new DialogsActivity(null);
-                                fragment.setSearchString(url);
-                                presentFragment(fragment);
-                            } else if (url.startsWith("/")) {
-                                if (parentLayout.fragmentsStack.size() > 1) {
-                                    BaseFragment previousFragment = parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 2);
-                                    if (previousFragment instanceof ChatActivity) {
-                                        finishFragment();
-                                        ((ChatActivity) previousFragment).chatActivityEnterView.setCommand(null, url, false, false);
-                                    }
-                                }
-                            }
-                        }
-                    };
+                    view = new AboutLinkCell(mContext);
+                    ((AboutLinkCell) view).setDelegate(aboutLinkCellDelegate);
                     break;
                 }
                 case 4: {
@@ -3080,7 +3112,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 case 3:
                     AboutLinkCell aboutLinkCell = (AboutLinkCell) holder.itemView;
                     if (position == userInfoRow) {
-                        aboutLinkCell.setTextAndValue(userInfo.about, LocaleController.getString("UserBio", R.string.UserBio), isBot);
+                        aboutLinkCell.setTextAndValue(userInfo.about, LocaleController.getString("UserBio", R.string.UserBio), true);
                     } else if (position == channelInfoRow) {
                         String text = chatInfo.about;
                         while (text.contains("\n\n\n")) {
