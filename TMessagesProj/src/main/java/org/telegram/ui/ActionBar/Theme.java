@@ -3797,6 +3797,7 @@ public class Theme {
     public static void createProfileResources(Context context) {
         if (profile_verifiedDrawable == null) {
             profile_aboutTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            profile_aboutTextPaint.setTextSize(AndroidUtilities.dp(16));
 
             Resources resources = context.getResources();
 
@@ -3806,7 +3807,6 @@ public class Theme {
             applyProfileTheme();
         }
 
-        profile_aboutTextPaint.setTextSize(AndroidUtilities.dp(16));
     }
 
     private static ColorFilter currentShareColorFilter;
