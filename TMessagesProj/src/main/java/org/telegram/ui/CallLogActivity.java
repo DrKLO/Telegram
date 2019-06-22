@@ -366,7 +366,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			if (error == null) {
 				SparseArray<TLRPC.User> users = new SparseArray<>();
 				TLRPC.messages_Messages msgs = (TLRPC.messages_Messages) response;
-				endReached = msgs.messages.isEmpty();
+				endReached = msgs.messages.size() < count;
 				for (int a = 0; a < msgs.users.size(); a++) {
 					TLRPC.User user = msgs.users.get(a);
 					users.put(user.id, user);
