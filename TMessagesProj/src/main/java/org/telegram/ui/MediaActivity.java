@@ -1641,7 +1641,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
         }
-        if (checkBottom && maxBottom != 0 && maxBottom <= (listView.getMeasuredHeight() - listView.getPaddingBottom())) {
+        if (checkBottom && maxBottom != 0 && maxBottom < (listView.getMeasuredHeight() - listView.getPaddingBottom())) {
             resetScroll();
         }
     }
