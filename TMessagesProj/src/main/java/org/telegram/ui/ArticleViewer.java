@@ -98,6 +98,7 @@ import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
@@ -3585,6 +3586,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 } else if (id == gallery_menu_save_to_gif) {
                     TLRPC.Document currentDocument = (TLRPC.Document) getMedia(currentIndex);
                     MessagesController.getInstance(currentAccount).saveGif("gif", currentDocument);
+                    DataQuery.getInstance(currentAccount).addRecentGif(currentDocument, (int) (System.currentTimeMillis() / 1000));
                 } else if(id == gallery_menu_save_to_downloads) {
                     if (Build.VERSION.SDK_INT >= 23 && parentActivity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                         parentActivity.requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
