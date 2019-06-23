@@ -29,6 +29,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
@@ -54,10 +57,10 @@ import org.telegram.ui.Adapters.SearchAdapterHelper;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ManageChatTextCell;
+import org.telegram.ui.Cells.ManageChatUserCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCheckCell2;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.Cells.ManageChatUserCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -67,9 +70,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 public class ChatUsersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private ListAdapter listViewAdapter;
@@ -78,6 +78,8 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     private SearchAdapter searchListViewAdapter;
     private ActionBarMenuItem searchItem;
     private ActionBarMenuItem doneItem;
+
+    private AlertDialog progressDialog;
 
     private TLRPC.Chat currentChat;
     private TLRPC.ChatFull info;
@@ -316,6 +318,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didRequestRemoveUser);
         loadChatParticipants(0, 200);
         return true;
     }
@@ -324,6 +327,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoad);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didRequestRemoveUser);
     }
 
     @Override
@@ -492,6 +496,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                                 for (int a = 0, N = users.size(); a < N; a++) {
                                     TLRPC.User user = users.get(a);
                                     MessagesController.getInstance(currentAccount).addUserToChat(chatId, user, null, fwdCount, null, ChatUsersActivity.this, null);
+                                    showProgressDialog();
                                 }
                             }
 
@@ -827,6 +832,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(userId);
         MessagesController.getInstance(currentAccount).deleteUserFromChat(chatId, user, null);
         finishFragment();
+        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didRequestRemoveUser, null);
     }
 
     private TLObject getAnyParticipant(int userId) {
@@ -1148,7 +1154,11 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.didRequestRemoveUser && !isFinishing()) {
+            showProgressDialog();
+        }
         if (id == NotificationCenter.chatInfoDidLoad) {
+            hideProgressDialog();
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
             boolean byChannelUsers = (Boolean) args[2];
             if (chatFull.id == chatId && (!byChannelUsers || !ChatObject.isChannel(currentChat))) {
@@ -2411,5 +2421,16 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueButton),
                 new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueIcon),
         };
+    }
+
+    private void showProgressDialog(){
+        if(progressDialog!=null && progressDialog.isShowing()) return;
+        progressDialog = new AlertDialog(getParentActivity(), 3);
+        progressDialog.setCanCacnel(false);
+        progressDialog.show();
+    }
+
+    private void hideProgressDialog(){
+        if (progressDialog != null && progressDialog.isShowing()) progressDialog.dismiss();
     }
 }
