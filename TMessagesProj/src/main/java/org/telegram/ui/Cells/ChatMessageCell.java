@@ -1708,7 +1708,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
                 if (lastTime != duration) {
                     lastTime = duration;
-                    String timeString = String.format("%02d:%02d", duration / 60, duration % 60);
+                    int hours = duration / 3600;
+                    int minutes = (duration % 3600) / 60;
+                    int seconds = duration % 60;
+                    String timeString = hours == 0 ? String.format("%02d:%02d", minutes, seconds) :
+                            String.format("%02d:%02d:%02d", hours, minutes, seconds);
                     timeWidthAudio = (int) Math.ceil(Theme.chat_audioTimePaint.measureText(timeString));
                     durationLayout = new StaticLayout(timeString, Theme.chat_audioTimePaint, timeWidthAudio, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 }
