@@ -6353,8 +6353,21 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     return;
                 } else if (currentAnimation != null) {
-                    imageReceiver.setImageBitmap(currentAnimation);
-                    currentAnimation.setSecondParentView(containerView);
+                    if(!currentAnimation.hasBitmap() && messageObject.photoThumbs != null && !messageObject.photoThumbs.isEmpty()){
+                        ImageReceiver.BitmapHolder placeHolder = null;
+                        if (currentThumb != null && imageReceiver == centerImage) {
+                            placeHolder = currentThumb;
+                        }
+                        TLRPC.Document document = messageObject.messageOwner.media.document;
+
+                        TLRPC.PhotoSize thumbLocation = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 100);
+                        ImageLocation mediaLocation= ImageLocation.getForDocument(document);
+
+                        imageReceiver.setImage(mediaLocation, ImageLoader.AUTOPLAY_FILTER, null, null, placeHolder == null ? ImageLocation.getForObject(thumbLocation, messageObject.photoThumbsObject) : null, "b", placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, messageObject.messageOwner.media.document.size, null, messageObject, 0);
+                    }else {
+                        imageReceiver.setImageBitmap(currentAnimation);
+                        currentAnimation.setSecondParentView(containerView);
+                    }
                     return;
                 } else if (sharedMediaType == DataQuery.MEDIA_FILE) {
                     if (messageObject.canPreviewDocument()) {
@@ -7993,7 +8006,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             drawProgress = progressView.getVisibility() != View.VISIBLE && (videoPlayer == null || !videoPlayer.isPlaying());
         } else {
             drawProgress = !drawTextureView && videoPlayerControlFrameLayout.getVisibility() != View.VISIBLE;
-            if (drawProgress && currentAnimation != null && !currentAnimation.isLoadingStream()) {
+            if (drawProgress && currentAnimation != null && currentAnimation.hasBitmap()) {
                 drawProgress = false;
             }
         }

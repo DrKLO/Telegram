@@ -1097,7 +1097,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             return drawable.getIntrinsicWidth();
         }
         AnimatedFileDrawable animation = getAnimation();
-        if (animation != null) {
+        if (animation != null && animation.hasBitmap()) {
             return imageOrientation % 360 == 0 || imageOrientation % 360 == 180 ? animation.getIntrinsicWidth() : animation.getIntrinsicHeight();
         }
         Bitmap bitmap = getBitmap();
@@ -1116,7 +1116,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             return drawable.getIntrinsicHeight();
         }
         AnimatedFileDrawable animation = getAnimation();
-        if (animation != null) {
+        if (animation != null && animation.hasBitmap()) {
             return imageOrientation % 360 == 0 || imageOrientation % 360 == 180 ? animation.getIntrinsicHeight() : animation.getIntrinsicWidth();
         }
         Bitmap bitmap = getBitmap();
