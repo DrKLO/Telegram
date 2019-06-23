@@ -160,6 +160,7 @@ public class NotificationCenter {
     public static final int notificationsCountUpdated = totalEvents++;
     public static final int playerDidStartPlaying = totalEvents++;
     public static final int closeSearchByActiveAction = totalEvents++;
+    public static final int didRequestRemoveUser = totalEvents++;
 
     private SparseArray<ArrayList<Object>> observers = new SparseArray<>();
     private SparseArray<ArrayList<Object>> removeAfterBroadcast = new SparseArray<>();
