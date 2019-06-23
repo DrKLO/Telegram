@@ -4403,7 +4403,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             return;
         } else if (pressedLink instanceof URLSpanNoUnderline) {
             URLSpanNoUnderline url = (URLSpanNoUnderline) pressedLink;
-            if (url.getURL().startsWith("/")) {
+            if (url.getURL().startsWith("/") || url.getURL().startsWith("#") || url.getURL().startsWith("@") || url.getURL().startsWith("$")) {
                 delegate.didPressUrl(currentMessageObject, pressedLink, true);
                 return;
             }
