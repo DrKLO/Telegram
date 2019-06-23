@@ -1353,9 +1353,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (videoPlayer == null && a == 0 && (currentMessageObject != null && currentMessageObject.isVideo() || currentBotInlineResult != null && (currentBotInlineResult.type.equals("video") || MessageObject.isVideoDocument(currentBotInlineResult.document)))) {
                         onActionClick(false);
                     } else {
-                        if (currentMessageObject != null && currentMessageObject.isGif() && currentAnimation != null && centerImage != null && containerView != null) {
-                            setIndexToImage(centerImage, currentIndex);
-                        }
+                        animateGifWhenReady();
                     }
                     if (a == 0 && videoPlayer != null) {
                         currentVideoFinishedLoading = true;
@@ -6356,7 +6354,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     return;
                 } else if (currentAnimation != null) {
-                    if (currentAnimation.isLoadingStream()) {
+                    imageReceiver.setCrossfadeWithOldImage(true);
+                    currentAnimation.setSecondParentView(containerView);
+                    if (currentAnimation.isLoadingStream() && !currentAnimation.hasBitmap()) {
                         imageReceiver.setNeedsQualityThumb(true);
                         if (messageObject.photoThumbs != null && !messageObject.photoThumbs.isEmpty()) {
                             ImageReceiver.BitmapHolder placeHolder = null;
@@ -6370,7 +6370,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         }
                     } else {
                         imageReceiver.setImageBitmap(currentAnimation);
-                        currentAnimation.setSecondParentView(containerView);
                     }
                     return;
                 } else if (sharedMediaType == DataQuery.MEDIA_FILE) {
@@ -7747,6 +7746,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         hintAnimation.start();
     }
 
+    private void animateGifWhenReady() {
+        if (currentMessageObject != null && currentMessageObject.isGif()) {
+            if (currentAnimation != null && centerImage.getDrawable() != currentAnimation && !currentAnimation.isLoadingStream() && animationInProgress != 1) {
+                setIndexToImage(centerImage, currentIndex);
+            }
+        }
+    }
+
     private void showHint(boolean hide, boolean enabled) {
         if (containerView == null || hide && hintTextView == null) {
             return;
@@ -8012,7 +8019,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             drawProgress = progressView.getVisibility() != View.VISIBLE && (videoPlayer == null || !videoPlayer.isPlaying());
         } else {
             drawProgress = !drawTextureView && videoPlayerControlFrameLayout.getVisibility() != View.VISIBLE;
-            if (drawProgress && currentAnimation != null && !currentAnimation.isLoadingStream()) {
+            if (drawProgress && currentAnimation != null && !currentAnimation.isLoadingStream() && currentAnimation.hasBitmap()) {
+                animateGifWhenReady();
                 drawProgress = false;
             }
         }
