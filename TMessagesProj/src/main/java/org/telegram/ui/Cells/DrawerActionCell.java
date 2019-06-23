@@ -51,6 +51,7 @@ public class DrawerActionCell extends FrameLayout {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         textView.setTextColor(Theme.getColor(Theme.key_chats_menuItemText));
+        setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
     }
 
     public void setTextAndIcon(String text, int resId) {
