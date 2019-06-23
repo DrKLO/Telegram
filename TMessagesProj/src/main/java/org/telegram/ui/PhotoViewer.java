@@ -1352,6 +1352,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     checkProgress(a, true);
                     if (videoPlayer == null && a == 0 && (currentMessageObject != null && currentMessageObject.isVideo() || currentBotInlineResult != null && (currentBotInlineResult.type.equals("video") || MessageObject.isVideoDocument(currentBotInlineResult.document)))) {
                         onActionClick(false);
+                    } else {
+                        if (currentMessageObject != null && currentMessageObject.isGif() && currentAnimation != null && centerImage != null && containerView != null) {
+                            setIndexToImage(centerImage, currentIndex);
+                        }
                     }
                     if (a == 0 && videoPlayer != null) {
                         currentVideoFinishedLoading = true;
@@ -6352,8 +6356,22 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     return;
                 } else if (currentAnimation != null) {
-                    imageReceiver.setImageBitmap(currentAnimation);
-                    currentAnimation.setSecondParentView(containerView);
+                    if (currentAnimation.isLoadingStream()) {
+                        imageReceiver.setNeedsQualityThumb(true);
+                        if (messageObject.photoThumbs != null && !messageObject.photoThumbs.isEmpty()) {
+                            ImageReceiver.BitmapHolder placeHolder = null;
+                            if (currentThumb != null && imageReceiver == centerImage) {
+                                placeHolder = currentThumb;
+                            }
+                            TLRPC.PhotoSize thumbLocation = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 100);
+                            imageReceiver.setImage(null, null, placeHolder == null ? ImageLocation.getForObject(thumbLocation, messageObject.photoThumbsObject) : null, "b", placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null, 0, null, messageObject, 1);
+                        } else {
+                            imageReceiver.setImageBitmap(parentActivity.getResources().getDrawable(R.drawable.photoview_placeholder));
+                        }
+                    } else {
+                        imageReceiver.setImageBitmap(currentAnimation);
+                        currentAnimation.setSecondParentView(containerView);
+                    }
                     return;
                 } else if (sharedMediaType == DataQuery.MEDIA_FILE) {
                     if (messageObject.canPreviewDocument()) {
