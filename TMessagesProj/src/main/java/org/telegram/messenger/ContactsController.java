@@ -1743,6 +1743,8 @@ public class ContactsController {
         final HashMap<String, ArrayList<TLRPC.TL_contact>> sectionsDict = new HashMap<>();
         final ArrayList<String> sortedSectionsArray = new ArrayList<>();
 
+        final int selfId = UserConfig.getInstance(currentAccount).clientUserId;
+
         for (int a = 0; a < contacts.size(); a++) {
             TLRPC.TL_contact value = contacts.get(a);
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(value.user_id);
@@ -1763,13 +1765,16 @@ public class ContactsController {
             if (replace != null) {
                 key = replace;
             }
-            ArrayList<TLRPC.TL_contact> arr = sectionsDict.get(key);
-            if (arr == null) {
-                arr = new ArrayList<>();
-                sectionsDict.put(key, arr);
-                sortedSectionsArray.add(key);
+
+            if (value.user_id != selfId) {
+                ArrayList<TLRPC.TL_contact> arr = sectionsDict.get(key);
+                if (arr == null) {
+                    arr = new ArrayList<>();
+                    sectionsDict.put(key, arr);
+                    sortedSectionsArray.add(key);
+                }
+                arr.add(value);
             }
-            arr.add(value);
         }
 
         Collections.sort(sortedSectionsArray, (s, s2) -> {
