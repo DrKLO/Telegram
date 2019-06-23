@@ -728,6 +728,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         searching = false;
         searchWas = false;
         pacmanAnimation = null;
+        floatingHidden = false;
 
         AndroidUtilities.runOnUIThread(() -> Theme.createChatResources(context, false));
 
@@ -1883,6 +1884,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         if (!floatingHidden) {
                             floatingButtonContainer.setTranslationY(floatingButtonContainer.getTranslationY() + additionalFloatingTranslation - diff);
                         }
+                        listView.setPadding(0, 0, 0, Math.round(diff));
                         additionalFloatingTranslation = diff;
                     }
                 }
@@ -1945,7 +1947,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
                         showDialog(permissionDialog = builder.create());
                     } else {
-                        askForPermissons(true);
+                        if (Build.VERSION.SDK_INT >= 24) {
+                            askForPermissons(true);
+                        } else {
+                            parentLayout.getViewTreeObserver().addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
+                                @Override
+                                public void onDraw() {
+                                    parentLayout.post(() -> {
+                                        parentLayout.getViewTreeObserver().removeOnDrawListener(this);
+                                        askForPermissons(true);
+                                    });
+                                }
+                            });
+                        }
                     }
                 }
             }
@@ -3382,6 +3396,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         arrayList.add(new ThemeDescription(sideMenu, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{DrawerActionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_chats_menuItemIcon));
         arrayList.add(new ThemeDescription(sideMenu, 0, new Class[]{DrawerActionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_chats_menuItemText));
+        arrayList.add(new ThemeDescription(sideMenu, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{DrawerActionCell.class}, null, null, null, Theme.key_chats_menuBackground));
 
         arrayList.add(new ThemeDescription(sideMenu, 0, new Class[]{DrawerUserCell.class}, new String[]{"textView"}, null, null, null, Theme.key_chats_menuItemText));
         arrayList.add(new ThemeDescription(sideMenu, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{DrawerUserCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_chats_unreadCounterText));

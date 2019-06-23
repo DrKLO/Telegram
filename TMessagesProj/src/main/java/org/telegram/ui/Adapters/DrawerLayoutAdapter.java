@@ -69,7 +69,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         }
         accountsShowed = value;
         if (profileCell != null) {
-            profileCell.setAccountsShowed(accountsShowed);
+            profileCell.setAccountsShowed(accountsShowed, animated);
         }
         MessagesController.getGlobalMainSettings().edit().putBoolean("accountsShowed", accountsShowed).commit();
         if (animated) {
@@ -105,10 +105,6 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         switch (viewType) {
             case 0:
                 profileCell = new DrawerProfileCell(mContext);
-                profileCell.setOnArrowClickListener(v -> {
-                    DrawerProfileCell drawerProfileCell = (DrawerProfileCell) v;
-                    setAccountsShowed(drawerProfileCell.isAccountsShowed(), true);
-                });
                 view = profileCell;
                 break;
             case 1:

@@ -125,7 +125,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     private void processSearch(final String query) {
         AndroidUtilities.runOnUIThread(() -> {
             if (allowUsernameSearch) {
-                searchAdapterHelper.queryServerSearch(query, true, allowChats, allowBots, true, channelId, -1);
+                searchAdapterHelper.queryServerSearch(query, true, allowChats, allowBots, false, channelId, -1);
             }
             final int currentAccount = UserConfig.selectedAccount;
             final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>(ContactsController.getInstance(currentAccount).contacts);

@@ -206,10 +206,7 @@ public class ThemeDescription {
             return false;
         }
         Object viewTag = view.getTag();
-        if (viewTag instanceof String) {
-            return ((String) viewTag).contains(key);
-        }
-        return false;
+        return viewTag instanceof String && viewTag.equals(key);
     }
 
     public void setColor(int color, boolean useDefault, boolean save) {

@@ -15,6 +15,8 @@ import org.telegram.ui.LaunchActivity;
 
 public class BringAppForegroundService extends IntentService {
 
+    public static final String ACTION_BRING_TO_FRONT = "org.telegram.messenger.ACTION_BRING_TO_FRONT";
+
     public BringAppForegroundService() {
         super("BringAppForegroundService");
     }
@@ -22,6 +24,7 @@ public class BringAppForegroundService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         Intent intent2 = new Intent(this, LaunchActivity.class);
+        intent2.setAction(ACTION_BRING_TO_FRONT);
         intent2.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent2);
     }
