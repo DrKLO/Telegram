@@ -2013,7 +2013,31 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             }
                         } else if (url instanceof URLSpanNoUnderline) {
                             String str = ((URLSpanNoUnderline) url).getURL();
-                            if (str.startsWith("@")) {
+                            if(longPress && (str.startsWith("@"))){
+                                BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+                                builder.setTitle(str);
+                                builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                                    if (which == 0) {
+                                        MessagesController.getInstance(currentAccount).openByUserName(str.substring(1), ChannelAdminLogActivity.this, 0);
+                                    } else if (which == 1) {
+                                        AndroidUtilities.addToClipboard(str);
+                                    }
+                                });
+                                showDialog(builder.create());
+                            }else if(longPress && (str.startsWith("#"))){
+                                BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+                                builder.setTitle(str);
+                                builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                                    if (which == 0) {
+                                        DialogsActivity fragment = new DialogsActivity(null);
+                                        fragment.setSearchString(str);
+                                        presentFragment(fragment);
+                                    } else if (which == 1) {
+                                        AndroidUtilities.addToClipboard(str);
+                                    }
+                                });
+                                showDialog(builder.create());
+                            } else if (str.startsWith("@")) {
                                 MessagesController.getInstance(currentAccount).openByUserName(str.substring(1), ChannelAdminLogActivity.this, 0);
                             } else if (str.startsWith("#")) {
                                 DialogsActivity fragment = new DialogsActivity(null);

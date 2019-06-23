@@ -13819,35 +13819,34 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             }
                         } else if (url instanceof URLSpanNoUnderline) {
                             String str = ((URLSpanNoUnderline) url).getURL();
-                            if (str.startsWith("@")) {
-                                String username = str.substring(1).toLowerCase();
-                                if (currentChat != null && !TextUtils.isEmpty(currentChat.username) && username.equals(currentChat.username.toLowerCase()) ||
-                                        currentUser != null && !TextUtils.isEmpty(currentUser.username) && username.equals(currentUser.username.toLowerCase())) {
-                                    Bundle args = new Bundle();
-                                    if (currentChat != null) {
-                                        args.putInt("chat_id", currentChat.id);
-                                    } else if (currentUser != null) {
-                                        args.putInt("user_id", currentUser.id);
-                                        if (currentEncryptedChat != null) {
-                                            args.putLong("dialog_id", dialog_id);
-                                        }
+                            if(longPress && (str.startsWith("@"))){
+                                BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+                                builder.setTitle(str);
+                                builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                                    if (which == 0) {
+                                        String username = str.substring(1).toLowerCase();
+                                        openProfile(username);
+                                    } else if (which == 1) {
+                                        AndroidUtilities.addToClipboard(str);
                                     }
-                                    ProfileActivity fragment = new ProfileActivity(args);
-                                    fragment.setPlayProfileAnimation(true);
-                                    fragment.setChatInfo(chatInfo);
-                                    fragment.setUserInfo(userInfo);
-                                    presentFragment(fragment);
-                                } else {
-                                    MessagesController.getInstance(currentAccount).openByUserName(username, ChatActivity.this, 0);
-                                }
+                                });
+                                showDialog(builder.create());
+                            }else if(longPress && (str.startsWith("#") || str.startsWith("$"))){
+                                BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+                                builder.setTitle(str);
+                                builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                                    if (which == 0) {
+                                        openTag(str);
+                                    } else if (which == 1) {
+                                        AndroidUtilities.addToClipboard(str);
+                                    }
+                                });
+                                showDialog(builder.create());
+                            } else if (str.startsWith("@")) {
+                                String username = str.substring(1).toLowerCase();
+                                openProfile(username);
                             } else if (str.startsWith("#") || str.startsWith("$")) {
-                                if (ChatObject.isChannel(currentChat)) {
-                                    openSearchWithText(str);
-                                } else {
-                                    DialogsActivity fragment = new DialogsActivity(null);
-                                    fragment.setSearchString(str);
-                                    presentFragment(fragment);
-                                }
+                                openTag(str);
                             } else if (str.startsWith("/")) {
                                 if (URLSpanBotCommand.enabled) {
                                     chatActivityEnterView.setCommand(messageObject, str, longPress, currentChat != null && currentChat.megagroup);
@@ -13895,6 +13894,39 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             }
                         }
                     }
+
+                    private void openProfile(String username) {
+                        if (currentChat != null && !TextUtils.isEmpty(currentChat.username) && username.equals(currentChat.username.toLowerCase()) ||
+                                currentUser != null && !TextUtils.isEmpty(currentUser.username) && username.equals(currentUser.username.toLowerCase())) {
+                            Bundle args = new Bundle();
+                            if (currentChat != null) {
+                                args.putInt("chat_id", currentChat.id);
+                            } else if (currentUser != null) {
+                                args.putInt("user_id", currentUser.id);
+                                if (currentEncryptedChat != null) {
+                                    args.putLong("dialog_id", dialog_id);
+                                }
+                            }
+                            ProfileActivity fragment = new ProfileActivity(args);
+                            fragment.setPlayProfileAnimation(true);
+                            fragment.setChatInfo(chatInfo);
+                            fragment.setUserInfo(userInfo);
+                            presentFragment(fragment);
+                        } else {
+                            MessagesController.getInstance(currentAccount).openByUserName(username, ChatActivity.this, 0);
+                        }
+                    }
+
+                    private void openTag(String tag){
+                        if (ChatObject.isChannel(currentChat)) {
+                            openSearchWithText(tag);
+                        } else {
+                            DialogsActivity fragment = new DialogsActivity(null);
+                            fragment.setSearchString(tag);
+                            presentFragment(fragment);
+                        }
+                    }
+
 
                     @Override
                     public void needOpenWebView(String url, String title, String description, String originalUrl, int w, int h) {
