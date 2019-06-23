@@ -98,6 +98,7 @@ import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.DataQuery;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
@@ -1163,13 +1164,17 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (which == 0) {
                 Browser.openUrl(parentActivity, urlFinal);
             } else if (which == 1) {
-                String url = urlFinal;
-                if (url.startsWith("mailto:")) {
-                    url = url.substring(7);
-                } else if (url.startsWith("tel:")) {
-                    url = url.substring(4);
+                String copyText = urlFinal;
+                String toastText = LocaleController.getString("LinkCopied", R.string.LinkCopied);
+                if (copyText.startsWith("mailto:")) {
+                    copyText = copyText.substring(7);
+                    toastText = LocaleController.getString("EmailCopied", R.string.EmailCopied);
+                } else if (copyText.startsWith("tel:")) {
+                    copyText = copyText.substring(4);
+                    toastText = LocaleController.getString("PhoneCopied", R.string.PhoneCopied);
                 }
-                AndroidUtilities.addToClipboard(url);
+                AndroidUtilities.addToClipboard(copyText);
+                Toast.makeText(parentActivity, toastText, Toast.LENGTH_SHORT).show();
             }
         });
         BottomSheet sheet = builder.create();
@@ -3578,12 +3583,31 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             public void onItemClick(int id) {
                 if (id == -1) {
                     closePhoto(true);
+                } else if (id == gallery_menu_save_to_gif) {
+                    TLRPC.Document currentDocument = (TLRPC.Document) getMedia(currentIndex);
+                    MessagesController.getInstance(currentAccount).saveGif("gif", currentDocument);
+                    DataQuery.getInstance(currentAccount).addRecentGif(currentDocument, (int) (System.currentTimeMillis() / 1000));
+                } else if(id == gallery_menu_save_to_downloads) {
+                    if (Build.VERSION.SDK_INT >= 23 && parentActivity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                        parentActivity.requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
+                        return;
+                    }
+                    TLRPC.Document currentDocument = (TLRPC.Document) getMedia(currentIndex);
+                    File f = getMediaFile(currentIndex);
+                    String fileName = FileLoader.getDocumentFileName(currentDocument);
+
+                    if (f != null && f.exists()) {
+                        MediaController.saveFile(f.toString(), parentActivity, 2, fileName, currentDocument != null ? currentDocument.mime_type : "");
+                    }
+
                 } else if (id == gallery_menu_save) {
                     if (Build.VERSION.SDK_INT >= 23 && parentActivity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                         parentActivity.requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
                         return;
                     }
+
                     File f = getMediaFile(currentIndex);
+
                     if (f != null && f.exists()) {
                         MediaController.saveFile(f.toString(), parentActivity, isMediaVideo(currentIndex) ? 1 : 0, null, null);
                     } else {
@@ -3618,6 +3642,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         menuItem = menu.addItem(0, R.drawable.ic_ab_other);
         menuItem.setLayoutInScreen(true);
         menuItem.addSubItem(gallery_menu_openin, R.drawable.msg_openin, LocaleController.getString("OpenInExternalApp", R.string.OpenInExternalApp)).setColors(0xfffafafa, 0xfffafafa);
+        menuItem.addSubItem(gallery_menu_save_to_gif, R.drawable.msg_gif, LocaleController.getString("SaveToGIFs", R.string.SaveToGIFs)).setColors(0xfffafafa, 0xfffafafa);
+        menuItem.addSubItem(gallery_menu_save_to_downloads, R.drawable.msg_download, LocaleController.getString("SaveToDownloads", R.string.SaveToDownloads)).setColors(0xfffafafa, 0xfffafafa);
         //menuItem.addSubItem(gallery_menu_share, LocaleController.getString("ShareFile", R.string.ShareFile), 0).setTextColor(0xfffafafa);
         menuItem.addSubItem(gallery_menu_save, R.drawable.msg_gallery, LocaleController.getString("SaveToGallery", R.string.SaveToGallery)).setColors(0xfffafafa, 0xfffafafa);
         menuItem.redrawPopup(0xf9222222);
@@ -3747,7 +3773,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     duration = 0;
                 }
                 duration /= 1000;
-                int size = (int) Math.ceil(videoPlayerTime.getPaint().measureText(String.format("%02d:%02d / %02d:%02d", duration / 60, duration % 60, duration / 60, duration % 60)));
+                int size = (int) Math.ceil(videoPlayerTime.getPaint().measureText(AndroidUtilities.formatLongDuration((int) duration)));
                 videoPlayerSeekbar.setSize(getMeasuredWidth() - AndroidUtilities.dp(48 + 16) - size, getMeasuredHeight());
             }
 
@@ -6265,7 +6291,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     }
                 }
             }
-            String timeString = String.format("%d:%02d", duration / 60, duration % 60);
+            String timeString = AndroidUtilities.formatShortDuration(duration);
             if (lastTimeString == null || lastTimeString != null && !lastTimeString.equals(timeString)) {
                 lastTimeString = timeString;
                 audioTimePaint.setTextSize(AndroidUtilities.dp(16));
@@ -10503,6 +10529,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     private final static int gallery_menu_save = 1;
     private final static int gallery_menu_share = 2;
     private final static int gallery_menu_openin = 3;
+    private final static int gallery_menu_save_to_gif = 4;
+    private final static int gallery_menu_save_to_downloads = 5;
+
 
     private static DecelerateInterpolator decelerateInterpolator;
     private static Paint progressPaint;
@@ -10729,15 +10758,15 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     private void updateVideoPlayerTime() {
         String newText;
         if (videoPlayer == null) {
-            newText = String.format("%02d:%02d / %02d:%02d", 0, 0, 0, 0);
+            newText = AndroidUtilities.formatLongDuration(0, 0);
         } else {
             long current = videoPlayer.getCurrentPosition() / 1000;
             long total = videoPlayer.getDuration();
             total /= 1000;
             if (total != C.TIME_UNSET && current != C.TIME_UNSET) {
-                newText = String.format("%02d:%02d / %02d:%02d", current / 60, current % 60, total / 60, total % 60);
+                newText = AndroidUtilities.formatLongDuration((int) current, (int) total);
             } else {
-                newText = String.format("%02d:%02d / %02d:%02d", 0, 0, 0, 0);
+                newText = AndroidUtilities.formatLongDuration(0, 0);
             }
         }
         if (!TextUtils.equals(videoPlayerTime.getText(), newText)) {
@@ -10856,7 +10885,6 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 duration = 0;
             }
             duration /= 1000;
-            int size = (int) Math.ceil(videoPlayerTime.getPaint().measureText(String.format("%02d:%02d / %02d:%02d", duration / 60, duration % 60, duration / 60, duration % 60)));
         }
         videoPlayer.preparePlayer(Uri.fromFile(file), "other");
         bottomLayout.setVisibility(View.VISIBLE);
@@ -11139,8 +11167,10 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             }
             setCurrentCaption(captionToSet, setAsIs);
             if (currentAnimation != null) {
-                menuItem.setVisibility(View.GONE);
+                menuItem.setVisibility(View.VISIBLE);
                 menuItem.hideSubItem(gallery_menu_save);
+                menuItem.showSubItem(gallery_menu_save_to_gif);
+                menuItem.showSubItem(gallery_menu_save_to_downloads);
                 actionBar.setTitle(LocaleController.getString("AttachGif", R.string.AttachGif));
             } else {
                 menuItem.setVisibility(View.VISIBLE);
@@ -11153,6 +11183,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 } else {
                     actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, currentIndex + 1, imagesArr.size()));
                 }
+                menuItem.hideSubItem(gallery_menu_save_to_gif);
+                menuItem.hideSubItem(gallery_menu_save_to_downloads);
                 menuItem.showSubItem(gallery_menu_save);
             }
             groupedPhotosListView.fillList();

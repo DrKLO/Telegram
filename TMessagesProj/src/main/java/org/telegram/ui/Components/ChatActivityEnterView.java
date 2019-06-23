@@ -3953,7 +3953,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             break;
                         }
                     }
-                    recordedAudioTimeTextView.setText(String.format("%d:%02d", duration / 60, duration % 60));
+                    recordedAudioTimeTextView.setText(AndroidUtilities.formatShortDuration(duration));
                     closeKeyboard();
                     hidePopup(false);
                     checkSendButton(false);

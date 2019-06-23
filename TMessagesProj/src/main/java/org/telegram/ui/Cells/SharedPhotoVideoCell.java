@@ -178,9 +178,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
             if (messageObject.isVideo()) {
                 videoInfoContainer.setVisibility(VISIBLE);
                 int duration = messageObject.getDuration();
-                int minutes = duration / 60;
-                int seconds = duration - minutes * 60;
-                videoTextView.setText(String.format("%d:%02d", minutes, seconds));
+                videoTextView.setText(AndroidUtilities.formatShortDuration(duration));
                 TLRPC.Document document = messageObject.getDocument();
                 TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 50);
                 TLRPC.PhotoSize qualityThumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 320);

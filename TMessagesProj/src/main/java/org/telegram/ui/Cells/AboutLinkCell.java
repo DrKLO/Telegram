@@ -11,17 +11,21 @@ package org.telegram.ui.Cells;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.os.Build;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -30,13 +34,67 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.URLSpanNoUnderline;
 
 public class AboutLinkCell extends FrameLayout {
+
+    public interface AboutLinkCellDelegate {
+        void onLinkPress(final String url);
+        void onLinkLongPress(final String url);
+    }
+
+    private boolean checkingForLongPress = false;
+    private CheckForLongPress pendingCheckForLongPress = null;
+    private int pressCount = 0;
+    private CheckForTap pendingCheckForTap = null;
+
+    private final class CheckForTap implements Runnable {
+        public void run() {
+            if (pendingCheckForLongPress == null) {
+                pendingCheckForLongPress = new CheckForLongPress();
+            }
+            pendingCheckForLongPress.currentPressCount = ++pressCount;
+            postDelayed(pendingCheckForLongPress, ViewConfiguration.getLongPressTimeout() - ViewConfiguration.getTapTimeout());
+        }
+    }
+
+    class CheckForLongPress implements Runnable {
+        public int currentPressCount;
+
+        public void run() {
+            if (checkingForLongPress && getParent() != null && currentPressCount == pressCount) {
+                checkingForLongPress = false;
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                didPressedLink(true);
+                MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
+                onTouchEvent(event);
+                event.recycle();
+            }
+        }
+    }
+
+    protected void startCheckLongPress() {
+        if (checkingForLongPress) {
+            return;
+        }
+        checkingForLongPress = true;
+        if (pendingCheckForTap == null) {
+            pendingCheckForTap = new CheckForTap();
+        }
+        postDelayed(pendingCheckForTap, ViewConfiguration.getTapTimeout());
+    }
+
+    protected void cancelCheckLongPress() {
+        checkingForLongPress = false;
+        if (pendingCheckForLongPress != null) {
+            removeCallbacks(pendingCheckForLongPress);
+        }
+        if (pendingCheckForTap != null) {
+            removeCallbacks(pendingCheckForTap);
+        }
+    }
 
     private StaticLayout textLayout;
     private String oldText;
@@ -47,6 +105,12 @@ public class AboutLinkCell extends FrameLayout {
 
     private ClickableSpan pressedLink;
     private LinkPath urlPath = new LinkPath();
+
+    private AboutLinkCellDelegate delegate;
+
+    public void setDelegate(AboutLinkCellDelegate aboutLinkCellDelegate) {
+        delegate = aboutLinkCellDelegate;
+    }
 
     public AboutLinkCell(Context context) {
         super(context);
@@ -63,8 +127,25 @@ public class AboutLinkCell extends FrameLayout {
         setWillNotDraw(false);
     }
 
-    protected void didPressUrl(String url) {
 
+    private void didPressedLink(boolean isLongPress) {
+        if (delegate == null || pressedLink == null) {
+            return;
+        }
+        try {
+            if (pressedLink instanceof URLSpan) {
+                String url = ((URLSpan) pressedLink).getURL();
+                if (isLongPress) {
+                    delegate.onLinkLongPress(url);
+                } else {
+                    delegate.onLinkPress(url);
+                }
+            } else {
+                pressedLink.onClick(this);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     private void resetPressedLink() {
@@ -79,7 +160,7 @@ public class AboutLinkCell extends FrameLayout {
     }
 
     public void setTextAndValue(String text, String value, boolean parseLinks) {
-        if (TextUtils.isEmpty(text) || text != null && oldText != null && text.equals(oldText)) {
+        if (TextUtils.isEmpty(text) || text != null && text.equals(oldText)) {
             return;
         }
         oldText = text;
@@ -87,7 +168,8 @@ public class AboutLinkCell extends FrameLayout {
         if (parseLinks) {
             MessageObject.addLinks(false, stringBuilder, false);
         }
-        Emoji.replaceEmoji(stringBuilder, Theme.profile_aboutTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
+        TextPaint paint = getAboutPaint();
+        Emoji.replaceEmoji(stringBuilder, paint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
         if (TextUtils.isEmpty(value)) {
             valueTextView.setVisibility(GONE);
         } else {
@@ -114,13 +196,16 @@ public class AboutLinkCell extends FrameLayout {
                         final int off = textLayout.getOffsetForHorizontal(line, x2);
 
                         final float left = textLayout.getLineLeft(line);
-                        if (left <= x2 && left + textLayout.getLineWidth(line) >= x2) {
+                        final float top = textLayout.getLineTop(line);
+                        final float bottom = textLayout.getLineBottom(line);
+                        if (left <= x2 && left + textLayout.getLineWidth(line) >= x2 && top <= y2 && bottom >= y2) {
                             Spannable buffer = (Spannable) textLayout.getText();
                             ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
                             if (link.length != 0) {
                                 resetPressedLink();
                                 pressedLink = link[0];
                                 result = true;
+                                startCheckLongPress();
                                 try {
                                     int start = buffer.getSpanStart(pressedLink);
                                     urlPath.setCurrentLayout(textLayout, start, 0);
@@ -139,22 +224,7 @@ public class AboutLinkCell extends FrameLayout {
                         FileLog.e(e);
                     }
                 } else if (pressedLink != null) {
-                    try {
-                        if (pressedLink instanceof URLSpanNoUnderline) {
-                            String url = ((URLSpanNoUnderline) pressedLink).getURL();
-                            if (url.startsWith("@") || url.startsWith("#") || url.startsWith("/")) {
-                                didPressUrl(url);
-                            }
-                        } else {
-                            if (pressedLink instanceof URLSpan) {
-                                Browser.openUrl(getContext(), ((URLSpan) pressedLink).getURL());
-                            } else {
-                                pressedLink.onClick(this);
-                            }
-                        }
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
+                    didPressedLink(false);
                     resetPressedLink();
                     result = true;
                 }
@@ -165,19 +235,28 @@ public class AboutLinkCell extends FrameLayout {
         return result || super.onTouchEvent(event);
     }
 
+    private TextPaint getAboutPaint() {
+        if (Theme.profile_aboutTextPaint != null) {
+            return Theme.profile_aboutTextPaint;
+        } else {
+            return Theme.settings_aboutTextPaint;
+        }
+    }
+
     @SuppressLint("DrawAllocation")
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (stringBuilder != null) {
             int maxWidth = MeasureSpec.getSize(widthMeasureSpec) - AndroidUtilities.dp(23 + 23);
+            TextPaint paint = getAboutPaint();
             if (Build.VERSION.SDK_INT >= 24) {
-                textLayout = StaticLayout.Builder.obtain(stringBuilder, 0, stringBuilder.length(), Theme.profile_aboutTextPaint, maxWidth)
+                textLayout = StaticLayout.Builder.obtain(stringBuilder, 0, stringBuilder.length(), paint, maxWidth)
                         .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
                         .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE)
                         .setAlignment(LocaleController.isRTL ? Layout.Alignment.ALIGN_RIGHT : Layout.Alignment.ALIGN_LEFT)
                         .build();
             } else {
-                textLayout = new StaticLayout(stringBuilder, Theme.profile_aboutTextPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                textLayout = new StaticLayout(stringBuilder, paint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             }
         }
         int height = (textLayout != null ? textLayout.getHeight() : AndroidUtilities.dp(20)) + AndroidUtilities.dp(16);

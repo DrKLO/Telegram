@@ -1966,6 +1966,92 @@ public class AndroidUtilities {
         }
     }
 
+    public static String formatShortDuration(int duration) {
+        return formatDuration(duration, false);
+    }
+
+    public static String formatLongDuration(int duration) {
+        return formatDuration(duration, true);
+    }
+
+    public static String formatDuration(int duration, boolean isLong) {
+        int h = duration / 3600;
+        int m = duration / 60 % 60;
+        int s = duration % 60;
+        if (h == 0) {
+            if (isLong) {
+                return String.format(Locale.US, "%02d:%02d", m, s);
+            } else {
+                return String.format(Locale.US, "%d:%02d", m, s);
+            }
+        } else {
+            return String.format(Locale.US, "%d:%02d:%02d", h, m, s);
+        }
+    }
+
+    public static String formatShortDuration(int progress, int duration) {
+        return formatDuration(progress, duration, false);
+    }
+
+    public static String formatLongDuration(int progress, int duration) {
+        return formatDuration(progress, duration, true);
+    }
+
+    public static String formatDuration(int progress, int duration, boolean isLong) {
+        int h = duration / 3600;
+        int m = duration / 60 % 60;
+        int s = duration % 60;
+
+        int ph = progress / 3600;
+        int pm = progress / 60 % 60;
+        int ps = progress % 60;
+
+        if (duration == 0) {
+            if (ph == 0) {
+                if (isLong) {
+                    return String.format(Locale.US, "%02d:%02d / -:--", pm, ps);
+                } else {
+                    return String.format(Locale.US, "%d:%02d / -:--", pm, ps);
+                }
+            } else {
+                return String.format(Locale.US, "%d:%02d:%02d / -:--", ph, pm, ps);
+            }
+        } else {
+            if (ph == 0 && h == 0) {
+                if (isLong) {
+                    return String.format(Locale.US, "%02d:%02d / %02d:%02d", pm, ps, m, s);
+                } else {
+                    return String.format(Locale.US, "%d:%02d / %d:%02d", pm, ps, m, s);
+                }
+            } else {
+                return String.format(Locale.US, "%d:%02d:%02d / %d:%02d:%02d", ph, pm, ps, h, m, s);
+            }
+        }
+    }
+
+    public static String formatVideoDuration(int progress, int duration) {
+        int h = duration / 3600;
+        int m = duration / 60 % 60;
+        int s = duration % 60;
+
+        int ph = progress / 3600;
+        int pm = progress / 60 % 60;
+        int ps = progress % 60;
+
+        if (ph == 0 && h == 0) {
+            return String.format(Locale.US, "%02d:%02d / %02d:%02d", pm, ps, m, s);
+        } else {
+            if (h == 0) {
+                return String.format(Locale.US, "%d:%02d:%02d / %02d:%02d", ph, pm, ps, m, s);
+            } else if (ph == 0) {
+                return String.format(Locale.US, "%02d:%02d / %d:%02d:%02d", pm, ps, h, m, s);
+            }
+            else {
+                return String.format(Locale.US, "%d:%02d:%02d / %d:%02d:%02d", ph, pm, ps, h, m, s);
+            }
+        }
+    }
+
     public static byte[] decodeQuotedPrintable(final byte[] bytes) {
         if (bytes == null) {
             return null;

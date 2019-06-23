@@ -995,7 +995,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                 }
                 if(callState==VoIPService.STATE_ESTABLISHED || callState==VoIPService.STATE_RECONNECTING){
                     long duration=VoIPService.getSharedInstance().getCallDuration()/1000;
-                    durationText.setText(duration>3600 ? String.format("%d:%02d:%02d", duration/3600, duration%3600/60, duration%60) : String.format("%d:%02d", duration/60, duration%60));
+                    durationText.setText(AndroidUtilities.formatShortDuration((int) duration));
                     durationText.postDelayed(this, 500);
                 }
             }
