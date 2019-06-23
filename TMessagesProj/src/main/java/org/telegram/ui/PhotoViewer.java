@@ -7963,10 +7963,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 centerImage.draw(canvas);
             }
             if (drawTextureView) {
-                scaleX = (float) canvas.getWidth() / (float) bitmapWidth;
-                scaleY = (float) canvas.getHeight() / (float) bitmapHeight;
-                scale = scaleX > scaleY ? scaleY : scaleX;
-                height = (int) (bitmapHeight * scale);
                 if (!videoCrossfadeStarted && textureUploaded) {
                     videoCrossfadeStarted = true;
                     videoCrossfadeAlpha = 0.0f;
