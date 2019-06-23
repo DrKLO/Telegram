@@ -80,6 +80,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Cells.AboutLinkCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HeaderCell;
@@ -251,6 +252,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public View createView(Context context) {
+        Theme.createSettingsResources();
         actionBar.setBackgroundColor(Theme.getColor(Theme.key_avatar_backgroundActionBarBlue));
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_avatar_actionBarSelectorBlue), false);
         actionBar.setItemsColor(Theme.getColor(Theme.key_avatar_actionBarIconBlue), false);
@@ -432,6 +434,59 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), (dialogInterface, i) -> searchAdapter.clearRecent());
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     showDialog(builder.create());
+                    return true;
+                }
+                if (position == numberRow) {
+                    TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
+                    if (user == null || TextUtils.isEmpty(user.phone)) {
+                        return false;
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setItems(new CharSequence[]{LocaleController.getString("Call", R.string.Call), LocaleController.getString("Copy", R.string.Copy)}, (dialogInterface, which) -> {
+                        if (which == 0) {
+                            try {
+                                Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:+" + user.phone));
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                getParentActivity().startActivityForResult(intent, 500);
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                        } else if (which == 1) {
+                            try {
+                                AndroidUtilities.addToClipboard("+" + user.phone);
+                                Toast.makeText(getParentActivity(), LocaleController.getString("PhoneCopied", R.string.PhoneCopied), Toast.LENGTH_SHORT).show();
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                        }
+                    });
+                    showDialog(builder.create());
+                    return true;
+                }
+                if (position == usernameRow) {
+                    TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
+                    if (user == null || TextUtils.isEmpty(user.username)) {
+                        return false;
+                    }
+                    try {
+                        AndroidUtilities.addToClipboard("@" + user.username);
+                        Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    return true;
+                }
+                if (position == bioRow) {
+                    String about = userInfo != null ? userInfo.about: null;
+                    if (TextUtils.isEmpty(about)) {
+                        return false;
+                    }
+                    try {
+                        AndroidUtilities.addToClipboard(about);
+                        Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
                     return true;
                 }
                 if (position == versionRow) {
@@ -1773,6 +1828,55 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
     }
 
+    private AboutLinkCell.AboutLinkCellDelegate aboutLinkCellDelegate = new AboutLinkCell.AboutLinkCellDelegate() {
+        @Override
+        public void onLinkPress(final String url) {
+            if (url.startsWith("@")) {
+                MessagesController.getInstance(currentAccount).openByUserName(url.substring(1), SettingsActivity.this, 0);
+            } else if (url.startsWith("#")) {
+                DialogsActivity fragment = new DialogsActivity(null);
+                fragment.setSearchString(url);
+                presentFragment(fragment);
+            } else if (url.startsWith("/")) {
+                if (parentLayout.fragmentsStack.size() > 1) {
+                    BaseFragment previousFragment = parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 2);
+                    if (previousFragment instanceof ChatActivity) {
+                        finishFragment();
+                        ((ChatActivity) previousFragment).chatActivityEnterView.setCommand(null, url, false, false);
+                    }
+                }
+            } else {
+                Browser.openUrl(getParentActivity(), url);
+            }
+        }
+
+        @Override
+        public void onLinkLongPress(final String url) {
+            BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+            builder.setTitle(url);
+            builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                if (which == 0) {
+                    onLinkPress(url);
+                } else if (which == 1) {
+                    String copyText = url;
+                    String toastText = LocaleController.getString("LinkCopied", R.string.LinkCopied);
+                    if (url.startsWith("mailto:")) {
+                        copyText = url.substring(7);
+                        toastText = LocaleController.getString("EmailCopied", R.string.EmailCopied);
+                    } else if (url.startsWith("tel:")) {
+                        copyText = url.substring(4);
+                        toastText = LocaleController.getString("PhoneCopied", R.string.PhoneCopied);
+                    } else if (url.startsWith("@") || url.startsWith("/") || url.startsWith("#")) {
+                        toastText = LocaleController.getString("TextCopied", R.string.TextCopied);
+                    }
+                    AndroidUtilities.addToClipboard(copyText);
+                    Toast.makeText(getParentActivity(), toastText, Toast.LENGTH_SHORT).show();
+                }
+            });
+            showDialog(builder.create());
+        }
+    };
+
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context mContext;
@@ -1841,13 +1945,17 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             value = LocaleController.getString("UsernameEmpty", R.string.UsernameEmpty);
                         }
                         textCell.setTextAndValue(value, LocaleController.getString("Username", R.string.Username), true);
-                    } else if (position == bioRow) {
-                        String value;
+                    }
+                    break;
+                }
+                case 7: {
+                    if (position == bioRow) {
+                        AboutLinkCell aboutLinkCell = (AboutLinkCell) holder.itemView;
                         if (userInfo == null || !TextUtils.isEmpty(userInfo.about)) {
-                            value = userInfo == null ? LocaleController.getString("Loading", R.string.Loading) : userInfo.about;
-                            textCell.setTextWithEmojiAndValue(value, LocaleController.getString("UserBio", R.string.UserBio), false);
+                            String value = userInfo == null ? LocaleController.getString("Loading", R.string.Loading) : userInfo.about;
+                            aboutLinkCell.setTextAndValue(value, LocaleController.getString("UserBio", R.string.UserBio), true);
                         } else {
-                            textCell.setTextAndValue(LocaleController.getString("UserBio", R.string.UserBio), LocaleController.getString("UserBioDetail", R.string.UserBioDetail), false);
+                            aboutLinkCell.setTextAndValue(LocaleController.getString("UserBio", R.string.UserBio), LocaleController.getString("UserBioDetail", R.string.UserBioDetail), false);
                         }
                     }
                     break;
@@ -1926,6 +2034,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     view = new TextDetailCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
+                case 7:
+                    AboutLinkCell aboutLinkCell = new AboutLinkCell(mContext);
+                    aboutLinkCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    aboutLinkCell.setDelegate(aboutLinkCellDelegate);
+                    view = aboutLinkCell;
+                    break;
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
             return new RecyclerListView.Holder(view);
@@ -1942,8 +2056,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 2;
             } else if (position == versionRow) {
                 return 5;
-            } else if (position == numberRow || position == usernameRow || position == bioRow) {
+            } else if (position == numberRow || position == usernameRow) {
                 return 6;
+            } else if (position == bioRow) {
+                return 7;
             } else if (position == settingsSectionRow2 || position == numberSectionRow) {
                 return 4;
             } else {
@@ -1985,6 +2101,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
                 new ThemeDescription(listView, 0, new Class[]{TextDetailCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{TextDetailCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{AboutLinkCell.class}, Theme.settings_aboutTextPaint, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(listView, ThemeDescription.FLAG_LINKCOLOR, new Class[]{AboutLinkCell.class}, Theme.settings_aboutTextPaint, null, null, Theme.key_windowBackgroundWhiteLinkText),
+                new ThemeDescription(listView, 0, new Class[]{AboutLinkCell.class}, Theme.linkSelectionPaint, null, null, Theme.key_windowBackgroundWhiteLinkSelection),
 
                 new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
                 new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3),

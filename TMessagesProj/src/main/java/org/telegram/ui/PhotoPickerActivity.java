@@ -1262,9 +1262,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                             imageView.setOrientation(photoEntry.orientation, true);
                             if (photoEntry.isVideo) {
                                 cell.videoInfoContainer.setVisibility(View.VISIBLE);
-                                int minutes = photoEntry.duration / 60;
-                                int seconds = photoEntry.duration - minutes * 60;
-                                cell.videoTextView.setText(String.format("%d:%02d", minutes, seconds));
+                                cell.videoTextView.setText(AndroidUtilities.formatShortDuration(photoEntry.duration));
                                 cell.setContentDescription(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatCallDuration(photoEntry.duration));
                                 imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, mContext.getResources().getDrawable(R.drawable.nophotos));
                             } else {

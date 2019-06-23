@@ -388,6 +388,8 @@ public class Theme {
     private static long lastHolidayCheckTime;
     private static boolean canStartHolidayAnimation;
 
+    public static TextPaint settings_aboutTextPaint;
+
     public static TextPaint profile_aboutTextPaint;
     public static Drawable profile_verifiedDrawable;
     public static Drawable profile_verifiedCheckDrawable;
@@ -2590,6 +2592,7 @@ public class Theme {
             applyCommonTheme();
             applyDialogsTheme();
             applyProfileTheme();
+            applySettingsTheme();
             applyChatTheme(false);
             AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewTheme, nightTheme));
         } catch (Exception e) {
@@ -3230,6 +3233,10 @@ public class Theme {
             profile_verifiedDrawable = null;
             createProfileResources(context);
         }
+        if (settings_aboutTextPaint != null) {
+            createSettingsResources();
+        }
+
     }
 
     public static void createChatResources(Context context, boolean fontsOnly) {
@@ -3797,6 +3804,7 @@ public class Theme {
     public static void createProfileResources(Context context) {
         if (profile_verifiedDrawable == null) {
             profile_aboutTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            profile_aboutTextPaint.setTextSize(AndroidUtilities.dp(16));
 
             Resources resources = context.getResources();
 
@@ -3805,8 +3813,13 @@ public class Theme {
 
             applyProfileTheme();
         }
+    }
 
-        profile_aboutTextPaint.setTextSize(AndroidUtilities.dp(16));
+    public static void createSettingsResources() {
+        settings_aboutTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        settings_aboutTextPaint.setTextSize(AndroidUtilities.dp(16));
+
+        applySettingsTheme();
     }
 
     private static ColorFilter currentShareColorFilter;
@@ -3839,6 +3852,13 @@ public class Theme {
 
         setDrawableColorByKey(profile_verifiedDrawable, key_profile_verifiedBackground);
         setDrawableColorByKey(profile_verifiedCheckDrawable, key_profile_verifiedCheck);
+    }
+
+    public static void applySettingsTheme() {
+        if (settings_aboutTextPaint != null) {
+            settings_aboutTextPaint.setColor(getColor(key_windowBackgroundWhiteBlackText));
+            settings_aboutTextPaint.linkColor = getColor(key_windowBackgroundWhiteLinkText);
+        }
     }
 
     public static Drawable getThemedDrawable(Context context, int resId, String key) {

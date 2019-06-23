@@ -1081,14 +1081,14 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 switchCameraButton.setAlpha(0.0f);
                 outputFile = AndroidUtilities.generateVideoPath(baseFragment instanceof ChatActivity && ((ChatActivity) baseFragment).isSecretChat());
                 recordTime.setAlpha(1.0f);
-                recordTime.setText(String.format("%02d:%02d", 0, 0));
+                recordTime.setText(AndroidUtilities.formatLongDuration(0));
                 videoRecordTime = 0;
                 videoRecordRunnable = () -> {
                     if (videoRecordRunnable == null) {
                         return;
                     }
                     videoRecordTime++;
-                    recordTime.setText(String.format("%02d:%02d", videoRecordTime / 60, videoRecordTime % 60));
+                    recordTime.setText(AndroidUtilities.formatLongDuration(videoRecordTime));
                     AndroidUtilities.runOnUIThread(videoRecordRunnable, 1000);
                 };
                 AndroidUtilities.lockOrientation(parentFragment.getParentActivity());
