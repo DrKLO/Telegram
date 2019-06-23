@@ -2420,6 +2420,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         if (passcodeView != null) {
             passcodeView.onPause();
         }
+        MediaController.getInstance().onAppPaused();
         ConnectionsManager.getInstance(currentAccount).setAppPaused(true, false);
         AndroidUtilities.unregisterUpdates();
         if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
@@ -2495,6 +2496,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     protected void onResume() {
         super.onResume();
         MediaController.getInstance().setFeedbackView(actionBarLayout, true);
+        MediaController.getInstance().onAppResumed();
         ApplicationLoader.mainInterfacePaused = false;
         showLanguageAlert(false);
         Utilities.stageQueue.postRunnable(() -> {

@@ -1587,6 +1587,11 @@ public class RecyclerListView extends RecyclerView {
         selectorRect.setEmpty();
     }
 
+    public void clearSelector() {
+        selectorPosition = NO_POSITION;
+        selectorRect.setEmpty();
+    }
+
     public ArrayList<View> getHeaders() {
         return headers;
     }

@@ -11382,7 +11382,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         fixLayout();
         applyDraftMaybe(false);
-        if (bottomOverlayChat != null && bottomOverlayChat.getVisibility() != View.VISIBLE && !actionBar.isSearchFieldVisible()) {
+        if (bottomOverlayChat != null && bottomOverlayChat.getVisibility() != View.VISIBLE && !actionBar.isSearchFieldVisible() && ChatObject.canWriteToChat(currentChat)) {
             chatActivityEnterView.setFieldFocused(true);
         }
         if (chatActivityEnterView != null) {
@@ -11832,10 +11832,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         cantDeleteMessagesCount = 0;
         canEditMessagesCount = 0;
         cantForwardMessagesCount = 0;
-        if (chatActivityEnterView != null) {
+        if (chatActivityEnterView != null && ChatObject.canWriteToChat(currentChat)) {
             EditTextCaption editTextCaption = chatActivityEnterView.getEditField();
             editTextCaption.requestFocus();
             editTextCaption.setAllowDrawCursor(true);
+        } else if (chatActivityEnterView != null) {
+            EditTextCaption editTextCaption = chatActivityEnterView.getEditField();
+            editTextCaption.clearFocus();
         }
     }
 
@@ -13819,34 +13822,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             }
                         } else if (url instanceof URLSpanNoUnderline) {
                             String str = ((URLSpanNoUnderline) url).getURL();
-                            if (str.startsWith("@")) {
-                                String username = str.substring(1).toLowerCase();
-                                if (currentChat != null && !TextUtils.isEmpty(currentChat.username) && username.equals(currentChat.username.toLowerCase()) ||
-                                        currentUser != null && !TextUtils.isEmpty(currentUser.username) && username.equals(currentUser.username.toLowerCase())) {
-                                    Bundle args = new Bundle();
-                                    if (currentChat != null) {
-                                        args.putInt("chat_id", currentChat.id);
-                                    } else if (currentUser != null) {
-                                        args.putInt("user_id", currentUser.id);
-                                        if (currentEncryptedChat != null) {
-                                            args.putLong("dialog_id", dialog_id);
+                            if(isHashTag(str)){
+                                if(longPress){
+                                    BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+                                    builder.setTitle(str);
+                                    builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                                        if (which == 0) {
+                                            openHashTag(str);
+                                        } else if (which == 1) {
+                                            AndroidUtilities.addToClipboard(str);
                                         }
-                                    }
-                                    ProfileActivity fragment = new ProfileActivity(args);
-                                    fragment.setPlayProfileAnimation(true);
-                                    fragment.setChatInfo(chatInfo);
-                                    fragment.setUserInfo(userInfo);
-                                    presentFragment(fragment);
+                                    });
+                                    showDialog(builder.create());
                                 } else {
-                                    MessagesController.getInstance(currentAccount).openByUserName(username, ChatActivity.this, 0);
-                                }
-                            } else if (str.startsWith("#") || str.startsWith("$")) {
-                                if (ChatObject.isChannel(currentChat)) {
-                                    openSearchWithText(str);
-                                } else {
-                                    DialogsActivity fragment = new DialogsActivity(null);
-                                    fragment.setSearchString(str);
-                                    presentFragment(fragment);
+                                    openHashTag(str);
                                 }
                             } else if (str.startsWith("/")) {
                                 if (URLSpanBotCommand.enabled) {
@@ -13892,6 +13881,43 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 } else if (url instanceof ClickableSpan) {
                                     ((ClickableSpan) url).onClick(fragmentView);
                                 }
+                            }
+                        }
+                    }
+
+                    private boolean isHashTag(String str){
+                        return str.startsWith("@") || str.startsWith("#") || str.startsWith("$");
+                    }
+
+                    private void openHashTag(String str) {
+                        if (str.startsWith("@")) {
+                            String username = str.substring(1).toLowerCase();
+                            if (currentChat != null && !TextUtils.isEmpty(currentChat.username) && username.equals(currentChat.username.toLowerCase()) ||
+                                    currentUser != null && !TextUtils.isEmpty(currentUser.username) && username.equals(currentUser.username.toLowerCase())) {
+                                Bundle args = new Bundle();
+                                if (currentChat != null) {
+                                    args.putInt("chat_id", currentChat.id);
+                                } else if (currentUser != null) {
+                                    args.putInt("user_id", currentUser.id);
+                                    if (currentEncryptedChat != null) {
+                                        args.putLong("dialog_id", dialog_id);
+                                    }
+                                }
+                                ProfileActivity fragment = new ProfileActivity(args);
+                                fragment.setPlayProfileAnimation(true);
+                                fragment.setChatInfo(chatInfo);
+                                fragment.setUserInfo(userInfo);
+                                presentFragment(fragment);
+                            } else {
+                                MessagesController.getInstance(currentAccount).openByUserName(username, ChatActivity.this, 0);
+                            }
+                        } else if (str.startsWith("#") || str.startsWith("$")) {
+                            if (ChatObject.isChannel(currentChat)) {
+                                openSearchWithText(str);
+                            } else {
+                                DialogsActivity fragment = new DialogsActivity(null);
+                                fragment.setSearchString(str);
+                                presentFragment(fragment);
                             }
                         }
                     }

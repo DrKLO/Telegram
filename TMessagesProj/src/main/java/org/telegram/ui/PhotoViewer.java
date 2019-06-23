@@ -310,6 +310,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private boolean isPlaying;
     private boolean isStreaming;
     private boolean firstAnimationDelay;
+    private boolean playVideoOnResume = false;
     private long lastBufferedPositionCheck;
     private View playButtonAccessibilityOverlay;
     
@@ -7326,7 +7327,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         redraw(0); //workaround for camera bug
         if (videoPlayer != null) {
             videoPlayer.seekTo(videoPlayer.getCurrentPosition() + 1);
+            if (playVideoOnResume) {
+                videoPlayer.setPlayWhenReady(true);
+                videoPlayer.play();
+            }
         }
+        playVideoOnResume = false;
     }
 
     public void onConfigurationChanged(Configuration newConfig) {
@@ -7336,6 +7342,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     public void onPause() {
+        if(videoPlayer != null){
+            playVideoOnResume = isPlaying || videoPlayer.getPlayWhenReady();
+            videoPlayer.setPlayWhenReady(false);
+            videoPlayer.pause();
+        }
         if (currentAnimation != null) {
             closePhoto(false, false);
             return;

@@ -201,6 +201,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private ImageView expandStickersButton;
     private EmojiView emojiView;
     private boolean emojiViewVisible;
+    private boolean botKeyboardViewVisible;
     private TextView recordTimeText;
     private FrameLayout audioVideoButtonContainer;
     private AnimatorSet audioVideoButtonAnimation;
@@ -246,6 +247,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private Paint dotPaint;
     private Drawable playDrawable;
     private Drawable pauseDrawable;
+    private ReplaceableIconDrawable botButtonDrawable;
     private int searchingType;
 
     private boolean destroyed;
@@ -1076,7 +1078,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
             botButton = new ImageView(context);
             botButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
-            botButton.setImageResource(R.drawable.input_bot2);
+            botButtonDrawable = new ReplaceableIconDrawable(context);
+            botButtonDrawable.setIcon(R.drawable.input_bot2, false);
+            botButton.setImageDrawable(botButtonDrawable);
             botButton.setScaleType(ImageView.ScaleType.CENTER);
             botButton.setVisibility(GONE);
             attachLayout.addView(botButton, LayoutHelper.createLinear(48, 48));
@@ -2986,7 +2990,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     } else {
                         allowFocus = true;
                     }
-                    if (allowFocus && messageEditText != null) {
+                    if (allowFocus && messageEditText != null && messageEditText.getVisibility() == VISIBLE) {
                         try {
                             messageEditText.requestFocus();
                         } catch (Exception e) {
@@ -3025,16 +3029,17 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             if (botButton.getVisibility() != VISIBLE) {
                 botButton.setVisibility(VISIBLE);
             }
+            boolean botButtonShowed = botButton.getMeasuredHeight() != 0;
             if (botReplyMarkup != null) {
                 if (isPopupShowing() && currentPopupContentType == 1) {
-                    botButton.setImageResource(R.drawable.input_keyboard);
+                    botButtonDrawable.setIcon(R.drawable.input_keyboard, botButtonShowed);
                     botButton.setContentDescription(LocaleController.getString("AccDescrShowKeyboard", R.string.AccDescrShowKeyboard));
                 } else {
-                    botButton.setImageResource(R.drawable.input_bot2);
+                    botButtonDrawable.setIcon(R.drawable.input_bot2, botButtonShowed);
                     botButton.setContentDescription(LocaleController.getString("AccDescrBotKeyboard", R.string.AccDescrBotKeyboard));
                 }
             } else {
-                botButton.setImageResource(R.drawable.input_bot1);
+                botButtonDrawable.setIcon(R.drawable.input_bot1, botButtonShowed);
                 botButton.setContentDescription(LocaleController.getString("AccDescrBotCommands", R.string.AccDescrBotCommands));
             }
         } else {
@@ -3514,9 +3519,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 emojiViewVisible = true;
                 if (botKeyboardView != null && botKeyboardView.getVisibility() != GONE) {
                     botKeyboardView.setVisibility(GONE);
+                    botKeyboardViewVisible = false;
                 }
                 currentView = emojiView;
             } else if (contentType == 1) {
+                botKeyboardViewVisible = true;
                 if (emojiView != null && emojiView.getVisibility() != GONE) {
                     emojiView.setVisibility(GONE);
                     emojiViewVisible = false;
@@ -3564,7 +3571,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
             }
             if (botKeyboardView != null) {
-                botKeyboardView.setVisibility(GONE);
+                botKeyboardViewVisible = false;
+                if (AndroidUtilities.usingHardwareInput || AndroidUtilities.isInMultiwindow) {
+                    botKeyboardView.setVisibility(GONE);
+                }
             }
             if (sizeNotifierLayout != null) {
                 if (show == 0) {
@@ -3717,7 +3727,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     public boolean isPopupShowing() {
-        return emojiViewVisible || botKeyboardView != null && botKeyboardView.getVisibility() == VISIBLE;
+        return emojiViewVisible || botKeyboardViewVisible;
     }
 
     public boolean isKeyboardVisible() {

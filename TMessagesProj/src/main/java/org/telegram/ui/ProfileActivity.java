@@ -32,11 +32,13 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+
 import androidx.annotation.Keep;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.text.TextUtils;
+import android.text.style.URLSpan;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -65,6 +67,7 @@ import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -77,6 +80,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
+import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.AboutLinkCell;
@@ -150,10 +154,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private boolean openAnimationInProgress;
     private boolean recreateMenuAfterAnimation;
     private boolean playProfileAnimation;
-    private boolean allowProfileAnimation = true;
     private int extraHeight;
     private int initialAnimationExtraHeight;
     private float animationProgress;
+    private int bottomOffset = 0;
+    private int lastKnownListHeight = 0;
 
     private boolean isBot;
 
@@ -195,6 +200,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int notificationsDividerRow;
     private int notificationsRow;
     private int infoSectionRow;
+    private int bottomOffsetRow;
 
     private int settingsTimerRow;
     private int settingsKeyRow;
@@ -1415,12 +1421,27 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (top >= 0 && holder != null && holder.getAdapterPosition() == 0) {
             newOffset = top;
         }
+        int childCount = listView.getChildCount();
+        if(listView.getMeasuredHeight() != lastKnownListHeight){
+            bottomOffset = 0;
+            lastKnownListHeight = listView.getMeasuredHeight();
+        }
+        if (rowCount - 1 == childCount) {
+            bottomOffset = 0;
+            for (int i = 0; i < childCount; i++) {
+                View localChild = listView.getChildAt(i);
+                bottomOffset += localChild.getMeasuredHeight();
+                if (listView.getLayoutManager().getItemViewType(localChild) == bottomOffsetRow) {
+                    bottomOffset = listView.getMeasuredHeight();
+                    break;
+                }
+            }
+            bottomOffset = listView.getMeasuredHeight() - bottomOffset;
+        }
+        if(bottomOffset < 0) bottomOffset = 0;
         if (extraHeight != newOffset) {
             extraHeight = newOffset;
             topView.invalidate();
-            if (playProfileAnimation) {
-                allowProfileAnimation = extraHeight != 0;
-            }
             needLayout();
         }
     }
@@ -1957,7 +1978,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
-        if (!backward && playProfileAnimation && allowProfileAnimation) {
+        if (!backward && playProfileAnimation) {
             openAnimationInProgress = true;
         }
         NotificationCenter.getInstance(currentAccount).setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats, NotificationCenter.mediaCountDidLoad, NotificationCenter.mediaCountsDidLoad});
@@ -1966,7 +1987,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
-        if (isOpen && !backward && playProfileAnimation && allowProfileAnimation) {
+        if (isOpen && !backward && playProfileAnimation) {
             openAnimationInProgress = false;
             if (recreateMenuAfterAnimation) {
                 createActionBarMenu();
@@ -2175,7 +2196,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     protected AnimatorSet onCustomTransitionAnimation(final boolean isOpen, final Runnable callback) {
-        if (playProfileAnimation && allowProfileAnimation) {
+        if (playProfileAnimation) {
             final AnimatorSet animatorSet = new AnimatorSet();
             animatorSet.setDuration(180);
             listView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
@@ -2620,6 +2641,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 addMemberRow = rowCount++;
             }
         }
+        bottomOffsetRow = rowCount++;
     }
 
     private Drawable getScamDrawable() {
@@ -3013,7 +3035,30 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                         ((ChatActivity) previousFragment).chatActivityEnterView.setCommand(null, url, false, false);
                                     }
                                 }
+                            } else {
+                                Browser.openUrl(getContext(), (url));
                             }
+                        }
+
+                        @Override
+                        protected void onLinkLongPress(final String urlFinal) {
+                            listView.clearSelector();
+                            BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+                            builder.setTitle(urlFinal);
+                            builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                                if (which == 0) {
+                                    didPressUrl(urlFinal);
+                                } else if (which == 1) {
+                                    String url = urlFinal;
+                                    if (url.startsWith("mailto:")) {
+                                        url = url.substring(7);
+                                    } else if (url.startsWith("tel:")) {
+                                        url = url.substring(4);
+                                    }
+                                    AndroidUtilities.addToClipboard(url);
+                                }
+                            });
+                            showDialog(builder.create());
                         }
                     };
                     break;
@@ -3041,6 +3086,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 case 11: {
                     view = new EmptyCell(mContext, 36);
+                    break;
+                }
+                case 12: {
+                    view = new View(mContext) {
+                        @Override
+                        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                            setMeasuredDimension(0, bottomOffset);
+                        }
+                    };
+                    break;
                 }
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
@@ -3328,6 +3383,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return 8;
             } else if (i == emptyRow) {
                 return 11;
+            } else if (i == bottomOffsetRow) {
+                return 12;
             }
             return 0;
         }

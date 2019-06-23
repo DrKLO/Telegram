@@ -390,6 +390,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private int currentAspectRatioFrameLayoutRotation;
     private float currentAspectRatioFrameLayoutRatio;
     private boolean currentAspectRatioFrameLayoutReady;
+    private boolean playVideoOnResume = false;
 
     private Runnable setLoadingRunnable = new Runnable() {
         @Override
@@ -3548,6 +3549,28 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         return lastColorFormat;
     }
+
+    public void onAppPaused() {
+        if(videoPlayer != null){
+            playVideoOnResume = videoPlayer.isPlaying();
+            videoPlayer.setPlayWhenReady(false);
+            videoPlayer.pause();
+        }
+    }
+
+    public void onAppResumed() {
+        if (videoPlayer != null) {
+            videoPlayer.seekTo(videoPlayer.getCurrentPosition() + 1);
+            if (playVideoOnResume) {
+                videoPlayer.setPlayWhenReady(true);
+                videoPlayer.play();
+            }
+        }
+        playVideoOnResume = false;
+    }
+
+
+
 
     private int findTrack(MediaExtractor extractor, boolean audio) {
         int numTracks = extractor.getTrackCount();
