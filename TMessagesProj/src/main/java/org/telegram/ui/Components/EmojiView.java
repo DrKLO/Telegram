@@ -1512,7 +1512,13 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             stickersSearchField = new SearchField(context, 0);
             stickersContainer.addView(stickersSearchField, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, searchFieldHeight + AndroidUtilities.getShadowHeight()));
 
-            trendingGridView = new RecyclerListView(context);
+            trendingGridView = new RecyclerListView(context){
+                @Override
+                public boolean onInterceptTouchEvent(MotionEvent event) {
+                    boolean result = ContentPreviewViewer.getInstance().onInterceptTouchEvent(event, trendingGridView, EmojiView.this.getMeasuredHeight(), contentPreviewViewerDelegate);
+                    return super.onInterceptTouchEvent(event) || result;
+                }
+            };
             trendingGridView.setItemAnimator(null);
             trendingGridView.setLayoutAnimation(null);
             trendingGridView.setLayoutManager(trendingLayoutManager = new GridLayoutManager(context, 5) {
@@ -1537,10 +1543,11 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     checkBottomTabScroll(dy);
                 }
             });
+            RecyclerListView.OnItemClickListener listener;
             trendingGridView.setClipToPadding(false);
             trendingGridView.setPadding(0, AndroidUtilities.dp(48), 0, 0);
             trendingGridView.setAdapter(trendingGridAdapter = new TrendingGridAdapter(context));
-            trendingGridView.setOnItemClickListener((view, position) -> {
+            trendingGridView.setOnItemClickListener(listener = (view, position) -> {
                 TLRPC.StickerSetCovered pack = trendingGridAdapter.positionsToSets.get(position);
                 if (pack != null) {
                     delegate.onShowStickerSet(pack.set, null);
@@ -1549,6 +1556,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             trendingGridAdapter.notifyDataSetChanged();
             trendingGridView.setGlowColor(Theme.getColor(Theme.key_chat_emojiPanelBackground));
             trendingGridView.setVisibility(GONE);
+            trendingGridView.setOnTouchListener((v, event) -> ContentPreviewViewer.getInstance().onTouch(event, trendingGridView, 0, listener, contentPreviewViewerDelegate));
             stickersContainer.addView(trendingGridView);
 
             stickersTab.setUnderlineHeight(AndroidUtilities.getShadowHeight());
