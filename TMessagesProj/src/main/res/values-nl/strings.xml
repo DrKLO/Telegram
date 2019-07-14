@@ -121,7 +121,7 @@
     <string name="NewGroup">Nieuwe groep</string>
     <string name="Yesterday">gisteren</string>
     <string name="NoResult">Geen resultaten</string>
-    <string name="NoChats">Nog geen chats</string>
+    <string name="NoChats">Welkom bij Telegram</string>
     <string name="RecentlyViewed">Recent bekeken</string>
     <string name="RecentlyViewedHide">VERBERG</string>
     <string name="NoChatsHelp">Begin een gesprek door op de opstelknop rechtsonder te drukken.</string>
@@ -182,6 +182,8 @@
     <string name="Hashtags">HASHTAGS</string>
     <string name="Recent">Recent</string>
     <string name="ChatHints">Mensen</string>
+    <string name="ChatHintsDeleteAlertTitle">Suggestie verwijderen</string>
+    <string name="ChatHintsDeleteAlert">**%1$s** echt uit suggesties verwijderen?</string>
     <string name="ChatHintsDelete">%1$s uit suggesties verwijderen?</string>
     <string name="LinkPreview">Link-voorbeeld</string>
     <string name="Draft">Concept</string>
@@ -453,6 +455,27 @@
     <string name="CantAddBotAsAdmin">Bots kunnen alleen als beheerder aan kanalen worden toegevoegd.</string>
     <string name="MakeAdmin">BEHEERDER MAKEN</string>
     <string name="AdminWillBeRemoved">%1$s  zal verwijderd worden als beheerder als je een beperking oplegt.</string>
+    <string name="Discussion">Discussion</string>
+    <string name="DiscussionInfo">Add a group chat for comments</string>
+    <string name="LinkedChannel">Linked Channel</string>
+    <string name="DiscussionChannelHelp">Select a group chat for discussion that will be displayed in your channel.</string>
+    <string name="DiscussionChannelHelp2">Everything you post in the channel will be forwarded to this group.</string>
+    <string name="DiscussionChannelGroupSetHelp">Een link naar **%1$s**  zal worden weergegeven aan alle abonnees in het onderpaneel.</string>
+    <string name="DiscussionGroupHelp">**%1$s** is linking the group as its discussion board.</string>
+    <string name="DiscussionGroupHelp2">All new messages posted in this channel are forwarded to the group.</string>
+    <string name="DiscussionCreateGroup">Create a New Group</string>
+    <string name="DiscussionUnlinkGroup">Groep ontkoppelen</string>
+    <string name="DiscussionUnlinkChannel">Kanaal ontkoppelen</string>
+    <string name="DiscussionUnlink">Ontkoppel</string>
+    <string name="DiscussionLinkGroup">Groep koppelen</string>
+    <string name="DiscussionLinkGroupPublicAlert">Do you want to make **%1$s** the discussion board for **%2$s**?</string>
+    <string name="DiscussionLinkGroupPrivateAlert">Do you want to make **%1$s** the discussion board for **%2$s**?\n\nAny member of this group will be able to see messages in the channel.</string>
+    <string name="DiscussionLinkGroupPublicPrivateAlert">Do you want to make **%1$s** the discussion board for **%2$s**?\n\nAnyone from the channel will be able to see messages in this group.</string>
+    <string name="DiscussionLinkGroupAlertHistory">\"Chat history for new members\" will be switched to Visible.</string>
+    <string name="DiscussionUnlinkGroupAlert">Are you sure you want to unlink **%1$s** from this group?</string>
+    <string name="DiscussionUnlinkChannelAlert">Are you sure you want to unlink **%1$s** from this channel?</string>
+    <string name="ChannelDiscuss">DISCUSS</string>
+    <string name="DiscussChannel">channel</string>
     <!--polls-->
     <string name="NewPoll">Nieuwe poll</string>
     <string name="Poll">Poll</string>
@@ -522,6 +545,10 @@
     <string name="EventLogDeletedMessages">bericht door un1 verwijderd:</string>
     <string name="EventLogChangedStickersSet">groepsstickers door un1 gewijzigd</string>
     <string name="EventLogRemovedStickersSet">groepsstickers door un1 verwijderd</string>
+    <string name="EventLogChangedLinkedGroup">un1 made un2 the discussion group for this channel</string>
+    <string name="EventLogRemovedLinkedGroup">un1 removed the discussion group un2</string>
+    <string name="EventLogChangedLinkedChannel">un1 linked this group to un2</string>
+    <string name="EventLogRemovedLinkedChannel">un1 unlinked this group from un2</string>
     <string name="EventLogChangedGroupLink">link door un1 gewijzigd:</string>
     <string name="EventLogChangedChannelLink">link door un1 gewijzigd:</string>
     <string name="EventLogRemovedGroupLink">groepslink door un1 verwijderd</string>
@@ -678,7 +705,10 @@
     <string name="UploadItems">Upload %1$s</string>
     <string name="SendAsFile">Als bestand</string>
     <string name="SendAsFiles">Als bestand</string>
-    <string name="OpenUrlAlert">URL %1$s openen?</string>
+    <string name="OpenUrlTitle">Open Link</string>
+    <string name="OpenUrlAlert2">Do you want to open %1$s?</string>
+    <string name="OpenUrlOption1">Log in to %1$s as **%2$s**</string>
+    <string name="OpenUrlOption2">Allow **%1$s** to send me messages</string>
     <string name="CancelSending">Versturen annuleren</string>
     <string name="BotPermissionGameAlert">Wil je %1$s toestaan om je naam en ID (niet je telefoonnummer) door te geven aan webpagina\'s die je opent via deze bot?</string>
     <string name="ReportSpam">SPAM MELDEN</string>
@@ -698,6 +728,8 @@
     <string name="PinMessage">Vastzetten</string>
     <string name="PinNotify">Alle leden informeren</string>
     <string name="UnpinMessage">Losmaken</string>
+    <string name="PinMessageAlertTitle">Bericht vastzetten</string>
+    <string name="UnpinMessageAlertTitle">Bericht losmaken</string>
     <string name="PinMessageAlert">Wil je dit bericht vastzetten?</string>
     <string name="PinMessageAlertChannel">Wil je dit bericht vastzetten?</string>
     <string name="PinMessageAlertChat">Wil je dit bericht vastzetten bovenaan de chat?</string>
@@ -788,6 +820,7 @@
     <string name="MapPreviewProviderNobody">Geen</string>
     <string name="InstallGoogleMaps">Google Maps installeren?</string>
     <string name="ScamMessage">OPLICHTING</string>
+    <string name="ViaBot">via</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -895,6 +928,7 @@
     <string name="SecretChatName">Telegram</string>
     <!--contacts view-->
     <string name="SelectContact">Contact kiezen</string>
+    <string name="SelectContacts">Select Contacts</string>
     <string name="ContactShare">Contact delen</string>
     <string name="NoContacts">Nog geen contacten</string>
     <string name="InviteText2">Ik gebruik Telegram om te chatten. Download de app hier: %1$s</string>
@@ -947,6 +981,8 @@
     <string name="CopyLink">Link kopiëren</string>
     <string name="ShareLink">Link delen</string>
     <string name="LinkInfo">Andere Telegram-gebruikers kunnen lid worden van je groep door deze link te openen.</string>
+    <string name="SearchForPeople">Search for people...</string>
+    <string name="SearchForPeopleAndGroups">Search for users and groups...</string>
     <!--group info view-->
     <string name="GroupMembers">Leden</string>
     <string name="SharedMedia">Gedeelde media</string>
@@ -975,6 +1011,9 @@
     <string name="ContactNotRegistered">%1$s is nog geen lid, uitnodigen?</string>
     <string name="Invite">Nodig uit</string>
     <string name="BlockContact">Blokkeer</string>
+    <string name="BlockUser">Block user</string>
+    <string name="UserBlocked">User blocked</string>
+    <string name="UserUnblocked">User unblocked</string>
     <string name="EditContact">Wijzig</string>
     <string name="DeleteContact">Verwijder</string>
     <string name="PhoneHome">Thuis</string>
@@ -1082,7 +1121,7 @@
     <string name="AutoNightThemeOff">Uit</string>
     <string name="AutoNightDisabled">Uitgeschakeld</string>
     <string name="AutoNightScheduled">Geplande tijd</string>
-    <string name="AutoNightAutomatic">Automatisch</string>
+    <string name="AutoNightAdaptive">Adaptive</string>
     <string name="AutoNightSchedule">Planning</string>
     <string name="AutoNightLocation">Gebruik zonsopkomst &amp; -ondergang</string>
     <string name="AutoNightUpdateLocation">Locatie bijwerken</string>
@@ -1094,6 +1133,8 @@
     <string name="AutoNightBrightnessInfo">Schakel om naar je nachtthema als het omgevingslicht minder dan  %1$d%% is.</string>
     <string name="ThemeDark">Donker</string>
     <string name="ThemeDarkBlue">Donkerblauw</string>
+    <string name="ThemeGraphite">Graphite</string>
+    <string name="ThemeArcticBlue">Arctic Blue</string>
     <string name="ThemeBlue">Blauw</string>
     <string name="DeleteThemeAlert">Thema echt verwijderen?</string>
     <string name="IncorrectTheme">Themabestand is ongeldig</string>
@@ -1102,6 +1143,8 @@
     <string name="SaveTheme">THEME OPSLAAN</string>
     <string name="NewTheme">Nieuw kleurenthema</string>
     <string name="ColorTheme">Kleurenthema</string>
+    <string name="BuiltInThemes">Built-in themes</string>
+    <string name="CustomThemes">Custom themes</string>
     <string name="ChatList">Weergave chatoverzicht</string>
     <string name="ChatListDefault">Twee regels</string>
     <string name="ChatListExpanded">Drie regels</string>
@@ -1109,6 +1152,8 @@
     <string name="ApplyTheme">TOEPASSEN</string>
     <string name="ThemePreview">Thema-voorbeeld</string>
     <string name="SelectColor">Selecteer kleur</string>
+    <string name="ColorThemes">Color Themes</string>
+    <string name="ShowAllThemes">Show all Themes</string>
     <string name="CreateNewThemeMenu">Nieuw thema maken</string>
     <string name="CreateNewThemeHelp">Tik op het palet-icoon om een lijst met elementen voor elk scherm te zien en deze te bewerken.</string>
     <string name="CreateNewThemeAlert">Je kunt je eigen thema maken door kleuren in de app aan te passen.\n\nJe kunt hier altijd het standaardthema weer instellen.</string>
@@ -1168,6 +1213,7 @@
     <string name="NotificationsTurnOn">Inschakelen</string>
     <string name="NotificationsTurnOff">Uitschakelen</string>
     <string name="BlockedUsers">Geblokkeerd</string>
+    <string name="BlockedUsersInfo">Blocked users will not be able to contact you and will not see your Last Seen time.</string>
     <string name="LogOut">Uitloggen</string>
     <string name="NoSound">Geen geluid</string>
     <string name="Default">Standaard</string>
@@ -1178,6 +1224,7 @@
     <string name="ChatBackground">Achtergrond kiezen</string>
     <string name="ResetChatBackgrounds">Chatachtergronden resetten</string>
     <string name="ResetChatBackgroundsInfo">Verwijder alle geüploade chatachtergronden en herstel de voorgeïnstalleerde achtergronden.</string>
+    <string name="ResetChatBackgroundsAlertTitle">Chat achtergrond resetten</string>
     <string name="ResetChatBackgroundsAlert">Echt alle chatachtergronden resetten?</string>
     <string name="DeleteChatBackgroundsAlert">Achtergrond echt verwijderen?</string>
     <string name="BackgroundPreview">Achtergrondvoorvertoning</string>
@@ -1306,6 +1353,7 @@
     <string name="AutoDownloadAudioInfo">Spraakberichten zijn miniscuul, ze worden altijd automatisch gedownload.</string>
     <string name="NoMediaAutoDownload">Geen media</string>
     <string name="ResetAutomaticMediaDownload">Autom. downloaden resetten</string>
+    <string name="ResetAutomaticMediaDownloadAlertTitle">Instellingen resetten</string>
     <string name="ResetAutomaticMediaDownloadAlert">Instellingen voor automatisch downloaden echt resetten?</string>
     <string name="WhenUsingMobileData">Bij mobiele verbinding</string>
     <string name="WhenConnectedOnWiFi">Bij Wi-Fi-verbinding</string>
@@ -1373,6 +1421,7 @@
     <string name="DebugMenuImportContacts">Contacten importeren</string>
     <string name="DebugMenuReloadContacts">Contacten verversen</string>
     <string name="DebugMenuResetDialogs">Chats herstellen</string>
+    <string name="DebugMenuReadAllDialogs">Alles als gelezen</string>
     <string name="DebugMenuEnableCamera">In-app camera inschakelen</string>
     <string name="DebugMenuDisableCamera">In-app camera uitschakelen</string>
     <string name="DebugMenuResetContacts">Reset geimporteerde contacten</string>
@@ -1825,6 +1874,8 @@
     <string name="AreYouSureDeleteGIF">Echt deze GIF verwijderen?</string>
     <string name="DiscardChanges">Wijzigingen weggooien?</string>
     <string name="ClearSearch">Zoekgeschiedenis wissen?</string>
+    <string name="ClearSearchAlert">Zoekgeschiedenis echt wissen?</string>
+    <string name="ClearSearchAlertTitle">Zoekgeschiedenis wissen</string>
     <string name="ClearButton">Wissen</string>
     <string name="AddCaption">Onderschrift toevoegen</string>
     <string name="PhotoCaption">Foto-onderschrift</string>
@@ -1923,6 +1974,7 @@
     <string name="TotalDataUsage">Totaal</string>
     <string name="ResetStatistics">Gegevens opnieuw instellen</string>
     <string name="NetworkUsageSince">Datagebruik sinds %1$s</string>
+    <string name="ResetStatisticsAlertTitle">Statistieken resetten</string>
     <string name="ResetStatisticsAlert">Gebruiksgegevens opnieuw instellen?</string>
     <!--privacy settings-->
     <string name="PrivacySettings">Privacy en veiligheid</string>
@@ -1932,6 +1984,10 @@
     <string name="PrivacyProfilePhotoTitle">Wie kan mijn profielfoto zien</string>
     <string name="PrivacyProfilePhotoInfo">Je kunt nauwkeurig beperken wie je profielfoto kan zien.</string>
     <string name="PrivacyProfilePhotoInfo2">Deze instelling overschrijft de bovenstaande.</string>
+    <string name="PrivacyPhone">Phone Number</string>
+    <string name="PrivacyPhoneTitle">Wie kan mijn telefoonnummer zien?</string>
+    <string name="PrivacyPhoneInfo">Users who already have your number saved in their contacts will see it on Telegram.</string>
+    <string name="PrivacyPhoneInfo2">You can add a user or an entire group as an exception that will override the settings above.</string>
     <string name="PrivacyForwards">Doorgestuurde berichten</string>
     <string name="PrivacyForwardsEverybody">Link naar je account</string>
     <string name="PrivacyForwardsContacts">Link indien hieronder toegestaan</string>
@@ -1940,7 +1996,9 @@
     <string name="PrivacyForwardsInfo">Berichten van je die worden doorgestuurd linken niet terug naar je account.</string>
     <string name="PrivacyForwardsInfo2">Deze instelling overschrijft de bovenstaande.</string>
     <string name="PrivacyForwardsMessageLine">Godfried, verveel je je?</string>
+    <string name="PrivacyP2PHeader">Peer-to-Peer</string>
     <string name="PrivacyP2P">Peer-to-Peer in oproepen</string>
+    <string name="PrivacyP2P2">Use Peer-to-Peer with</string>
     <string name="PrivacyBots">Bots en websites</string>
     <string name="PrivacyPaymentsClear">Betaal- en verzendinfo wissen</string>
     <string name="PrivacyPaymentsClearAlert">Je verzendinformatie wissen en alle betalingsproviders opdracht geven om je bewaarde creditcards te verwijderen? Je creditcardgegevens worden nooit opgeslagen door Telegram.</string>
@@ -1977,9 +2035,7 @@
     <string name="NeverShareWith">Nooit delen met</string>
     <string name="CustomShareSettingsHelp">Deze instelling overschrijft de bovenstaande.</string>
     <string name="AlwaysShareWithTitle">Altijd delen</string>
-    <string name="AlwaysShareWithPlaceholder">Altijd delen met gebruikers</string>
     <string name="NeverShareWithTitle">Nooit delen</string>
-    <string name="NeverShareWithPlaceholder">Nooit delen met gebruikers</string>
     <string name="EmpryUsersPlaceholder">Toevoegen</string>
     <string name="PrivacyFloodControlError">Sorry, te veel verzoeken. Momenteel is het niet mogelijk om de privacyinstellingen te wijzigen, even geduld alsjeblieft.</string>
     <string name="RemoveFromListText">Gebruiker vasthouden om te verwijderen.</string>
@@ -1988,8 +2044,6 @@
     <string name="WhoCanAddMeInfo">Je kunt nauwkeurig bepalen wie je aan groepen en kanalen mag toevoegen.</string>
     <string name="AlwaysAllow">Altijd toestaan</string>
     <string name="NeverAllow">Nooit toestaan</string>
-    <string name="AlwaysAllowPlaceholder">Altijd toestaan...</string>
-    <string name="NeverAllowPlaceholder">Nooit toestaan...</string>
     <string name="CustomShareInfo">Deze gebruikers altijd toestaan of verbieden je aan groepen en kanalen toe te voegen.</string>
     <string name="GroupsAndChannelsHelp">Wijzig wie je aan groepen en kanalen kan toevoegen.</string>
     <string name="InviteToGroupError">Je kunt deze gebruiker niet toevoegen aan groepen vanwege de privacyinstellingen van deze gebruiker.</string>
@@ -2000,6 +2054,8 @@
     <string name="SuggestContacts">Veelgebruikte contacten voorstellen</string>
     <string name="SuggestContactsInfo">Mensen die je vaak een bericht stuurt bovenaan de zoeksectie weergeven voor snelle toegang.</string>
     <string name="SuggestContactsAlert">Hiermee verwijder je alle gegevens van mensen die je vaak berichten stuurt, inclusief inline-bots die je veel gebruikt.</string>
+    <string name="PrivacyAddAnException">Add Users or Groups</string>
+    <string name="PrivacyExceptions">Exceptions</string>
     <!--edit video view-->
     <string name="SendingVideo">Video versturen</string>
     <string name="SendingGif">GIF versturen...</string>
@@ -2029,6 +2085,7 @@
     <string name="Call">Bellen</string>
     <string name="Copy">Kopieer</string>
     <string name="Delete">Verwijder</string>
+    <string name="Start">Start</string>
     <string name="DeleteAndStop">Verwijderen en stoppen</string>
     <string name="Forward">Doorsturen</string>
     <string name="Retry">Opnieuw proberen</string>
@@ -2115,6 +2172,8 @@
     <string name="ActionTakeScreenshootYou">Schermafdruk gemaakt!</string>
     <string name="ActionTakeScreenshoot">un1 heeft een schermafdruk gemaakt!</string>
     <!--Alert messages-->
+    <string name="DeleteAllMessagesAlert">Warning! This will **delete all messages** in this chat for **both** participants.</string>
+    <string name="DeleteAll">Delete All</string>
     <string name="StopLoading">Stopped met laden?</string>
     <string name="UpdateTelegram">Telegram bijwerken</string>
     <string name="UpdateAppAlert">Je gebruikt een verouderde versie van Telegram, deze kan dit verzoek niet verwerken. Werk Telegram bij.</string>
@@ -2137,6 +2196,12 @@
     <string name="AddToTheGroupTitle">%1$s toevoegen aan de groep %2$s?</string>
     <string name="AddToTheGroupForwardCount">Aantal recente berichten om door te sturen:</string>
     <string name="AddToTheGroup">%1$s toevoegen aan de groep?</string>
+    <string name="AddMembersAlertTitle">Add %1$s</string>
+    <string name="AddOneMemberAlertTitle">Add member</string>
+    <string name="AddMembersAlertNamesText">Are you sure you want to add %1$s to **%2$s**?</string>
+    <string name="AddMembersAlertCountText">Are you sure you want to add %1$s to **%2$s**?</string>
+    <string name="AddMembersForwardMessages">Show the last 100 messages to the new members</string>
+    <string name="AddOneMemberForwardMessages">Show the last 100 messages to **%1$s**</string>
     <string name="SendMessagesTo">Berichten naar %1$s versturen?</string>
     <string name="SendGameTo">Spel delen met %1$s?</string>
     <string name="SendContactTo">Contact delen met %1$s?</string>
@@ -2164,9 +2229,10 @@
     <string name="AreYouSureShareMyContactInfoBot">De bot krijgt je telefoonnummer, dit kan handig zijn voor de integratie met andere diensten.</string>
     <string name="AreYouSureShareMyContactInfoUser">Telefoonnummer %1$s delen met **%2$s**?</string>
     <string name="AreYouSureShareMyContactInfo">Telefoonnummer echt delen?</string>
-    <string name="AreYouSureBlockContact">Weet je zeker dat je deze persoon wilt blokkeren?</string>
+    <string name="AreYouSureBlockContact2">Are you sure you want to block **%1$s**?</string>
     <string name="AreYouSureUnblockContact">Weet je zeker dat je deze persoon wilt deblokkeren?</string>
     <string name="AreYouSureDeleteContact">Contact echt verwijderen?</string>
+    <string name="AreYouSureSecretChatTitle">Geheime chat</string>
     <string name="AreYouSureSecretChat">Weet je zeker dat je een geheime chat wilt starten?</string>
     <string name="AreYouSureRegistration">Weet je zeker dat je de registratie wilt annuleren?</string>
     <string name="StopVerification">Wil je telefoonnummerverificatieproces stoppen?</string>
@@ -2503,12 +2569,12 @@
     <string name="Stickers_few">%1$d stickers</string>
     <string name="Stickers_many">%1$d stickers</string>
     <string name="Stickers_other">%1$d stickers</string>
-    <string name="MasksCount_zero">%1$d masks</string>
-    <string name="MasksCount_one">%1$d mask</string>
-    <string name="MasksCount_two">%1$d masks</string>
-    <string name="MasksCount_few">%1$d masks</string>
-    <string name="MasksCount_many">%1$d masks</string>
-    <string name="MasksCount_other">%1$d masks</string>
+    <string name="MasksCount_zero">%1$d maskers</string>
+    <string name="MasksCount_one">%1$d masker</string>
+    <string name="MasksCount_two">%1$d maskers</string>
+    <string name="MasksCount_few">%1$d maskers</string>
+    <string name="MasksCount_many">%1$d maskers</string>
+    <string name="MasksCount_other">%1$d maskers</string>
     <string name="Subscribers_zero">%1$d abonnees</string>
     <string name="Subscribers_one">%1$d abonnee</string>
     <string name="Subscribers_two">%1$d abonnees</string>
@@ -2576,12 +2642,12 @@
     <string name="Photos_few">%1$d foto\'s</string>
     <string name="Photos_many">%1$d foto\'s</string>
     <string name="Photos_other">%1$d foto\'s</string>
-    <string name="Videos_zero">%1$d foto\'s</string>
-    <string name="Videos_one">%1$d foto</string>
-    <string name="Videos_two">%1$d foto\'s</string>
-    <string name="Videos_few">%1$d foto\'s</string>
-    <string name="Videos_many">%1$d foto\'s</string>
-    <string name="Videos_other">%1$d foto\'s</string>
+    <string name="Videos_zero">%1$d video\'s</string>
+    <string name="Videos_one">%1$d video</string>
+    <string name="Videos_two">%1$d video\'s</string>
+    <string name="Videos_few">%1$d video\'s</string>
+    <string name="Videos_many">%1$d video\'s</string>
+    <string name="Videos_other">%1$d video\'s</string>
     <string name="Files_zero">%1$d bestanden</string>
     <string name="Files_one">%1$d bestand</string>
     <string name="Files_two">%1$d bestanden</string>
@@ -2594,6 +2660,12 @@
     <string name="Media_few">%1$d media</string>
     <string name="Media_many">%1$d media</string>
     <string name="Media_other">%1$d media</string>
+    <string name="BlockedUsersCount_zero">%1$d blocked users</string>
+    <string name="BlockedUsersCount_one">%1$d blocked user</string>
+    <string name="BlockedUsersCount_two">%1$d blocked users</string>
+    <string name="BlockedUsersCount_few">%1$d blocked users</string>
+    <string name="BlockedUsersCount_many">%1$d blocked users</string>
+    <string name="BlockedUsersCount_other">%1$d blocked users</string>
     <string name="ForwardedFile_zero">Bijlage: %1$d bestanden</string>
     <string name="ForwardedFile_one">Bijlage: 1 bestand</string>
     <string name="ForwardedFile_two">Bijlage: %1$d bestanden</string>

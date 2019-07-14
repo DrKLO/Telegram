@@ -1551,6 +1551,10 @@ public class LocaleController {
     }
 
     public static String formatUserStatus(int currentAccount, TLRPC.User user) {
+        return formatUserStatus(currentAccount, user, null);
+    }
+
+    public static String formatUserStatus(int currentAccount, TLRPC.User user, boolean[] isOnline) {
         if (user != null && user.status != null && user.status.expires == 0) {
             if (user.status instanceof TLRPC.TL_userStatusRecently) {
                 user.status.expires = -100;
@@ -1562,6 +1566,9 @@ public class LocaleController {
         }
         if (user != null && user.status != null && user.status.expires <= 0) {
             if (MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(user.id)) {
+                if (isOnline != null) {
+                    isOnline[0] = true;
+                }
                 return getString("Online", R.string.Online);
             }
         }
@@ -1570,6 +1577,9 @@ public class LocaleController {
         } else {
             int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
             if (user.status.expires > currentTime) {
+                if (isOnline != null) {
+                    isOnline[0] = true;
+                }
                 return getString("Online", R.string.Online);
             } else {
                 if (user.status.expires == -1) {

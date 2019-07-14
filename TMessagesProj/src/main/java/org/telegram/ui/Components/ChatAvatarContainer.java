@@ -49,6 +49,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     private int currentAccount = UserConfig.selectedAccount;
     private boolean occupyStatusBar = true;
 
+    private boolean[] isOnline = new boolean[1];
+
     private int onlineCount = -1;
     private int currentConnectionState;
     private CharSequence lastSubtitle;
@@ -71,6 +73,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
         subtitleTextView = new SimpleTextView(context);
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
+        subtitleTextView.setTag(Theme.key_actionBarDefaultSubtitle);
         subtitleTextView.setTextSize(14);
         subtitleTextView.setGravity(Gravity.LEFT);
         addView(subtitleTextView);
@@ -134,7 +137,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
     public void setTitleColors(int title, int subtitle) {
         titleTextView.setTextColor(title);
-        subtitleTextView.setTextColor(title);
+        subtitleTextView.setTextColor(subtitle);
+        subtitleTextView.setTag(subtitle);
     }
 
     @Override
@@ -271,6 +275,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             printString = TextUtils.replace(printString, new String[]{"..."}, new String[]{""});
         }
         CharSequence newSubtitle;
+        boolean useOnlineColor = false;
         if (printString == null || printString.length() == 0 || ChatObject.isChannel(chat) && !chat.megagroup) {
             setTypingAnimation(false);
             if (chat != null) {
@@ -335,7 +340,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 } else if (user.bot) {
                     newStatus = LocaleController.getString("Bot", R.string.Bot);
                 } else {
-                    newStatus = LocaleController.formatUserStatus(currentAccount, user);
+                    isOnline[0] = false;
+                    newStatus = LocaleController.formatUserStatus(currentAccount, user, isOnline);
+                    useOnlineColor = isOnline[0];
                 }
                 newSubtitle = newStatus;
             } else {
@@ -343,10 +350,14 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             }
         } else {
             newSubtitle = printString;
+            useOnlineColor = true;
             setTypingAnimation(true);
         }
         if (lastSubtitle == null) {
             subtitleTextView.setText(newSubtitle);
+            String key = useOnlineColor ? Theme.key_chat_status : Theme.key_actionBarDefaultSubtitle;
+            subtitleTextView.setTextColor(Theme.getColor(key));
+            subtitleTextView.setTag(key);
         } else {
             lastSubtitle = newSubtitle;
         }

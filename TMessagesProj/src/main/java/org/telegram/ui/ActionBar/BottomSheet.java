@@ -656,7 +656,9 @@ public class BottomSheet extends Dialog {
         params.gravity = Gravity.TOP | Gravity.LEFT;
         params.dimAmount = 0;
         params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
-        if (!focusable) {
+        if (focusable) {
+            params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
+        } else {
             params.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
         }
         if (isFullscreen) {
@@ -666,6 +668,7 @@ public class BottomSheet extends Dialog {
                         WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
             }
             params.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+            container.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_FULLSCREEN);
         }
         params.height = ViewGroup.LayoutParams.MATCH_PARENT;
         if (Build.VERSION.SDK_INT >= 28) {
@@ -802,6 +805,12 @@ public class BottomSheet extends Dialog {
                         }
                         if (useHardwareLayer) {
                             container.setLayerType(View.LAYER_TYPE_NONE, null);
+                        }
+
+                        if (isFullscreen) {
+                            WindowManager.LayoutParams params = getWindow().getAttributes();
+                            params.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
+                            getWindow().setAttributes(params);
                         }
                     }
                 }

@@ -64,7 +64,6 @@ public class Utilities {
     public native static long getDirSize(String path, int docType);
     public native static void clearDir(String path, int docType, long time);
     private native static int pbkdf2(byte[] password, byte[] salt, byte[] dst, int iterations);
-    public native static int argon2(int iterations);
     public static native void stackBlurBitmap(Bitmap bitmap, int radius);
 
     public static Bitmap blurWallpaper(Bitmap src) {

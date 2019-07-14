@@ -65,12 +65,14 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     private ArrayList<MessageObject> searchResultMessages = new ArrayList<>();
     private ArrayList<String> searchResultHashtags = new ArrayList<>();
     private String lastSearchText;
+    private boolean searchWas;
     private int reqId = 0;
     private int lastReqId;
     private DialogsSearchAdapterDelegate delegate;
     private int needMessagesSearch;
     private boolean messagesSearchEndReached;
     private String lastMessagesSearchString;
+    private int nextSearchRate;
     private int lastSearchId = 0;
     private int dialogsType;
     private SearchAdapterHelper searchAdapterHelper;
@@ -98,6 +100,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         void searchStateChanged(boolean searching);
         void didPressedOnSubDialog(long did);
         void needRemoveHint(int did);
+        void needClearList();
     }
 
     private class CategoryAdapterRecycler extends RecyclerListView.SelectionAdapter {
@@ -158,6 +161,10 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
             @Override
             public void onDataSetChanged() {
+                searchWas = true;
+                if (!searchAdapterHelper.isSearchInProgress() && delegate != null) {
+                    delegate.searchStateChanged(false);
+                }
                 notifyDataSetChanged();
             }
 
@@ -201,17 +208,18 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     private void searchMessagesInternal(final String query) {
-        if (needMessagesSearch == 0 || (lastMessagesSearchString == null || lastMessagesSearchString.length() == 0) && (query == null || query.length() == 0)) {
+        if (needMessagesSearch == 0 || TextUtils.isEmpty(lastMessagesSearchString) && TextUtils.isEmpty(query)) {
             return;
         }
         if (reqId != 0) {
             ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
             reqId = 0;
         }
-        if (query == null || query.length() == 0) {
+        if (TextUtils.isEmpty(query)) {
             searchResultMessages.clear();
             lastReqId = 0;
             lastMessagesSearchString = null;
+            searchWas = false;
             notifyDataSetChanged();
             if (delegate != null) {
                 delegate.searchStateChanged(false);
@@ -225,7 +233,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         if (query.equals(lastMessagesSearchString) && !searchResultMessages.isEmpty()) {
             MessageObject lastMessage = searchResultMessages.get(searchResultMessages.size() - 1);
             req.offset_id = lastMessage.getId();
-            req.offset_date = lastMessage.messageOwner.date;
+            req.offset_rate = nextSearchRate;
             int id;
             if (lastMessage.messageOwner.to_id.channel_id != 0) {
                 id = -lastMessage.messageOwner.to_id.channel_id;
@@ -236,15 +244,15 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             }
             req.offset_peer = MessagesController.getInstance(currentAccount).getInputPeer(id);
         } else {
-            req.offset_date = 0;
+            req.offset_rate = 0;
             req.offset_id = 0;
             req.offset_peer = new TLRPC.TL_inputPeerEmpty();
         }
         lastMessagesSearchString = query;
         final int currentReqId = ++lastReqId;
-        if (delegate != null) {
+        /*if (delegate != null) {
             delegate.searchStateChanged(true);
-        }
+        }*/
         reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (currentReqId == lastReqId) {
                 if (error == null) {
@@ -255,6 +263,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     if (req.offset_id == 0) {
                         searchResultMessages.clear();
                     }
+                    nextSearchRate = res.next_rate;
                     for (int a = 0; a < res.messages.size(); a++) {
                         TLRPC.Message message = res.messages.get(a);
                         searchResultMessages.add(new MessageObject(currentAccount, message, false));
@@ -267,6 +276,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         }
                         message.unread = value < message.id;
                     }
+                    searchWas = true;
                     messagesSearchEndReached = res.messages.size() != 20;
                     notifyDataSetChanged();
                 }
@@ -283,7 +293,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public boolean isRecentSearchDisplayed() {
-        return needMessagesSearch != 2 && (lastSearchText == null || lastSearchText.length() == 0) && (!recentSearchObjects.isEmpty() || !DataQuery.getInstance(currentAccount).hints.isEmpty());
+        return needMessagesSearch != 2 && !searchWas && (!recentSearchObjects.isEmpty() || !DataQuery.getInstance(currentAccount).hints.isEmpty());
     }
 
     public void loadRecentSearch() {
@@ -775,6 +785,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             if (searchId != lastSearchId) {
                 return;
             }
+            searchWas = true;
             for (int a = 0; a < result.size(); a++) {
                 TLObject obj = result.get(a);
                 if (obj instanceof TLRPC.User) {
@@ -793,6 +804,13 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             searchResultNames = names;
             searchAdapterHelper.mergeResults(searchResult);
             notifyDataSetChanged();
+            if (delegate != null) {
+                if (getItemCount() == 0 && (searchRunnable2 != null || searchAdapterHelper.isSearchInProgress())) {
+                    delegate.searchStateChanged(true);
+                } else {
+                    delegate.searchStateChanged(false);
+                }
+            }
         });
     }
 
@@ -802,11 +820,11 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         notifyDataSetChanged();
     }
 
-    public void searchDialogs(final String query) {
-        if (query != null && query.equals(lastSearchText)) {
+    public void searchDialogs(String text) {
+        if (text != null && text.equals(lastSearchText)) {
             return;
         }
-        lastSearchText = query;
+        lastSearchText = text;
         if (searchRunnable != null) {
             Utilities.searchQueue.cancelRunnable(searchRunnable);
             searchRunnable = null;
@@ -814,6 +832,12 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         if (searchRunnable2 != null) {
             AndroidUtilities.cancelRunOnUIThread(searchRunnable2);
             searchRunnable2 = null;
+        }
+        String query;
+        if (text != null) {
+            query = text.trim();
+        } else {
+            query = null;
         }
         if (TextUtils.isEmpty(query)) {
             searchAdapterHelper.unloadRecentHashtags();
@@ -824,6 +848,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             if (needMessagesSearch != 2) {
                 searchAdapterHelper.queryServerSearch(null, true, true, true, true, 0, 0);
             }
+            searchWas = false;
+            lastSearchId = -1;
             searchMessagesInternal(null);
             notifyDataSetChanged();
         } else {
@@ -840,9 +866,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         delegate.searchStateChanged(false);
                     }
                 } else {
-                    if (delegate != null) {
+                    /*if (delegate != null) {
                         delegate.searchStateChanged(true);
-                    }
+                    }*/
                 }
                 notifyDataSetChanged();
             } else {
@@ -850,11 +876,14 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 notifyDataSetChanged();
             }
             final int searchId = ++lastSearchId;
-            Utilities.globalQueue.postRunnable(searchRunnable = () -> {
+            Utilities.searchQueue.postRunnable(searchRunnable = () -> {
                 searchRunnable = null;
                 searchDialogsInternal(query, searchId);
                 AndroidUtilities.runOnUIThread(searchRunnable2 = () -> {
                     searchRunnable2 = null;
+                    if (searchId != lastSearchId) {
+                        return;
+                    }
                     if (needMessagesSearch != 2) {
                         searchAdapterHelper.queryServerSearch(query, true, true, true, true, 0, 0);
                     }
@@ -979,7 +1008,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 view = new GraySectionCell(mContext);
                 break;
             case 2:
-                view = new DialogCell(mContext, false);
+                view = new DialogCell(mContext, false, true);
                 break;
             case 3:
                 view = new LoadingCell(mContext);
@@ -1154,10 +1183,18 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     if (position < offset) {
                         cell.setText(LocaleController.getString("ChatHints", R.string.ChatHints));
                     } else {
-                        cell.setText(LocaleController.getString("Recent", R.string.Recent));
+                        cell.setText(LocaleController.getString("Recent", R.string.Recent), LocaleController.getString("ClearButton", R.string.ClearButton), v -> {
+                            if (delegate != null) {
+                                delegate.needClearList();
+                            }
+                        });
                     }
                 } else if (!searchResultHashtags.isEmpty()) {
-                    cell.setText(LocaleController.getString("Hashtags", R.string.Hashtags));
+                    cell.setText(LocaleController.getString("Hashtags", R.string.Hashtags), LocaleController.getString("ClearButton", R.string.ClearButton), v -> {
+                        if (delegate != null) {
+                            delegate.needClearList();
+                        }
+                    });
                 } else if (!searchAdapterHelper.getGlobalSearch().isEmpty() && position == searchResult.size() + searchAdapterHelper.getLocalServerSearch().size()) {
                     cell.setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
                 } else {

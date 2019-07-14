@@ -112,20 +112,30 @@ public class DrawerProfileCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         Drawable backgroundDrawable = Theme.getCachedWallpaper();
+        String backgroundKey = applyBackground();
+        boolean useImageBackground = !backgroundKey.equals(Theme.key_chats_menuTopBackground) && Theme.isCustomTheme() && !Theme.isPatternWallpaper() && backgroundDrawable != null;
+        boolean drawCatsShadow = false;
         int color;
-        if (Theme.hasThemeKey(Theme.key_chats_menuTopShadow)) {
-            color = Theme.getColor(Theme.key_chats_menuTopShadow);
+        if (!useImageBackground && Theme.hasThemeKey(Theme.key_chats_menuTopShadowCats)) {
+            color = Theme.getColor(Theme.key_chats_menuTopShadowCats);
+            drawCatsShadow = true;
         } else {
-            color = Theme.getServiceMessageColor() | 0xff000000;
+            if (Theme.hasThemeKey(Theme.key_chats_menuTopShadow)) {
+                color = Theme.getColor(Theme.key_chats_menuTopShadow);
+            } else {
+                color = Theme.getServiceMessageColor() | 0xff000000;
+            }
         }
         if (currentColor == null || currentColor != color) {
             currentColor = color;
             shadowView.getDrawable().setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
         }
         nameTextView.setTextColor(Theme.getColor(Theme.key_chats_menuName));
-        if (Theme.isCustomTheme() && !Theme.isPatternWallpaper() && backgroundDrawable != null) {
+        if (useImageBackground) {
             phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuPhone));
-            shadowView.setVisibility(VISIBLE);
+            if (shadowView.getVisibility() != VISIBLE) {
+                shadowView.setVisibility(VISIBLE);
+            }
             if (backgroundDrawable instanceof ColorDrawable) {
                 backgroundDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
                 backgroundDrawable.draw(canvas);
@@ -147,7 +157,10 @@ public class DrawerProfileCell extends FrameLayout {
                 }
             }
         } else {
-            shadowView.setVisibility(INVISIBLE);
+            int visibility = drawCatsShadow? VISIBLE : INVISIBLE;
+            if (shadowView.getVisibility() != visibility) {
+                shadowView.setVisibility(visibility);
+            }
             phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuPhoneCats));
             super.onDraw(canvas);
         }
@@ -189,5 +202,17 @@ public class DrawerProfileCell extends FrameLayout {
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
         avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundInProfileBlue));
         avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+
+        applyBackground();
+    }
+
+    public String applyBackground() {
+        String currentTag = (String) getTag();
+        String backgroundKey = Theme.hasThemeKey(Theme.key_chats_menuTopBackground) && Theme.getColor(Theme.key_chats_menuTopBackground) != 0 ? Theme.key_chats_menuTopBackground : Theme.key_chats_menuTopBackgroundCats;
+        if (!backgroundKey.equals(currentTag)) {
+            setBackgroundColor(Theme.getColor(backgroundKey));
+            setTag(backgroundKey);
+        }
+        return backgroundKey;
     }
 }

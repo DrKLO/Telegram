@@ -108,6 +108,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     public View createView(Context context) {
         actionBar.setBackgroundColor(Theme.ACTION_BAR_MEDIA_PICKER_COLOR);
         actionBar.setTitleColor(0xffffffff);
+        actionBar.setItemsColor(0xffffffff, false);
         actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {

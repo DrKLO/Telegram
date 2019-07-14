@@ -1622,6 +1622,24 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         }
     }
 
+    public void updateAdapters() {
+        if (photoVideoAdapter != null) {
+            photoVideoAdapter.notifyDataSetChanged();
+        }
+        if (documentsAdapter != null) {
+            documentsAdapter.notifyDataSetChanged();
+        }
+        if (voiceAdapter != null) {
+            voiceAdapter.notifyDataSetChanged();
+        }
+        if (linksAdapter != null) {
+            linksAdapter.notifyDataSetChanged();
+        }
+        if (audioAdapter != null) {
+            audioAdapter.notifyDataSetChanged();
+        }
+    }
+
     private void updateRowsSelection() {
         for (int i = 0; i < mediaPages.length; i++) {
             int count = mediaPages[i].listView.getChildCount();
@@ -2193,7 +2211,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     break;
                 case 2:
                 default:
-                    view = new LoadingCell(mContext);
+                    view = new LoadingCell(mContext, AndroidUtilities.dp(32), AndroidUtilities.dp(54));
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -2307,7 +2325,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     view = new SharedDocumentCell(mContext);
                     break;
                 case 2:
-                    view = new LoadingCell(mContext);
+                    view = new LoadingCell(mContext, AndroidUtilities.dp(32), AndroidUtilities.dp(54));
                     break;
                 case 3:
                 default:
@@ -2489,7 +2507,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     break;
                 case 2:
                 default:
-                    view = new LoadingCell(mContext);
+                    view = new LoadingCell(mContext, AndroidUtilities.dp(32), AndroidUtilities.dp(74));
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -2901,10 +2919,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_inappPlayerPerformer));
         arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{FragmentContextView.class}, new String[]{"closeButton"}, null, null, null, Theme.key_inappPlayerClose));
 
-        arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarDefaultTitle));
-        arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarDefaultSubtitle));
-        arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarDefaultSelector));
-        arrayList.add(new ThemeDescription(null, 0, null, null, new Drawable[]{scrollSlidingTextTabStrip.getSelectorDrawable()}, null, Theme.key_actionBarDefaultTitle));
+        arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarTabActiveText));
+        arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarTabUnactiveText));
+        arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarTabLine));
+        arrayList.add(new ThemeDescription(null, 0, null, null, new Drawable[]{scrollSlidingTextTabStrip.getSelectorDrawable()}, null, Theme.key_actionBarTabSelector));
 
         for (int a = 0; a < mediaPages.length; a++) {
             final int num = a;

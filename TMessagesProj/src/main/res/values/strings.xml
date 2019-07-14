@@ -182,6 +182,8 @@
     <string name="Hashtags">HASHTAGS</string>
     <string name="Recent">Recent</string>
     <string name="ChatHints">People</string>
+    <string name="ChatHintsDeleteAlertTitle">Remove suggestion</string>
+    <string name="ChatHintsDeleteAlert">Are you sure you want to remove **%1$s** from suggestions?</string>
     <string name="ChatHintsDelete">Delete %1$s from suggestions?</string>
     <string name="LinkPreview">Link preview</string>
     <string name="Draft">Draft</string>
@@ -453,6 +455,27 @@
     <string name="CantAddBotAsAdmin">Sorry, bots can only be added to channels as administrators.</string>
     <string name="MakeAdmin">MAKE ADMIN</string>
     <string name="AdminWillBeRemoved">%1$s will be removed from admins if you restrict them.</string>
+    <string name="Discussion">Discussion</string>
+    <string name="DiscussionInfo">Add a group chat for comments</string>
+    <string name="LinkedChannel">Linked Channel</string>
+    <string name="DiscussionChannelHelp">Select a group chat for discussion that will be displayed in your channel.</string>
+    <string name="DiscussionChannelHelp2">Everything you post in the channel will be forwarded to this group.</string>
+    <string name="DiscussionChannelGroupSetHelp">A link to **%1$s** is shown to all subscribers in the bottom panel.</string>
+    <string name="DiscussionGroupHelp">**%1$s** is linking the group as its discussion board.</string>
+    <string name="DiscussionGroupHelp2">All new messages posted in this channel are forwarded to the group.</string>
+    <string name="DiscussionCreateGroup">Create a New Group</string>
+    <string name="DiscussionUnlinkGroup">Unlink Group</string>
+    <string name="DiscussionUnlinkChannel">Unlink Channel</string>
+    <string name="DiscussionUnlink">Unlink</string>
+    <string name="DiscussionLinkGroup">LINK GROUP</string>
+    <string name="DiscussionLinkGroupPublicAlert">Do you want to make **%1$s** the discussion board for **%2$s**?</string>
+    <string name="DiscussionLinkGroupPrivateAlert">Do you want to make **%1$s** the discussion board for **%2$s**?\n\nAny member of this group will be able to see messages in the channel.</string>
+    <string name="DiscussionLinkGroupPublicPrivateAlert">Do you want to make **%1$s** the discussion board for **%2$s**?\n\nAnyone from the channel will be able to see messages in this group.</string>
+    <string name="DiscussionLinkGroupAlertHistory">\"Chat history for new members\" will be switched to Visible.</string>
+    <string name="DiscussionUnlinkGroupAlert">Are you sure you want to unlink **%1$s** from this group?</string>
+    <string name="DiscussionUnlinkChannelAlert">Are you sure you want to unlink **%1$s** from this channel?</string>
+    <string name="ChannelDiscuss">DISCUSS</string>
+    <string name="DiscussChannel">channel</string>
     <!--polls-->
     <string name="NewPoll">New Poll</string>
     <string name="Poll">Poll</string>
@@ -522,6 +545,10 @@
     <string name="EventLogDeletedMessages">un1 deleted this message:</string>
     <string name="EventLogChangedStickersSet">un1 changed the group sticker set</string>
     <string name="EventLogRemovedStickersSet">un1 removed the group sticker set</string>
+    <string name="EventLogChangedLinkedGroup">un1 made un2 the discussion group for this channel</string>
+    <string name="EventLogRemovedLinkedGroup">un1 removed the discussion group un2</string>
+    <string name="EventLogChangedLinkedChannel">un1 linked this group to un2</string>
+    <string name="EventLogRemovedLinkedChannel">un1 unlinked this group from un2</string>
     <string name="EventLogChangedGroupLink">un1 changed the group link:</string>
     <string name="EventLogChangedChannelLink">un1 changed the channel link:</string>
     <string name="EventLogRemovedGroupLink">un1 removed the group link</string>
@@ -678,7 +705,10 @@
     <string name="UploadItems">Upload %1$s</string>
     <string name="SendAsFile">Send as file</string>
     <string name="SendAsFiles">Send as files</string>
-    <string name="OpenUrlAlert">Open url %1$s?</string>
+    <string name="OpenUrlTitle">Open Link</string>
+    <string name="OpenUrlAlert2">Do you want to open %1$s?</string>
+    <string name="OpenUrlOption1">Log in to %1$s as **%2$s**</string>
+    <string name="OpenUrlOption2">Allow **%1$s** to send me messages</string>
     <string name="CancelSending">Cancel sending</string>
     <string name="BotPermissionGameAlert">Allow %1$s to pass your Telegram name and id (not your phone number) to pages you open with this bot?</string>
     <string name="ReportSpam">REPORT SPAM</string>
@@ -698,6 +728,8 @@
     <string name="PinMessage">Pin</string>
     <string name="PinNotify">Notify all members</string>
     <string name="UnpinMessage">Unpin</string>
+    <string name="PinMessageAlertTitle">Pin message</string>
+    <string name="UnpinMessageAlertTitle">Unpin message</string>
     <string name="PinMessageAlert">Do you want to pin this message in this group?</string>
     <string name="PinMessageAlertChannel">Do you want to pin this message in this channel?</string>
     <string name="PinMessageAlertChat">Do you want to pin this message at the top of the chat?</string>
@@ -788,6 +820,7 @@
     <string name="MapPreviewProviderNobody">No previews</string>
     <string name="InstallGoogleMaps">Install Google Maps?</string>
     <string name="ScamMessage">SCAM</string>
+    <string name="ViaBot">via</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -895,6 +928,7 @@
     <string name="SecretChatName">Telegram</string>
     <!--contacts view-->
     <string name="SelectContact">Select Contact</string>
+    <string name="SelectContacts">Select Contacts</string>
     <string name="ContactShare">SHARE CONTACT</string>
     <string name="NoContacts">No contacts yet</string>
     <string name="InviteText2">Hey, I\'m using Telegram to chat. Join me! Download it here: %1$s</string>
@@ -947,6 +981,8 @@
     <string name="CopyLink">Copy Link</string>
     <string name="ShareLink">Share Link</string>
     <string name="LinkInfo">Anyone who has Telegram installed will be able to join your group by following this link.</string>
+    <string name="SearchForPeople">Search for people...</string>
+    <string name="SearchForPeopleAndGroups">Search for users and groups...</string>
     <!--group info view-->
     <string name="GroupMembers">Members</string>
     <string name="SharedMedia">Shared Media</string>
@@ -975,6 +1011,9 @@
     <string name="ContactNotRegistered">%1$s is not on Telegram yet, would you like to invite them to join?</string>
     <string name="Invite">Invite</string>
     <string name="BlockContact">Block</string>
+    <string name="BlockUser">Block user</string>
+    <string name="UserBlocked">User blocked</string>
+    <string name="UserUnblocked">User unblocked</string>
     <string name="EditContact">Edit contact</string>
     <string name="DeleteContact">Delete contact</string>
     <string name="PhoneHome">Home</string>
@@ -1082,7 +1121,7 @@
     <string name="AutoNightThemeOff">Off</string>
     <string name="AutoNightDisabled">Disabled</string>
     <string name="AutoNightScheduled">Scheduled</string>
-    <string name="AutoNightAutomatic">Automatic</string>
+    <string name="AutoNightAdaptive">Adaptive</string>
     <string name="AutoNightSchedule">Schedule</string>
     <string name="AutoNightLocation">Use Local Sunset &amp; Sunrise</string>
     <string name="AutoNightUpdateLocation">Update Location</string>
@@ -1094,6 +1133,8 @@
     <string name="AutoNightBrightnessInfo">Switch to your preferred night theme when ambient lighting falls below %1$d%%.</string>
     <string name="ThemeDark">Dark</string>
     <string name="ThemeDarkBlue">Dark Blue</string>
+    <string name="ThemeGraphite">Graphite</string>
+    <string name="ThemeArcticBlue">Arctic Blue</string>
     <string name="ThemeBlue">Blue</string>
     <string name="DeleteThemeAlert">Are you sure you want to delete this theme?</string>
     <string name="IncorrectTheme">Incorrect theme file</string>
@@ -1102,6 +1143,8 @@
     <string name="SaveTheme">SAVE THEME</string>
     <string name="NewTheme">New color theme</string>
     <string name="ColorTheme">Color theme</string>
+    <string name="BuiltInThemes">Built-in themes</string>
+    <string name="CustomThemes">Custom themes</string>
     <string name="ChatList">Chat list view</string>
     <string name="ChatListDefault">Two lines</string>
     <string name="ChatListExpanded">Three lines</string>
@@ -1109,6 +1152,8 @@
     <string name="ApplyTheme">APPLY</string>
     <string name="ThemePreview">Theme Preview</string>
     <string name="SelectColor">Select color</string>
+    <string name="ColorThemes">Color Themes</string>
+    <string name="ShowAllThemes">Show all Themes</string>
     <string name="CreateNewThemeMenu">Create new theme</string>
     <string name="CreateNewThemeHelp">Tap on the palette icon to view the list of elements on each screen - and edit them.</string>
     <string name="CreateNewThemeAlert">You can create your own theme by changing colors within the app.\n\nYou can always switch back to the default Telegram theme here.</string>
@@ -1168,6 +1213,7 @@
     <string name="NotificationsTurnOn">Turn On</string>
     <string name="NotificationsTurnOff">Turn Off</string>
     <string name="BlockedUsers">Blocked Users</string>
+    <string name="BlockedUsersInfo">Blocked users will not be able to contact you and will not see your Last Seen time.</string>
     <string name="LogOut">Log out</string>
     <string name="NoSound">No sound</string>
     <string name="Default">Default</string>
@@ -1178,6 +1224,7 @@
     <string name="ChatBackground">Chat Background</string>
     <string name="ResetChatBackgrounds">Reset Chat Backgrounds</string>
     <string name="ResetChatBackgroundsInfo">Remove all uploaded chat backgrounds and restore the pre-installed ones.</string>
+    <string name="ResetChatBackgroundsAlertTitle">Reset chat backgrounds</string>
     <string name="ResetChatBackgroundsAlert">Are you sure you want to reset all chat backgrounds?</string>
     <string name="DeleteChatBackgroundsAlert">Are you sure you want to delete the selected backgrounds?</string>
     <string name="BackgroundPreview">Background Preview</string>
@@ -1306,6 +1353,7 @@
     <string name="AutoDownloadAudioInfo">Voice messages are tiny, so they\'re always downloaded automatically.</string>
     <string name="NoMediaAutoDownload">No media</string>
     <string name="ResetAutomaticMediaDownload">Reset Auto-Download Settings</string>
+    <string name="ResetAutomaticMediaDownloadAlertTitle">Reset settings</string>
     <string name="ResetAutomaticMediaDownloadAlert">Are you sure you want to reset auto-download settings?</string>
     <string name="WhenUsingMobileData">When using mobile data</string>
     <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
@@ -1826,6 +1874,8 @@
     <string name="AreYouSureDeleteGIF">Are you sure you want to delete this GIF?</string>
     <string name="DiscardChanges">Discard changes?</string>
     <string name="ClearSearch">Clear search history?</string>
+    <string name="ClearSearchAlert">Are you sure you want to clear your search history?</string>
+    <string name="ClearSearchAlertTitle">Clear search history</string>
     <string name="ClearButton">Clear</string>
     <string name="AddCaption">Add a caption...</string>
     <string name="PhotoCaption">Photo Caption</string>
@@ -1924,6 +1974,7 @@
     <string name="TotalDataUsage">Total</string>
     <string name="ResetStatistics">Reset Statistics</string>
     <string name="NetworkUsageSince">Network usage since %1$s</string>
+    <string name="ResetStatisticsAlertTitle">Reset statistics</string>
     <string name="ResetStatisticsAlert">Do you want to reset your usage statistics?</string>
     <!--privacy settings-->
     <string name="PrivacySettings">Privacy and Security</string>
@@ -1933,6 +1984,10 @@
     <string name="PrivacyProfilePhotoTitle">Who can see my profile photo?</string>
     <string name="PrivacyProfilePhotoInfo">You can restrict who can see your profile photo with granular precision.</string>
     <string name="PrivacyProfilePhotoInfo2">These settings will override the values above.</string>
+    <string name="PrivacyPhone">Phone Number</string>
+    <string name="PrivacyPhoneTitle">Who can see my phone number?</string>
+    <string name="PrivacyPhoneInfo">Users who already have your number saved in the contacts will see it on Telegram.</string>
+    <string name="PrivacyPhoneInfo2">You can add a user or an entire group as an exception that will override the settings above.</string>
     <string name="PrivacyForwards">Forwarded Messages</string>
     <string name="PrivacyForwardsEverybody">Link to your account</string>
     <string name="PrivacyForwardsContacts">Link if allowed by the settings below</string>
@@ -1941,7 +1996,9 @@
     <string name="PrivacyForwardsInfo">When forwarded to other chats, messages you send will not link back to your account.</string>
     <string name="PrivacyForwardsInfo2">These settings will override the values above.</string>
     <string name="PrivacyForwardsMessageLine">Reinhardt, we need to find you some new tunes &#127926;.</string>
+    <string name="PrivacyP2PHeader">Peer-to-Peer</string>
     <string name="PrivacyP2P">Peer-to-Peer in Calls</string>
+    <string name="PrivacyP2P2">Use Peer-to-Peer with</string>
     <string name="PrivacyBots">Bots and websites</string>
     <string name="PrivacyPaymentsClear">Clear Payment and Shipping Info</string>
     <string name="PrivacyPaymentsClearAlert">Delete your shipping info and instruct all payment providers to remove your saved credit cards? Note that Telegram never stores your credit card data.</string>
@@ -1978,9 +2035,7 @@
     <string name="NeverShareWith">Never Share With</string>
     <string name="CustomShareSettingsHelp">These settings will override the values above.</string>
     <string name="AlwaysShareWithTitle">Always Share</string>
-    <string name="AlwaysShareWithPlaceholder">Always share with users...</string>
     <string name="NeverShareWithTitle">Never Share</string>
-    <string name="NeverShareWithPlaceholder">Never share with users...</string>
     <string name="EmpryUsersPlaceholder">Add Users</string>
     <string name="PrivacyFloodControlError">Sorry, too many requests. Unable to change privacy settings now, please wait.</string>
     <string name="RemoveFromListText">Tap and hold on user to delete.</string>
@@ -1989,8 +2044,6 @@
     <string name="WhoCanAddMeInfo">You can restrict who can add you to groups and channels with granular precision.</string>
     <string name="AlwaysAllow">Always Allow</string>
     <string name="NeverAllow">Never Allow</string>
-    <string name="AlwaysAllowPlaceholder">Always allow...</string>
-    <string name="NeverAllowPlaceholder">Never allow...</string>
     <string name="CustomShareInfo">These users will or will not be able to add you to groups and channels regardless of the settings above.</string>
     <string name="GroupsAndChannelsHelp">Change who can add you to groups and channels.</string>
     <string name="InviteToGroupError">Sorry, you can\'t add this user to groups because of user\'s privacy settings.</string>
@@ -2001,6 +2054,8 @@
     <string name="SuggestContacts">Suggest Frequent Contacts</string>
     <string name="SuggestContactsInfo">Display people you message frequently at the top of the search section for quick access.</string>
     <string name="SuggestContactsAlert">This will delete all data about the people you message frequently as well as the inline bots you are likely to use.</string>
+    <string name="PrivacyAddAnException">Add Users or Groups</string>
+    <string name="PrivacyExceptions">Exceptions</string>
     <!--edit video view-->
     <string name="SendingVideo">Sending video...</string>
     <string name="SendingGif">Sending GIF...</string>
@@ -2030,6 +2085,7 @@
     <string name="Call">Call</string>
     <string name="Copy">Copy</string>
     <string name="Delete">Delete</string>
+    <string name="Start">Start</string>
     <string name="DeleteAndStop">Delete and stop</string>
     <string name="Forward">Forward</string>
     <string name="Retry">Retry</string>
@@ -2116,6 +2172,8 @@
     <string name="ActionTakeScreenshootYou">You took a screenshot!</string>
     <string name="ActionTakeScreenshoot">un1 took a screenshot!</string>
     <!--Alert messages-->
+    <string name="DeleteAllMessagesAlert">Warning! This will **delete all messages** in this chat for **both** participants.</string>
+    <string name="DeleteAll">Delete All</string>
     <string name="StopLoading">Stop loading?</string>
     <string name="UpdateTelegram">Update Telegram</string>
     <string name="UpdateAppAlert">Sorry, your Telegram app is out of date and can\'t handle this request. Please update Telegram.</string>
@@ -2138,6 +2196,12 @@
     <string name="AddToTheGroupTitle">Add %1$s to the chat %2$s?</string>
     <string name="AddToTheGroupForwardCount">Number of last messages to forward:</string>
     <string name="AddToTheGroup">Add %1$s to the group?</string>
+    <string name="AddMembersAlertTitle">Add %1$s</string>
+    <string name="AddOneMemberAlertTitle">Add member</string>
+    <string name="AddMembersAlertNamesText">Are you sure you want to add %1$s to **%2$s**?</string>
+    <string name="AddMembersAlertCountText">Are you sure you want to add %1$s to **%2$s**?</string>
+    <string name="AddMembersForwardMessages">Show the last 100 messages to the new members</string>
+    <string name="AddOneMemberForwardMessages">Show the last 100 messages to **%1$s**</string>
     <string name="SendMessagesTo">Send messages to %1$s?</string>
     <string name="SendGameTo">Share game to %1$s?</string>
     <string name="SendContactTo">Send contact to %1$s?</string>
@@ -2165,9 +2229,10 @@
     <string name="AreYouSureShareMyContactInfoBot">The bot will know your phone number. This can be useful for integration with other services.</string>
     <string name="AreYouSureShareMyContactInfoUser">Are you sure you want to share your phone number %1$s with **%2$s**?</string>
     <string name="AreYouSureShareMyContactInfo">Are you sure you want to share your phone number?</string>
-    <string name="AreYouSureBlockContact">Are you sure you want to block this contact?</string>
+    <string name="AreYouSureBlockContact2">Are you sure you want to block **%1$s**?</string>
     <string name="AreYouSureUnblockContact">Are you sure you want to unblock this contact?</string>
     <string name="AreYouSureDeleteContact">Are you sure you want to delete this contact?</string>
+    <string name="AreYouSureSecretChatTitle">Secret chat</string>
     <string name="AreYouSureSecretChat">Are you sure you want to start a secret chat?</string>
     <string name="AreYouSureRegistration">Are you sure you want to cancel registration?</string>
     <string name="StopVerification">Do you want to stop the phone number verification process?</string>
@@ -2595,6 +2660,12 @@
     <string name="Media_few">%1$d media</string>
     <string name="Media_many">%1$d media</string>
     <string name="Media_other">%1$d media</string>
+    <string name="BlockedUsersCount_zero">%1$d blocked users</string>
+    <string name="BlockedUsersCount_one">%1$d blocked user</string>
+    <string name="BlockedUsersCount_two">%1$d blocked users</string>
+    <string name="BlockedUsersCount_few">%1$d blocked users</string>
+    <string name="BlockedUsersCount_many">%1$d blocked users</string>
+    <string name="BlockedUsersCount_other">%1$d blocked users</string>
     <string name="ForwardedFile_zero">%1$d forwarded files</string>
     <string name="ForwardedFile_one">Forwarded file</string>
     <string name="ForwardedFile_two">%1$d forwarded files</string>

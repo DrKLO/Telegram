@@ -66,8 +66,6 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -261,9 +259,6 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     addNewSectionRow = rowCount++;
                 }
             } else {
-                if (searchItem != null) {
-                    searchItem.setVisibility(View.INVISIBLE);
-                }
                 blockedEmptyRow = rowCount++;
             }
         } else if (type == TYPE_ADMIN) {
@@ -487,23 +482,22 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         presentFragment(fragment);
                     } else if (type == TYPE_USERS) {
                         Bundle args = new Bundle();
-                        args.putBoolean("onlyUsers", true);
-                        args.putBoolean("destroyAfterSelect", true);
-                        args.putBoolean("returnAsResult", true);
-                        args.putBoolean("needForwardCount", false);
-                        if (isChannel) {
-                            args.putString("selectAlertString", LocaleController.getString("ChannelAddTo", R.string.ChannelAddTo));
-                            args.putInt("channelId", currentChat.id);
-                        } else {
-                            args.putString("selectAlertString", LocaleController.getString("AddToTheGroup", R.string.AddToTheGroup));
-                            args.putInt("chat_id", currentChat.id);
-                        }
-                        ContactsActivity fragment = new ContactsActivity(args);
-                        fragment.setDelegate((user, param, activity) -> {
-                            if (user != null && user.bot && isChannel) {
-                                openRightsEdit(user.id, null, null, null, true, ChatRightsEditActivity.TYPE_ADMIN, true);
-                            } else {
-                                MessagesController.getInstance(currentAccount).addUserToChat(chatId, user, null, param != null ? Utilities.parseInt(param) : 0, null, ChatUsersActivity.this, null);
+                        args.putBoolean("addToGroup", true);
+                        args.putInt(isChannel ? "channelId" : "chatId", currentChat.id);
+                        GroupCreateActivity fragment = new GroupCreateActivity(args);
+                        fragment.setIgnoreUsers(contactsMap != null && contactsMap.size() != 0 ? contactsMap : participantsMap);
+                        fragment.setDelegate(new GroupCreateActivity.ContactsAddActivityDelegate() {
+                            @Override
+                            public void didSelectUsers(ArrayList<TLRPC.User> users, int fwdCount) {
+                                for (int a = 0, N = users.size(); a < N; a++) {
+                                    TLRPC.User user = users.get(a);
+                                    MessagesController.getInstance(currentAccount).addUserToChat(chatId, user, null, fwdCount, null, ChatUsersActivity.this, null);
+                                }
+                            }
+
+                            @Override
+                            public void needAddBot(TLRPC.User user) {
+                                openRightsEdit(user.id, null, null, null, true, ChatRightsEditActivity.TYPE_ADMIN, false);
                             }
                         });
                         presentFragment(fragment);
@@ -685,7 +679,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                             showDialog(builder.create());
                         } else {
-                            openRightsEdit(user_id, participant, adminRights, bannedRights, canEditAdmin, selectType == 1 ? 0 : 1, false);
+                            openRightsEdit(user_id, participant, adminRights, bannedRights, canEditAdmin, selectType == 1 ? 0 : 1, selectType == 1);
                         }
                     } else {
                         removeUser(user_id);
@@ -819,7 +813,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 channelParticipant.admin_rights = rightsAdmin;
                 channelParticipant.banned_rights = rightsBanned;
             }
-            removeSelfFromStack();
+            if (removeFragment) {
+                removeSelfFromStack();
+            }
         });
         presentFragment(fragment, removeFragment);
     }
@@ -1557,7 +1553,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         private ArrayList<TLObject> searchResult = new ArrayList<>();
         private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
         private SearchAdapterHelper searchAdapterHelper;
-        private Timer searchTimer;
+        private Runnable searchRunnable;
 
         private int groupStartRow;
         private int contactsStartRow;
@@ -1581,12 +1577,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         }
 
         public void searchDialogs(final String query) {
-            try {
-                if (searchTimer != null) {
-                    searchTimer.cancel();
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
+            if (searchRunnable != null) {
+                Utilities.searchQueue.cancelRunnable(searchRunnable);
+                searchRunnable = null;
             }
             if (TextUtils.isEmpty(query)) {
                 searchResult.clear();
@@ -1595,24 +1588,14 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 searchAdapterHelper.queryServerSearch(null, type != 0, false, true, false, ChatObject.isChannel(currentChat) ? chatId : 0, type);
                 notifyDataSetChanged();
             } else {
-                searchTimer = new Timer();
-                searchTimer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        try {
-                            searchTimer.cancel();
-                            searchTimer = null;
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        processSearch(query);
-                    }
-                }, 200, 300);
+                Utilities.searchQueue.postRunnable(searchRunnable = () -> processSearch(query), 300);
             }
         }
 
         private void processSearch(final String query) {
             AndroidUtilities.runOnUIThread(() -> {
+                searchRunnable = null;
+
                 int kickedType;
                 final ArrayList<TLRPC.ChatParticipant> participantsCopy = !ChatObject.isChannel(currentChat) && info != null ? new ArrayList<>(info.participants.participants) : null;
                 final ArrayList<TLRPC.TL_contact> contactsCopy = selectType == 1 ? new ArrayList<>(ContactsController.getInstance(currentAccount).contacts) : null;
@@ -1989,8 +1972,14 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 return ChatObject.canBlockUsers(currentChat);
             } else if (type == 0) {
                 ManageChatUserCell cell = (ManageChatUserCell) holder.itemView;
-                TLRPC.User user = cell.getCurrentUser();
-                return user != null && !user.self;
+                TLObject object = cell.getCurrentObject();
+                if (object instanceof TLRPC.User) {
+                    TLRPC.User user = (TLRPC.User) object;
+                    if (user.self) {
+                        return false;
+                    }
+                }
+                return true;
             }
             return type == 0 || type == 2 || type == 6;
         }
@@ -2374,7 +2363,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         };
 
         return new ThemeDescription[]{
-                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{ManageChatUserCell.class, ManageChatTextCell.class, TextCheckCell2.class, TextSettingsCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, ManageChatUserCell.class, ManageChatTextCell.class, TextCheckCell2.class, TextSettingsCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
                 new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray),
 
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),

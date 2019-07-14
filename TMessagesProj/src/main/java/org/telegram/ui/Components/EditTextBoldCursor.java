@@ -265,6 +265,11 @@ public class EditTextBoldCursor extends EditText {
         requestLayout();
     }
 
+    @Override
+    public boolean requestFocus(int direction, Rect previouslyFocusedRect) {
+        return super.requestFocus(direction, previouslyFocusedRect);
+    }
+
     public boolean hasErrorText() {
         return !TextUtils.isEmpty(errorText);
     }

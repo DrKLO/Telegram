@@ -115,6 +115,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     private SetImageBackup setImageBackup;
 
+    private ImageLocation strippedLocation;
     private ImageLocation currentImageLocation;
     private String currentImageFilter;
     private String currentImageKey;
@@ -206,6 +207,14 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     public boolean isForceLoding() {
         return forceLoding;
+    }
+
+    public void setStrippedLocation(ImageLocation location) {
+        strippedLocation = location;
+    }
+
+    public ImageLocation getStrippedLocation() {
+        return strippedLocation;
     }
 
     public void setImage(ImageLocation imageLocation, String imageFilter, Drawable thumb, String ext, Object parentObject, int cacheType) {
@@ -314,7 +323,14 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             }
         }
 
-        String thumbKey = thumbLocation != null ? thumbLocation.getKey(parentObject, mediaLocation != null ? mediaLocation : imageLocation) : null;
+        ImageLocation strippedLoc;
+        if (strippedLocation != null) {
+            strippedLoc = strippedLocation;
+        } else {
+            strippedLoc = mediaLocation != null ? mediaLocation : imageLocation;
+        }
+
+        String thumbKey = thumbLocation != null ? thumbLocation.getKey(parentObject, strippedLoc) : null;
         if (thumbKey != null && thumbFilter != null) {
             thumbKey += "@" + thumbFilter;
         }
@@ -663,7 +679,6 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             float scaleW = imageW == 0 ? 1.0f : (bitmapW / realImageW);
             float scaleH = imageH == 0 ? 1.0f : (bitmapH / realImageH);
 
-
             if (shader != null) {
                 if (isAspectFit) {
                     float scale = Math.max(scaleW, scaleH);
@@ -700,7 +715,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                     }
                     if (isVisible) {
                         shaderMatrix.reset();
-                        shaderMatrix.setTranslate(drawRegion.left, drawRegion.top);
+                        shaderMatrix.setTranslate(drawRegion.left + sideClip, drawRegion.top + sideClip);
                         if (orientation == 90) {
                             shaderMatrix.preRotate(90);
                             shaderMatrix.preTranslate(0, -drawRegion.width());
@@ -1437,7 +1452,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             if (!key.equals(currentImageKey)) {
                 return false;
             }
-            if (!(drawable instanceof AnimatedFileDrawable)) {
+            if (!(drawable instanceof AnimatedFileDrawable) && !(drawable instanceof LottieDrawable)) {
                 ImageLoader.getInstance().incrementUseCount(currentImageKey);
             }
             currentImageDrawable = drawable;
@@ -1473,7 +1488,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             if (!key.equals(currentMediaKey)) {
                 return false;
             }
-            if (!(drawable instanceof AnimatedFileDrawable)) {
+            if (!(drawable instanceof AnimatedFileDrawable) && !(drawable instanceof LottieDrawable)) {
                 ImageLoader.getInstance().incrementUseCount(currentMediaKey);
             }
             currentMediaDrawable = drawable;

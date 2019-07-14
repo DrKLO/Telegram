@@ -55,13 +55,24 @@ public class ContactsController {
 
     private int loadingDeleteInfo;
     private int deleteAccountTTL;
-    private int[] loadingPrivacyInfo = new int[6];
-    private ArrayList<TLRPC.PrivacyRule> privacyRules;
+    private int[] loadingPrivacyInfo = new int[PRIVACY_RULES_TYPE_COUNT];
+    private ArrayList<TLRPC.PrivacyRule> lastseenPrivacyRules;
     private ArrayList<TLRPC.PrivacyRule> groupPrivacyRules;
     private ArrayList<TLRPC.PrivacyRule> callPrivacyRules;
     private ArrayList<TLRPC.PrivacyRule> p2pPrivacyRules;
     private ArrayList<TLRPC.PrivacyRule> profilePhotoPrivacyRules;
     private ArrayList<TLRPC.PrivacyRule> forwardsPrivacyRules;
+    private ArrayList<TLRPC.PrivacyRule> phonePrivacyRules;
+
+    public final static int PRIVACY_RULES_TYPE_LASTSEEN = 0;
+    public final static int PRIVACY_RULES_TYPE_INVITE = 1;
+    public final static int PRIVACY_RULES_TYPE_CALLS = 2;
+    public final static int PRIVACY_RULES_TYPE_P2P = 3;
+    public final static int PRIVACY_RULES_TYPE_PHOTO = 4;
+    public final static int PRIVACY_RULES_TYPE_FORWARDS = 5;
+    public final static int PRIVACY_RULES_TYPE_PHONE = 6;
+
+    public final static int PRIVACY_RULES_TYPE_COUNT = 7;
 
     private class MyContentObserver extends ContentObserver {
 
@@ -162,7 +173,7 @@ public class ContactsController {
     private int completedRequestsCount;
 
     private int currentAccount;
-    private static volatile ContactsController Instance[] = new ContactsController[UserConfig.MAX_ACCOUNT_COUNT];
+    private static volatile ContactsController[] Instance = new ContactsController[UserConfig.MAX_ACCOUNT_COUNT];
     public static ContactsController getInstance(int num) {
         ContactsController localInstance = Instance[num];
         if (localInstance == null) {
@@ -244,12 +255,13 @@ public class ContactsController {
         for (int a = 0; a < loadingPrivacyInfo.length; a++) {
             loadingPrivacyInfo[a] = 0;
         }
-        privacyRules = null;
+        lastseenPrivacyRules = null;
         groupPrivacyRules = null;
         callPrivacyRules = null;
         p2pPrivacyRules = null;
         profilePhotoPrivacyRules = null;
         forwardsPrivacyRules = null;
+        phonePrivacyRules = null;
 
         Utilities.globalQueue.postRunnable(() -> {
             migratingContacts = false;
@@ -479,9 +491,7 @@ public class ContactsController {
                 return false;
             }
             ContentResolver cr = ApplicationLoader.applicationContext.getContentResolver();
-            Cursor pCur = null;
-            try {
-                pCur = cr.query(ContactsContract.RawContacts.CONTENT_URI, new String[]{ContactsContract.RawContacts.VERSION}, null, null, null);
+            try (Cursor pCur = cr.query(ContactsContract.RawContacts.CONTENT_URI, new String[]{ContactsContract.RawContacts.VERSION}, null, null, null)) {
                 if (pCur != null) {
                     StringBuilder currentVersion = new StringBuilder();
                     while (pCur.moveToNext()) {
@@ -495,10 +505,6 @@ public class ContactsController {
                 }
             } catch (Exception e) {
                 FileLog.e(e);
-            } finally {
-                if (pCur != null) {
-                    pCur.close();
-                }
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -631,7 +637,7 @@ public class ContactsController {
                                 int spaceIndex = displayName.lastIndexOf(' ');
                                 if (spaceIndex != -1) {
                                     contact.first_name = displayName.substring(0, spaceIndex).trim();
-                                    contact.last_name = displayName.substring(spaceIndex + 1, displayName.length()).trim();
+                                    contact.last_name = displayName.substring(spaceIndex + 1).trim();
                                 } else {
                                     contact.first_name = displayName;
                                     contact.last_name = "";
@@ -2298,24 +2304,27 @@ public class ContactsController {
             TLRPC.TL_account_getPrivacy req = new TLRPC.TL_account_getPrivacy();
 
             switch (num) {
-                case 0:
+                case PRIVACY_RULES_TYPE_LASTSEEN:
                     req.key = new TLRPC.TL_inputPrivacyKeyStatusTimestamp();
                     break;
-                case 1:
+                case PRIVACY_RULES_TYPE_INVITE:
                     req.key = new TLRPC.TL_inputPrivacyKeyChatInvite();
                     break;
-                case 2:
+                case PRIVACY_RULES_TYPE_CALLS:
                     req.key = new TLRPC.TL_inputPrivacyKeyPhoneCall();
                     break;
-                case 3:
+                case PRIVACY_RULES_TYPE_P2P:
                     req.key = new TLRPC.TL_inputPrivacyKeyPhoneP2P();
                     break;
-                case 4:
+                case PRIVACY_RULES_TYPE_PHOTO:
                     req.key = new TLRPC.TL_inputPrivacyKeyProfilePhoto();
                     break;
-                case 5:
-                default:
+                case PRIVACY_RULES_TYPE_FORWARDS:
                     req.key = new TLRPC.TL_inputPrivacyKeyForwards();
+                    break;
+                case PRIVACY_RULES_TYPE_PHONE:
+                default:
+                    req.key = new TLRPC.TL_inputPrivacyKeyPhoneNumber();
                     break;
             }
 
@@ -2323,26 +2332,30 @@ public class ContactsController {
                 if (error == null) {
                     TLRPC.TL_account_privacyRules rules = (TLRPC.TL_account_privacyRules) response;
                     MessagesController.getInstance(currentAccount).putUsers(rules.users, false);
+                    MessagesController.getInstance(currentAccount).putChats(rules.chats, false);
 
                     switch (num) {
-                        case 0:
-                            privacyRules = rules.rules;
+                        case PRIVACY_RULES_TYPE_LASTSEEN:
+                            lastseenPrivacyRules = rules.rules;
                             break;
-                        case 1:
+                        case PRIVACY_RULES_TYPE_INVITE:
                             groupPrivacyRules = rules.rules;
                             break;
-                        case 2:
+                        case PRIVACY_RULES_TYPE_CALLS:
                             callPrivacyRules = rules.rules;
                             break;
-                        case 3:
+                        case PRIVACY_RULES_TYPE_P2P:
                             p2pPrivacyRules = rules.rules;
                             break;
-                        case 4:
+                        case PRIVACY_RULES_TYPE_PHOTO:
                             profilePhotoPrivacyRules = rules.rules;
                             break;
-                        case 5:
-                        default:
+                        case PRIVACY_RULES_TYPE_FORWARDS:
                             forwardsPrivacyRules = rules.rules;
+                            break;
+                        case PRIVACY_RULES_TYPE_PHONE:
+                        default:
+                            phonePrivacyRules = rules.rules;
                             break;
                     }
 
@@ -2373,34 +2386,48 @@ public class ContactsController {
     }
 
     public ArrayList<TLRPC.PrivacyRule> getPrivacyRules(int type) {
-        if (type == 5) {
-            return forwardsPrivacyRules;
-        } else if (type == 4) {
-            return profilePhotoPrivacyRules;
-        } else if (type == 3) {
-            return p2pPrivacyRules;
-        } else if (type == 2) {
-            return callPrivacyRules;
-        } else if (type == 1) {
-            return groupPrivacyRules;
-        } else {
-            return privacyRules;
+        switch (type) {
+            case PRIVACY_RULES_TYPE_LASTSEEN:
+                return lastseenPrivacyRules;
+            case PRIVACY_RULES_TYPE_INVITE:
+                return groupPrivacyRules;
+            case PRIVACY_RULES_TYPE_CALLS:
+                return callPrivacyRules;
+            case PRIVACY_RULES_TYPE_P2P:
+                return p2pPrivacyRules;
+            case PRIVACY_RULES_TYPE_PHOTO:
+                return profilePhotoPrivacyRules;
+            case PRIVACY_RULES_TYPE_FORWARDS:
+                return forwardsPrivacyRules;
+            case PRIVACY_RULES_TYPE_PHONE:
+                return phonePrivacyRules;
         }
+        return null;
     }
 
     public void setPrivacyRules(ArrayList<TLRPC.PrivacyRule> rules, int type) {
-        if (type == 5) {
-            forwardsPrivacyRules = rules;
-        } else if (type == 4) {
-            profilePhotoPrivacyRules = rules;
-        } else if (type == 3) {
-            p2pPrivacyRules = rules;
-        } else if (type == 2) {
-            callPrivacyRules = rules;
-        } else if (type == 1) {
-            groupPrivacyRules = rules;
-        } else {
-            privacyRules = rules;
+        switch (type) {
+            case PRIVACY_RULES_TYPE_LASTSEEN:
+                lastseenPrivacyRules = rules;
+                break;
+            case PRIVACY_RULES_TYPE_INVITE:
+                groupPrivacyRules = rules;
+                break;
+            case PRIVACY_RULES_TYPE_CALLS:
+                callPrivacyRules = rules;
+                break;
+            case PRIVACY_RULES_TYPE_P2P:
+                p2pPrivacyRules = rules;
+                break;
+            case PRIVACY_RULES_TYPE_PHOTO:
+                profilePhotoPrivacyRules = rules;
+                break;
+            case PRIVACY_RULES_TYPE_FORWARDS:
+                forwardsPrivacyRules = rules;
+                break;
+            case PRIVACY_RULES_TYPE_PHONE:
+                phonePrivacyRules = rules;
+                break;
         }
         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.privacyRulesUpdated);
         reloadContactsStatuses();

@@ -83,7 +83,7 @@ public class BotHelpCell extends View {
         } else {
             maxWidth = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.7f);
         }
-        String lines[] = text.split("\n");
+        String[] lines = text.split("\n");
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
         String help = LocaleController.getString("BotInfoTitle", R.string.BotInfoTitle);
         stringBuilder.append(help);
@@ -191,7 +191,7 @@ public class BotHelpCell extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        int x = (canvas.getWidth() - width) / 2;
+        int x = (getWidth() - width) / 2;
         int y = AndroidUtilities.dp(4);
         Theme.chat_msgInMediaShadowDrawable.setBounds(x, y, width + x, height + y);
         Theme.chat_msgInMediaShadowDrawable.draw(canvas);

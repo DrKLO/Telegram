@@ -104,6 +104,14 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
     private final static int done_button = 1;
 
+    public interface GroupCreateFinalActivityDelegate {
+        void didStartChatCreation();
+        void didFinishChatCreation(GroupCreateFinalActivity fragment, int chatId);
+        void didFailChatCreation();
+    }
+
+    private GroupCreateFinalActivityDelegate delegate;
+
     public GroupCreateFinalActivity(Bundle args) {
         super(args);
         chatType = args.getInt("chatType", ChatObject.CHAT_TYPE_CHAT);
@@ -437,7 +445,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         showAvatarProgress(false, false);
 
         editText = new EditTextEmoji(context, sizeNotifierFrameLayout, this, EditTextEmoji.STYLE_FRAGMENT);
-        editText.setHint(chatType == ChatObject.CHAT_TYPE_CHAT ? LocaleController.getString("EnterGroupNamePlaceholder", R.string.EnterGroupNamePlaceholder) : LocaleController.getString("EnterListName", R.string.EnterListName));
+        editText.setHint(chatType == ChatObject.CHAT_TYPE_CHAT || chatType == ChatObject.CHAT_TYPE_MEGAGROUP ? LocaleController.getString("EnterGroupNamePlaceholder", R.string.EnterGroupNamePlaceholder) : LocaleController.getString("EnterListName", R.string.EnterListName));
         if (nameToSet != null) {
             editText.setText(nameToSet);
             nameToSet = null;
@@ -539,6 +547,9 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             if (file != null) {
                 uploadedAvatar = file;
                 if (createAfterUpload) {
+                    if (delegate != null) {
+                        delegate.didStartChatCreation();
+                    }
                     MessagesController.getInstance(currentAccount).createChat(editText.getText().toString(), selectedContacts, null, chatType, GroupCreateFinalActivity.this);
                 }
                 showAvatarProgress(false, true);
@@ -555,6 +566,10 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     @Override
     public String getInitialSearchString() {
         return editText.getText().toString();
+    }
+
+    public void setDelegate(GroupCreateFinalActivityDelegate groupCreateFinalActivityDelegate) {
+        delegate = groupCreateFinalActivityDelegate;
     }
 
     private void showAvatarProgress(boolean show, boolean animated) {
@@ -677,13 +692,20 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             if (editText != null) {
                 editText.setEnabled(true);
             }
+            if (delegate != null) {
+                delegate.didFailChatCreation();
+            }
         } else if (id == NotificationCenter.chatDidCreated) {
             reqId = 0;
             int chat_id = (Integer) args[0];
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
-            Bundle args2 = new Bundle();
-            args2.putInt("chat_id", chat_id);
-            presentFragment(new ChatActivity(args2), true);
+            if (delegate != null) {
+                delegate.didFinishChatCreation(this, chat_id);
+            } else {
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
+                Bundle args2 = new Bundle();
+                args2.putInt("chat_id", chat_id);
+                presentFragment(new ChatActivity(args2), true);
+            }
             if (uploadedAvatar != null) {
                 MessagesController.getInstance(currentAccount).changeChatAvatar(chat_id, uploadedAvatar, avatar, avatarBig);
             }
@@ -691,6 +713,9 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     private void showEditDoneProgress(final boolean show) {
+        if (floatingButtonIcon == null) {
+            return;
+        }
         if (doneItemAnimation != null) {
             doneItemAnimation.cancel();
         }
@@ -794,7 +819,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 case 2: {
                     GroupCreateUserCell cell = (GroupCreateUserCell) holder.itemView;
                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(selectedContacts.get(position - 2));
-                    cell.setUser(user, null, null);
+                    cell.setObject(user, null, null);
                     break;
                 }
             }

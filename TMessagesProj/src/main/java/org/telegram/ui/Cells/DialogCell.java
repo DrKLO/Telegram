@@ -131,6 +131,7 @@ public class DialogCell extends BaseCell {
 
     private CheckBox2 checkBox;
 
+    public boolean useForceThreeLines;
     public boolean useSeparator;
     public boolean fullSeparator;
     public boolean fullSeparator2;
@@ -213,11 +214,12 @@ public class DialogCell extends BaseCell {
         }
     }
 
-    public DialogCell(Context context, boolean needCheck) {
+    public DialogCell(Context context, boolean needCheck, boolean forceThreeLines) {
         super(context);
 
         Theme.createDialogsResources(context);
         avatarImage.setRoundRadius(AndroidUtilities.dp(28));
+        useForceThreeLines = forceThreeLines;
 
         if (needCheck) {
             checkBox = new CheckBox2(context);
@@ -331,7 +333,7 @@ public class DialogCell extends BaseCell {
         if (checkBox != null) {
             checkBox.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(24), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(24), MeasureSpec.EXACTLY));
         }
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) + (useSeparator ? 1 : 0));
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 78 : 72) + (useSeparator ? 1 : 0));
         topClip = 0;
         bottomClip = getMeasuredHeight();
     }
@@ -368,7 +370,7 @@ public class DialogCell extends BaseCell {
             TLRPC.User currentUser = null;
             TLRPC.Chat currentChat = null;
             if (DialogObject.isSecretDialogId(dialog.id)) {
-                TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat((int) dialog.id);
+                TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat((int) (dialog.id >> 32));
                 if (encryptedChat != null) {
                     currentUser = MessagesController.getInstance(currentAccount).getUser(encryptedChat.user_id);
                 }
@@ -409,7 +411,7 @@ public class DialogCell extends BaseCell {
     }
 
     public void buildLayout() {
-        if (SharedConfig.useThreeLinesLayout) {
+        if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
             Theme.dialogs_namePaint.setTextSize(AndroidUtilities.dp(16));
             Theme.dialogs_nameEncryptedPaint.setTextSize(AndroidUtilities.dp(16));
             Theme.dialogs_messagePaint.setTextSize(AndroidUtilities.dp(15));
@@ -452,7 +454,7 @@ public class DialogCell extends BaseCell {
         String messageFormat;
         boolean hasNameInMessage;
         if (Build.VERSION.SDK_INT >= 18) {
-            if (!SharedConfig.useThreeLinesLayout || currentDialogFolderId != 0) {
+            if (!useForceThreeLines && !SharedConfig.useThreeLinesLayout || currentDialogFolderId != 0) {
                 messageFormat = "%2$s: \u2068%1$s\u2069";
                 hasNameInMessage = true;
             } else {
@@ -460,7 +462,7 @@ public class DialogCell extends BaseCell {
                 hasNameInMessage = false;
             }
         } else {
-            if (!SharedConfig.useThreeLinesLayout || currentDialogFolderId != 0) {
+            if (!useForceThreeLines && !SharedConfig.useThreeLinesLayout || currentDialogFolderId != 0) {
                 messageFormat = "%2$s: %1$s";
                 hasNameInMessage = true;
             } else {
@@ -474,7 +476,7 @@ public class DialogCell extends BaseCell {
         if (customDialog != null) {
             if (customDialog.type == 2) {
                 drawNameLock = true;
-                if (SharedConfig.useThreeLinesLayout) {
+                if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                     nameLockTop = AndroidUtilities.dp(12.5f);
                     if (!LocaleController.isRTL) {
                         nameLockLeft = AndroidUtilities.dp(72 + 6);
@@ -497,7 +499,7 @@ public class DialogCell extends BaseCell {
                 drawVerified = customDialog.verified;
                 if (SharedConfig.drawDialogIcons && customDialog.type == 1) {
                     drawNameGroup = true;
-                    if (SharedConfig.useThreeLinesLayout) {
+                    if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                         nameLockTop = AndroidUtilities.dp(13.5f);
                         if (!LocaleController.isRTL) {
                             nameLockLeft = AndroidUtilities.dp(72 + 6);
@@ -517,7 +519,7 @@ public class DialogCell extends BaseCell {
                         }
                     }
                 } else {
-                    if (SharedConfig.useThreeLinesLayout) {
+                    if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                         if (!LocaleController.isRTL) {
                             nameLeft = AndroidUtilities.dp(72 + 6);
                         } else {
@@ -546,7 +548,7 @@ public class DialogCell extends BaseCell {
                     if (mess.length() > 150) {
                         mess = mess.substring(0, 150);
                     }
-                    if (SharedConfig.useThreeLinesLayout) {
+                    if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                         stringBuilder = SpannableStringBuilder.valueOf(String.format(messageFormat, mess, messageNameString));
                     } else {
                         stringBuilder = SpannableStringBuilder.valueOf(String.format(messageFormat, mess.replace('\n', ' '), messageNameString));
@@ -582,7 +584,7 @@ public class DialogCell extends BaseCell {
             }
             nameString = customDialog.name;
         } else {
-            if (SharedConfig.useThreeLinesLayout) {
+            if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                 if (!LocaleController.isRTL) {
                     nameLeft = AndroidUtilities.dp(72 + 6);
                 } else {
@@ -599,7 +601,7 @@ public class DialogCell extends BaseCell {
             if (encryptedChat != null) {
                 if (currentDialogFolderId == 0) {
                     drawNameLock = true;
-                    if (SharedConfig.useThreeLinesLayout) {
+                    if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                         nameLockTop = AndroidUtilities.dp(12.5f);
                         if (!LocaleController.isRTL) {
                             nameLockLeft = AndroidUtilities.dp(72 + 6);
@@ -629,7 +631,7 @@ public class DialogCell extends BaseCell {
                             drawVerified = chat.verified;
                         }
                         if (SharedConfig.drawDialogIcons) {
-                            if (SharedConfig.useThreeLinesLayout) {
+                            if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                                 if (chat.id < 0 || ChatObject.isChannel(chat) && !chat.megagroup) {
                                     drawNameBroadcast = true;
                                     nameLockTop = AndroidUtilities.dp(12.5f);
@@ -672,7 +674,7 @@ public class DialogCell extends BaseCell {
                         }
                         if (SharedConfig.drawDialogIcons && user.bot) {
                             drawNameBot = true;
-                            if (SharedConfig.useThreeLinesLayout) {
+                            if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                                 nameLockTop = AndroidUtilities.dp(12.5f);
                                 if (!LocaleController.isRTL) {
                                     nameLockLeft = AndroidUtilities.dp(72 + 6);
@@ -721,7 +723,7 @@ public class DialogCell extends BaseCell {
                     checkMessage = false;
                     messageNameString = LocaleController.getString("Draft", R.string.Draft);
                     if (TextUtils.isEmpty(draftMessage.message)) {
-                        if (SharedConfig.useThreeLinesLayout) {
+                        if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                             messageString = "";
                         } else {
                             SpannableStringBuilder stringBuilder = SpannableStringBuilder.valueOf(messageNameString);
@@ -734,7 +736,7 @@ public class DialogCell extends BaseCell {
                             mess = mess.substring(0, 150);
                         }
                         SpannableStringBuilder stringBuilder;
-                        if (SharedConfig.useThreeLinesLayout) {
+                        if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                             stringBuilder = SpannableStringBuilder.valueOf(String.format(messageFormat, mess.replace('\n', ' '), messageNameString));
                         } else {
                             stringBuilder = SpannableStringBuilder.valueOf(String.format(messageFormat, mess.replace('\n', ' '), messageNameString));
@@ -785,7 +787,7 @@ public class DialogCell extends BaseCell {
                             messageString = LocaleController.getString("SavedMessagesInfo", R.string.SavedMessagesInfo);
                             showChecks = false;
                             drawTime = false;
-                        } else if (!SharedConfig.useThreeLinesLayout && currentDialogFolderId != 0) {
+                        } else if (!useForceThreeLines && !SharedConfig.useThreeLinesLayout && currentDialogFolderId != 0) {
                             checkMessage = false;
                             messageString = formatArchivedDialogNames();
                         } else if (message.messageOwner instanceof TLRPC.TL_messageService) {
@@ -802,7 +804,7 @@ public class DialogCell extends BaseCell {
                                 if (message.isOutOwner()) {
                                     messageNameString = LocaleController.getString("FromYou", R.string.FromYou);
                                 } else if (fromUser != null) {
-                                    if (SharedConfig.useThreeLinesLayout) {
+                                    if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                                         if (UserObject.isDeleted(fromUser)) {
                                             messageNameString = LocaleController.getString("HiddenName", R.string.HiddenName);
                                         } else {
@@ -869,7 +871,7 @@ public class DialogCell extends BaseCell {
                                 } else {
                                     stringBuilder = SpannableStringBuilder.valueOf("");
                                 }
-                                if (!SharedConfig.useThreeLinesLayout || currentDialogFolderId != 0 && stringBuilder.length() > 0) {
+                                if (!useForceThreeLines && !SharedConfig.useThreeLinesLayout || currentDialogFolderId != 0 && stringBuilder.length() > 0) {
                                     try {
                                         stringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_chats_nameMessage)), 0, messageNameString.length() + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                     } catch (Exception e) {
@@ -996,7 +998,7 @@ public class DialogCell extends BaseCell {
                 }
             }
 
-            if (dialogsType == 0 && MessagesController.getInstance(currentAccount).isProxyDialog(currentDialogId)) {
+            if (dialogsType == 0 && MessagesController.getInstance(currentAccount).isProxyDialog(currentDialogId, true)) {
                 drawPinBackground = true;
                 timeString = LocaleController.getString("UseProxySponsor", R.string.UseProxySponsor);
             }
@@ -1127,7 +1129,7 @@ public class DialogCell extends BaseCell {
         int messageWidth;
         int avatarLeft;
         int avatarTop;
-        if (SharedConfig.useThreeLinesLayout) {
+        if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
             avatarTop = AndroidUtilities.dp(11);
             messageNameTop = AndroidUtilities.dp(32);
             timeTop = AndroidUtilities.dp(13);
@@ -1237,13 +1239,13 @@ public class DialogCell extends BaseCell {
             if (mess.length() > 150) {
                 mess = mess.substring(0, 150);
             }
-            if (!SharedConfig.useThreeLinesLayout || messageNameString != null) {
+            if (!useForceThreeLines && !SharedConfig.useThreeLinesLayout || messageNameString != null) {
                 mess = mess.replace('\n', ' ');
             }
             messageString = Emoji.replaceEmoji(mess, Theme.dialogs_messagePaint.getFontMetricsInt(), AndroidUtilities.dp(17), false);
         }
         messageWidth = Math.max(AndroidUtilities.dp(12), messageWidth);
-        if (SharedConfig.useThreeLinesLayout && messageNameString != null && (currentDialogFolderId == 0 || currentDialogFolderDialogsCount == 1)) {
+        if ((useForceThreeLines || SharedConfig.useThreeLinesLayout) && messageNameString != null && (currentDialogFolderId == 0 || currentDialogFolderDialogsCount == 1)) {
             try {
                 messageNameLayout = StaticLayoutEx.createStaticLayout(messageNameString, Theme.dialogs_messageNamePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false, TextUtils.TruncateAt.END, messageWidth, 1);
             } catch (Exception e) {
@@ -1252,7 +1254,7 @@ public class DialogCell extends BaseCell {
             messageTop = AndroidUtilities.dp(32 + 19);
         } else {
             messageNameLayout = null;
-            if (SharedConfig.useThreeLinesLayout) {
+            if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                 messageTop = AndroidUtilities.dp(32);
             } else {
                 messageTop = AndroidUtilities.dp(39);
@@ -1261,16 +1263,16 @@ public class DialogCell extends BaseCell {
 
         try {
             CharSequence messageStringFinal;
-            if (SharedConfig.useThreeLinesLayout && currentDialogFolderId != 0 && currentDialogFolderDialogsCount > 1) {
+            if ((useForceThreeLines || SharedConfig.useThreeLinesLayout) && currentDialogFolderId != 0 && currentDialogFolderDialogsCount > 1) {
                 messageStringFinal = messageNameString;
                 messageNameString = null;
                 currentMessagePaint = Theme.dialogs_messagePaint;
-            } else if (!SharedConfig.useThreeLinesLayout || messageNameString != null) {
+            } else if (!useForceThreeLines && !SharedConfig.useThreeLinesLayout || messageNameString != null) {
                 messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
             } else {
                 messageStringFinal = messageString;
             }
-            if (SharedConfig.useThreeLinesLayout) {
+            if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                 messageLayout = StaticLayoutEx.createStaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, AndroidUtilities.dp(1), false, TextUtils.TruncateAt.END, messageWidth, messageNameString != null ? 1 : 2);
             } else {
                 messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -1731,7 +1733,7 @@ public class DialogCell extends BaseCell {
                 }
             }
             int drawableX = getMeasuredWidth() - AndroidUtilities.dp(43) - translationDrawable.getIntrinsicWidth() / 2;
-            int drawableY = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 12 : 9);
+            int drawableY = AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12 : 9);
             if (!(translationDrawable instanceof LottieDrawable)) {
                 drawableY += AndroidUtilities.dp(2);
             }
@@ -1769,7 +1771,7 @@ public class DialogCell extends BaseCell {
             canvas.clipRect(tx, 0, getMeasuredWidth(), getMeasuredHeight());
 
             int width = (int) Math.ceil(Theme.dialogs_countTextPaint.measureText(archive));
-            canvas.drawText(archive, getMeasuredWidth() - AndroidUtilities.dp(43) - width / 2, AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 62 : 59), Theme.dialogs_archiveTextPaint);
+            canvas.drawText(archive, getMeasuredWidth() - AndroidUtilities.dp(43) - width / 2, AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 62 : 59), Theme.dialogs_archiveTextPaint);
 
             canvas.restore();
         } else if (translationDrawable != null) {
@@ -1849,18 +1851,18 @@ public class DialogCell extends BaseCell {
         if (nameLayout != null) {
             if (currentDialogFolderId != 0) {
                 Theme.dialogs_namePaint.setColor(Theme.dialogs_namePaint.linkColor = Theme.getColor(Theme.key_chats_nameArchived));
-            } else if (encryptedChat != null) {
+            } else if (encryptedChat != null || customDialog != null && customDialog.type == 2) {
                 Theme.dialogs_namePaint.setColor(Theme.dialogs_namePaint.linkColor = Theme.getColor(Theme.key_chats_secretName));
             } else {
                 Theme.dialogs_namePaint.setColor(Theme.dialogs_namePaint.linkColor = Theme.getColor(Theme.key_chats_name));
             }
             canvas.save();
-            canvas.translate(nameLeft, AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 10 : 13));
+            canvas.translate(nameLeft, AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 10 : 13));
             nameLayout.draw(canvas);
             canvas.restore();
         }
 
-        if (timeLayout != null) {
+        if (timeLayout != null && currentDialogFolderId == 0) {
             canvas.save();
             canvas.translate(timeLeft, timeTop);
             timeLayout.draw(canvas);
@@ -1905,31 +1907,33 @@ public class DialogCell extends BaseCell {
             canvas.restore();
         }
 
-        if (drawClock) {
-            setDrawableBounds(Theme.dialogs_clockDrawable, checkDrawLeft, checkDrawTop);
-            Theme.dialogs_clockDrawable.draw(canvas);
-        } else if (drawCheck2) {
-            if (drawCheck1) {
-                setDrawableBounds(Theme.dialogs_halfCheckDrawable, halfCheckDrawLeft, checkDrawTop);
-                Theme.dialogs_halfCheckDrawable.draw(canvas);
-                setDrawableBounds(Theme.dialogs_checkDrawable, checkDrawLeft, checkDrawTop);
-                Theme.dialogs_checkDrawable.draw(canvas);
-            } else {
-                setDrawableBounds(Theme.dialogs_checkDrawable, checkDrawLeft, checkDrawTop);
-                Theme.dialogs_checkDrawable.draw(canvas);
+        if (currentDialogFolderId == 0) {
+            if (drawClock) {
+                setDrawableBounds(Theme.dialogs_clockDrawable, checkDrawLeft, checkDrawTop);
+                Theme.dialogs_clockDrawable.draw(canvas);
+            } else if (drawCheck2) {
+                if (drawCheck1) {
+                    setDrawableBounds(Theme.dialogs_halfCheckDrawable, halfCheckDrawLeft, checkDrawTop);
+                    Theme.dialogs_halfCheckDrawable.draw(canvas);
+                    setDrawableBounds(Theme.dialogs_checkDrawable, checkDrawLeft, checkDrawTop);
+                    Theme.dialogs_checkDrawable.draw(canvas);
+                } else {
+                    setDrawableBounds(Theme.dialogs_checkDrawable, checkDrawLeft, checkDrawTop);
+                    Theme.dialogs_checkDrawable.draw(canvas);
+                }
             }
         }
 
         if (dialogMuted && !drawVerified && !drawScam) {
-            setDrawableBounds(Theme.dialogs_muteDrawable, nameMuteLeft - AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 0 : 1), AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 13.5f : 17.5f));
+            setDrawableBounds(Theme.dialogs_muteDrawable, nameMuteLeft - AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 0 : 1), AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 13.5f : 17.5f));
             Theme.dialogs_muteDrawable.draw(canvas);
         } else if (drawVerified) {
-            setDrawableBounds(Theme.dialogs_verifiedDrawable, nameMuteLeft, AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 12.5f : 16.5f));
-            setDrawableBounds(Theme.dialogs_verifiedCheckDrawable, nameMuteLeft, AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 12.5f : 16.5f));
+            setDrawableBounds(Theme.dialogs_verifiedDrawable, nameMuteLeft, AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12.5f : 16.5f));
+            setDrawableBounds(Theme.dialogs_verifiedCheckDrawable, nameMuteLeft, AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12.5f : 16.5f));
             Theme.dialogs_verifiedDrawable.draw(canvas);
             Theme.dialogs_verifiedCheckDrawable.draw(canvas);
         } else if (drawScam) {
-            setDrawableBounds(Theme.dialogs_scamDrawable, nameMuteLeft, AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 12 : 15));
+            setDrawableBounds(Theme.dialogs_scamDrawable, nameMuteLeft, AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12 : 15));
             Theme.dialogs_scamDrawable.draw(canvas);
         }
 
@@ -2000,12 +2004,12 @@ public class DialogCell extends BaseCell {
         if (user != null && isDialogCell && currentDialogFolderId == 0 && !MessagesController.isSupportUser(user) && !user.bot) {
             boolean isOnline = !user.self && (user.status != null && user.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(user.id));
             if (isOnline || onlineProgress != 0) {
-                int top = avatarImage.getImageY2() - AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 6 : 8);
+                int top = avatarImage.getImageY2() - AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 6 : 8);
                 int left;
                 if (LocaleController.isRTL) {
-                    left = avatarImage.getImageX() + AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 10 : 6);
+                    left = avatarImage.getImageX() + AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 10 : 6);
                 } else {
-                    left = avatarImage.getImageX2() - AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 10 : 6);
+                    left = avatarImage.getImageX2() - AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 10 : 6);
                 }
 
                 Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));

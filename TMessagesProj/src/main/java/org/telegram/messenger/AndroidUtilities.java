@@ -45,7 +45,6 @@ import android.provider.MediaStore;
 import android.provider.Settings;
 import androidx.core.content.FileProvider;
 import androidx.viewpager.widget.ViewPager;
-import androidx.core.widget.EdgeEffectCompat;
 import android.telephony.TelephonyManager;
 import android.text.Selection;
 import android.text.Spannable;
@@ -1683,12 +1682,16 @@ public class AndroidUtilities {
     }*/
 
     public static void checkForCrashes(Activity context) {
-        CrashManager.register(context, BuildVars.DEBUG_VERSION ? BuildVars.HOCKEY_APP_HASH_DEBUG : BuildVars.HOCKEY_APP_HASH, new CrashManagerListener() {
-            @Override
-            public boolean includeDeviceData() {
-                return true;
-            }
-        });
+        try {
+            CrashManager.register(context, BuildVars.DEBUG_VERSION ? BuildVars.HOCKEY_APP_HASH_DEBUG : BuildVars.HOCKEY_APP_HASH, new CrashManagerListener() {
+                @Override
+                public boolean includeDeviceData() {
+                    return true;
+                }
+            });
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
     }
 
     public static void checkForUpdates(Activity context) {

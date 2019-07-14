@@ -121,7 +121,7 @@
     <string name="NewGroup">Nuevo grupo</string>
     <string name="Yesterday">ayer</string>
     <string name="NoResult">Sin resultados</string>
-    <string name="NoChats">Aún no hay chats...</string>
+    <string name="NoChats">Bienvenido a Telegram</string>
     <string name="RecentlyViewed">Vistos recientemente</string>
     <string name="RecentlyViewedHide">OCULTAR</string>
     <string name="NoChatsHelp">Envía mensajes tocando el botón del lápiz en la esquina inferior derecha.</string>
@@ -145,7 +145,7 @@
     <string name="ClearHistory">Vaciar chat</string>
     <string name="HistoryClearedUndo">Historial borrado.</string>
     <string name="ChatsMute">Silenciar</string>
-    <string name="ChatsUnmute">Activar</string>
+    <string name="ChatsUnmute">Notificar</string>
     <string name="ChatDeletedUndo">Chat eliminado.</string>
     <string name="GroupDeletedUndo">Grupo eliminado.</string>
     <string name="ChannelDeletedUndo">Canal eliminado.</string>
@@ -176,12 +176,14 @@
     <string name="Search">Buscar</string>
     <string name="MuteNotifications">Silenciar notificaciones</string>
     <string name="MuteFor">Silenciar %1$s</string>
-    <string name="UnmuteNotifications">Activar notificaciones</string>
+    <string name="UnmuteNotifications">Notificar</string>
     <string name="WillUnmuteIn">En %1$s</string>
     <string name="MuteDisable">Desactivar</string>
     <string name="Hashtags">HASHTAGS</string>
     <string name="Recent">Recientes</string>
     <string name="ChatHints">Personas</string>
+    <string name="ChatHintsDeleteAlertTitle">Eliminar sugerencia</string>
+    <string name="ChatHintsDeleteAlert">¿Quieres eliminar a **%1$s** de las sugerencias?</string>
     <string name="ChatHintsDelete">¿Eliminar a %1$s de las sugerencias?</string>
     <string name="LinkPreview">Vista previa del enlace</string>
     <string name="Draft">Borrador</string>
@@ -247,8 +249,8 @@
     <string name="ActionPinnedMusic">un1 ancló un audio</string>
     <string name="ActionMigrateFromGroup">Este grupo fue convertido en un supergrupo</string>
     <string name="ActionMigrateFromGroupNotify">%1$s fue convertido en un supergrupo</string>
-    <string name="NoBlockedGroup2">Los usuarios eliminados de un grupo por administradores no pueden volver a unirse con enlaces de invitación.</string>
-    <string name="NoBlockedChannel2">Los usuarios eliminados de un canal por administradores no pueden volver a unirse con enlaces de invitación.</string>
+    <string name="NoBlockedGroup2">Los usuarios que fueron eliminados del grupo por los administradores no pueden volver a unirse con enlaces de invitación.</string>
+    <string name="NoBlockedChannel2">Los usuarios que fueron eliminados del canal por los administradores no pueden volver a unirse con enlaces de invitación.</string>
     <string name="NewChannel">Nuevo canal</string>
     <string name="EnterChannelName">Nombre del canal</string>
     <string name="AddMutual">Añadir contactos a tu canal</string>
@@ -325,7 +327,7 @@
     <string name="ChannelCreator">Creador</string>
     <string name="ChannelAdmin">Administrador</string>
     <string name="ChannelMute">SILENCIAR</string>
-    <string name="ChannelUnmute">ACTIVAR NOTIFICACIONES</string>
+    <string name="ChannelUnmute">NOTIFICAR</string>
     <string name="ChannelAddAdmin">Añadir administrador</string>
     <string name="ChannelBlockUser">Eliminar usuario</string>
     <string name="Unban">Quitar suspensión</string>
@@ -453,6 +455,27 @@
     <string name="CantAddBotAsAdmin">Lo sentimos, los bots pueden ser añadidos a canales sólo como administradores.</string>
     <string name="MakeAdmin">PROMOVER A ADMINISTRADOR</string>
     <string name="AdminWillBeRemoved">%1$s se eliminará de los administradores si le aplicas restricciones.</string>
+    <string name="Discussion">Conversación</string>
+    <string name="DiscussionInfo">Añade un grupo para comentar</string>
+    <string name="LinkedChannel">Canal vinculado</string>
+    <string name="DiscussionChannelHelp">Elige un grupo de conversación que se mostrará en tu canal.</string>
+    <string name="DiscussionChannelHelp2">Todo lo que publiques en el canal será reenviado a este grupo.</string>
+    <string name="DiscussionChannelGroupSetHelp">Un enlace a **%1$s** se muestra a todos los suscriptores en el panel inferior.</string>
+    <string name="DiscussionGroupHelp">**%1$s** está vinculando al grupo como su grupo de conversación.</string>
+    <string name="DiscussionGroupHelp2">Todo lo que publiques en este canal será reenviado a este grupo.</string>
+    <string name="DiscussionCreateGroup">Crear un nuevo grupo</string>
+    <string name="DiscussionUnlinkGroup">Desvincular grupo</string>
+    <string name="DiscussionUnlinkChannel">Desvincular canal</string>
+    <string name="DiscussionUnlink">Desvincular</string>
+    <string name="DiscussionLinkGroup">VINCULAR GRUPO</string>
+    <string name="DiscussionLinkGroupPublicAlert">¿Quieres convertir a **%1$s** en el grupo de conversación de **%2$s**?</string>
+    <string name="DiscussionLinkGroupPrivateAlert">¿Quieres convertir a **%1$s** en el grupo de conversación de **%2$s**?\n\nCualquier miembro de este grupo podrá ver los mensajes del canal.</string>
+    <string name="DiscussionLinkGroupPublicPrivateAlert">¿Quieres convertir a **%1$s** en el grupo de conversación de **%2$s**?\n\nCualquier miembro de este canal podrá ver los mensajes del grupo.</string>
+    <string name="DiscussionLinkGroupAlertHistory">El “Historial de chat para nuevos miembros” cambiará a Visible.</string>
+    <string name="DiscussionUnlinkGroupAlert">¿Quieres desvincular a **%1$s** de este grupo?</string>
+    <string name="DiscussionUnlinkChannelAlert">¿Quieres desvincular a **%1$s** de este canal?</string>
+    <string name="ChannelDiscuss">CONVERSAR</string>
+    <string name="DiscussChannel">canal</string>
     <!--polls-->
     <string name="NewPoll">Nueva encuesta</string>
     <string name="Poll">Encuesta</string>
@@ -522,6 +545,10 @@
     <string name="EventLogDeletedMessages">un1 eliminó este mensaje:</string>
     <string name="EventLogChangedStickersSet">un1 cambió el pack de stickers de grupo</string>
     <string name="EventLogRemovedStickersSet">un1 eliminó el pack de stickers de grupo</string>
+    <string name="EventLogChangedLinkedGroup">un1 convirtió a un2 en el grupo de conversación para este canal</string>
+    <string name="EventLogRemovedLinkedGroup">un1 eliminó el grupo de conversación un2</string>
+    <string name="EventLogChangedLinkedChannel">un1 vinculó este grupo a un2</string>
+    <string name="EventLogRemovedLinkedChannel">un1 desvinculó este grupo de un2</string>
     <string name="EventLogChangedGroupLink">un1 cambió el enlace del grupo:</string>
     <string name="EventLogChangedChannelLink">un1 cambió el enlace del canal:</string>
     <string name="EventLogRemovedGroupLink">un1 eliminó el enlace del grupo</string>
@@ -678,7 +705,10 @@
     <string name="UploadItems">Subir %1$s</string>
     <string name="SendAsFile">Como archivo</string>
     <string name="SendAsFiles">Como archivos</string>
-    <string name="OpenUrlAlert">¿Abrir %1$s?</string>
+    <string name="OpenUrlTitle">Abrir enlace</string>
+    <string name="OpenUrlAlert2">¿Quieres abrir %1$s?</string>
+    <string name="OpenUrlOption1">Iniciar sesión en %1$s como **%2$s**</string>
+    <string name="OpenUrlOption2">Permitir a **%1$s** enviarme mensajes</string>
     <string name="CancelSending">Cancelar envío</string>
     <string name="BotPermissionGameAlert">¿Permites a %1$s entregar tu nombre e id de Telegram (no tu número de teléfono) a los sitios web que abres a través de este bot?</string>
     <string name="ReportSpam">REPORTAR SPAM</string>
@@ -698,6 +728,8 @@
     <string name="PinMessage">Anclar</string>
     <string name="PinNotify">Notificar a todos los miembros</string>
     <string name="UnpinMessage">Desanclar</string>
+    <string name="PinMessageAlertTitle">Anclar mensaje</string>
+    <string name="UnpinMessageAlertTitle">Desanclar mensaje</string>
     <string name="PinMessageAlert">¿Quieres anclar este mensaje en el grupo?</string>
     <string name="PinMessageAlertChannel">¿Quieres anclar este mensaje en el canal?</string>
     <string name="PinMessageAlertChat">¿Quieres anclar este mensaje en la parte de arriba del chat?</string>
@@ -788,6 +820,7 @@
     <string name="MapPreviewProviderNobody">Ninguno</string>
     <string name="InstallGoogleMaps">¿Instalar Google Maps?</string>
     <string name="ScamMessage">ESTAFA</string>
+    <string name="ViaBot">vía</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s activó la autodestrucción en %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Activaste la autodestrucción en %1$s</string>
@@ -895,6 +928,7 @@
     <string name="SecretChatName">Telegram</string>
     <!--contacts view-->
     <string name="SelectContact">Elegir contacto</string>
+    <string name="SelectContacts">Elegir contactos</string>
     <string name="ContactShare">COMPARTIR CONTACTO</string>
     <string name="NoContacts">Aún no hay contactos</string>
     <string name="InviteText2">Estoy usando Telegram para chatear. ¡Únete! Descárgala aquí: %1$s</string>
@@ -947,6 +981,8 @@
     <string name="CopyLink">Copiar enlace</string>
     <string name="ShareLink">Compartir enlace</string>
     <string name="LinkInfo">Cualquiera que tenga Telegram instalada podrá unirse a tu grupo siguiendo este enlace.</string>
+    <string name="SearchForPeople">Buscar personas...</string>
+    <string name="SearchForPeopleAndGroups">Buscar usuarios y grupos...</string>
     <!--group info view-->
     <string name="GroupMembers">Miembros</string>
     <string name="SharedMedia">Multimedia</string>
@@ -975,6 +1011,9 @@
     <string name="ContactNotRegistered">%1$s aún no está en Telegram. ¿Quieres enviarle una invitación?</string>
     <string name="Invite">Invitar</string>
     <string name="BlockContact">Bloquear</string>
+    <string name="BlockUser">Bloquear usuario</string>
+    <string name="UserBlocked">Usuario bloqueado</string>
+    <string name="UserUnblocked">Usuario desbloqueado</string>
     <string name="EditContact">Editar contacto</string>
     <string name="DeleteContact">Eliminar contacto</string>
     <string name="PhoneHome">Casa</string>
@@ -1082,7 +1121,7 @@
     <string name="AutoNightThemeOff">Desactivado</string>
     <string name="AutoNightDisabled">Desactivado</string>
     <string name="AutoNightScheduled">Programado</string>
-    <string name="AutoNightAutomatic">Automático</string>
+    <string name="AutoNightAdaptive">Adaptado</string>
     <string name="AutoNightSchedule">Programar</string>
     <string name="AutoNightLocation">Usar el anochecer y amanecer local</string>
     <string name="AutoNightUpdateLocation">Actualizar ubicación</string>
@@ -1094,6 +1133,8 @@
     <string name="AutoNightBrightnessInfo">Cambia a tu tema nocturno preferido cuando la luminosidad del entorno sea menor a un %1$d%%.</string>
     <string name="ThemeDark">Oscuro</string>
     <string name="ThemeDarkBlue">Azul oscuro</string>
+    <string name="ThemeGraphite">Grafito</string>
+    <string name="ThemeArcticBlue">Azul ártico</string>
     <string name="ThemeBlue">Azul</string>
     <string name="DeleteThemeAlert">¿Quieres eliminar este tema?</string>
     <string name="IncorrectTheme">Archivo de tema incorrecto</string>
@@ -1102,6 +1143,8 @@
     <string name="SaveTheme">GUARDAR TEMA</string>
     <string name="NewTheme">Nuevo tema</string>
     <string name="ColorTheme">Tema</string>
+    <string name="BuiltInThemes">Temas incorporados</string>
+    <string name="CustomThemes">Temas personalizados</string>
     <string name="ChatList">Vista de lista de chats</string>
     <string name="ChatListDefault">Dos líneas</string>
     <string name="ChatListExpanded">Tres líneas</string>
@@ -1109,11 +1152,13 @@
     <string name="ApplyTheme">APLICAR</string>
     <string name="ThemePreview">Vista previa del tema</string>
     <string name="SelectColor">Elegir color</string>
+    <string name="ColorThemes">Temas</string>
+    <string name="ShowAllThemes">Mostrar todos los temas</string>
     <string name="CreateNewThemeMenu">Crear nuevo tema</string>
     <string name="CreateNewThemeHelp">Toca sobre el icono de la paleta de colores para ver la lista de elementos en cada ventana y editarlos.</string>
     <string name="CreateNewThemeAlert">Puedes crear tu propio tema cambiando los colores dentro de la aplicación.\n\nSiempre puedes volver al tema por defecto de Telegram aquí.</string>
     <!--settings view-->
-    <string name="ResetNotificationsText">Restablecer las notificaciones</string>
+    <string name="ResetNotificationsText">Todos los ajustes de notificaciones fueron restablecidos a los valores por defecto</string>
     <string name="ResetNotificationsAlert">¿Quieres restablecer todos los ajustes de notificaciones?</string>
     <string name="TextSizeHeader">Tamaño del texto</string>
     <string name="AskAQuestion">Hacer una pregunta</string>
@@ -1168,6 +1213,7 @@
     <string name="NotificationsTurnOn">Activar</string>
     <string name="NotificationsTurnOff">Desactivar</string>
     <string name="BlockedUsers">Usuarios bloqueados</string>
+    <string name="BlockedUsersInfo">Los usuarios bloqueados no podrán contactarte y no verán tu última conexión.</string>
     <string name="LogOut">Cerrar sesión</string>
     <string name="NoSound">Sin sonido</string>
     <string name="Default">Por defecto</string>
@@ -1178,6 +1224,7 @@
     <string name="ChatBackground">Fondo de chat</string>
     <string name="ResetChatBackgrounds">Restablecer fondos de chat</string>
     <string name="ResetChatBackgroundsInfo">Elimina todos los fondos de chat subidos y restaura los preinstalados.</string>
+    <string name="ResetChatBackgroundsAlertTitle">Restablecer fondos de chat</string>
     <string name="ResetChatBackgroundsAlert">¿Quieres restablecer todos los fondos de chat?</string>
     <string name="DeleteChatBackgroundsAlert">¿Quieres eliminar los fondos seleccionados?</string>
     <string name="BackgroundPreview">Vista previa del fondo</string>
@@ -1185,10 +1232,10 @@
     <string name="BackgroundPreviewLine2">¡Woo-hoo! ¡Gracias!</string>
     <string name="BackgroundColorPreviewLine1">Desliza a la izquierda o derecha para ver más colores.</string>
     <string name="BackgroundColorPreviewLine2">El salmón es un pez, no un color.</string>
-    <string name="FontSizePreviewName">Lúcio</string>
-    <string name="FontSizePreviewReply">Reinhardt, necesitamos encontrarte algunas nuevas canciones &#127926;.</string>
-    <string name="FontSizePreviewLine1">¡Ah! Los niños de hoy en día con la música tecno. Disfruten los clásicos, ¡como Hasselhoff!</string>
-    <string name="FontSizePreviewLine2">Con eso ya no puedo tomarte en serio.</string>
+    <string name="FontSizePreviewName">Bob Harris</string>
+    <string name="FontSizePreviewReply">¡Buenos días! &#128075;</string>
+    <string name="FontSizePreviewLine1">¿Sabes qué hora es?</string>
+    <string name="FontSizePreviewLine2">Es de mañana en Tokio &#128526;</string>
     <string name="BackgroundColorSinglePreviewLine1">Pulsa Establecer para aplicar el fondo.</string>
     <string name="BackgroundColorSinglePreviewLine2">Disfruta de la vista.</string>
     <string name="SetBackground">ESTABLECER FONDO</string>
@@ -1306,6 +1353,7 @@
     <string name="AutoDownloadAudioInfo">Los mensajes de voz son pequeños, siempre se descargan automáticamente.</string>
     <string name="NoMediaAutoDownload">Ningún contenido multimedia</string>
     <string name="ResetAutomaticMediaDownload">Restablecer ajustes de autodescarga</string>
+    <string name="ResetAutomaticMediaDownloadAlertTitle">Restablecer ajustes</string>
     <string name="ResetAutomaticMediaDownloadAlert">¿Quieres restablecer los ajustes de autodescarga?</string>
     <string name="WhenUsingMobileData">Con datos móviles</string>
     <string name="WhenConnectedOnWiFi">Con Wi-Fi</string>
@@ -1373,6 +1421,7 @@
     <string name="DebugMenuImportContacts">Importar contactos</string>
     <string name="DebugMenuReloadContacts">Recargar contactos</string>
     <string name="DebugMenuResetDialogs">Restablecer diálogos</string>
+    <string name="DebugMenuReadAllDialogs">Leer todos los chats</string>
     <string name="DebugMenuEnableCamera">Activar cámara interna</string>
     <string name="DebugMenuDisableCamera">Desactivar cámara interna</string>
     <string name="DebugMenuResetContacts">Restablecer contactos importados</string>
@@ -1468,7 +1517,7 @@
     <string name="LocalMusicCache">Música</string>
     <string name="LocalGifCache">GIF</string>
     <string name="LocalCache">Otros archivos</string>
-    <string name="CacheEmpty">Vacío</string>
+    <string name="CacheEmpty">Vacía</string>
     <string name="KeepMedia">Conservar multimedia</string>
     <string name="KeepMediaInfo">Las fotos, videos y otros archivos de los chats en la nube, a los que **no accedas** durante este periodo, se eliminarán del dispositivo para ahorrar espacio.\n\nToda la multimedia estará en la nube de Telegram y podrás descargarla de nuevo si la necesitas.</string>
     <string name="KeepMediaForever">Siempre</string>
@@ -1507,7 +1556,7 @@
     <string name="PassportAddAgreement">Añadir contrato de alquiler</string>
     <string name="PassportAddress">Dirección</string>
     <string name="PassportResidentialAddress">Dirección de residencia</string>
-    <string name="PassportAddressNoUploadInfo">Por favor, pon tu dirección</string>
+    <string name="PassportAddressNoUploadInfo">Pon tu dirección</string>
     <string name="PassportAddressInfo">Sube una prueba de tu dirección</string>
     <string name="PassportAddressHeader">Dirección</string>
     <string name="PassportStreet1">Calle</string>
@@ -1825,6 +1874,8 @@
     <string name="AreYouSureDeleteGIF">¿Quieres eliminar este GIF?</string>
     <string name="DiscardChanges">¿Descartar cambios?</string>
     <string name="ClearSearch">¿Quieres eliminar el historial de búsqueda?</string>
+    <string name="ClearSearchAlert">¿Quieres eliminar tu historial de búsqueda?</string>
+    <string name="ClearSearchAlertTitle">Historial de búsqueda</string>
     <string name="ClearButton">Eliminar</string>
     <string name="AddCaption">Añadir un comentario...</string>
     <string name="PhotoCaption">Comentario de foto</string>
@@ -1923,6 +1974,7 @@
     <string name="TotalDataUsage">Total</string>
     <string name="ResetStatistics">Restablecer estadísticas</string>
     <string name="NetworkUsageSince">Uso de la red desde el %1$s</string>
+    <string name="ResetStatisticsAlertTitle">Restablecer estadísticas</string>
     <string name="ResetStatisticsAlert">¿Quieres restablecer las estadísticas de uso?</string>
     <!--privacy settings-->
     <string name="PrivacySettings">Privacidad y seguridad</string>
@@ -1932,6 +1984,10 @@
     <string name="PrivacyProfilePhotoTitle">¿Quién puede ver mi foto de perfil?</string>
     <string name="PrivacyProfilePhotoInfo">Puedes restringir quién puede ver tu foto de perfil con gran precisión.</string>
     <string name="PrivacyProfilePhotoInfo2">Estos ajustes anularán los valores de arriba.</string>
+    <string name="PrivacyPhone">Número de teléfono</string>
+    <string name="PrivacyPhoneTitle">¿Quién puede ver mi número de teléfono?</string>
+    <string name="PrivacyPhoneInfo">Los usuarios que ya tienen tu número guardado en sus contactos también lo verán en Telegram.</string>
+    <string name="PrivacyPhoneInfo2">Puedes añadir un usuario o un grupo como una excepción que anulará los ajustes de arriba.</string>
     <string name="PrivacyForwards">Mensajes reenviados</string>
     <string name="PrivacyForwardsEverybody">Enlace a tu cuenta</string>
     <string name="PrivacyForwardsContacts">Enlace según los ajustes de abajo</string>
@@ -1940,7 +1996,9 @@
     <string name="PrivacyForwardsInfo">Los mensajes que envías no enlazarán a tu cuenta al ser reenviados a otros chats.</string>
     <string name="PrivacyForwardsInfo2">Estos ajustes anularán los valores de arriba.</string>
     <string name="PrivacyForwardsMessageLine">Reinhardt, necesitamos encontrarte algunas nuevas canciones &#127926;.</string>
+    <string name="PrivacyP2PHeader">Peer-to-peer</string>
     <string name="PrivacyP2P">Peer-to-peer en llamadas</string>
+    <string name="PrivacyP2P2">Usar peer-to-peer con</string>
     <string name="PrivacyBots">Bots y sitios web</string>
     <string name="PrivacyPaymentsClear">Eliminar información de pago y envío</string>
     <string name="PrivacyPaymentsClearAlert">¿Quieres eliminar tu información de envío y forzar a todos los proveedores de pago a eliminar tus tarjetas de crédito guardadas? Telegram nunca almacena tus datos de tarjetas de crédito.</string>
@@ -1977,9 +2035,7 @@
     <string name="NeverShareWith">No compartir con</string>
     <string name="CustomShareSettingsHelp">Estos ajustes anularán los valores de arriba.</string>
     <string name="AlwaysShareWithTitle">Compartir</string>
-    <string name="AlwaysShareWithPlaceholder">Compartir con...</string>
     <string name="NeverShareWithTitle">No compartir</string>
-    <string name="NeverShareWithPlaceholder">No compartir con...</string>
     <string name="EmpryUsersPlaceholder">Añadir usuarios</string>
     <string name="PrivacyFloodControlError">Lo sentimos, hay demasiadas solicitudes. Es imposible cambiar los ajustes de privacidad ahora. Por favor, espera.</string>
     <string name="RemoveFromListText">Mantén pulsado sobre un usuario para eliminarlo.</string>
@@ -1988,8 +2044,6 @@
     <string name="WhoCanAddMeInfo">Puedes restringir quién puede añadirte a grupos y canales con gran precisión.</string>
     <string name="AlwaysAllow">Permitir</string>
     <string name="NeverAllow">No permitir</string>
-    <string name="AlwaysAllowPlaceholder">Permitir...</string>
-    <string name="NeverAllowPlaceholder">No permitir...</string>
     <string name="CustomShareInfo">Estos usuarios podrán o no añadirte a grupos y canales, sin importar los ajustes de arriba.</string>
     <string name="GroupsAndChannelsHelp">Elige quién puede añadirte a grupos y canales.</string>
     <string name="InviteToGroupError">No puedes añadir a este usuario a grupos debido a sus ajustes de privacidad.</string>
@@ -2000,6 +2054,8 @@
     <string name="SuggestContacts">Sugerir contactos frecuentes</string>
     <string name="SuggestContactsInfo">Muestra a las personas con las que te comunicas frecuentemente en la parte de arriba de la sección de búsqueda para un acceso rápido.</string>
     <string name="SuggestContactsAlert">Esto eliminará todos los datos sobre las personas con las que conversas frecuentemente, así como los bots integrados que podrías utilizar.</string>
+    <string name="PrivacyAddAnException">Añadir usuarios o grupos</string>
+    <string name="PrivacyExceptions">Excepciones</string>
     <!--edit video view-->
     <string name="SendingVideo">Enviando video...</string>
     <string name="SendingGif">Enviando GIF...</string>
@@ -2029,6 +2085,7 @@
     <string name="Call">Llamar</string>
     <string name="Copy">Copiar</string>
     <string name="Delete">Eliminar</string>
+    <string name="Start">Iniciar</string>
     <string name="DeleteAndStop">Eliminar y detener</string>
     <string name="Forward">Reenviar</string>
     <string name="Retry">Reintentar</string>
@@ -2115,6 +2172,8 @@
     <string name="ActionTakeScreenshootYou">¡Hiciste una captura de pantalla!</string>
     <string name="ActionTakeScreenshoot">¡un1 hizo una captura de pantalla!</string>
     <!--Alert messages-->
+    <string name="DeleteAllMessagesAlert">¡Advertencia! Esto **eliminará todos los mensajes** en este chat para **ambos** participantes.</string>
+    <string name="DeleteAll">Eliminar todo</string>
     <string name="StopLoading">¿Detener la carga?</string>
     <string name="UpdateTelegram">Actualizar Telegram</string>
     <string name="UpdateAppAlert">Lo sentimos, tu app de Telegram no está actualizada y no puede procesar esta solicitud. Por favor, actualiza Telegram.</string>
@@ -2137,6 +2196,12 @@
     <string name="AddToTheGroupTitle">¿Añadir a %1$s al chat %2$s?</string>
     <string name="AddToTheGroupForwardCount">Cantidad de últimos mensajes para reenviar:</string>
     <string name="AddToTheGroup">¿Añadir a %1$s al grupo?</string>
+    <string name="AddMembersAlertTitle">Añadir a %1$s</string>
+    <string name="AddOneMemberAlertTitle">Añadir miembro</string>
+    <string name="AddMembersAlertNamesText">¿Quieres añadir a %1$s a **%2$s**?</string>
+    <string name="AddMembersAlertCountText">¿Quieres añadir a %1$s a **%2$s**?</string>
+    <string name="AddMembersForwardMessages">Mostrar los últimos 100 mensajes a los nuevos miembros</string>
+    <string name="AddOneMemberForwardMessages">Mostrar los últimos 100 mensajes a **%1$s**</string>
     <string name="SendMessagesTo">¿Enviar mensajes a %1$s?</string>
     <string name="SendGameTo">¿Compartir el juego con %1$s?</string>
     <string name="SendContactTo">¿Enviar contacto a %1$s?</string>
@@ -2164,9 +2229,10 @@
     <string name="AreYouSureShareMyContactInfoBot">El bot sabrá tu número de teléfono. Puede ser útil para la integración con otros servicios.</string>
     <string name="AreYouSureShareMyContactInfoUser">¿Quieres compartir tu número de teléfono %1$s con **%2$s**?</string>
     <string name="AreYouSureShareMyContactInfo">¿Quieres compartir tu número de teléfono?</string>
-    <string name="AreYouSureBlockContact">¿Quieres bloquear este contacto?</string>
+    <string name="AreYouSureBlockContact2">¿Quieres bloquear a **%1$s**?</string>
     <string name="AreYouSureUnblockContact">¿Quieres desbloquear este contacto?</string>
     <string name="AreYouSureDeleteContact">¿Quieres eliminar este contacto?</string>
+    <string name="AreYouSureSecretChatTitle">Chat secreto</string>
     <string name="AreYouSureSecretChat">¿Quieres iniciar un chat secreto?</string>
     <string name="AreYouSureRegistration">¿Quieres cancelar el registro?</string>
     <string name="StopVerification">¿Quieres detener el proceso de verificación del número de teléfono?</string>
@@ -2576,12 +2642,12 @@
     <string name="Photos_few">%1$d fotos</string>
     <string name="Photos_many">%1$d fotos</string>
     <string name="Photos_other">%1$d fotos</string>
-    <string name="Videos_zero">%1$d fotos</string>
-    <string name="Videos_one">%1$d foto</string>
-    <string name="Videos_two">%1$d fotos</string>
-    <string name="Videos_few">%1$d fotos</string>
-    <string name="Videos_many">%1$d fotos</string>
-    <string name="Videos_other">%1$d fotos</string>
+    <string name="Videos_zero">%1$d videos</string>
+    <string name="Videos_one">%1$d video</string>
+    <string name="Videos_two">%1$d videos</string>
+    <string name="Videos_few">%1$d videos</string>
+    <string name="Videos_many">%1$d videos</string>
+    <string name="Videos_other">%1$d videos</string>
     <string name="Files_zero">%1$d archivos</string>
     <string name="Files_one">%1$d archivo</string>
     <string name="Files_two">%1$d archivos</string>
@@ -2594,6 +2660,12 @@
     <string name="Media_few">%1$d archivos multimedia</string>
     <string name="Media_many">%1$d archivos multimedia</string>
     <string name="Media_other">%1$d archivos multimedia</string>
+    <string name="BlockedUsersCount_zero">%1$d usuarios bloqueados</string>
+    <string name="BlockedUsersCount_one">%1$d usuario bloqueado</string>
+    <string name="BlockedUsersCount_two">%1$d usuarios bloqueados</string>
+    <string name="BlockedUsersCount_few">%1$d usuarios bloqueados</string>
+    <string name="BlockedUsersCount_many">%1$d usuarios bloqueados</string>
+    <string name="BlockedUsersCount_other">%1$d usuarios bloqueados</string>
     <string name="ForwardedFile_zero">%1$d archivos reenviados</string>
     <string name="ForwardedFile_one">Archivo reenviado</string>
     <string name="ForwardedFile_two">%1$d archivos reenviados</string>

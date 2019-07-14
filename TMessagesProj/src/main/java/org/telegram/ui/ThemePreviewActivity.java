@@ -634,7 +634,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
             View view = null;
             if (viewType == 0) {
-                view = new DialogCell(mContext, false);
+                view = new DialogCell(mContext, false, false);
             } else if (viewType == 1) {
                 view = new LoadingCell(mContext);
             }

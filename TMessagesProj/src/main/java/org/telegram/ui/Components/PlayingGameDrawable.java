@@ -73,7 +73,7 @@ public class PlayingGameDrawable extends StatusDrawable {
             //y = AndroidUtilities.dp(9.3f) + getBounds().top;
         }
 
-        paint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
+        paint.setColor(Theme.getColor(Theme.key_chat_status));
         rect.set(0, y, size, y + size);
         int rad;
         if (progress < 0.5f) {

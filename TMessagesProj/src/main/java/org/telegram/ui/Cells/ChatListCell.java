@@ -32,7 +32,6 @@ public class ChatListCell extends LinearLayout {
             setWillNotDraw(false);
 
             isThreeLines = threeLines;
-            button = new RadioButton(context);
 
             textPaint.setTextSize(AndroidUtilities.dp(13));
 

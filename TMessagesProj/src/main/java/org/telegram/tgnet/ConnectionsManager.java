@@ -42,6 +42,7 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -86,6 +87,8 @@ public class ConnectionsManager {
     private int appResumeCount;
 
     private static AsyncTask currentTask;
+
+    private static HashMap<String, ResolveHostByNameTask> resolvingHostnameTasks = new HashMap<>();
 
     private static class ResolvedDomain {
 
@@ -492,8 +495,13 @@ public class ConnectionsManager {
         if (resolvedDomain != null && SystemClock.elapsedRealtime() - resolvedDomain.ttl < 5 * 60 * 1000) {
             native_onHostNameResolved(hostName, address, resolvedDomain.getAddress());
         } else {
-            ResolveHostByNameTask task = new ResolveHostByNameTask(address, hostName);
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
+            ResolveHostByNameTask task = resolvingHostnameTasks.get(hostName);
+            if (task == null) {
+                task = new ResolveHostByNameTask(hostName);
+                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
+                resolvingHostnameTasks.put(hostName, task);
+            }
+            task.addAddress(address);
         }
     }
 
@@ -669,13 +677,19 @@ public class ConnectionsManager {
 
     private static class ResolveHostByNameTask extends AsyncTask<Void, Void, String> {
 
-        private long currentAddress;
+        private ArrayList<Long> addresses = new ArrayList<>();
         private String currentHostName;
 
-        public ResolveHostByNameTask(long address, String hostName) {
+        public ResolveHostByNameTask(String hostName) {
             super();
-            currentAddress = address;
             currentHostName = hostName;
+        }
+
+        public void addAddress(long address) {
+            if (addresses.contains(address)) {
+                return;
+            }
+            addresses.add(address);
         }
 
         protected String doInBackground(Void... voids) {
@@ -752,7 +766,10 @@ public class ConnectionsManager {
 
         @Override
         protected void onPostExecute(final String result) {
-            native_onHostNameResolved(currentHostName, currentAddress, result);
+            for (int a = 0, N = addresses.size(); a < N; a++) {
+                native_onHostNameResolved(currentHostName, addresses.get(a), result);
+            }
+            resolvingHostnameTasks.remove(currentHostName);
         }
     }
 

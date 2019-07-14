@@ -60,6 +60,7 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.EditTextEmoji;
 import org.telegram.ui.Components.ImageUpdater;
@@ -93,6 +94,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
     private LinearLayout typeEditContainer;
     private ShadowSectionCell settingsTopSectionCell;
     private TextDetailCell typeCell;
+    private TextDetailCell linkedCell;
     private TextDetailCell historyCell;
     private ShadowSectionCell settingsSectionCell;
 
@@ -137,7 +139,6 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         chatId = args.getInt("chat_id", 0);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public boolean onFragmentCreate() {
         currentChat = MessagesController.getInstance(currentAccount).getChat(chatId);
@@ -196,6 +197,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         super.onResume();
         if (nameTextView != null) {
             nameTextView.onResume();
+            nameTextView.getEditText().requestFocus();
         }
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
         updateFields(true);
@@ -535,6 +537,17 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             });
         }
 
+        if (ChatObject.isChannel(currentChat) && (isChannel && ChatObject.canUserDoAdminAction(currentChat, ChatObject.ACTION_CHANGE_INFO) || !isChannel && ChatObject.canUserDoAdminAction(currentChat, ChatObject.ACTION_PIN))) {
+            linkedCell = new TextDetailCell(context);
+            linkedCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+            typeEditContainer.addView(linkedCell, LayoutHelper.createLinear(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            linkedCell.setOnClickListener(v -> {
+                ChatLinkActivity fragment = new ChatLinkActivity(chatId);
+                fragment.setInfo(info);
+                presentFragment(fragment);
+            });
+        }
+
         if (!isChannel && ChatObject.canBlockUsers(currentChat) && (ChatObject.isChannel(currentChat) || currentChat.creator)) {
             historyCell = new TextDetailCell(context);
             historyCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
@@ -603,7 +616,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             doneButton.setContentDescription(LocaleController.getString("Done", R.string.Done));
         }
 
-        if (signCell != null || historyCell != null || typeCell != null) {
+        if (signCell != null || historyCell != null || typeCell != null || linkedCell != null) {
             settingsSectionCell = new ShadowSectionCell(context);
             linearLayout1.addView(settingsSectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
@@ -710,28 +723,15 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 deleteCell.setText(LocaleController.getString("DeleteAndExitButton", R.string.DeleteAndExitButton), false);
             }
             deleteContainer.addView(deleteCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            deleteCell.setOnClickListener(v -> {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                if (isChannel) {
-                    builder.setMessage(LocaleController.getString("ChannelDeleteAlert", R.string.ChannelDeleteAlert));
-                } else if (currentChat.megagroup) {
-                    builder.setMessage(LocaleController.getString("MegaDeleteAlert", R.string.MegaDeleteAlert));
+            deleteCell.setOnClickListener(v -> AlertsCreator.createClearOrDeleteDialogAlert(ChatEditActivity.this, false, true, false, currentChat, null, false, (param) -> {
+                if (AndroidUtilities.isTablet()) {
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats, -(long) chatId);
                 } else {
-                    builder.setMessage(LocaleController.getString("AreYouSureDeleteAndExit", R.string.AreYouSureDeleteAndExit));
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
                 }
-                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
-                    if (AndroidUtilities.isTablet()) {
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats, -(long) chatId);
-                    } else {
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
-                    }
-                    MessagesController.getInstance(currentAccount).deleteUserFromChat(chatId, MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId()), info, true, false);
-                    finishFragment();
-                });
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                showDialog(builder.create());
-            });
+                MessagesController.getInstance(currentAccount).deleteUserFromChat(chatId, MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId()), info, true, false);
+                finishFragment();
+            }));
 
             deleteInfoCell = new ShadowSectionCell(context);
             deleteInfoCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
@@ -1021,11 +1021,11 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         boolean isPrivate = TextUtils.isEmpty(currentChat.username);
 
         if (historyCell != null) {
-            historyCell.setVisibility(isPrivate ? View.VISIBLE : View.GONE);
+            historyCell.setVisibility(isPrivate && (info == null || info.linked_chat_id == 0) ? View.VISIBLE : View.GONE);
         }
 
         if (settingsSectionCell != null) {
-            settingsSectionCell.setVisibility(signCell == null && typeCell == null && (historyCell == null || historyCell.getVisibility() != View.VISIBLE) ? View.GONE : View.VISIBLE);
+            settingsSectionCell.setVisibility(signCell == null && typeCell == null && linkedCell == null && (historyCell == null || historyCell.getVisibility() != View.VISIBLE) ? View.GONE : View.VISIBLE);
         }
 
         if (logCell != null) {
@@ -1043,6 +1043,36 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 typeCell.setTextAndValue(LocaleController.getString("ChannelType", R.string.ChannelType), type, true);
             } else {
                 typeCell.setTextAndValue(LocaleController.getString("GroupType", R.string.GroupType), type, true);
+            }
+        }
+
+        if (linkedCell != null) {
+            if (info == null || !isChannel && info.linked_chat_id == 0) {
+                linkedCell.setVisibility(View.GONE);
+            } else {
+                linkedCell.setVisibility(View.VISIBLE);
+                if (info.linked_chat_id == 0) {
+                    linkedCell.setTextAndValue(LocaleController.getString("Discussion", R.string.Discussion), LocaleController.getString("DiscussionInfo", R.string.DiscussionInfo), true);
+                } else {
+                    TLRPC.Chat chat = getMessagesController().getChat(info.linked_chat_id);
+                    if (chat == null) {
+                        linkedCell.setVisibility(View.GONE);
+                    } else {
+                        if (isChannel) {
+                            if (TextUtils.isEmpty(chat.username)) {
+                                linkedCell.setTextAndValue(LocaleController.getString("Discussion", R.string.Discussion), chat.title, true);
+                            } else {
+                                linkedCell.setTextAndValue(LocaleController.getString("Discussion", R.string.Discussion), "@" + chat.username, true);
+                            }
+                        } else {
+                            if (TextUtils.isEmpty(chat.username)) {
+                                linkedCell.setTextAndValue(LocaleController.getString("LinkedChannel", R.string.LinkedChannel), chat.title, false);
+                            } else {
+                                linkedCell.setTextAndValue(LocaleController.getString("LinkedChannel", R.string.LinkedChannel), "@" + chat.username, false);
+                            }
+                        }
+                    }
+                }
             }
         }
 

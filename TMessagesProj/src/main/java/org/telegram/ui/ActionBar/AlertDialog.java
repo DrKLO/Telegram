@@ -87,6 +87,8 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     private int progressViewStyle;
     private int currentProgress;
 
+    private boolean messageTextViewClickable = true;
+
     private boolean canCacnel = true;
 
     private boolean dismissDialogByButtons = true;
@@ -449,6 +451,10 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         messageTextView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
         messageTextView.setLinkTextColor(getThemeColor(Theme.key_dialogTextLink));
+        if (!messageTextViewClickable) {
+            messageTextView.setClickable(false);
+            messageTextView.setEnabled(false);
+        }
         messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         if (progressViewStyle == 1) {
             progressViewContainer = new FrameLayout(getContext());
@@ -935,6 +941,10 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         }
     }
 
+    public void setMessageTextViewClickable(boolean value) {
+        messageTextViewClickable = value;
+    }
+
     public void setButton(int type, CharSequence text, final OnClickListener listener) {
         switch (type) {
             case BUTTON_NEUTRAL:
@@ -1088,6 +1098,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
 
         public Builder setCustomViewOffset(int offset) {
             alertDialog.customViewOffset = offset;
+            return this;
+        }
+
+        public Builder setMessageTextViewClickable(boolean value) {
+            alertDialog.messageTextViewClickable = value;
             return this;
         }
 

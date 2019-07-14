@@ -19,7 +19,7 @@ dependencies {
     implementation 'androidx.palette:palette:1.0.0'
     implementation 'androidx.exifinterface:exifinterface:1.0.0'
 
-    implementation 'com.airbnb.android:lottie:3.0.1'
+    implementation 'com.airbnb.android:lottie:3.0.3'
 
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
@@ -243,7 +243,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 1591
+    defaultConfig.versionCode = 1608
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
@@ -277,7 +277,7 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 27
-        versionName "5.6.1"
+        versionName "5.7.1"
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 

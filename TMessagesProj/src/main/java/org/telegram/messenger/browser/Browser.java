@@ -173,13 +173,13 @@ public class Browser {
             return;
         }
         final int currentAccount = UserConfig.selectedAccount;
-        boolean forceBrowser[] = new boolean[] {false};
+        boolean[] forceBrowser = new boolean[]{false};
         boolean internalUri = isInternalUri(uri, forceBrowser);
         if (tryTelegraph) {
             try {
                 String host = uri.getHost().toLowerCase();
                 if (host.equals("telegra.ph") || uri.toString().toLowerCase().contains("telegram.org/faq")) {
-                    final AlertDialog progressDialog[] = new AlertDialog[] {new AlertDialog(context, 3)};
+                    final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(context, 3)};
 
                     Uri finalUri = uri;
                     TLRPC.TL_messages_getWebPagePreview req = new TLRPC.TL_messages_getWebPagePreview();
@@ -231,7 +231,7 @@ public class Browser {
                 }
             }
             if (allowCustom && SharedConfig.customTabs && !internalUri && !scheme.equals("tel")) {
-                String browserPackageNames[] = null;
+                String[] browserPackageNames = null;
                 try {
                     Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.google.com"));
                     List<ResolveInfo> list = context.getPackageManager().queryIntentActivities(browserIntent, 0);
@@ -313,7 +313,7 @@ public class Browser {
         }
     }
 
-    public static boolean isInternalUrl(String url, boolean forceBrowser[]) {
+    public static boolean isInternalUrl(String url, boolean[] forceBrowser) {
         return isInternalUri(Uri.parse(url), forceBrowser);
     }
 
@@ -332,7 +332,7 @@ public class Browser {
         return false;
     }
 
-    public static boolean isInternalUri(Uri uri, boolean forceBrowser[]) {
+    public static boolean isInternalUri(Uri uri, boolean[] forceBrowser) {
         String host = uri.getHost();
         host = host != null ? host.toLowerCase() : "";
         if ("tg".equals(uri.getScheme())) {
@@ -341,7 +341,7 @@ public class Browser {
             String path = uri.getPath();
             if (path != null && path.length() > 1) {
                 path = path.substring(1).toLowerCase();
-                if (path.startsWith("blog") || path.equals("iv") || path.startsWith("faq") || path.equals("apps")) {
+                if (path.startsWith("blog") || path.equals("iv") || path.startsWith("faq") || path.equals("apps") || path.startsWith("s/")) {
                     if (forceBrowser != null) {
                         forceBrowser[0] = true;
                     }
@@ -353,7 +353,7 @@ public class Browser {
             String path = uri.getPath();
             if (path != null && path.length() > 1) {
                 path = path.substring(1).toLowerCase();
-                if (path.equals("iv")) {
+                if (path.equals("iv") || path.startsWith("s/")) {
                     if (forceBrowser != null) {
                         forceBrowser[0] = true;
                     }

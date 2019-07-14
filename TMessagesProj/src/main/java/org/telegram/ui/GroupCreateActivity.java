@@ -47,19 +47,22 @@ import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.Theme;
@@ -67,8 +70,10 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.SearchAdapterHelper;
+import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.GroupCreateSectionCell;
 import org.telegram.ui.Cells.GroupCreateUserCell;
+import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.EmptyTextProgressView;
@@ -76,8 +81,11 @@ import org.telegram.ui.Components.GroupCreateDividerItemDecoration;
 import org.telegram.ui.Components.GroupCreateSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.TypefaceSpan;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -91,9 +99,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private EmptyTextProgressView emptyView;
     private GroupCreateAdapter adapter;
     private GroupCreateActivityDelegate delegate;
+    private ContactsAddActivityDelegate delegate2;
     private GroupCreateDividerItemDecoration itemDecoration;
     private AnimatorSet currentDoneButtonAnimation;
-    private View doneButton;
     private ImageView floatingButton;
     private boolean doneButtonVisible;
     private boolean ignoreScrollEvent;
@@ -101,11 +109,15 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private int containerHeight;
 
     private int chatId;
+    private int channelId;
+
+    private SparseArray<TLObject> ignoreUsers;
 
     private int maxCount = MessagesController.getInstance(currentAccount).maxMegagroupCount;
     private int chatType = ChatObject.CHAT_TYPE_CHAT;
     private boolean isAlwaysShare;
     private boolean isNeverShare;
+    private boolean addToGroup;
     private boolean searchWas;
     private boolean searching;
     private boolean isGroup;
@@ -113,14 +125,20 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private ArrayList<GroupCreateSpan> allSpans = new ArrayList<>();
     private GroupCreateSpan currentDeletingSpan;
 
-    private boolean showFabButton;
-
     private int fieldY;
 
     private final static int done_button = 1;
 
     public interface GroupCreateActivityDelegate {
         void didSelectUsers(ArrayList<Integer> ids);
+    }
+
+    public interface ContactsAddActivityDelegate {
+        void didSelectUsers(ArrayList<TLRPC.User> users, int fwdCount);
+
+        default void needAddBot(TLRPC.User user) {
+
+        }
     }
 
     private class SpansContainer extends ViewGroup {
@@ -139,11 +157,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             int count = getChildCount();
             int width = MeasureSpec.getSize(widthMeasureSpec);
-            int maxWidth = width - AndroidUtilities.dp(32);
+            int maxWidth = width - AndroidUtilities.dp(26);
             int currentLineWidth = 0;
-            int y = AndroidUtilities.dp(12);
+            int y = AndroidUtilities.dp(10);
             int allCurrentLineWidth = 0;
-            int allY = AndroidUtilities.dp(12);
+            int allY = AndroidUtilities.dp(10);
             int x;
             for (int a = 0; a < count; a++) {
                 View child = getChildAt(a);
@@ -152,17 +170,17 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 }
                 child.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(32), MeasureSpec.EXACTLY));
                 if (child != removingSpan && currentLineWidth + child.getMeasuredWidth() > maxWidth) {
-                    y += child.getMeasuredHeight() + AndroidUtilities.dp(12);
+                    y += child.getMeasuredHeight() + AndroidUtilities.dp(8);
                     currentLineWidth = 0;
                 }
                 if (allCurrentLineWidth + child.getMeasuredWidth() > maxWidth) {
-                    allY += child.getMeasuredHeight() + AndroidUtilities.dp(12);
+                    allY += child.getMeasuredHeight() + AndroidUtilities.dp(8);
                     allCurrentLineWidth = 0;
                 }
-                x = AndroidUtilities.dp(16) + currentLineWidth;
+                x = AndroidUtilities.dp(13) + currentLineWidth;
                 if (!animationStarted) {
                     if (child == removingSpan) {
-                        child.setTranslationX(AndroidUtilities.dp(16) + allCurrentLineWidth);
+                        child.setTranslationX(AndroidUtilities.dp(13) + allCurrentLineWidth);
                         child.setTranslationY(allY);
                     } else if (removingSpan != null) {
                         if (child.getTranslationX() != x) {
@@ -183,24 +201,24 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             }
             int minWidth;
             if (AndroidUtilities.isTablet()) {
-                minWidth = AndroidUtilities.dp(530 - 32 - 18 - 57 * 2) / 3;
+                minWidth = AndroidUtilities.dp(530 - 26 - 18 - 57 * 2) / 3;
             } else {
-                minWidth = (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(32 + 18 + 57 * 2)) / 3;
+                minWidth = (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(26 + 18 + 57 * 2)) / 3;
             }
             if (maxWidth - currentLineWidth < minWidth) {
                 currentLineWidth = 0;
-                y += AndroidUtilities.dp(32 + 12);
+                y += AndroidUtilities.dp(32 + 8);
             }
             if (maxWidth - allCurrentLineWidth < minWidth) {
-                allY += AndroidUtilities.dp(32 + 12);
+                allY += AndroidUtilities.dp(32 + 8);
             }
             editText.measure(MeasureSpec.makeMeasureSpec(maxWidth - currentLineWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(32), MeasureSpec.EXACTLY));
             if (!animationStarted) {
-                int currentHeight = allY + AndroidUtilities.dp(32 + 12);
+                int currentHeight = allY + AndroidUtilities.dp(32 + 10);
                 int fieldX = currentLineWidth + AndroidUtilities.dp(16);
                 fieldY = y;
                 if (currentAnimation != null) {
-                    int resultHeight = y + AndroidUtilities.dp(32 + 12);
+                    int resultHeight = y + AndroidUtilities.dp(32 + 10);
                     if (containerHeight != resultHeight) {
                         animators.add(ObjectAnimator.ofInt(GroupCreateActivity.this, "containerHeight", resultHeight));
                     }
@@ -309,10 +327,15 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         chatType = args.getInt("chatType", ChatObject.CHAT_TYPE_CHAT);
         isAlwaysShare = args.getBoolean("isAlwaysShare", false);
         isNeverShare = args.getBoolean("isNeverShare", false);
+        addToGroup = args.getBoolean("addToGroup", false);
         isGroup = args.getBoolean("isGroup", false);
         chatId = args.getInt("chatId");
-        showFabButton = args.getBoolean("showFabButton", false);
-        maxCount = chatType == ChatObject.CHAT_TYPE_CHAT ? MessagesController.getInstance(currentAccount).maxMegagroupCount : MessagesController.getInstance(currentAccount).maxBroadcastCount;
+        channelId = args.getInt("channelId");
+        if (isAlwaysShare || isNeverShare || addToGroup) {
+            maxCount = 0;
+        } else {
+            maxCount = chatType == ChatObject.CHAT_TYPE_CHAT ? MessagesController.getInstance(currentAccount).maxMegagroupCount : MessagesController.getInstance(currentAccount).maxBroadcastCount;
+        }
     }
 
     @Override
@@ -363,7 +386,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         if (chatType == ChatObject.CHAT_TYPE_CHANNEL) {
             actionBar.setTitle(LocaleController.getString("ChannelAddMembers", R.string.ChannelAddMembers));
         } else {
-            if (isAlwaysShare) {
+            if (addToGroup) {
+                actionBar.setTitle(LocaleController.getString("SelectContacts", R.string.SelectContacts));
+            } else if (isAlwaysShare) {
                 if (isGroup) {
                     actionBar.setTitle(LocaleController.getString("AlwaysAllow", R.string.AlwaysAllow));
                 } else {
@@ -386,7 +411,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 if (id == -1) {
                     finishFragment();
                 } else if (id == done_button) {
-                    onDonePressed();
+                    onDonePressed(true);
                 }
             }
         });
@@ -478,7 +503,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 return super.onTouchEvent(event);
             }
         };
-        editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         editText.setHintColor(Theme.getColor(Theme.key_groupcreate_hintText));
         editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         editText.setCursorColor(Theme.getColor(Theme.key_groupcreate_cursor));
@@ -496,18 +521,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         if (chatType == ChatObject.CHAT_TYPE_CHANNEL) {
             editText.setHintText(LocaleController.getString("AddMutual", R.string.AddMutual));
         } else {
-            if (isAlwaysShare) {
-                if (isGroup) {
-                    editText.setHintText(LocaleController.getString("AlwaysAllowPlaceholder", R.string.AlwaysAllowPlaceholder));
-                } else {
-                    editText.setHintText(LocaleController.getString("AlwaysShareWithPlaceholder", R.string.AlwaysShareWithPlaceholder));
-                }
-            } else if (isNeverShare) {
-                if (isGroup) {
-                    editText.setHintText(LocaleController.getString("NeverAllowPlaceholder", R.string.NeverAllowPlaceholder));
-                } else {
-                    editText.setHintText(LocaleController.getString("NeverShareWithPlaceholder", R.string.NeverShareWithPlaceholder));
-                }
+            if (addToGroup) {
+                editText.setHintText(LocaleController.getString("SearchForPeople", R.string.SearchForPeople));
+            } else if (isAlwaysShare || isNeverShare) {
+                editText.setHintText(LocaleController.getString("SearchForPeopleAndGroups", R.string.SearchForPeopleAndGroups));
             } else {
                 editText.setHintText(LocaleController.getString("SendMessageTo", R.string.SendMessageTo));
             }
@@ -529,7 +546,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 return false;
             }
         });
-        editText.setOnEditorActionListener((v, actionId, event) -> actionId == EditorInfo.IME_ACTION_DONE && onDonePressed());
+        editText.setOnEditorActionListener((v, actionId, event) -> actionId == EditorInfo.IME_ACTION_DONE && onDonePressed(true));
         editText.setOnKeyListener(new View.OnKeyListener() {
 
             private boolean wasEmpty;
@@ -563,14 +580,17 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             @Override
             public void afterTextChanged(Editable editable) {
                 if (editText.length() != 0) {
-                    searching = true;
-                    searchWas = true;
-                    adapter.setSearching(true);
-                    itemDecoration.setSearching(true);
+                    if (!adapter.searching) {
+                        searching = true;
+                        searchWas = true;
+                        adapter.setSearching(true);
+                        itemDecoration.setSearching(true);
+                        listView.setFastScrollVisible(false);
+                        listView.setVerticalScrollBarEnabled(true);
+                        emptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                        emptyView.showProgress();
+                    }
                     adapter.searchDialogs(editText.getText().toString());
-                    listView.setFastScrollVisible(false);
-                    listView.setVerticalScrollBarEnabled(true);
-                    emptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
                 } else {
                     closeSearch();
                 }
@@ -599,43 +619,88 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         listView.addItemDecoration(itemDecoration = new GroupCreateDividerItemDecoration());
         frameLayout.addView(listView);
         listView.setOnItemClickListener((view, position) -> {
-            if (!(view instanceof GroupCreateUserCell)) {
-                return;
-            }
-            GroupCreateUserCell cell = (GroupCreateUserCell) view;
-            TLRPC.User user = cell.getUser();
-            if (user == null) {
-                return;
-            }
-            boolean exists;
-            if (exists = selectedContacts.indexOfKey(user.id) >= 0) {
-                GroupCreateSpan span = selectedContacts.get(user.id);
-                spansContainer.removeSpan(span);
-            } else {
-                if (maxCount != 0 && selectedContacts.size() == maxCount) {
+            if (position == 0 && adapter.inviteViaLink != 0 && !adapter.searching) {
+                presentFragment(new GroupInviteActivity(chatId != 0 ? chatId : channelId));
+            } else if (view instanceof GroupCreateUserCell) {
+                GroupCreateUserCell cell = (GroupCreateUserCell) view;
+                TLObject object = cell.getObject();
+                int id;
+                if (object instanceof TLRPC.User) {
+                    id = ((TLRPC.User) object).id;
+                } else if (object instanceof TLRPC.Chat) {
+                    id = -((TLRPC.Chat) object).id;
+                } else {
                     return;
                 }
-                if (chatType == ChatObject.CHAT_TYPE_CHAT && selectedContacts.size() == MessagesController.getInstance(currentAccount).maxGroupCount) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                    builder.setMessage(LocaleController.getString("SoftUserLimitAlert", R.string.SoftUserLimitAlert));
-                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                    showDialog(builder.create());
+                if (ignoreUsers != null && ignoreUsers.indexOfKey(id) >= 0) {
                     return;
                 }
-                MessagesController.getInstance(currentAccount).putUser(user, !searching);
-                GroupCreateSpan span = new GroupCreateSpan(editText.getContext(), user);
-                spansContainer.addSpan(span);
-                span.setOnClickListener(GroupCreateActivity.this);
-            }
-            updateHint();
-            if (searching || searchWas) {
-                AndroidUtilities.showKeyboard(editText);
-            } else {
-                cell.setChecked(!exists, true);
-            }
-            if (editText.length() > 0) {
-                editText.setText(null);
+                boolean exists;
+                if (exists = selectedContacts.indexOfKey(id) >= 0) {
+                    GroupCreateSpan span = selectedContacts.get(id);
+                    spansContainer.removeSpan(span);
+                } else {
+                    if (maxCount != 0 && selectedContacts.size() == maxCount) {
+                        return;
+                    }
+                    if (chatType == ChatObject.CHAT_TYPE_CHAT && selectedContacts.size() == MessagesController.getInstance(currentAccount).maxGroupCount) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setMessage(LocaleController.getString("SoftUserLimitAlert", R.string.SoftUserLimitAlert));
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                        showDialog(builder.create());
+                        return;
+                    }
+                    if (object instanceof TLRPC.User) {
+                        TLRPC.User user = (TLRPC.User) object;
+                        if (addToGroup && user.bot) {
+                            if (user.bot_nochats) {
+                                try {
+                                    Toast.makeText(getParentActivity(), LocaleController.getString("BotCantJoinGroups", R.string.BotCantJoinGroups), Toast.LENGTH_SHORT).show();
+                                } catch (Exception e) {
+                                    FileLog.e(e);
+                                }
+                                return;
+                            }
+                            if (channelId != 0) {
+                                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(channelId);
+                                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                                if (ChatObject.canAddAdmins(chat)) {
+                                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                    builder.setMessage(LocaleController.getString("AddBotAsAdmin", R.string.AddBotAsAdmin));
+                                    builder.setPositiveButton(LocaleController.getString("MakeAdmin", R.string.MakeAdmin), (dialogInterface, i) -> {
+                                        delegate2.needAddBot(user);
+                                        if (editText.length() > 0) {
+                                            editText.setText(null);
+                                        }
+                                    });
+                                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                                } else {
+                                    builder.setMessage(LocaleController.getString("CantAddBotAsAdmin", R.string.CantAddBotAsAdmin));
+                                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                                }
+                                showDialog(builder.create());
+                                return;
+                            }
+                        }
+                        MessagesController.getInstance(currentAccount).putUser(user, !searching);
+                    } else if (object instanceof TLRPC.Chat) {
+                        TLRPC.Chat chat = (TLRPC.Chat) object;
+                        MessagesController.getInstance(currentAccount).putChat(chat, !searching);
+                    }
+                    GroupCreateSpan span = new GroupCreateSpan(editText.getContext(), object);
+                    spansContainer.addSpan(span);
+                    span.setOnClickListener(GroupCreateActivity.this);
+                }
+                updateHint();
+                if (searching || searchWas) {
+                    AndroidUtilities.showKeyboard(editText);
+                } else {
+                    cell.setChecked(!exists, true);
+                }
+                if (editText.length() > 0) {
+                    editText.setText(null);
+                }
             }
         });
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -647,54 +712,48 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             }
         });
 
-        if (showFabButton) {
-            floatingButton = new ImageView(context);
-            floatingButton.setScaleType(ImageView.ScaleType.CENTER);
+        floatingButton = new ImageView(context);
+        floatingButton.setScaleType(ImageView.ScaleType.CENTER);
 
-            Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground));
-            if (Build.VERSION.SDK_INT < 21) {
-                Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.floating_shadow).mutate();
-                shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
-                CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
-                combinedDrawable.setIconSize(AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-                drawable = combinedDrawable;
-            }
-            floatingButton.setBackgroundDrawable(drawable);
-            floatingButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
+        Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground));
+        if (Build.VERSION.SDK_INT < 21) {
+            Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.floating_shadow).mutate();
+            shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
+            CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
+            combinedDrawable.setIconSize(AndroidUtilities.dp(56), AndroidUtilities.dp(56));
+            drawable = combinedDrawable;
+        }
+        floatingButton.setBackgroundDrawable(drawable);
+        floatingButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
+        if (isNeverShare || isAlwaysShare || addToGroup) {
+            floatingButton.setImageResource(R.drawable.floating_check);
+        } else {
             BackDrawable backDrawable = new BackDrawable(false);
             backDrawable.setArrowRotation(180);
             floatingButton.setImageDrawable(backDrawable);
-            if (Build.VERSION.SDK_INT >= 21) {
-                StateListAnimator animator = new StateListAnimator();
-                animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
-                animator.addState(new int[]{}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
-                floatingButton.setStateListAnimator(animator);
-                floatingButton.setOutlineProvider(new ViewOutlineProvider() {
-                    @SuppressLint("NewApi")
-                    @Override
-                    public void getOutline(View view, Outline outline) {
-                        outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-                    }
-                });
-            }
-            frameLayout.addView(floatingButton);
-            floatingButton.setOnClickListener(v -> onDonePressed());
-            if (chatType != ChatObject.CHAT_TYPE_CHANNEL) {
-                floatingButton.setVisibility(View.INVISIBLE);
-                floatingButton.setScaleX(0.0f);
-                floatingButton.setScaleY(0.0f);
-                floatingButton.setAlpha(0.0f);
-            }
-            floatingButton.setContentDescription(LocaleController.getString("Next", R.string.Next));
-        } else {
-            ActionBarMenu menu = actionBar.createMenu();
-            doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
-            if (chatType != ChatObject.CHAT_TYPE_CHANNEL) {
-                doneButton.setScaleX(0.0f);
-                doneButton.setScaleY(0.0f);
-                doneButton.setAlpha(0.0f);
-            }
         }
+        if (Build.VERSION.SDK_INT >= 21) {
+            StateListAnimator animator = new StateListAnimator();
+            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
+            animator.addState(new int[]{}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
+            floatingButton.setStateListAnimator(animator);
+            floatingButton.setOutlineProvider(new ViewOutlineProvider() {
+                @SuppressLint("NewApi")
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
+                }
+            });
+        }
+        frameLayout.addView(floatingButton);
+        floatingButton.setOnClickListener(v -> onDonePressed(true));
+        if (chatType != ChatObject.CHAT_TYPE_CHANNEL) {
+            floatingButton.setVisibility(View.INVISIBLE);
+            floatingButton.setScaleX(0.0f);
+            floatingButton.setScaleY(0.0f);
+            floatingButton.setAlpha(0.0f);
+        }
+        floatingButton.setContentDescription(LocaleController.getString("Next", R.string.Next));
 
         updateHint();
         return fragmentView;
@@ -736,6 +795,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         }
     }
 
+    public void setIgnoreUsers(SparseArray<TLObject> users) {
+        ignoreUsers = users;
+    }
+
     @Keep
     public void setContainerHeight(int value) {
         containerHeight = value;
@@ -754,46 +817,138 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             View child = listView.getChildAt(a);
             if (child instanceof GroupCreateUserCell) {
                 GroupCreateUserCell cell = (GroupCreateUserCell) child;
-                TLRPC.User user = cell.getUser();
-                if (user != null) {
-                    cell.setChecked(selectedContacts.indexOfKey(user.id) >= 0, true);
+                TLObject object = cell.getObject();
+                int id;
+                if (object instanceof TLRPC.User) {
+                    id = ((TLRPC.User) object).id;
+                } else if (object instanceof TLRPC.Chat) {
+                    id = -((TLRPC.Chat) object).id;
+                } else {
+                    id = 0;
+                }
+                if (id != 0) {
+                    if (ignoreUsers != null && ignoreUsers.indexOfKey(id) >= 0) {
+                        cell.setChecked(true, false);
+                        cell.setCheckBoxEnabled(false);
+                    } else {
+                        cell.setChecked(selectedContacts.indexOfKey(id) >= 0, true);
+                        cell.setCheckBoxEnabled(true);
+                    }
                 }
             }
         }
     }
 
-    private boolean onDonePressed() {
-        if (chatType == ChatObject.CHAT_TYPE_CHANNEL) {
-            ArrayList<TLRPC.InputUser> result = new ArrayList<>();
-            for (int a = 0; a < selectedContacts.size(); a++) {
-                TLRPC.InputUser user = MessagesController.getInstance(currentAccount).getInputUser(MessagesController.getInstance(currentAccount).getUser(selectedContacts.keyAt(a)));
-                if (user != null) {
-                    result.add(user);
-                }
-            }
-            MessagesController.getInstance(currentAccount).addUsersToChannel(chatId, result, null);
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
-            Bundle args2 = new Bundle();
-            args2.putInt("chat_id", chatId);
-            presentFragment(new ChatActivity(args2), true);
-        } else {
-            if (!doneButtonVisible || selectedContacts.size() == 0) {
+    private void onAddToGroupDone(int count) {
+        ArrayList<TLRPC.User> result = new ArrayList<>();
+        for (int a = 0; a < selectedContacts.size(); a++) {
+            TLRPC.User user = getMessagesController().getUser(selectedContacts.keyAt(a));
+            result.add(user);
+        }
+        if (delegate2 != null) {
+            delegate2.didSelectUsers(result, count);
+        }
+        finishFragment();
+    }
+
+    private boolean onDonePressed(boolean alert) {
+        if (selectedContacts.size() == 0) {
+            return false;
+        }
+        if (alert && addToGroup) {
+            if (getParentActivity() == null) {
                 return false;
             }
-            ArrayList<Integer> result = new ArrayList<>();
-            for (int a = 0; a < selectedContacts.size(); a++) {
-                result.add(selectedContacts.keyAt(a));
-            }
-            if (isAlwaysShare || isNeverShare) {
-                if (delegate != null) {
-                    delegate.didSelectUsers(result);
-                }
-                finishFragment();
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            if (selectedContacts.size() == 1) {
+                builder.setTitle(LocaleController.getString("AddOneMemberAlertTitle", R.string.AddOneMemberAlertTitle));
             } else {
-                Bundle args = new Bundle();
-                args.putIntegerArrayList("result", result);
-                args.putInt("chatType", chatType);
-                presentFragment(new GroupCreateFinalActivity(args));
+                builder.setTitle(LocaleController.formatString("AddMembersAlertTitle", R.string.AddMembersAlertTitle, LocaleController.formatPluralString("Members", selectedContacts.size())));
+            }
+            StringBuilder stringBuilder = new StringBuilder();
+            for (int a = 0; a < selectedContacts.size(); a++) {
+                int uid = selectedContacts.keyAt(a);
+                TLRPC.User user = getMessagesController().getUser(uid);
+                if (user == null) {
+                    continue;
+                }
+                if (stringBuilder.length() > 0) {
+                    stringBuilder.append(", ");
+                }
+                stringBuilder.append("**").append(ContactsController.formatName(user.first_name, user.last_name)).append("**");
+            }
+            TLRPC.Chat chat = getMessagesController().getChat(chatId != 0 ? chatId : channelId);
+            if (selectedContacts.size() > 5) {
+                SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(AndroidUtilities.replaceTags(LocaleController.formatString("AddMembersAlertNamesText", R.string.AddMembersAlertNamesText, LocaleController.formatPluralString("Members", selectedContacts.size()), chat.title)));
+                String countString = String.format("%d", selectedContacts.size());
+                int index = TextUtils.indexOf(spannableStringBuilder, countString);
+                if (index >= 0) {
+                    spannableStringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), index, index + countString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                builder.setMessage(spannableStringBuilder);
+            } else {
+                builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("AddMembersAlertNamesText", R.string.AddMembersAlertNamesText, stringBuilder, chat.title)));
+            }
+            CheckBoxCell[] cells = new CheckBoxCell[1];
+            if (!ChatObject.isChannel(chat)) {
+                LinearLayout linearLayout = new LinearLayout(getParentActivity());
+                linearLayout.setOrientation(LinearLayout.VERTICAL);
+                cells[0] = new CheckBoxCell(getParentActivity(), 1);
+                cells[0].setBackgroundDrawable(Theme.getSelectorDrawable(false));
+                cells[0].setMultiline(true);
+                if (selectedContacts.size() == 1) {
+                    TLRPC.User user = getMessagesController().getUser(selectedContacts.keyAt(0));
+                    cells[0].setText(AndroidUtilities.replaceTags(LocaleController.formatString("AddOneMemberForwardMessages", R.string.AddOneMemberForwardMessages, UserObject.getFirstName(user))), "", true, false);
+                } else {
+                    cells[0].setText(LocaleController.getString("AddMembersForwardMessages", R.string.AddMembersForwardMessages), "", true, false);
+                }
+                cells[0].setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
+                linearLayout.addView(cells[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                cells[0].setOnClickListener(v -> cells[0].setChecked(!cells[0].isChecked(), true));
+
+                builder.setCustomViewOffset(12);
+                builder.setView(linearLayout);
+            }
+            builder.setPositiveButton(LocaleController.getString("Add", R.string.Add), (dialogInterface, i) -> onAddToGroupDone(cells[0] != null && cells[0].isChecked() ? 100 : 0));
+            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+            showDialog(builder.create());
+        } else {
+            if (chatType == ChatObject.CHAT_TYPE_CHANNEL) {
+                ArrayList<TLRPC.InputUser> result = new ArrayList<>();
+                for (int a = 0; a < selectedContacts.size(); a++) {
+                    TLRPC.InputUser user = MessagesController.getInstance(currentAccount).getInputUser(MessagesController.getInstance(currentAccount).getUser(selectedContacts.keyAt(a)));
+                    if (user != null) {
+                        result.add(user);
+                    }
+                }
+                MessagesController.getInstance(currentAccount).addUsersToChannel(chatId, result, null);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
+                Bundle args2 = new Bundle();
+                args2.putInt("chat_id", chatId);
+                presentFragment(new ChatActivity(args2), true);
+            } else {
+                if (!doneButtonVisible || selectedContacts.size() == 0) {
+                    return false;
+                }
+                if (addToGroup) {
+                    onAddToGroupDone(0);
+                } else {
+                    ArrayList<Integer> result = new ArrayList<>();
+                    for (int a = 0; a < selectedContacts.size(); a++) {
+                        result.add(selectedContacts.keyAt(a));
+                    }
+                    if (isAlwaysShare || isNeverShare) {
+                        if (delegate != null) {
+                            delegate.didSelectUsers(result);
+                        }
+                        finishFragment();
+                    } else {
+                        Bundle args = new Bundle();
+                        args.putIntegerArrayList("result", result);
+                        args.putInt("chatType", chatType);
+                        presentFragment(new GroupCreateFinalActivity(args));
+                    }
+                }
             }
         }
         return true;
@@ -811,7 +966,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     private void updateHint() {
-        if (!isAlwaysShare && !isNeverShare) {
+        if (!isAlwaysShare && !isNeverShare && !addToGroup) {
             if (chatType == ChatObject.CHAT_TYPE_CHANNEL) {
                 actionBar.setSubtitle(LocaleController.formatPluralString("Members", selectedContacts.size()));
             } else {
@@ -828,21 +983,15 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     currentDoneButtonAnimation.cancel();
                 }
                 currentDoneButtonAnimation = new AnimatorSet();
-                if (doneButton != null) {
-                    currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(doneButton, "scaleX", 0.0f),
-                            ObjectAnimator.ofFloat(doneButton, "scaleY", 0.0f),
-                            ObjectAnimator.ofFloat(doneButton, "alpha", 0.0f));
-                } else if (floatingButton != null) {
-                    currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, "scaleX", 0.0f),
-                            ObjectAnimator.ofFloat(floatingButton, "scaleY", 0.0f),
-                            ObjectAnimator.ofFloat(floatingButton, "alpha", 0.0f));
-                    currentDoneButtonAnimation.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            floatingButton.setVisibility(View.INVISIBLE);
-                        }
-                    });
-                }
+                currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, "scaleX", 0.0f),
+                        ObjectAnimator.ofFloat(floatingButton, "scaleY", 0.0f),
+                        ObjectAnimator.ofFloat(floatingButton, "alpha", 0.0f));
+                currentDoneButtonAnimation.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        floatingButton.setVisibility(View.INVISIBLE);
+                    }
+                });
                 currentDoneButtonAnimation.setDuration(180);
                 currentDoneButtonAnimation.start();
                 doneButtonVisible = false;
@@ -851,16 +1000,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     currentDoneButtonAnimation.cancel();
                 }
                 currentDoneButtonAnimation = new AnimatorSet();
-                if (doneButton != null) {
-                    currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(doneButton, "scaleX", 1.0f),
-                            ObjectAnimator.ofFloat(doneButton, "scaleY", 1.0f),
-                            ObjectAnimator.ofFloat(doneButton, "alpha", 1.0f));
-                } else if (floatingButton != null) {
-                    floatingButton.setVisibility(View.VISIBLE);
-                    currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, "scaleX", 1.0f),
-                            ObjectAnimator.ofFloat(floatingButton, "scaleY", 1.0f),
-                            ObjectAnimator.ofFloat(floatingButton, "alpha", 1.0f));
-                }
+                floatingButton.setVisibility(View.VISIBLE);
+                currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, "scaleX", 1.0f),
+                        ObjectAnimator.ofFloat(floatingButton, "scaleY", 1.0f),
+                        ObjectAnimator.ofFloat(floatingButton, "alpha", 1.0f));
                 currentDoneButtonAnimation.setDuration(180);
                 currentDoneButtonAnimation.start();
                 doneButtonVisible = true;
@@ -872,20 +1015,26 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         delegate = groupCreateActivityDelegate;
     }
 
+    public void setDelegate(ContactsAddActivityDelegate contactsAddActivityDelegate) {
+        delegate2 = contactsAddActivityDelegate;
+    }
+
     public class GroupCreateAdapter extends RecyclerListView.FastScrollAdapter {
 
         private Context context;
-        private ArrayList<TLRPC.User> searchResult = new ArrayList<>();
+        private ArrayList<TLObject> searchResult = new ArrayList<>();
         private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
         private SearchAdapterHelper searchAdapterHelper;
         private Timer searchTimer;
         private boolean searching;
-        private ArrayList<TLRPC.User> contacts = new ArrayList<>();
+        private ArrayList<TLObject> contacts = new ArrayList<>();
+        private int usersStartRow;
+        private int inviteViaLink;
 
         public GroupCreateAdapter(Context ctx) {
             context = ctx;
 
-            ArrayList<TLRPC.TL_contact> arrayList  = ContactsController.getInstance(currentAccount).contacts;
+            ArrayList<TLRPC.TL_contact> arrayList = ContactsController.getInstance(currentAccount).contacts;
             for (int a = 0; a < arrayList.size(); a++) {
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(arrayList.get(a).user_id);
                 if (user == null || user.self || user.deleted) {
@@ -893,8 +1042,39 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 }
                 contacts.add(user);
             }
+            if (isNeverShare || isAlwaysShare) {
+                ArrayList<TLRPC.Dialog> dialogs = getMessagesController().getAllDialogs();
+                for (int a = 0, N = dialogs.size(); a < N; a++) {
+                    TLRPC.Dialog dialog = dialogs.get(a);
+                    int lowerId = (int) dialog.id;
+                    if (lowerId >= 0) {
+                        continue;
+                    }
+                    TLRPC.Chat chat = getMessagesController().getChat(-lowerId);
+                    if (chat == null || chat.migrated_to != null || ChatObject.isChannel(chat) && !chat.megagroup) {
+                        continue;
+                    }
+                    contacts.add(chat);
+                }
+                Collections.sort(contacts, new Comparator<TLObject>() {
+                    private String getName(TLObject object) {
+                        if (object instanceof TLRPC.User) {
+                            TLRPC.User user = (TLRPC.User) object;
+                            return ContactsController.formatName(user.first_name, user.last_name);
+                        } else {
+                            TLRPC.Chat chat = (TLRPC.Chat) object;
+                            return chat.title;
+                        }
+                    }
 
-            searchAdapterHelper = new SearchAdapterHelper(true);
+                    @Override
+                    public int compare(TLObject o1, TLObject o2) {
+                        return getName(o1).compareTo(getName(o2));
+                    }
+                });
+            }
+
+            searchAdapterHelper = new SearchAdapterHelper(false);
             searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
                 @Override
                 public void onDataSetChanged() {
@@ -918,24 +1098,32 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
         @Override
         public String getLetter(int position) {
-            if (position < 0 || position >= contacts.size()) {
+            if (searching || position < usersStartRow || position >= contacts.size() + usersStartRow) {
                 return null;
             }
-            TLRPC.User user = contacts.get(position);
-            if (user == null) {
-                return null;
+            TLObject object = contacts.get(position - usersStartRow);
+            String firstName;
+            String lastName;
+            if (object instanceof TLRPC.User) {
+                TLRPC.User user = (TLRPC.User) object;
+                firstName = user.first_name;
+                lastName = user.last_name;
+            } else {
+                TLRPC.Chat chat = (TLRPC.Chat) object;
+                firstName = chat.title;
+                lastName = "";
             }
             if (LocaleController.nameDisplayOrder == 1) {
-                if (!TextUtils.isEmpty(user.first_name)) {
-                    return user.first_name.substring(0, 1).toUpperCase();
-                } else if (!TextUtils.isEmpty(user.last_name)) {
-                    return user.last_name.substring(0, 1).toUpperCase();
+                if (!TextUtils.isEmpty(firstName)) {
+                    return firstName.substring(0, 1).toUpperCase();
+                } else if (!TextUtils.isEmpty(lastName)) {
+                    return lastName.substring(0, 1).toUpperCase();
                 }
             } else {
-                if (!TextUtils.isEmpty(user.last_name)) {
-                    return user.last_name.substring(0, 1).toUpperCase();
-                } else if (!TextUtils.isEmpty(user.first_name)) {
-                    return user.first_name.substring(0, 1).toUpperCase();
+                if (!TextUtils.isEmpty(lastName)) {
+                    return lastName.substring(0, 1).toUpperCase();
+                } else if (!TextUtils.isEmpty(firstName)) {
+                    return firstName.substring(0, 1).toUpperCase();
                 }
             }
             return "";
@@ -943,15 +1131,35 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
         @Override
         public int getItemCount() {
+            int count;
             if (searching) {
-                int count = searchResult.size();
+                count = searchResult.size();
+                int localServerCount = searchAdapterHelper.getLocalServerSearch().size();
                 int globalCount = searchAdapterHelper.getGlobalSearch().size();
+                count += localServerCount;
                 if (globalCount != 0) {
                     count += globalCount + 1;
                 }
                 return count;
+            } else {
+                count = contacts.size();
+                if (addToGroup) {
+                    if (chatId != 0) {
+                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
+                        inviteViaLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE) ? 1 : 0;
+                    } else if (channelId != 0) {
+                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(channelId);
+                        inviteViaLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE) && TextUtils.isEmpty(chat.username) ? 2 : 0;
+                    } else {
+                        inviteViaLink = 0;
+                    }
+                    if (inviteViaLink != 0) {
+                        usersStartRow = 1;
+                        count++;
+                    }
+                }
             }
-            return contacts.size();
+            return count;
         }
 
         @Override
@@ -961,8 +1169,12 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 case 0:
                     view = new GroupCreateSectionCell(context);
                     break;
-                default:
+                case 1:
                     view = new GroupCreateUserCell(context, true, 0);
+                    break;
+                case 2:
+                default:
+                    view = new TextCell(context);
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -978,31 +1190,41 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     }
                     break;
                 }
-                default: {
+                case 1: {
                     GroupCreateUserCell cell = (GroupCreateUserCell) holder.itemView;
-                    TLRPC.User user;
+                    TLObject object;
                     CharSequence username = null;
                     CharSequence name = null;
                     if (searching) {
                         int localCount = searchResult.size();
                         int globalCount = searchAdapterHelper.getGlobalSearch().size();
+                        int localServerCount = searchAdapterHelper.getLocalServerSearch().size();
+
                         if (position >= 0 && position < localCount) {
-                            user = searchResult.get(position);
-                        } else if (position > localCount && position <= globalCount + localCount) {
-                            user = (TLRPC.User) searchAdapterHelper.getGlobalSearch().get(position - localCount - 1);
+                            object = searchResult.get(position);
+                        } else if (position >= localCount && position < localServerCount + localCount) {
+                            object = searchAdapterHelper.getLocalServerSearch().get(position - localCount);
+                        } else if (position > localCount + localServerCount && position <= globalCount + localCount + localServerCount) {
+                            object = searchAdapterHelper.getGlobalSearch().get(position - localCount - localServerCount - 1);
                         } else {
-                            user = null;
+                            object = null;
                         }
-                        if (user != null) {
+                        if (object != null) {
+                            String objectUserName;
+                            if (object instanceof TLRPC.User) {
+                                objectUserName = ((TLRPC.User) object).username;
+                            } else {
+                                objectUserName = ((TLRPC.Chat) object).username;
+                            }
                             if (position < localCount) {
                                 name = searchResultNames.get(position);
-                                if (name != null && !TextUtils.isEmpty(user.username)) {
-                                    if (name.toString().startsWith("@" + user.username)) {
+                                if (name != null && !TextUtils.isEmpty(objectUserName)) {
+                                    if (name.toString().startsWith("@" + objectUserName)) {
                                         username = name;
                                         name = null;
                                     }
                                 }
-                            } else if (position > localCount && !TextUtils.isEmpty(user.username)) {
+                            } else if (position > localCount && !TextUtils.isEmpty(objectUserName)) {
                                 String foundUserName = searchAdapterHelper.getLastFoundUsername();
                                 if (foundUserName.startsWith("@")) {
                                     foundUserName = foundUserName.substring(1);
@@ -1011,8 +1233,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                     int index;
                                     SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
                                     spannableStringBuilder.append("@");
-                                    spannableStringBuilder.append(user.username);
-                                    if ((index = user.username.toLowerCase().indexOf(foundUserName)) != -1) {
+                                    spannableStringBuilder.append(objectUserName);
+                                    if ((index = objectUserName.toLowerCase().indexOf(foundUserName)) != -1) {
                                         int len = foundUserName.length();
                                         if (index == 0) {
                                             len++;
@@ -1023,15 +1245,40 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                     }
                                     username = spannableStringBuilder;
                                 } catch (Exception e) {
-                                    username = user.username;
+                                    username = objectUserName;
                                 }
                             }
                         }
                     } else {
-                        user = contacts.get(position);
+                        object = contacts.get(position - usersStartRow);
                     }
-                    cell.setUser(user, name, username);
-                    cell.setChecked(selectedContacts.indexOfKey(user.id) >= 0, false);
+                    cell.setObject(object, name, username);
+                    int id;
+                    if (object instanceof TLRPC.User) {
+                        id = ((TLRPC.User) object).id;
+                    } else if (object instanceof TLRPC.Chat) {
+                        id = -((TLRPC.Chat) object).id;
+                    } else {
+                        id = 0;
+                    }
+                    if (id != 0) {
+                        if (ignoreUsers != null && ignoreUsers.indexOfKey(id) >= 0) {
+                            cell.setChecked(true, false);
+                            cell.setCheckBoxEnabled(false);
+                        } else {
+                            cell.setChecked(selectedContacts.indexOfKey(id) >= 0, false);
+                            cell.setCheckBoxEnabled(true);
+                        }
+                    }
+                    break;
+                }
+                case 2: {
+                    TextCell textCell = (TextCell) holder.itemView;
+                    if (inviteViaLink == 2) {
+                        textCell.setTextAndIcon(LocaleController.getString("ChannelInviteViaLink", R.string.ChannelInviteViaLink), R.drawable.profile_link, false);
+                    } else {
+                        textCell.setTextAndIcon(LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink), R.drawable.profile_link, false);
+                    }
                     break;
                 }
             }
@@ -1040,11 +1287,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         @Override
         public int getItemViewType(int position) {
             if (searching) {
-                if (position == searchResult.size()) {
+                if (position == searchResult.size() + searchAdapterHelper.getLocalServerSearch().size()) {
                     return 0;
                 }
                 return 1;
             } else {
+                if (inviteViaLink != 0 && position == 0) {
+                    return 2;
+                }
                 return 1;
             }
         }
@@ -1063,6 +1313,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            if (ignoreUsers != null && holder.itemView instanceof GroupCreateUserCell) {
+                GroupCreateUserCell cell = (GroupCreateUserCell) holder.itemView;
+                TLObject object = cell.getObject();
+                if (object instanceof TLRPC.User) {
+                    TLRPC.User user = (TLRPC.User) object;
+                    return ignoreUsers.indexOfKey(user.id) < 0;
+                }
+            }
             return true;
         }
 
@@ -1077,7 +1335,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (query == null) {
                 searchResult.clear();
                 searchResultNames.clear();
-                searchAdapterHelper.queryServerSearch(null, true, false, false, false, 0, 0);
+                searchAdapterHelper.mergeResults(null);
+                searchAdapterHelper.queryServerSearch(null, true, isAlwaysShare || isNeverShare, false, false, 0, 0);
                 notifyDataSetChanged();
             } else {
                 searchTimer = new Timer();
@@ -1092,7 +1351,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         }
 
                         AndroidUtilities.runOnUIThread(() -> {
-                            searchAdapterHelper.queryServerSearch(query, true, false, true, false, 0, 0);
+                            searchAdapterHelper.queryServerSearch(query, true, isAlwaysShare || isNeverShare, true, false, 0, 0);
                             Utilities.searchQueue.postRunnable(() -> {
                                 String search1 = query.trim().toLowerCase();
                                 if (search1.length() == 0) {
@@ -1109,13 +1368,24 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                     search[1] = search2;
                                 }
 
-                                ArrayList<TLRPC.User> resultArray = new ArrayList<>();
+                                ArrayList<TLObject> resultArray = new ArrayList<>();
                                 ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
 
                                 for (int a = 0; a < contacts.size(); a++) {
-                                    TLRPC.User user = contacts.get(a);
+                                    TLObject object = contacts.get(a);
 
-                                    String name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
+                                    String name;
+                                    String username;
+
+                                    if (object instanceof TLRPC.User) {
+                                        TLRPC.User user = (TLRPC.User) object;
+                                        name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
+                                        username = user.username;
+                                    } else {
+                                        TLRPC.Chat chat = (TLRPC.Chat) object;
+                                        name = chat.title;
+                                        username = chat.username;
+                                    }
                                     String tName = LocaleController.getInstance().getTranslitString(name);
                                     if (name.equals(tName)) {
                                         tName = null;
@@ -1125,17 +1395,23 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                     for (String q : search) {
                                         if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                             found = 1;
-                                        } else if (user.username != null && user.username.startsWith(q)) {
+                                        } else if (username != null && username.startsWith(q)) {
                                             found = 2;
                                         }
 
                                         if (found != 0) {
                                             if (found == 1) {
-                                                resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
+                                                if (object instanceof TLRPC.User) {
+                                                    TLRPC.User user = (TLRPC.User) object;
+                                                    resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
+                                                } else {
+                                                    TLRPC.Chat chat = (TLRPC.Chat) object;
+                                                    resultArrayNames.add(AndroidUtilities.generateSearchName(chat.title, null, q));
+                                                }
                                             } else {
-                                                resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
+                                                resultArrayNames.add(AndroidUtilities.generateSearchName("@" + username, null, "@" + q));
                                             }
-                                            resultArray.add(user);
+                                            resultArray.add(object);
                                             break;
                                         }
                                     }
@@ -1149,10 +1425,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             }
         }
 
-        private void updateSearchResults(final ArrayList<TLRPC.User> users, final ArrayList<CharSequence> names) {
+        private void updateSearchResults(final ArrayList<TLObject> users, final ArrayList<CharSequence> names) {
             AndroidUtilities.runOnUIThread(() -> {
                 searchResult = users;
                 searchResultNames = names;
+                searchAdapterHelper.mergeResults(searchResult);
+                if (searching && !searchAdapterHelper.isSearchInProgress()) {
+                    emptyView.showTextView();
+                }
                 notifyDataSetChanged();
             });
         }
@@ -1203,8 +1483,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{GroupCreateSectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_groupcreate_sectionText),
 
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{GroupCreateUserCell.class}, new String[]{"textView"}, null, null, null, Theme.key_groupcreate_sectionText),
-                new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{GroupCreateUserCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_groupcreate_checkbox),
-                new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{GroupCreateUserCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_groupcreate_checkboxCheck),
+                new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{GroupCreateUserCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_checkbox),
+                new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{GroupCreateUserCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_checkboxDisabled),
+                new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{GroupCreateUserCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_checkboxCheck),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{GroupCreateUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{GroupCreateUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText),
                 new ThemeDescription(listView, 0, new Class[]{GroupCreateUserCell.class}, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),

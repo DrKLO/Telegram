@@ -16,6 +16,7 @@ import android.animation.StateListAnimator;
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -65,6 +66,7 @@ import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -73,7 +75,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.SimpleTextView;
@@ -118,6 +119,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private ImageView writeButton;
     private AnimatorSet writeButtonAnimation;
     private ScamDrawable scamDrawable;
+    private MediaActivity mediaActivity;
+
+    private boolean[] isOnline = new boolean[1];
 
     private AvatarDrawable avatarDrawable;
     private ActionBarMenuItem animatingItem;
@@ -214,6 +218,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int groupsInCommonRow;
     private int sharedSectionRow;
 
+    private int unblockRow;
     private int startSecretChatRow;
     private int leaveChannelRow;
     private int joinRow;
@@ -366,6 +371,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             if (ChatObject.isChannel(currentChat)) {
                 MessagesController.getInstance(currentAccount).loadFullChat(chat_id, classGuid, true);
+            } else if (chatInfo == null) {
+                MessagesController.getInstance(currentAccount).loadChatInfo(chat_id, null, false);
+            }
+            if (chatInfo == null) {
+                chatInfo = getMessagesController().getChatFull(chat_id);
             }
         } else {
             return false;
@@ -453,22 +463,25 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         return;
                     }
                     if (!isBot || MessagesController.isSupportUser(user)) {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        if (!userBlocked) {
-                            builder.setMessage(LocaleController.getString("AreYouSureBlockContact", R.string.AreYouSureBlockContact));
+                        if (userBlocked) {
+                            MessagesController.getInstance(currentAccount).unblockUser(user_id);
+                            AlertsCreator.showSimpleToast(ProfileActivity.this, LocaleController.getString("UserUnblocked", R.string.UserUnblocked));
                         } else {
-                            builder.setMessage(LocaleController.getString("AreYouSureUnblockContact", R.string.AreYouSureUnblockContact));
-                        }
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
-                            if (!userBlocked) {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                            builder.setTitle(LocaleController.getString("BlockUser", R.string.BlockUser));
+                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureBlockContact2", R.string.AreYouSureBlockContact2, ContactsController.formatName(user.first_name, user.last_name))));
+                            builder.setPositiveButton(LocaleController.getString("BlockContact", R.string.BlockContact), (dialogInterface, i) -> {
                                 MessagesController.getInstance(currentAccount).blockUser(user_id);
-                            } else {
-                                MessagesController.getInstance(currentAccount).unblockUser(user_id);
+                                AlertsCreator.showSimpleToast(ProfileActivity.this, LocaleController.getString("UserBlocked", R.string.UserBlocked));
+                            });
+                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                            AlertDialog dialog = builder.create();
+                            showDialog(dialog);
+                            TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                            if (button != null) {
+                                button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
                             }
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showDialog(builder.create());
+                        }
                     } else {
                         if (!userBlocked) {
                             MessagesController.getInstance(currentAccount).blockUser(user_id);
@@ -502,15 +515,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         return;
                     }
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setTitle(LocaleController.getString("DeleteContact", R.string.DeleteContact));
                     builder.setMessage(LocaleController.getString("AreYouSureDeleteContact", R.string.AreYouSureDeleteContact));
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
+                    builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
                         ArrayList<TLRPC.User> arrayList = new ArrayList<>();
                         arrayList.add(user);
                         ContactsController.getInstance(currentAccount).deleteContact(arrayList);
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showDialog(builder.create());
+                    AlertDialog dialog = builder.create();
+                    showDialog(dialog);
+                    TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                    if (button != null) {
+                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    }
                 } else if (id == leave_group) {
                     leaveChatPressed();
                 } else if (id == edit_channel) {
@@ -729,9 +747,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 int[] media = new int[DataQuery.MEDIA_TYPES_COUNT];
                 System.arraycopy(lastMediaCount, 0, media, 0, media.length);
-                MediaActivity fragment = new MediaActivity(args, media, sharedMediaData, tab);
-                fragment.setChatInfo(chatInfo);
-                presentFragment(fragment);
+                mediaActivity = new MediaActivity(args, media, sharedMediaData, tab);
+                mediaActivity.setChatInfo(chatInfo);
+                presentFragment(mediaActivity);
             } else if (position == groupsInCommonRow) {
                 presentFragment(new CommonGroupsActivity(user_id));
             } else if (position == settingsKeyRow) {
@@ -805,14 +823,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 AlertsCreator.showCustomNotificationsDialog(ProfileActivity.this, did, -1, null, currentAccount, param -> listAdapter.notifyItemChanged(notificationsRow));
             } else if (position == startSecretChatRow) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle(LocaleController.getString("AreYouSureSecretChatTitle", R.string.AreYouSureSecretChatTitle));
                 builder.setMessage(LocaleController.getString("AreYouSureSecretChat", R.string.AreYouSureSecretChat));
-                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
+                builder.setPositiveButton(LocaleController.getString("Start", R.string.Start), (dialogInterface, i) -> {
                     creatingChat = true;
                     SecretChatHelper.getInstance(currentAccount).startSecretChat(getParentActivity(), MessagesController.getInstance(currentAccount).getUser(user_id));
                 });
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                 showDialog(builder.create());
+            } else if (position == unblockRow) {
+                MessagesController.getInstance(currentAccount).unblockUser(user_id);
+                AlertsCreator.showSimpleToast(ProfileActivity.this, LocaleController.getString("UserUnblocked", R.string.UserUnblocked));
             } else if (position >= membersStartRow && position < membersEndRow) {
                 int user_id;
                 if (!sortedUsers.isEmpty()) {
@@ -1363,24 +1384,22 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private void openAddMember() {
         Bundle args = new Bundle();
-        args.putBoolean("onlyUsers", true);
-        args.putBoolean("destroyAfterSelect", true);
-        args.putBoolean("returnAsResult", true);
-        args.putBoolean("needForwardCount", !ChatObject.isChannel(currentChat));
-        //args.putBoolean("allowUsernameSearch", false);
-        if (chat_id > 0) {
-            args.putInt("chat_id", currentChat.id);
-            args.putString("selectAlertString", LocaleController.getString("AddToTheGroup", R.string.AddToTheGroup));
-        }
-        ContactsActivity fragment = new ContactsActivity(args);
-        fragment.setDelegate((user, param, activity) -> MessagesController.getInstance(currentAccount).addUserToChat(chat_id, user, chatInfo, param != null ? Utilities.parseInt(param) : 0, null, ProfileActivity.this, null));
+        args.putBoolean("addToGroup", true);
+        args.putInt("chatId", currentChat.id);
+        GroupCreateActivity fragment = new GroupCreateActivity(args);
         if (chatInfo != null && chatInfo.participants != null) {
-            SparseArray<TLRPC.User> users = new SparseArray<>();
+            SparseArray<TLObject> users = new SparseArray<>();
             for (int a = 0; a < chatInfo.participants.participants.size(); a++) {
                 users.put(chatInfo.participants.participants.get(a).user_id, null);
             }
             fragment.setIgnoreUsers(users);
         }
+        fragment.setDelegate((users, fwdCount) -> {
+            for (int a = 0, N = users.size(); a < N; a++) {
+                TLRPC.User user = users.get(a);
+                MessagesController.getInstance(currentAccount).addUserToChat(chat_id, user, chatInfo, fwdCount, null, ProfileActivity.this, null);
+            }
+        });
         presentFragment(fragment);
     }
 
@@ -1720,6 +1739,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             userBlocked = MessagesController.getInstance(currentAccount).blockedUsers.indexOfKey(user_id) >= 0;
             if (oldValue != userBlocked) {
                 createActionBarMenu();
+                updateRowsIds();
+                listAdapter.notifyDataSetChanged();
             }
         } else if (id == NotificationCenter.chatInfoDidLoad) {
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
@@ -1819,8 +1840,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             boolean updated = false;
             for (int a = 0, N = markAsDeletedMessages.size(); a < N; a++) {
                 for (int b = 0; b < sharedMediaData.length; b++) {
-                    sharedMediaData[b].deleteMessage(markAsDeletedMessages.get(a), 0);
+                    if (sharedMediaData[b].deleteMessage(markAsDeletedMessages.get(a), 0)) {
+                        updated = true;
+                    }
                 }
+            }
+            if (updated && mediaActivity != null) {
+                mediaActivity.updateAdapters();
             }
             loadMediaCounts();
         }
@@ -2004,8 +2030,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             nameTextView[i].setTextColor(Color.argb(a + aD, r + rD, g + gD, b + bD));
         }
 
-        color = AvatarDrawable.getProfileTextColorForId(user_id != 0 || ChatObject.isChannel(chat_id, currentAccount) && !currentChat.megagroup ? 5 : chat_id);
-        int subtitleColor = Theme.getColor(Theme.key_actionBarDefaultSubtitle);
+        color = isOnline[0] ? Theme.getColor(Theme.key_profile_status) : AvatarDrawable.getProfileTextColorForId(user_id != 0 || ChatObject.isChannel(chat_id, currentAccount) && !currentChat.megagroup ? 5 : chat_id);
+        int subtitleColor = Theme.getColor(isOnline[0] ? Theme.key_chat_status : Theme.key_actionBarDefaultSubtitle);
         r = Color.red(subtitleColor);
         g = Color.green(subtitleColor);
         b = Color.blue(subtitleColor);
@@ -2403,6 +2429,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         groupsInCommonRow = -1;
         sharedSectionRow = -1;
 
+        unblockRow = -1;
         startSecretChatRow = -1;
         leaveChannelRow = -1;
         joinRow = -1;
@@ -2484,7 +2511,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
 
             if (user != null && !isBot && currentEncryptedChat == null && user.id != UserConfig.getInstance(currentAccount).getClientUserId()) {
-                startSecretChatRow = rowCount++;
+                if (userBlocked) {
+                    unblockRow = rowCount++;
+                } else {
+                    startSecretChatRow = rowCount++;
+                }
                 lastSectionRow = rowCount++;
             }
         } else if (chat_id != 0) {
@@ -2509,7 +2540,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         membersHeaderRow = rowCount++;
                         subscribersRow = rowCount++;
                         administratorsRow = rowCount++;
-                        blockedUsersRow = rowCount++;
+                        if (chatInfo.banned_count != 0 || chatInfo.kicked_count != 0) {
+                            blockedUsersRow = rowCount++;
+                        }
                         membersSectionRow = rowCount++;
                     }
                 }
@@ -2637,7 +2670,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             } else if (isBot) {
                 newString2 = LocaleController.getString("Bot", R.string.Bot);
             } else {
-                newString2 = LocaleController.formatUserStatus(currentAccount, user);
+                isOnline[0] = false;
+                newString2 = LocaleController.formatUserStatus(currentAccount, user, isOnline);
+                if (onlineTextView[1] != null) {
+                    String key = isOnline[0] ? Theme.key_profile_status : Theme.key_avatar_subtitleInProfileBlue;
+                    onlineTextView[1].setTag(key);
+                    onlineTextView[1].setTextColor(Theme.getColor(key));
+                }
             }
             for (int a = 0; a < 2; a++) {
                 if (nameTextView[a] == null) {
@@ -2989,7 +3028,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     break;
                 }
                 case 6: {
-                    view = new NotificationsCheckCell(mContext, 23);
+                    view = new NotificationsCheckCell(mContext, 23, 70);
                     break;
                 }
                 case 7: {
@@ -3089,6 +3128,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             value = LocaleController.formatTTLString(encryptedChat.ttl);
                         }
                         textCell.setTextAndValue(LocaleController.getString("MessageLifetime", R.string.MessageLifetime), value, false);
+                    } else if (position == unblockRow) {
+                        textCell.setText(LocaleController.getString("Unblock", R.string.Unblock), false);
+                        textCell.setColors(null, Theme.key_windowBackgroundWhiteRedText5);
                     } else if (position == startSecretChatRow) {
                         textCell.setText(LocaleController.getString("StartEncryptedChat", R.string.StartEncryptedChat), false);
                         textCell.setColors(null, Theme.key_windowBackgroundWhiteGreenText2);
@@ -3210,7 +3252,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     View sectionCell = holder.itemView;
                     sectionCell.setTag(position);
                     Drawable drawable;
-                    if (position == infoSectionRow && sharedSectionRow == -1 && lastSectionRow == -1 && settingsSectionRow == -1 || position == sharedSectionRow && lastSectionRow == -1 || position == lastSectionRow || position == membersSectionRow && lastSectionRow == -1 && sharedSectionRow == -1) {
+                    if (position == infoSectionRow && sharedSectionRow == -1 && lastSectionRow == -1 && settingsSectionRow == -1 || position == sharedSectionRow && lastSectionRow == -1 || position == lastSectionRow || position == membersSectionRow && lastSectionRow == -1 && (sharedSectionRow == -1 || membersSectionRow > sharedSectionRow)) {
                         drawable = Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
                     } else {
                         drawable = Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
@@ -3274,7 +3316,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             } else if (i == settingsTimerRow || i == settingsKeyRow || i == photosRow || i == filesRow ||
                     i == linksRow || i == audioRow || i == voiceRow || i == groupsInCommonRow ||
                     i == startSecretChatRow || i == subscribersRow || i == administratorsRow || i == blockedUsersRow ||
-                    i == leaveChannelRow || i == addMemberRow || i == joinRow) {
+                    i == leaveChannelRow || i == addMemberRow || i == joinRow || i == unblockRow) {
                 return 4;
             } else if (i == notificationsDividerRow) {
                 return 5;
@@ -3317,7 +3359,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_avatar_actionBarSelectorBlue),
                 new ThemeDescription(nameTextView[1], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_profile_title),
                 new ThemeDescription(nameTextView[1], ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_avatar_backgroundActionBarBlue),
-                new ThemeDescription(onlineTextView[1], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_avatar_subtitleInProfileBlue),
+                new ThemeDescription(onlineTextView[1], ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_profile_status),
+                new ThemeDescription(onlineTextView[1], ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_avatar_subtitleInProfileBlue),
 
                 new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
 

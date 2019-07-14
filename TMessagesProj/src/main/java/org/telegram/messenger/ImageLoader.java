@@ -66,7 +66,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ImageLoader {
 
     private HashMap<String, Integer> bitmapUseCounts = new HashMap<>();
-    private LruCache memCache;
+    private LruCache<BitmapDrawable> memCache;
+    private LruCache<LottieDrawable> lottieMemCache;
     private HashMap<String, CacheImage> imageLoadingByUrl = new HashMap<>();
     private HashMap<String, CacheImage> imageLoadingByKeys = new HashMap<>();
     private SparseArray<CacheImage> imageLoadingByTag = new SparseArray<>();
@@ -711,7 +712,6 @@ public class ImageLoader {
                     }
 
                     memCache.put(kf, bitmapDrawable);
-
                 });
             } catch (Throwable e) {
                 FileLog.e(e);
@@ -955,7 +955,12 @@ public class ImageLoader {
 
                             float photoW = opts.outWidth;
                             float photoH = opts.outHeight;
-                            float scaleFactor = Math.max(photoW / w_filter, photoH / h_filter);
+                            float scaleFactor;
+                            if (w_filter > h_filter && photoW > photoH) {
+                                scaleFactor = Math.max(photoW / w_filter, photoH / h_filter);
+                            } else {
+                                scaleFactor = Math.min(photoW / w_filter, photoH / h_filter);
+                            }
                             if (scaleFactor < 1) {
                                 scaleFactor = 1;
                             }
@@ -1198,8 +1203,14 @@ public class ImageLoader {
                                 float bitmapW = image.getWidth();
                                 float bitmapH = image.getHeight();
                                 if (!opts.inPurgeable && w_filter != 0 && bitmapW != w_filter && bitmapW > w_filter + 20) {
-                                    float scaleFactor = bitmapW / w_filter;
-                                    Bitmap scaledBitmap = Bitmaps.createScaledBitmap(image, (int) w_filter, (int) (bitmapH / scaleFactor), true);
+                                    Bitmap scaledBitmap;
+                                    if (bitmapW > bitmapH && w_filter > h_filter) {
+                                        float scaleFactor = bitmapW / w_filter;
+                                        scaledBitmap = Bitmaps.createScaledBitmap(image, (int) w_filter, (int) (bitmapH / scaleFactor), true);
+                                    } else {
+                                        float scaleFactor = bitmapH / h_filter;
+                                        scaledBitmap = Bitmaps.createScaledBitmap(image, (int) (bitmapW / scaleFactor), (int) h_filter, true);
+                                    }
                                     if (image != scaledBitmap) {
                                         image.recycle();
                                         image = scaledBitmap;
@@ -1247,7 +1258,14 @@ public class ImageLoader {
             AndroidUtilities.runOnUIThread(() -> {
                 Drawable toSet = null;
                 String decrementKey = null;
-                if (drawable instanceof AnimatedFileDrawable || drawable instanceof LottieDrawable) {
+                if (drawable instanceof LottieDrawable) {
+                    LottieDrawable lottieDrawable = (LottieDrawable) drawable;
+                    toSet = lottieMemCache.get(cacheImage.key);
+                    if (toSet == null) {
+                        lottieMemCache.put(cacheImage.key, lottieDrawable);
+                        toSet = lottieDrawable;
+                    }
+                } else if (drawable instanceof AnimatedFileDrawable) {
                     toSet = drawable;
                 } else if (drawable instanceof BitmapDrawable) {
                     BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
@@ -1475,7 +1493,7 @@ public class ImageLoader {
         }
         int cacheSize = Math.min(maxSize, memoryClass / 7) * 1024 * 1024;
 
-        memCache = new LruCache(cacheSize) {
+        memCache = new LruCache<BitmapDrawable>(cacheSize) {
             @Override
             protected int sizeOf(String key, BitmapDrawable value) {
                 return value.getBitmap().getByteCount();
@@ -1493,6 +1511,13 @@ public class ImageLoader {
                         b.recycle();
                     }
                 }
+            }
+        };
+
+        lottieMemCache = new LruCache<LottieDrawable>(5) {
+            @Override
+            protected int sizeOf(String key, LottieDrawable value) {
+                return 1;
             }
         };
 
@@ -1849,6 +1874,7 @@ public class ImageLoader {
 
     public void clearMemory() {
         memCache.evictAll();
+        lottieMemCache.evictAll();
     }
 
     private void removeFromWaitingForThumb(int TAG, ImageReceiver imageReceiver) {
@@ -1905,10 +1931,6 @@ public class ImageLoader {
             }
         }
         return drawable;
-    }
-
-    public BitmapDrawable getImageFromMemory(String key) {
-        return memCache.get(key);
     }
 
     public BitmapDrawable getImageFromMemory(TLObject fileLocation, String httpUrl, String filter) {
@@ -2173,10 +2195,7 @@ public class ImageLoader {
                                 cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), url + ".enc");
                             }
                             if (imageLocation.document != null) {
-                                String name = FileLoader.getDocumentFileName(imageLocation.document);
-                                if (name.startsWith("tg_secret_sticker") && name.endsWith("json")) {
-                                    img.lottieFile = true;
-                                }
+                                img.lottieFile = "application/x-tgsticker".equals(imageLocation.document.mime_type);
                             }
                         } else if (imageLocation.document != null) {
                             TLRPC.Document document = imageLocation.document;
@@ -2190,12 +2209,7 @@ public class ImageLoader {
                             if (AUTOPLAY_FILTER.equals(filter) && !cacheFile.exists()) {
                                 cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), document.dc_id + "_" + document.id + ".temp");
                             }
-                            if (BuildVars.DEBUG_PRIVATE_VERSION) {
-                                String name = FileLoader.getDocumentFileName(document);
-                                if (name.startsWith("tg_secret_sticker") && name.endsWith("json")) {
-                                    img.lottieFile = true;
-                                }
-                            }
+                            img.lottieFile = "application/x-tgsticker".equals(document.mime_type);
                             fileSize = document.size;
                         } else if (imageLocation.webFile != null) {
                             cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_DOCUMENT), url);
@@ -2280,10 +2294,16 @@ public class ImageLoader {
         boolean imageSet = false;
         String mediaKey = imageReceiver.getMediaKey();
         if (mediaKey != null) {
-            BitmapDrawable bitmapDrawable = memCache.get(mediaKey);
-            if (bitmapDrawable != null) {
+            ImageLocation mediaLocation = imageReceiver.getMediaLocation();
+            Drawable drawable;
+            if (MessageObject.isAnimatedStickerDocument(mediaLocation.document)) {
+                drawable = lottieMemCache.get(mediaKey);
+            } else {
+                drawable = memCache.get(mediaKey);
+            }
+            if (drawable != null) {
                 cancelLoadingForImageReceiver(imageReceiver, true);
-                imageReceiver.setImageBitmapByKey(bitmapDrawable, mediaKey, ImageReceiver.TYPE_MEDIA, true);
+                imageReceiver.setImageBitmapByKey(drawable, mediaKey, ImageReceiver.TYPE_MEDIA, true);
                 imageSet = true;
                 if (!imageReceiver.isForcePreview()) {
                     return;
@@ -2292,10 +2312,16 @@ public class ImageLoader {
         }
         String imageKey = imageReceiver.getImageKey();
         if (!imageSet && imageKey != null) {
-            BitmapDrawable bitmapDrawable = memCache.get(imageKey);
-            if (bitmapDrawable != null) {
+            ImageLocation imageLocation = imageReceiver.getImageLocation();
+            Drawable drawable;
+            if (imageLocation != null && MessageObject.isAnimatedStickerDocument(imageLocation.document)) {
+                drawable = lottieMemCache.get(imageKey);
+            } else {
+                drawable = memCache.get(imageKey);
+            }
+            if (drawable != null) {
                 cancelLoadingForImageReceiver(imageReceiver, true);
-                imageReceiver.setImageBitmapByKey(bitmapDrawable, imageKey, ImageReceiver.TYPE_IMAGE, true);
+                imageReceiver.setImageBitmapByKey(drawable, imageKey, ImageReceiver.TYPE_IMAGE, true);
                 imageSet = true;
                 if (!imageReceiver.isForcePreview() && mediaKey == null) {
                     return;
@@ -2421,7 +2447,11 @@ public class ImageLoader {
         }
 
         if (thumbLocation != null) {
-            thumbKey = thumbLocation.getKey(parentObject, mediaLocation != null ? mediaLocation : imageLocation);
+            ImageLocation strippedLoc = imageReceiver.getStrippedLocation();
+            if (strippedLoc == null) {
+                strippedLoc = mediaLocation != null ? mediaLocation : imageLocation;
+            }
+            thumbKey = thumbLocation.getKey(parentObject, strippedLoc);
             if (thumbLocation.path != null) {
                 thumbUrl = thumbKey + "." + getHttpUrlExtension(thumbLocation.path, "jpg");
             } else if (thumbLocation.photoSize instanceof TLRPC.TL_photoStrippedSize) {
@@ -2527,6 +2557,7 @@ public class ImageLoader {
                     cacheImage.cacheTask = new CacheOutTask(cacheImage);
                     cacheImage.filter = filter;
                     cacheImage.animatedFile = img.animatedFile;
+                    cacheImage.lottieFile = img.lottieFile;
                     imageLoadingByKeys.put(key, cacheImage);
                     tasks.add(cacheImage.cacheTask);
                 }

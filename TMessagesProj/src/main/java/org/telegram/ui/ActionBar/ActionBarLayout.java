@@ -500,10 +500,11 @@ public class ActionBarLayout extends FrameLayout {
                         velocityTracker = VelocityTracker.obtain();
                     }
                     velocityTracker.computeCurrentVelocity(1000);
-                    if (!inPreviewMode && !transitionAnimationPreviewMode && !startedTracking && fragmentsStack.get(fragmentsStack.size() - 1).swipeBackEnabled) {
+                    BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
+                    if (!inPreviewMode && !transitionAnimationPreviewMode && !startedTracking && currentFragment.swipeBackEnabled) {
                         float velX = velocityTracker.getXVelocity();
                         float velY = velocityTracker.getYVelocity();
-                        if (velX >= 3500 && velX > Math.abs(velY)) {
+                        if (velX >= 3500 && velX > Math.abs(velY) && currentFragment.canBeginSlide()) {
                             prepareForMoving(ev);
                             if (!beginTrackingSent) {
                                 if (((Activity) getContext()).getCurrentFocus() != null) {
@@ -1295,7 +1296,9 @@ public class ActionBarLayout extends FrameLayout {
                     r = Math.min(255, (int) (rS + (rE - rS) * value));
                     g = Math.min(255, (int) (gS + (gE - gS) * value));
                     b = Math.min(255, (int) (bS + (bE - bS) * value));
-                    themeAnimatorDescriptions[j][i].setColor(Color.argb(a, r, g, b), false, false);
+                    int color = Color.argb(a, r, g, b);
+                    Theme.setAnimatedColor(themeAnimatorDescriptions[j][i].getCurrentKey(), color);
+                    themeAnimatorDescriptions[j][i].setColor(color, false, false);
                 }
                 if (themeAnimatorDelegate[j] != null) {
                     themeAnimatorDelegate[j].didSetColor();
@@ -1326,7 +1329,7 @@ public class ActionBarLayout extends FrameLayout {
             if (i == 0) {
                 fragment = getLastFragment();
             } else {
-                if (!inPreviewMode && !transitionAnimationPreviewMode && fragmentsStack.size() <= 1) {
+                if (!inPreviewMode && !transitionAnimationPreviewMode || fragmentsStack.size() <= 1) {
                     themeAnimatorDescriptions[i] = null;
                     animateStartColors[i] = null;
                     animateEndColors[i] = null;
@@ -1367,6 +1370,7 @@ public class ActionBarLayout extends FrameLayout {
                             animateEndColors[a] = null;
                             themeAnimatorDelegate[a] = null;
                         }
+                        Theme.setAnimatingColor(false);
                         themeAnimatorSet = null;
                     }
                 }
@@ -1380,19 +1384,21 @@ public class ActionBarLayout extends FrameLayout {
                             animateEndColors[a] = null;
                             themeAnimatorDelegate[a] = null;
                         }
+                        Theme.setAnimatingColor(false);
                         themeAnimatorSet = null;
                     }
                 }
             });
-            themeAnimatorSet.playTogether(ObjectAnimator.ofFloat(this, "themeAnimationValue", 0.0f, 1.0f));
-            themeAnimatorSet.setDuration(200);
-            themeAnimatorSet.start();
             int count = fragmentsStack.size() - (inPreviewMode || transitionAnimationPreviewMode ? 2 : 1);
             for (int a = 0; a < count; a++) {
                 BaseFragment fragment = fragmentsStack.get(a);
                 fragment.clearViews();
                 fragment.setParentLayout(this);
             }
+            Theme.setAnimatingColor(true);
+            themeAnimatorSet.playTogether(ObjectAnimator.ofFloat(this, "themeAnimationValue", 0.0f, 1.0f));
+            themeAnimatorSet.setDuration(200);
+            themeAnimatorSet.start();
         }
     }
 
