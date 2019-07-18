@@ -119,6 +119,12 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     private int passwordEnabledDetailRow;
     private int rowCount;
 
+    private TwoStepVerificationActivityDelegate delegate;
+
+    public interface TwoStepVerificationActivityDelegate {
+        void didEnterPassword(TLRPC.InputCheckPasswordSRP password);
+    }
+
     private final static int done_button = 1;
 
     public TwoStepVerificationActivity(int type) {
@@ -215,6 +221,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
+        titleTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), 0);
         linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 38, 0, 0));
 
         passwordEditText = new EditTextBoldCursor(context);
@@ -440,7 +447,11 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             updateRows();
 
             actionBar.setTitle(LocaleController.getString("TwoStepVerificationTitle", R.string.TwoStepVerificationTitle));
-            titleTextView.setText(LocaleController.getString("PleaseEnterCurrentPassword", R.string.PleaseEnterCurrentPassword));
+            if (delegate != null) {
+                titleTextView.setText(LocaleController.getString("PleaseEnterCurrentPasswordTransfer", R.string.PleaseEnterCurrentPasswordTransfer));
+            } else {
+                titleTextView.setText(LocaleController.getString("PleaseEnterCurrentPassword", R.string.PleaseEnterCurrentPassword));
+            }
         } else if (type == 1) {
             setPasswordSetState(passwordSetState);
         }
@@ -506,8 +517,14 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     }
 
     public void setCurrentPasswordInfo(byte[] hash, TLRPC.TL_account_password password) {
-        currentPasswordHash = hash;
+        if (hash != null) {
+            currentPasswordHash = hash;
+        }
         currentPassword = password;
+    }
+
+    public void setDelegate(TwoStepVerificationActivityDelegate twoStepVerificationActivityDelegate) {
+        delegate = twoStepVerificationActivityDelegate;
     }
 
     @Override
@@ -793,22 +810,22 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             progressView.setVisibility(View.VISIBLE);
             doneItem.setEnabled(false);
             doneItemAnimation.playTogether(
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleX", 0.1f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleY", 0.1f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "alpha", 0.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 0.1f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 0.1f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 0.0f),
                     ObjectAnimator.ofFloat(progressView, "scaleX", 1.0f),
                     ObjectAnimator.ofFloat(progressView, "scaleY", 1.0f),
                     ObjectAnimator.ofFloat(progressView, "alpha", 1.0f));
         } else {
-            doneItem.getImageView().setVisibility(View.VISIBLE);
+            doneItem.getContentView().setVisibility(View.VISIBLE);
             doneItem.setEnabled(true);
             doneItemAnimation.playTogether(
                     ObjectAnimator.ofFloat(progressView, "scaleX", 0.1f),
                     ObjectAnimator.ofFloat(progressView, "scaleY", 0.1f),
                     ObjectAnimator.ofFloat(progressView, "alpha", 0.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleX", 1.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleY", 1.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "alpha", 1.0f));
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 1.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 1.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 1.0f));
         }
         doneItemAnimation.addListener(new AnimatorListenerAdapter() {
             @Override
@@ -817,7 +834,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                     if (!show) {
                         progressView.setVisibility(View.INVISIBLE);
                     } else {
-                        doneItem.getImageView().setVisibility(View.INVISIBLE);
+                        doneItem.getContentView().setVisibility(View.INVISIBLE);
                     }
                 }
             }
@@ -842,7 +859,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         progressDialog.show();
     }
 
-    private void needHideProgress() {
+    protected void needHideProgress() {
         if (progressDialog == null) {
             return;
         }
@@ -1068,7 +1085,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         });
     }
 
-    private TLRPC.TL_inputCheckPasswordSRP getNewSrpPassword() {
+    protected TLRPC.TL_inputCheckPasswordSRP getNewSrpPassword() {
         if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
             TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
             return SRPHelper.startCheck(currentPasswordHash, currentPassword.srp_id, currentPassword.srp_B, algo);
@@ -1153,12 +1170,18 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                             Utilities.globalQueue.postRunnable(() -> {
                                 boolean secretOk = checkSecretValues(oldPasswordBytes, (TLRPC.TL_account_passwordSettings) response);
                                 AndroidUtilities.runOnUIThread(() -> {
-                                    needHideProgress();
+                                    if (delegate == null || !secretOk) {
+                                        needHideProgress();
+                                    }
                                     if (secretOk) {
                                         currentPasswordHash = x_bytes;
                                         passwordEntered = true;
                                         AndroidUtilities.hideKeyboard(passwordEditText);
-                                        updateRows();
+                                        if (delegate != null) {
+                                            delegate.didEnterPassword(getNewSrpPassword());
+                                        } else {
+                                            updateRows();
+                                        }
                                     } else {
                                         AlertsCreator.showUpdateAppAlert(getParentActivity(), LocaleController.getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
                                     }

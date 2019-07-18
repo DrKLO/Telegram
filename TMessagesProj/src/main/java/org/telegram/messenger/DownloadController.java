@@ -17,14 +17,13 @@ import android.net.ConnectivityManager;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class DownloadController implements NotificationCenter.NotificationCenterDelegate {
+public class DownloadController extends BaseController implements NotificationCenter.NotificationCenterDelegate {
 
     public interface FileDownloadProgressListener {
         void onFailedDownload(String fileName, boolean canceled);
@@ -189,8 +188,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
     public int currentMobilePreset;
     public int currentWifiPreset;
     public int currentRoamingPreset;
-
-    private int currentAccount;
+    
     private static volatile DownloadController[] Instance = new DownloadController[UserConfig.MAX_ACCOUNT_COUNT];
 
     public static DownloadController getInstance(int num) {
@@ -207,13 +205,13 @@ public class DownloadController implements NotificationCenter.NotificationCenter
     }
 
     public DownloadController(int instance) {
-        currentAccount = instance;
+        super(instance);
         SharedPreferences preferences = MessagesController.getMainSettings(currentAccount);
         lowPreset = new Preset(preferences.getString("preset0", "1_1_1_1_1048576_512000_512000_524288_0_0_1_1"));
         mediumPreset = new Preset(preferences.getString("preset1", "13_13_13_13_1048576_10485760_1048576_524288_1_1_1_0"));
         highPreset = new Preset(preferences.getString("preset2", "13_13_13_13_1048576_15728640_3145728_524288_1_1_1_0"));
         boolean newConfig;
-        if (newConfig = preferences.contains("newConfig") || !UserConfig.getInstance(currentAccount).isClientActivated()) {
+        if (newConfig = preferences.contains("newConfig") || !getUserConfig().isClientActivated()) {
             mobilePreset = new Preset(preferences.getString("mobilePreset", mediumPreset.toString()));
             wifiPreset = new Preset(preferences.getString("wifiPreset", highPreset.toString()));
             roamingPreset = new Preset(preferences.getString("roamingPreset", lowPreset.toString()));
@@ -268,12 +266,12 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         }
 
         AndroidUtilities.runOnUIThread(() -> {
-            NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.fileDidFailedLoad);
-            NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.fileDidLoad);
-            NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.FileLoadProgressChanged);
-            NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.FileUploadProgressChanged);
-            NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.httpFileDidLoad);
-            NotificationCenter.getInstance(currentAccount).addObserver(DownloadController.this, NotificationCenter.httpFileDidFailedLoad);
+            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.fileDidFailedLoad);
+            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.fileDidLoad);
+            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.FileLoadProgressChanged);
+            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.FileUploadProgressChanged);
+            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.httpFileDidLoad);
+            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.httpFileDidFailedLoad);
             loadAutoDownloadConfig(false);
         });
 
@@ -286,21 +284,21 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
         ApplicationLoader.applicationContext.registerReceiver(networkStateReceiver, filter);
 
-        if (UserConfig.getInstance(currentAccount).isClientActivated()) {
+        if (getUserConfig().isClientActivated()) {
             checkAutodownloadSettings();
         }
     }
 
     public void loadAutoDownloadConfig(boolean force) {
-        if (loadingAutoDownloadConfig || !force && Math.abs(System.currentTimeMillis() - UserConfig.getInstance(currentAccount).autoDownloadConfigLoadTime) < 24 * 60 * 60 * 1000) {
+        if (loadingAutoDownloadConfig || !force && Math.abs(System.currentTimeMillis() - getUserConfig().autoDownloadConfigLoadTime) < 24 * 60 * 60 * 1000) {
             return;
         }
         loadingAutoDownloadConfig = true;
         TLRPC.TL_account_getAutoDownloadSettings req = new TLRPC.TL_account_getAutoDownloadSettings();
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             loadingAutoDownloadConfig = false;
-            UserConfig.getInstance(currentAccount).autoDownloadConfigLoadTime = System.currentTimeMillis();
-            UserConfig.getInstance(currentAccount).saveConfig(false);
+            getUserConfig().autoDownloadConfigLoadTime = System.currentTimeMillis();
+            getUserConfig().saveConfig(false);
             if (response != null) {
                 TLRPC.TL_account_autoDownloadSettings res = (TLRPC.TL_account_autoDownloadSettings) response;
                 lowPreset.set(res.low);
@@ -474,9 +472,9 @@ public class DownloadController implements NotificationCenter.NotificationCenter
                 if (downloadObject.object instanceof TLRPC.Photo) {
                     TLRPC.Photo photo = (TLRPC.Photo) downloadObject.object;
                     TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, AndroidUtilities.getPhotoSize());
-                    FileLoader.getInstance(currentAccount).cancelLoadFile(photoSize);
+                    getFileLoader().cancelLoadFile(photoSize);
                 } else if (downloadObject.object instanceof TLRPC.Document) {
-                    FileLoader.getInstance(currentAccount).cancelLoadFile((TLRPC.Document) downloadObject.object);
+                    getFileLoader().cancelLoadFile((TLRPC.Document) downloadObject.object);
                 }
             }
             photoDownloadQueue.clear();
@@ -488,7 +486,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         } else {
             for (int a = 0; a < audioDownloadQueue.size(); a++) {
                 DownloadObject downloadObject = audioDownloadQueue.get(a);
-                FileLoader.getInstance(currentAccount).cancelLoadFile((TLRPC.Document) downloadObject.object);
+                getFileLoader().cancelLoadFile((TLRPC.Document) downloadObject.object);
             }
             audioDownloadQueue.clear();
         }
@@ -500,7 +498,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
             for (int a = 0; a < documentDownloadQueue.size(); a++) {
                 DownloadObject downloadObject = documentDownloadQueue.get(a);
                 TLRPC.Document document = (TLRPC.Document) downloadObject.object;
-                FileLoader.getInstance(currentAccount).cancelLoadFile(document);
+                getFileLoader().cancelLoadFile(document);
             }
             documentDownloadQueue.clear();
         }
@@ -511,25 +509,25 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         } else {
             for (int a = 0; a < videoDownloadQueue.size(); a++) {
                 DownloadObject downloadObject = videoDownloadQueue.get(a);
-                FileLoader.getInstance(currentAccount).cancelLoadFile((TLRPC.Document) downloadObject.object);
+                getFileLoader().cancelLoadFile((TLRPC.Document) downloadObject.object);
             }
             videoDownloadQueue.clear();
         }
         int mask = getAutodownloadMaskAll();
         if (mask == 0) {
-            MessagesStorage.getInstance(currentAccount).clearDownloadQueue(0);
+            getMessagesStorage().clearDownloadQueue(0);
         } else {
             if ((mask & AUTODOWNLOAD_TYPE_PHOTO) == 0) {
-                MessagesStorage.getInstance(currentAccount).clearDownloadQueue(AUTODOWNLOAD_TYPE_PHOTO);
+                getMessagesStorage().clearDownloadQueue(AUTODOWNLOAD_TYPE_PHOTO);
             }
             if ((mask & AUTODOWNLOAD_TYPE_AUDIO) == 0) {
-                MessagesStorage.getInstance(currentAccount).clearDownloadQueue(AUTODOWNLOAD_TYPE_AUDIO);
+                getMessagesStorage().clearDownloadQueue(AUTODOWNLOAD_TYPE_AUDIO);
             }
             if ((mask & AUTODOWNLOAD_TYPE_VIDEO) == 0) {
-                MessagesStorage.getInstance(currentAccount).clearDownloadQueue(AUTODOWNLOAD_TYPE_VIDEO);
+                getMessagesStorage().clearDownloadQueue(AUTODOWNLOAD_TYPE_VIDEO);
             }
             if ((mask & AUTODOWNLOAD_TYPE_DOCUMENT) == 0) {
-                MessagesStorage.getInstance(currentAccount).clearDownloadQueue(AUTODOWNLOAD_TYPE_DOCUMENT);
+                getMessagesStorage().clearDownloadQueue(AUTODOWNLOAD_TYPE_DOCUMENT);
             }
         }
     }
@@ -572,7 +570,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
             type = AUTODOWNLOAD_TYPE_VIDEO;
         } else if (MessageObject.isVoiceMessage(message)) {
             type = AUTODOWNLOAD_TYPE_AUDIO;
-        } else if (MessageObject.isPhoto(message) || MessageObject.isStickerMessage(message)) {
+        } else if (MessageObject.isPhoto(message) || MessageObject.isStickerMessage(message) || MessageObject.isAnimatedStickerMessage(message)) {
             type = AUTODOWNLOAD_TYPE_PHOTO;
         } else if (MessageObject.getDocument(message) != null) {
             type = AUTODOWNLOAD_TYPE_DOCUMENT;
@@ -583,20 +581,20 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         TLRPC.Peer peer = message.to_id;
         if (peer != null) {
             if (peer.user_id != 0) {
-                if (ContactsController.getInstance(currentAccount).contactsDict.containsKey(peer.user_id)) {
+                if (getContactsController().contactsDict.containsKey(peer.user_id)) {
                     index = 0;
                 } else {
                     index = 1;
                 }
             } else if (peer.chat_id != 0) {
-                if (message.from_id != 0 && ContactsController.getInstance(currentAccount).contactsDict.containsKey(message.from_id)) {
+                if (message.from_id != 0 && getContactsController().contactsDict.containsKey(message.from_id)) {
                     index = 0;
                 } else {
                     index = 2;
                 }
             } else {
                 if (MessageObject.isMegagroup(message)) {
-                    if (message.from_id != 0 && ContactsController.getInstance(currentAccount).contactsDict.containsKey(message.from_id)) {
+                    if (message.from_id != 0 && getContactsController().contactsDict.containsKey(message.from_id)) {
                         index = 0;
                     } else {
                         index = 2;
@@ -716,7 +714,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         req.settings.photo_size_max = photo ? preset.sizes[PRESET_SIZE_NUM_PHOTO] : 0;
         req.settings.video_size_max = video ? preset.sizes[PRESET_SIZE_NUM_VIDEO] : 0;
         req.settings.file_size_max = document ? preset.sizes[PRESET_SIZE_NUM_DOCUMENT] : 0;
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+        getConnectionsManager().sendRequest(req, (response, error) -> {
 
         });
     }
@@ -763,10 +761,10 @@ public class DownloadController implements NotificationCenter.NotificationCenter
                 } else {
                     cacheType = 0;
                 }
-                FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForPhoto(photoSize, photo), downloadObject.parent, null, 0, cacheType);
+                getFileLoader().loadFile(ImageLocation.getForPhoto(photoSize, photo), downloadObject.parent, null, 0, cacheType);
             } else if (downloadObject.object instanceof TLRPC.Document) {
                 TLRPC.Document document = (TLRPC.Document) downloadObject.object;
-                FileLoader.getInstance(currentAccount).loadFile(document, downloadObject.parent, 0, downloadObject.secret ? 2 : 0);
+                getFileLoader().loadFile(document, downloadObject.parent, 0, downloadObject.secret ? 2 : 0);
             } else {
                 added = false;
             }
@@ -780,16 +778,16 @@ public class DownloadController implements NotificationCenter.NotificationCenter
     protected void newDownloadObjectsAvailable(int downloadMask) {
         int mask = getCurrentDownloadMask();
         if ((mask & AUTODOWNLOAD_TYPE_PHOTO) != 0 && (downloadMask & AUTODOWNLOAD_TYPE_PHOTO) != 0 && photoDownloadQueue.isEmpty()) {
-            MessagesStorage.getInstance(currentAccount).getDownloadQueue(AUTODOWNLOAD_TYPE_PHOTO);
+            getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_PHOTO);
         }
         if ((mask & AUTODOWNLOAD_TYPE_AUDIO) != 0 && (downloadMask & AUTODOWNLOAD_TYPE_AUDIO) != 0 && audioDownloadQueue.isEmpty()) {
-            MessagesStorage.getInstance(currentAccount).getDownloadQueue(AUTODOWNLOAD_TYPE_AUDIO);
+            getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_AUDIO);
         }
         if ((mask & AUTODOWNLOAD_TYPE_VIDEO) != 0 && (downloadMask & AUTODOWNLOAD_TYPE_VIDEO) != 0 && videoDownloadQueue.isEmpty()) {
-            MessagesStorage.getInstance(currentAccount).getDownloadQueue(AUTODOWNLOAD_TYPE_VIDEO);
+            getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_VIDEO);
         }
         if ((mask & AUTODOWNLOAD_TYPE_DOCUMENT) != 0 && (downloadMask & AUTODOWNLOAD_TYPE_DOCUMENT) != 0 && documentDownloadQueue.isEmpty()) {
-            MessagesStorage.getInstance(currentAccount).getDownloadQueue(AUTODOWNLOAD_TYPE_DOCUMENT);
+            getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_DOCUMENT);
         }
     }
 
@@ -798,7 +796,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
         if (downloadObject != null) {
             downloadQueueKeys.remove(fileName);
             if (state == 0 || state == 2) {
-                MessagesStorage.getInstance(currentAccount).removeFromDownloadQueue(downloadObject.id, downloadObject.type, false /*state != 0*/);
+                getMessagesStorage().removeFromDownloadQueue(downloadObject.id, downloadObject.type, false /*state != 0*/);
             }
             if (downloadObject.type == AUTODOWNLOAD_TYPE_PHOTO) {
                 photoDownloadQueue.remove(downloadObject);
@@ -973,7 +971,7 @@ public class DownloadController implements NotificationCenter.NotificationCenter
             listenerInProgress = false;
             processLaterArrays();
             try {
-                ArrayList<SendMessagesHelper.DelayedMessage> delayedMessages = SendMessagesHelper.getInstance(currentAccount).getDelayedMessages(fileName);
+                ArrayList<SendMessagesHelper.DelayedMessage> delayedMessages = getSendMessagesHelper().getDelayedMessages(fileName);
                 if (delayedMessages != null) {
                     for (int a = 0; a < delayedMessages.size(); a++) {
                         SendMessagesHelper.DelayedMessage delayedMessage = delayedMessages.get(a);
@@ -984,9 +982,9 @@ public class DownloadController implements NotificationCenter.NotificationCenter
                                 if (lastTime == null || lastTime + 4000 < System.currentTimeMillis()) {
                                     MessageObject messageObject = (MessageObject) delayedMessage.extraHashMap.get(fileName + "_i");
                                     if (messageObject != null && messageObject.isVideo()) {
-                                        MessagesController.getInstance(currentAccount).sendTyping(dialog_id, 5, 0);
+                                        getMessagesController().sendTyping(dialog_id, 5, 0);
                                     } else {
-                                        MessagesController.getInstance(currentAccount).sendTyping(dialog_id, 4, 0);
+                                        getMessagesController().sendTyping(dialog_id, 4, 0);
                                     }
                                     typingTimes.put(dialog_id, System.currentTimeMillis());
                                 }
@@ -995,15 +993,15 @@ public class DownloadController implements NotificationCenter.NotificationCenter
                                 TLRPC.Document document = delayedMessage.obj.getDocument();
                                 if (lastTime == null || lastTime + 4000 < System.currentTimeMillis()) {
                                     if (delayedMessage.obj.isRoundVideo()) {
-                                        MessagesController.getInstance(currentAccount).sendTyping(dialog_id, 8, 0);
+                                        getMessagesController().sendTyping(dialog_id, 8, 0);
                                     } else if (delayedMessage.obj.isVideo()) {
-                                        MessagesController.getInstance(currentAccount).sendTyping(dialog_id, 5, 0);
+                                        getMessagesController().sendTyping(dialog_id, 5, 0);
                                     } else if (delayedMessage.obj.isVoice()) {
-                                        MessagesController.getInstance(currentAccount).sendTyping(dialog_id, 9, 0);
+                                        getMessagesController().sendTyping(dialog_id, 9, 0);
                                     } else if (delayedMessage.obj.getDocument() != null) {
-                                        MessagesController.getInstance(currentAccount).sendTyping(dialog_id, 3, 0);
+                                        getMessagesController().sendTyping(dialog_id, 3, 0);
                                     } else if (delayedMessage.photoSize != null) {
-                                        MessagesController.getInstance(currentAccount).sendTyping(dialog_id, 4, 0);
+                                        getMessagesController().sendTyping(dialog_id, 4, 0);
                                     }
                                     typingTimes.put(dialog_id, System.currentTimeMillis());
                                 }

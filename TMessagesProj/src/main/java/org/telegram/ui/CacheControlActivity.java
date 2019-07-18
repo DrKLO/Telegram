@@ -24,7 +24,7 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ClearCacheService;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -345,7 +345,7 @@ public class CacheControlActivity extends BaseFragment {
                                     database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
                                     database.executeFast("DELETE FROM media_v2 WHERE uid = " + did).stepThis().dispose();
                                     database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
-                                    DataQuery.getInstance(currentAccount).clearBotKeyboard(did, null);
+                                    MediaDataController.getInstance(currentAccount).clearBotKeyboard(did, null);
                                     if (messageId != -1) {
                                         MessagesStorage.createFirstHoles(did, state5, state6, messageId);
                                     }

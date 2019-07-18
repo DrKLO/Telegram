@@ -86,9 +86,6 @@ import org.telegram.ui.Components.TypefaceSpan;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class GroupCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, View.OnClickListener {
 
@@ -110,6 +107,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
     private int chatId;
     private int channelId;
+    private TLRPC.ChatFull info;
 
     private SparseArray<TLObject> ignoreUsers;
 
@@ -387,7 +385,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             actionBar.setTitle(LocaleController.getString("ChannelAddMembers", R.string.ChannelAddMembers));
         } else {
             if (addToGroup) {
-                actionBar.setTitle(LocaleController.getString("SelectContacts", R.string.SelectContacts));
+                actionBar.setTitle(LocaleController.getString("GroupAddMembers", R.string.GroupAddMembers));
             } else if (isAlwaysShare) {
                 if (isGroup) {
                     actionBar.setTitle(LocaleController.getString("AlwaysAllow", R.string.AlwaysAllow));
@@ -620,7 +618,15 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         frameLayout.addView(listView);
         listView.setOnItemClickListener((view, position) -> {
             if (position == 0 && adapter.inviteViaLink != 0 && !adapter.searching) {
-                presentFragment(new GroupInviteActivity(chatId != 0 ? chatId : channelId));
+                int id = chatId != 0 ? chatId : channelId;
+                TLRPC.Chat chat = getMessagesController().getChat(id);
+                if (chat != null && chat.has_geo && !TextUtils.isEmpty(chat.username)) {
+                    ChatEditTypeActivity activity = new ChatEditTypeActivity(id, true);
+                    activity.setInfo(info);
+                    presentFragment(activity);
+                    return;
+                }
+                presentFragment(new GroupInviteActivity(id));
             } else if (view instanceof GroupCreateUserCell) {
                 GroupCreateUserCell cell = (GroupCreateUserCell) view;
                 TLObject object = cell.getObject();
@@ -654,7 +660,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     if (object instanceof TLRPC.User) {
                         TLRPC.User user = (TLRPC.User) object;
                         if (addToGroup && user.bot) {
-                            if (user.bot_nochats) {
+                            if (channelId == 0 && user.bot_nochats) {
                                 try {
                                     Toast.makeText(getParentActivity(), LocaleController.getString("BotCantJoinGroups", R.string.BotCantJoinGroups), Toast.LENGTH_SHORT).show();
                                 } catch (Exception e) {
@@ -799,6 +805,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         ignoreUsers = users;
     }
 
+    public void setInfo(TLRPC.ChatFull chatFull) {
+        info = chatFull;
+    }
+
     @Keep
     public void setContainerHeight(int value) {
         containerHeight = value;
@@ -852,7 +862,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     private boolean onDonePressed(boolean alert) {
-        if (selectedContacts.size() == 0) {
+        if (selectedContacts.size() == 0 && chatType != ChatObject.CHAT_TYPE_CHANNEL) {
             return false;
         }
         if (alert && addToGroup) {
@@ -1025,7 +1035,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         private ArrayList<TLObject> searchResult = new ArrayList<>();
         private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
         private SearchAdapterHelper searchAdapterHelper;
-        private Timer searchTimer;
+        private Runnable searchRunnable;
         private boolean searching;
         private ArrayList<TLObject> contacts = new ArrayList<>();
         private int usersStartRow;
@@ -1075,16 +1085,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             }
 
             searchAdapterHelper = new SearchAdapterHelper(false);
-            searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
-                @Override
-                public void onDataSetChanged() {
-                    notifyDataSetChanged();
+            searchAdapterHelper.setDelegate(() -> {
+                if (searchRunnable == null && !searchAdapterHelper.isSearchInProgress()) {
+                    emptyView.showTextView();
                 }
-
-                @Override
-                public void onSetHashtags(ArrayList<SearchAdapterHelper.HashtagObject> arrayList, HashMap<String, SearchAdapterHelper.HashtagObject> hashMap) {
-
-                }
+                notifyDataSetChanged();
             });
         }
 
@@ -1234,7 +1239,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                     SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
                                     spannableStringBuilder.append("@");
                                     spannableStringBuilder.append(objectUserName);
-                                    if ((index = objectUserName.toLowerCase().indexOf(foundUserName)) != -1) {
+                                    if ((index = AndroidUtilities.indexOfIgnoreCase(objectUserName, foundUserName)) != -1) {
                                         int len = foundUserName.length();
                                         if (index == 0) {
                                             len++;
@@ -1325,108 +1330,92 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         }
 
         public void searchDialogs(final String query) {
-            try {
-                if (searchTimer != null) {
-                    searchTimer.cancel();
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
+            if (searchRunnable != null) {
+                Utilities.searchQueue.cancelRunnable(searchRunnable);
+                searchRunnable = null;
             }
             if (query == null) {
                 searchResult.clear();
                 searchResultNames.clear();
                 searchAdapterHelper.mergeResults(null);
-                searchAdapterHelper.queryServerSearch(null, true, isAlwaysShare || isNeverShare, false, false, 0, 0);
+                searchAdapterHelper.queryServerSearch(null, true, isAlwaysShare || isNeverShare, false, false, 0, false, 0);
                 notifyDataSetChanged();
             } else {
-                searchTimer = new Timer();
-                searchTimer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        try {
-                            searchTimer.cancel();
-                            searchTimer = null;
-                        } catch (Exception e) {
-                            FileLog.e(e);
+                Utilities.searchQueue.postRunnable(searchRunnable = () -> AndroidUtilities.runOnUIThread(() -> {
+                    searchAdapterHelper.queryServerSearch(query, true, isAlwaysShare || isNeverShare, true, false, 0, false, 0);
+                    Utilities.searchQueue.postRunnable(searchRunnable = () -> {
+                        String search1 = query.trim().toLowerCase();
+                        if (search1.length() == 0) {
+                            updateSearchResults(new ArrayList<>(), new ArrayList<>());
+                            return;
+                        }
+                        String search2 = LocaleController.getInstance().getTranslitString(search1);
+                        if (search1.equals(search2) || search2.length() == 0) {
+                            search2 = null;
+                        }
+                        String[] search = new String[1 + (search2 != null ? 1 : 0)];
+                        search[0] = search1;
+                        if (search2 != null) {
+                            search[1] = search2;
                         }
 
-                        AndroidUtilities.runOnUIThread(() -> {
-                            searchAdapterHelper.queryServerSearch(query, true, isAlwaysShare || isNeverShare, true, false, 0, 0);
-                            Utilities.searchQueue.postRunnable(() -> {
-                                String search1 = query.trim().toLowerCase();
-                                if (search1.length() == 0) {
-                                    updateSearchResults(new ArrayList<>(), new ArrayList<>());
-                                    return;
+                        ArrayList<TLObject> resultArray = new ArrayList<>();
+                        ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
+
+                        for (int a = 0; a < contacts.size(); a++) {
+                            TLObject object = contacts.get(a);
+
+                            String name;
+                            String username;
+
+                            if (object instanceof TLRPC.User) {
+                                TLRPC.User user = (TLRPC.User) object;
+                                name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
+                                username = user.username;
+                            } else {
+                                TLRPC.Chat chat = (TLRPC.Chat) object;
+                                name = chat.title;
+                                username = chat.username;
+                            }
+                            String tName = LocaleController.getInstance().getTranslitString(name);
+                            if (name.equals(tName)) {
+                                tName = null;
+                            }
+
+                            int found = 0;
+                            for (String q : search) {
+                                if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
+                                    found = 1;
+                                } else if (username != null && username.startsWith(q)) {
+                                    found = 2;
                                 }
-                                String search2 = LocaleController.getInstance().getTranslitString(search1);
-                                if (search1.equals(search2) || search2.length() == 0) {
-                                    search2 = null;
-                                }
-                                String[] search = new String[1 + (search2 != null ? 1 : 0)];
-                                search[0] = search1;
-                                if (search2 != null) {
-                                    search[1] = search2;
-                                }
 
-                                ArrayList<TLObject> resultArray = new ArrayList<>();
-                                ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
-
-                                for (int a = 0; a < contacts.size(); a++) {
-                                    TLObject object = contacts.get(a);
-
-                                    String name;
-                                    String username;
-
-                                    if (object instanceof TLRPC.User) {
-                                        TLRPC.User user = (TLRPC.User) object;
-                                        name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
-                                        username = user.username;
+                                if (found != 0) {
+                                    if (found == 1) {
+                                        if (object instanceof TLRPC.User) {
+                                            TLRPC.User user = (TLRPC.User) object;
+                                            resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
+                                        } else {
+                                            TLRPC.Chat chat = (TLRPC.Chat) object;
+                                            resultArrayNames.add(AndroidUtilities.generateSearchName(chat.title, null, q));
+                                        }
                                     } else {
-                                        TLRPC.Chat chat = (TLRPC.Chat) object;
-                                        name = chat.title;
-                                        username = chat.username;
+                                        resultArrayNames.add(AndroidUtilities.generateSearchName("@" + username, null, "@" + q));
                                     }
-                                    String tName = LocaleController.getInstance().getTranslitString(name);
-                                    if (name.equals(tName)) {
-                                        tName = null;
-                                    }
-
-                                    int found = 0;
-                                    for (String q : search) {
-                                        if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
-                                            found = 1;
-                                        } else if (username != null && username.startsWith(q)) {
-                                            found = 2;
-                                        }
-
-                                        if (found != 0) {
-                                            if (found == 1) {
-                                                if (object instanceof TLRPC.User) {
-                                                    TLRPC.User user = (TLRPC.User) object;
-                                                    resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
-                                                } else {
-                                                    TLRPC.Chat chat = (TLRPC.Chat) object;
-                                                    resultArrayNames.add(AndroidUtilities.generateSearchName(chat.title, null, q));
-                                                }
-                                            } else {
-                                                resultArrayNames.add(AndroidUtilities.generateSearchName("@" + username, null, "@" + q));
-                                            }
-                                            resultArray.add(object);
-                                            break;
-                                        }
-                                    }
+                                    resultArray.add(object);
+                                    break;
                                 }
-                                updateSearchResults(resultArray, resultArrayNames);
-                            });
-                        });
-
-                    }
-                }, 200, 300);
+                            }
+                        }
+                        updateSearchResults(resultArray, resultArrayNames);
+                    });
+                }), 300);
             }
         }
 
         private void updateSearchResults(final ArrayList<TLObject> users, final ArrayList<CharSequence> names) {
             AndroidUtilities.runOnUIThread(() -> {
+                searchRunnable = null;
                 searchResult = users;
                 searchResultNames = names;
                 searchAdapterHelper.mergeResults(searchResult);

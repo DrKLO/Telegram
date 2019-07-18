@@ -17,7 +17,7 @@ import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -128,7 +128,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         }
         if (newSuggest != currentSuggest) {
             if (!newSuggest) {
-                DataQuery.getInstance(currentAccount).clearTopPeers();
+                MediaDataController.getInstance(currentAccount).clearTopPeers();
             }
             UserConfig.getInstance(currentAccount).suggestContacts = newSuggest;
             UserConfig.getInstance(currentAccount).saveConfig(false);
@@ -188,7 +188,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 builder.setMessage(LocaleController.getString("AreYouSureClearDrafts", R.string.AreYouSureClearDrafts));
                 builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
                     TLRPC.TL_messages_clearAllDrafts req = new TLRPC.TL_messages_clearAllDrafts();
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> DataQuery.getInstance(currentAccount).clearAllDrafts()));
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> MediaDataController.getInstance(currentAccount).clearAllDrafts()));
                 });
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                 showDialog(builder.create());
@@ -625,7 +625,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     if (position == blockedRow) {
                         if (!getMessagesController().loadingBlockedUsers) {
                             if (getMessagesController().blockedUsers.size() == 0) {
-                                textCell.setTextAndValue(LocaleController.getString("BlockedUsers", R.string.BlockedUsers), LocaleController.getString("EmptyExceptions", R.string.EmptyExceptions), true);
+                                textCell.setTextAndValue(LocaleController.getString("BlockedUsers", R.string.BlockedUsers), LocaleController.getString("BlockedEmpty", R.string.BlockedEmpty), true);
                             } else {
                                 textCell.setTextAndValue(LocaleController.getString("BlockedUsers", R.string.BlockedUsers), String.format("%d", getMessagesController().blockedUsers.size()), true);
                             }

@@ -16,7 +16,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.UserObject;
@@ -102,7 +102,7 @@ public class MentionCell extends LinearLayout {
         nameTextView.invalidate();
     }
 
-    public void setEmojiSuggestion(DataQuery.KeywordResult suggestion) {
+    public void setEmojiSuggestion(MediaDataController.KeywordResult suggestion) {
         imageView.setVisibility(INVISIBLE);
         usernameTextView.setVisibility(INVISIBLE);
         StringBuilder stringBuilder = new StringBuilder(suggestion.emoji.length() + suggestion.keyword.length() + 4);

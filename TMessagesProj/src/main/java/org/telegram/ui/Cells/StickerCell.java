@@ -23,6 +23,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -33,6 +34,7 @@ public class StickerCell extends FrameLayout {
 
     private BackupImageView imageView;
     private TLRPC.Document sticker;
+    private Object parentObject;
     private long lastUpdateTime;
     private boolean scaled;
     private float scale;
@@ -45,6 +47,7 @@ public class StickerCell extends FrameLayout {
 
         imageView = new BackupImageView(context);
         imageView.setAspectFit(true);
+        imageView.setLayerNum(1);
         addView(imageView, LayoutHelper.createFrame(66, 66, Gravity.CENTER_HORIZONTAL, 0, 5, 0, 0));
         setFocusable(true);
     }
@@ -71,10 +74,19 @@ public class StickerCell extends FrameLayout {
         return clearsInputField;
     }
 
-    public void setSticker(TLRPC.Document document, Object parentObject, int side) {
+    public void setSticker(TLRPC.Document document, Object parent, int side) {
+        parentObject = parent;
         if (document != null) {
             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-            imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", null, parentObject);
+            if (MessageObject.canAutoplayAnimatedSticker(document)) {
+                if (thumb != null) {
+                    imageView.setImage(ImageLocation.getForDocument(document), "80_80", ImageLocation.getForDocument(thumb, document), null, 0, parentObject);
+                } else {
+                    imageView.setImage(ImageLocation.getForDocument(document), "80_80", null, null, parentObject);
+                }
+            } else {
+                imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", null, parentObject);
+            }
         }
         sticker = document;
         if (side == -1) {
@@ -99,6 +111,10 @@ public class StickerCell extends FrameLayout {
 
     public TLRPC.Document getSticker() {
         return sticker;
+    }
+
+    public Object getParentObject() {
+        return parentObject;
     }
 
     public void setScaled(boolean value) {

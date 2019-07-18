@@ -44,6 +44,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -218,8 +219,10 @@ public class BottomSheet extends Dialog {
                         if (currentAnimation != null && currentAnimation.equals(animation)) {
                             currentAnimation = null;
                         }
+                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
                     }
                 });
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
                 currentAnimation.start();
             }
         }
@@ -474,6 +477,7 @@ public class BottomSheet extends Dialog {
         public BottomSheetCell(Context context, int type) {
             super(context);
 
+            setBackground(null);
             setBackgroundDrawable(Theme.getSelectorDrawable(false));
             //setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
 
@@ -813,6 +817,7 @@ public class BottomSheet extends Dialog {
                             getWindow().setAttributes(params);
                         }
                     }
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
                 }
 
                 @Override
@@ -822,6 +827,7 @@ public class BottomSheet extends Dialog {
                     }
                 }
             });
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
             animatorSet.start();
             currentSheetAnimation = animatorSet;
         }
@@ -910,6 +916,7 @@ public class BottomSheet extends Dialog {
                         }
                     });
                 }
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
             }
 
             @Override
@@ -919,6 +926,7 @@ public class BottomSheet extends Dialog {
                 }
             }
         });
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
         animatorSet.start();
         currentSheetAnimation = animatorSet;
     }
@@ -960,6 +968,7 @@ public class BottomSheet extends Dialog {
                             }
                         });
                     }
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
                 }
 
                 @Override
@@ -969,6 +978,7 @@ public class BottomSheet extends Dialog {
                     }
                 }
             });
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
             animatorSet.start();
             currentSheetAnimation = animatorSet;
         }

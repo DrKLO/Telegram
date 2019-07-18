@@ -19,7 +19,6 @@ import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.support.SparseLongArray;
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -35,7 +34,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class MessagesStorage {
+public class MessagesStorage extends BaseController {
 
     public interface IntCallback {
         void run(int param);
@@ -67,7 +66,6 @@ public class MessagesStorage {
 
     private CountDownLatch openSync = new CountDownLatch(1);
 
-    private int currentAccount;
     private static volatile MessagesStorage[] Instance = new MessagesStorage[UserConfig.MAX_ACCOUNT_COUNT];
     private final static int LAST_DB_VERSION = 60;
 
@@ -163,7 +161,7 @@ public class MessagesStorage {
     }
 
     public MessagesStorage(int instance) {
-        currentAccount = instance;
+        super(instance);
         //storageQueue.setPriority(Thread.MAX_PRIORITY);
         storageQueue.postRunnable(() -> openDatabase(1));
     }
@@ -367,10 +365,10 @@ public class MessagesStorage {
                 if (openTries == 2) {
                     cleanupInternal(true);
                     for (int a = 0; a < 2; a++) {
-                        UserConfig.getInstance(currentAccount).setDialogsLoadOffset(a, 0, 0, 0, 0, 0, 0);
-                        UserConfig.getInstance(currentAccount).setTotalDialogsCount(a, 0);
+                        getUserConfig().setDialogsLoadOffset(a, 0, 0, 0, 0, 0, 0);
+                        getUserConfig().setTotalDialogsCount(a, 0);
                     }
-                    UserConfig.getInstance(currentAccount).saveConfig(false);
+                    getUserConfig().saveConfig(false);
                 } else {
                     cleanupInternal(false);
                 }
@@ -837,7 +835,7 @@ public class MessagesStorage {
             cleanupInternal(true);
             openDatabase(1);
             if (isLogin) {
-                Utilities.stageQueue.postRunnable(() -> MessagesController.getInstance(currentAccount).getDifference());
+                Utilities.stageQueue.postRunnable(() -> getMessagesController().getDifference());
             }
         });
     }
@@ -957,14 +955,14 @@ public class MessagesStorage {
                             case 0: {
                                 final TLRPC.Chat chat = TLRPC.Chat.TLdeserialize(data, data.readInt32(false), false);
                                 if (chat != null) {
-                                    Utilities.stageQueue.postRunnable(() -> MessagesController.getInstance(currentAccount).loadUnknownChannel(chat, taskId));
+                                    Utilities.stageQueue.postRunnable(() -> getMessagesController().loadUnknownChannel(chat, taskId));
                                 }
                                 break;
                             }
                             case 1: {
                                 final int channelId = data.readInt32(false);
                                 final int newDialogType = data.readInt32(false);
-                                Utilities.stageQueue.postRunnable(() -> MessagesController.getInstance(currentAccount).getChannelDifference(channelId, newDialogType, taskId, null));
+                                Utilities.stageQueue.postRunnable(() -> getMessagesController().getChannelDifference(channelId, newDialogType, taskId, null));
                                 break;
                             }
                             case 2:
@@ -995,28 +993,28 @@ public class MessagesStorage {
                                     dialog.folder_id = data.readInt32(false);
                                 }
                                 final TLRPC.InputPeer peer = TLRPC.InputPeer.TLdeserialize(data, data.readInt32(false), false);
-                                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).checkLastDialogMessage(dialog, peer, taskId));
+                                AndroidUtilities.runOnUIThread(() -> getMessagesController().checkLastDialogMessage(dialog, peer, taskId));
                                 break;
                             }
                             case 3: {
                                 long random_id = data.readInt64(false);
                                 TLRPC.InputPeer peer = TLRPC.InputPeer.TLdeserialize(data, data.readInt32(false), false);
                                 TLRPC.TL_inputMediaGame game = (TLRPC.TL_inputMediaGame) TLRPC.InputMedia.TLdeserialize(data, data.readInt32(false), false);
-                                SendMessagesHelper.getInstance(currentAccount).sendGame(peer, game, random_id, taskId);
+                                getSendMessagesHelper().sendGame(peer, game, random_id, taskId);
                                 break;
                             }
                             case 4: {
                                 final long did = data.readInt64(false);
                                 final boolean pin = data.readBool(false);
                                 final TLRPC.InputPeer peer = TLRPC.InputPeer.TLdeserialize(data, data.readInt32(false), false);
-                                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).pinDialog(did, pin, peer, taskId));
+                                AndroidUtilities.runOnUIThread(() -> getMessagesController().pinDialog(did, pin, peer, taskId));
                                 break;
                             }
                             case 6: {
                                 final int channelId = data.readInt32(false);
                                 final int newDialogType = data.readInt32(false);
                                 final TLRPC.InputChannel inputChannel = TLRPC.InputChannel.TLdeserialize(data, data.readInt32(false), false);
-                                Utilities.stageQueue.postRunnable(() -> MessagesController.getInstance(currentAccount).getChannelDifference(channelId, newDialogType, taskId, inputChannel));
+                                Utilities.stageQueue.postRunnable(() -> getMessagesController().getChannelDifference(channelId, newDialogType, taskId, inputChannel));
                                 break;
                             }
                             case 7: {
@@ -1030,14 +1028,14 @@ public class MessagesStorage {
                                     removePendingTask(taskId);
                                 } else {
                                     final TLObject finalRequest = request;
-                                    AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).deleteMessages(null, null, null, channelId, true, taskId, finalRequest));
+                                    AndroidUtilities.runOnUIThread(() -> getMessagesController().deleteMessages(null, null, null, channelId, true, taskId, finalRequest));
                                 }
                                 break;
                             }
                             case 9: {
                                 final long did = data.readInt64(false);
                                 final TLRPC.InputPeer peer = TLRPC.InputPeer.TLdeserialize(data, data.readInt32(false), false);
-                                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).markDialogAsUnread(did, peer, taskId));
+                                AndroidUtilities.runOnUIThread(() -> getMessagesController().markDialogAsUnread(did, peer, taskId));
                                 break;
                             }
                             case 11: {
@@ -1050,7 +1048,7 @@ public class MessagesStorage {
                                 } else {
                                     inputChannel = null;
                                 }
-                                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).markMessageAsRead(mid, channelId, inputChannel, ttl, taskId));
+                                AndroidUtilities.runOnUIThread(() -> getMessagesController().markMessageAsRead(mid, channelId, inputChannel, ttl, taskId));
                                 break;
                             }
                             case 12: {
@@ -1061,7 +1059,7 @@ public class MessagesStorage {
                                 int backgroundColor = data.readInt32(false);
                                 float intesity = (float) data.readDouble(false);
                                 boolean install = data.readBool(false);
-                                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).saveWallpaperToServer(null, wallPaperId, accessHash, isBlurred, isMotion, backgroundColor, intesity, install, taskId));
+                                AndroidUtilities.runOnUIThread(() -> getMessagesController().saveWallpaperToServer(null, wallPaperId, accessHash, isBlurred, isMotion, backgroundColor, intesity, install, taskId));
                                 break;
                             }
                             case 13: {
@@ -1071,12 +1069,12 @@ public class MessagesStorage {
                                 final int maxIdDelete = data.readInt32(false);
                                 final boolean revoke = data.readBool(false);
                                 TLRPC.InputPeer inputPeer = TLRPC.InputPeer.TLdeserialize(data, data.readInt32(false), false);
-                                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).deleteDialog(did, first, onlyHistory, maxIdDelete, revoke, inputPeer, taskId));
+                                AndroidUtilities.runOnUIThread(() -> getMessagesController().deleteDialog(did, first, onlyHistory, maxIdDelete, revoke, inputPeer, taskId));
                                 break;
                             }
                             case 15: {
                                 TLRPC.InputPeer inputPeer = TLRPC.InputPeer.TLdeserialize(data, data.readInt32(false), false);
-                                Utilities.stageQueue.postRunnable(() -> MessagesController.getInstance(currentAccount).loadUnknownDialog(inputPeer, taskId));
+                                Utilities.stageQueue.postRunnable(() -> getMessagesController().loadUnknownDialog(inputPeer, taskId));
                                 break;
                             }
                             case 16: {
@@ -1087,7 +1085,7 @@ public class MessagesStorage {
                                     TLRPC.InputDialogPeer inputPeer = TLRPC.InputDialogPeer.TLdeserialize(data, data.readInt32(false), false);
                                     peers.add(inputPeer);
                                 }
-                                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).reorderPinnedDialogs(folderId, peers, taskId));
+                                AndroidUtilities.runOnUIThread(() -> getMessagesController().reorderPinnedDialogs(folderId, peers, taskId));
                                 break;
                             }
                             case 17: {
@@ -1098,7 +1096,7 @@ public class MessagesStorage {
                                     TLRPC.TL_inputFolderPeer inputPeer = TLRPC.TL_inputFolderPeer.TLdeserialize(data, data.readInt32(false), false);
                                     peers.add(inputPeer);
                                 }
-                                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).addDialogToFolder(null, folderId, -1, peers, taskId));
+                                AndroidUtilities.runOnUIThread(() -> getMessagesController().addDialogToFolder(null, folderId, -1, peers, taskId));
                                 break;
                             }
                         }
@@ -1272,13 +1270,13 @@ public class MessagesStorage {
                     getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
                 }
                 AndroidUtilities.runOnUIThread(() -> {
-                    MessagesController.getInstance(currentAccount).putUsers(users, true);
-                    MessagesController.getInstance(currentAccount).putChats(chats, true);
-                    MessagesController.getInstance(currentAccount).putEncryptedChats(encryptedChats, true);
+                    getMessagesController().putUsers(users, true);
+                    getMessagesController().putChats(chats, true);
+                    getMessagesController().putEncryptedChats(encryptedChats, true);
                     for (int a = 0; a < dialogs.size(); a++) {
                         long did = dialogs.keyAt(a);
                         ReadDialog dialog = dialogs.valueAt(a);
-                        MessagesController.getInstance(currentAccount).markDialogAsRead(did, dialog.lastMid, dialog.lastMid, dialog.date, false, dialog.unreadCount, true);
+                        getMessagesController().markDialogAsRead(did, dialog.lastMid, dialog.lastMid, dialog.date, false, dialog.unreadCount, true);
                     }
                 });
             } catch (Exception e) {
@@ -1298,7 +1296,7 @@ public class MessagesStorage {
                 final LongSparseArray<Integer> pushDialogs = new LongSparseArray<>();
                 SQLiteCursor cursor = database.queryFinalized("SELECT d.did, d.unread_count, s.flags FROM dialogs as d LEFT JOIN dialog_settings as s ON d.did = s.did WHERE d.unread_count != 0");
                 StringBuilder ids = new StringBuilder();
-                int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+                int currentTime = getConnectionsManager().getCurrentTime();
                 while (cursor.next()) {
                     long flags = cursor.longValue(2);
                     boolean muted = (flags & 1) != 0;
@@ -1349,7 +1347,7 @@ public class MessagesStorage {
                         NativeByteBuffer data = cursor.byteBufferValue(1);
                         if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                            message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                            message.readAttachPath(data, getUserConfig().clientUserId);
                             data.reuse();
                             MessageObject.setUnreadFlags(message, cursor.intValue(0));
                             message.id = cursor.intValue(3);
@@ -1377,7 +1375,7 @@ public class MessagesStorage {
                                         data = cursor.byteBufferValue(6);
                                         if (data != null) {
                                             message.replyMessage = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                            message.replyMessage.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                                            message.replyMessage.readAttachPath(data, getUserConfig().clientUserId);
                                             data.reuse();
                                             if (message.replyMessage != null) {
                                                 if (MessageObject.isMegagroup(message)) {
@@ -1425,6 +1423,22 @@ public class MessagesStorage {
                             String name = cursor.isNull(6) ? null : cursor.stringValue(6);
                             String userName = cursor.isNull(7) ? null : cursor.stringValue(7);
                             int flags = cursor.intValue(8);
+                            if (message.from_id == 0) {
+                                int lowerId = (int) message.dialog_id;
+                                if (lowerId > 0) {
+                                    message.from_id = lowerId;
+                                }
+                            }
+                            int lower_id = (int) message.dialog_id;
+                            if (lower_id > 0) {
+                                if (!usersToLoad.contains(lower_id)) {
+                                    usersToLoad.add(lower_id);
+                                }
+                            } else if (lower_id < 0) {
+                                if (!chatsToLoad.contains(-lower_id)) {
+                                    chatsToLoad.add(-lower_id);
+                                }
+                            }
 
                             pushMessages.add(new MessageObject(currentAccount, message, messageText, name, userName, (flags & 1) != 0, (flags & 2) != 0, false));
                             addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad);
@@ -1438,7 +1452,7 @@ public class MessagesStorage {
                             NativeByteBuffer data = cursor.byteBufferValue(0);
                             if (data != null) {
                                 TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                                message.readAttachPath(data, getUserConfig().clientUserId);
                                 data.reuse();
                                 message.id = cursor.intValue(1);
                                 message.date = cursor.intValue(2);
@@ -1492,7 +1506,7 @@ public class MessagesStorage {
                     }
                 }
                 Collections.reverse(messages);
-                AndroidUtilities.runOnUIThread(() -> NotificationsController.getInstance(currentAccount).processLoadedUnreadMessages(pushDialogs, messages, pushMessages, users, chats, encryptedChats));
+                AndroidUtilities.runOnUIThread(() -> getNotificationsController().processLoadedUnreadMessages(pushDialogs, messages, pushMessages, users, chats, encryptedChats));
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -1599,7 +1613,7 @@ public class MessagesStorage {
                     arrayList.add(searchImage);
                 }
                 cursor.dispose();*/
-                AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recentImagesDidLoad, type, arrayList));
+                AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.recentImagesDidLoad, type, arrayList));
             } catch (Throwable e) {
                 FileLog.e(e);
             }
@@ -1722,7 +1736,7 @@ public class MessagesStorage {
                     getUsersInternal(usersToLoad.toString(), users);
                 }
 
-                MessagesController.getInstance(currentAccount).processLoadedBlockedUsers(ids, users, true);
+                getMessagesController().processLoadedBlockedUsers(ids, users, true);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -1775,7 +1789,7 @@ public class MessagesStorage {
                         NativeByteBuffer data = cursor.byteBufferValue(0);
                         if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                            message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                            message.readAttachPath(data, getUserConfig().clientUserId);
                             data.reuse();
                             if (message != null && message.from_id == uid && message.id != 1) {
                                 mids.add(message.id);
@@ -1807,12 +1821,12 @@ public class MessagesStorage {
                     FileLog.e(e);
                 }
                 cursor.dispose();
-                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).markChannelDialogMessageAsDeleted(mids, channelId));
+                AndroidUtilities.runOnUIThread(() -> getMessagesController().markChannelDialogMessageAsDeleted(mids, channelId));
                 markMessagesAsDeletedInternal(mids, channelId);
                 updateDialogsWithDeletedMessagesInternal(mids, null, channelId);
-                FileLoader.getInstance(currentAccount).deleteFiles(filesToDelete, 0);
+                getFileLoader().deleteFiles(filesToDelete, 0);
                 if (!mids.isEmpty()) {
-                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messagesDeleted, mids, channelId));
+                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, mids, channelId));
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -1842,7 +1856,7 @@ public class MessagesStorage {
                             NativeByteBuffer data = cursor.byteBufferValue(0);
                             if (data != null) {
                                 TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                                message.readAttachPath(data, getUserConfig().clientUserId);
                                 data.reuse();
                                 if (message != null && message.media != null) {
                                     if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
@@ -1873,7 +1887,7 @@ public class MessagesStorage {
                         FileLog.e(e);
                     }
                     cursor.dispose();
-                    FileLoader.getInstance(currentAccount).deleteFiles(filesToDelete, messagesOnly);
+                    getFileLoader().deleteFiles(filesToDelete, messagesOnly);
                 }
 
                 if (messagesOnly == 0 || messagesOnly == 3) {
@@ -1906,7 +1920,7 @@ public class MessagesStorage {
                                 NativeByteBuffer data = cursor2.byteBufferValue(0);
                                 if (data != null) {
                                     TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                    message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                                    message.readAttachPath(data, getUserConfig().clientUserId);
                                     data.reuse();
                                     if (message != null) {
                                         messageId = message.id;
@@ -1924,7 +1938,7 @@ public class MessagesStorage {
                         database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
                         database.executeFast("DELETE FROM media_v2 WHERE uid = " + did).stepThis().dispose();
                         database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
-                        DataQuery.getInstance(currentAccount).clearBotKeyboard(did, null);
+                        getMediaDataController().clearBotKeyboard(did, null);
 
                         SQLitePreparedStatement state5 = database.executeFast("REPLACE INTO messages_holes VALUES(?, ?, ?)");
                         SQLitePreparedStatement state6 = database.executeFast("REPLACE INTO media_holes_v2 VALUES(?, ?, ?, ?)");
@@ -1945,8 +1959,8 @@ public class MessagesStorage {
                 database.executeFast("DELETE FROM media_v2 WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM messages_holes WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
-                DataQuery.getInstance(currentAccount).clearBotKeyboard(did, null);
-                AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needReloadRecentDialogsSearch));
+                getMediaDataController().clearBotKeyboard(did, null);
+                AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.needReloadRecentDialogsSearch));
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -1986,7 +2000,7 @@ public class MessagesStorage {
                 }
                 cursor.dispose();
 
-                Utilities.stageQueue.postRunnable(() -> MessagesController.getInstance(currentAccount).processLoadedUserPhotos(res, did, count, max_id, true, classGuid));
+                Utilities.stageQueue.postRunnable(() -> getMessagesController().processLoadedUserPhotos(res, did, count, max_id, true, classGuid));
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -2099,8 +2113,8 @@ public class MessagesStorage {
                 putDialogsInternal(dialogsRes, 0);
                 saveDiffParamsInternal(seq, newPts, date, qts);
 
-                int totalDialogsLoadCount = UserConfig.getInstance(currentAccount).getTotalDialogsCount(0);
-                int[] dialogsLoadOffset = UserConfig.getInstance(currentAccount).getDialogLoadOffsets(0);
+                int totalDialogsLoadCount = getUserConfig().getTotalDialogsCount(0);
+                int[] dialogsLoadOffset = getUserConfig().getDialogLoadOffsets(0);
                 int dialogsLoadOffsetId;
                 int dialogsLoadOffsetDate;
                 int dialogsLoadOffsetChannelId = 0;
@@ -2146,17 +2160,17 @@ public class MessagesStorage {
                     }
                 }
                 for (int a = 0; a < 2; a++) {
-                    UserConfig.getInstance(currentAccount).setDialogsLoadOffset(a,
+                    getUserConfig().setDialogsLoadOffset(a,
                             dialogsLoadOffsetId,
                             dialogsLoadOffsetDate,
                             dialogsLoadOffsetUserId,
                             dialogsLoadOffsetChatId,
                             dialogsLoadOffsetChannelId,
                             dialogsLoadOffsetAccess);
-                    UserConfig.getInstance(currentAccount).setTotalDialogsCount(a, totalDialogsLoadCount);
+                    getUserConfig().setTotalDialogsCount(a, totalDialogsLoadCount);
                 }
-                UserConfig.getInstance(currentAccount).saveConfig(false);
-                MessagesController.getInstance(currentAccount).completeDialogsReset(dialogsRes, messagesCount, seq, newPts, date, qts, new_dialogs_dict, new_dialogMessage, lastMessage);
+                getUserConfig().saveConfig(false);
+                getMessagesController().completeDialogsReset(dialogsRes, messagesCount, seq, newPts, date, qts, new_dialogs_dict, new_dialogMessage, lastMessage);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -2202,7 +2216,7 @@ public class MessagesStorage {
                     NativeByteBuffer data = cursor.byteBufferValue(0);
                     if (data != null) {
                         TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                        message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                        message.readAttachPath(data, getUserConfig().clientUserId);
                         data.reuse();
                         if (message.media != null) {
                             if (message.media.document != null) {
@@ -2270,11 +2284,11 @@ public class MessagesStorage {
                     state.dispose();
                     AndroidUtilities.runOnUIThread(() -> {
                         for (int a = 0; a < messages.size(); a++) {
-                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateMessageMedia, messages.get(a));
+                            getNotificationCenter().postNotificationName(NotificationCenter.updateMessageMedia, messages.get(a));
                         }
                     });
                 }
-                FileLoader.getInstance(currentAccount).deleteFiles(filesToDelete, 0);
+                getFileLoader().deleteFiles(filesToDelete, 0);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -2302,7 +2316,7 @@ public class MessagesStorage {
                             NativeByteBuffer data = cursor.byteBufferValue(0);
                             if (data != null) {
                                 TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                                message.readAttachPath(data, getUserConfig().clientUserId);
                                 data.reuse();
                                 if (message.media instanceof TLRPC.TL_messageMediaPoll) {
                                     TLRPC.TL_messageMediaPoll media = (TLRPC.TL_messageMediaPoll) message.media;
@@ -2363,7 +2377,7 @@ public class MessagesStorage {
                     arr.add((int) mid);
                 }
                 cursor.dispose();
-                MessagesController.getInstance(currentAccount).processLoadedDeleteTask(date, arr, channelId1);
+                getMessagesController().processLoadedDeleteTask(date, arr, channelId1);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -2389,7 +2403,7 @@ public class MessagesStorage {
                 database.executeFast(String.format(Locale.US, "UPDATE dialogs SET unread_count_i = %d WHERE did = %d", old_mentions_count, did)).stepThis().dispose();
                 LongSparseArray<Integer> sparseArray = new LongSparseArray<>(1);
                 sparseArray.put(did, old_mentions_count);
-                MessagesController.getInstance(currentAccount).processDialogsUpdateRead(null, sparseArray);
+                getMessagesController().processDialogsUpdateRead(null, sparseArray);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -2415,7 +2429,7 @@ public class MessagesStorage {
                 database.executeFast(String.format(Locale.US, "UPDATE dialogs SET unread_count_i = %d WHERE did = %d", count, did)).stepThis().dispose();
                 LongSparseArray<Integer> sparseArray = new LongSparseArray<>(1);
                 sparseArray.put(did, count);
-                MessagesController.getInstance(currentAccount).processDialogsUpdateRead(null, sparseArray);
+                getMessagesController().processDialogsUpdateRead(null, sparseArray);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -2440,7 +2454,7 @@ public class MessagesStorage {
                     if (!inner) {
                         markMessagesContentAsRead(midsArray, 0);
                     }
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messagesReadContent, midsArray);
+                    getNotificationCenter().postNotificationName(NotificationCenter.messagesReadContent, midsArray);
                 });
 
                 SQLitePreparedStatement state = database.executeFast("REPLACE INTO enc_tasks_v2 VALUES(?, ?)");
@@ -2456,7 +2470,7 @@ public class MessagesStorage {
                 }
                 state.dispose();
                 database.executeFast(String.format(Locale.US, "UPDATE messages SET ttl = 0 WHERE mid = %d", mid)).stepThis().dispose();
-                MessagesController.getInstance(currentAccount).didAddedNewTask(minDate, messages);
+                getMessagesController().didAddedNewTask(minDate, messages);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -2504,7 +2518,7 @@ public class MessagesStorage {
                 if (random_ids != null) {
                     AndroidUtilities.runOnUIThread(() -> {
                         markMessagesContentAsRead(midsArray, 0);
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messagesReadContent, midsArray);
+                        getNotificationCenter().postNotificationName(NotificationCenter.messagesReadContent, midsArray);
                     });
                 }
 
@@ -2524,7 +2538,7 @@ public class MessagesStorage {
                     state.dispose();
                     database.commitTransaction();
                     database.executeFast(String.format(Locale.US, "UPDATE messages SET ttl = 0 WHERE mid IN(%s)", mids.toString())).stepThis().dispose();
-                    MessagesController.getInstance(currentAccount).didAddedNewTask(minDate, messages);
+                    getMessagesController().didAddedNewTask(minDate, messages);
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -2649,9 +2663,9 @@ public class MessagesStorage {
                 database.commitTransaction();
             }
 
-            MessagesController.getInstance(currentAccount).processDialogsUpdateRead(dialogsToUpdate, dialogsToUpdateMentions);
+            getMessagesController().processDialogsUpdateRead(dialogsToUpdate, dialogsToUpdateMentions);
             if (!channelMentionsToReload.isEmpty()) {
-                MessagesController.getInstance(currentAccount).reloadMentionsCountForChannels(channelMentionsToReload);
+                getMessagesController().reloadMentionsCountForChannels(channelMentionsToReload);
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -2711,7 +2725,7 @@ public class MessagesStorage {
                 if (info instanceof TLRPC.TL_chatFull) {
                     info.participants = participants;
                     final TLRPC.ChatFull finalInfo = info;
-                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, finalInfo, 0, false, null));
+                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.chatInfoDidLoad, finalInfo, 0, false, null));
 
                     SQLitePreparedStatement state = database.executeFast("REPLACE INTO chat_settings_v2 VALUES(?, ?, ?, ?)");
                     NativeByteBuffer data = new NativeByteBuffer(info.getObjectSize());
@@ -2739,7 +2753,7 @@ public class MessagesStorage {
                     ids.add(cursor.intValue(0));
                 }
                 cursor.dispose();
-                MessagesController.getInstance(currentAccount).processLoadedChannelAdmins(ids, chatId, true);
+                getMessagesController().processLoadedChannelAdmins(ids, chatId, true);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -2804,7 +2818,7 @@ public class MessagesStorage {
         }
         storageQueue.postRunnable(() -> {
             try {
-                int currentDate = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+                int currentDate = getConnectionsManager().getCurrentTime();
                 if (result instanceof TLRPC.TL_messages_botCallbackAnswer) {
                     currentDate += ((TLRPC.TL_messages_botCallbackAnswer) result).cache_time;
                 } else if (result instanceof TLRPC.TL_messages_botResults) {
@@ -2829,7 +2843,7 @@ public class MessagesStorage {
         if (key == null || requestDelegate == null) {
             return;
         }
-        final int currentDate = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+        final int currentDate = getConnectionsManager().getCurrentTime();
         storageQueue.postRunnable(() -> {
             TLObject result = null;
             try {
@@ -2879,12 +2893,12 @@ public class MessagesStorage {
                 }
                 cursor.dispose();
                 if (info != null && info.pinned_msg_id != 0) {
-                    pinnedMessageObject = DataQuery.getInstance(currentAccount).loadPinnedMessage(user.id, 0, info.pinned_msg_id, false);
+                    pinnedMessageObject = getMediaDataController().loadPinnedMessage(user.id, 0, info.pinned_msg_id, false);
                 }
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                MessagesController.getInstance(currentAccount).processUserInfo(user, info, true, force, pinnedMessageObject, classGuid);
+                getMessagesController().processUserInfo(user, info, true, force, pinnedMessageObject, classGuid);
             }
         });
     }
@@ -2986,7 +3000,7 @@ public class MessagesStorage {
                     info.flags |= 64;
 
                     final TLRPC.UserFull finalInfo = info;
-                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.userInfoDidLoad, userId, finalInfo, null));
+                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.userInfoDidLoad, userId, finalInfo, null));
 
                     SQLitePreparedStatement state = database.executeFast("REPLACE INTO user_settings VALUES(?, ?, ?)");
                     NativeByteBuffer data = new NativeByteBuffer(info.getObjectSize());
@@ -3044,7 +3058,7 @@ public class MessagesStorage {
                     }
 
                     final TLRPC.ChatFull finalInfo = info;
-                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, finalInfo, 0, false, null));
+                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.chatInfoDidLoad, finalInfo, 0, false, null));
 
                     SQLitePreparedStatement state = database.executeFast("REPLACE INTO chat_settings_v2 VALUES(?, ?, ?, ?)");
                     NativeByteBuffer data = new NativeByteBuffer(info.getObjectSize());
@@ -3097,7 +3111,7 @@ public class MessagesStorage {
                         TLRPC.TL_chatParticipant participant = new TLRPC.TL_chatParticipant();
                         participant.user_id = user_id;
                         participant.inviter_id = invited_id;
-                        participant.date = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+                        participant.date = getConnectionsManager().getCurrentTime();
                         info.participants.participants.add(participant);
                     } else if (what == 2) {
                         for (int a = 0; a < info.participants.participants.size(); a++) {
@@ -3123,7 +3137,7 @@ public class MessagesStorage {
                     info.participants.version = version;
 
                     final TLRPC.ChatFull finalInfo = info;
-                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, finalInfo, 0, false, null));
+                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.chatInfoDidLoad, finalInfo, 0, false, null));
 
                     SQLitePreparedStatement state = database.executeFast("REPLACE INTO chat_settings_v2 VALUES(?, ?, ?, ?)");
                     NativeByteBuffer data = new NativeByteBuffer(info.getObjectSize());
@@ -3259,12 +3273,12 @@ public class MessagesStorage {
                     countDownLatch.countDown();
                 }
                 if (info != null && info.pinned_msg_id != 0) {
-                    pinnedMessageObject = DataQuery.getInstance(currentAccount).loadPinnedMessage(-chat_id, info instanceof TLRPC.TL_channelFull ? chat_id : 0, info.pinned_msg_id, false);
+                    pinnedMessageObject = getMediaDataController().loadPinnedMessage(-chat_id, info instanceof TLRPC.TL_channelFull ? chat_id : 0, info.pinned_msg_id, false);
                 }
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
-                MessagesController.getInstance(currentAccount).processChatInfo(chat_id, info, loadedUsers, true, force, byChannelUsers, pinnedMessageObject);
+                getMessagesController().processChatInfo(chat_id, info, loadedUsers, true, force, byChannelUsers, pinnedMessageObject);
                 if (countDownLatch != null) {
                     countDownLatch.countDown();
                 }
@@ -3272,7 +3286,8 @@ public class MessagesStorage {
         });
     }
 
-    public void processPendingRead(final long dialog_id, final long maxPositiveId, final long maxNegativeId, final int max_date, final boolean isChannel) {
+    public void processPendingRead(final long dialog_id, final long maxPositiveId, final long maxNegativeId, final boolean isChannel) {
+        final int maxDate = lastSavedDate;
         storageQueue.postRunnable(() -> {
             try {
                 long currentMaxId = 0;
@@ -3322,6 +3337,13 @@ public class MessagesStorage {
                     state.bindLong(2, currentMaxId);
                     state.step();
                     state.dispose();
+
+                    state = database.executeFast("DELETE FROM unread_push_messages WHERE uid = ? AND date <= ?");
+                    state.requery();
+                    state.bindLong(1, dialog_id);
+                    state.bindLong(2, maxDate);
+                    state.step();
+                    state.dispose();
                 } else {
                     currentMaxId = (int) maxNegativeId;
 
@@ -3343,13 +3365,6 @@ public class MessagesStorage {
                         cursor.dispose();
                         unreadCount = Math.max(0, unreadCount - updatedCount);
                     }
-
-                    state = database.executeFast("DELETE FROM unread_push_messages WHERE uid = ? AND mid >= ?");
-                    state.requery();
-                    state.bindLong(1, dialog_id);
-                    state.bindLong(2, currentMaxId);
-                    state.step();
-                    state.dispose();
                 }
 
                 state = database.executeFast("UPDATE dialogs SET unread_count = ?, inbox_max = ? WHERE did = ?");
@@ -3409,7 +3424,7 @@ public class MessagesStorage {
     }
 
     public void applyPhoneBookUpdates(final String adds, final String deletes) {
-        if (adds.length() == 0 && deletes.length() == 0) {
+        if (TextUtils.isEmpty(adds)) {
             return;
         }
         storageQueue.postRunnable(() -> {
@@ -3532,7 +3547,7 @@ public class MessagesStorage {
                     }
                     cursor.dispose();
                     cursor = null;
-                    ContactsController.getInstance(currentAccount).migratePhoneBookToV7(contactHashMap);
+                    getContactsController().migratePhoneBookToV7(contactHashMap);
                     return;
                 }
             } catch (Throwable e) {
@@ -3619,7 +3634,7 @@ public class MessagesStorage {
                     cursor.dispose();
                 }
             }
-            ContactsController.getInstance(currentAccount).performSyncPhoneBook(contactHashMap, true, true, false, false, !byError, false);
+            getContactsController().performSyncPhoneBook(contactHashMap, true, true, false, false, !byError, false);
         });
     }
 
@@ -3651,7 +3666,7 @@ public class MessagesStorage {
                 users.clear();
                 FileLog.e(e);
             }
-            ContactsController.getInstance(currentAccount).processLoadedContacts(contacts, users, 1);
+            getContactsController().processLoadedContacts(contacts, users, 1);
         });
     }
 
@@ -3674,7 +3689,7 @@ public class MessagesStorage {
                     if (data != null) {
                         TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                         message.send_state = cursor.intValue(2);
-                        message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                        message.readAttachPath(data, getUserConfig().clientUserId);
                         data.reuse();
                         if (messageHashMap.indexOfKey(message.id) < 0) {
                             MessageObject.setUnreadFlags(message, cursor.intValue(0));
@@ -3756,7 +3771,7 @@ public class MessagesStorage {
                     getChatsInternal(stringToLoad.toString(), chats);
                 }
 
-                SendMessagesHelper.getInstance(currentAccount).processUnsentMessages(messages, users, chats, encryptedChats);
+                getSendMessagesHelper().processUnsentMessages(messages, users, chats, encryptedChats);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -3855,7 +3870,7 @@ public class MessagesStorage {
 
     public void getMessages(final long dialog_id, final int count, final int max_id, final int offset_date, final int minDate, final int classGuid, final int load_type, final boolean isChannel, final int loadIndex) {
         storageQueue.postRunnable(() -> {
-            int currentUserId = UserConfig.getInstance(currentAccount).clientUserId;
+            int currentUserId = getUserConfig().clientUserId;
             TLRPC.TL_messages_messages res = new TLRPC.TL_messages_messages();
             int count_unread = 0;
             int mentions_unread = 0;
@@ -4466,7 +4481,7 @@ public class MessagesStorage {
                 res.users.clear();
                 FileLog.e(e);
             } finally {
-                MessagesController.getInstance(currentAccount).processLoadedMessages(res, dialog_id, count_query, max_id_override, offset_date, true, classGuid, min_unread_id, last_message_id, count_unread, max_unread_date, load_type, isChannel, isEnd, loadIndex, queryFromServer, mentions_unread);
+                getMessagesController().processLoadedMessages(res, dialog_id, count_query, max_id_override, offset_date, true, classGuid, min_unread_id, last_message_id, count_unread, max_unread_date, load_type, isChannel, isEnd, loadIndex, queryFromServer, mentions_unread);
             }
         });
     }
@@ -5216,7 +5231,7 @@ public class MessagesStorage {
                 }
                 cursor.dispose();
 
-                AndroidUtilities.runOnUIThread(() -> DownloadController.getInstance(currentAccount).processDownloadObjects(type, objects));
+                AndroidUtilities.runOnUIThread(() -> getDownloadController().processDownloadObjects(type, objects));
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -5265,7 +5280,7 @@ public class MessagesStorage {
                         NativeByteBuffer data = cursor.byteBufferValue(1);
                         if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                            message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                            message.readAttachPath(data, getUserConfig().clientUserId);
                             data.reuse();
                             if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
                                 message.id = mid;
@@ -5314,7 +5329,7 @@ public class MessagesStorage {
 
                 database.commitTransaction();
 
-                AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didReceivedWebpages, messages));
+                AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.didReceivedWebpages, messages));
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -5345,7 +5360,7 @@ public class MessagesStorage {
                 database.executeFast("DELETE FROM media_v2 WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM messages_holes WHERE uid = " + did).stepThis().dispose();
                 database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
-                DataQuery.getInstance(currentAccount).clearBotKeyboard(did, null);
+                getMediaDataController().clearBotKeyboard(did, null);
 
                 TLRPC.TL_messages_dialogs dialogs = new TLRPC.TL_messages_dialogs();
                 dialogs.chats.addAll(difference.chats);
@@ -5361,12 +5376,12 @@ public class MessagesStorage {
                 putDialogsInternal(dialogs, 0);
 
                 updateDialogsWithDeletedMessages(new ArrayList<>(), null, false, channel_id);
-                AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, true));
+                AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, true));
                 if (checkInvite) {
                     if (newDialogType == 1) {
-                        MessagesController.getInstance(currentAccount).checkChannelInviter(channel_id);
+                        getMessagesController().checkChannelInviter(channel_id);
                     } else {
-                        MessagesController.getInstance(currentAccount).generateJoinMessage(channel_id, false);
+                        getMessagesController().generateJoinMessage(channel_id, false);
                     }
                 }
             } catch (Exception e) {
@@ -5486,7 +5501,7 @@ public class MessagesStorage {
                         messagesIdsMap.put(messageId, message.dialog_id);
                     }
                 }
-                if (DataQuery.canAddMessageToMedia(message)) {
+                if (MediaDataController.canAddMessageToMedia(message)) {
                     if (messageMediaIds == null) {
                         messageMediaIds = new StringBuilder();
                         messagesMediaIdsMap = new LongSparseArray<>();
@@ -5497,7 +5512,7 @@ public class MessagesStorage {
                     }
                     messageMediaIds.append(messageId);
                     messagesMediaIdsMap.put(messageId, message.dialog_id);
-                    mediaTypes.put(messageId, DataQuery.getMediaType(message));
+                    mediaTypes.put(messageId, MediaDataController.getMediaType(message));
                 }
                 if (isValidKeyboardToSave(message)) {
                     TLRPC.Message oldMessage = botKeyboards.get(message.dialog_id);
@@ -5508,7 +5523,7 @@ public class MessagesStorage {
             }
 
             for (int a = 0; a < botKeyboards.size(); a++) {
-                DataQuery.getInstance(currentAccount).putBotKeyboard(botKeyboards.keyAt(a), botKeyboards.valueAt(a));
+                getMediaDataController().putBotKeyboard(botKeyboards.keyAt(a), botKeyboards.valueAt(a));
             }
 
             if (messageMediaIds != null) {
@@ -5647,7 +5662,7 @@ public class MessagesStorage {
                     state_randoms.step();
                 }
 
-                if (DataQuery.canAddMessageToMedia(message)) {
+                if (MediaDataController.canAddMessageToMedia(message)) {
                     if (state_media == null) {
                         state_media = database.executeFast("REPLACE INTO media_v2 VALUES(?, ?, ?, ?, ?)");
                     }
@@ -5655,7 +5670,7 @@ public class MessagesStorage {
                     state_media.bindLong(1, messageId);
                     state_media.bindLong(2, message.dialog_id);
                     state_media.bindInteger(3, message.date);
-                    state_media.bindInteger(4, DataQuery.getMediaType(message));
+                    state_media.bindInteger(4, MediaDataController.getMediaType(message));
                     state_media.bindByteBuffer(5, data);
                     state_media.step();
                 }
@@ -5678,7 +5693,7 @@ public class MessagesStorage {
 
                 data.reuse();
 
-                if (downloadMask != 0 && (message.to_id.channel_id == 0 || message.post) && message.date >= ConnectionsManager.getInstance(currentAccount).getCurrentTime() - 60 * 60 && DownloadController.getInstance(currentAccount).canDownloadMedia(message) == 1) {
+                if (downloadMask != 0 && (message.to_id.channel_id == 0 || message.post) && message.date >= getConnectionsManager().getCurrentTime() - 60 * 60 && getDownloadController().canDownloadMedia(message) == 1) {
                     if (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaDocument || message.media instanceof TLRPC.TL_messageMediaWebPage) {
                         int type = 0;
                         long id = 0;
@@ -5691,7 +5706,7 @@ public class MessagesStorage {
                             object = new TLRPC.TL_messageMediaDocument();
                             object.document = document;
                             object.flags |= 1;
-                        } else if (MessageObject.isStickerMessage(message)) {
+                        } else if (MessageObject.isStickerMessage(message) || MessageObject.isAnimatedStickerMessage(message)) {
                             id = document.id;
                             type = DownloadController.AUTODOWNLOAD_TYPE_PHOTO;
                             object = new TLRPC.TL_messageMediaDocument();
@@ -5780,7 +5795,7 @@ public class MessagesStorage {
                     last_mid = cursor.intValue(2);
                     old_mentions_count = Math.max(0, cursor.intValue(3));
                 } else if (channelId != 0) {
-                    MessagesController.getInstance(currentAccount).checkChannelInviter(channelId);
+                    getMessagesController().checkChannelInviter(channelId);
                 }
                 cursor.dispose();
 
@@ -5869,11 +5884,11 @@ public class MessagesStorage {
             if (withTransaction) {
                 database.commitTransaction();
             }
-            MessagesController.getInstance(currentAccount).processDialogsUpdateRead(messagesCounts, mentionCounts);
+            getMessagesController().processDialogsUpdateRead(messagesCounts, mentionCounts);
 
             if (downloadMediaMask != 0) {
                 final int downloadMediaMaskFinal = downloadMediaMask;
-                AndroidUtilities.runOnUIThread(() -> DownloadController.getInstance(currentAccount).newDownloadObjectsAvailable(downloadMediaMaskFinal));
+                AndroidUtilities.runOnUIThread(() -> getDownloadController().newDownloadObjectsAvailable(downloadMediaMaskFinal));
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -6106,9 +6121,6 @@ public class MessagesStorage {
     }
 
     private void updateUsersInternal(final ArrayList<TLRPC.User> users, final boolean onlyStatus, final boolean withTransaction) {
-        if (Thread.currentThread().getId() != storageQueue.getId()) {
-            throw new RuntimeException("wrong db thread");
-        }
         try {
             if (onlyStatus) {
                 if (withTransaction) {
@@ -6277,7 +6289,7 @@ public class MessagesStorage {
                 }
                 cursor.dispose();
                 if (!mids.isEmpty()) {
-                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messagesDeleted, mids, 0));
+                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, mids, 0));
                     updateDialogsWithReadMessagesInternal(mids, null, null, null);
                     markMessagesAsDeletedInternal(mids, 0);
                     updateDialogsWithDeletedMessagesInternal(mids, null, 0);
@@ -6317,7 +6329,7 @@ public class MessagesStorage {
                 ids = TextUtils.join(",", messages);
             }
             ArrayList<File> filesToDelete = new ArrayList<>();
-            int currentUser = UserConfig.getInstance(currentAccount).getClientUserId();
+            int currentUser = getUserConfig().getClientUserId();
             SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT uid, data, read_state, out, mention, mid FROM messages WHERE mid IN(%s)", ids));
 
             try {
@@ -6348,7 +6360,7 @@ public class MessagesStorage {
                     NativeByteBuffer data = cursor.byteBufferValue(1);
                     if (data != null) {
                         TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                        message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                        message.readAttachPath(data, getUserConfig().clientUserId);
                         data.reuse();
                         if (message != null) {
                             if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
@@ -6380,7 +6392,7 @@ public class MessagesStorage {
             }
             cursor.dispose();
 
-            FileLoader.getInstance(currentAccount).deleteFiles(filesToDelete, 0);
+            getFileLoader().deleteFiles(filesToDelete, 0);
 
             for (int a = 0; a < dialogsToUpdate.size(); a++) {
                 long did = dialogsToUpdate.keyAt(a);
@@ -6471,7 +6483,7 @@ public class MessagesStorage {
                 }
             }
             database.executeFast(String.format(Locale.US, "DELETE FROM media_v2 WHERE mid IN(%s)", ids)).stepThis().dispose();
-            DataQuery.getInstance(currentAccount).clearBotKeyboard(0, messages);
+            getMediaDataController().clearBotKeyboard(0, messages);
             return dialogsIds;
         } catch (Exception e) {
             FileLog.e(e);
@@ -6480,9 +6492,6 @@ public class MessagesStorage {
     }
 
     private void updateDialogsWithDeletedMessagesInternal(final ArrayList<Integer> messages, ArrayList<Long> additionalDialogsToUpdate, int channelId) {
-        if (Thread.currentThread().getId() != storageQueue.getId()) {
-            throw new RuntimeException("wrong db thread");
-        }
         try {
             String ids;
             ArrayList<Long> dialogsToUpdate = new ArrayList<>();
@@ -6569,7 +6578,7 @@ public class MessagesStorage {
                 NativeByteBuffer data = cursor.byteBufferValue(4);
                 if (data != null) {
                     TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                    message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                    message.readAttachPath(data, getUserConfig().clientUserId);
                     data.reuse();
                     MessageObject.setUnreadFlags(message, cursor.intValue(5));
                     message.id = cursor.intValue(6);
@@ -6623,7 +6632,7 @@ public class MessagesStorage {
             }
 
             if (!dialogs.dialogs.isEmpty() || !encryptedChats.isEmpty()) {
-                MessagesController.getInstance(currentAccount).processDialogsUpdate(dialogs, encryptedChats);
+                getMessagesController().processDialogsUpdate(dialogs, encryptedChats);
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -6662,7 +6671,7 @@ public class MessagesStorage {
             maxMessageId |= ((long) channelId) << 32;
 
             ArrayList<File> filesToDelete = new ArrayList<>();
-            int currentUser = UserConfig.getInstance(currentAccount).getClientUserId();
+            int currentUser = getUserConfig().getClientUserId();
 
             SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT uid, data, read_state, out, mention FROM messages WHERE uid = %d AND mid <= %d", -channelId, maxMessageId));
 
@@ -6692,7 +6701,7 @@ public class MessagesStorage {
                     NativeByteBuffer data = cursor.byteBufferValue(1);
                     if (data != null) {
                         TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                        message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                        message.readAttachPath(data, getUserConfig().clientUserId);
                         data.reuse();
                         if (message != null) {
                             if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
@@ -6724,7 +6733,7 @@ public class MessagesStorage {
             }
             cursor.dispose();
 
-            FileLoader.getInstance(currentAccount).deleteFiles(filesToDelete, 0);
+            getFileLoader().deleteFiles(filesToDelete, 0);
 
             for (int a = 0; a < dialogsToUpdate.size(); a++) {
                 long did = dialogsToUpdate.keyAt(a);
@@ -6809,7 +6818,7 @@ public class MessagesStorage {
                 database.executeFast(String.format(Locale.US, "DELETE FROM media_holes_v2 WHERE uid = %d AND start = 0", did)).stepThis().dispose();
             }
             SQLitePreparedStatement state = database.executeFast("REPLACE INTO media_holes_v2 VALUES(?, ?, ?, ?)");
-            for (int a = 0; a < DataQuery.MEDIA_TYPES_COUNT; a++) {
+            for (int a = 0; a < MediaDataController.MEDIA_TYPES_COUNT; a++) {
                 state.requery();
                 state.bindLong(1, did);
                 state.bindInteger(2, a);
@@ -7040,12 +7049,12 @@ public class MessagesStorage {
                 state.bindInteger(11, message.mentioned ? 1 : 0);
                 state.step();
 
-                if (DataQuery.canAddMessageToMedia(message)) {
+                if (MediaDataController.canAddMessageToMedia(message)) {
                     state2.requery();
                     state2.bindLong(1, messageId);
                     state2.bindLong(2, message.dialog_id);
                     state2.bindInteger(3, message.date);
-                    state2.bindInteger(4, DataQuery.getMediaType(message));
+                    state2.bindInteger(4, MediaDataController.getMediaType(message));
                     state2.bindByteBuffer(5, data);
                     state2.step();
                 }
@@ -7069,7 +7078,7 @@ public class MessagesStorage {
                     MessageObject messageObject = new MessageObject(currentAccount, message, userHashMap, chatHashMap, true);
                     ArrayList<MessageObject> arrayList = new ArrayList<>();
                     arrayList.add(messageObject);
-                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.replaceMessagesObjects, messageObject.getDialogId(), arrayList));
+                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.replaceMessagesObjects, messageObject.getDialogId(), arrayList));
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -7138,7 +7147,7 @@ public class MessagesStorage {
                             NativeByteBuffer data = cursor.byteBufferValue(1);
                             if (data != null) {
                                 TLRPC.Message oldMessage = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                oldMessage.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                                oldMessage.readAttachPath(data, getUserConfig().clientUserId);
                                 data.reuse();
                                 int send_state = cursor.intValue(5);
                                 if (oldMessage != null && send_state != 3) {
@@ -7238,12 +7247,12 @@ public class MessagesStorage {
                     state_messages.bindInteger(11, message.mentioned ? 1 : 0);
                     state_messages.step();
 
-                    if (DataQuery.canAddMessageToMedia(message)) {
+                    if (MediaDataController.canAddMessageToMedia(message)) {
                         state_media.requery();
                         state_media.bindLong(1, messageId);
                         state_media.bindLong(2, dialog_id);
                         state_media.bindInteger(3, message.date);
-                        state_media.bindInteger(4, DataQuery.getMediaType(message));
+                        state_media.bindInteger(4, MediaDataController.getMediaType(message));
                         state_media.bindByteBuffer(5, data);
                         state_media.step();
                     }
@@ -7283,7 +7292,7 @@ public class MessagesStorage {
                     state_polls.dispose();
                 }
                 if (botKeyboard != null) {
-                    DataQuery.getInstance(currentAccount).putBotKeyboard(dialog_id, botKeyboard);
+                    getMediaDataController().putBotKeyboard(dialog_id, botKeyboard);
                 }
 
                 putUsersInternal(messages.users);
@@ -7293,7 +7302,7 @@ public class MessagesStorage {
                     database.executeFast(String.format(Locale.US, "UPDATE dialogs SET unread_count_i = %d WHERE did = %d", mentionCountUpdate, dialog_id)).stepThis().dispose();
                     LongSparseArray<Integer> sparseArray = new LongSparseArray<>(1);
                     sparseArray.put(dialog_id, mentionCountUpdate);
-                    MessagesController.getInstance(currentAccount).processDialogsUpdateRead(null, sparseArray);
+                    getMessagesController().processDialogsUpdateRead(null, sparseArray);
                 }
 
                 database.commitTransaction();
@@ -7396,7 +7405,7 @@ public class MessagesStorage {
             ArrayList<TLRPC.EncryptedChat> encryptedChats = new ArrayList<>();
             try {
                 ArrayList<Integer> usersToLoad = new ArrayList<>();
-                usersToLoad.add(UserConfig.getInstance(currentAccount).getClientUserId());
+                usersToLoad.add(getUserConfig().getClientUserId());
                 ArrayList<Integer> chatsToLoad = new ArrayList<>();
                 ArrayList<Integer> encryptedToLoad = new ArrayList<>();
                 ArrayList<Long> replyMessages = new ArrayList<>();
@@ -7466,7 +7475,7 @@ public class MessagesStorage {
                         NativeByteBuffer data = cursor.byteBufferValue(4);
                         if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                            message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                            message.readAttachPath(data, getUserConfig().clientUserId);
                             data.reuse();
                             if (message != null) {
                                 MessageObject.setUnreadFlags(message, cursor.intValue(5));
@@ -7490,7 +7499,7 @@ public class MessagesStorage {
                                             data = cursor.byteBufferValue(13);
                                             if (data != null) {
                                                 message.replyMessage = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                                message.replyMessage.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                                                message.replyMessage.readAttachPath(data, getUserConfig().clientUserId);
                                                 data.reuse();
                                                 if (message.replyMessage != null) {
                                                     if (MessageObject.isMegagroup(message)) {
@@ -7550,7 +7559,7 @@ public class MessagesStorage {
                         NativeByteBuffer data = cursor.byteBufferValue(0);
                         if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                            message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                            message.readAttachPath(data, getUserConfig().clientUserId);
                             data.reuse();
                             message.id = cursor.intValue(1);
                             message.date = cursor.intValue(2);
@@ -7580,14 +7589,14 @@ public class MessagesStorage {
                 if (!usersToLoad.isEmpty()) {
                     getUsersInternal(TextUtils.join(",", usersToLoad), dialogs.users);
                 }
-                MessagesController.getInstance(currentAccount).processLoadedDialogs(dialogs, encryptedChats, folderId, offset, count, 1, false, false, true);
+                getMessagesController().processLoadedDialogs(dialogs, encryptedChats, folderId, offset, count, 1, false, false, true);
             } catch (Exception e) {
                 dialogs.dialogs.clear();
                 dialogs.users.clear();
                 dialogs.chats.clear();
                 encryptedChats.clear();
                 FileLog.e(e);
-                MessagesController.getInstance(currentAccount).processLoadedDialogs(dialogs, encryptedChats, folderId, 0, 100, 1, true, false, true);
+                getMessagesController().processLoadedDialogs(dialogs, encryptedChats, folderId, 0, 100, 1, true, false, true);
             }
         });
     }
@@ -7599,7 +7608,7 @@ public class MessagesStorage {
         state5.bindInteger(3, messageId);
         state5.step();
 
-        for (int b = 0; b < DataQuery.MEDIA_TYPES_COUNT; b++) {
+        for (int b = 0; b < MediaDataController.MEDIA_TYPES_COUNT; b++) {
             state6.requery();
             state6.bindLong(1, did);
             state6.bindInteger(2, b);
@@ -7652,7 +7661,7 @@ public class MessagesStorage {
                         messageDate = Math.max(message.date, messageDate);
 
                         if (isValidKeyboardToSave(message)) {
-                            DataQuery.getInstance(currentAccount).putBotKeyboard(dialog.id, message);
+                            getMediaDataController().putBotKeyboard(dialog.id, message);
                         }
 
                         fixUnsupportedMedia(message);
@@ -7678,12 +7687,12 @@ public class MessagesStorage {
                         state_messages.bindInteger(11, message.mentioned ? 1 : 0);
                         state_messages.step();
 
-                        if (DataQuery.canAddMessageToMedia(message)) {
+                        if (MediaDataController.canAddMessageToMedia(message)) {
                             state_media.requery();
                             state_media.bindLong(1, messageId);
                             state_media.bindLong(2, dialog.id);
                             state_media.bindInteger(3, message.date);
-                            state_media.bindInteger(4, DataQuery.getMediaType(message));
+                            state_media.bindInteger(4, MediaDataController.getMediaType(message));
                             state_media.bindByteBuffer(5, data);
                             state_media.step();
                         }
@@ -7831,7 +7840,7 @@ public class MessagesStorage {
         try {
             SQLiteCursor cursor = database.queryFinalized("SELECT did FROM dialogs WHERE folder_id = ?", folderId);
             if (!cursor.next()) {
-                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).onFolderEmpty(folderId));
+                AndroidUtilities.runOnUIThread(() -> getMessagesController().onFolderEmpty(folderId));
                 database.executeFast("DELETE FROM dialogs WHERE did = " + DialogObject.makeFolderDialogId(folderId)).stepThis().dispose();
             }
             cursor.dispose();

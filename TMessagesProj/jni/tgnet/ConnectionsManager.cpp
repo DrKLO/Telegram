@@ -377,7 +377,7 @@ void ConnectionsManager::loadConfig() {
                 for (uint32_t a = 0; a < count; a++) {
                     Datacenter *datacenter = new Datacenter(instanceNum, buffer);
                     datacenters[datacenter->getDatacenterId()] = datacenter;
-                    if (LOGS_ENABLED) DEBUG_D("datacenter(%p) %u loaded (hasAuthKey = %d)", datacenter, datacenter->getDatacenterId(), (int) datacenter->hasPermanentAuthKey());
+                    if (LOGS_ENABLED) DEBUG_D("datacenter(%p) %u loaded (hasAuthKey = %d, 0x%" PRIx64 ")", datacenter, datacenter->getDatacenterId(), (int) datacenter->hasPermanentAuthKey(), datacenter->getPermanentAuthKeyId());
                 }
             }
         }
@@ -680,31 +680,33 @@ void ConnectionsManager::onConnectionClosed(Connection *connection, int reason) 
         sendingPushPing = false;
         lastPushPingTime = getCurrentTimeMonotonicMillis() - nextPingTimeOffset + 4000;
     } else if (connection->getConnectionType() == ConnectionTypeProxy) {
-        for (std::vector<std::unique_ptr<ProxyCheckInfo>>::iterator iter = proxyActiveChecks.begin(); iter != proxyActiveChecks.end(); iter++) {
-            ProxyCheckInfo *proxyCheckInfo = iter->get();
-            if (proxyCheckInfo->connectionNum == connection->getConnectionNum()) {
-                bool found = false;
-                for (requestsIter iter2 = runningRequests.begin(); iter2 != runningRequests.end(); iter2++) {
-                    Request *request = iter2->get();
-                    if (connection->getConnectionToken() == request->connectionToken && request->requestToken == proxyCheckInfo->requestToken && (request->connectionType & 0x0000ffff) == ConnectionTypeProxy) {
-                        request->completed = true;
-                        runningRequests.erase(iter2);
-                        proxyCheckInfo->onRequestTime(-1);
-                        found = true;
-                        break;
+        scheduleTask([&, connection] {
+            for (std::vector<std::unique_ptr<ProxyCheckInfo>>::iterator iter = proxyActiveChecks.begin(); iter != proxyActiveChecks.end(); iter++) {
+                ProxyCheckInfo *proxyCheckInfo = iter->get();
+                if (proxyCheckInfo->connectionNum == connection->getConnectionNum()) {
+                    bool found = false;
+                    for (requestsIter iter2 = runningRequests.begin(); iter2 != runningRequests.end(); iter2++) {
+                        Request *request = iter2->get();
+                        if (connection->getConnectionToken() == request->connectionToken && request->requestToken == proxyCheckInfo->requestToken && (request->connectionType & 0x0000ffff) == ConnectionTypeProxy) {
+                            request->completed = true;
+                            runningRequests.erase(iter2);
+                            proxyCheckInfo->onRequestTime(-1);
+                            found = true;
+                            break;
+                        }
                     }
-                }
-                if (found) {
-                    proxyActiveChecks.erase(iter);
-                    if (!proxyCheckQueue.empty()) {
-                        proxyCheckInfo = proxyCheckQueue[0].release();
-                        proxyCheckQueue.erase(proxyCheckQueue.begin());
-                        checkProxyInternal(proxyCheckInfo);
+                    if (found) {
+                        proxyActiveChecks.erase(iter);
+                        if (!proxyCheckQueue.empty()) {
+                            proxyCheckInfo = proxyCheckQueue[0].release();
+                            proxyCheckQueue.erase(proxyCheckQueue.begin());
+                            checkProxyInternal(proxyCheckInfo);
+                        }
                     }
+                    break;
                 }
-                break;
             }
-        }
+        });
     }
 }
 
@@ -1097,7 +1099,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                         if (!proxyCheckQueue.empty()) {
                             proxyCheckInfo = proxyCheckQueue[0].release();
                             proxyCheckQueue.erase(proxyCheckQueue.begin());
-                            checkProxyInternal(proxyCheckInfo);
+                            scheduleCheckProxyInternal(proxyCheckInfo);
                         }
                         break;
                     }
@@ -1880,7 +1882,7 @@ void ConnectionsManager::onDatacenterHandshakeComplete(Datacenter *datacenter, H
     if (type == HandshakeTypeTemp && !proxyCheckQueue.empty()) {
         ProxyCheckInfo *proxyCheckInfo = proxyCheckQueue[0].release();
         proxyCheckQueue.erase(proxyCheckQueue.begin());
-        checkProxyInternal(proxyCheckInfo);
+        scheduleCheckProxyInternal(proxyCheckInfo);
     }
 }
 
@@ -2638,9 +2640,21 @@ std::unique_ptr<TLObject> ConnectionsManager::wrapInLayer(TLObject *object, Data
             request->api_id = currentApiId;
             request->app_version = currentAppVersion;
             request->lang_code = currentLangCode;
-            request->system_lang_code = currentLangCode;
             request->lang_pack = "android";
             request->system_lang_code = currentSystemLangCode;
+            if (!currentRegId.empty()) {
+                TL_jsonObject *jsonObject = new TL_jsonObject();
+                TL_jsonObjectValue *objectValue = new TL_jsonObjectValue();
+                jsonObject->value.push_back(std::unique_ptr<TL_jsonObjectValue>(objectValue));
+
+                TL_jsonString *jsonString = new TL_jsonString();
+                jsonString->value = currentRegId;
+                objectValue->key = "device_token";
+                objectValue->value = std::unique_ptr<JSONValue>(jsonString);
+                request->params = std::unique_ptr<JSONValue>(jsonObject);
+
+                request->flags |= 2;
+            }
             if (!proxyAddress.empty() && !proxySecret.empty()) {
                 request->flags |= 1;
                 request->proxy = std::unique_ptr<TL_inputClientProxy>(new TL_inputClientProxy());
@@ -2996,7 +3010,7 @@ void ConnectionsManager::applyDnsConfig(NativeByteBuffer *buffer, std::string ph
     });
 }
 
-void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, int32_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType) {
+void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, std::string regId, int32_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType) {
     currentVersion = version;
     currentLayer = layer;
     currentApiId = apiId;
@@ -3005,6 +3019,7 @@ void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, st
     currentSystemVersion = systemVersion;
     currentAppVersion = appVersion;
     currentLangCode = langCode;
+    currentRegId = regId;
     currentSystemLangCode = systemLangCode;
     currentUserId = userId;
     currentLogPath = logPath;
@@ -3088,6 +3103,19 @@ void ConnectionsManager::setLangCode(std::string langCode) {
             return;
         }
         currentLangCode = langCode;
+        for (std::map<uint32_t, Datacenter *>::iterator iter = datacenters.begin(); iter != datacenters.end(); iter++) {
+            iter->second->resetInitVersion();
+        }
+        saveConfig();
+    });
+}
+
+void ConnectionsManager::setRegId(std::string regId) {
+    scheduleTask([&, regId] {
+        if (currentRegId.compare(regId) == 0) {
+            return;
+        }
+        currentRegId = regId;
         for (std::map<uint32_t, Datacenter *>::iterator iter = datacenters.begin(); iter != datacenters.end(); iter++) {
             iter->second->resetInitVersion();
         }
@@ -3184,51 +3212,55 @@ int64_t ConnectionsManager::checkProxy(std::string address, uint16_t port, std::
     proxyCheckInfo->instanceNum = instanceNum;
     proxyCheckInfo->ptr1 = ptr1;
 
-    checkProxyInternal(proxyCheckInfo);
+    scheduleCheckProxyInternal(proxyCheckInfo);
 
     return proxyCheckInfo->pingId;
 }
 
-void ConnectionsManager::checkProxyInternal(ProxyCheckInfo *proxyCheckInfo) {
+void ConnectionsManager::scheduleCheckProxyInternal(ProxyCheckInfo *proxyCheckInfo) {
     scheduleTask([&, proxyCheckInfo] {
-        int32_t freeConnectionNum = -1;
-        if (proxyActiveChecks.size() != PROXY_CONNECTIONS_COUNT) {
-            for (int32_t a = 0; a < PROXY_CONNECTIONS_COUNT; a++) {
-                bool found = false;
-                for (std::vector<std::unique_ptr<ProxyCheckInfo>>::iterator iter = proxyActiveChecks.begin(); iter != proxyActiveChecks.end(); iter++) {
-                    if (iter->get()->connectionNum == a) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    freeConnectionNum = a;
+        checkProxyInternal(proxyCheckInfo);
+    });
+}
+
+void ConnectionsManager::checkProxyInternal(ProxyCheckInfo *proxyCheckInfo) {
+    int32_t freeConnectionNum = -1;
+    if (proxyActiveChecks.size() != PROXY_CONNECTIONS_COUNT) {
+        for (int32_t a = 0; a < PROXY_CONNECTIONS_COUNT; a++) {
+            bool found = false;
+            for (std::vector<std::unique_ptr<ProxyCheckInfo>>::iterator iter = proxyActiveChecks.begin(); iter != proxyActiveChecks.end(); iter++) {
+                if (iter->get()->connectionNum == a) {
+                    found = true;
                     break;
                 }
             }
-        }
-        if (freeConnectionNum == -1) {
-            proxyCheckQueue.push_back(std::unique_ptr<ProxyCheckInfo>(proxyCheckInfo));
-        } else {
-            ConnectionType connectionType = (ConnectionType) (ConnectionTypeProxy | (freeConnectionNum << 16));
-            Datacenter *datacenter = getDatacenterWithId(DEFAULT_DATACENTER_ID);
-            Connection *connection = datacenter->getProxyConnection((uint8_t) freeConnectionNum, true, false);
-            if (connection != nullptr) {
-                connection->setOverrideProxy(proxyCheckInfo->address, proxyCheckInfo->port, proxyCheckInfo->username, proxyCheckInfo->password, proxyCheckInfo->secret);
-                connection->suspendConnection();
-                proxyCheckInfo->connectionNum = freeConnectionNum;
-                TL_ping *request = new TL_ping();
-                request->ping_id = proxyCheckInfo->pingId;
-                proxyCheckInfo->requestToken = sendRequest(request, nullptr, nullptr, RequestFlagEnableUnauthorized | RequestFlagWithoutLogin, DEFAULT_DATACENTER_ID, connectionType, true, 0);
-                proxyActiveChecks.push_back(std::unique_ptr<ProxyCheckInfo>(proxyCheckInfo));
-            } else if (PFS_ENABLED) {
-                if (datacenter->isHandshaking(false)) {
-                    datacenter->beginHandshake(HandshakeTypeTemp, false);
-                }
-                proxyCheckQueue.push_back(std::unique_ptr<ProxyCheckInfo>(proxyCheckInfo));
+            if (!found) {
+                freeConnectionNum = a;
+                break;
             }
         }
-    });
+    }
+    if (freeConnectionNum == -1) {
+        proxyCheckQueue.push_back(std::unique_ptr<ProxyCheckInfo>(proxyCheckInfo));
+    } else {
+        ConnectionType connectionType = (ConnectionType) (ConnectionTypeProxy | (freeConnectionNum << 16));
+        Datacenter *datacenter = getDatacenterWithId(DEFAULT_DATACENTER_ID);
+        Connection *connection = datacenter->getProxyConnection((uint8_t) freeConnectionNum, true, false);
+        if (connection != nullptr) {
+            connection->setOverrideProxy(proxyCheckInfo->address, proxyCheckInfo->port, proxyCheckInfo->username, proxyCheckInfo->password, proxyCheckInfo->secret);
+            connection->suspendConnection();
+            proxyCheckInfo->connectionNum = freeConnectionNum;
+            TL_ping *request = new TL_ping();
+            request->ping_id = proxyCheckInfo->pingId;
+            proxyCheckInfo->requestToken = sendRequest(request, nullptr, nullptr, RequestFlagEnableUnauthorized | RequestFlagWithoutLogin, DEFAULT_DATACENTER_ID, connectionType, true, 0);
+            proxyActiveChecks.push_back(std::unique_ptr<ProxyCheckInfo>(proxyCheckInfo));
+        } else if (PFS_ENABLED) {
+            if (datacenter->isHandshaking(false)) {
+                datacenter->beginHandshake(HandshakeTypeTemp, false);
+            }
+            proxyCheckQueue.push_back(std::unique_ptr<ProxyCheckInfo>(proxyCheckInfo));
+        }
+    }
 }
 
 #ifdef ANDROID

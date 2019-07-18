@@ -68,9 +68,10 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -127,6 +128,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     private int currentAccount = UserConfig.selectedAccount;
+    private AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
 
     private SeekBarWaveform seekBarWaveform;
 
@@ -247,6 +249,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private Drawable playDrawable;
     private Drawable pauseDrawable;
     private int searchingType;
+    private Runnable focusRunnable;
 
     private boolean destroyed;
 
@@ -845,7 +848,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 @Override
                 protected void onDraw(Canvas canvas) {
                     super.onDraw(canvas);
-                    if (getTag() != null && attachLayout != null && !emojiViewVisible && !DataQuery.getInstance(currentAccount).getUnreadStickerSets().isEmpty() && dotPaint != null) {
+                    if (getTag() != null && attachLayout != null && !emojiViewVisible && !MediaDataController.getInstance(currentAccount).getUnreadStickerSets().isEmpty() && dotPaint != null) {
                         int x = getWidth() / 2 + AndroidUtilities.dp(4 + 5);
                         int y = getHeight() / 2 - AndroidUtilities.dp(13 - 5);
                         canvas.drawCircle(x, y, AndroidUtilities.dp(5), dotPaint);
@@ -882,28 +885,33 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             @Override
             public InputConnection onCreateInputConnection(EditorInfo editorInfo) {
                 final InputConnection ic = super.onCreateInputConnection(editorInfo);
-                EditorInfoCompat.setContentMimeTypes(editorInfo, new String[]{"image/gif", "image/*", "image/jpg", "image/png"});
+                try {
+                    EditorInfoCompat.setContentMimeTypes(editorInfo, new String[]{"image/gif", "image/*", "image/jpg", "image/png"});
 
-                final InputConnectionCompat.OnCommitContentListener callback = (inputContentInfo, flags, opts) -> {
-                    if (BuildCompat.isAtLeastNMR1() && (flags & InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION) != 0) {
-                        try {
-                            inputContentInfo.requestPermission();
-                        } catch (Exception e) {
-                            return false;
+                    final InputConnectionCompat.OnCommitContentListener callback = (inputContentInfo, flags, opts) -> {
+                        if (BuildCompat.isAtLeastNMR1() && (flags & InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION) != 0) {
+                            try {
+                                inputContentInfo.requestPermission();
+                            } catch (Exception e) {
+                                return false;
+                            }
                         }
-                    }
-                    ClipDescription description = inputContentInfo.getDescription();
-                    if (description.hasMimeType("image/gif")) {
-                        SendMessagesHelper.prepareSendingDocument(null, null, inputContentInfo.getContentUri(), null, "image/gif", dialog_id, replyingMessageObject, inputContentInfo, null);
-                    } else {
-                        SendMessagesHelper.prepareSendingPhoto(null, inputContentInfo.getContentUri(), dialog_id, replyingMessageObject, null, null, null, inputContentInfo, 0, null);
-                    }
-                    if (delegate != null) {
-                        delegate.onMessageSend(null);
-                    }
-                    return true;
-                };
-                return InputConnectionCompat.createWrapper(ic, editorInfo, callback);
+                        ClipDescription description = inputContentInfo.getDescription();
+                        if (description.hasMimeType("image/gif")) {
+                            SendMessagesHelper.prepareSendingDocument(accountInstance, null, null, inputContentInfo.getContentUri(), null, "image/gif", dialog_id, replyingMessageObject, inputContentInfo, null);
+                        } else {
+                            SendMessagesHelper.prepareSendingPhoto(accountInstance, null, inputContentInfo.getContentUri(), dialog_id, replyingMessageObject, null, null, null, inputContentInfo, 0, null);
+                        }
+                        if (delegate != null) {
+                            delegate.onMessageSend(null);
+                        }
+                        return true;
+                    };
+                    return InputConnectionCompat.createWrapper(ic, editorInfo, callback);
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                }
+                return ic;
             }
 
             @Override
@@ -937,9 +945,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 delegate.onTextSpansChanged(messageEditText.getText());
             }
         });
+        TLRPC.EncryptedChat encryptedChat = parentFragment != null ? parentFragment.getCurrentEncryptedChat() : null;
+        messageEditText.setAllowTextEntitiesIntersection(encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 101);
         updateFieldHint();
         int flags = EditorInfo.IME_FLAG_NO_EXTRACT_UI;
-        if (parentFragment != null && parentFragment.getCurrentEncryptedChat() != null) {
+        if (encryptedChat != null) {
             flags |= 0x01000000; //EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING;
         }
         messageEditText.setImeOptions(flags);
@@ -1719,7 +1729,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     public void setOpenGifsTabFirst() {
         createEmojiView();
-        DataQuery.getInstance(currentAccount).loadRecents(DataQuery.TYPE_IMAGE, true, true, false);
+        MediaDataController.getInstance(currentAccount).loadRecents(MediaDataController.TYPE_IMAGE, true, true, false);
         emojiView.switchToGifRecent();
     }
 
@@ -1988,6 +1998,13 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         }
     }
 
+    public void onBeginHide() {
+        if (focusRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(focusRunnable);
+            focusRunnable = null;
+        }
+    }
+
     public void onPause() {
         isPaused = true;
         closeKeyboard();
@@ -1995,6 +2012,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     public void onResume() {
         isPaused = false;
+        int visibility = getVisibility();
         if (showKeyboardOnResume) {
             showKeyboardOnResume = false;
             if (searchingType == 0) {
@@ -2007,6 +2025,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 AndroidUtilities.runOnUIThread(openKeyboardRunnable, 100);
             }
         }
+    }
+
+    @Override
+    public void setVisibility(int visibility) {
+        super.setVisibility(visibility);
+        messageEditText.setEnabled(visibility == VISIBLE);
     }
 
     public void setDialogId(long id, int account) {
@@ -2222,7 +2246,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             delegate.onMessageEditEnd(true);
             showEditDoneProgress(true, true);
             CharSequence[] message = new CharSequence[]{messageEditText.getText()};
-            ArrayList<TLRPC.MessageEntity> entities = DataQuery.getInstance(currentAccount).getEntities(message);
+            ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(currentAccount).getEntities(message);
             editingMessageReqId = SendMessagesHelper.getInstance(currentAccount).editMessage(editingMessageObject, message[0].toString(), messageWebPageSearch, parentFragment, entities, () -> {
                 editingMessageReqId = 0;
                 setEditingMessageObject(null, false);
@@ -2237,7 +2261,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             int count = (int) Math.ceil(text.length() / (float) maxLength);
             for (int a = 0; a < count; a++) {
                 CharSequence[] message = new CharSequence[]{text.subSequence(a * maxLength, Math.min((a + 1) * maxLength, text.length()))};
-                ArrayList<TLRPC.MessageEntity> entities = DataQuery.getInstance(currentAccount).getEntities(message);
+                ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(currentAccount).getEntities(message);
                 SendMessagesHelper.getInstance(currentAccount).sendMessage(message[0].toString(), dialog_id, replyingMessageObject, messageWebPage, messageWebPageSearch, entities, null, null);
             }
             return true;
@@ -2386,6 +2410,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         sendButton.setAlpha(1.0f);
                         sendButton.setVisibility(VISIBLE);
                         cancelBotButton.setVisibility(GONE);
+                    }
+                    if (expandStickersButton.getVisibility() == VISIBLE) {
+                        expandStickersButton.setScaleX(0.1f);
+                        expandStickersButton.setScaleY(0.1f);
+                        expandStickersButton.setAlpha(0.0f);
+                        expandStickersButton.setVisibility(GONE);
                     }
                     audioVideoButtonContainer.setVisibility(GONE);
                     if (attachLayout != null) {
@@ -2797,7 +2827,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
             if (editingText != null) {
                 ArrayList<TLRPC.MessageEntity> entities = editingMessageObject.messageOwner.entities;
-                DataQuery.sortEntities(entities);
+                MediaDataController.sortEntities(entities);
                 SpannableStringBuilder stringBuilder = new SpannableStringBuilder(editingText);
                 Object[] spansToRemove = stringBuilder.getSpans(0, stringBuilder.length(), Object.class);
                 if (spansToRemove != null && spansToRemove.length > 0) {
@@ -2806,37 +2836,44 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     }
                 }
                 if (entities != null) {
-                    int addToOffset = 0;
                     try {
                         for (int a = 0; a < entities.size(); a++) {
                             TLRPC.MessageEntity entity = entities.get(a);
-                            if (entity.offset + entity.length + addToOffset > stringBuilder.length()) {
+                            if (entity.offset + entity.length > stringBuilder.length()) {
                                 continue;
                             }
                             if (entity instanceof TLRPC.TL_inputMessageEntityMentionName) {
-                                if (entity.offset + entity.length + addToOffset < stringBuilder.length() && stringBuilder.charAt(entity.offset + entity.length + addToOffset) == ' ') {
+                                if (entity.offset + entity.length < stringBuilder.length() && stringBuilder.charAt(entity.offset + entity.length) == ' ') {
                                     entity.length++;
                                 }
-                                stringBuilder.setSpan(new URLSpanUserMention("" + ((TLRPC.TL_inputMessageEntityMentionName) entity).user_id.user_id, 1), entity.offset + addToOffset, entity.offset + entity.length + addToOffset, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                stringBuilder.setSpan(new URLSpanUserMention("" + ((TLRPC.TL_inputMessageEntityMentionName) entity).user_id.user_id, 1), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             } else if (entity instanceof TLRPC.TL_messageEntityMentionName) {
-                                if (entity.offset + entity.length + addToOffset < stringBuilder.length() && stringBuilder.charAt(entity.offset + entity.length + addToOffset) == ' ') {
+                                if (entity.offset + entity.length < stringBuilder.length() && stringBuilder.charAt(entity.offset + entity.length) == ' ') {
                                     entity.length++;
                                 }
-                                stringBuilder.setSpan(new URLSpanUserMention("" + ((TLRPC.TL_messageEntityMentionName) entity).user_id, 1), entity.offset + addToOffset, entity.offset + entity.length + addToOffset, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                            } else if (entity instanceof TLRPC.TL_messageEntityCode) {
-                                stringBuilder.insert(entity.offset + entity.length + addToOffset, "`");
-                                stringBuilder.insert(entity.offset + addToOffset, "`");
-                                addToOffset += 2;
-                            } else if (entity instanceof TLRPC.TL_messageEntityPre) {
-                                stringBuilder.insert(entity.offset + entity.length + addToOffset, "```");
-                                stringBuilder.insert(entity.offset + addToOffset, "```");
-                                addToOffset += 6;
+                                stringBuilder.setSpan(new URLSpanUserMention("" + ((TLRPC.TL_messageEntityMentionName) entity).user_id, 1), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            } else if (entity instanceof TLRPC.TL_messageEntityCode || entity instanceof TLRPC.TL_messageEntityPre) {
+                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                                run.flags |= TextStyleSpan.FLAG_STYLE_MONO;
+                                MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
                             } else if (entity instanceof TLRPC.TL_messageEntityBold) {
-                                stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), entity.offset + addToOffset, entity.offset + entity.length + addToOffset, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                                run.flags |= TextStyleSpan.FLAG_STYLE_BOLD;
+                                MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
                             } else if (entity instanceof TLRPC.TL_messageEntityItalic) {
-                                stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/ritalic.ttf")), entity.offset + addToOffset, entity.offset + entity.length + addToOffset, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                                run.flags |= TextStyleSpan.FLAG_STYLE_ITALIC;
+                                MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
+                            } else if (entity instanceof TLRPC.TL_messageEntityStrike) {
+                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                                run.flags |= TextStyleSpan.FLAG_STYLE_STRIKE;
+                                MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
+                            } else if (entity instanceof TLRPC.TL_messageEntityUnderline) {
+                                TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                                run.flags |= TextStyleSpan.FLAG_STYLE_UNDERLINE;
+                                MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
                             } else if (entity instanceof TLRPC.TL_messageEntityTextUrl) {
-                                stringBuilder.setSpan(new URLSpanReplacement(entity.url), entity.offset + addToOffset, entity.offset + entity.length + addToOffset, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                stringBuilder.setSpan(new URLSpanReplacement(entity.url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             }
                         }
                     } catch (Exception e) {
@@ -2906,7 +2943,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         messageEditText.setText(text);
         messageEditText.setSelection(messageEditText.getText().length());
         ignoreTextChange = false;
-        if (delegate != null) {
+        if (ignoreChange && delegate != null) {
             delegate.onTextChanged(messageEditText.getText(), true);
         }
     }
@@ -2969,7 +3006,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         }
         if (focus) {
             if (searchingType == 0 && !messageEditText.isFocused()) {
-                messageEditText.postDelayed(() -> {
+                AndroidUtilities.runOnUIThread(focusRunnable = () -> {
+                    focusRunnable = null;
                     boolean allowFocus;
                     if (AndroidUtilities.isTablet()) {
                         if (parentActivity instanceof LaunchActivity) {
@@ -2986,7 +3024,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     } else {
                         allowFocus = true;
                     }
-                    if (allowFocus && messageEditText != null) {
+                    if (!isPaused && allowFocus && messageEditText != null) {
                         try {
                             messageEditText.requestFocus();
                         } catch (Exception e) {
@@ -3131,7 +3169,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         } else if (button instanceof TLRPC.TL_keyboardButtonUrl) {
             parentFragment.showOpenUrlAlert(button.url, true);
         } else if (button instanceof TLRPC.TL_keyboardButtonRequestPhone) {
-            parentFragment.shareMyContact(messageObject);
+            parentFragment.shareMyContact(2, messageObject);
         } else if (button instanceof TLRPC.TL_keyboardButtonRequestGeoLocation) {
             AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
             builder.setTitle(LocaleController.getString("ShareYouLocationTitle", R.string.ShareYouLocationTitle));
@@ -3179,7 +3217,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         return;
                     }
                     long did = dids.get(0);
-                    DataQuery.getInstance(currentAccount).saveDraft(did, "@" + user.username + " " + button.query, null, null, true);
+                    MediaDataController.getInstance(currentAccount).saveDraft(did, "@" + user.username + " " + button.query, null, null, true);
                     if (did != dialog_id) {
                         int lower_part = (int) did;
                         if (lower_part != 0) {
@@ -3275,7 +3313,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             @Override
             public void onStickersSettingsClick() {
                 if (parentFragment != null) {
-                    parentFragment.presentFragment(new StickersActivity(DataQuery.TYPE_IMAGE));
+                    parentFragment.presentFragment(new StickersActivity(MediaDataController.TYPE_IMAGE));
                 }
             }
 
@@ -3290,7 +3328,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 if (gif instanceof TLRPC.Document) {
                     TLRPC.Document document = (TLRPC.Document) gif;
                     SendMessagesHelper.getInstance(currentAccount).sendSticker(document, dialog_id, replyingMessageObject, parent);
-                    DataQuery.getInstance(currentAccount).addRecentGif(document, (int) (System.currentTimeMillis() / 1000));
+                    MediaDataController.getInstance(currentAccount).addRecentGif(document, (int) (System.currentTimeMillis() / 1000));
                     if ((int) dialog_id == 0) {
                         MessagesController.getInstance(currentAccount).saveGif(parent, document);
                     }
@@ -3298,7 +3336,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     TLRPC.BotInlineResult result = (TLRPC.BotInlineResult) gif;
 
                     if (result.document != null) {
-                        DataQuery.getInstance(currentAccount).addRecentGif(result.document, (int) (System.currentTimeMillis() / 1000));
+                        MediaDataController.getInstance(currentAccount).addRecentGif(result.document, (int) (System.currentTimeMillis() / 1000));
                         if ((int) dialog_id == 0) {
                             MessagesController.getInstance(currentAccount).saveGif(parent, result.document);
                         }
@@ -3310,7 +3348,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     params.put("id", result.id);
                     params.put("query_id", "" + result.query_id);
 
-                    SendMessagesHelper.prepareSendingBotContextResult(result, params, dialog_id, replyingMessageObject);
+                    SendMessagesHelper.prepareSendingBotContextResult(accountInstance, result, params, dialog_id, replyingMessageObject);
 
                     if (searchingType != 0) {
                         searchingType = 0;
@@ -3357,12 +3395,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
             @Override
             public void onStickerSetAdd(TLRPC.StickerSetCovered stickerSet) {
-                DataQuery.getInstance(currentAccount).removeStickersSet(parentActivity, stickerSet.set, 2, parentFragment, false);
+                MediaDataController.getInstance(currentAccount).removeStickersSet(parentActivity, stickerSet.set, 2, parentFragment, false);
             }
 
             @Override
             public void onStickerSetRemove(TLRPC.StickerSetCovered stickerSet) {
-                DataQuery.getInstance(currentAccount).removeStickersSet(parentActivity, stickerSet.set, 0, parentFragment, false);
+                MediaDataController.getInstance(currentAccount).removeStickersSet(parentActivity, stickerSet.set, 0, parentFragment, false);
             }
 
             @Override
@@ -3412,6 +3450,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 stickersDragging = true;
                 wasExpanded = stickersExpanded;
                 stickersExpanded = true;
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 1);
                 stickersExpandedHeight = sizeNotifierLayout.getHeight() - (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? AndroidUtilities.statusBarHeight : 0) - ActionBar.getCurrentActionBarHeight() - getHeight() + Theme.chat_composeShadowDrawable.getIntrinsicHeight();
                 if (searchingType == 2) {
                     stickersExpandedHeight = Math.min(stickersExpandedHeight, AndroidUtilities.dp(120) + (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? keyboardHeightLand : keyboardHeight));
@@ -3485,7 +3524,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         if (clearsInputField) {
             setFieldText("");
         }
-        DataQuery.getInstance(currentAccount).addRecentSticker(DataQuery.TYPE_IMAGE, parent, sticker, (int) (System.currentTimeMillis() / 1000), false);
+        MediaDataController.getInstance(currentAccount).addRecentSticker(MediaDataController.TYPE_IMAGE, parent, sticker, (int) (System.currentTimeMillis() / 1000), false);
     }
 
     public void addStickerToRecent(TLRPC.Document sticker) {
@@ -3495,6 +3534,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     public void hideEmojiView() {
         if (!emojiViewVisible && emojiView != null && emojiView.getVisibility() != GONE) {
+            sizeNotifierLayout.removeView(emojiView);
             emojiView.setVisibility(GONE);
         }
     }
@@ -3510,6 +3550,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
             View currentView = null;
             if (contentType == 0) {
+                if (emojiView.getParent() == null) {
+                    sizeNotifierLayout.addView(emojiView);
+                }
                 emojiView.setVisibility(VISIBLE);
                 emojiViewVisible = true;
                 if (botKeyboardView != null && botKeyboardView.getVisibility() != GONE) {
@@ -3518,6 +3561,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 currentView = emojiView;
             } else if (contentType == 1) {
                 if (emojiView != null && emojiView.getVisibility() != GONE) {
+                    sizeNotifierLayout.removeView(emojiView);
                     emojiView.setVisibility(GONE);
                     emojiViewVisible = false;
                 }
@@ -3559,7 +3603,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             currentPopupContentType = -1;
             if (emojiView != null) {
                 emojiViewVisible = false;
-                if (AndroidUtilities.usingHardwareInput || AndroidUtilities.isInMultiwindow) {
+                if (show != 2 || AndroidUtilities.usingHardwareInput || AndroidUtilities.isInMultiwindow) {
+                    sizeNotifierLayout.removeView(emojiView);
                     emojiView.setVisibility(GONE);
                 }
             }
@@ -3725,7 +3770,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     public void addRecentGif(TLRPC.Document searchImage) {
-        DataQuery.getInstance(currentAccount).addRecentGif(searchImage, (int) (System.currentTimeMillis() / 1000));
+        MediaDataController.getInstance(currentAccount).addRecentGif(searchImage, (int) (System.currentTimeMillis() / 1000));
         if (emojiView != null) {
             emojiView.addRecentGif(searchImage);
         }
@@ -4084,6 +4129,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             stickersExpansionAnim = null;
         }
         if (stickersExpanded) {
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 1);
             originalViewHeight = sizeNotifierLayout.getHeight();
             stickersExpandedHeight = originalViewHeight - (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? AndroidUtilities.statusBarHeight : 0) - ActionBar.getCurrentActionBarHeight() - getHeight() + Theme.chat_composeShadowDrawable.getIntrinsicHeight();
             if (searchingType == 2) {
@@ -4114,10 +4160,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     public void onAnimationEnd(Animator animation) {
                         stickersExpansionAnim = null;
                         emojiView.setLayerType(LAYER_TYPE_NONE, null);
+                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
                     }
                 });
                 stickersExpansionAnim = anims;
                 emojiView.setLayerType(LAYER_TYPE_HARDWARE, null);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
                 anims.start();
             } else {
                 stickersExpansionProgress = 1;
@@ -4126,6 +4174,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 stickersArrow.setAnimationProgress(1);
             }
         } else {
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 1);
             if (animated) {
                 closeAnimationInProgress = true;
                 AnimatorSet anims = new AnimatorSet();
@@ -4154,10 +4203,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             sizeNotifierLayout.setForeground(null);
                             sizeNotifierLayout.setWillNotDraw(false);
                         }
+                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
                     }
                 });
                 stickersExpansionAnim = anims;
                 emojiView.setLayerType(LAYER_TYPE_HARDWARE, null);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
                 anims.start();
             } else {
                 stickersExpansionProgress = 0;

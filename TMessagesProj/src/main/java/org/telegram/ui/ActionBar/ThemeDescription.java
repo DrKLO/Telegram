@@ -27,13 +27,6 @@ import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import com.airbnb.lottie.LottieAnimationView;
-import com.airbnb.lottie.LottieDrawable;
-import com.airbnb.lottie.LottieProperty;
-import com.airbnb.lottie.SimpleColorFilter;
-import com.airbnb.lottie.model.KeyPath;
-import com.airbnb.lottie.value.LottieValueCallback;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -52,6 +45,8 @@ import org.telegram.ui.Components.LetterDrawable;
 import org.telegram.ui.Components.LineProgressView;
 import org.telegram.ui.Components.MessageBackgroundDrawable;
 import org.telegram.ui.Components.NumberTextView;
+import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RadioButton;
 import org.telegram.ui.Components.RecyclerListView;
@@ -149,7 +144,7 @@ public class ThemeDescription {
         }
     }
 
-    public ThemeDescription(View view, int flags, Class[] classes, LottieDrawable[] drawables, String layerName, String key) {
+    public ThemeDescription(View view, int flags, Class[] classes, RLottieDrawable[] drawables, String layerName, String key) {
         currentKey = key;
         lottieLayerName = layerName;
         drawablesToUpdate = drawables;
@@ -232,9 +227,9 @@ public class ThemeDescription {
                 }
                 if (drawablesToUpdate[a] instanceof ScamDrawable) {
                     ((ScamDrawable) drawablesToUpdate[a]).setColor(color);
-                } else if (drawablesToUpdate[a] instanceof LottieDrawable) {
+                } else if (drawablesToUpdate[a] instanceof RLottieDrawable) {
                     if (lottieLayerName != null) {
-                        ((LottieDrawable) drawablesToUpdate[a]).addValueCallback(new KeyPath(lottieLayerName, "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(color)));
+                        ((RLottieDrawable) drawablesToUpdate[a]).setLayerColor(lottieLayerName + ".**", color);
                     }
                 } else if (drawablesToUpdate[a] instanceof CombinedDrawable) {
                     if ((changeFlags & FLAG_BACKGROUNDFILTER) != 0) {
@@ -548,8 +543,8 @@ public class ThemeDescription {
                                 if (object instanceof View) {
                                     ((View) object).invalidate();
                                 }
-                                if (lottieLayerName != null && object instanceof LottieAnimationView) {
-                                    ((LottieAnimationView) object).addValueCallback(new KeyPath(lottieLayerName, "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(color)));
+                                if (lottieLayerName != null && object instanceof RLottieImageView) {
+                                    ((RLottieImageView) object).setLayerColor(lottieLayerName + ".**", color);
                                 }
                                 if ((changeFlags & FLAG_USEBACKGROUNDDRAWABLE) != 0 && object instanceof View) {
                                     object = ((View) object).getBackground();
@@ -665,6 +660,8 @@ public class ThemeDescription {
                                     } else {
                                         ((LineProgressView) object).setBackColor(color);
                                     }
+                                } else if (object instanceof RadialProgressView) {
+                                    ((RadialProgressView) object).setProgressColor(color);
                                 } else if (object instanceof Paint) {
                                     ((Paint) object).setColor(color);
                                 } else if (object instanceof SeekBarView) {

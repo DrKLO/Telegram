@@ -147,6 +147,7 @@ public class FileLoadOperation {
     private ArrayList<RequestInfo> delayedRequestInfos;
 
     private File cacheFileTemp;
+    private File cacheFileGzipTemp;
     private File cacheFileFinal;
     private File cacheIvTemp;
     private File cacheFileParts;
@@ -226,6 +227,7 @@ public class FileLoadOperation {
             }
             allowDisordererFileSave = true;
         }
+        ungzip = imageLocation.lottieAnimation;
         initialDatacenterId = datacenterId = imageLocation.dc_id;
         currentType = ConnectionsManager.FileTypePhoto;
         totalBytesCount = size;
@@ -683,6 +685,9 @@ public class FileLoadOperation {
 
         if (!finalFileExist) {
             cacheFileTemp = new File(tempPath, fileNameTemp);
+            if (ungzip) {
+                cacheFileGzipTemp = new File(tempPath, fileNameTemp + ".gz");
+            }
             boolean newKeyGenerated = false;
 
             if (encryptFile) {
@@ -1067,14 +1072,18 @@ public class FileLoadOperation {
                 if (ungzip) {
                     try {
                         GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(cacheFileTemp));
-                        FileLoader.copyFile(gzipInputStream, cacheFileFinal);
+                        FileLoader.copyFile(gzipInputStream, cacheFileGzipTemp, 1024 * 1024 * 2);
                         gzipInputStream.close();
                         cacheFileTemp.delete();
+                        cacheFileTemp = cacheFileGzipTemp;
+                        ungzip = false;
                     } catch (ZipException zipException) {
                         ungzip = false;
                     } catch (Throwable e) {
                         FileLog.e(e);
-                        FileLog.e("unable to ungzip temp = " + cacheFileTemp + " to final = " + cacheFileFinal);
+                        if (BuildVars.LOGS_ENABLED) {
+                            FileLog.e("unable to ungzip temp = " + cacheFileTemp + " to final = " + cacheFileFinal);
+                        }
                     }
                 }
                 if (!ungzip) {
@@ -1097,6 +1106,9 @@ public class FileLoadOperation {
                         }
                         cacheFileFinal = cacheFileTemp;
                     }
+                } else {
+                    onFail(false, 0);
+                    return;
                 }
             }
             if (BuildVars.LOGS_ENABLED) {

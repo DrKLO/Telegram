@@ -30,10 +30,11 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
@@ -96,6 +97,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
 
         imageView = new BackupImageView(context);
         imageView.setAspectFit(true);
+        imageView.setLayerNum(1);
         addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
 
         addButton = new TextView(context) {
@@ -140,7 +142,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
         addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
-        addButton.setText(LocaleController.getString("Add", R.string.Add).toUpperCase());
+        addButton.setText(LocaleController.getString("Add", R.string.Add));
         addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
         addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? 14 : 0, 18, LocaleController.isRTL ? 0 : 14, 0));
 
@@ -227,19 +229,28 @@ public class FeaturedStickerSetCell extends FrameLayout {
 
         valueTextView.setText(LocaleController.formatPluralString("Stickers", set.set.count));
         TLRPC.PhotoSize thumb = set.cover != null ? FileLoader.getClosestPhotoSizeWithSize(set.cover.thumbs, 90) : null;
+
         if (thumb != null && thumb.location != null) {
-            imageView.setImage(ImageLocation.getForDocument(thumb, set.cover), null, "webp", null, set);
+            if (MessageObject.canAutoplayAnimatedSticker(set.cover)) {
+                imageView.setImage(ImageLocation.getForDocument(set.cover), "80_80", ImageLocation.getForDocument(thumb, set.cover), null, 0, set);
+            } else {
+                imageView.setImage(ImageLocation.getForDocument(thumb, set.cover), null, "webp", null, set);
+            }
         } else if (!set.covers.isEmpty()) {
             TLRPC.Document document = set.covers.get(0);
             thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-            imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", null, set);
+            if (MessageObject.canAutoplayAnimatedSticker(document)) {
+                imageView.setImage(ImageLocation.getForDocument(document), "80_80", ImageLocation.getForDocument(thumb, document), null, 0, set);
+            } else {
+                imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", null, set);
+            }
         } else {
             imageView.setImage(null, null, "webp", null, set);
         }
 
         if (sameSet) {
             boolean wasInstalled = isInstalled;
-            if (isInstalled = DataQuery.getInstance(currentAccount).isStickerPackInstalled(set.set.id)) {
+            if (isInstalled = MediaDataController.getInstance(currentAccount).isStickerPackInstalled(set.set.id)) {
                 if (!wasInstalled) {
                     checkImage.setVisibility(VISIBLE);
                     addButton.setClickable(false);
@@ -299,7 +310,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
                 }
             }
         } else {
-            if (isInstalled = DataQuery.getInstance(currentAccount).isStickerPackInstalled(set.set.id)) {
+            if (isInstalled = MediaDataController.getInstance(currentAccount).isStickerPackInstalled(set.set.id)) {
                 addButton.setVisibility(INVISIBLE);
                 addButton.setClickable(false);
                 checkImage.setVisibility(VISIBLE);

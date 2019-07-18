@@ -57,7 +57,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -563,7 +563,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             builder.setMessage(LocaleController.formatString("ChatHintsDelete", R.string.ChatHintsDelete, ContactsController.formatName(currentUser.first_name, currentUser.last_name)));
-            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> DataQuery.getInstance(currentAccount).removeInline(currentUser.id));
+            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> MediaDataController.getInstance(currentAccount).removeInline(currentUser.id));
             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
             builder.show();
         }
@@ -593,7 +593,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     getParent().requestDisallowInterceptTouchEvent(true);
                     pressed = false;
                     playSoundEffect(SoundEffectConstants.CLICK);
-                    delegate.didSelectBot(MessagesController.getInstance(currentAccount).getUser(DataQuery.getInstance(currentAccount).inlineBots.get((Integer) getTag()).peer.user_id));
+                    delegate.didSelectBot(MessagesController.getInstance(currentAccount).getUser(MediaDataController.getInstance(currentAccount).inlineBots.get((Integer) getTag()).peer.user_id));
                     setUseRevealAnimation(false);
                     dismiss();
                     setUseRevealAnimation(true);
@@ -700,7 +700,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 } else {
                     h = 203;
                 }
-                int contentSize = backgroundPaddingTop + AndroidUtilities.dp(h) + (DataQuery.getInstance(currentAccount).inlineBots.isEmpty() ? 0 : ((int) Math.ceil(DataQuery.getInstance(currentAccount).inlineBots.size() / 4.0f) * AndroidUtilities.dp(100) + AndroidUtilities.dp(12)));
+                int contentSize = backgroundPaddingTop + AndroidUtilities.dp(h) + (MediaDataController.getInstance(currentAccount).inlineBots.isEmpty() ? 0 : ((int) Math.ceil(MediaDataController.getInstance(currentAccount).inlineBots.size() / 4.0f) * AndroidUtilities.dp(100) + AndroidUtilities.dp(12)));
                 int padding = contentSize == AndroidUtilities.dp(h) ? 0 : Math.max(0, (height - AndroidUtilities.dp(h)));
                 if (padding != 0 && contentSize < height) {
                     padding -= (height - contentSize);
@@ -2267,7 +2267,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     }
 
     private void showHint() {
-        if (editingMessageObject != null || !(baseFragment instanceof ChatActivity) || DataQuery.getInstance(currentAccount).inlineBots.isEmpty()) {
+        if (editingMessageObject != null || !(baseFragment instanceof ChatActivity) || MediaDataController.getInstance(currentAccount).inlineBots.isEmpty()) {
             return;
         }
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
@@ -2606,12 +2606,12 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 FrameLayout frameLayout = (FrameLayout) holder.itemView;
                 for (int a = 0; a < 4; a++) {
                     AttachBotButton child = (AttachBotButton) frameLayout.getChildAt(a);
-                    if (position + a >= DataQuery.getInstance(currentAccount).inlineBots.size()) {
+                    if (position + a >= MediaDataController.getInstance(currentAccount).inlineBots.size()) {
                         child.setVisibility(View.INVISIBLE);
                     } else {
                         child.setVisibility(View.VISIBLE);
                         child.setTag(position + a);
-                        child.setUser(MessagesController.getInstance(currentAccount).getUser(DataQuery.getInstance(currentAccount).inlineBots.get(position + a).peer.user_id));
+                        child.setUser(MessagesController.getInstance(currentAccount).getUser(MediaDataController.getInstance(currentAccount).inlineBots.get(position + a).peer.user_id));
                     }
                 }
             }
@@ -2625,7 +2625,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         @Override
         public int getItemCount() {
             if (editingMessageObject == null && baseFragment instanceof ChatActivity) {
-                return 1 + (!DataQuery.getInstance(currentAccount).inlineBots.isEmpty() ? 1 + (int) Math.ceil(DataQuery.getInstance(currentAccount).inlineBots.size() / 4.0f) : 0);
+                return 1 + (!MediaDataController.getInstance(currentAccount).inlineBots.isEmpty() ? 1 + (int) Math.ceil(MediaDataController.getInstance(currentAccount).inlineBots.size() / 4.0f) : 0);
             } else {
                 return 1;
             }
@@ -2947,6 +2947,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         }
                     }
                 }
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 512);
             }
 
             @Override
@@ -3025,6 +3026,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             }
         }
         currentSheetAnimation = animatorSet;
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
         animatorSet.start();
     }
 

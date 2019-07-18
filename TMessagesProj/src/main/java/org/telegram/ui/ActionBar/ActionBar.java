@@ -648,6 +648,10 @@ public class ActionBar extends FrameLayout {
         menu.openSearchField(!isSearchFieldVisible, text, animated);
     }
 
+    public void setSearchFieldText(String text) {
+        menu.setSearchFieldText(text);
+    }
+
     @Override
     public void setEnabled(boolean enabled) {
         super.setEnabled(enabled);

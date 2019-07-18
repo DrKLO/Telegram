@@ -15,8 +15,6 @@ import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
-import com.airbnb.lottie.LottieDrawable;
-
 public abstract class BaseCell extends ViewGroup {
 
     private final class CheckForTap implements Runnable {

@@ -344,6 +344,16 @@ void setLangCode(JNIEnv *env, jclass c, jint instanceNum, jstring langCode) {
     }
 }
 
+void setRegId(JNIEnv *env, jclass c, jint instanceNum, jstring regId) {
+    const char *regIdStr = env->GetStringUTFChars(regId, 0);
+
+    ConnectionsManager::getInstance(instanceNum).setRegId(std::string(regIdStr));
+
+    if (regIdStr != 0) {
+        env->ReleaseStringUTFChars(regId, regIdStr);
+    }
+}
+
 void setSystemLangCode(JNIEnv *env, jclass c, jint instanceNum, jstring langCode) {
     const char *langCodeStr = env->GetStringUTFChars(langCode, 0);
 
@@ -354,7 +364,7 @@ void setSystemLangCode(JNIEnv *env, jclass c, jint instanceNum, jstring langCode
     }
 }
 
-void init(JNIEnv *env, jclass c, jint instanceNum, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring systemLangCode, jstring configPath, jstring logPath, jint userId, jboolean enablePushConnection, jboolean hasNetwork, jint networkType) {
+void init(JNIEnv *env, jclass c, jint instanceNum, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring systemLangCode, jstring configPath, jstring logPath, jstring regId, jint userId, jboolean enablePushConnection, jboolean hasNetwork, jint networkType) {
     const char *deviceModelStr = env->GetStringUTFChars(deviceModel, 0);
     const char *systemVersionStr = env->GetStringUTFChars(systemVersion, 0);
     const char *appVersionStr = env->GetStringUTFChars(appVersion, 0);
@@ -362,8 +372,9 @@ void init(JNIEnv *env, jclass c, jint instanceNum, jint version, jint layer, jin
     const char *systemLangCodeStr = env->GetStringUTFChars(systemLangCode, 0);
     const char *configPathStr = env->GetStringUTFChars(configPath, 0);
     const char *logPathStr = env->GetStringUTFChars(logPath, 0);
+    const char *regIdStr = env->GetStringUTFChars(regId, 0);
 
-    ConnectionsManager::getInstance(instanceNum).init((uint32_t) version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(systemLangCodeStr), std::string(configPathStr), std::string(logPathStr), userId, true, enablePushConnection, hasNetwork, networkType);
+    ConnectionsManager::getInstance(instanceNum).init((uint32_t) version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(systemLangCodeStr), std::string(configPathStr), std::string(logPathStr), std::string(regIdStr), userId, true, enablePushConnection, hasNetwork, networkType);
 
     if (deviceModelStr != 0) {
         env->ReleaseStringUTFChars(deviceModel, deviceModelStr);
@@ -385,6 +396,9 @@ void init(JNIEnv *env, jclass c, jint instanceNum, jint version, jint layer, jin
     }
     if (logPathStr != 0) {
         env->ReleaseStringUTFChars(logPath, logPathStr);
+    }
+    if (regIdStr != 0) {
+        env->ReleaseStringUTFChars(regId, regIdStr);
     }
 }
 
@@ -410,8 +424,9 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_setProxySettings", "(ILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", (void *) setProxySettings},
         {"native_getConnectionState", "(I)I", (void *) getConnectionState},
         {"native_setUserId", "(II)V", (void *) setUserId},
-        {"native_init", "(IIIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZZI)V", (void *) init},
+        {"native_init", "(IIIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZZI)V", (void *) init},
         {"native_setLangCode", "(ILjava/lang/String;)V", (void *) setLangCode},
+        {"native_setRegId", "(ILjava/lang/String;)V", (void *) setRegId},
         {"native_setSystemLangCode", "(ILjava/lang/String;)V", (void *) setSystemLangCode},
         {"native_switchBackend", "(I)V", (void *) switchBackend},
         {"native_pauseNetwork", "(I)V", (void *) pauseNetwork},

@@ -947,6 +947,146 @@ void TL_inputClientProxy::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(port);
 }
 
+
+JSONValue *JSONValue::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    JSONValue *result = nullptr;
+    switch (constructor) {
+        case 0xc7345e6a:
+            result = new TL_jsonBool();
+            break;
+        case 0x3f6d7b68:
+            result = new TL_jsonNull();
+            break;
+        case 0xb71e767a:
+            result = new TL_jsonString();
+            break;
+        case 0xf7444763:
+            result = new TL_jsonArray();
+            break;
+        case 0x99c1d49d:
+            result = new TL_jsonObject();
+            break;
+        case 0x2be0dfa4:
+            result = new TL_jsonNumber();
+            break;
+        default:
+            error = true;
+            if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in JSONValue", constructor);
+            return nullptr;
+    }
+    result->readParams(stream, instanceNum, error);
+    return result;
+}
+
+TL_jsonObjectValue *TL_jsonObjectValue::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    if (TL_jsonObjectValue::constructor != constructor) {
+        error = true;
+        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_jsonObjectValue", constructor);
+        return nullptr;
+    }
+    TL_jsonObjectValue *result = new TL_jsonObjectValue();
+    result->readParams(stream, instanceNum, error);
+    return result;
+}
+
+
+void TL_jsonObjectValue::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    key = stream->readString(&error);
+    value = std::unique_ptr<JSONValue>(JSONValue::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+}
+
+
+void TL_jsonObjectValue::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeString(key);
+    value->serializeToStream(stream);
+}
+
+void TL_jsonBool::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    value = stream->readBool(&error);
+}
+
+void TL_jsonBool::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeBool(value);
+}
+
+void TL_jsonNull::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+}
+
+void TL_jsonString::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    value = stream->readString(&error);
+}
+
+void TL_jsonString::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeString(value);
+}
+
+void TL_jsonArray::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    int magic = stream->readInt32(&error);
+    if (magic != 0x1cb5c415) {
+        error = true;
+        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+        return;
+    }
+    int count = stream->readInt32(&error);
+    for (int a = 0; a < count; a++) {
+        JSONValue *object = JSONValue::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error);
+        if (object == nullptr) {
+            return;
+        }
+        value.push_back(std::unique_ptr<JSONValue>(object));
+    }
+}
+
+void TL_jsonArray::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(0x1cb5c415);
+    uint32_t count = (uint32_t) value.size();
+    stream->writeInt32(count);
+    for (int a = 0; a < count; a++) {
+        value[a]->serializeToStream(stream);
+    }
+}
+
+void TL_jsonObject::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    int magic = stream->readInt32(&error);
+    if (magic != 0x1cb5c415) {
+        error = true;
+        if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+        return;
+    }
+    int count = stream->readInt32(&error);
+    for (int a = 0; a < count; a++) {
+        TL_jsonObjectValue *object = TL_jsonObjectValue::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error);
+        if (object == nullptr) {
+            return;
+        }
+        value.push_back(std::unique_ptr<TL_jsonObjectValue>(object));
+    }
+}
+
+void TL_jsonObject::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(0x1cb5c415);
+    uint32_t count = (uint32_t) value.size();
+    stream->writeInt32(count);
+    for (int a = 0; a < count; a++) {
+        value[a]->serializeToStream(stream);
+    }
+}
+
+void TL_jsonNumber::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    value = stream->readDouble(&error);
+}
+
+void TL_jsonNumber::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeDouble(value);
+}
+
 void initConnection::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
     stream->writeInt32(flags);
@@ -959,6 +1099,9 @@ void initConnection::serializeToStream(NativeByteBuffer *stream) {
     stream->writeString(lang_code);
     if ((flags & 1) != 0) {
         proxy->serializeToStream(stream);
+    }
+    if ((flags & 2) != 0) {
+        params->serializeToStream(stream);
     }
     query->serializeToStream(stream);
 }

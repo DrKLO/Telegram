@@ -52,34 +52,45 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public ActionBarMenuItem addItem(int id, Drawable drawable) {
-        return addItem(id, 0, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, drawable, AndroidUtilities.dp(48), null);
+        return addItem(id, 0, null, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, drawable, AndroidUtilities.dp(48), null);
     }
 
     public ActionBarMenuItem addItem(int id, int icon) {
         return addItem(id, icon, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor);
     }
 
+    public ActionBarMenuItem addItem(int id, CharSequence text) {
+        return addItem(id, 0, text, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, null, 0, text);
+    }
+
     public ActionBarMenuItem addItem(int id, int icon, int backgroundColor) {
-        return addItem(id, icon, backgroundColor, null, AndroidUtilities.dp(48), null);
+        return addItem(id, icon, null, backgroundColor, null, AndroidUtilities.dp(48), null);
     }
 
     public ActionBarMenuItem addItemWithWidth(int id, int icon, int width) {
-        return addItem(id, icon, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, null, width, null);
+        return addItem(id, icon, null, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, null, width, null);
     }
 
     public ActionBarMenuItem addItemWithWidth(int id, int icon, int width, CharSequence title) {
-        return addItem(id, icon, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, null, width, title);
+        return addItem(id, icon, null, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, null, width, title);
     }
 
-    public ActionBarMenuItem addItem(int id, int icon, int backgroundColor, Drawable drawable, int width, CharSequence title) {
-        ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, backgroundColor, isActionMode ? parentActionBar.itemsActionModeColor : parentActionBar.itemsColor);
+    public ActionBarMenuItem addItem(int id, int icon, CharSequence text, int backgroundColor, Drawable drawable, int width, CharSequence title) {
+        ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, backgroundColor, isActionMode ? parentActionBar.itemsActionModeColor : parentActionBar.itemsColor, text != null);
         menuItem.setTag(id);
-        if (drawable != null) {
-            menuItem.iconView.setImageDrawable(drawable);
-        } else if (icon != 0) {
-            menuItem.iconView.setImageResource(icon);
+        if (text != null) {
+            menuItem.textView.setText(text);
+            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(width != 0 ? width : ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            layoutParams.leftMargin = layoutParams.rightMargin = AndroidUtilities.dp(14);
+            addView(menuItem, layoutParams);
+        } else {
+            if (drawable != null) {
+                menuItem.iconView.setImageDrawable(drawable);
+            } else if (icon != 0) {
+                menuItem.iconView.setImageResource(icon);
+            }
+            addView(menuItem, new LinearLayout.LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT));
         }
-        addView(menuItem, new LinearLayout.LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT));
         menuItem.setOnClickListener(view -> {
             ActionBarMenuItem item = (ActionBarMenuItem) view;
             if (item.hasSubMenu()) {
@@ -187,6 +198,21 @@ public class ActionBarMenu extends LinearLayout {
                     } else {
                         item.getSearchField().setTextColor(color);
                     }
+                    break;
+                }
+            }
+        }
+    }
+
+    public void setSearchFieldText(String text) {
+        int count = getChildCount();
+        for (int a = 0; a < count; a++) {
+            View view = getChildAt(a);
+            if (view instanceof ActionBarMenuItem) {
+                ActionBarMenuItem item = (ActionBarMenuItem) view;
+                if (item.isSearchField()) {
+                    item.setSearchFieldText(text, false);
+                    item.getSearchField().setSelection(text.length());
                     break;
                 }
             }

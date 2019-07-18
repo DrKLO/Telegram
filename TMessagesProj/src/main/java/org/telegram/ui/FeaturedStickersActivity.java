@@ -14,7 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -51,10 +51,10 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        DataQuery.getInstance(currentAccount).checkFeaturedStickers();
+        MediaDataController.getInstance(currentAccount).checkFeaturedStickers();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.featuredStickersDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
-        ArrayList<Long> arrayList = DataQuery.getInstance(currentAccount).getUnreadStickerSets();
+        ArrayList<Long> arrayList = MediaDataController.getInstance(currentAccount).getUnreadStickerSets();
         if (arrayList != null) {
             unreadStickers = new ArrayList<>(arrayList);
         }
@@ -107,7 +107,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position) -> {
             if (position >= stickersStartRow && position < stickersEndRow && getParentActivity() != null) {
-                final TLRPC.StickerSetCovered stickerSet = DataQuery.getInstance(currentAccount).getFeaturedStickerSets().get(position);
+                final TLRPC.StickerSetCovered stickerSet = MediaDataController.getInstance(currentAccount).getFeaturedStickerSets().get(position);
                 TLRPC.InputStickerSet inputStickerSet;
                 if (stickerSet.set.id != 0) {
                     inputStickerSet = new TLRPC.TL_inputStickerSetID();
@@ -141,7 +141,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.featuredStickersDidLoad) {
             if (unreadStickers == null) {
-                unreadStickers = DataQuery.getInstance(currentAccount).getUnreadStickerSets();
+                unreadStickers = MediaDataController.getInstance(currentAccount).getUnreadStickerSets();
             }
             updateRows();
         } else if (id == NotificationCenter.stickersDidLoad) {
@@ -166,7 +166,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
 
     private void updateRows() {
         rowCount = 0;
-        ArrayList<TLRPC.StickerSetCovered> stickerSets = DataQuery.getInstance(currentAccount).getFeaturedStickerSets();
+        ArrayList<TLRPC.StickerSetCovered> stickerSets = MediaDataController.getInstance(currentAccount).getFeaturedStickerSets();
         if (!stickerSets.isEmpty()) {
             stickersStartRow = rowCount;
             stickersEndRow = rowCount + stickerSets.size();
@@ -180,7 +180,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
-        DataQuery.getInstance(currentAccount).markFaturedStickersAsRead(true);
+        MediaDataController.getInstance(currentAccount).markFaturedStickersAsRead(true);
     }
 
     @Override
@@ -207,7 +207,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             if (getItemViewType(position) == 0) {
-                ArrayList<TLRPC.StickerSetCovered> arrayList = DataQuery.getInstance(currentAccount).getFeaturedStickerSets();
+                ArrayList<TLRPC.StickerSetCovered> arrayList = MediaDataController.getInstance(currentAccount).getFeaturedStickerSets();
                 FeaturedStickerSetCell cell = (FeaturedStickerSetCell) holder.itemView;
                 cell.setTag(position);
                 TLRPC.StickerSetCovered stickerSet = arrayList.get(position);
@@ -241,7 +241,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
                             return;
                         }
                         installingStickerSets.put(pack.set.id, pack);
-                        DataQuery.getInstance(currentAccount).removeStickersSet(getParentActivity(), pack.set, 2, FeaturedStickersActivity.this, false);
+                        MediaDataController.getInstance(currentAccount).removeStickersSet(getParentActivity(), pack.set, 2, FeaturedStickersActivity.this, false);
                         parent1.setDrawProgress(true);
                     });
                     break;

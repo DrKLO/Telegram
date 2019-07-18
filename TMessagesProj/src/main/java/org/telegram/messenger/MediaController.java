@@ -1728,7 +1728,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 currentPlaylistNum = 0;
             }
             if (loadMusic) {
-                DataQuery.getInstance(current.currentAccount).loadMusic(current.getDialogId(), playlist.get(0).getIdWithChannel());
+                MediaDataController.getInstance(current.currentAccount).loadMusic(current.getDialogId(), playlist.get(0).getIdWithChannel());
             }
         }
         return playMessage(current);
@@ -3825,7 +3825,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
                 checkConversionCanceled();
 
-                if (resultWidth != originalWidth || resultHeight != originalHeight || rotateRender != 0 || messageObject.videoEditedInfo.roundVideo) {
+                if (resultWidth != originalWidth || resultHeight != originalHeight || rotateRender != 0 || messageObject.videoEditedInfo.roundVideo || Build.VERSION.SDK_INT >= 18 && startTime != -1) {
                     int videoIndex = findTrack(extractor, false);
                     int audioIndex = bitrate != -1 ? findTrack(extractor, true) : -1;
                     if (videoIndex >= 0) {

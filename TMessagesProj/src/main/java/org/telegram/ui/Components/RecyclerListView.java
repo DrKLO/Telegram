@@ -337,11 +337,11 @@ public class RecyclerListView extends RecyclerView {
                 case MotionEvent.ACTION_DOWN:
                     float x = event.getX();
                     lastY = event.getY();
-                    float currectY = (float) Math.ceil((getMeasuredHeight() - AndroidUtilities.dp(24 + 30)) * progress) + AndroidUtilities.dp(12);
-                    if (LocaleController.isRTL && x > AndroidUtilities.dp(25) || !LocaleController.isRTL && x < AndroidUtilities.dp(107) || lastY < currectY || lastY > currectY + AndroidUtilities.dp(30)) {
+                    float currentY = (float) Math.ceil((getMeasuredHeight() - AndroidUtilities.dp(24 + 30)) * progress) + AndroidUtilities.dp(12);
+                    if (LocaleController.isRTL && x > AndroidUtilities.dp(25) || !LocaleController.isRTL && x < AndroidUtilities.dp(107) || lastY < currentY || lastY > currentY + AndroidUtilities.dp(30)) {
                         return false;
                     }
-                    startDy = lastY - currectY;
+                    startDy = lastY - currentY;
                     pressed = true;
                     lastUpdateTime = System.currentTimeMillis();
                     getCurrentLetter();
@@ -389,7 +389,7 @@ public class RecyclerListView extends RecyclerView {
                     if (adapter instanceof FastScrollAdapter) {
                         FastScrollAdapter fastScrollAdapter = (FastScrollAdapter) adapter;
                         int position = fastScrollAdapter.getPositionForScrollProgress(progress);
-                        linearLayoutManager.scrollToPositionWithOffset(position, 0);
+                        linearLayoutManager.scrollToPositionWithOffset(position, sectionOffset);
                         String newLetter = fastScrollAdapter.getLetter(position);
                         if (newLetter == null) {
                             if (letterLayout != null) {
@@ -904,7 +904,9 @@ public class RecyclerListView extends RecyclerView {
     protected void onMeasure(int widthSpec, int heightSpec) {
         super.onMeasure(widthSpec, heightSpec);
         if (fastScroll != null) {
-            fastScroll.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(132), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+            int height = getMeasuredHeight() - getPaddingTop() - getPaddingBottom();
+            fastScroll.getLayoutParams().height = height;
+            fastScroll.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(132), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
         }
     }
 
@@ -913,6 +915,7 @@ public class RecyclerListView extends RecyclerView {
         super.onLayout(changed, l, t, r, b);
         if (fastScroll != null) {
             selfOnLayout = true;
+            t += getPaddingTop();
             if (LocaleController.isRTL) {
                 fastScroll.layout(0, t, fastScroll.getMeasuredWidth(), t + fastScroll.getMeasuredHeight());
             } else {
@@ -942,13 +945,44 @@ public class RecyclerListView extends RecyclerView {
                 LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
                 if (linearLayoutManager.getOrientation() == LinearLayoutManager.VERTICAL) {
                     if (sectionsAdapter != null) {
+                        int paddingTop = getPaddingTop();
                         if (sectionsType == 1) {
-                            int firstVisibleItem = linearLayoutManager.findFirstVisibleItemPosition();
-                            int lastVisibleItem = linearLayoutManager.findLastVisibleItemPosition();
-                            int visibleItemCount = Math.abs(lastVisibleItem - firstVisibleItem) + 1;
-                            if (firstVisibleItem == NO_POSITION) {
+                            int childCount = getChildCount();
+                            int maxBottom = 0;
+                            int minBottom = Integer.MAX_VALUE;
+                            View minChild = null;
+
+                            int minBottomSection = Integer.MAX_VALUE;
+                            for (int a = 0; a < childCount; a++) {
+                                View child = getChildAt(a);
+                                int bottom = child.getBottom();
+                                if (bottom <= sectionOffset + paddingTop) {
+                                    continue;
+                                }
+                                if (bottom < minBottom) {
+                                    minBottom = bottom;
+                                    minChild = child;
+                                }
+                                maxBottom = Math.max(maxBottom, bottom);
+                                if (bottom < sectionOffset + paddingTop + AndroidUtilities.dp(32)) {
+                                    continue;
+                                }
+                                if (bottom < minBottomSection) {
+                                    minBottomSection = bottom;
+                                }
+                            }
+                            if (minChild == null) {
                                 return;
                             }
+                            ViewHolder holder = getChildViewHolder(minChild);
+                            if (holder == null) {
+                                return;
+                            }
+
+                            int firstVisibleItem = holder.getAdapterPosition();
+                            int lastVisibleItem = linearLayoutManager.findLastVisibleItemPosition();
+                            int visibleItemCount = Math.abs(lastVisibleItem - firstVisibleItem) + 1;
+
                             if (scrollingByUser && fastScroll != null) {
                                 Adapter adapter = getAdapter();
                                 if (adapter instanceof FastScrollAdapter) {
@@ -987,12 +1021,12 @@ public class RecyclerListView extends RecyclerView {
                                 if (a == startSection) {
                                     int pos = sectionsAdapter.getPositionInSectionForPosition(itemNum);
                                     if (pos == count - 1) {
-                                        header.setTag(-header.getHeight());
+                                        header.setTag(-header.getHeight() + paddingTop);
                                     } else if (pos == count - 2) {
                                         View child = getChildAt(itemNum - firstVisibleItem);
                                         int headerTop;
                                         if (child != null) {
-                                            headerTop = child.getTop();
+                                            headerTop = child.getTop() + paddingTop;
                                         } else {
                                             headerTop = -AndroidUtilities.dp(100);
                                         }
@@ -1008,7 +1042,7 @@ public class RecyclerListView extends RecyclerView {
                                 } else {
                                     View child = getChildAt(itemNum - firstVisibleItem);
                                     if (child != null) {
-                                        header.setTag(child.getTop());
+                                        header.setTag(child.getTop() + paddingTop);
                                     } else {
                                         header.setTag(-AndroidUtilities.dp(100));
                                     }
@@ -1030,7 +1064,7 @@ public class RecyclerListView extends RecyclerView {
                             for (int a = 0; a < childCount; a++) {
                                 View child = getChildAt(a);
                                 int bottom = child.getBottom();
-                                if (bottom <= sectionOffset + getPaddingTop()) {
+                                if (bottom <= sectionOffset + paddingTop) {
                                     continue;
                                 }
                                 if (bottom < minBottom) {
@@ -1038,7 +1072,7 @@ public class RecyclerListView extends RecyclerView {
                                     minChild = child;
                                 }
                                 maxBottom = Math.max(maxBottom, bottom);
-                                if (bottom < sectionOffset + getPaddingTop() + AndroidUtilities.dp(32)) {
+                                if (bottom < sectionOffset + paddingTop + AndroidUtilities.dp(32)) {
                                     continue;
                                 }
                                 if (bottom < minBottomSection) {
@@ -1068,7 +1102,6 @@ public class RecyclerListView extends RecyclerView {
                             int count = sectionsAdapter.getCountForSection(startSection);
 
                             int pos = sectionsAdapter.getPositionInSectionForPosition(firstVisibleItem);
-                            int paddingTop = getPaddingTop();
                             int sectionOffsetY = maxBottom != 0 && maxBottom < (getMeasuredHeight() - getPaddingBottom()) ? 0 : sectionOffset;
 
                             if (pos == count - 1) {
@@ -1260,6 +1293,10 @@ public class RecyclerListView extends RecyclerView {
     @Override
     public void setOnScrollListener(OnScrollListener listener) {
         onScrollListener = listener;
+    }
+
+    public OnScrollListener getOnScrollListener() {
+        return onScrollListener;
     }
 
     public void setOnInterceptTouchListener(OnInterceptTouchListener listener) {

@@ -295,9 +295,6 @@ namespace tgvoip {
 			cfg.statsDumpFilePath=jni::JavaStringToStdString(env, statsDumpPath);
 		}
 
-		// remove before push
-		cfg.enableVideoReceive=cfg.enableVideoSend=true;
-
 		((VoIPController*)(intptr_t)inst)->SetConfig(cfg);
 	}
 

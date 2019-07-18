@@ -276,7 +276,7 @@ public class SharingLocationsAlert extends BottomSheet implements NotificationCe
             View view;
             switch (viewType) {
                 case 0:
-                    view = new SharingLiveLocationCell(context, false);
+                    view = new SharingLiveLocationCell(context, false, 54);
                     //view.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                     break;
                 case 1:

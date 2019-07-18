@@ -19,14 +19,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
-public class FileLoader {
+public class FileLoader extends BaseController {
 
     public interface FileLoaderDelegate {
         void fileUploadProgressChanged(String location, float progress, boolean isEncrypted);
@@ -72,7 +71,6 @@ public class FileLoader {
     private int lastReferenceId;
     private ConcurrentHashMap<Integer, Object> parentObjectReferences = new ConcurrentHashMap<>();
 
-    private int currentAccount;
     private static volatile FileLoader[] Instance = new FileLoader[UserConfig.MAX_ACCOUNT_COUNT];
     public static FileLoader getInstance(int num) {
         FileLoader localInstance = Instance[num];
@@ -88,7 +86,7 @@ public class FileLoader {
     }
 
     public FileLoader(int instance) {
-        currentAccount = instance;
+        super(instance);
     }
 
     public static void setMediaDirs(SparseArray<File> dirs) {
@@ -128,7 +126,7 @@ public class FileLoader {
         String key = getAttachFileName(document);
         String dKey = key + (player ? "p" : "");
         loadingVideos.put(dKey, true);
-        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.videoLoadingStateChanged, key);
+        getNotificationCenter().postNotificationName(NotificationCenter.videoLoadingStateChanged, key);
     }
 
     public void setLoadingVideo(TLRPC.Document document, boolean player, boolean schedule) {
@@ -156,7 +154,7 @@ public class FileLoader {
         String key = getAttachFileName(document);
         String dKey = key + (player ? "p" : "");
         if (loadingVideos.remove(dKey) != null) {
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.videoLoadingStateChanged, key);
+            getNotificationCenter().postNotificationName(NotificationCenter.videoLoadingStateChanged, key);
         }
     }
 
@@ -1222,13 +1220,23 @@ public class FileLoader {
     }
 
     public static boolean copyFile(InputStream sourceFile, File destFile) throws IOException {
-        OutputStream out = new FileOutputStream(destFile);
+        return copyFile(sourceFile, destFile, -1);
+    }
+
+    public static boolean copyFile(InputStream sourceFile, File destFile, int maxSize) throws IOException {
+        FileOutputStream out = new FileOutputStream(destFile);
         byte[] buf = new byte[4096];
         int len;
+        int totalLen = 0;
         while ((len = sourceFile.read(buf)) > 0) {
             Thread.yield();
             out.write(buf, 0, len);
+            totalLen += len;
+            if (maxSize > 0 && totalLen >= maxSize) {
+                break;
+            }
         }
+        out.getFD().sync();
         out.close();
         return true;
     }

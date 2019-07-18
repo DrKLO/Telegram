@@ -212,8 +212,6 @@ public class ThemeCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            int color = Theme.dividerPaint.getColor();
-            FileLog.d(String.format("set color %d %d %d %d", Color.alpha(color), Color.red(color), Color.green(color), Color.blue(color)));
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
         }
         int x = AndroidUtilities.dp(16 + 15);

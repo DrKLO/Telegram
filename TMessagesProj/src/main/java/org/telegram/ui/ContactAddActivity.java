@@ -25,9 +25,10 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -36,6 +37,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -51,12 +53,21 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     private TextView nameTextView;
     private TextView onlineTextView;
     private AvatarDrawable avatarDrawable;
+    private TextView infoTextView;
+    private CheckBoxCell checkBoxCell;
 
     private int user_id;
     private boolean addContact;
-    private String phone = null;
+    private boolean needAddException;
+    private String phone;
+
+    private ContactAddActivityDelegate delegate;
 
     private final static int done_button = 1;
+
+    public interface ContactAddActivityDelegate {
+        void didAddToContacts();
+    }
 
     public ContactAddActivity(Bundle args) {
         super(args);
@@ -64,18 +75,19 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
+        getNotificationCenter().addObserver(this, NotificationCenter.updateInterfaces);
         user_id = getArguments().getInt("user_id", 0);
         phone = getArguments().getString("phone");
         addContact = getArguments().getBoolean("addContact", false);
-        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(user_id);
+        needAddException = MessagesController.getNotificationsSettings(currentAccount).getBoolean("dialog_bar_exception" + user_id, false);
+        TLRPC.User user = getMessagesController().getUser(user_id);
         return user != null && super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
+        getNotificationCenter().removeObserver(this, NotificationCenter.updateInterfaces);
     }
 
     @Override
@@ -83,7 +95,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (addContact) {
-            actionBar.setTitle(LocaleController.getString("AddContactTitle", R.string.AddContactTitle));
+            actionBar.setTitle(LocaleController.getString("NewContact", R.string.NewContact));
         } else {
             actionBar.setTitle(LocaleController.getString("EditName", R.string.EditName));
         }
@@ -94,22 +106,25 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                     finishFragment();
                 } else if (id == done_button) {
                     if (firstNameField.getText().length() != 0) {
-                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(user_id);
+                        TLRPC.User user = getMessagesController().getUser(user_id);
                         user.first_name = firstNameField.getText().toString();
                         user.last_name = lastNameField.getText().toString();
-                        ContactsController.getInstance(currentAccount).addContact(user);
-                        finishFragment();
+                        getContactsController().addContact(user, checkBoxCell != null && checkBoxCell.isChecked());
                         SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                        preferences.edit().putInt("spam3_" + user_id, 1).commit();
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.peerSettingsDidLoad, (long) user_id);
+                        preferences.edit().putInt("dialog_bar_vis3" + user_id, 3).commit();
+                        getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
+                        getNotificationCenter().postNotificationName(NotificationCenter.peerSettingsDidLoad, (long) user_id);
+                        finishFragment();
+                        if (delegate != null) {
+                            delegate.didAddToContacts();
+                        }
                     }
                 }
             }
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        doneButton = menu.addItem(done_button, LocaleController.getString("Done", R.string.Done).toUpperCase());
 
         fragmentView = new ScrollView(context);
 
@@ -170,6 +185,16 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             }
             return false;
         });
+        firstNameField.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            boolean focued;
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!paused && !hasFocus && focued) {
+                    FileLog.d("changed");
+                }
+                focued = hasFocus;
+            }
+        });
 
         lastNameField = new EditTextBoldCursor(context);
         lastNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
@@ -195,7 +220,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             return false;
         });
 
-        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(user_id);
+        TLRPC.User user = getMessagesController().getUser(user_id);
         if (user != null) {
             if (user.phone == null) {
                 if (phone != null) {
@@ -207,18 +232,49 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             lastNameField.setText(user.last_name);
         }
 
+        infoTextView = new TextView(context);
+        infoTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
+        infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        infoTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        if (addContact) {
+            if (!needAddException || TextUtils.isEmpty(user.phone)) {
+                linearLayout.addView(infoTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 18, 24, 0));
+            }
+
+            if (needAddException) {
+                checkBoxCell = new CheckBoxCell(getParentActivity(), 0);
+                checkBoxCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+                checkBoxCell.setText(LocaleController.formatString("SharePhoneNumberWith", R.string.SharePhoneNumberWith, UserObject.getFirstName(user)), "", true, false);
+                checkBoxCell.setPadding(AndroidUtilities.dp(7), 0, AndroidUtilities.dp(7), 0);
+                checkBoxCell.setOnClickListener(v -> checkBoxCell.setChecked(!checkBoxCell.isChecked(), true));
+                linearLayout.addView(checkBoxCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 10, 0, 0));
+            }
+        }
+
         return fragmentView;
+    }
+
+    public void setDelegate(ContactAddActivityDelegate contactAddActivityDelegate) {
+        delegate = contactAddActivityDelegate;
     }
 
     private void updateAvatarLayout() {
         if (nameTextView == null) {
             return;
         }
-        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(user_id);
+        TLRPC.User user = getMessagesController().getUser(user_id);
         if (user == null) {
             return;
         }
-        nameTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+        if (TextUtils.isEmpty(user.phone)) {
+            nameTextView.setText(LocaleController.getString("MobileHidden", R.string.MobileHidden));
+            infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("MobileHiddenExceptionInfo", R.string.MobileHiddenExceptionInfo, UserObject.getFirstName(user))));
+        } else {
+            nameTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+            if (needAddException) {
+                infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("MobileVisibleInfo", R.string.MobileVisibleInfo, UserObject.getFirstName(user))));
+            }
+        }
         onlineTextView.setText(LocaleController.formatUserStatus(currentAccount, user));
         avatarImage.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable = new AvatarDrawable(user), user);
     }
@@ -232,15 +288,24 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         }
     }
 
+    boolean paused;
+    @Override
+    public void onPause() {
+        super.onPause();
+        paused = true;
+    }
+
     @Override
     public void onResume() {
         super.onResume();
         updateAvatarLayout();
-        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        boolean animations = preferences.getBoolean("view_animations", true);
-        if (!animations) {
+        if (firstNameField != null) {
             firstNameField.requestFocus();
-            AndroidUtilities.showKeyboard(firstNameField);
+            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+            boolean animations = preferences.getBoolean("view_animations", true);
+            if (!animations) {
+                AndroidUtilities.showKeyboard(firstNameField);
+            }
         }
     }
 
@@ -256,7 +321,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     public ThemeDescription[] getThemeDescriptions() {
         ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
             if (avatarImage != null) {
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(user_id);
+                TLRPC.User user = getMessagesController().getUser(user_id);
                 if (user == null) {
                     return;
                 }
@@ -283,6 +348,8 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                 new ThemeDescription(lastNameField, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText),
                 new ThemeDescription(lastNameField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField),
                 new ThemeDescription(lastNameField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated),
+
+                new ThemeDescription(infoTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText4),
 
                 new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),

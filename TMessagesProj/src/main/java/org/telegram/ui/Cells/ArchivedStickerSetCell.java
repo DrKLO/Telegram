@@ -22,6 +22,8 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
@@ -63,6 +65,7 @@ public class ArchivedStickerSetCell extends FrameLayout {
 
         imageView = new BackupImageView(context);
         imageView.setAspectFit(true);
+        imageView.setLayerNum(1);
         addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
 
         if (needCheckBox) {
@@ -99,11 +102,19 @@ public class ArchivedStickerSetCell extends FrameLayout {
         valueTextView.setText(LocaleController.formatPluralString("Stickers", set.set.count));
         TLRPC.PhotoSize thumb = set.cover != null ? FileLoader.getClosestPhotoSizeWithSize(set.cover.thumbs, 90) : null;
         if (thumb != null && thumb.location != null) {
-            imageView.setImage(ImageLocation.getForDocument(thumb, set.cover), null, "webp", null, set);
+            if (MessageObject.canAutoplayAnimatedSticker(set.cover)) {
+                imageView.setImage(ImageLocation.getForDocument(set.cover), "80_80", ImageLocation.getForDocument(thumb, set.cover), null, 0, set);
+            } else {
+                imageView.setImage(ImageLocation.getForDocument(thumb, set.cover), null, "webp", null, set);
+            }
         } else if (!set.covers.isEmpty()) {
             TLRPC.Document document = set.covers.get(0);
             thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-            imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", null, set);
+            if (MessageObject.canAutoplayAnimatedSticker(document)) {
+                imageView.setImage(ImageLocation.getForDocument(document), "80_80", ImageLocation.getForDocument(thumb, document), null, 0, set);
+            } else {
+                imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", null, set);
+            }
         } else {
             imageView.setImage(null, null, "webp", null, set);
         }

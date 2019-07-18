@@ -488,7 +488,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             }
         } else {
             updateStyle(2);
-            playButton.setImageDrawable(new ShareLocationDrawable(getContext(), true));
+            playButton.setImageDrawable(new ShareLocationDrawable(getContext(), 1));
             if (create && topPadding == 0) {
                 setTopPadding(AndroidUtilities.dp2(36));
                 yPosition = 0;

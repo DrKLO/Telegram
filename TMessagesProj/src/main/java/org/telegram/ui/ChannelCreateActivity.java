@@ -148,7 +148,6 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public boolean onFragmentCreate() {
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatDidCreated);
@@ -242,7 +241,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                             progressDialog.show();
                             return;
                         }
-                        final int reqId = MessagesController.getInstance(currentAccount).createChat(nameTextView.getText().toString(), new ArrayList<>(), descriptionTextView.getText().toString(), ChatObject.CHAT_TYPE_CHANNEL, ChannelCreateActivity.this);
+                        final int reqId = MessagesController.getInstance(currentAccount).createChat(nameTextView.getText().toString(), new ArrayList<>(), descriptionTextView.getText().toString(), ChatObject.CHAT_TYPE_CHANNEL, null, null, ChannelCreateActivity.this);
                         progressDialog = new AlertDialog(getParentActivity(), 3);
                         progressDialog.setOnCancelListener(dialog -> {
                             ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);

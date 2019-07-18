@@ -81,6 +81,7 @@ public class ActionBarMenuItem extends FrameLayout {
     private TextView searchFieldCaption;
     private ImageView clearButton;
     protected ImageView iconView;
+    protected TextView textView;
     private FrameLayout searchContainer;
     private boolean isSearchField;
     private ActionBarMenuItemSearchListener listener;
@@ -103,17 +104,33 @@ public class ActionBarMenuItem extends FrameLayout {
     private boolean animateClear = true;
 
     public ActionBarMenuItem(Context context, ActionBarMenu menu, int backgroundColor, int iconColor) {
+        this(context, menu, backgroundColor, iconColor, false);
+    }
+
+    public ActionBarMenuItem(Context context, ActionBarMenu menu, int backgroundColor, int iconColor, boolean text) {
         super(context);
         if (backgroundColor != 0) {
-            setBackgroundDrawable(Theme.createSelectorDrawable(backgroundColor));
+            setBackgroundDrawable(Theme.createSelectorDrawable(backgroundColor, text ? 5 : 1));
         }
         parentMenu = menu;
 
-        iconView = new ImageView(context);
-        iconView.setScaleType(ImageView.ScaleType.CENTER);
-        addView(iconView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        if (iconColor != 0) {
-            iconView.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+        if (text) {
+            textView = new TextView(context);
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setGravity(Gravity.CENTER);
+            textView.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+            if (iconColor != 0) {
+                textView.setTextColor(iconColor);
+            }
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
+        } else {
+            iconView = new ImageView(context);
+            iconView.setScaleType(ImageView.ScaleType.CENTER);
+            addView(iconView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            if (iconColor != 0) {
+                iconView.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+            }
         }
     }
 
@@ -200,7 +217,12 @@ public class ActionBarMenuItem extends FrameLayout {
     }
 
     public void setIconColor(int color) {
-        iconView.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+        if (iconView != null) {
+            iconView.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+        }
+        if (textView != null) {
+            textView.setTextColor(color);
+        }
         if (clearButton != null) {
             clearButton.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
         }
@@ -468,16 +490,29 @@ public class ActionBarMenuItem extends FrameLayout {
         }
     }
 
-    public void setIcon(int resId) {
-        iconView.setImageResource(resId);
-    }
-
     public void setIcon(Drawable drawable) {
+        if (iconView == null) {
+            return;
+        }
         iconView.setImageDrawable(drawable);
     }
 
-    public ImageView getImageView() {
-        return iconView;
+    public void setIcon(int resId) {
+        if (iconView == null) {
+            return;
+        }
+        iconView.setImageResource(resId);
+    }
+
+    public void setText(CharSequence text) {
+        if (textView == null) {
+            return;
+        }
+        textView.setText(text);
+    }
+
+    public View getContentView() {
+        return iconView != null ? iconView : textView;
     }
 
     public void setSearchFieldHint(CharSequence hint) {

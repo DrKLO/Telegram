@@ -12,8 +12,6 @@
 #include "threading.h"
 #include "utils.h"
 
-using namespace std;
-
 namespace tgvoip{
 
 template<typename T>
@@ -80,7 +78,7 @@ private:
 		return r;
 	}
 
-	list<T> queue;
+	std::list<T> queue;
 	size_t capacity;
 	//tgvoip_lock_t lock;
 	Semaphore semaphore;

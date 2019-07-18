@@ -12,7 +12,6 @@
 #include <stdint.h>
 #include <vector>
 #include <map>
-#include <bits/unique_ptr.h>
 #include "Defines.h"
 
 class TL_future_salt;
@@ -54,6 +53,7 @@ public:
     bool isHandshaking(HandshakeType type);
     bool hasAuthKey(ConnectionType connectionTyoe, int32_t allowPendingKey);
     bool hasPermanentAuthKey();
+    int64_t getPermanentAuthKeyId();
     bool isExportingAuthorization();
     bool hasMediaAddress();
     void resetInitVersion();

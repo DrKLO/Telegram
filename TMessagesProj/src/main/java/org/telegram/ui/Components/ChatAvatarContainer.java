@@ -54,6 +54,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     private int onlineCount = -1;
     private int currentConnectionState;
     private CharSequence lastSubtitle;
+    private String lastSubtitleColorKey;
 
     public ChatAvatarContainer(Context context, ChatActivity chatActivity, boolean needTime) {
         super(context);
@@ -101,6 +102,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                         parentFragment.presentFragment(fragment);
                     } else {
                         args.putInt("user_id", user.id);
+                        args.putBoolean("reportSpam", parentFragment.hasReportSpam());
                         if (timeItem != null) {
                             args.putLong("dialog_id", parentFragment.getDialogId());
                         }
@@ -299,7 +301,17 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                         }
                     } else {
                         if (chat.megagroup) {
-                            newSubtitle = LocaleController.getString("Loading", R.string.Loading).toLowerCase();
+                            if (info == null) {
+                                newSubtitle = LocaleController.getString("Loading", R.string.Loading).toLowerCase();
+                            } else {
+                                if (chat.has_geo) {
+                                    newSubtitle = LocaleController.getString("MegaLocation", R.string.MegaLocation).toLowerCase();
+                                } else if (!TextUtils.isEmpty(chat.username)) {
+                                    newSubtitle = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();
+                                } else {
+                                    newSubtitle = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
+                                }
+                            }
                         } else {
                             if ((chat.flags & TLRPC.CHAT_FLAG_IS_PUBLIC) != 0) {
                                 newSubtitle = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
@@ -353,11 +365,11 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             useOnlineColor = true;
             setTypingAnimation(true);
         }
+        lastSubtitleColorKey = useOnlineColor ? Theme.key_chat_status : Theme.key_actionBarDefaultSubtitle;
         if (lastSubtitle == null) {
             subtitleTextView.setText(newSubtitle);
-            String key = useOnlineColor ? Theme.key_chat_status : Theme.key_actionBarDefaultSubtitle;
-            subtitleTextView.setTextColor(Theme.getColor(key));
-            subtitleTextView.setTag(key);
+            subtitleTextView.setTextColor(Theme.getColor(lastSubtitleColorKey));
+            subtitleTextView.setTag(lastSubtitleColorKey);
         } else {
             lastSubtitle = newSubtitle;
         }
@@ -478,10 +490,18 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             if (lastSubtitle != null) {
                 subtitleTextView.setText(lastSubtitle);
                 lastSubtitle = null;
+                if (lastSubtitleColorKey != null) {
+                    subtitleTextView.setTextColor(Theme.getColor(lastSubtitleColorKey));
+                    subtitleTextView.setTag(lastSubtitleColorKey);
+                }
             }
         } else {
-            lastSubtitle = subtitleTextView.getText();
+            if (lastSubtitle == null) {
+                lastSubtitle = subtitleTextView.getText();
+            }
             subtitleTextView.setText(title);
+            subtitleTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
+            subtitleTextView.setTag(Theme.key_actionBarDefaultSubtitle);
         }
     }
 }

@@ -15,16 +15,18 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BaseController;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.KeepAliveJob;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.StatsController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -44,10 +46,15 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ConnectionsManager {
+public class ConnectionsManager extends BaseController {
 
     public final static int ConnectionTypeGeneric = 1;
     public final static int ConnectionTypeDownload = 2;
@@ -90,6 +97,26 @@ public class ConnectionsManager {
 
     private static HashMap<String, ResolveHostByNameTask> resolvingHostnameTasks = new HashMap<>();
 
+    public static final Executor DNS_THREAD_POOL_EXECUTOR;
+    public static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
+    private static final int CORE_POOL_SIZE = Math.max(2, Math.min(CPU_COUNT - 1, 4));
+    private static final int MAXIMUM_POOL_SIZE = CPU_COUNT * 2 + 1;
+    private static final int KEEP_ALIVE_SECONDS = 30;
+    private static final BlockingQueue<Runnable> sPoolWorkQueue = new LinkedBlockingQueue<>(128);
+    private static final ThreadFactory sThreadFactory = new ThreadFactory() {
+        private final AtomicInteger mCount = new AtomicInteger(1);
+
+        public Thread newThread(Runnable r) {
+            return new Thread(r, "DnsAsyncTask #" + mCount.getAndIncrement());
+        }
+    };
+
+    static {
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, sPoolWorkQueue, sThreadFactory);
+        threadPoolExecutor.allowCoreThreadTimeOut(true);
+        DNS_THREAD_POOL_EXECUTOR = threadPoolExecutor;
+    }
+
     private static class ResolvedDomain {
 
         public ArrayList<String> addresses;
@@ -105,11 +132,10 @@ public class ConnectionsManager {
         }
     }
 
-    private static ConcurrentHashMap<String, ResolvedDomain> dnsCache = new ConcurrentHashMap<>();
+    private static HashMap<String, ResolvedDomain> dnsCache = new HashMap<>();
 
     private static int lastClassGuid = 1;
-
-    private int currentAccount;
+    
     private static volatile ConnectionsManager[] Instance = new ConnectionsManager[UserConfig.MAX_ACCOUNT_COUNT];
     public static ConnectionsManager getInstance(int num) {
         ConnectionsManager localInstance = Instance[num];
@@ -125,7 +151,7 @@ public class ConnectionsManager {
     }
 
     public ConnectionsManager(int instance) {
-        currentAccount = instance;
+        super(instance);
         connectionState = native_getConnectionState(currentAccount);
         String deviceModel;
         String systemLangCode;
@@ -166,8 +192,12 @@ public class ConnectionsManager {
         if (systemVersion.trim().length() == 0) {
             systemVersion = "SDK Unknown";
         }
-        UserConfig.getInstance(currentAccount).loadConfig();
-        init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, FileLog.getNetworkLogPath(), UserConfig.getInstance(currentAccount).getClientUserId(), enablePushConnection);
+        getUserConfig().loadConfig();
+        String pushString = SharedConfig.pushString;
+        if (TextUtils.isEmpty(pushString) && !TextUtils.isEmpty(SharedConfig.pushStringStatus)) {
+            pushString = SharedConfig.pushStringStatus;
+        }
+        init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, FileLog.getNetworkLogPath(), pushString, getUserConfig().getClientUserId(), enablePushConnection);
     }
 
     public long getCurrentTimeMillis() {
@@ -290,7 +320,7 @@ public class ConnectionsManager {
         native_setPushConnectionEnabled(currentAccount, value);
     }
 
-    public void init(int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, int userId, boolean enablePushConnection) {
+    public void init(int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, int userId, boolean enablePushConnection) {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         String proxyAddress = preferences.getString("proxy_ip", "");
         String proxyUsername = preferences.getString("proxy_user", "");
@@ -301,7 +331,7 @@ public class ConnectionsManager {
             native_setProxySettings(currentAccount, proxyAddress, proxyPort, proxyUsername, proxyPassword, proxySecret);
         }
 
-        native_init(currentAccount, version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, userId, enablePushConnection, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType());
+        native_init(currentAccount, version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, regId, userId, enablePushConnection, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType());
         checkConnection();
     }
 
@@ -309,6 +339,16 @@ public class ConnectionsManager {
         langCode = langCode.replace('_', '-').toLowerCase();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             native_setLangCode(a, langCode);
+        }
+    }
+
+    public static void setRegId(String regId, String status) {
+        String pushString = regId;
+        if (TextUtils.isEmpty(pushString) && !TextUtils.isEmpty(status)) {
+            pushString = status;
+        }
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            native_setRegId(a, pushString);
         }
     }
 
@@ -387,7 +427,7 @@ public class ConnectionsManager {
                 FileLog.d("reset app pause time");
             }
             if (lastPauseTime != 0 && System.currentTimeMillis() - lastPauseTime > 5000) {
-                ContactsController.getInstance(currentAccount).checkContacts();
+                getContactsController().checkContacts();
             }
             lastPauseTime = 0;
             native_resumeNetwork(currentAccount, false);
@@ -405,7 +445,7 @@ public class ConnectionsManager {
                     FileLog.d("java received " + message);
                 }
                 KeepAliveJob.finishJob();
-                Utilities.stageQueue.postRunnable(() -> MessagesController.getInstance(currentAccount).processUpdates((TLRPC.Updates) message, false));
+                Utilities.stageQueue.postRunnable(() -> AccountInstance.getInstance(currentAccount).getMessagesController().processUpdates((TLRPC.Updates) message, false));
             } else {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d(String.format("java received unknown constructor 0x%x", constructor));
@@ -417,25 +457,26 @@ public class ConnectionsManager {
     }
 
     public static void onUpdate(final int currentAccount) {
-        Utilities.stageQueue.postRunnable(() -> MessagesController.getInstance(currentAccount).updateTimerProc());
+        Utilities.stageQueue.postRunnable(() -> AccountInstance.getInstance(currentAccount).getMessagesController().updateTimerProc());
     }
 
     public static void onSessionCreated(final int currentAccount) {
-        Utilities.stageQueue.postRunnable(() -> MessagesController.getInstance(currentAccount).getDifference());
+        Utilities.stageQueue.postRunnable(() -> AccountInstance.getInstance(currentAccount).getMessagesController().getDifference());
     }
 
     public static void onConnectionStateChanged(final int state, final int currentAccount) {
         AndroidUtilities.runOnUIThread(() -> {
             getInstance(currentAccount).connectionState = state;
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didUpdateConnectionState);
+            AccountInstance.getInstance(currentAccount).getNotificationCenter().postNotificationName(NotificationCenter.didUpdateConnectionState);
         });
     }
 
     public static void onLogout(final int currentAccount) {
         AndroidUtilities.runOnUIThread(() -> {
-            if (UserConfig.getInstance(currentAccount).getClientUserId() != 0) {
-                UserConfig.getInstance(currentAccount).clearConfig();
-                MessagesController.getInstance(currentAccount).performLogout(0);
+            AccountInstance accountInstance = AccountInstance.getInstance(currentAccount);
+            if (accountInstance.getUserConfig().getClientUserId() != 0) {
+                accountInstance.getUserConfig().clearConfig();
+                accountInstance.getMessagesController().performLogout(0);
             }
         });
     }
@@ -446,7 +487,7 @@ public class ConnectionsManager {
 
     public static void onBytesSent(int amount, int networkType, final int currentAccount) {
         try {
-            StatsController.getInstance(currentAccount).incrementSentBytesCount(networkType, StatsController.TYPE_TOTAL, amount);
+            AccountInstance.getInstance(currentAccount).getStatsController().incrementSentBytesCount(networkType, StatsController.TYPE_TOTAL, amount);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -491,18 +532,26 @@ public class ConnectionsManager {
     }
 
     public static void getHostByName(String hostName, long address) {
-        ResolvedDomain resolvedDomain = dnsCache.get(hostName);
-        if (resolvedDomain != null && SystemClock.elapsedRealtime() - resolvedDomain.ttl < 5 * 60 * 1000) {
-            native_onHostNameResolved(hostName, address, resolvedDomain.getAddress());
-        } else {
-            ResolveHostByNameTask task = resolvingHostnameTasks.get(hostName);
-            if (task == null) {
-                task = new ResolveHostByNameTask(hostName);
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
-                resolvingHostnameTasks.put(hostName, task);
+        AndroidUtilities.runOnUIThread(() -> {
+            ResolvedDomain resolvedDomain = dnsCache.get(hostName);
+            if (resolvedDomain != null && SystemClock.elapsedRealtime() - resolvedDomain.ttl < 5 * 60 * 1000) {
+                native_onHostNameResolved(hostName, address, resolvedDomain.getAddress());
+            } else {
+                ResolveHostByNameTask task = resolvingHostnameTasks.get(hostName);
+                if (task == null) {
+                    task = new ResolveHostByNameTask(hostName);
+                    try {
+                        task.executeOnExecutor(DNS_THREAD_POOL_EXECUTOR, null, null, null);
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                        native_onHostNameResolved(hostName, address, "");
+                        return;
+                    }
+                    resolvingHostnameTasks.put(hostName, task);
+                }
+                task.addAddress(address);
             }
-            task.addAddress(address);
-        }
+        });
     }
 
     public static void onBytesReceived(int amount, int networkType, final int currentAccount) {
@@ -519,7 +568,7 @@ public class ConnectionsManager {
             buff.reused = true;
             final TLRPC.TL_config message = TLRPC.TL_config.TLdeserialize(buff, buff.readInt32(true), true);
             if (message != null) {
-                Utilities.stageQueue.postRunnable(() -> MessagesController.getInstance(currentAccount).updateConfig(message));
+                Utilities.stageQueue.postRunnable(() -> AccountInstance.getInstance(currentAccount).getMessagesController().updateConfig(message));
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -549,8 +598,9 @@ public class ConnectionsManager {
             } else {
                 native_setProxySettings(a, "", 1080, "", "", "");
             }
-            if (UserConfig.getInstance(a).isClientActivated()) {
-                MessagesController.getInstance(a).checkProxyInfo(true);
+            AccountInstance accountInstance = AccountInstance.getInstance(a);
+            if (accountInstance.getUserConfig().isClientActivated()) {
+                accountInstance.getMessagesController().checkProxyInfo(true);
             }
         }
     }
@@ -573,9 +623,10 @@ public class ConnectionsManager {
     public static native void native_applyDatacenterAddress(int currentAccount, int datacenterId, String ipAddress, int port);
     public static native int native_getConnectionState(int currentAccount);
     public static native void native_setUserId(int currentAccount, int id);
-    public static native void native_init(int currentAccount, int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, int userId, boolean enablePushConnection, boolean hasNetwork, int networkType);
+    public static native void native_init(int currentAccount, int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, int userId, boolean enablePushConnection, boolean hasNetwork, int networkType);
     public static native void native_setProxySettings(int currentAccount, String address, int port, String username, String password, String secret);
     public static native void native_setLangCode(int currentAccount, String langCode);
+    public static native void native_setRegId(int currentAccount, String regId);
     public static native void native_setSystemLangCode(int currentAccount, String langCode);
     public static native void native_seSystemLangCode(int currentAccount, String langCode);
     public static native void native_setJava(boolean useJavaByteBuffers);
@@ -584,8 +635,6 @@ public class ConnectionsManager {
     public static native long native_checkProxy(int currentAccount, String address, int port, String username, String password, String secret, RequestTimeDelegate requestTimeDelegate);
     public static native void native_onHostNameResolved(String host, long address, String ip);
 
-
-    //void onHostNameResolved(JNIEnv *env, jclass c, jlong address, jstring ip)
     public static int generateClassGuid() {
         return lastClassGuid++;
     }
@@ -597,7 +646,7 @@ public class ConnectionsManager {
             }
             isUpdating = value;
             if (connectionState == ConnectionStateConnected) {
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didUpdateConnectionState);
+                AccountInstance.getInstance(currentAccount).getNotificationCenter().postNotificationName(NotificationCenter.didUpdateConnectionState);
             }
         });
     }
@@ -675,7 +724,7 @@ public class ConnectionsManager {
         return false;
     }
 
-    private static class ResolveHostByNameTask extends AsyncTask<Void, Void, String> {
+    private static class ResolveHostByNameTask extends AsyncTask<Void, Void, ResolvedDomain> {
 
         private ArrayList<Long> addresses = new ArrayList<>();
         private String currentHostName;
@@ -692,7 +741,7 @@ public class ConnectionsManager {
             addresses.add(address);
         }
 
-        protected String doInBackground(Void... voids) {
+        protected ResolvedDomain doInBackground(Void... voids) {
             ByteArrayOutputStream outbuf = null;
             InputStream httpConnectionStream = null;
             boolean done = false;
@@ -729,9 +778,7 @@ public class ConnectionsManager {
                         for (int a = 0; a < len; a++) {
                             addresses.add(array.getJSONObject(a).getString("data"));
                         }
-                        ResolvedDomain newResolvedDomain = new ResolvedDomain(addresses, SystemClock.elapsedRealtime());
-                        dnsCache.put(currentHostName, newResolvedDomain);
-                        return newResolvedDomain.getAddress();
+                        return new ResolvedDomain(addresses, SystemClock.elapsedRealtime());
                     }
                 }
                 done = true;
@@ -756,18 +803,27 @@ public class ConnectionsManager {
             if (!done) {
                 try {
                     InetAddress address = InetAddress.getByName(currentHostName);
-                    return address.getHostAddress();
+                    ArrayList<String> addresses = new ArrayList<>(1);
+                    addresses.add(address.getHostAddress());
+                    return new ResolvedDomain(addresses, SystemClock.elapsedRealtime());
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
             }
-            return "";
+            return null;
         }
 
         @Override
-        protected void onPostExecute(final String result) {
-            for (int a = 0, N = addresses.size(); a < N; a++) {
-                native_onHostNameResolved(currentHostName, addresses.get(a), result);
+        protected void onPostExecute(final ResolvedDomain result) {
+            if (result != null) {
+                dnsCache.put(currentHostName, result);
+                for (int a = 0, N = addresses.size(); a < N; a++) {
+                    native_onHostNameResolved(currentHostName, addresses.get(a), result.getAddress());
+                }
+            } else {
+                for (int a = 0, N = addresses.size(); a < N; a++) {
+                    native_onHostNameResolved(currentHostName, addresses.get(a), "");
+                }
             }
             resolvingHostnameTasks.remove(currentHostName);
         }
@@ -795,7 +851,7 @@ public class ConnectionsManager {
                     } else {
                         googleDomain = "google.com";
                     }
-                    String domain = native_isTestBackend(currentAccount) != 0 ? "tapv2.stel.com" : MessagesController.getInstance(currentAccount).dcDomainName;
+                    String domain = native_isTestBackend(currentAccount) != 0 ? "tapv2.stel.com" : AccountInstance.getInstance(currentAccount).getMessagesController().dcDomainName;
                     int len = Utilities.random.nextInt(116) + 13;
                     final String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -886,7 +942,7 @@ public class ConnectionsManager {
             Utilities.stageQueue.postRunnable(() -> {
                 if (result != null) {
                     currentTask = null;
-                    native_applyDnsConfig(currentAccount, result.address, UserConfig.getInstance(currentAccount).getClientPhone());
+                    native_applyDnsConfig(currentAccount, result.address, AccountInstance.getInstance(currentAccount).getUserConfig().getClientPhone());
                 } else {
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d("failed to get dns txt result");
@@ -937,7 +993,7 @@ public class ConnectionsManager {
                             try {
                                 NativeByteBuffer buffer = new NativeByteBuffer(bytes.length);
                                 buffer.writeBytes(bytes);
-                                native_applyDnsConfig(currentAccount, buffer.address, UserConfig.getInstance(currentAccount).getClientPhone());
+                                native_applyDnsConfig(currentAccount, buffer.address, AccountInstance.getInstance(currentAccount).getUserConfig().getClientPhone());
                             } catch (Exception e) {
                                 FileLog.e(e);
                             }
@@ -1045,7 +1101,7 @@ public class ConnectionsManager {
         protected void onPostExecute(final NativeByteBuffer result) {
             Utilities.stageQueue.postRunnable(() -> {
                 if (result != null) {
-                    native_applyDnsConfig(currentAccount, result.address, UserConfig.getInstance(currentAccount).getClientPhone());
+                    native_applyDnsConfig(currentAccount, result.address, AccountInstance.getInstance(currentAccount).getUserConfig().getClientPhone());
                 } else {
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d("failed to get azure result");

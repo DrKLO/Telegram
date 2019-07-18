@@ -1,5 +1,7 @@
 package org.telegram.messenger;
 
+import android.content.SharedPreferences;
+
 import org.telegram.tgnet.ConnectionsManager;
 
 public class AccountInstance {
@@ -35,8 +37,8 @@ public class AccountInstance {
         return ContactsController.getInstance(currentAccount);
     }
 
-    public DataQuery getDataQuery() {
-        return DataQuery.getInstance(currentAccount);
+    public MediaDataController getMediaDataController() {
+        return MediaDataController.getInstance(currentAccount);
     }
 
     public ConnectionsManager getConnectionsManager() {
@@ -51,7 +53,39 @@ public class AccountInstance {
         return NotificationCenter.getInstance(currentAccount);
     }
 
+    public LocationController getLocationController() {
+        return LocationController.getInstance(currentAccount);
+    }
+
     public UserConfig getUserConfig() {
         return UserConfig.getInstance(currentAccount);
+    }
+
+    public DownloadController getDownloadController() {
+        return DownloadController.getInstance(currentAccount);
+    }
+
+    public SendMessagesHelper getSendMessagesHelper() {
+        return SendMessagesHelper.getInstance(currentAccount);
+    }
+
+    public SecretChatHelper getSecretChatHelper() {
+        return SecretChatHelper.getInstance(currentAccount);
+    }
+
+    public StatsController getStatsController() {
+        return StatsController.getInstance(currentAccount);
+    }
+
+    public FileLoader getFileLoader() {
+        return FileLoader.getInstance(currentAccount);
+    }
+
+    public FileRefController getFileRefController() {
+        return FileRefController.getInstance(currentAccount);
+    }
+
+    public SharedPreferences getNotificationsSettings() {
+        return MessagesController.getNotificationsSettings(currentAccount);
     }
 }

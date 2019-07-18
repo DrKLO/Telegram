@@ -2,18 +2,14 @@ package org.telegram.ui.ActionBar;
 
 import android.content.Context;
 
-/**
- * Created by grishka on 27.09.2017.
- */
-
-public class DarkAlertDialog extends AlertDialog{
-	public DarkAlertDialog(Context context, int progressStyle){
+public class DarkAlertDialog extends AlertDialog {
+	public DarkAlertDialog(Context context, int progressStyle) {
 		super(context, progressStyle);
 	}
 
 	@Override
-	protected int getThemeColor(String key){
-		switch(key){
+	protected int getThemeColor(String key) {
+		switch (key) {
 			case Theme.key_dialogBackground:
 				return 0xFF262626;
 			case Theme.key_dialogTextBlack:
@@ -24,13 +20,13 @@ public class DarkAlertDialog extends AlertDialog{
 		return super.getThemeColor(key);
 	}
 
-	public static class Builder extends AlertDialog.Builder{
+	public static class Builder extends AlertDialog.Builder {
 
-		public Builder(Context context){
+		public Builder(Context context) {
 			super(new DarkAlertDialog(context, 0));
 		}
 
-		public Builder(Context context, int progressViewStyle){
+		public Builder(Context context, int progressViewStyle) {
 			super(new DarkAlertDialog(context, progressViewStyle));
 		}
 	}

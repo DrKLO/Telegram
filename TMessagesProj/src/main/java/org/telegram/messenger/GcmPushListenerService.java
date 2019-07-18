@@ -237,12 +237,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                             deletedMessages.put(channel_id, ids);
                             NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages);
 
-                            final long dialogIdFinal = dialog_id;
-                            MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
-                                MessagesStorage.getInstance(accountFinal).deletePushMessages(dialogIdFinal, ids);
-                                ArrayList<Long> dialogIds = MessagesStorage.getInstance(accountFinal).markMessagesAsDeleted(ids, false, channel_id);
-                                MessagesStorage.getInstance(accountFinal).updateDialogsWithDeletedMessages(ids, dialogIds, false, channel_id);
-                            });
+                            MessagesController.getInstance(currentAccount).deleteMessagesByPush(dialog_id, ids, channel_id);
                         } else if (!TextUtils.isEmpty(loc_key)) {
                             int msg_id;
                             if (custom.has("msg_id")) {
@@ -877,6 +872,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         messageOwner.to_id = new TLRPC.TL_peerUser();
                                         messageOwner.to_id.user_id = user_id;
                                     }
+                                    messageOwner.flags |= 256;
                                     messageOwner.from_id = chat_from_id;
                                     messageOwner.mentioned = mention || pinned;
                                     messageOwner.silent = silent;
@@ -914,7 +910,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                 update.max_id = max_id;
                                 updates.add(update);
                             }
-                            MessagesController.getInstance(accountFinal).processUpdateArray(updates, null, null, false);
+                            MessagesController.getInstance(accountFinal).processUpdateArray(updates, null, null, false, 0);
                             countDownLatch.countDown();
                         }
                     }
@@ -969,6 +965,10 @@ public class GcmPushListenerService extends FirebaseMessagingService {
 
     public static void sendRegistrationToServer(final String token) {
         Utilities.stageQueue.postRunnable(() -> {
+            ConnectionsManager.setRegId(token, SharedConfig.pushStringStatus);
+            if (token == null) {
+                return;
+            }
             SharedConfig.pushString = token;
             for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
                 UserConfig userConfig = UserConfig.getInstance(a);

@@ -13,6 +13,7 @@ import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.SystemClock;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -23,11 +24,13 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -55,6 +58,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
     private Context mContext;
     private ArchiveHintCell archiveHintCell;
+    private ArrayList<TLRPC.TL_contact> onlineContacts;
+    private int prevContactsCount;
     private int dialogsType;
     private int folderId;
     private long openedDialogId;
@@ -63,10 +68,10 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     private ArrayList<Long> selectedDialogs;
     private boolean hasHints;
     private int currentAccount = UserConfig.selectedAccount;
-    private boolean showContacts;
     private boolean dialogsListFrozen;
     private boolean showArchiveHint;
     private boolean isReordering;
+    private long lastSortTime;
 
     public DialogsAdapter(Context context, int type, int folder, boolean onlySelect) {
         mContext = context;
@@ -134,10 +139,10 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public int getItemCount() {
-        showContacts = false;
         ArrayList<TLRPC.Dialog> array = DialogsActivity.getDialogsArray(currentAccount, dialogsType, folderId, dialogsListFrozen);
         int dialogsCount = array.size();
         if (dialogsCount == 0 && (folderId != 0 || MessagesController.getInstance(currentAccount).isLoadingDialogs(folderId))) {
+            onlineContacts = null;
             if (folderId == 1 && showArchiveHint) {
                 return (currentCount = 2);
             }
@@ -147,16 +152,34 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         if (!MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId) || dialogsCount == 0) {
             count++;
         }
+        boolean hasContacts = false;
         if (hasHints) {
             count += 2 + MessagesController.getInstance(currentAccount).hintDialogs.size();
         } else if (dialogsType == 0 && dialogsCount == 0 && folderId == 0) {
             if (ContactsController.getInstance(currentAccount).contacts.isEmpty() && ContactsController.getInstance(currentAccount).isLoadingContacts()) {
+                onlineContacts = null;
                 return (currentCount = 0);
             }
+
             if (!ContactsController.getInstance(currentAccount).contacts.isEmpty()) {
-                count += ContactsController.getInstance(currentAccount).contacts.size() + 2;
-                showContacts = true;
+                if (onlineContacts == null || prevContactsCount != ContactsController.getInstance(currentAccount).contacts.size()) {
+                    onlineContacts = new ArrayList<>(ContactsController.getInstance(currentAccount).contacts);
+                    prevContactsCount = onlineContacts.size();
+                    int selfId = UserConfig.getInstance(currentAccount).clientUserId;
+                    for (int a = 0, N = onlineContacts.size(); a < N; a++) {
+                        if (onlineContacts.get(a).user_id == selfId) {
+                            onlineContacts.remove(a);
+                            break;
+                        }
+                    }
+                    sortOnlineContacts(false);
+                }
+                count += onlineContacts.size() + 2;
+                hasContacts = true;
             }
+        }
+        if (!hasContacts && onlineContacts != null) {
+            onlineContacts = null;
         }
         if (folderId == 1 && showArchiveHint) {
             count += 2;
@@ -169,12 +192,12 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public TLObject getItem(int i) {
-        if (showContacts) {
+        if (onlineContacts != null) {
             i -= 3;
-            if (i < 0 || i >= ContactsController.getInstance(currentAccount).contacts.size()) {
+            if (i < 0 || i >= onlineContacts.size()) {
                 return null;
             }
-            return MessagesController.getInstance(currentAccount).getUser(ContactsController.getInstance(currentAccount).contacts.get(i).user_id);
+            return MessagesController.getInstance(currentAccount).getUser(onlineContacts.get(i).user_id);
         }
         if (showArchiveHint) {
             i -= 2;
@@ -192,6 +215,62 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             return null;
         }
         return arrayList.get(i);
+    }
+
+    public void sortOnlineContacts(boolean notify) {
+        if (onlineContacts == null || notify && (SystemClock.uptimeMillis() - lastSortTime) < 2000) {
+            return;
+        }
+        lastSortTime = SystemClock.uptimeMillis();
+        try {
+            int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+            MessagesController messagesController = MessagesController.getInstance(currentAccount);
+            Collections.sort(onlineContacts, (o1, o2) -> {
+                TLRPC.User user1 = messagesController.getUser(o2.user_id);
+                TLRPC.User user2 = messagesController.getUser(o1.user_id);
+                int status1 = 0;
+                int status2 = 0;
+                if (user1 != null) {
+                    if (user1.self) {
+                        status1 = currentTime + 50000;
+                    } else if (user1.status != null) {
+                        status1 = user1.status.expires;
+                    }
+                }
+                if (user2 != null) {
+                    if (user2.self) {
+                        status2 = currentTime + 50000;
+                    } else if (user2.status != null) {
+                        status2 = user2.status.expires;
+                    }
+                }
+                if (status1 > 0 && status2 > 0) {
+                    if (status1 > status2) {
+                        return 1;
+                    } else if (status1 < status2) {
+                        return -1;
+                    }
+                    return 0;
+                } else if (status1 < 0 && status2 < 0) {
+                    if (status1 > status2) {
+                        return 1;
+                    } else if (status1 < status2) {
+                        return -1;
+                    }
+                    return 0;
+                } else if (status1 < 0 && status2 > 0 || status1 == 0 && status2 != 0) {
+                    return -1;
+                } else if (status2 < 0 && status1 > 0 || status2 == 0 && status1 != 0) {
+                    return 1;
+                }
+                return 0;
+            });
+            if (notify) {
+                notifyDataSetChanged();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     public void setDialogsListFrozen(boolean frozen) {
@@ -362,7 +441,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             }
             case 5: {
                 DialogsEmptyCell cell = (DialogsEmptyCell) holder.itemView;
-                cell.setType(showContacts ? 1 : 0);
+                cell.setType(onlineContacts != null ? 1 : 0);
                 break;
             }
             case 4: {
@@ -372,7 +451,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             }
             case 6: {
                 UserCell cell = (UserCell) holder.itemView;
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(ContactsController.getInstance(currentAccount).contacts.get(i - 3).user_id);
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(onlineContacts.get(i - 3).user_id);
                 cell.setData(user, null, null, 0);
                 break;
             }
@@ -381,7 +460,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public int getItemViewType(int i) {
-        if (showContacts) {
+        if (onlineContacts != null) {
             if (i == 0) {
                 return 5;
             } else if (i == 1) {

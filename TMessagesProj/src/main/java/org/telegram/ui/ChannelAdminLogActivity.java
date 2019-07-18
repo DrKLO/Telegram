@@ -62,7 +62,7 @@ import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
@@ -335,6 +335,11 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                         TLRPC.TL_channelAdminLogEvent event = res.events.get(a);
                         if (messagesDict.indexOfKey(event.id) >= 0) {
                             continue;
+                        }
+                        if (event.action instanceof TLRPC.TL_channelAdminLogEventActionParticipantToggleAdmin) {
+                            if (event.action.prev_participant instanceof TLRPC.TL_channelParticipantCreator && !(event.action.new_participant instanceof TLRPC.TL_channelParticipantCreator)) {
+                                continue;
+                            }
                         }
                         minEventId = Math.min(minEventId, event.id);
                         added = true;
@@ -1454,14 +1459,14 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         } else {
             if (messageObject.isVoice()) {
                 return 2;
-            } else if (messageObject.isSticker()) {
+            } else if (messageObject.isSticker() || messageObject.isAnimatedSticker()) {
                 TLRPC.InputStickerSet inputStickerSet = messageObject.getInputStickerSet();
                 if (inputStickerSet instanceof TLRPC.TL_inputStickerSetID) {
-                    if (!DataQuery.getInstance(currentAccount).isStickerPackInstalled(inputStickerSet.id)) {
+                    if (!MediaDataController.getInstance(currentAccount).isStickerPackInstalled(inputStickerSet.id)) {
                         return 7;
                     }
                 } else if (inputStickerSet instanceof TLRPC.TL_inputStickerSetShortName) {
-                    if (!DataQuery.getInstance(currentAccount).isStickerPackInstalled(inputStickerSet.short_name)) {
+                    if (!MediaDataController.getInstance(currentAccount).isStickerPackInstalled(inputStickerSet.short_name)) {
                         return 7;
                     }
                 }
@@ -1730,18 +1735,18 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
 
     @Override
     public void onTransitionAnimationStart(boolean isOpen, boolean backward) {
-        NotificationCenter.getInstance(currentAccount).setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.chatInfoDidLoad, NotificationCenter.dialogsNeedReload,
-                NotificationCenter.closeChats, NotificationCenter.messagesDidLoad, NotificationCenter.botKeyboardDidLoad/*, NotificationCenter.botInfoDidLoad*/});
-        NotificationCenter.getInstance(currentAccount).setAnimationInProgress(true);
         if (isOpen) {
+            NotificationCenter.getInstance(currentAccount).setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.chatInfoDidLoad, NotificationCenter.dialogsNeedReload,
+                    NotificationCenter.closeChats, NotificationCenter.messagesDidLoad, NotificationCenter.botKeyboardDidLoad/*, NotificationCenter.botInfoDidLoad*/});
+            NotificationCenter.getInstance(currentAccount).setAnimationInProgress(true);
             openAnimationEnded = false;
         }
     }
 
     @Override
     public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
-        NotificationCenter.getInstance(currentAccount).setAnimationInProgress(false);
         if (isOpen) {
+            NotificationCenter.getInstance(currentAccount).setAnimationInProgress(false);
             openAnimationEnded = true;
         }
     }

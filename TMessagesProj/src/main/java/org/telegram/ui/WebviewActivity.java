@@ -131,13 +131,6 @@ public class WebviewActivity extends BaseFragment {
         type = TYPE_STAT;
     }
 
-    /*@Override
-    protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
-        if (!isOpen) {
-
-        }
-    }*/
-
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
@@ -209,7 +202,7 @@ public class WebviewActivity extends BaseFragment {
             progressView.setScaleX(1.0f);
             progressView.setScaleY(1.0f);
             progressView.setVisibility(View.VISIBLE);
-            progressItem.getImageView().setVisibility(View.GONE);
+            progressItem.getContentView().setVisibility(View.GONE);
             progressItem.setEnabled(false);
         }
 
@@ -283,15 +276,15 @@ public class WebviewActivity extends BaseFragment {
                 if (progressView != null && progressView.getVisibility() == View.VISIBLE) {
                     AnimatorSet animatorSet = new AnimatorSet();
                     if (type == TYPE_GAME) {
-                        progressItem.getImageView().setVisibility(View.VISIBLE);
+                        progressItem.getContentView().setVisibility(View.VISIBLE);
                         progressItem.setEnabled(true);
                         animatorSet.playTogether(
                                 ObjectAnimator.ofFloat(progressView, "scaleX", 1.0f, 0.1f),
                                 ObjectAnimator.ofFloat(progressView, "scaleY", 1.0f, 0.1f),
                                 ObjectAnimator.ofFloat(progressView, "alpha", 1.0f, 0.0f),
-                                ObjectAnimator.ofFloat(progressItem.getImageView(), "scaleX", 0.0f, 1.0f),
-                                ObjectAnimator.ofFloat(progressItem.getImageView(), "scaleY", 0.0f, 1.0f),
-                                ObjectAnimator.ofFloat(progressItem.getImageView(), "alpha", 0.0f, 1.0f));
+                                ObjectAnimator.ofFloat(progressItem.getContentView(), "scaleX", 0.0f, 1.0f),
+                                ObjectAnimator.ofFloat(progressItem.getContentView(), "scaleY", 0.0f, 1.0f),
+                                ObjectAnimator.ofFloat(progressItem.getContentView(), "alpha", 0.0f, 1.0f));
                     } else {
                         animatorSet.playTogether(
                                 ObjectAnimator.ofFloat(progressView, "scaleX", 1.0f, 0.1f),

@@ -523,22 +523,22 @@ public class LoginActivity extends BaseFragment {
             doneProgressView.setTag(1);
             doneProgressView.setVisibility(View.VISIBLE);
             doneItemAnimation.playTogether(
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleX", 0.1f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleY", 0.1f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "alpha", 0.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 0.1f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 0.1f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 0.0f),
                     ObjectAnimator.ofFloat(doneProgressView, "scaleX", 1.0f),
                     ObjectAnimator.ofFloat(doneProgressView, "scaleY", 1.0f),
                     ObjectAnimator.ofFloat(doneProgressView, "alpha", 1.0f));
         } else {
             doneProgressView.setTag(null);
-            doneItem.getImageView().setVisibility(View.VISIBLE);
+            doneItem.getContentView().setVisibility(View.VISIBLE);
             doneItemAnimation.playTogether(
                     ObjectAnimator.ofFloat(doneProgressView, "scaleX", 0.1f),
                     ObjectAnimator.ofFloat(doneProgressView, "scaleY", 0.1f),
                     ObjectAnimator.ofFloat(doneProgressView, "alpha", 0.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleX", 1.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleY", 1.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "alpha", 1.0f));
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 1.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 1.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 1.0f));
         }
         doneItemAnimation.addListener(new AnimatorListenerAdapter() {
             @Override
@@ -547,7 +547,7 @@ public class LoginActivity extends BaseFragment {
                     if (!show) {
                         doneProgressView.setVisibility(View.INVISIBLE);
                     } else {
-                        doneItem.getImageView().setVisibility(View.INVISIBLE);
+                        doneItem.getContentView().setVisibility(View.INVISIBLE);
                     }
                 }
             }
@@ -2553,7 +2553,7 @@ public class LoginActivity extends BaseFragment {
             needShowProgress(0);
 
             Utilities.globalQueue.postRunnable(() -> {
-                final byte x_bytes[];
+                final byte[] x_bytes;
 
                 TLRPC.PasswordKdfAlgo current_algo = null;
                 if (passwordType == 1) {

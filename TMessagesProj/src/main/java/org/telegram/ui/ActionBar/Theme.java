@@ -45,13 +45,6 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.StateSet;
 
-import com.airbnb.lottie.LottieCompositionFactory;
-import com.airbnb.lottie.LottieDrawable;
-import com.airbnb.lottie.LottieProperty;
-import com.airbnb.lottie.SimpleColorFilter;
-import com.airbnb.lottie.model.KeyPath;
-import com.airbnb.lottie.value.LottieValueCallback;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
@@ -67,6 +60,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.time.SunDate;
 import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.ScamDrawable;
 import org.telegram.ui.Components.ThemeEditorView;
 
@@ -339,6 +333,7 @@ public class Theme {
     public static Drawable listSelector;
     public static Drawable avatar_broadcastDrawable;
     public static Drawable avatar_savedDrawable;
+    public static Drawable avatar_ghostDrawable;
 
     public static Drawable moveUpDrawable;
 
@@ -376,11 +371,11 @@ public class Theme {
     public static Drawable dialogs_pinnedDrawable;
     public static Drawable dialogs_mentionDrawable;
     public static Drawable dialogs_holidayDrawable;
-    public static LottieDrawable dialogs_archiveAvatarDrawable;
-    public static Drawable dialogs_archiveDrawable;
-    public static Drawable dialogs_unarchiveDrawable;
-    public static Drawable dialogs_pinArchiveDrawable;
-    public static Drawable dialogs_unpinArchiveDrawable;
+    public static RLottieDrawable dialogs_archiveAvatarDrawable;
+    public static RLottieDrawable dialogs_archiveDrawable;
+    public static RLottieDrawable dialogs_unarchiveDrawable;
+    public static RLottieDrawable dialogs_pinArchiveDrawable;
+    public static RLottieDrawable dialogs_unpinArchiveDrawable;
     public static boolean dialogs_archiveDrawableRecolored;
     public static boolean dialogs_archiveAvatarDrawableRecolored;
     private static int dialogs_holidayDrawableOffsetX;
@@ -1102,7 +1097,7 @@ public class Theme {
     public static final String key_stickers_menuSelector = "stickers_menuSelector";
 
     public static final String key_changephoneinfo_image = "changephoneinfo_image";
-    public static final String key_changephoneinfo_changeText = "key_changephoneinfo_changeText";
+    public static final String key_changephoneinfo_image2 = "changephoneinfo_image2";
 
     public static final String key_groupcreate_hintText = "groupcreate_hintText";
     public static final String key_groupcreate_cursor = "groupcreate_cursor";
@@ -1128,7 +1123,6 @@ public class Theme {
     public static final String key_picker_badge = "picker_badge";
     public static final String key_picker_badgeText = "picker_badgeText";
 
-    public static final String key_location_markerX = "location_markerX";
     public static final String key_location_sendLocationBackground = "location_sendLocationBackground";
     public static final String key_location_sendLiveLocationBackground = "location_sendLiveLocationBackground";
     public static final String key_location_sendLocationIcon = "location_sendLocationIcon";
@@ -1678,7 +1672,7 @@ public class Theme {
         defaultColors.put(key_chat_messagePanelVoiceDuration, 0xffffffff);
         defaultColors.put(key_chat_inlineResultIcon, 0xff5795cc);
         defaultColors.put(key_chat_topPanelBackground, 0xffffffff);
-        defaultColors.put(key_chat_topPanelClose, 0xffa8a8a8);
+        defaultColors.put(key_chat_topPanelClose, 0xff8c959a);
         defaultColors.put(key_chat_topPanelLine, 0xff6c9fd2);
         defaultColors.put(key_chat_topPanelTitle, 0xff3a8ccf);
         defaultColors.put(key_chat_topPanelMessage, 0xff999999);
@@ -1741,7 +1735,6 @@ public class Theme {
         defaultColors.put(key_passport_authorizeBackgroundSelected, 0xff409ddb);
         defaultColors.put(key_passport_authorizeText, 0xffffffff);
 
-        defaultColors.put(key_location_markerX, 0xff808080);
         defaultColors.put(key_location_sendLocationBackground, 0xff6da0d4);
         defaultColors.put(key_location_sendLiveLocationBackground, 0xffff6464);
         defaultColors.put(key_location_sendLocationIcon, 0xffffffff);
@@ -1784,8 +1777,8 @@ public class Theme {
         defaultColors.put(key_stickers_menu, 0xffb6bdc5);
         defaultColors.put(key_stickers_menuSelector, 0x0f000000);
 
-        defaultColors.put(key_changephoneinfo_image, 0xffa8a8a8);
-        defaultColors.put(key_changephoneinfo_changeText, 0xff4d83b3);
+        defaultColors.put(key_changephoneinfo_image, 0xffb8bfc5);
+        defaultColors.put(key_changephoneinfo_image2, 0xff50a7ea);
 
         defaultColors.put(key_groupcreate_hintText, 0xffa1aab3);
         defaultColors.put(key_groupcreate_cursor, 0xff52a3db);
@@ -1823,7 +1816,7 @@ public class Theme {
         fallbackKeys.put(key_chat_outAudioCacheSeekbar, key_chat_outAudioSeekbar);
         fallbackKeys.put(key_chat_emojiSearchBackground, key_chat_emojiPanelStickerPackSelector);
         fallbackKeys.put(key_location_sendLiveLocationIcon, key_location_sendLocationIcon);
-        fallbackKeys.put(key_changephoneinfo_changeText, key_windowBackgroundWhiteBlueText4);
+        fallbackKeys.put(key_changephoneinfo_image2, key_featuredStickers_addButton);
         fallbackKeys.put(key_graySectionText, key_windowBackgroundWhiteGrayText2);
         fallbackKeys.put(key_chat_inMediaIcon, key_chat_inBubble);
         fallbackKeys.put(key_chat_outMediaIcon, key_chat_outBubble);
@@ -2421,9 +2414,9 @@ public class Theme {
         Drawable drawable;
         if (Build.VERSION.SDK_INT >= 21) {
             Drawable maskDrawable = null;
-            if (maskType == 1 && Build.VERSION.SDK_INT >= 23) {
+            if ((maskType == 1 || maskType == 5) && Build.VERSION.SDK_INT >= 23) {
                 maskDrawable = null;
-            } else if (maskType == 1 || maskType == 3 || maskType == 4) {
+            } else if (maskType == 1 || maskType == 3 || maskType == 4 || maskType == 5) {
                 maskPaint.setColor(0xffffffff);
                 maskDrawable = new Drawable() {
                     @Override
@@ -2463,8 +2456,12 @@ public class Theme {
                     new int[]{color}
             );
             RippleDrawable rippleDrawable = new RippleDrawable(colorStateList, null, maskDrawable);
-            if (maskType == 1 && Build.VERSION.SDK_INT >= 23) {
-                rippleDrawable.setRadius(AndroidUtilities.dp(20));
+            if (Build.VERSION.SDK_INT >= 23) {
+                if (maskType == 1) {
+                    rippleDrawable.setRadius(AndroidUtilities.dp(20));
+                } else if (maskType == 5) {
+                    rippleDrawable.setRadius(RippleDrawable.RADIUS_AUTO);
+                }
             }
             return rippleDrawable;
         } else {
@@ -3011,32 +3008,30 @@ public class Theme {
 
             avatar_broadcastDrawable = resources.getDrawable(R.drawable.broadcast_w);
             avatar_savedDrawable = resources.getDrawable(R.drawable.chats_saved);
+            avatar_ghostDrawable = resources.getDrawable(R.drawable.ghost);
 
-            dialogs_archiveAvatarDrawable = new LottieDrawable();
-            dialogs_archiveAvatarDrawable.setComposition(LottieCompositionFactory.fromRawResSync(context, R.raw.chats_archiveavatar).getValue());
-            if (Build.VERSION.SDK_INT == 24) {
-                dialogs_archiveDrawable = resources.getDrawable(R.drawable.chats_archive);
-                dialogs_unarchiveDrawable = resources.getDrawable(R.drawable.chats_unarchive);
-                dialogs_pinArchiveDrawable = resources.getDrawable(R.drawable.chats_archive_hide);
-                dialogs_unpinArchiveDrawable = resources.getDrawable(R.drawable.chats_archive_show);
-            } else {
-                LottieDrawable lottie_dialogs_archiveDrawable = new LottieDrawable();
-                lottie_dialogs_archiveDrawable.setComposition(LottieCompositionFactory.fromRawResSync(context, R.raw.chats_archive).getValue());
-                dialogs_archiveDrawable = lottie_dialogs_archiveDrawable;
-
-                LottieDrawable lottie_dialogs_unarchiveDrawable = new LottieDrawable();
-                lottie_dialogs_unarchiveDrawable.setComposition(LottieCompositionFactory.fromRawResSync(context, R.raw.chats_unarchive).getValue());
-                dialogs_unarchiveDrawable = lottie_dialogs_unarchiveDrawable;
-
-                LottieDrawable lottie_dialogs_pinArchiveDrawable = new LottieDrawable();
-                lottie_dialogs_pinArchiveDrawable.setComposition(LottieCompositionFactory.fromRawResSync(context, R.raw.chats_hide).getValue());
-                dialogs_pinArchiveDrawable = lottie_dialogs_pinArchiveDrawable;
-
-                LottieDrawable lottie_dialogs_unpinArchiveDrawable = new LottieDrawable();
-                lottie_dialogs_unpinArchiveDrawable.setComposition(LottieCompositionFactory.fromRawResSync(context, R.raw.chats_unhide).getValue());
-                dialogs_unpinArchiveDrawable = lottie_dialogs_unpinArchiveDrawable;
+            if (dialogs_archiveAvatarDrawable != null) {
+                dialogs_archiveAvatarDrawable.setCallback(null);
+                dialogs_archiveAvatarDrawable.recycle();
             }
-
+            if (dialogs_archiveDrawable != null) {
+                dialogs_archiveDrawable.recycle();
+            }
+            if (dialogs_unarchiveDrawable != null) {
+                dialogs_unarchiveDrawable.recycle();
+            }
+            if (dialogs_pinArchiveDrawable != null) {
+                dialogs_pinArchiveDrawable.recycle();
+            }
+            if (dialogs_unpinArchiveDrawable != null) {
+                dialogs_unpinArchiveDrawable.recycle();
+            }
+            dialogs_archiveAvatarDrawable = new RLottieDrawable(R.raw.chats_archiveavatar, "chats_archiveavatar", AndroidUtilities.dp(36), AndroidUtilities.dp(36), false);
+            dialogs_archiveDrawable = new RLottieDrawable(R.raw.chats_archive, "chats_archive", AndroidUtilities.dp(36), AndroidUtilities.dp(36));
+            dialogs_unarchiveDrawable = new RLottieDrawable(R.raw.chats_unarchive, "chats_unarchive", AndroidUtilities.dp(AndroidUtilities.dp(36)), AndroidUtilities.dp(36));
+            dialogs_pinArchiveDrawable = new RLottieDrawable(R.raw.chats_hide, "chats_hide", AndroidUtilities.dp(36), AndroidUtilities.dp(36));
+            dialogs_unpinArchiveDrawable = new RLottieDrawable(R.raw.chats_unhide, "chats_unhide", AndroidUtilities.dp(36), AndroidUtilities.dp(36));
+            
             applyCommonTheme();
         }
     }
@@ -3051,57 +3046,28 @@ public class Theme {
         setDrawableColorByKey(avatar_broadcastDrawable, key_avatar_text);
         setDrawableColorByKey(avatar_savedDrawable, key_avatar_text);
 
-        dialogs_archiveAvatarDrawable.addValueCallback(new KeyPath("**"), LottieProperty.COLOR_FILTER, (LottieValueCallback<ColorFilter>) null);
-        dialogs_archiveAvatarDrawable.addValueCallback(new KeyPath("Arrow1", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_avatar_backgroundArchived))));
-        dialogs_archiveAvatarDrawable.addValueCallback(new KeyPath("Arrow2", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_avatar_backgroundArchived))));
-        dialogs_archiveAvatarDrawable.addValueCallback(new KeyPath("Box2", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_avatar_text))));
-        dialogs_archiveAvatarDrawable.addValueCallback(new KeyPath("Box1", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_avatar_text))));
+        dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", getColor(key_avatar_backgroundArchived));
+        dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", getColor(key_avatar_backgroundArchived));
+        dialogs_archiveAvatarDrawable.setLayerColor("Box2.**", getColor(key_avatar_text));
+        dialogs_archiveAvatarDrawable.setLayerColor("Box1.**", getColor(key_avatar_text));
         dialogs_archiveAvatarDrawableRecolored = false;
+        dialogs_archiveAvatarDrawable.setAllowDecodeSingleFrame(true);
+        
+        dialogs_pinArchiveDrawable.setLayerColor("Arrow.**", getColor(key_chats_archiveIcon));
+        dialogs_pinArchiveDrawable.setLayerColor("Line.**", getColor(key_chats_archiveIcon));
+        
+        dialogs_unpinArchiveDrawable.setLayerColor("Arrow.**", getColor(key_chats_archiveIcon));
+        dialogs_unpinArchiveDrawable.setLayerColor("Line.**", getColor(key_chats_archiveIcon));
 
-        /*
-        fallbackKeys.put(key_chats_archiveIcon, key_chats_actionIcon);
-        fallbackKeys.put(key_chats_archiveText, key_chats_actionIcon);
-         */
+        dialogs_archiveDrawable.setLayerColor("Arrow.**", getColor(key_chats_archiveBackground));
+        dialogs_archiveDrawable.setLayerColor("Box2.**", getColor(key_chats_archiveIcon));
+        dialogs_archiveDrawable.setLayerColor("Box1.**", getColor(key_chats_archiveIcon));
+        dialogs_archiveDrawableRecolored = false;
 
-        if (dialogs_pinArchiveDrawable instanceof LottieDrawable) {
-            LottieDrawable lottieDrawable = (LottieDrawable) dialogs_pinArchiveDrawable;
-            lottieDrawable.addValueCallback(new KeyPath("**"), LottieProperty.COLOR_FILTER, (LottieValueCallback<ColorFilter>) null);
-            lottieDrawable.addValueCallback(new KeyPath("Arrow", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_chats_archiveIcon))));
-            lottieDrawable.addValueCallback(new KeyPath("Line", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_chats_archiveIcon))));
-        } else {
-            setDrawableColorByKey(dialogs_pinArchiveDrawable, key_chats_archiveIcon);
-        }
-
-        if (dialogs_unpinArchiveDrawable instanceof LottieDrawable) {
-            LottieDrawable lottieDrawable = (LottieDrawable) dialogs_unpinArchiveDrawable;
-            lottieDrawable.addValueCallback(new KeyPath("**"), LottieProperty.COLOR_FILTER, (LottieValueCallback<ColorFilter>) null);
-            lottieDrawable.addValueCallback(new KeyPath("Arrow", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_chats_archiveIcon))));
-            lottieDrawable.addValueCallback(new KeyPath("Line", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_chats_archiveIcon))));
-        } else {
-            setDrawableColorByKey(dialogs_unpinArchiveDrawable, key_chats_archiveIcon);
-        }
-
-        if (dialogs_archiveDrawable instanceof LottieDrawable) {
-            LottieDrawable lottieDrawable = (LottieDrawable) dialogs_archiveDrawable;
-            lottieDrawable.addValueCallback(new KeyPath("**"), LottieProperty.COLOR_FILTER, (LottieValueCallback<ColorFilter>) null);
-            lottieDrawable.addValueCallback(new KeyPath("Arrow", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_chats_archiveBackground))));
-            lottieDrawable.addValueCallback(new KeyPath("Box2", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_chats_archiveIcon))));
-            lottieDrawable.addValueCallback(new KeyPath("Box1", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_chats_archiveIcon))));
-            dialogs_archiveDrawableRecolored = false;
-        } else {
-            setDrawableColorByKey(dialogs_archiveDrawable, key_chats_archiveIcon);
-        }
-
-        if (dialogs_unarchiveDrawable instanceof LottieDrawable) {
-            LottieDrawable lottieDrawable = (LottieDrawable) dialogs_unarchiveDrawable;
-            lottieDrawable.addValueCallback(new KeyPath("**"), LottieProperty.COLOR_FILTER, (LottieValueCallback<ColorFilter>) null);
-            lottieDrawable.addValueCallback(new KeyPath("Arrow1", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_chats_archiveIcon))));
-            lottieDrawable.addValueCallback(new KeyPath("Arrow2", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_chats_archivePinBackground))));
-            lottieDrawable.addValueCallback(new KeyPath("Box2", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_chats_archiveIcon))));
-            lottieDrawable.addValueCallback(new KeyPath("Box1", "**"), LottieProperty.COLOR_FILTER, new LottieValueCallback<>(new SimpleColorFilter(getColor(key_chats_archiveIcon))));
-        } else {
-            setDrawableColorByKey(dialogs_unarchiveDrawable, key_chats_archiveIcon);
-        }
+        dialogs_unarchiveDrawable.setLayerColor("Arrow1.**", getColor(key_chats_archiveIcon));
+        dialogs_unarchiveDrawable.setLayerColor("Arrow2.**", getColor(key_chats_archivePinBackground));
+        dialogs_unarchiveDrawable.setLayerColor("Box2.**", getColor(key_chats_archiveIcon));
+        dialogs_unarchiveDrawable.setLayerColor("Box1.**", getColor(key_chats_archiveIcon));
     }
 
     public static void createDialogsResources(Context context) {
@@ -3857,7 +3823,7 @@ public class Theme {
     public static int getDefaultColor(String key) {
         Integer value = defaultColors.get(key);
         if (value == null) {
-            if (key.equals(key_chats_menuTopShadow)) {
+            if (key.equals(key_chats_menuTopShadow) || key.equals(key_chats_menuTopBackground)) {
                 return 0;
             }
             return 0xffff0000;

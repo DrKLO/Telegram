@@ -9,8 +9,10 @@
 package org.telegram.messenger;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.text.TextUtils;
@@ -21,6 +23,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 
 import java.io.File;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -28,6 +31,7 @@ import java.util.Iterator;
 public class SharedConfig {
 
     public static String pushString = "";
+    public static String pushStringStatus = "";
     public static byte[] pushAuthKey;
     public static byte[] pushAuthKeyId;
 
@@ -74,7 +78,6 @@ public class SharedConfig {
     public static boolean streamAllVideo = false;
     public static boolean streamMkv = false;
     public static boolean saveStreamMedia = true;
-    public static boolean showAnimatedStickers = BuildVars.DEBUG_VERSION;
     public static boolean sortContactsByName;
     public static boolean shuffleMusic;
     public static boolean playOrderReversed;
@@ -84,10 +87,13 @@ public class SharedConfig {
     public static boolean allowBigEmoji;
     public static boolean useSystemEmoji;
     public static int fontSize = AndroidUtilities.dp(16);
+    private static int devicePerformanceClass;
 
     public static boolean drawDialogIcons;
     public static boolean useThreeLinesLayout;
     public static boolean archiveHidden;
+
+    public static int distanceSystemType;
 
     static {
         loadConfig();
@@ -240,6 +246,8 @@ public class SharedConfig {
             directShareHash = preferences.getLong("directShareHash", 0);
             useThreeLinesLayout = preferences.getBoolean("useThreeLinesLayout", false);
             archiveHidden = preferences.getBoolean("archiveHidden", false);
+            distanceSystemType = preferences.getInt("distanceSystemType", 0);
+            devicePerformanceClass = preferences.getInt("devicePerformanceClass", -1);
 
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             showNotificationsForAllAccounts = preferences.getBoolean("AllAccounts", true);
@@ -545,6 +553,15 @@ public class SharedConfig {
         editor.commit();
     }
 
+    public static void setDistanceSystemType(int type) {
+        distanceSystemType = type;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt("distanceSystemType", distanceSystemType);
+        editor.commit();
+        LocaleController.resetImperialSystemType();
+    }
+
     public static void loadProxyList() {
         if (proxyListLoaded) {
             return;
@@ -665,5 +682,40 @@ public class SharedConfig {
         } catch (Exception e) {
             FileLog.e(e);
         }
+    }
+
+    public final static int PERFORMANCE_CLASS_LOW = 0;
+    public final static int PERFORMANCE_CLASS_AVERAGE = 1;
+    public final static int PERFORMANCE_CLASS_HIGH = 2;
+
+    public static int getDevicePerfomanceClass() {
+        if (devicePerformanceClass == -1) {
+            int maxCpuFreq = -1;
+            try {
+                RandomAccessFile reader = new RandomAccessFile("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
+                String line = reader.readLine();
+                if (line != null) {
+                    maxCpuFreq = Utilities.parseInt(line) / 1000;
+                }
+                reader.close();
+            } catch (Throwable ignore) {
+
+            }
+            int androidVersion = Build.VERSION.SDK_INT;
+            int cpuCount = ConnectionsManager.CPU_COUNT;
+            int memoryClass = ((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass();
+            if (androidVersion < 21 || cpuCount <= 2 || memoryClass <= 100 || cpuCount <= 4 && maxCpuFreq != -1 && maxCpuFreq <= 1250 || cpuCount <= 4 && maxCpuFreq <= 1600 && memoryClass <= 128 && androidVersion <= 21) {
+                devicePerformanceClass = PERFORMANCE_CLASS_LOW;
+            } else if (cpuCount < 8 || memoryClass <= 160 || maxCpuFreq != -1 && maxCpuFreq <= 1650) {
+                devicePerformanceClass = PERFORMANCE_CLASS_AVERAGE;
+            } else {
+                devicePerformanceClass = PERFORMANCE_CLASS_HIGH;
+            }
+            if (BuildVars.DEBUG_VERSION) {
+                FileLog.d("device performance info (cpu_count = " + cpuCount + ", freq = " + maxCpuFreq + ", memoryClass = " + memoryClass + ", android version " + androidVersion + ")");
+            }
+        }
+
+        return devicePerformanceClass;
     }
 }

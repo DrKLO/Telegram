@@ -2388,10 +2388,10 @@ simpleAudioBlock random_id:long random_bytes:string raw_data:string = DecryptedA
 						stm->jitterBuffer->SetMinPacketCount((uint32_t) ServerConfig::GetSharedInstance()->GetInt("jitter_initial_delay_20", 6));
 					stm->decoder=NULL;
 				}else if(stm->type==STREAM_TYPE_VIDEO){
-					if(!stm->packetReassembler){
+					/*if(!stm->packetReassembler){
 						stm->packetReassembler=make_shared<PacketReassembler>();
 						stm->packetReassembler->SetCallback(bind(&VoIPController::ProcessIncomingVideoFrame, this, placeholders::_1, placeholders::_2, placeholders::_3, placeholders::_4));
-					}
+					}*/
 				}else{
 					LOGW("Unknown incoming stream type: %d", stm->type);
 					continue;

@@ -128,8 +128,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private Bitmap lastBitmap;
 
     private int[] position = new int[2];
-    private int cameraTexture[] = new int[1];
-    private int oldCameraTexture[] = new int[1];
+    private int[] cameraTexture = new int[1];
+    private int[] oldCameraTexture = new int[1];
     private float cameraTextureAlpha = 1.0f;
 
     private AnimatorSet animatorSet;

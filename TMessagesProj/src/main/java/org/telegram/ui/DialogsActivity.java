@@ -55,14 +55,12 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.airbnb.lottie.LottieDrawable;
-
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
@@ -102,6 +100,7 @@ import org.telegram.ui.Cells.HintDialogCell;
 import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -124,6 +123,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
 import org.telegram.ui.Components.PacmanAnimation;
 import org.telegram.ui.Components.ProxyDrawable;
+import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.ActionBar.Theme;
@@ -213,6 +213,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private String selectAlertString;
     private String selectAlertStringGroup;
     private String addToGroupAlertString;
+    private boolean resetDelegate = true;
     private int dialogsType;
 
     public static boolean[] dialogsLoaded = new boolean[UserConfig.MAX_ACCOUNT_COUNT];
@@ -509,6 +510,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             } else {
                                 lastItemsCount++;
                                 dialogsAdapter.notifyItemInserted(0);
+                                if (!SharedConfig.archiveHidden && layoutManager.findFirstVisibleItemPosition() == 0) {
+                                    listView.smoothScrollBy(0, -AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72));
+                                }
                             }
                             ArrayList<TLRPC.Dialog> dialogs = getDialogsArray(currentAccount, dialogsType, folderId, false);
                             frozenDialogsList.add(0, dialogs.get(0));
@@ -636,6 +640,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             allowSwitchAccount = arguments.getBoolean("allowSwitchAccount");
             checkCanWrite = arguments.getBoolean("checkCanWrite", true);
             folderId = arguments.getInt("folderId", 0);
+            resetDelegate = arguments.getBoolean("resetDelegate", true);
         }
 
         if (dialogsType == 0) {
@@ -677,8 +682,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             getMessagesController().loadDialogs(folderId, 0, 100, true);
             getMessagesController().loadHintDialogs();
             getContactsController().checkInviteText();
-            getDataQuery().loadRecents(DataQuery.TYPE_FAVE, false, true, false);
-            getDataQuery().checkFeaturedStickers();
+            getMediaDataController().loadRecents(MediaDataController.TYPE_FAVE, false, true, false);
+            getMediaDataController().checkFeaturedStickers();
             dialogsLoaded[currentAccount] = true;
         }
         getMessagesController().loadPinnedDialogs(folderId, 0, null);
@@ -980,6 +985,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
 
             @Override
+            public void setPadding(int left, int top, int right, int bottom) {
+                super.setPadding(left, top, right, bottom);
+                if (searchEmptyView != null) {
+                    searchEmptyView.setPadding(left, top, right, bottom);
+                }
+            }
+
+            @Override
             protected void onMeasure(int widthSpec, int heightSpec) {
                 if (firstLayout && getMessagesController().dialogsLoaded) {
                     if (hasHiddenArchive()) {
@@ -1236,7 +1249,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     message_id = messageObject.getId();
                     dialogsSearchAdapter.addHashtagsFromMessage(dialogsSearchAdapter.getLastSearchString());
                 } else if (obj instanceof String) {
-                    actionBar.openSearchField((String) obj, false);
+                    String str = (String) obj;
+                    if (dialogsSearchAdapter.isHashtagSearch()) {
+                        actionBar.openSearchField(str, false);
+                    } else if (!str.equals("section")) {
+                        NewContactActivity activity = new NewContactActivity();
+                        activity.setInitialPhoneNumber(str);
+                        presentFragment(activity);
+                    }
                 }
             }
 
@@ -1593,6 +1613,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
                 int visibleItemCount = Math.abs(layoutManager.findLastVisibleItemPosition() - firstVisibleItem) + 1;
                 int totalItemCount = recyclerView.getAdapter().getItemCount();
+                dialogsItemAnimator.onListScroll(-dy);
 
                 if (searching && searchWas) {
                     if (visibleItemCount > 0 && layoutManager.findLastVisibleItemPosition() == totalItemCount - 1 && !dialogsSearchAdapter.isMessagesSearchEndReached()) {
@@ -1718,7 +1739,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                 builder.setTitle(LocaleController.getString("ChatHintsDeleteAlertTitle", R.string.ChatHintsDeleteAlertTitle));
                 builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("ChatHintsDeleteAlert", R.string.ChatHintsDeleteAlert, ContactsController.formatName(user.first_name, user.last_name))));
-                builder.setPositiveButton(LocaleController.getString("StickersRemove", R.string.StickersRemove), (dialogInterface, i) -> getDataQuery().removePeer(did));
+                builder.setPositiveButton(LocaleController.getString("StickersRemove", R.string.StickersRemove), (dialogInterface, i) -> getMediaDataController().removePeer(did));
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                 AlertDialog dialog = builder.create();
                 showDialog(dialog);
@@ -2631,6 +2652,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }*/
 
+    protected RecyclerListView getListView() {
+        return listView;
+    }
+
     private UndoView getUndoView() {
         if (undoView[0].getVisibility() == View.VISIBLE) {
             UndoView old = undoView[0];
@@ -2841,6 +2866,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (id == NotificationCenter.updateInterfaces) {
             Integer mask = (Integer) args[0];
             updateVisibleRows(mask);
+            if ((mask & MessagesController.UPDATE_MASK_STATUS) != 0 && dialogsAdapter != null) {
+                dialogsAdapter.sortOnlineContacts(true);
+            }
             /*if ((mask & MessagesController.UPDATE_MASK_NEW_MESSAGE) != 0 || (mask & MessagesController.UPDATE_MASK_READ_DIALOG_MESSAGE) != 0) {
                 checkUnreadCount(true);
             }*/
@@ -2917,7 +2945,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }*/
         } else if (id == NotificationCenter.needDeleteDialog) {
-            if (fragmentView == null) {
+            if (fragmentView == null || isPaused) {
                 return;
             }
             long dialogId = (Long) args[0];
@@ -3178,7 +3206,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 ArrayList<Long> dids = new ArrayList<>();
                 dids.add(dialog_id);
                 delegate.didSelectDialogs(DialogsActivity.this, dids, null, param);
-                delegate = null;
+                if (resetDelegate) {
+                    delegate = null;
+                }
             } else {
                 finishFragment();
             }
@@ -3215,7 +3245,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 View child = sideMenu.getChildAt(0);
                 if (child instanceof DrawerProfileCell) {
                     DrawerProfileCell profileCell = (DrawerProfileCell) child;
-                    profileCell.applyBackground();
+                    profileCell.applyBackground(true);
                 }
             }
         };
@@ -3325,49 +3355,29 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, null, null, null, Theme.key_chats_archiveBackground));
 
         if (SharedConfig.archiveHidden) {
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{Theme.dialogs_archiveAvatarDrawable}, "Arrow1", Theme.key_avatar_backgroundArchivedHidden));
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{Theme.dialogs_archiveAvatarDrawable}, "Arrow2", Theme.key_avatar_backgroundArchivedHidden));
+            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_archiveAvatarDrawable}, "Arrow1", Theme.key_avatar_backgroundArchivedHidden));
+            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_archiveAvatarDrawable}, "Arrow2", Theme.key_avatar_backgroundArchivedHidden));
         } else {
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{Theme.dialogs_archiveAvatarDrawable}, "Arrow1", Theme.key_avatar_backgroundArchived));
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{Theme.dialogs_archiveAvatarDrawable}, "Arrow2", Theme.key_avatar_backgroundArchived));
+            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_archiveAvatarDrawable}, "Arrow1", Theme.key_avatar_backgroundArchived));
+            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_archiveAvatarDrawable}, "Arrow2", Theme.key_avatar_backgroundArchived));
         }
-        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{Theme.dialogs_archiveAvatarDrawable}, "Box2", Theme.key_avatar_text));
-        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{Theme.dialogs_archiveAvatarDrawable}, "Box1", Theme.key_avatar_text));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_archiveAvatarDrawable}, "Box2", Theme.key_avatar_text));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_archiveAvatarDrawable}, "Box1", Theme.key_avatar_text));
 
-        if (Theme.dialogs_pinArchiveDrawable instanceof LottieDrawable) {
-            LottieDrawable lottieDrawable = (LottieDrawable) Theme.dialogs_pinArchiveDrawable;
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{lottieDrawable}, "Arrow", Theme.key_chats_archiveIcon));
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{lottieDrawable}, "Line", Theme.key_chats_archiveIcon));
-        } else {
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, null, new Drawable[]{Theme.dialogs_pinArchiveDrawable}, null, Theme.key_chats_archiveIcon));
-        }
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_pinArchiveDrawable}, "Arrow", Theme.key_chats_archiveIcon));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_pinArchiveDrawable}, "Line", Theme.key_chats_archiveIcon));
 
-        if (Theme.dialogs_unpinArchiveDrawable instanceof LottieDrawable) {
-            LottieDrawable lottieDrawable = (LottieDrawable) Theme.dialogs_unpinArchiveDrawable;
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{lottieDrawable}, "Arrow", Theme.key_chats_archiveIcon));
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{lottieDrawable}, "Line", Theme.key_chats_archiveIcon));
-        } else {
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, null, new Drawable[]{Theme.dialogs_unpinArchiveDrawable}, null, Theme.key_chats_archiveIcon));
-        }
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_unpinArchiveDrawable}, "Arrow", Theme.key_chats_archiveIcon));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_unpinArchiveDrawable}, "Line", Theme.key_chats_archiveIcon));
 
-        if (Theme.dialogs_archiveDrawable instanceof LottieDrawable) {
-            LottieDrawable lottieDrawable = (LottieDrawable) Theme.dialogs_archiveDrawable;
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{lottieDrawable}, "Arrow", Theme.key_chats_archiveBackground));
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{lottieDrawable}, "Box2", Theme.key_chats_archiveIcon));
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{lottieDrawable}, "Box1", Theme.key_chats_archiveIcon));
-        } else {
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, null, new Drawable[]{Theme.dialogs_archiveDrawable}, null, Theme.key_chats_archiveIcon));
-        }
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_archiveDrawable}, "Arrow", Theme.key_chats_archiveBackground));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_archiveDrawable}, "Box2", Theme.key_chats_archiveIcon));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_archiveDrawable}, "Box1", Theme.key_chats_archiveIcon));
 
-        if (Theme.dialogs_unarchiveDrawable instanceof LottieDrawable) {
-            LottieDrawable lottieDrawable = (LottieDrawable) Theme.dialogs_unarchiveDrawable;
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{lottieDrawable}, "Arrow1", Theme.key_chats_archiveIcon));
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{lottieDrawable}, "Arrow2", Theme.key_chats_archivePinBackground));
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{lottieDrawable}, "Box2", Theme.key_chats_archiveIcon));
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new LottieDrawable[]{lottieDrawable}, "Box1", Theme.key_chats_archiveIcon));
-        } else {
-            arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, null, new Drawable[]{Theme.dialogs_unarchiveDrawable}, null, Theme.key_chats_archiveIcon));
-        }
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_unarchiveDrawable}, "Arrow1", Theme.key_chats_archiveIcon));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_unarchiveDrawable}, "Arrow2", Theme.key_chats_archivePinBackground));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_unarchiveDrawable}, "Box2", Theme.key_chats_archiveIcon));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, new RLottieDrawable[]{Theme.dialogs_unarchiveDrawable}, "Box1", Theme.key_chats_archiveIcon));
 
         arrayList.add(new ThemeDescription(sideMenu, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_chats_menuBackground));
         arrayList.add(new ThemeDescription(sideMenu, 0, new Class[]{DrawerProfileCell.class}, null, null, null, Theme.key_chats_menuName));
@@ -3428,6 +3438,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         arrayList.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_returnToCallBackground));
         arrayList.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_returnToCallText));
+
+        arrayList.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText2));
 
         for (int a = 0; a < undoView.length; a++) {
             arrayList.add(new ThemeDescription(undoView[a], ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_undo_background));

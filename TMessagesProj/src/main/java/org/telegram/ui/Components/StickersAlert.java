@@ -36,7 +36,7 @@ import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -211,6 +211,12 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         init(context);
     }
 
+    @Override
+    public void show() {
+        super.show();
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 2);
+    }
+
     public void setClearsInputField(boolean value) {
         clearsInputField = value;
     }
@@ -222,10 +228,10 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
     private void loadStickerSet() {
         if (inputStickerSet != null) {
             if (stickerSet == null && inputStickerSet.short_name != null) {
-                stickerSet = DataQuery.getInstance(currentAccount).getStickerSetByName(inputStickerSet.short_name);
+                stickerSet = MediaDataController.getInstance(currentAccount).getStickerSetByName(inputStickerSet.short_name);
             }
             if (stickerSet == null) {
-                stickerSet = DataQuery.getInstance(currentAccount).getStickerSetById(inputStickerSet.id);
+                stickerSet = MediaDataController.getInstance(currentAccount).getStickerSetById(inputStickerSet.id);
             }
             if (stickerSet == null) {
                 TLRPC.TL_messages_getStickerSet req = new TLRPC.TL_messages_getStickerSet();
@@ -471,7 +477,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                     }
                 }
                 if (!set) {
-                    stickerEmojiTextView.setText(Emoji.replaceEmoji(DataQuery.getInstance(currentAccount).getEmojiForSticker(selectedSticker.id), stickerEmojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(30), false));
+                    stickerEmojiTextView.setText(Emoji.replaceEmoji(MediaDataController.getInstance(currentAccount).getEmojiForSticker(selectedSticker.id), stickerEmojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(30), false));
                 }
 
                 TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(selectedSticker.thumbs, 90);
@@ -521,7 +527,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         optionsButton.setIcon(R.drawable.ic_ab_other);
         optionsButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_player_actionBarSelector), 1));
         containerView.addView(optionsButton, LayoutHelper.createFrame(40, 40, Gravity.TOP | Gravity.RIGHT, 0, 5, 5, 0));
-        optionsButton.addSubItem(1, R.drawable.msg_shareout, LocaleController.getString("StickersShare", R.string.StickersShare));
+        optionsButton.addSubItem(1, R.drawable.msg_share, LocaleController.getString("StickersShare", R.string.StickersShare));
         optionsButton.addSubItem(2, R.drawable.msg_link, LocaleController.getString("CopyLink", R.string.CopyLink));
         optionsButton.setOnClickListener(v -> optionsButton.toggleSubMenu());
         optionsButton.setDelegate(this::onSubItemClick);
@@ -555,6 +561,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
         stickerImageView = new BackupImageView(context);
         stickerImageView.setAspectFit(true);
+        stickerImageView.setLayerNum(3);
         stickerPreviewLayout.addView(stickerImageView);
 
         stickerEmojiTextView = new TextView(context);
@@ -668,7 +675,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             }
             titleTextView.setText(stringBuilder != null ? stringBuilder : stickerSet.set.title);
 
-            if (stickerSet.set == null || !DataQuery.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id)) {
+            if (stickerSet.set == null || !MediaDataController.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id)) {
                 String text;
                 if (stickerSet.set.masks) {
                     text = LocaleController.formatString("AddStickersCount", R.string.AddStickersCount, LocaleController.formatPluralString("MasksCount", stickerSet.documents.size())).toUpperCase();
@@ -703,7 +710,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                         } catch (Exception e) {
                             FileLog.e(e);
                         }
-                        DataQuery.getInstance(currentAccount).loadStickers(stickerSet.set.masks ? DataQuery.TYPE_MASK : DataQuery.TYPE_IMAGE, false, true);
+                        MediaDataController.getInstance(currentAccount).loadStickers(stickerSet.set.masks ? MediaDataController.TYPE_MASK : MediaDataController.TYPE_IMAGE, false, true);
                     }));
                 }, text, Theme.getColor(Theme.key_dialogTextBlue2));
             } else {
@@ -719,7 +726,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                             installDelegate.onStickerSetUninstalled();
                         }
                         dismiss();
-                        DataQuery.getInstance(currentAccount).removeStickersSet(getContext(), stickerSet.set, 1, parentFragment, true);
+                        MediaDataController.getInstance(currentAccount).removeStickersSet(getContext(), stickerSet.set, 1, parentFragment, true);
                     }, text, Theme.getColor(Theme.key_dialogTextRed));
                 } else {
                     setButton(v -> {
@@ -727,7 +734,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                             installDelegate.onStickerSetUninstalled();
                         }
                         dismiss();
-                        DataQuery.getInstance(currentAccount).removeStickersSet(getContext(), stickerSet.set, 0, parentFragment, true);
+                        MediaDataController.getInstance(currentAccount).removeStickersSet(getContext(), stickerSet.set, 0, parentFragment, true);
                     }, text, Theme.getColor(Theme.key_dialogTextRed));
                 }
             }
@@ -834,6 +841,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             reqId = 0;
         }
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 2);
     }
 
     @Override
@@ -903,11 +911,13 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             View view = null;
             switch (viewType) {
                 case 0:
-                    view = new StickerEmojiCell(context) {
+                    StickerEmojiCell cell = new StickerEmojiCell(context) {
                         public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                             super.onMeasure(MeasureSpec.makeMeasureSpec(itemSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(82), MeasureSpec.EXACTLY));
                         }
                     };
+                    cell.getImageView().setLayerNum(3);
+                    view = cell;
                     break;
                 case 1:
                     view = new EmptyCell(context);

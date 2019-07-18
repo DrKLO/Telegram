@@ -128,7 +128,7 @@ public class LogoutActivity extends BaseFragment {
             } else if (position == cacheRow) {
                 presentFragment(new CacheControlActivity());
             } else if (position == phoneRow) {
-                presentFragment(new ChangePhoneHelpActivity());
+                presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
             } else if (position == supportRow) {
                 showDialog(AlertsCreator.createSupportAlert(LogoutActivity.this));
             } else if (position == logoutRow) {

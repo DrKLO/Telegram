@@ -169,6 +169,9 @@ public class MediaActionDrawable extends Drawable {
             } else {
                 transitionAnimationTime = 220.0f;
             }
+            if (animatingTransition) {
+                currentIcon = nextIcon;
+            }
             animatingTransition = true;
             nextIcon = icon;
             savedTransitionProgress = transitionProgress;

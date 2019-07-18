@@ -2680,4 +2680,32 @@ public class AndroidUtilities {
         int aS = Color.alpha(color1);
         return Color.argb((int) ((aS + (aF - aS) * offset) * alpha), (int) (rS + (rF - rS) * offset), (int) (gS + (gF - gS) * offset), (int) (bS + (bF - bS) * offset));
     }
+
+    public static int indexOfIgnoreCase(final String origin, final String searchStr) {
+        if (searchStr.isEmpty() || origin.isEmpty()) {
+            return origin.indexOf(searchStr);
+        }
+
+        for (int i = 0; i < origin.length(); i++) {
+            if (i + searchStr.length() > origin.length()) {
+                return -1;
+            }
+            int j = 0;
+            int ii = i;
+            while (ii < origin.length() && j < searchStr.length()) {
+                char c = Character.toLowerCase(origin.charAt(ii));
+                char c2 = Character.toLowerCase(searchStr.charAt(j));
+                if (c != c2) {
+                    break;
+                }
+                j++;
+                ii++;
+            }
+            if (j == searchStr.length()) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
 }

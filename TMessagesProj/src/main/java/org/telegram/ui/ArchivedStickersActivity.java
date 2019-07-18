@@ -14,7 +14,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -82,7 +82,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        if (currentType == DataQuery.TYPE_IMAGE) {
+        if (currentType == MediaDataController.TYPE_IMAGE) {
             actionBar.setTitle(LocaleController.getString("ArchivedStickers", R.string.ArchivedStickers));
         } else {
             actionBar.setTitle(LocaleController.getString("ArchivedMasks", R.string.ArchivedMasks));
@@ -103,7 +103,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
         frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         emptyView = new EmptyTextProgressView(context);
-        if (currentType == DataQuery.TYPE_IMAGE) {
+        if (currentType == MediaDataController.TYPE_IMAGE) {
             emptyView.setText(LocaleController.getString("ArchivedStickersEmpty", R.string.ArchivedStickersEmpty));
         } else {
             emptyView.setText(LocaleController.getString("ArchivedMasksEmpty", R.string.ArchivedMasksEmpty));
@@ -201,7 +201,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
         TLRPC.TL_messages_getArchivedStickers req = new TLRPC.TL_messages_getArchivedStickers();
         req.offset_id = sets.isEmpty() ? 0 : sets.get(sets.size() - 1).set.id;
         req.limit = 15;
-        req.masks = currentType == DataQuery.TYPE_MASK;
+        req.masks = currentType == MediaDataController.TYPE_MASK;
         int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (error == null) {
                 TLRPC.TL_messages_archivedStickers res = (TLRPC.TL_messages_archivedStickers) response;
@@ -260,7 +260,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
                 cell.setTag(position);
                 TLRPC.StickerSetCovered stickerSet = sets.get(position);
                 cell.setStickersSet(stickerSet, position != sets.size() - 1);
-                cell.setChecked(DataQuery.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id));
+                cell.setChecked(MediaDataController.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id));
             }
         }
 
@@ -283,7 +283,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
                             return;
                         }
                         TLRPC.StickerSetCovered stickerSet = sets.get(num);
-                        DataQuery.getInstance(currentAccount).removeStickersSet(getParentActivity(), stickerSet.set, !isChecked ? 1 : 2, ArchivedStickersActivity.this, false);
+                        MediaDataController.getInstance(currentAccount).removeStickersSet(getParentActivity(), stickerSet.set, !isChecked ? 1 : 2, ArchivedStickersActivity.this, false);
                     });
                     break;
                 case 1:

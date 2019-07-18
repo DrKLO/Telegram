@@ -14,7 +14,7 @@ import android.content.SharedPreferences;
 import java.io.File;
 import java.io.RandomAccessFile;
 
-public class StatsController {
+public class StatsController extends BaseController {
 
     public static final int TYPE_MOBILE = 0;
     public static final int TYPE_WIFI = 1;
@@ -32,12 +32,12 @@ public class StatsController {
     private byte[] buffer = new byte[8];
 
     private long lastInternalStatsSaveTime;
-    private long sentBytes[][] = new long[3][TYPES_COUNT];
-    private long receivedBytes[][] = new long[3][TYPES_COUNT];
-    private int sentItems[][] = new int[3][TYPES_COUNT];
-    private int receivedItems[][] = new int[3][TYPES_COUNT];
-    private long resetStatsDate[] = new long[3];
-    private int callsTotalTime[] = new int[3];
+    private long[][] sentBytes = new long[3][TYPES_COUNT];
+    private long[][] receivedBytes = new long[3][TYPES_COUNT];
+    private int[][] sentItems = new int[3][TYPES_COUNT];
+    private int[][] receivedItems = new int[3][TYPES_COUNT];
+    private long[] resetStatsDate = new long[3];
+    private int[] callsTotalTime = new int[3];
     private RandomAccessFile statsFile;
     private static DispatchQueue statsSaveQueue = new DispatchQueue("statsSaveQueue");
 
@@ -103,7 +103,7 @@ public class StatsController {
         }
     };
 
-    private static volatile StatsController Instance[] = new StatsController[UserConfig.MAX_ACCOUNT_COUNT];
+    private static volatile StatsController[] Instance = new StatsController[UserConfig.MAX_ACCOUNT_COUNT];
 
     public static StatsController getInstance(int num) {
         StatsController localInstance = Instance[num];
@@ -119,6 +119,7 @@ public class StatsController {
     }
 
     private StatsController(int account) {
+        super(account);
         File filesDir = ApplicationLoader.getFilesDirFixed();
         if (account != 0) {
             filesDir = new File(ApplicationLoader.getFilesDirFixed(), "account" + account + "/");

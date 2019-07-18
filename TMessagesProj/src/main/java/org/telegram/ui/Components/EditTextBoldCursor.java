@@ -471,34 +471,33 @@ public class EditTextBoldCursor extends EditText {
                         mCursorDrawable = ((Drawable[]) mCursorDrawableField.get(editor))[0];
                     }
                 }
-                if (mCursorDrawable == null) {
-                    return;
-                }
-                long mShowCursor = mShowCursorField.getLong(editor);
-                boolean showCursor = (SystemClock.uptimeMillis() - mShowCursor) % (2 * 500) < 500 && isFocused();
-                if (showCursor) {
-                    canvas.save();
-                    int voffsetCursor = 0;
-                    if ((getGravity() & Gravity.VERTICAL_GRAVITY_MASK) != Gravity.TOP) {
-                        voffsetCursor = (int) getVerticalOffsetMethod.invoke(this, true);
+                if (mCursorDrawable != null) {
+                    long mShowCursor = mShowCursorField.getLong(editor);
+                    boolean showCursor = (SystemClock.uptimeMillis() - mShowCursor) % (2 * 500) < 500 && isFocused();
+                    if (showCursor) {
+                        canvas.save();
+                        int voffsetCursor = 0;
+                        if ((getGravity() & Gravity.VERTICAL_GRAVITY_MASK) != Gravity.TOP) {
+                            voffsetCursor = (int) getVerticalOffsetMethod.invoke(this, true);
+                        }
+                        canvas.translate(getPaddingLeft(), getExtendedPaddingTop() + voffsetCursor);
+                        Layout layout = getLayout();
+                        int line = layout.getLineForOffset(getSelectionStart());
+                        int lineCount = layout.getLineCount();
+                        Rect bounds = mCursorDrawable.getBounds();
+                        rect.left = bounds.left;
+                        rect.right = bounds.left + AndroidUtilities.dp(cursorWidth);
+                        rect.bottom = bounds.bottom;
+                        rect.top = bounds.top;
+                        if (lineSpacingExtra != 0 && line < lineCount - 1) {
+                            rect.bottom -= lineSpacingExtra;
+                        }
+                        rect.top = rect.centerY() - cursorSize / 2;
+                        rect.bottom = rect.top + cursorSize;
+                        gradientDrawable.setBounds(rect);
+                        gradientDrawable.draw(canvas);
+                        canvas.restore();
                     }
-                    canvas.translate(getPaddingLeft(), getExtendedPaddingTop() + voffsetCursor);
-                    Layout layout = getLayout();
-                    int line = layout.getLineForOffset(getSelectionStart());
-                    int lineCount = layout.getLineCount();
-                    Rect bounds = mCursorDrawable.getBounds();
-                    rect.left = bounds.left;
-                    rect.right = bounds.left + AndroidUtilities.dp(cursorWidth);
-                    rect.bottom = bounds.bottom;
-                    rect.top = bounds.top;
-                    if (lineSpacingExtra != 0 && line < lineCount - 1) {
-                        rect.bottom -= lineSpacingExtra;
-                    }
-                    rect.top = rect.centerY() - cursorSize / 2;
-                    rect.bottom = rect.top + cursorSize;
-                    gradientDrawable.setBounds(rect);
-                    gradientDrawable.draw(canvas);
-                    canvas.restore();
                 }
             }
         } catch (Throwable ignore) {

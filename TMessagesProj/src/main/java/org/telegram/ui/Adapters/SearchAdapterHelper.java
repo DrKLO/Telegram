@@ -10,9 +10,11 @@ package org.telegram.ui.Adapters;
 
 import android.util.SparseArray;
 
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -37,7 +39,10 @@ public class SearchAdapterHelper {
 
     public interface SearchAdapterHelperDelegate {
         void onDataSetChanged();
-        void onSetHashtags(ArrayList<HashtagObject> arrayList, HashMap<String, HashtagObject> hashMap);
+
+        default void onSetHashtags(ArrayList<HashtagObject> arrayList, HashMap<String, HashtagObject> hashMap) {
+
+        }
 
         default SparseArray<TLRPC.User> getExcludeUsers() {
             return null;
@@ -54,6 +59,8 @@ public class SearchAdapterHelper {
     private SparseArray<TLObject> globalSearchMap = new SparseArray<>();
     private ArrayList<TLObject> groupSearch = new ArrayList<>();
     private SparseArray<TLObject> groupSearchMap = new SparseArray<>();
+    private SparseArray<TLObject> phoneSearchMap = new SparseArray<>();
+    private ArrayList<Object> phonesSearch = new ArrayList<>();
     private ArrayList<TLObject> localSearchResults;
 
     private int currentAccount = UserConfig.selectedAccount;
@@ -82,7 +89,7 @@ public class SearchAdapterHelper {
         return reqId != 0 || channelReqId != 0;
     }
 
-    public void queryServerSearch(final String query, final boolean allowUsername, final boolean allowChats, final boolean allowBots, final boolean allowSelf, final int channelId, final int type) {
+    public void queryServerSearch(final String query, final boolean allowUsername, final boolean allowChats, final boolean allowBots, final boolean allowSelf, final int channelId, final boolean phoneNumbers, final int type) {
         if (reqId != 0) {
             ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
             reqId = 0;
@@ -97,6 +104,8 @@ public class SearchAdapterHelper {
             globalSearch.clear();
             globalSearchMap.clear();
             localServerSearch.clear();
+            phonesSearch.clear();
+            phoneSearchMap.clear();
             lastReqId = 0;
             channelLastReqId = 0;
             delegate.onDataSetChanged();
@@ -162,6 +171,7 @@ public class SearchAdapterHelper {
                 final int currentReqId = ++lastReqId;
                 reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (currentReqId == lastReqId) {
+                        reqId = 0;
                         if (error == null) {
                             TLRPC.TL_contacts_found res = (TLRPC.TL_contacts_found) response;
                             globalSearch.clear();
@@ -229,6 +239,9 @@ public class SearchAdapterHelper {
                                         chat = chatsMap.get(peer.channel_id);
                                     }
                                     if (chat != null) {
+                                        if (!allowChats) {
+                                            continue;
+                                        }
                                         localServerSearch.add(chat);
                                         globalSearchMap.put(-chat.id, chat);
                                     } else if (user != null) {
@@ -245,7 +258,6 @@ public class SearchAdapterHelper {
                             delegate.onDataSetChanged();
                         }
                     }
-                    reqId = 0;
                 }), ConnectionsManager.RequestFlagFailOnServerErrors);
             } else {
                 globalSearch.clear();
@@ -254,6 +266,32 @@ public class SearchAdapterHelper {
                 lastReqId = 0;
                 delegate.onDataSetChanged();
             }
+        }
+        if (phoneNumbers && query.startsWith("+") && query.length() > 3) {
+            phonesSearch.clear();
+            phoneSearchMap.clear();
+            String phone = PhoneFormat.stripExceptNumbers(query);
+            ArrayList<TLRPC.TL_contact> arrayList = ContactsController.getInstance(currentAccount).contacts;
+            boolean hasFullMatch = false;
+            for (int a = 0, N = arrayList.size(); a < N; a++) {
+                TLRPC.TL_contact contact = arrayList.get(a);
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(contact.user_id);
+                if (user == null) {
+                    continue;
+                }
+                if (user.phone != null && user.phone.startsWith(phone)) {
+                    if (!hasFullMatch) {
+                        hasFullMatch = user.phone.length() == phone.length();
+                    }
+                    phonesSearch.add(user);
+                    phoneSearchMap.put(user.id, user);
+                }
+            }
+            if (!hasFullMatch) {
+                phonesSearch.add("section");
+                phonesSearch.add(phone);
+            }
+            delegate.onDataSetChanged();
         }
     }
 
@@ -315,6 +353,11 @@ public class SearchAdapterHelper {
                 if (participant != null) {
                     groupSearch.remove(participant);
                     groupSearchMap.remove(user.id);
+                }
+                Object object = phoneSearchMap.get(user.id);
+                if (object != null) {
+                    phonesSearch.remove(object);
+                    phoneSearchMap.remove(user.id);
                 }
             } else if (obj instanceof TLRPC.Chat) {
                 TLRPC.Chat chat = (TLRPC.Chat) obj;
@@ -417,6 +460,10 @@ public class SearchAdapterHelper {
 
     public ArrayList<TLObject> getGlobalSearch() {
         return globalSearch;
+    }
+
+    public ArrayList<Object> getPhoneSearch() {
+        return phonesSearch;
     }
 
     public ArrayList<TLObject> getLocalServerSearch() {

@@ -342,22 +342,22 @@ public class PollCreateActivity extends BaseFragment {
             progressView.setVisibility(View.VISIBLE);
             doneItem.setEnabled(false);
             doneItemAnimation.playTogether(
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), View.SCALE_X, 0.1f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), View.SCALE_Y, 0.1f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), View.ALPHA, 0.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_X, 0.1f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_Y, 0.1f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), View.ALPHA, 0.0f),
                     ObjectAnimator.ofFloat(progressView, View.SCALE_X, 1.0f),
                     ObjectAnimator.ofFloat(progressView, View.SCALE_Y, 1.0f),
                     ObjectAnimator.ofFloat(progressView, View.ALPHA, 1.0f));
         } else {
-            doneItem.getImageView().setVisibility(View.VISIBLE);
+            doneItem.getContentView().setVisibility(View.VISIBLE);
             doneItem.setEnabled(true);
             doneItemAnimation.playTogether(
                     ObjectAnimator.ofFloat(progressView, View.SCALE_X, 0.1f),
                     ObjectAnimator.ofFloat(progressView, View.SCALE_Y, 0.1f),
                     ObjectAnimator.ofFloat(progressView, View.ALPHA, 0.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), View.SCALE_X, 1.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), View.SCALE_Y, 1.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), View.ALPHA, 1.0f));
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_X, 1.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_Y, 1.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), View.ALPHA, 1.0f));
         }
         doneItemAnimation.addListener(new AnimatorListenerAdapter() {
             @Override
@@ -366,7 +366,7 @@ public class PollCreateActivity extends BaseFragment {
                     if (!show) {
                         progressView.setVisibility(View.INVISIBLE);
                     } else {
-                        doneItem.getImageView().setVisibility(View.INVISIBLE);
+                        doneItem.getContentView().setVisibility(View.INVISIBLE);
                     }
                 }
             }

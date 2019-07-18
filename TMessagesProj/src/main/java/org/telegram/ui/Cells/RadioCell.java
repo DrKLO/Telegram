@@ -93,6 +93,7 @@ public class RadioCell extends FrameLayout {
     }
 
     public void setEnabled(boolean value, ArrayList<Animator> animators) {
+        super.setEnabled(value);
         if (animators != null) {
             animators.add(ObjectAnimator.ofFloat(textView, "alpha", value ? 1.0f : 0.5f));
             animators.add(ObjectAnimator.ofFloat(radioButton, "alpha", value ? 1.0f : 0.5f));

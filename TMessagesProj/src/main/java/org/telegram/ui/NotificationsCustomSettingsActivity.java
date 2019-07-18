@@ -13,6 +13,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
@@ -28,26 +29,28 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Adapters.SearchAdapterHelper;
+import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.NotificationsCheckCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
@@ -62,9 +65,8 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -74,7 +76,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
     private RecyclerListView listView;
     private ListAdapter adapter;
     private EmptyTextProgressView emptyView;
-    private SearchAdapter searchListViewAdapter;
+    private SearchAdapter searchAdapter;
     private AnimatorSet animatorSet;
 
     private boolean searchWas;
@@ -96,10 +98,13 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
     private int exceptionsStartRow;
     private int exceptionsEndRow;
     private int exceptionsSection2Row;
+    private int deleteAllRow;
+    private int deleteAllSectionRow;
     private int rowCount = 0;
 
     private int currentType;
     private ArrayList<NotificationsSettingsActivity.NotificationException> exceptions;
+    private HashMap<Long, NotificationsSettingsActivity.NotificationException> exceptionsDict = new HashMap<>();
 
     public NotificationsCustomSettingsActivity(int type, ArrayList<NotificationsSettingsActivity.NotificationException> notificationExceptions) {
         this(type, notificationExceptions, false);
@@ -109,6 +114,10 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
         super();
         currentType = type;
         exceptions = notificationExceptions;
+        for (int a = 0, N = exceptions.size(); a < N; a++) {
+            NotificationsSettingsActivity.NotificationException exception = exceptions.get(a);
+            exceptionsDict.put(exception.did, exception);
+        }
         if (load) {
             loadExceptions();
         }
@@ -151,7 +160,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
 
                 @Override
                 public void onSearchCollapse() {
-                    searchListViewAdapter.searchDialogs(null);
+                    searchAdapter.searchDialogs(null);
                     searching = false;
                     searchWas = false;
                     emptyView.setText(LocaleController.getString("NoExceptions", R.string.NoExceptions));
@@ -164,7 +173,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
 
                 @Override
                 public void onTextChanged(EditText editText) {
-                    if (searchListViewAdapter == null) {
+                    if (searchAdapter == null) {
                         return;
                     }
                     String text = editText.getText().toString();
@@ -172,19 +181,20 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                         searchWas = true;
                         if (listView != null) {
                             emptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
-                            listView.setAdapter(searchListViewAdapter);
-                            searchListViewAdapter.notifyDataSetChanged();
+                            emptyView.showProgress();
+                            listView.setAdapter(searchAdapter);
+                            searchAdapter.notifyDataSetChanged();
                             listView.setFastScrollVisible(false);
                             listView.setVerticalScrollBarEnabled(true);
                         }
                     }
-                    searchListViewAdapter.searchDialogs(text);
+                    searchAdapter.searchDialogs(text);
                 }
             });
             searchItem.setSearchFieldHint(LocaleController.getString("Search", R.string.Search));
         }
 
-        searchListViewAdapter = new SearchAdapter(context);
+        searchAdapter = new SearchAdapter(context);
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
@@ -207,37 +217,80 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
             if (getParentActivity() == null) {
                 return;
             }
-            if (listView.getAdapter() == searchListViewAdapter || position >= exceptionsStartRow && position < exceptionsEndRow) {
+            if (listView.getAdapter() == searchAdapter || position >= exceptionsStartRow && position < exceptionsEndRow) {
                 ArrayList<NotificationsSettingsActivity.NotificationException> arrayList;
-                int index = position;
-                if (listView.getAdapter() == searchListViewAdapter) {
-                    arrayList = searchListViewAdapter.searchResult;
+                NotificationsSettingsActivity.NotificationException exception;
+                boolean newException;
+                if (listView.getAdapter() == searchAdapter) {
+                    Object object = searchAdapter.getObject(position);
+                    if (object instanceof NotificationsSettingsActivity.NotificationException) {
+                        arrayList = searchAdapter.searchResult;
+                        exception = (NotificationsSettingsActivity.NotificationException) object;
+                        newException = false;
+                    } else {
+                        long did;
+                        if (object instanceof TLRPC.User) {
+                            TLRPC.User user = (TLRPC.User) object;
+                            did = user.id;
+                        } else {
+                            TLRPC.Chat chat = (TLRPC.Chat) object;
+                            did = -chat.id;
+                        }
+                        if (exceptionsDict.containsKey(did)) {
+                            exception = exceptionsDict.get(did);
+                            newException = false;
+                        } else {
+                            newException = true;
+                            exception = new NotificationsSettingsActivity.NotificationException();
+                            exception.did = did;
+                            if (object instanceof TLRPC.User) {
+                                TLRPC.User user = (TLRPC.User) object;
+                                exception.did = user.id;
+                            } else {
+                                TLRPC.Chat chat = (TLRPC.Chat) object;
+                                exception.did = -chat.id;
+                            }
+                        }
+                        arrayList = exceptions;
+                    }
                 } else {
                     arrayList = exceptions;
-                    index -= exceptionsStartRow;
+                    int index = position - exceptionsStartRow;
+                    if (index < 0 || index >= arrayList.size()) {
+                        return;
+                    }
+                    exception = arrayList.get(index);
+                    newException = false;
                 }
-                if (index < 0 || index >= arrayList.size()) {
+                if (exception == null) {
                     return;
                 }
-                NotificationsSettingsActivity.NotificationException exception = arrayList.get(index);
+
                 AlertsCreator.showCustomNotificationsDialog(NotificationsCustomSettingsActivity.this, exception.did, -1, null, currentAccount, null, param -> {
                     if (param == 0) {
+                        if (newException) {
+                            return;
+                        }
                         if (arrayList != exceptions) {
                             int idx = exceptions.indexOf(exception);
                             if (idx >= 0) {
                                 exceptions.remove(idx);
+                                exceptionsDict.remove(exception.did);
                             }
                         }
                         arrayList.remove(exception);
                         if (exceptionsAddRow != -1 && arrayList.isEmpty() && arrayList == exceptions) {
                             listView.getAdapter().notifyItemChanged(exceptionsAddRow);
+                            listView.getAdapter().notifyItemRemoved(deleteAllRow);
+                            listView.getAdapter().notifyItemRemoved(deleteAllSectionRow);
                         }
                         listView.getAdapter().notifyItemRemoved(position);
 
                         updateRows();
                         checkRowsEnabled();
+                        actionBar.closeSearchField();
                     } else {
-                        SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                        SharedPreferences preferences = getNotificationsSettings();
                         exception.hasCustom = preferences.getBoolean("custom_" + exception.did, false);
                         exception.notify = preferences.getInt("notify2_" + exception.did, 0);
                         if (exception.notify != 0) {
@@ -246,7 +299,15 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                                 exception.muteUntil = time;
                             }
                         }
-                        listView.getAdapter().notifyItemChanged(position);
+                        if (newException) {
+                            exceptions.add(exception);
+                            exceptionsDict.put(exception.did, exception);
+                            updateRows();
+                            adapter.notifyDataSetChanged();
+                        } else {
+                            listView.getAdapter().notifyItemChanged(position);
+                        }
+                        actionBar.closeSearchField();
                     }
                 });
                 return;
@@ -276,13 +337,48 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                     presentFragment(profileNotificationsActivity, true);
                 });
                 presentFragment(activity);
+            } else if (position == deleteAllRow) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle(LocaleController.getString("NotificationsDeleteAllExceptionTitle", R.string.NotificationsDeleteAllExceptionTitle));
+                builder.setMessage(LocaleController.getString("NotificationsDeleteAllExceptionAlert", R.string.NotificationsDeleteAllExceptionAlert));
+                builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
+                    SharedPreferences preferences = getNotificationsSettings();
+                    SharedPreferences.Editor editor = preferences.edit();
+                    for (int a = 0, N = exceptions.size(); a < N; a++) {
+                        NotificationsSettingsActivity.NotificationException exception = exceptions.get(a);
+                        editor.remove("notify2_" + exception.did).remove("custom_" + exception.did);
+                        getMessagesStorage().setDialogFlags(exception.did, 0);
+                        TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(exception.did);
+                        if (dialog != null) {
+                            dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
+                        }
+                    }
+                    editor.commit();
+                    for (int a = 0, N = exceptions.size(); a < N; a++) {
+                        NotificationsSettingsActivity.NotificationException exception = exceptions.get(a);
+                        getNotificationsController().updateServerNotificationsSettings(exception.did, false);
+                    }
+
+                    exceptions.clear();
+                    exceptionsDict.clear();
+                    updateRows();
+                    getNotificationCenter().postNotificationName(NotificationCenter.notificationsSettingsUpdated);
+                    adapter.notifyDataSetChanged();
+                });
+                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                AlertDialog alertDialog = builder.create();
+                showDialog(alertDialog);
+                TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                if (button != null) {
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                }
             } else if (position == alertRow) {
-                enabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(currentType);
+                enabled = getNotificationsController().isGlobalNotificationsEnabled(currentType);
 
                 NotificationsCheckCell checkCell = (NotificationsCheckCell) view;
                 RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(position);
                 if (!enabled) {
-                    NotificationsController.getInstance(currentAccount).setGlobalNotificationsEnabled(currentType, 0);
+                    getNotificationsController().setGlobalNotificationsEnabled(currentType, 0);
                     checkCell.setChecked(!enabled);
                     if (holder != null) {
                         adapter.onBindViewHolder(holder, position);
@@ -291,7 +387,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 } else {
                     AlertsCreator.showCustomNotificationsDialog(NotificationsCustomSettingsActivity.this, 0, currentType, exceptions, currentAccount, param -> {
                         int offUntil;
-                        SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                        SharedPreferences preferences = getNotificationsSettings();
                         if (currentType == NotificationsController.TYPE_PRIVATE) {
                             offUntil = preferences.getInt("EnableAll2", 0);
                         } else if (currentType == NotificationsController.TYPE_GROUP) {
@@ -299,7 +395,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                         } else {
                             offUntil = preferences.getInt("EnableChannel2", 0);
                         }
-                        int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+                        int currentTime = getConnectionsManager().getCurrentTime();
                         int iconType;
                         if (offUntil < currentTime) {
                             iconType = 0;
@@ -308,7 +404,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                         } else {
                             iconType = 2;
                         }
-                        checkCell.setChecked(NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(currentType), iconType);
+                        checkCell.setChecked(getNotificationsController().isGlobalNotificationsEnabled(currentType), iconType);
                         if (holder != null) {
                             adapter.onBindViewHolder(holder, position);
                         }
@@ -319,7 +415,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 if (!view.isEnabled()) {
                     return;
                 }
-                SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                SharedPreferences preferences = getNotificationsSettings();
                 SharedPreferences.Editor editor = preferences.edit();
                 if (currentType == NotificationsController.TYPE_PRIVATE) {
                     enabled = preferences.getBoolean("EnablePreviewAll", true);
@@ -332,13 +428,13 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                     editor.putBoolean("EnablePreviewChannel", !enabled);
                 }
                 editor.commit();
-                NotificationsController.getInstance(currentAccount).updateServerNotificationsSettings(currentType);
+                getNotificationsController().updateServerNotificationsSettings(currentType);
             } else if (position == messageSoundRow) {
                 if (!view.isEnabled()) {
                     return;
                 }
                 try {
-                    SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                    SharedPreferences preferences = getNotificationsSettings();
                     Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                     tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
                     tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
@@ -451,7 +547,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
         }
         int count = listView.getChildCount();
         ArrayList<Animator> animators = new ArrayList<>();
-        boolean enabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(currentType);
+        boolean enabled = getNotificationsController().isGlobalNotificationsEnabled(currentType);
         for (int a = 0; a < count; a++) {
             View child = listView.getChildAt(a);
             RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.getChildViewHolder(child);
@@ -500,7 +596,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
     }
 
     private void loadExceptions() {
-        MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
+        getMessagesStorage().getStorageQueue().postRunnable(() -> {
             ArrayList<NotificationsSettingsActivity.NotificationException> usersResult = new ArrayList<>();
             ArrayList<NotificationsSettingsActivity.NotificationException> chatsResult = new ArrayList<>();
             ArrayList<NotificationsSettingsActivity.NotificationException> channelsResult = new ArrayList<>();
@@ -513,9 +609,9 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
             ArrayList<TLRPC.User> users = new ArrayList<>();
             ArrayList<TLRPC.Chat> chats = new ArrayList<>();
             ArrayList<TLRPC.EncryptedChat> encryptedChats = new ArrayList<>();
-            int selfId = UserConfig.getInstance(currentAccount).clientUserId;
+            int selfId = getUserConfig().clientUserId;
 
-            SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+            SharedPreferences preferences = getNotificationsSettings();
             Map<String, ?> values = preferences.getAll();
             for (Map.Entry<String, ?> entry : values.entrySet()) {
                 String key = entry.getKey();
@@ -539,7 +635,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                         int high_id = (int) (did << 32);
                         if (lower_id != 0) {
                             if (lower_id > 0) {
-                                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
+                                TLRPC.User user = getMessagesController().getUser(lower_id);
                                 if (user == null) {
                                     usersToLoad.add(lower_id);
                                     waitingForLoadExceptions.put(did, exception);
@@ -548,7 +644,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                                 }
                                 usersResult.add(exception);
                             } else {
-                                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
+                                TLRPC.Chat chat = getMessagesController().getChat(-lower_id);
                                 if (chat == null) {
                                     chatsToLoad.add(-lower_id);
                                     waitingForLoadExceptions.put(did, exception);
@@ -563,12 +659,12 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                                 }
                             }
                         } else if (high_id != 0) {
-                            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(high_id);
+                            TLRPC.EncryptedChat encryptedChat = getMessagesController().getEncryptedChat(high_id);
                             if (encryptedChat == null) {
                                 encryptedChatsToLoad.add(high_id);
                                 waitingForLoadExceptions.put(did, exception);
                             } else {
-                                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(encryptedChat.user_id);
+                                TLRPC.User user = getMessagesController().getUser(encryptedChat.user_id);
                                 if (user == null) {
                                     usersToLoad.add(encryptedChat.user_id);
                                     waitingForLoadExceptions.put(encryptedChat.user_id, exception);
@@ -584,13 +680,13 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
             if (waitingForLoadExceptions.size() != 0) {
                 try {
                     if (!encryptedChatsToLoad.isEmpty()) {
-                        MessagesStorage.getInstance(currentAccount).getEncryptedChatsInternal(TextUtils.join(",", encryptedChatsToLoad), encryptedChats, usersToLoad);
+                        getMessagesStorage().getEncryptedChatsInternal(TextUtils.join(",", encryptedChatsToLoad), encryptedChats, usersToLoad);
                     }
                     if (!usersToLoad.isEmpty()) {
-                        MessagesStorage.getInstance(currentAccount).getUsersInternal(TextUtils.join(",", usersToLoad), users);
+                        getMessagesStorage().getUsersInternal(TextUtils.join(",", usersToLoad), users);
                     }
                     if (!chatsToLoad.isEmpty()) {
-                        MessagesStorage.getInstance(currentAccount).getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
+                        getMessagesStorage().getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -633,9 +729,9 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 }
             }
             AndroidUtilities.runOnUIThread(() -> {
-                MessagesController.getInstance(currentAccount).putUsers(users, true);
-                MessagesController.getInstance(currentAccount).putChats(chats, true);
-                MessagesController.getInstance(currentAccount).putEncryptedChats(encryptedChats, true);
+                getMessagesController().putUsers(users, true);
+                getMessagesController().putChats(chats, true);
+                getMessagesController().putEncryptedChats(encryptedChats, true);
                 if (currentType == NotificationsController.TYPE_PRIVATE) {
                     exceptions = usersResult;
                 } else if (currentType == NotificationsController.TYPE_GROUP) {
@@ -697,6 +793,13 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
         } else {
             exceptionsSection2Row = -1;
         }
+        if (exceptions != null && !exceptions.isEmpty()) {
+            deleteAllRow = rowCount++;
+            deleteAllSectionRow = rowCount++;
+        } else {
+            deleteAllRow = -1;
+            deleteAllSectionRow = -1;
+        }
     }
 
     @Override
@@ -716,7 +819,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 }
             }
 
-            SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+            SharedPreferences preferences = getNotificationsSettings();
             SharedPreferences.Editor editor = preferences.edit();
 
             if (currentType == NotificationsController.TYPE_PRIVATE) {
@@ -745,7 +848,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 }
             }
             editor.commit();
-            NotificationsController.getInstance(currentAccount).updateServerNotificationsSettings(currentType);
+            getNotificationsController().updateServerNotificationsSettings(currentType);
             RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(requestCode);
             if (holder != null) {
                 adapter.onBindViewHolder(holder, requestCode);
@@ -766,48 +869,44 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
         private Context mContext;
         private ArrayList<NotificationsSettingsActivity.NotificationException> searchResult = new ArrayList<>();
         private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
-        private Timer searchTimer;
+        private Runnable searchRunnable;
+        private SearchAdapterHelper searchAdapterHelper;
 
         public SearchAdapter(Context context) {
             mContext = context;
+            searchAdapterHelper = new SearchAdapterHelper(true);
+            searchAdapterHelper.setDelegate(() -> {
+                if (searchRunnable == null && !searchAdapterHelper.isSearchInProgress()) {
+                    emptyView.showTextView();
+                }
+                notifyDataSetChanged();
+            });
         }
 
         public void searchDialogs(final String query) {
-            try {
-                if (searchTimer != null) {
-                    searchTimer.cancel();
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
+            if (searchRunnable != null) {
+                Utilities.searchQueue.cancelRunnable(searchRunnable);
+                searchRunnable = null;
             }
             if (query == null) {
                 searchResult.clear();
                 searchResultNames.clear();
+                searchAdapterHelper.mergeResults(null);
+                searchAdapterHelper.queryServerSearch(null, true, currentType != NotificationsController.TYPE_PRIVATE, true, false, 0, false, 0);
                 notifyDataSetChanged();
             } else {
-                searchTimer = new Timer();
-                searchTimer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        try {
-                            searchTimer.cancel();
-                            searchTimer = null;
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        processSearch(query);
-                    }
-                }, 200, 300);
+                Utilities.searchQueue.postRunnable(searchRunnable = () -> processSearch(query), 300);
             }
         }
 
         private void processSearch(final String query) {
             AndroidUtilities.runOnUIThread(() -> {
+                searchAdapterHelper.queryServerSearch(query, true, currentType != NotificationsController.TYPE_PRIVATE, true, false, 0, false, 0);
                 final ArrayList<NotificationsSettingsActivity.NotificationException> contactsCopy = new ArrayList<>(exceptions);
                 Utilities.searchQueue.postRunnable(() -> {
                     String search1 = query.trim().toLowerCase();
                     if (search1.length() == 0) {
-                        updateSearchResults(new ArrayList<>(), new ArrayList<>());
+                        updateSearchResults(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
                         return;
                     }
                     String search2 = LocaleController.getInstance().getTranslitString(search1);
@@ -820,7 +919,8 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                         search[1] = search2;
                     }
 
-                    ArrayList<NotificationsSettingsActivity.NotificationException> resultArray = new ArrayList<>();
+                    ArrayList<TLObject> resultArray = new ArrayList<>();
+                    ArrayList<NotificationsSettingsActivity.NotificationException> exceptionsArray = new ArrayList<>();
                     ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
 
                     String[] names = new String[2];
@@ -829,31 +929,34 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
 
                         int lower_id = (int) exception.did;
                         int high_id = (int) (exception.did >> 32);
+                        TLObject object = null;
 
                         if (lower_id != 0) {
                             if (lower_id > 0) {
-                                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
+                                TLRPC.User user = getMessagesController().getUser(lower_id);
                                 if (user.deleted) {
                                     continue;
                                 }
                                 if (user != null) {
                                     names[0] = ContactsController.formatName(user.first_name, user.last_name);
                                     names[1] = user.username;
+                                    object = user;
                                 }
                             } else {
-                                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
+                                TLRPC.Chat chat = getMessagesController().getChat(-lower_id);
                                 if (chat != null) {
                                     if (chat.left || chat.kicked || chat.migrated_to != null) {
                                         continue;
                                     }
                                     names[0] = chat.title;
                                     names[1] = chat.username;
+                                    object = chat;
                                 }
                             }
                         } else {
-                            TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(high_id);
+                            TLRPC.EncryptedChat encryptedChat = getMessagesController().getEncryptedChat(high_id);
                             if (encryptedChat != null) {
-                                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(encryptedChat.user_id);
+                                TLRPC.User user = getMessagesController().getUser(encryptedChat.user_id);
                                 if (user != null) {
                                     names[0] = ContactsController.formatName(user.first_name, user.last_name);
                                     names[1] = user.username;
@@ -883,22 +986,43 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                                 } else {
                                     resultArrayNames.add(AndroidUtilities.generateSearchName("@" + names[1], null, "@" + q));
                                 }
-                                resultArray.add(exception);
+                                exceptionsArray.add(exception);
+                                if (object != null) {
+                                    resultArray.add(object);
+                                }
                                 break;
                             }
                         }
                     }
-                    updateSearchResults(resultArray, resultArrayNames);
+                    updateSearchResults(resultArray, exceptionsArray, resultArrayNames);
                 });
             });
         }
 
-        private void updateSearchResults(final ArrayList<NotificationsSettingsActivity.NotificationException> users, final ArrayList<CharSequence> names) {
+        private void updateSearchResults(final ArrayList<TLObject> result, final ArrayList<NotificationsSettingsActivity.NotificationException> exceptions, final ArrayList<CharSequence> names) {
             AndroidUtilities.runOnUIThread(() -> {
-                searchResult = users;
+                searchRunnable = null;
+                searchResult = exceptions;
                 searchResultNames = names;
+                searchAdapterHelper.mergeResults(result);
+                if (searching && !searchAdapterHelper.isSearchInProgress()) {
+                    emptyView.showTextView();
+                }
                 notifyDataSetChanged();
             });
+        }
+
+        public Object getObject(int position) {
+            if (position >= 0 && position < searchResult.size()) {
+                return searchResult.get(position);
+            } else {
+                position -= searchResult.size() + 1;
+                ArrayList<TLObject> globalSearch = searchAdapterHelper.getGlobalSearch();
+                if (position >= 0 && position < globalSearch.size()) {
+                    return searchAdapterHelper.getGlobalSearch().get(position);
+                }
+            }
+            return null;
         }
 
         @Override
@@ -908,25 +1032,63 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
 
         @Override
         public int getItemCount() {
-            return searchResult.size();
+            int count = searchResult.size();
+            ArrayList<TLObject> globalSearch = searchAdapterHelper.getGlobalSearch();
+            if (!globalSearch.isEmpty()) {
+                count += 1 + globalSearch.size();
+            }
+            return count;
         }
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = new UserCell(mContext, 9, 0, false);
-            view.setPadding(AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6), 0);
-            view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            View view;
+            switch (viewType) {
+                case 0: {
+                    view = new UserCell(mContext, 4, 0, false, true);
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
+                }
+                case 1:
+                default: {
+                    view = new GraySectionCell(mContext);
+                    break;
+                }
+            }
+
             return new RecyclerListView.Holder(view);
         }
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            UserCell cell = (UserCell) holder.itemView;
-            cell.setException(searchResult.get(position), searchResultNames.get(position), position != searchResult.size() - 1);
+            switch (holder.getItemViewType()) {
+                case 0: {
+                    UserCell cell = (UserCell) holder.itemView;
+                    if (position < searchResult.size()) {
+                        cell.setException(searchResult.get(position), searchResultNames.get(position), position != searchResult.size() - 1);
+                        cell.setAddButtonVisible(false);
+                    } else {
+                        position -= searchResult.size() + 1;
+                        ArrayList<TLObject> globalSearch = searchAdapterHelper.getGlobalSearch();
+                        TLObject object = globalSearch.get(position);
+                        cell.setData(object, null, LocaleController.getString("NotificationsOn", R.string.NotificationsOn), 0, position != globalSearch.size() - 1);
+                        cell.setAddButtonVisible(true);
+                    }
+                    break;
+                }
+                case 1: {
+                    GraySectionCell cell = (GraySectionCell) holder.itemView;
+                    cell.setText(LocaleController.getString("AddToExceptions", R.string.AddToExceptions));
+                    break;
+                }
+            }
         }
 
         @Override
-        public int getItemViewType(int i) {
+        public int getItemViewType(int position) {
+            if (position == searchResult.size()) {
+                return 1;
+            }
             return 0;
         }
     }
@@ -1002,7 +1164,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 }
                 case 1: {
                     TextCheckCell checkCell = (TextCheckCell) holder.itemView;
-                    SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                    SharedPreferences preferences = getNotificationsSettings();
                     if (position == previewRow) {
                         boolean enabled;
                         if (currentType == NotificationsController.TYPE_PRIVATE) {
@@ -1024,7 +1186,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 }
                 case 3: {
                     TextColorCell textColorCell = (TextColorCell) holder.itemView;
-                    SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                    SharedPreferences preferences = getNotificationsSettings();
                     int color;
                     if (currentType == NotificationsController.TYPE_PRIVATE) {
                         color = preferences.getInt("MessagesLed", 0xff0000ff);
@@ -1043,7 +1205,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                     break;
                 }
                 case 4: {
-                    if (position == exceptionsSection2Row || position == groupSection2Row && exceptionsSection2Row == -1) {
+                    if (position == deleteAllSectionRow || position == groupSection2Row && exceptionsSection2Row == -1 || position == exceptionsSection2Row && deleteAllRow == -1) {
                         holder.itemView.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     } else {
                         holder.itemView.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
@@ -1052,7 +1214,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 }
                 case 5: {
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
-                    SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                    SharedPreferences preferences = getNotificationsSettings();
                     if (position == messageSoundRow) {
                         String value;
                         if (currentType == NotificationsController.TYPE_PRIVATE) {
@@ -1133,7 +1295,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                     String text;
                     StringBuilder builder = new StringBuilder();
                     int offUntil;
-                    SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                    SharedPreferences preferences = getNotificationsSettings();
 
                     if (currentType == NotificationsController.TYPE_PRIVATE) {
                         text = LocaleController.getString("NotificationsForPrivateChats", R.string.NotificationsForPrivateChats);
@@ -1145,7 +1307,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                         text = LocaleController.getString("NotificationsForChannels", R.string.NotificationsForChannels);
                         offUntil = preferences.getInt("EnableChannel2", 0);
                     }
-                    int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+                    int currentTime = getConnectionsManager().getCurrentTime();
                     boolean enabled;
                     int iconType;
                     if (enabled = offUntil < currentTime) {
@@ -1163,9 +1325,12 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 }
                 case 7: {
                     TextCell textCell = (TextCell) holder.itemView;
-                    textCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
                     if (position == exceptionsAddRow) {
                         textCell.setTextAndIcon(LocaleController.getString("NotificationsAddAnException", R.string.NotificationsAddAnException), R.drawable.actions_addmember2, exceptionsStartRow != -1);
+                        textCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
+                    } else if (position == deleteAllRow) {
+                        textCell.setText(LocaleController.getString("NotificationsDeleteAllException", R.string.NotificationsDeleteAllException), false);
+                        textCell.setColors(null, Theme.key_windowBackgroundWhiteRedText5);
                     }
                     break;
                 }
@@ -1177,7 +1342,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
             if (exceptions == null || !exceptions.isEmpty()) {
                 return;
             }
-            boolean enabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(currentType);
+            boolean enabled = getNotificationsController().isGlobalNotificationsEnabled(currentType);
             switch (holder.getItemViewType()) {
                 case 0: {
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
@@ -1216,11 +1381,11 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 return 2;
             } else if (position == messageLedRow) {
                 return 3;
-            } else if (position == groupSection2Row || position == alertSection2Row || position == exceptionsSection2Row) {
+            } else if (position == groupSection2Row || position == alertSection2Row || position == exceptionsSection2Row || position == deleteAllSectionRow) {
                 return 4;
             } else if (position == alertRow) {
                 return 6;
-            } else if (position == exceptionsAddRow) {
+            } else if (position == exceptionsAddRow || position == deleteAllRow) {
                 return 7;
             } else {
                 return 5;
@@ -1276,6 +1441,9 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
 
+                new ThemeDescription(listView, 0, new Class[]{GraySectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_graySectionText),
+                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{GraySectionCell.class}, null, null, null, Theme.key_graySection),
+
                 new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
                 new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack),
@@ -1289,6 +1457,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
 
                 new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueButton),
+                new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteRedText5),
                 new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueIcon),
         };
     }

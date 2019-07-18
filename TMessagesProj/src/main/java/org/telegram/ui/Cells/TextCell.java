@@ -28,10 +28,17 @@ public class TextCell extends FrameLayout {
     private SimpleTextView valueTextView;
     private ImageView imageView;
     private ImageView valueImageView;
+    private int leftPadding;
     private boolean needDivider;
 
     public TextCell(Context context) {
+        this(context, 23);
+    }
+
+    public TextCell(Context context, int left) {
         super(context);
+
+        leftPadding = left;
 
         textView = new SimpleTextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -74,8 +81,8 @@ public class TextCell extends FrameLayout {
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = AndroidUtilities.dp(48);
 
-        valueTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(23), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
-        textView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(71 + 24) - valueTextView.getTextWidth(), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
+        valueTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(leftPadding), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
+        textView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(71 + leftPadding) - valueTextView.getTextWidth(), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
         if (imageView.getVisibility() == VISIBLE) {
             imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST));
         }
@@ -91,14 +98,14 @@ public class TextCell extends FrameLayout {
         int width = right - left;
 
         int viewTop = (height - valueTextView.getTextHeight()) / 2;
-        int viewLeft = LocaleController.isRTL ? AndroidUtilities.dp(23) : 0;
+        int viewLeft = LocaleController.isRTL ? AndroidUtilities.dp(leftPadding) : 0;
         valueTextView.layout(viewLeft, viewTop, viewLeft + valueTextView.getMeasuredWidth(), viewTop + valueTextView.getMeasuredHeight());
 
         viewTop = (height - textView.getTextHeight()) / 2;
         if (LocaleController.isRTL) {
-            viewLeft = getMeasuredWidth() - textView.getMeasuredWidth() - AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? 71 : 23);
+            viewLeft = getMeasuredWidth() - textView.getMeasuredWidth() - AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? 71 : leftPadding);
         } else {
-            viewLeft = AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? 71 : 23);
+            viewLeft = AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? 71 : leftPadding);
         }
         textView.layout(viewLeft, viewTop, viewLeft + textView.getMeasuredWidth(), viewTop + textView.getMeasuredHeight());
 

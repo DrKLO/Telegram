@@ -17,19 +17,18 @@ configurations.all {
 dependencies {
     implementation 'androidx.core:core:1.1.0-beta01'
     implementation 'androidx.palette:palette:1.0.0'
-    implementation 'androidx.exifinterface:exifinterface:1.0.0'
-
-    implementation 'com.airbnb.android:lottie:3.0.3'
+    implementation 'androidx.exifinterface:exifinterface:1.1.0-beta01'
 
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
-    implementation 'com.google.firebase:firebase-messaging:18.0.0'
-    implementation 'com.google.firebase:firebase-config:16.5.0'
-    implementation 'com.google.android.gms:play-services-maps:16.1.0'
-    implementation 'com.google.android.gms:play-services-auth:16.0.1'
+    implementation 'com.google.firebase:firebase-messaging:19.0.1'
+    implementation 'com.google.firebase:firebase-config:18.0.0'
+    implementation 'com.google.android.gms:play-services-maps:17.0.0'
+    implementation 'com.google.android.gms:play-services-auth:17.0.0'
     implementation 'com.google.android.gms:play-services-vision:16.2.0'
-    implementation 'com.google.android.gms:play-services-wallet:16.0.1'
-    implementation 'com.google.android.gms:play-services-wearable:16.0.1'
+    implementation 'com.google.android.gms:play-services-wallet:17.0.0'
+    implementation 'com.google.android.gms:play-services-wearable:17.0.0'
+    implementation 'com.google.android.gms:play-services-location:17.0.0'
     implementation 'net.hockeyapp.android:HockeySDK:5.1.1'
     implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
     implementation 'com.stripe:stripe-android:2.0.2'
@@ -243,7 +242,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 1608
+    defaultConfig.versionCode = 1648
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
@@ -277,7 +276,7 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 27
-        versionName "5.7.1"
+        versionName "5.9.0"
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 

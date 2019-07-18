@@ -24,7 +24,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -71,7 +71,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
     private ArrayList<String> searchResultHashtags;
     private ArrayList<String> searchResultCommands;
     private ArrayList<String> searchResultCommandsHelp;
-    private ArrayList<DataQuery.KeywordResult> searchResultSuggestions;
+    private ArrayList<MediaDataController.KeywordResult> searchResultSuggestions;
     private String[] lastSearchKeyboardLanguage;
     private ArrayList<TLRPC.User> searchResultCommandsUsers;
     private ArrayList<TLRPC.BotInlineResult> searchResultBotContext;
@@ -686,7 +686,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
             ArrayList<TLRPC.User> newResult = new ArrayList<>();
             final SparseArray<TLRPC.User> newResultsHashMap = new SparseArray<>();
             final SparseArray<TLRPC.User> newMap = new SparseArray<>();
-            ArrayList<TLRPC.TL_topPeer> inlineBots = DataQuery.getInstance(currentAccount).inlineBots;
+            ArrayList<TLRPC.TL_topPeer> inlineBots = MediaDataController.getInstance(currentAccount).inlineBots;
             if (!usernameOnly && needBotContext && dogPostion == 0 && !inlineBots.isEmpty()) {
                 int count = 0;
                 for (int a = 0; a < inlineBots.size(); a++) {
@@ -869,10 +869,10 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
         } else if (foundType == 3) {
             String[] newLanguage = AndroidUtilities.getCurrentKeyboardLanguage();
             if (!Arrays.equals(newLanguage, lastSearchKeyboardLanguage)) {
-                DataQuery.getInstance(currentAccount).fetchNewEmojiKeywords(newLanguage);
+                MediaDataController.getInstance(currentAccount).fetchNewEmojiKeywords(newLanguage);
             }
             lastSearchKeyboardLanguage = newLanguage;
-            DataQuery.getInstance(currentAccount).getEmojiSuggestions(lastSearchKeyboardLanguage, result.toString(), false, (param, alias) -> {
+            MediaDataController.getInstance(currentAccount).getEmojiSuggestions(lastSearchKeyboardLanguage, result.toString(), false, (param, alias) -> {
                 searchResultSuggestions = param;
                 searchResultHashtags = null;
                 searchResultUsernames = null;

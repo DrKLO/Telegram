@@ -16,6 +16,7 @@ import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -29,6 +30,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
+import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -53,9 +55,10 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     private boolean onlyMutual;
     private boolean allowChats;
     private boolean allowBots;
+    private boolean allowPhoneNumbers;
     private int channelId;
 
-    public SearchAdapter(Context context, SparseArray<TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats, boolean bots, int searchChannelId) {
+    public SearchAdapter(Context context, SparseArray<TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats, boolean bots, boolean phones, int searchChannelId) {
         mContext = context;
         ignoreUsers = arg1;
         onlyMutual = mutual;
@@ -63,6 +66,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
         allowChats = chats;
         allowBots = bots;
         channelId = searchChannelId;
+        allowPhoneNumbers = phones;
         searchAdapterHelper = new SearchAdapterHelper(true);
         searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
             @Override
@@ -102,7 +106,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
             searchResult.clear();
             searchResultNames.clear();
             if (allowUsernameSearch) {
-                searchAdapterHelper.queryServerSearch(null, true, allowChats, allowBots, true, channelId, 0);
+                searchAdapterHelper.queryServerSearch(null, true, allowChats, allowBots, true, channelId, allowPhoneNumbers, 0);
             }
             notifyDataSetChanged();
         } else {
@@ -125,7 +129,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     private void processSearch(final String query) {
         AndroidUtilities.runOnUIThread(() -> {
             if (allowUsernameSearch) {
-                searchAdapterHelper.queryServerSearch(query, true, allowChats, allowBots, true, channelId, -1);
+                searchAdapterHelper.queryServerSearch(query, true, allowChats, allowBots, true, channelId, allowPhoneNumbers, -1);
             }
             final int currentAccount = UserConfig.selectedAccount;
             final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>(ContactsController.getInstance(currentAccount).contacts);
@@ -197,7 +201,8 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public boolean isEnabled(RecyclerView.ViewHolder holder) {
-        return holder.getItemViewType() == 0;
+        int type = holder.getItemViewType();
+        return type == 0 || type == 2;
     }
 
     @Override
@@ -207,27 +212,43 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
         if (globalCount != 0) {
             count += globalCount + 1;
         }
+        int phoneCount = searchAdapterHelper.getPhoneSearch().size();
+        if (phoneCount != 0) {
+            count += phoneCount;
+        }
         return count;
     }
 
     public boolean isGlobalSearch(int i) {
         int localCount = searchResult.size();
         int globalCount = searchAdapterHelper.getGlobalSearch().size();
+        int phoneCount = searchAdapterHelper.getPhoneSearch().size();
         if (i >= 0 && i < localCount) {
             return false;
-        } else if (i > localCount && i <= globalCount + localCount) {
+        } else if (i > localCount && i < localCount + phoneCount) {
+            return false;
+        } else if (i > localCount + phoneCount && i <= globalCount + phoneCount + localCount) {
             return true;
         }
         return false;
     }
 
-    public TLObject getItem(int i) {
+    public Object getItem(int i) {
         int localCount = searchResult.size();
         int globalCount = searchAdapterHelper.getGlobalSearch().size();
+        int phoneCount = searchAdapterHelper.getPhoneSearch().size();
         if (i >= 0 && i < localCount) {
             return searchResult.get(i);
-        } else if (i > localCount && i <= globalCount + localCount) {
-            return searchAdapterHelper.getGlobalSearch().get(i - localCount - 1);
+        } else {
+            i -= localCount;
+            if (i >= 0 && i < phoneCount) {
+                return searchAdapterHelper.getPhoneSearch().get(i);
+            } else {
+                i -= phoneCount;
+                if (i > 0 && i <= globalCount) {
+                    return searchAdapterHelper.getGlobalSearch().get(i - 1);
+                }
+            }
         }
         return null;
     }
@@ -247,9 +268,11 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                 }
                 break;
             case 1:
-            default:
                 view = new GraySectionCell(mContext);
-                ((GraySectionCell) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
+                break;
+            case 2:
+            default:
+                view = new TextCell(mContext, 16);
                 break;
         }
         return new RecyclerListView.Holder(view);
@@ -257,81 +280,108 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-        if (holder.getItemViewType() == 0) {
-            TLObject object = getItem(position);
-            if (object != null) {
-                int id = 0;
-                String un = null;
-                if (object instanceof TLRPC.User) {
-                    un = ((TLRPC.User) object).username;
-                    id = ((TLRPC.User) object).id;
-                } else if (object instanceof TLRPC.Chat) {
-                    un = ((TLRPC.Chat) object).username;
-                    id = ((TLRPC.Chat) object).id;
-                }
+        switch (holder.getItemViewType()) {
+            case 0: {
+                TLObject object = (TLObject) getItem(position);
+                if (object != null) {
+                    int id = 0;
+                    String un = null;
+                    if (object instanceof TLRPC.User) {
+                        un = ((TLRPC.User) object).username;
+                        id = ((TLRPC.User) object).id;
+                    } else if (object instanceof TLRPC.Chat) {
+                        un = ((TLRPC.Chat) object).username;
+                        id = ((TLRPC.Chat) object).id;
+                    }
 
-                CharSequence username = null;
-                CharSequence name = null;
-                if (position < searchResult.size()) {
-                    name = searchResultNames.get(position);
-                    if (name != null && un != null && un.length() > 0) {
-                        if (name.toString().startsWith("@" + un)) {
-                            username = name;
-                            name = null;
-                        }
-                    }
-                } else if (position > searchResult.size() && un != null) {
-                    String foundUserName = searchAdapterHelper.getLastFoundUsername();
-                    if (foundUserName.startsWith("@")) {
-                        foundUserName = foundUserName.substring(1);
-                    }
-                    try {
-                        int index;
-                        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
-                        spannableStringBuilder.append("@");
-                        spannableStringBuilder.append(un);
-                        if ((index = un.toLowerCase().indexOf(foundUserName)) != -1) {
-                            int len = foundUserName.length();
-                            if (index == 0) {
-                                len++;
-                            } else {
-                                index++;
+                    CharSequence username = null;
+                    CharSequence name = null;
+                    if (position < searchResult.size()) {
+                        name = searchResultNames.get(position);
+                        if (name != null && un != null && un.length() > 0) {
+                            if (name.toString().startsWith("@" + un)) {
+                                username = name;
+                                name = null;
                             }
-                            spannableStringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), index, index + len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         }
-                        username = spannableStringBuilder;
-                    } catch (Exception e) {
-                        username = un;
-                        FileLog.e(e);
+                    } else if (position > searchResult.size() && un != null) {
+                        String foundUserName = searchAdapterHelper.getLastFoundUsername();
+                        if (foundUserName.startsWith("@")) {
+                            foundUserName = foundUserName.substring(1);
+                        }
+                        try {
+                            int index;
+                            SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
+                            spannableStringBuilder.append("@");
+                            spannableStringBuilder.append(un);
+                            if ((index = AndroidUtilities.indexOfIgnoreCase(un, foundUserName)) != -1) {
+                                int len = foundUserName.length();
+                                if (index == 0) {
+                                    len++;
+                                } else {
+                                    index++;
+                                }
+                                spannableStringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), index, index + len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            }
+                            username = spannableStringBuilder;
+                        } catch (Exception e) {
+                            username = un;
+                            FileLog.e(e);
+                        }
                     }
-                }
 
-                if (useUserCell) {
-                    UserCell userCell = (UserCell) holder.itemView;
-                    userCell.setData(object, name, username, 0);
-                    if (checkedMap != null) {
-                        userCell.setChecked(checkedMap.indexOfKey(id) >= 0, false);
-                    }
-                } else {
-                    ProfileSearchCell profileSearchCell = (ProfileSearchCell) holder.itemView;
-                    profileSearchCell.setData(object, null, name, username, false, false);
-                    profileSearchCell.useSeparator = (position != getItemCount() - 1 && position != searchResult.size() - 1);
-                    /*if (ignoreUsers != null) {
-                        if (ignoreUsers.containsKey(id)) {
-                            profileSearchCell.drawAlpha = 0.5f;
-                        } else {
-                            profileSearchCell.drawAlpha = 1.0f;
+                    if (useUserCell) {
+                        UserCell userCell = (UserCell) holder.itemView;
+                        userCell.setData(object, name, username, 0);
+                        if (checkedMap != null) {
+                            userCell.setChecked(checkedMap.indexOfKey(id) >= 0, false);
                         }
-                    }*/
+                    } else {
+                        ProfileSearchCell profileSearchCell = (ProfileSearchCell) holder.itemView;
+                        profileSearchCell.setData(object, null, name, username, false, false);
+                        profileSearchCell.useSeparator = (position != getItemCount() - 1 && position != searchResult.size() - 1);
+                        /*if (ignoreUsers != null) {
+                            if (ignoreUsers.containsKey(id)) {
+                                profileSearchCell.drawAlpha = 0.5f;
+                            } else {
+                                profileSearchCell.drawAlpha = 1.0f;
+                            }
+                        }*/
+                    }
                 }
+                break;
+            }
+            case 1: {
+                GraySectionCell cell = (GraySectionCell) holder.itemView;
+                if (getItem(position) == null) {
+                    cell.setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
+                } else {
+                    cell.setText(LocaleController.getString("PhoneNumberSearch", R.string.PhoneNumberSearch));
+                }
+                break;
+            }
+            case 2: {
+                String str = (String) getItem(position);
+                TextCell cell = (TextCell) holder.itemView;
+                cell.setColors(null, Theme.key_windowBackgroundWhiteBlueText2);
+                cell.setText(LocaleController.formatString("AddContactByPhone", R.string.AddContactByPhone, PhoneFormat.getInstance().format("+" + str)), false);
+                break;
             }
         }
     }
 
     @Override
     public int getItemViewType(int i) {
-        if (i == searchResult.size()) {
+        Object item = getItem(i);
+        if (item == null) {
             return 1;
+        } else if (item instanceof String) {
+            String str = (String) item;
+            if ("section".equals(str)) {
+                return 1;
+            } else {
+                return 2;
+            }
         }
         return 0;
     }

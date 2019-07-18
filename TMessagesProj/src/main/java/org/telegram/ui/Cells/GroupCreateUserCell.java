@@ -212,6 +212,8 @@ public class GroupCreateUserCell extends FrameLayout {
                 statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
                 if (currentChat.participants_count != 0) {
                     statusTextView.setText(LocaleController.formatPluralString("Members", currentChat.participants_count));
+                } else if (currentChat.has_geo) {
+                    statusTextView.setText(LocaleController.getString("MegaLocation", R.string.MegaLocation));
                 } else if (TextUtils.isEmpty(currentChat.username)) {
                     statusTextView.setText(LocaleController.getString("MegaPrivate", R.string.MegaPrivate));
                 } else {

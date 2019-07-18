@@ -48,6 +48,7 @@ public class UserCell extends FrameLayout {
     private CheckBox checkBox;
     private CheckBoxSquare checkBoxBig;
     private TextView adminTextView;
+    private TextView addButton;
 
     private AvatarDrawable avatarDrawable;
     private TLObject currentObject;
@@ -70,7 +71,27 @@ public class UserCell extends FrameLayout {
     private boolean needDivider;
 
     public UserCell(Context context, int padding, int checkbox, boolean admin) {
+        this(context, padding, checkbox, admin, false);
+    }
+
+    public UserCell(Context context, int padding, int checkbox, boolean admin, boolean needAddButton) {
         super(context);
+
+        int additionalPadding;
+        if (needAddButton) {
+            addButton = new TextView(context);
+            addButton.setGravity(Gravity.CENTER);
+            addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            addButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+            addButton.setText(LocaleController.getString("Add", R.string.Add));
+            addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
+            addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? 14 : 0, 15, LocaleController.isRTL ? 0 : 14, 0));
+            additionalPadding = (int) Math.ceil((addButton.getPaint().measureText(addButton.getText().toString()) + AndroidUtilities.dp(34 + 14)) / AndroidUtilities.density);
+        } else {
+            additionalPadding = 0;
+        }
 
         statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText);
         statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
@@ -86,12 +107,12 @@ public class UserCell extends FrameLayout {
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setTextSize(16);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) : (64 + padding), 10, LocaleController.isRTL ? (64 + padding) : 28 + (checkbox == 2 ? 18 : 0), 0));
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) + additionalPadding : (64 + padding), 10, LocaleController.isRTL ? (64 + padding) : 28 + (checkbox == 2 ? 18 : 0) + additionalPadding, 0));
 
         statusTextView = new SimpleTextView(context);
         statusTextView.setTextSize(15);
         statusTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : (64 + padding), 32, LocaleController.isRTL ? (64 + padding) : 28, 0));
+        addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + additionalPadding : (64 + padding), 32, LocaleController.isRTL ? (64 + padding) : 28 + additionalPadding, 0));
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
@@ -115,6 +136,7 @@ public class UserCell extends FrameLayout {
             adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon));
             addView(adminTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 23 : 0, 10, LocaleController.isRTL ? 0 : 23, 0));
         }
+
         setFocusable(true);
     }
 
@@ -137,6 +159,13 @@ public class UserCell extends FrameLayout {
             layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 37 + padding);
             layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 37 + padding : 0);
         }
+    }
+
+    public void setAddButtonVisible(boolean value) {
+        if (addButton == null) {
+            return;
+        }
+        addButton.setVisibility(value ? VISIBLE : GONE);
     }
 
     public void setIsAdmin(int value) {
@@ -332,7 +361,7 @@ public class UserCell extends FrameLayout {
         if (mask != 0) {
             boolean continueUpdate = false;
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
-                if (lastAvatar != null && photo == null || lastAvatar == null && photo != null && lastAvatar != null && photo != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
+                if (lastAvatar != null && photo == null || lastAvatar == null && photo != null || lastAvatar != null && photo != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
                     continueUpdate = true;
                 }
             }

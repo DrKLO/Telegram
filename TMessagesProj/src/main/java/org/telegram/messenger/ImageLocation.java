@@ -23,6 +23,7 @@ public class ImageLocation {
     public boolean photoPeerBig;
     public TLRPC.InputPeer photoPeer;
     public TLRPC.InputStickerSet stickerSet;
+    public boolean lottieAnimation;
 
     public int currentSize;
 
@@ -155,11 +156,15 @@ public class ImageLocation {
         } else if (photoSize == null || sticker == null) {
             return null;
         }
-        TLRPC.InputStickerSet stickerSet = DataQuery.getInputStickerSet(sticker);
+        TLRPC.InputStickerSet stickerSet = MediaDataController.getInputStickerSet(sticker);
         if (stickerSet == null) {
             return null;
         }
-        return getForPhoto(photoSize.location, photoSize.size, null, null, null, false, sticker.dc_id, stickerSet, photoSize.type);
+        ImageLocation imageLocation = getForPhoto(photoSize.location, photoSize.size, null, null, null, false, sticker.dc_id, stickerSet, photoSize.type);
+        if (MessageObject.isAnimatedStickerDocument(sticker)) {
+            imageLocation.lottieAnimation = true;
+        }
+        return imageLocation;
     }
 
     public static ImageLocation getForDocument(TLRPC.PhotoSize photoSize, TLRPC.Document document) {

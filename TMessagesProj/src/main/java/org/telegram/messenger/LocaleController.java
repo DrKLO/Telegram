@@ -15,6 +15,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.util.Xml;
@@ -509,6 +510,10 @@ public class LocaleController {
     }
 
     public static String getLocaleStringIso639() {
+        LocaleInfo info = getInstance().currentLocaleInfo;
+        if (info != null) {
+            return info.getLangCode();
+        }
         Locale locale = getInstance().currentLocale;
         if (locale == null) {
             return "en";
@@ -2697,5 +2702,56 @@ public class LocaleController {
 
     public static String addNbsp(String src) {
         return src.replace(' ', '\u00A0');
+    }
+
+    private static Boolean useImperialSystemType;
+
+    public static void resetImperialSystemType() {
+        useImperialSystemType = null;
+    }
+
+    public static String formatDistance(float distance) {
+        if (useImperialSystemType == null) {
+            if (SharedConfig.distanceSystemType == 0) {
+                try {
+                    TelephonyManager telephonyManager = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+                    if (telephonyManager != null) {
+                        String country = telephonyManager.getSimCountryIso().toUpperCase();
+                        useImperialSystemType = "US".equals(country) || "GB".equals(country) || "MM".equals(country) || "LR".equals(country);
+                    }
+                } catch (Exception e) {
+                    useImperialSystemType = false;
+                    FileLog.e(e);
+                }
+            } else {
+                useImperialSystemType = SharedConfig.distanceSystemType == 2;
+            }
+        }
+        if (useImperialSystemType) {
+            distance *= 3.28084f;
+            if (distance < 1000) {
+                return formatString("FootsAway", R.string.FootsAway, String.format("%d", (int) Math.max(1, distance)));
+            } else {
+                String arg;
+                if (distance % 5280 == 0) {
+                    arg = String.format("%d", (int) (distance / 5280));
+                } else {
+                    arg = String.format("%.2f", distance / 5280.0f);
+                }
+                return formatString("MilesAway", R.string.MilesAway, arg);
+            }
+        } else {
+            if (distance < 1000) {
+                return formatString("MetersAway2", R.string.MetersAway2, String.format("%d", (int) Math.max(1, distance)));
+            } else {
+                String arg;
+                if (distance % 1000 == 0) {
+                    arg = String.format("%d", (int) (distance / 1000));
+                } else {
+                    arg = String.format("%.2f", distance / 1000.0f);
+                }
+                return formatString("KMetersAway2", R.string.KMetersAway2, arg);
+            }
+        }
     }
 }

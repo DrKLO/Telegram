@@ -1011,6 +1011,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
             ImageView check = new ImageView(getContext());
             check.setImageResource(R.drawable.ic_ab_done);
             check.setScaleType(ImageView.ScaleType.CENTER);
+            check.setColorFilter(new PorterDuffColorFilter(0xff2f8cc9, PorterDuff.Mode.MULTIPLY));
             button.addView(check, LayoutHelper.createFrame(50, LayoutHelper.MATCH_PARENT));
         }
 
@@ -1078,6 +1079,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
             ImageView check = new ImageView(getContext());
             check.setImageResource(R.drawable.ic_ab_done);
             check.setScaleType(ImageView.ScaleType.CENTER);
+            check.setColorFilter(new PorterDuffColorFilter(0xff2f8cc9, PorterDuff.Mode.MULTIPLY));
             button.addView(check, LayoutHelper.createFrame(50, LayoutHelper.MATCH_PARENT));
         }
 

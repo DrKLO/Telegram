@@ -2,7 +2,6 @@ package org.telegram.messenger;
 
 import android.os.SystemClock;
 
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -10,7 +9,7 @@ import org.telegram.tgnet.TLRPC;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class FileRefController {
+public class FileRefController extends BaseController {
 
     private class Requester {
         private TLRPC.InputFileLocation location;
@@ -32,8 +31,7 @@ public class FileRefController {
 
     private long lastCleanupTime = SystemClock.uptimeMillis();
 
-    private int currentAccount;
-    private static volatile FileRefController Instance[] = new FileRefController[UserConfig.MAX_ACCOUNT_COUNT];
+    private static volatile FileRefController[] Instance = new FileRefController[UserConfig.MAX_ACCOUNT_COUNT];
 
     public static FileRefController getInstance(int num) {
         FileRefController localInstance = Instance[num];
@@ -49,7 +47,7 @@ public class FileRefController {
     }
 
     public FileRefController(int instance) {
-        currentAccount = instance;
+        super(instance);
     }
 
     public static String getKeyForParentObject(Object parentObject) {
@@ -267,13 +265,13 @@ public class FileRefController {
             int channelId = messageObject.getChannelId();
             if (channelId != 0) {
                 TLRPC.TL_channels_getMessages req = new TLRPC.TL_channels_getMessages();
-                req.channel = MessagesController.getInstance(currentAccount).getInputChannel(channelId);
+                req.channel = getMessagesController().getInputChannel(channelId);
                 req.id.add(messageObject.getRealId());
-                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+                getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
             } else {
                 TLRPC.TL_messages_getMessages req = new TLRPC.TL_messages_getMessages();
                 req.id.add(messageObject.getRealId());
-                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+                getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
             }
         } else if (parentObject instanceof TLRPC.TL_wallPaper) {
             TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) parentObject;
@@ -282,43 +280,43 @@ public class FileRefController {
             inputWallPaper.id = wallPaper.id;
             inputWallPaper.access_hash = wallPaper.access_hash;
             req.wallpaper = inputWallPaper;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+            getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
         } else if (parentObject instanceof TLRPC.WebPage) {
             TLRPC.WebPage webPage = (TLRPC.WebPage) parentObject;
             TLRPC.TL_messages_getWebPage req = new TLRPC.TL_messages_getWebPage();
             req.url = webPage.url;
             req.hash = 0;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+            getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
         } else if (parentObject instanceof TLRPC.User) {
             TLRPC.User user = (TLRPC.User) parentObject;
             TLRPC.TL_users_getUsers req = new TLRPC.TL_users_getUsers();
-            req.id.add(MessagesController.getInstance(currentAccount).getInputUser(user));
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+            req.id.add(getMessagesController().getInputUser(user));
+            getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
         } else if (parentObject instanceof TLRPC.Chat) {
             TLRPC.Chat chat = (TLRPC.Chat) parentObject;
             if (chat instanceof TLRPC.TL_chat) {
                 TLRPC.TL_messages_getChats req = new TLRPC.TL_messages_getChats();
                 req.id.add(chat.id);
-                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+                getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
             } else if (chat instanceof TLRPC.TL_channel) {
                 TLRPC.TL_channels_getChannels req = new TLRPC.TL_channels_getChannels();
                 req.id.add(MessagesController.getInputChannel(chat));
-                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+                getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
             }
         } else if (parentObject instanceof String) {
             String string = (String) parentObject;
             if ("wallpaper".equals(string)) {
                 TLRPC.TL_account_getWallPapers req = new TLRPC.TL_account_getWallPapers();
-                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+                getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
             } else if (string.startsWith("gif")) {
                 TLRPC.TL_messages_getSavedGifs req = new TLRPC.TL_messages_getSavedGifs();
-                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+                getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
             } else if ("recent".equals(string)) {
                 TLRPC.TL_messages_getRecentStickers req = new TLRPC.TL_messages_getRecentStickers();
-                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+                getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
             } else if ("fav".equals(string)) {
                 TLRPC.TL_messages_getFavedStickers req = new TLRPC.TL_messages_getFavedStickers();
-                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+                getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
             } else if (string.startsWith("avatar_")) {
                 int id = Utilities.parseInt(string);
                 if (id > 0) {
@@ -326,16 +324,16 @@ public class FileRefController {
                     req.limit = 80;
                     req.offset = 0;
                     req.max_id = 0;
-                    req.user_id = MessagesController.getInstance(currentAccount).getInputUser(id);
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+                    req.user_id = getMessagesController().getInputUser(id);
+                    getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
                 } else {
                     TLRPC.TL_messages_search req = new TLRPC.TL_messages_search();
                     req.filter = new TLRPC.TL_inputMessagesFilterChatPhotos();
                     req.limit = 80;
                     req.offset_id = 0;
                     req.q = "";
-                    req.peer = MessagesController.getInstance(currentAccount).getInputPeer(id);
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+                    req.peer = getMessagesController().getInputPeer(id);
+                    getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
                 }
             } else if (string.startsWith("sent_")) {
                 String[] params = string.split("_");
@@ -343,13 +341,13 @@ public class FileRefController {
                     int channelId = Utilities.parseInt(params[1]);
                     if (channelId != 0) {
                         TLRPC.TL_channels_getMessages req = new TLRPC.TL_channels_getMessages();
-                        req.channel = MessagesController.getInstance(currentAccount).getInputChannel(channelId);
+                        req.channel = getMessagesController().getInputChannel(channelId);
                         req.id.add(Utilities.parseInt(params[2]));
-                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, false));
+                        getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, false));
                     } else {
                         TLRPC.TL_messages_getMessages req = new TLRPC.TL_messages_getMessages();
                         req.id.add(Utilities.parseInt(params[2]));
-                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, false));
+                        getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, false));
                     }
                 } else {
                     sendErrorToObject(args, 0);
@@ -363,18 +361,18 @@ public class FileRefController {
             req.stickerset = new TLRPC.TL_inputStickerSetID();
             req.stickerset.id = stickerSet.set.id;
             req.stickerset.access_hash = stickerSet.set.access_hash;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+            getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
         } else if (parentObject instanceof TLRPC.StickerSetCovered) {
             TLRPC.StickerSetCovered stickerSet = (TLRPC.StickerSetCovered) parentObject;
             TLRPC.TL_messages_getStickerSet req = new TLRPC.TL_messages_getStickerSet();
             req.stickerset = new TLRPC.TL_inputStickerSetID();
             req.stickerset.id = stickerSet.set.id;
             req.stickerset.access_hash = stickerSet.set.access_hash;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+            getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
         } else if (parentObject instanceof TLRPC.InputStickerSet) {
             TLRPC.TL_messages_getStickerSet req = new TLRPC.TL_messages_getStickerSet();
             req.stickerset = (TLRPC.InputStickerSet) parentObject;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
+            getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, true));
         } else {
             sendErrorToObject(args, 0);
         }
@@ -422,7 +420,7 @@ public class FileRefController {
             }
             if (done) {
                 multiMediaCache.remove(multiMedia);
-                SendMessagesHelper.getInstance(currentAccount).performSendMessageRequestMulti(multiMedia, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4]);
+                getSendMessagesHelper().performSendMessageRequestMulti(multiMedia, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4]);
             }
         } else if (requester.args[0] instanceof TLRPC.TL_messages_sendMedia) {
             TLRPC.TL_messages_sendMedia req = (TLRPC.TL_messages_sendMedia) requester.args[0];
@@ -433,7 +431,7 @@ public class FileRefController {
                 TLRPC.TL_inputMediaPhoto mediaPhoto = (TLRPC.TL_inputMediaPhoto) req.media;
                 mediaPhoto.id.file_reference = file_reference;
             }
-            SendMessagesHelper.getInstance(currentAccount).performSendMessageRequest((TLObject) requester.args[0], (MessageObject) requester.args[1], (String) requester.args[2], (SendMessagesHelper.DelayedMessage) requester.args[3], (Boolean) requester.args[4], (SendMessagesHelper.DelayedMessage) requester.args[5], null);
+            getSendMessagesHelper().performSendMessageRequest((TLObject) requester.args[0], (MessageObject) requester.args[1], (String) requester.args[2], (SendMessagesHelper.DelayedMessage) requester.args[3], (Boolean) requester.args[4], (SendMessagesHelper.DelayedMessage) requester.args[5], null);
         } else if (requester.args[0] instanceof TLRPC.TL_messages_editMessage) {
             TLRPC.TL_messages_editMessage req = (TLRPC.TL_messages_editMessage) requester.args[0];
             if (req.media instanceof TLRPC.TL_inputMediaDocument) {
@@ -443,23 +441,23 @@ public class FileRefController {
                 TLRPC.TL_inputMediaPhoto mediaPhoto = (TLRPC.TL_inputMediaPhoto) req.media;
                 mediaPhoto.id.file_reference = file_reference;
             }
-            SendMessagesHelper.getInstance(currentAccount).performSendMessageRequest((TLObject) requester.args[0], (MessageObject) requester.args[1], (String) requester.args[2], (SendMessagesHelper.DelayedMessage) requester.args[3], (Boolean) requester.args[4], (SendMessagesHelper.DelayedMessage) requester.args[5], null);
+            getSendMessagesHelper().performSendMessageRequest((TLObject) requester.args[0], (MessageObject) requester.args[1], (String) requester.args[2], (SendMessagesHelper.DelayedMessage) requester.args[3], (Boolean) requester.args[4], (SendMessagesHelper.DelayedMessage) requester.args[5], null);
         } else if (requester.args[0] instanceof TLRPC.TL_messages_saveGif) {
             TLRPC.TL_messages_saveGif req = (TLRPC.TL_messages_saveGif) requester.args[0];
             req.id.file_reference = file_reference;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+            getConnectionsManager().sendRequest(req, (response, error) -> {
 
             });
         } else if (requester.args[0] instanceof TLRPC.TL_messages_saveRecentSticker) {
             TLRPC.TL_messages_saveRecentSticker req = (TLRPC.TL_messages_saveRecentSticker) requester.args[0];
             req.id.file_reference = file_reference;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+            getConnectionsManager().sendRequest(req, (response, error) -> {
 
             });
         } else if (requester.args[0] instanceof TLRPC.TL_messages_faveSticker) {
             TLRPC.TL_messages_faveSticker req = (TLRPC.TL_messages_faveSticker) requester.args[0];
             req.id.file_reference = file_reference;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+            getConnectionsManager().sendRequest(req, (response, error) -> {
 
             });
         } else if (requester.args[0] instanceof TLRPC.TL_messages_getAttachedStickers) {
@@ -471,7 +469,7 @@ public class FileRefController {
                 TLRPC.TL_inputStickeredMediaPhoto mediaPhoto = (TLRPC.TL_inputStickeredMediaPhoto) req.media;
                 mediaPhoto.id.file_reference = file_reference;
             }
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (RequestDelegate) requester.args[1]);
+            getConnectionsManager().sendRequest(req, (RequestDelegate) requester.args[1]);
         } else if (requester.args[1] instanceof FileLoadOperation) {
             FileLoadOperation fileLoadOperation = (FileLoadOperation) requester.args[1];
             if (locationReplacement != null) {
@@ -491,10 +489,10 @@ public class FileRefController {
             Object[] objects = multiMediaCache.get(req);
             if (objects != null) {
                 multiMediaCache.remove(req);
-                SendMessagesHelper.getInstance(currentAccount).performSendMessageRequestMulti(req, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4]);
+                getSendMessagesHelper().performSendMessageRequestMulti(req, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4]);
             }
         } else if (args[0] instanceof TLRPC.TL_messages_sendMedia || args[0] instanceof TLRPC.TL_messages_editMessage) {
-            SendMessagesHelper.getInstance(currentAccount).performSendMessageRequest((TLObject) args[0], (MessageObject) args[1], (String) args[2], (SendMessagesHelper.DelayedMessage) args[3], (Boolean) args[4], (SendMessagesHelper.DelayedMessage) args[5], null);
+            getSendMessagesHelper().performSendMessageRequest((TLObject) args[0], (MessageObject) args[1], (String) args[2], (SendMessagesHelper.DelayedMessage) args[3], (Boolean) args[4], (SendMessagesHelper.DelayedMessage) args[5], null);
         } else if (args[0] instanceof TLRPC.TL_messages_saveGif) {
             TLRPC.TL_messages_saveGif req = (TLRPC.TL_messages_saveGif) args[0];
             //do nothing
@@ -506,7 +504,7 @@ public class FileRefController {
             //do nothing
         } else if (args[0] instanceof TLRPC.TL_messages_getAttachedStickers) {
             TLRPC.TL_messages_getAttachedStickers req = (TLRPC.TL_messages_getAttachedStickers) args[0];
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (RequestDelegate) args[1]);
+            getConnectionsManager().sendRequest(req, (RequestDelegate) args[1]);
         } else {
             if (reason == 0) {
                 TLRPC.TL_error error = new TLRPC.TL_error();
@@ -547,9 +545,9 @@ public class FileRefController {
                 parentRequester.remove(parentKey);
             }
         }
-        byte result[] = null;
+        byte[] result = null;
         TLRPC.InputFileLocation[] locationReplacement = null;
-        boolean needReplacement[] = null;
+        boolean[] needReplacement = null;
         ArrayList<Requester> arrayList = locationRequester.get(locationKey);
         if (arrayList == null) {
             return found;
@@ -598,13 +596,13 @@ public class FileRefController {
                                         }
                                     }
                                 }
-                                MessagesStorage.getInstance(currentAccount).replaceMessageIfExists(message, currentAccount, res.users, res.chats, false);
+                                getMessagesStorage().replaceMessageIfExists(message, currentAccount, res.users, res.chats, false);
                             }
                             break;
                         }
                     }
                     if (result == null) {
-                        MessagesStorage.getInstance(currentAccount).replaceMessageIfExists(res.messages.get(0), currentAccount, res.users, res.chats,true);
+                        getMessagesStorage().replaceMessageIfExists(res.messages.get(0), currentAccount, res.users, res.chats,true);
                         if (BuildVars.DEBUG_VERSION) {
                             FileLog.d("file ref not found in messages, replacing message");
                         }
@@ -621,7 +619,7 @@ public class FileRefController {
                     }
                 }
                 if (result != null && cache) {
-                    MessagesStorage.getInstance(currentAccount).putWallpapers(accountWallPapers.wallpapers, 1);
+                    getMessagesStorage().putWallpapers(accountWallPapers.wallpapers, 1);
                 }
             } else if (response instanceof TLRPC.TL_wallPaper) {
                 TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) response;
@@ -629,7 +627,7 @@ public class FileRefController {
                 if (result != null && cache) {
                     ArrayList<TLRPC.WallPaper> wallpapers = new ArrayList<>();
                     wallpapers.add(wallPaper);
-                    MessagesStorage.getInstance(currentAccount).putWallpapers(wallpapers, 0);
+                    getMessagesStorage().putWallpapers(wallpapers, 0);
                 }
             } else if (response instanceof TLRPC.Vector) {
                 TLRPC.Vector vector = (TLRPC.Vector) response;
@@ -642,8 +640,8 @@ public class FileRefController {
                             if (cache && result != null) {
                                 ArrayList<TLRPC.User> arrayList1 = new ArrayList<>();
                                 arrayList1.add(user);
-                                MessagesStorage.getInstance(currentAccount).putUsersAndChats(arrayList1, null, true, true);
-                                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).putUser(user, false));
+                                getMessagesStorage().putUsersAndChats(arrayList1, null, true, true);
+                                AndroidUtilities.runOnUIThread(() -> getMessagesController().putUser(user, false));
                             }
                         } else if (object instanceof TLRPC.Chat) {
                             TLRPC.Chat chat = (TLRPC.Chat) object;
@@ -651,8 +649,8 @@ public class FileRefController {
                             if (cache && result != null) {
                                 ArrayList<TLRPC.Chat> arrayList1 = new ArrayList<>();
                                 arrayList1.add(chat);
-                                MessagesStorage.getInstance(currentAccount).putUsersAndChats(null, arrayList1, true, true);
-                                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).putChat(chat, false));
+                                getMessagesStorage().putUsersAndChats(null, arrayList1, true, true);
+                                AndroidUtilities.runOnUIThread(() -> getMessagesController().putChat(chat, false));
                             }
                         }
                         if (result != null) {
@@ -670,8 +668,8 @@ public class FileRefController {
                             if (cache) {
                                 ArrayList<TLRPC.Chat> arrayList1 = new ArrayList<>();
                                 arrayList1.add(chat);
-                                MessagesStorage.getInstance(currentAccount).putUsersAndChats(null, arrayList1, true, true);
-                                AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).putChat(chat, false));
+                                getMessagesStorage().putUsersAndChats(null, arrayList1, true, true);
+                                AndroidUtilities.runOnUIThread(() -> getMessagesController().putChat(chat, false));
                             }
                             break;
                         }
@@ -686,7 +684,7 @@ public class FileRefController {
                     }
                 }
                 if (cache) {
-                    DataQuery.getInstance(currentAccount).processLoadedRecentDocuments(DataQuery.TYPE_IMAGE, savedGifs.gifs, true, 0, true);
+                    getMediaDataController().processLoadedRecentDocuments(MediaDataController.TYPE_IMAGE, savedGifs.gifs, true, 0, true);
                 }
             } else if (response instanceof TLRPC.TL_messages_stickerSet) {
                 TLRPC.TL_messages_stickerSet stickerSet = (TLRPC.TL_messages_stickerSet) response;
@@ -699,7 +697,7 @@ public class FileRefController {
                     }
                 }
                 if (cache) {
-                    AndroidUtilities.runOnUIThread(() -> DataQuery.getInstance(currentAccount).replaceStickerSet(stickerSet));
+                    AndroidUtilities.runOnUIThread(() -> getMediaDataController().replaceStickerSet(stickerSet));
                 }
             } else if (response instanceof TLRPC.TL_messages_recentStickers) {
                 TLRPC.TL_messages_recentStickers recentStickers = (TLRPC.TL_messages_recentStickers) response;
@@ -710,7 +708,7 @@ public class FileRefController {
                     }
                 }
                 if (cache) {
-                    DataQuery.getInstance(currentAccount).processLoadedRecentDocuments(DataQuery.TYPE_IMAGE, recentStickers.stickers, false, 0, true);
+                    getMediaDataController().processLoadedRecentDocuments(MediaDataController.TYPE_IMAGE, recentStickers.stickers, false, 0, true);
                 }
             } else if (response instanceof TLRPC.TL_messages_favedStickers) {
                 TLRPC.TL_messages_favedStickers favedStickers = (TLRPC.TL_messages_favedStickers) response;
@@ -721,7 +719,7 @@ public class FileRefController {
                     }
                 }
                 if (cache) {
-                    DataQuery.getInstance(currentAccount).processLoadedRecentDocuments(DataQuery.TYPE_FAVE, favedStickers.stickers, false, 0, true);
+                    getMediaDataController().processLoadedRecentDocuments(MediaDataController.TYPE_FAVE, favedStickers.stickers, false, 0, true);
                 }
             } else if (response instanceof TLRPC.photos_Photos) {
                 TLRPC.photos_Photos res = (TLRPC.photos_Photos) response;

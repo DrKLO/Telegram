@@ -153,13 +153,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
         listView.setOnItemClickListener((view, position) -> {
             if (position == blockUserRow) {
                 if (blockedUsersActivity) {
-                    Bundle args = new Bundle();
-                    args.putBoolean("onlyUsers", true);
-                    args.putBoolean("destroyAfterSelect", true);
-                    args.putBoolean("returnAsResult", true);
-                    ContactsActivity fragment = new ContactsActivity(args);
-                    fragment.setDelegate(PrivacyUsersActivity.this);
-                    presentFragment(fragment);
+                    presentFragment(new DialogOrContactPickerActivity());
                 } else {
                     Bundle args = new Bundle();
                     args.putBoolean(isAlwaysShare ? "isAlwaysShare" : "isNeverShare", true);
@@ -406,6 +400,8 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
                             String subtitle;
                             if (chat.participants_count != 0) {
                                 subtitle = LocaleController.formatPluralString("Members", chat.participants_count);
+                            } else if (chat.has_geo) {
+                                subtitle = LocaleController.getString("MegaLocation", R.string.MegaLocation);
                             } else if (TextUtils.isEmpty(chat.username)) {
                                 subtitle = LocaleController.getString("MegaPrivate", R.string.MegaPrivate);
                             } else {

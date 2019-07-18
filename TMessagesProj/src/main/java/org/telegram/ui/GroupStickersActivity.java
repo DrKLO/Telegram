@@ -36,7 +36,7 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -117,7 +117,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        DataQuery.getInstance(currentAccount).checkStickers(DataQuery.TYPE_IMAGE);
+        MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_IMAGE);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
@@ -328,7 +328,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                 if (holder != null) {
                     top = holder.itemView.getTop();
                 }
-                selectedStickerSet = DataQuery.getInstance(currentAccount).getStickerSets(DataQuery.TYPE_IMAGE).get(position - stickersStartRow);
+                selectedStickerSet = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_IMAGE).get(position - stickersStartRow);
                 ignoreTextChanges = true;
                 usernameTextView.setText(selectedStickerSet.set.short_name);
                 usernameTextView.setSelection(usernameTextView.length());
@@ -360,14 +360,14 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.stickersDidLoad) {
-            if ((Integer) args[0] == DataQuery.TYPE_IMAGE) {
+            if ((Integer) args[0] == MediaDataController.TYPE_IMAGE) {
                 updateRows();
             }
         } else if (id == NotificationCenter.chatInfoDidLoad) {
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
             if (chatFull.id == chatId) {
                 if (info == null && chatFull.stickerset != null) {
-                    selectedStickerSet = DataQuery.getInstance(currentAccount).getGroupStickerSetById(chatFull.stickerset);
+                    selectedStickerSet = MediaDataController.getInstance(currentAccount).getGroupStickerSetById(chatFull.stickerset);
                 }
                 info = chatFull;
                 updateRows();
@@ -383,7 +383,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     public void setInfo(TLRPC.ChatFull chatFull) {
         info = chatFull;
         if (info != null && info.stickerset != null) {
-            selectedStickerSet = DataQuery.getInstance(currentAccount).getGroupStickerSetById(info.stickerset);
+            selectedStickerSet = MediaDataController.getInstance(currentAccount).getGroupStickerSetById(info.stickerset);
         }
     }
 
@@ -411,7 +411,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         searching = true;
         searchWas = true;
         final String query = usernameTextView.getText().toString();
-        TLRPC.TL_messages_stickerSet existingSet = DataQuery.getInstance(currentAccount).getStickerSetByName(query);
+        TLRPC.TL_messages_stickerSet existingSet = MediaDataController.getInstance(currentAccount).getStickerSetByName(query);
         if (existingSet != null) {
             selectedStickerSet = existingSet;
         }
@@ -495,7 +495,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                     info.stickerset = null;
                 } else {
                     info.stickerset = selectedStickerSet.set;
-                    DataQuery.getInstance(currentAccount).putGroupStickerSet(selectedStickerSet);
+                    MediaDataController.getInstance(currentAccount).putGroupStickerSet(selectedStickerSet);
                 }
                 if (info.stickerset == null) {
                     info.flags |= 256;
@@ -522,7 +522,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
             selectedStickerRow = -1;
         }
         infoRow = rowCount++;
-        ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = DataQuery.getInstance(currentAccount).getStickerSets(DataQuery.TYPE_IMAGE);
+        ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_IMAGE);
         if (!stickerSets.isEmpty()) {
             headerRow = rowCount++;
             stickersStartRow = rowCount;
@@ -569,22 +569,22 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
             progressView.setVisibility(View.VISIBLE);
             doneItem.setEnabled(false);
             doneItemAnimation.playTogether(
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleX", 0.1f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleY", 0.1f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "alpha", 0.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 0.1f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 0.1f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 0.0f),
                     ObjectAnimator.ofFloat(progressView, "scaleX", 1.0f),
                     ObjectAnimator.ofFloat(progressView, "scaleY", 1.0f),
                     ObjectAnimator.ofFloat(progressView, "alpha", 1.0f));
         } else {
-            doneItem.getImageView().setVisibility(View.VISIBLE);
+            doneItem.getContentView().setVisibility(View.VISIBLE);
             doneItem.setEnabled(true);
             doneItemAnimation.playTogether(
                     ObjectAnimator.ofFloat(progressView, "scaleX", 0.1f),
                     ObjectAnimator.ofFloat(progressView, "scaleY", 0.1f),
                     ObjectAnimator.ofFloat(progressView, "alpha", 0.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleX", 1.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleY", 1.0f),
-                    ObjectAnimator.ofFloat(doneItem.getImageView(), "alpha", 1.0f));
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 1.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 1.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 1.0f));
 
         }
         doneItemAnimation.addListener(new AnimatorListenerAdapter() {
@@ -594,7 +594,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                     if (!show) {
                         progressView.setVisibility(View.INVISIBLE);
                     } else {
-                        doneItem.getImageView().setVisibility(View.INVISIBLE);
+                        doneItem.getContentView().setVisibility(View.INVISIBLE);
                     }
                 }
             }
@@ -627,7 +627,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             switch (holder.getItemViewType()) {
                 case 0: {
-                    ArrayList<TLRPC.TL_messages_stickerSet> arrayList = DataQuery.getInstance(currentAccount).getStickerSets(DataQuery.TYPE_IMAGE);
+                    ArrayList<TLRPC.TL_messages_stickerSet> arrayList = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_IMAGE);
                     int row = position - stickersStartRow;
                     StickerSetCell cell = (StickerSetCell) holder.itemView;
                     TLRPC.TL_messages_stickerSet set = arrayList.get(row);

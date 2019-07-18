@@ -1015,7 +1015,7 @@ public class ThemeEditorView {
                     }
                 });
                 animatorSet.start();
-                listAdapter.notifyItemChanged(currentThemeDesriptionPosition);
+                listView.getAdapter().notifyItemChanged(currentThemeDesriptionPosition);
             }
         }
 
@@ -1149,12 +1149,13 @@ public class ThemeEditorView {
                     ArrayList<CharSequence> names = new ArrayList<>();
                     for (int a = 0, N = listAdapter.items.size(); a < N; a++) {
                         ArrayList<ThemeDescription> themeDescriptions = listAdapter.items.get(a);
-                        String name = themeDescriptions.get(0).getCurrentKey().toLowerCase();
+                        String key = themeDescriptions.get(0).getCurrentKey();
+                        String name = key.toLowerCase();
                         int found = 0;
                         for (String q : search) {
                             if (name.contains(q)) {
                                 searchResults.add(themeDescriptions);
-                                names.add(generateSearchName(name, q));
+                                names.add(generateSearchName(key, q));
                                 break;
                             }
                         }

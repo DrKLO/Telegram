@@ -112,7 +112,7 @@ public class DrawerProfileCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         Drawable backgroundDrawable = Theme.getCachedWallpaper();
-        String backgroundKey = applyBackground();
+        String backgroundKey = applyBackground(false);
         boolean useImageBackground = !backgroundKey.equals(Theme.key_chats_menuTopBackground) && Theme.isCustomTheme() && !Theme.isPatternWallpaper() && backgroundDrawable != null;
         boolean drawCatsShadow = false;
         int color;
@@ -203,13 +203,13 @@ public class DrawerProfileCell extends FrameLayout {
         avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundInProfileBlue));
         avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
 
-        applyBackground();
+        applyBackground(true);
     }
 
-    public String applyBackground() {
+    public String applyBackground(boolean force) {
         String currentTag = (String) getTag();
         String backgroundKey = Theme.hasThemeKey(Theme.key_chats_menuTopBackground) && Theme.getColor(Theme.key_chats_menuTopBackground) != 0 ? Theme.key_chats_menuTopBackground : Theme.key_chats_menuTopBackgroundCats;
-        if (!backgroundKey.equals(currentTag)) {
+        if (force || !backgroundKey.equals(currentTag)) {
             setBackgroundColor(Theme.getColor(backgroundKey));
             setTag(backgroundKey);
         }

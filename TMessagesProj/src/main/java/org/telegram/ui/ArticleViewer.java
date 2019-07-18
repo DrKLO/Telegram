@@ -1161,6 +1161,30 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 return;
             }
             if (which == 0) {
+                int index;
+                if ((index = urlFinal.lastIndexOf('#')) != -1) {
+                    String webPageUrl;
+                    if (!TextUtils.isEmpty(currentPage.cached_page.url)) {
+                        webPageUrl = currentPage.cached_page.url.toLowerCase();
+                    } else {
+                        webPageUrl = currentPage.url.toLowerCase();
+                    }
+                    String anchor;
+                    try {
+                        anchor = URLDecoder.decode(urlFinal.substring(index + 1), "UTF-8");
+                    } catch (Exception ignore) {
+                        anchor = "";
+                    }
+                    if (urlFinal.toLowerCase().contains(webPageUrl)) {
+                        if (TextUtils.isEmpty(anchor)) {
+                            layoutManager[0].scrollToPositionWithOffset(0, 0);
+                            checkScrollAnimated();
+                        } else {
+                            scrollToAnchor(anchor);
+                        }
+                        return;
+                    }
+                }
                 Browser.openUrl(parentActivity, urlFinal);
             } else if (which == 1) {
                 String url = urlFinal;

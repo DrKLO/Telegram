@@ -399,7 +399,9 @@ public class ProfileSearchCell extends BaseCell {
                         statusString = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
                     }
                 } else {
-                    if (TextUtils.isEmpty(chat.username)) {
+                    if (chat.has_geo) {
+                        statusString = LocaleController.getString("MegaLocation", R.string.MegaLocation);
+                    } else if (TextUtils.isEmpty(chat.username)) {
                         statusString = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
                     } else {
                         statusString = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();

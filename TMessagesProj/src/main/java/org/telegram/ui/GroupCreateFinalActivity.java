@@ -23,6 +23,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
@@ -52,6 +53,7 @@ import org.telegram.ui.Cells.GroupCreateUserCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.EditTextEmoji;
@@ -74,7 +76,7 @@ import androidx.recyclerview.widget.RecyclerView;
 public class GroupCreateFinalActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ImageUpdater.ImageUpdaterDelegate {
 
     private GroupCreateAdapter adapter;
-    private RecyclerView listView;
+    private RecyclerListView listView;
     private EditTextEmoji editText;
     private BackupImageView avatarImage;
     private View avatarOverlay;
@@ -100,6 +102,9 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     private String nameToSet;
     private int chatType;
 
+    private String currentGroupCreateAddress;
+    private Location currentGroupCreateLocation;
+
     private int reqId;
 
     private final static int done_button = 1;
@@ -116,6 +121,8 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         super(args);
         chatType = args.getInt("chatType", ChatObject.CHAT_TYPE_CHAT);
         avatarDrawable = new AvatarDrawable();
+        currentGroupCreateAddress = args.getString("address");
+        currentGroupCreateLocation = args.getParcelable("location");
     }
 
     @Override
@@ -463,7 +470,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         listView.setVerticalScrollBarEnabled(false);
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? View.SCROLLBAR_POSITION_LEFT : View.SCROLLBAR_POSITION_RIGHT);
         GroupCreateDividerItemDecoration decoration = new GroupCreateDividerItemDecoration();
-        decoration.setSkipRows(2);
+        decoration.setSkipRows(currentGroupCreateAddress != null ? 5 : 2);
         listView.addItemDecoration(decoration);
         linearLayout.addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -472,6 +479,21 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
                     AndroidUtilities.hideKeyboard(editText);
                 }
+            }
+        });
+        listView.setOnItemClickListener((view, position) -> {
+            if (view instanceof TextSettingsCell) {
+                if (!AndroidUtilities.isGoogleMapsInstalled(GroupCreateFinalActivity.this)) {
+                    return;
+                }
+                LocationActivity fragment = new LocationActivity(LocationActivity.LOCATION_TYPE_GROUP);
+                fragment.setDialogId(0);
+                fragment.setDelegate((location, live) -> {
+                    currentGroupCreateLocation.setLatitude(location.geo.lat);
+                    currentGroupCreateLocation.setLongitude(location.geo._long);
+                    currentGroupCreateAddress = location.address;
+                });
+                presentFragment(fragment);
             }
         });
 
@@ -519,7 +541,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 createAfterUpload = true;
             } else {
                 showEditDoneProgress(true);
-                reqId = MessagesController.getInstance(currentAccount).createChat(editText.getText().toString(), selectedContacts, null, chatType, GroupCreateFinalActivity.this);
+                reqId = MessagesController.getInstance(currentAccount).createChat(editText.getText().toString(), selectedContacts, null, chatType, currentGroupCreateLocation, currentGroupCreateAddress, GroupCreateFinalActivity.this);
             }
         });
 
@@ -550,7 +572,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                     if (delegate != null) {
                         delegate.didStartChatCreation();
                     }
-                    MessagesController.getInstance(currentAccount).createChat(editText.getText().toString(), selectedContacts, null, chatType, GroupCreateFinalActivity.this);
+                    MessagesController.getInstance(currentAccount).createChat(editText.getText().toString(), selectedContacts, null, chatType, currentGroupCreateLocation, currentGroupCreateAddress, GroupCreateFinalActivity.this);
                 }
                 showAvatarProgress(false, true);
                 avatarEditor.setImageDrawable(null);
@@ -768,6 +790,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     public class GroupCreateAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context context;
+        private int usersStartRow;
 
         public GroupCreateAdapter(Context ctx) {
             context = ctx;
@@ -775,12 +798,16 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
         @Override
         public int getItemCount() {
-            return 2 + selectedContacts.size();
+            int count = 2 + selectedContacts.size();
+            if (currentGroupCreateAddress != null) {
+                count += 3;
+            }
+            return count;
         }
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return false;
+            return holder.getItemViewType() == 3;
         }
 
         @Override
@@ -801,8 +828,11 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                     view = headerCell;
                     break;
                 case 2:
-                default:
                     view = new GroupCreateUserCell(context, false, 3);
+                    break;
+                case 3:
+                default:
+                    view = new TextSettingsCell(context);
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -813,13 +843,22 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             switch (holder.getItemViewType()) {
                 case 1: {
                     HeaderCell cell = (HeaderCell) holder.itemView;
-                    cell.setText(LocaleController.formatPluralString("Members", selectedContacts.size()));
+                    if (currentGroupCreateAddress != null && position == 1) {
+                        cell.setText(LocaleController.getString("AttachLocation", R.string.AttachLocation));
+                    } else {
+                        cell.setText(LocaleController.formatPluralString("Members", selectedContacts.size()));
+                    }
                     break;
                 }
                 case 2: {
                     GroupCreateUserCell cell = (GroupCreateUserCell) holder.itemView;
-                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(selectedContacts.get(position - 2));
+                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(selectedContacts.get(position - usersStartRow));
                     cell.setObject(user, null, null);
+                    break;
+                }
+                case 3: {
+                    TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                    cell.setText(currentGroupCreateAddress, false);
                     break;
                 }
             }
@@ -827,6 +866,20 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
         @Override
         public int getItemViewType(int position) {
+            if (currentGroupCreateAddress != null) {
+                if (position == 0) {
+                    return 0;
+                } else if (position == 1) {
+                    return 1;
+                } else if (position == 2) {
+                    return 3;
+                } else {
+                    position -= 3;
+                }
+                usersStartRow = 5;
+            } else {
+                usersStartRow = 2;
+            }
             switch (position) {
                 case 0:
                     return 0;
@@ -899,6 +952,8 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
+
+                new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
 
                 new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressInner2),
                 new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressOuter2),

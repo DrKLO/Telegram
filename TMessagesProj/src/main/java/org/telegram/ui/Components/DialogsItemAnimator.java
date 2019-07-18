@@ -310,6 +310,21 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
         return true;
     }
 
+    public void onListScroll(int dy) {
+        if (!mPendingRemovals.isEmpty()) {
+            for (int a = 0, N = mPendingRemovals.size(); a < N; a++) {
+                ViewHolder holder = mPendingRemovals.get(a);
+                holder.itemView.setTranslationY(holder.itemView.getTranslationY() + dy);
+            }
+        }
+        if (!mRemoveAnimations.isEmpty()) {
+            for (int a = 0, N = mRemoveAnimations.size(); a < N; a++) {
+                ViewHolder holder = mRemoveAnimations.get(a);
+                holder.itemView.setTranslationY(holder.itemView.getTranslationY() + dy);
+            }
+        }
+    }
+
     void animateMoveImpl(final ViewHolder holder, int fromX, int fromY, int toX, int toY) {
         final View view = holder.itemView;
         final int deltaX = toX - fromX;
@@ -596,6 +611,9 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
         count = mPendingRemovals.size();
         for (int i = count - 1; i >= 0; i--) {
             ViewHolder item = mPendingRemovals.get(i);
+            View view = item.itemView;
+            view.setTranslationY(0);
+            view.setTranslationX(0);
             dispatchRemoveFinished(item);
             mPendingRemovals.remove(i);
         }

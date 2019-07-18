@@ -1020,7 +1020,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 showEditDoneProgress(true, true);
                 progressView.setVisibility(View.VISIBLE);
                 doneItem.setEnabled(false);
-                doneItem.getImageView().setVisibility(View.INVISIBLE);
+                doneItem.getContentView().setVisibility(View.INVISIBLE);
                 webView = new WebView(context) {
                     @Override
                     public boolean onTouchEvent(MotionEvent event) {
@@ -1823,7 +1823,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 frameLayout.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 48));
 
                 doneItem.setEnabled(false);
-                doneItem.getImageView().setVisibility(View.INVISIBLE);
+                doneItem.getContentView().setVisibility(View.INVISIBLE);
 
                 webView = new WebView(context) {
                     @Override
@@ -3042,7 +3042,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         showEditDoneProgress(true, true);
                         progressView.setVisibility(View.VISIBLE);
                         doneItem.setEnabled(false);
-                        doneItem.getImageView().setVisibility(View.INVISIBLE);
+                        doneItem.getContentView().setVisibility(View.INVISIBLE);
                         webView.loadUrl(webViewUrl = ((TLRPC.TL_payments_paymentVerficationNeeded) response).url);
                     });
                 }
@@ -3182,9 +3182,9 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 progressView.setVisibility(View.VISIBLE);
                 doneItem.setEnabled(false);
                 doneItemAnimation.playTogether(
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleX", 0.1f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleY", 0.1f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), "alpha", 0.0f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 0.1f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 0.1f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 0.0f),
                         ObjectAnimator.ofFloat(progressView, "scaleX", 1.0f),
                         ObjectAnimator.ofFloat(progressView, "scaleY", 1.0f),
                         ObjectAnimator.ofFloat(progressView, "alpha", 1.0f));
@@ -3195,15 +3195,15 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                             ObjectAnimator.ofFloat(progressView, "scaleY", 0.1f),
                             ObjectAnimator.ofFloat(progressView, "alpha", 0.0f));
                 } else {
-                    doneItem.getImageView().setVisibility(View.VISIBLE);
+                    doneItem.getContentView().setVisibility(View.VISIBLE);
                     doneItem.setEnabled(true);
                     doneItemAnimation.playTogether(
                             ObjectAnimator.ofFloat(progressView, "scaleX", 0.1f),
                             ObjectAnimator.ofFloat(progressView, "scaleY", 0.1f),
                             ObjectAnimator.ofFloat(progressView, "alpha", 0.0f),
-                            ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleX", 1.0f),
-                            ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleY", 1.0f),
-                            ObjectAnimator.ofFloat(doneItem.getImageView(), "alpha", 1.0f));
+                            ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 1.0f),
+                            ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 1.0f),
+                            ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 1.0f));
                 }
 
             }
@@ -3214,7 +3214,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         if (!show) {
                             progressView.setVisibility(View.INVISIBLE);
                         } else {
-                            doneItem.getImageView().setVisibility(View.INVISIBLE);
+                            doneItem.getContentView().setVisibility(View.INVISIBLE);
                         }
                     }
                 }

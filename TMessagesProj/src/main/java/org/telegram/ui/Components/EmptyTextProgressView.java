@@ -108,9 +108,9 @@ public class EmptyTextProgressView extends FrameLayout {
             int x = (width - child.getMeasuredWidth()) / 2;
             int y;
             if (showAtCenter) {
-                y = (height / 2 - child.getMeasuredHeight()) / 2;
+                y = (height / 2 - child.getMeasuredHeight()) / 2 + getPaddingTop();
             } else {
-                y = (height - child.getMeasuredHeight()) / 2;
+                y = (height - child.getMeasuredHeight()) / 2 + getPaddingTop();
             }
             child.layout(x, y, x + child.getMeasuredWidth(), y + child.getMeasuredHeight());
         }

@@ -17,8 +17,15 @@ import org.telegram.messenger.browser.Browser;
 
 public class URLSpanNoUnderline extends URLSpan {
 
+    private TextStyleSpan.TextStyleRun style;
+
     public URLSpanNoUnderline(String url) {
+        this(url, null);
+    }
+
+    public URLSpanNoUnderline(String url, TextStyleSpan.TextStyleRun run) {
         super(url);
+        style = run;
     }
 
     @Override
@@ -33,8 +40,12 @@ public class URLSpanNoUnderline extends URLSpan {
     }
 
     @Override
-    public void updateDrawState(TextPaint ds) {
-        super.updateDrawState(ds);
-        ds.setUnderlineText(false);
+    public void updateDrawState(TextPaint p) {
+        super.updateDrawState(p);
+        if (style != null) {
+            style.applyStyle(p);
+        } else {
+            p.setUnderlineText(false);
+        }
     }
 }

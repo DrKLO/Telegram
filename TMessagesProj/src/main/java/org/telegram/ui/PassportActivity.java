@@ -807,30 +807,38 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         } else {
                             hash = "";
                         }
-                        if ("data".equals(target)) {
-                            if (field != null) {
-                                vals.put(field, description);
-                            }
-                        } else if ("files".equals(target)) {
-                            if (file_hash != null) {
-                                vals.put("files" + hash, description);
-                            } else {
-                                vals.put("files_all", description);
-                            }
-                        } else if ("selfie".equals(target)) {
-                            vals.put("selfie" + hash, description);
-                        } else if ("translation".equals(target)) {
-                            if (file_hash != null) {
-                                vals.put("translation" + hash, description);
-                            } else {
-                                vals.put("translation_all", description);
-                            }
-                        } else if ("front".equals(target)) {
-                            vals.put("front" + hash, description);
-                        } else if ("reverse".equals(target)) {
-                            vals.put("reverse" + hash, description);
-                        } else if ("error_all".equals(target)) {
-                            vals.put("error_all", description);
+                        switch (target) {
+                            case "data":
+                                if (field != null) {
+                                    vals.put(field, description);
+                                }
+                                break;
+                            case "files":
+                                if (file_hash != null) {
+                                    vals.put("files" + hash, description);
+                                } else {
+                                    vals.put("files_all", description);
+                                }
+                                break;
+                            case "selfie":
+                                vals.put("selfie" + hash, description);
+                                break;
+                            case "translation":
+                                if (file_hash != null) {
+                                    vals.put("translation" + hash, description);
+                                } else {
+                                    vals.put("translation_all", description);
+                                }
+                                break;
+                            case "front":
+                                vals.put("front" + hash, description);
+                                break;
+                            case "reverse":
+                                vals.put("reverse" + hash, description);
+                                break;
+                            case "error_all":
+                                vals.put("error_all", description);
+                                break;
                         }
                     }
                 } catch (Exception ignore) {
@@ -1448,11 +1456,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setInputType(InputType.TYPE_CLASS_PHONE);
 
             inputFields[a].setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-            switch (a) {
-                case FIELD_EMAIL:
-                    inputFields[a].setHint(LocaleController.getString("PassportEmailCode", R.string.PassportEmailCode));
-                    break;
-            }
+            inputFields[a].setHint(LocaleController.getString("PassportEmailCode", R.string.PassportEmailCode));
             inputFields[a].setSelection(inputFields[a].length());
             inputFields[a].setPadding(0, 0, 0, AndroidUtilities.dp(6));
             inputFields[a].setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
@@ -2745,18 +2749,13 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setCursorSize(AndroidUtilities.dp(20));
             inputFields[a].setCursorWidth(1.5f);
             inputFields[a].setInputType(EditorInfo.TYPE_CLASS_TEXT | EditorInfo.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-
             inputFields[a].setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-            switch (a) {
-                case FIELD_EMAIL:
-                    inputFields[a].setHint(LocaleController.getString("PaymentShippingEmailPlaceholder", R.string.PaymentShippingEmailPlaceholder));
-                    if (currentTypeValue != null && currentTypeValue.plain_data instanceof TLRPC.TL_securePlainEmail) {
-                        TLRPC.TL_securePlainEmail securePlainEmail = (TLRPC.TL_securePlainEmail) currentTypeValue.plain_data;
-                        if (!TextUtils.isEmpty(securePlainEmail.email)) {
-                            inputFields[a].setText(securePlainEmail.email);
-                        }
-                    }
-                    break;
+            inputFields[a].setHint(LocaleController.getString("PaymentShippingEmailPlaceholder", R.string.PaymentShippingEmailPlaceholder));
+            if (currentTypeValue != null && currentTypeValue.plain_data instanceof TLRPC.TL_securePlainEmail) {
+                TLRPC.TL_securePlainEmail securePlainEmail = (TLRPC.TL_securePlainEmail) currentTypeValue.plain_data;
+                if (!TextUtils.isEmpty(securePlainEmail.email)) {
+                    inputFields[a].setText(securePlainEmail.email);
+                }
             }
             inputFields[a].setSelection(inputFields[a].length());
             inputFields[a].setPadding(0, 0, 0, AndroidUtilities.dp(6));
@@ -6398,22 +6397,22 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 progressView.setVisibility(View.VISIBLE);
                 doneItem.setEnabled(false);
                 doneItemAnimation.playTogether(
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), View.SCALE_X, 0.1f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), View.SCALE_Y, 0.1f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), View.ALPHA, 0.0f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_X, 0.1f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_Y, 0.1f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.ALPHA, 0.0f),
                         ObjectAnimator.ofFloat(progressView, View.SCALE_X, 1.0f),
                         ObjectAnimator.ofFloat(progressView, View.SCALE_Y, 1.0f),
                         ObjectAnimator.ofFloat(progressView, View.ALPHA, 1.0f));
             } else {
-                doneItem.getImageView().setVisibility(View.VISIBLE);
+                doneItem.getContentView().setVisibility(View.VISIBLE);
                 doneItem.setEnabled(true);
                 doneItemAnimation.playTogether(
                         ObjectAnimator.ofFloat(progressView, View.SCALE_X, 0.1f),
                         ObjectAnimator.ofFloat(progressView, View.SCALE_Y, 0.1f),
                         ObjectAnimator.ofFloat(progressView, View.ALPHA, 0.0f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), View.SCALE_X, 1.0f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), View.SCALE_Y, 1.0f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), View.ALPHA, 1.0f));
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_X, 1.0f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_Y, 1.0f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.ALPHA, 1.0f));
             }
             doneItemAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -6422,7 +6421,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         if (!show) {
                             progressView.setVisibility(View.INVISIBLE);
                         } else {
-                            doneItem.getImageView().setVisibility(View.INVISIBLE);
+                            doneItem.getContentView().setVisibility(View.INVISIBLE);
                         }
                     }
                 }

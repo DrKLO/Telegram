@@ -27,6 +27,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -153,6 +154,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         tabsContainer.addView(tab);
         tab.setSelected(position == currentPosition);
         BackupImageView imageView = new BackupImageView(getContext());
+        imageView.setLayerNum(1);
         imageView.setRoundRadius(AndroidUtilities.dp(15));
 
         AvatarDrawable avatarDrawable = new AvatarDrawable();
@@ -175,6 +177,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         tabsContainer.addView(tab);
         tab.setSelected(position == currentPosition);
         BackupImageView imageView = new BackupImageView(getContext());
+        imageView.setLayerNum(1);
         imageView.setAspectFit(true);
         tab.addView(imageView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));
 
@@ -229,6 +232,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             Object parentObject = child.getTag(R.id.parent_tag);
             TLRPC.Document sticker = (TLRPC.Document) child.getTag(R.id.object_tag);
             ImageLocation imageLocation;
+
             if (object instanceof TLRPC.Document) {
                 TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
                 imageLocation = ImageLocation.getForDocument(thumb, sticker);
@@ -238,8 +242,17 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             } else {
                 continue;
             }
+            if (imageLocation == null) {
+                continue;
+            }
             BackupImageView imageView = (BackupImageView) ((FrameLayout) child).getChildAt(0);
-            imageView.setImage(imageLocation, null, "webp", null, parentObject);
+            if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker)) {
+                imageView.setImage(ImageLocation.getForDocument(sticker), "30_30", imageLocation, null, 0, parentObject);
+            } else if (imageLocation.lottieAnimation) {
+                imageView.setImage(imageLocation, "30_30", "tgs", null, parentObject);
+            } else {
+                imageView.setImage(imageLocation, null, "webp", null, parentObject);
+            }
         }
     }
 
@@ -273,11 +286,20 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             } else {
                 continue;
             }
+            if (imageLocation == null) {
+                continue;
+            }
             BackupImageView imageView = (BackupImageView) ((FrameLayout) child).getChildAt(0);
             if (a < newStart || a >= newStart + count) {
                 imageView.setImageDrawable(null);
             } else {
-                imageView.setImage(imageLocation, null, "webp", null, parentObject);
+                if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker)) {
+                    imageView.setImage(ImageLocation.getForDocument(sticker), "30_30", imageLocation, null, 0, parentObject);
+                } else if (imageLocation.lottieAnimation) {
+                    imageView.setImage(imageLocation, "30_30", "tgs", null, parentObject);
+                } else {
+                    imageView.setImage(imageLocation, null, "webp", null, parentObject);
+                }
             }
         }
     }

@@ -36,20 +36,15 @@ public class LocationSharingService extends Service implements NotificationCente
     public void onCreate() {
         super.onCreate();
         handler = new Handler();
-        runnable = new Runnable() {
-            public void run() {
-                handler.postDelayed(runnable, 60000);
-                Utilities.stageQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                            LocationController.getInstance(a).update();
-                        }
-                    }
-                });
-            }
+        runnable = () -> {
+            handler.postDelayed(runnable, 1000);
+            Utilities.stageQueue.postRunnable(() -> {
+                for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                    LocationController.getInstance(a).update();
+                }
+            });
         };
-        handler.postDelayed(runnable, 60000);
+        handler.postDelayed(runnable, 1000);
     }
 
     public IBinder onBind(Intent arg2) {
@@ -61,6 +56,7 @@ public class LocationSharingService extends Service implements NotificationCente
             handler.removeCallbacks(runnable);
         }
         stopForeground(true);
+        NotificationManagerCompat.from(ApplicationLoader.applicationContext).cancel(6);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.liveLocationsChanged);
     }
 
@@ -68,15 +64,12 @@ public class LocationSharingService extends Service implements NotificationCente
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.liveLocationsChanged) {
             if (handler != null) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        ArrayList<LocationController.SharingLocationInfo> infos = getInfos();
-                        if (infos.isEmpty()) {
-                            stopSelf();
-                        } else {
-                            updateNotification(true);
-                        }
+                handler.post(() -> {
+                    ArrayList<LocationController.SharingLocationInfo> infos = getInfos();
+                    if (infos.isEmpty()) {
+                        stopSelf();
+                    } else {
+                        updateNotification(true);
                     }
                 });
             }
