@@ -22,7 +22,7 @@ MTproto protocol manuals: https://core.telegram.org/mtproto
 
 ### Compilation Guide
 
-You will require Android Studio 3.4, Android NDK rev. 16b (https://developer.android.com/ndk/downloads/older_releases.html) and Android SDK 8.1
+You will require Android Studio 3.4, Android NDK rev. 20 and Android SDK 8.1
 
 1. Download the Telegram source code from https://github.com/DrKLO/Telegram ( git clone https://github.com/DrKLO/Telegram.git )
 2. Copy your release.keystore into TMessagesProj/config
