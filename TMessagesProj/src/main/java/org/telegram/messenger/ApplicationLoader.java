@@ -327,7 +327,11 @@ public class ApplicationLoader extends Application {
             am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pendingIntent);
             try {
                 Log.d("TFOSS", "Starting push service...");
-                applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    applicationContext.startForegroundService(new Intent(applicationContext, NotificationsService.class));
+                } else {
+                    applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
+                }
             } catch (Throwable ignore) {
                 Log.d("TFOSS", "Failed to start push service");
             }
