@@ -490,6 +490,7 @@ public class FileLoadOperation {
                 }
                 if (range.start <= offset && range.end > offset) {
                     availableLength = 0;
+                    break;
                 }
             }
             if (availableLength == 0) {
