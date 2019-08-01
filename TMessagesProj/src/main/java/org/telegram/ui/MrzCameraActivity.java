@@ -169,7 +169,7 @@ public class MrzCameraActivity extends BaseFragment implements Camera.PreviewCal
         backgroundHandlerThread.quitSafely();
     }
 
-    public void cancel() {
+    public void stopNotification() {
         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStopped, 0);
     }
 
