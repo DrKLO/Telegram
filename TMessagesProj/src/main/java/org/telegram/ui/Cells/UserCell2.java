@@ -283,6 +283,8 @@ public class UserCell2 extends FrameLayout {
                 }
             }
             avatarImageView.setImage(ImageLocation.getForChat(currentChat, false), "50_50", avatarDrawable, currentObject);
+        } else {
+            avatarImageView.setImageDrawable(avatarDrawable);
         }
 
         if (imageView.getVisibility() == VISIBLE && currentDrawable == 0 || imageView.getVisibility() == GONE && currentDrawable != 0) {

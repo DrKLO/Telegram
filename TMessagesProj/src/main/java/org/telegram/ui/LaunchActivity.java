@@ -8,6 +8,7 @@
 
 package org.telegram.ui;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.DialogInterface;
@@ -576,7 +577,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             } else {
                 os2 = "";
             }
-            if (BuildVars.DEBUG_VERSION) {
+            if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("OS name " + os1 + " " + os2);
             }
             if (os1.contains("flyme") || os2.contains("flyme")) {
@@ -584,6 +585,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 final View view = getWindow().getDecorView().getRootView();
                 view.getViewTreeObserver().addOnGlobalLayoutListener(onGlobalLayoutListener = () -> {
                     int height = view.getMeasuredHeight();
+                    FileLog.d("height = " + height + " displayHeight = " + AndroidUtilities.displaySize.y);
                     if (Build.VERSION.SDK_INT >= 21) {
                         height -= AndroidUtilities.statusBarHeight;
                     }
@@ -759,7 +761,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
     }
 
-    private void showUpdateActivity(int account, TLRPC.TL_help_appUpdate update) {
+    private void showUpdateActivity(int account, TLRPC.TL_help_appUpdate update, boolean check) {
         if (blockingUpdateView == null) {
             blockingUpdateView = new BlockingUpdateView(LaunchActivity.this) {
                 @Override
@@ -772,7 +774,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             };
             drawerLayoutContainer.addView(blockingUpdateView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         }
-        blockingUpdateView.show(account, update);
+        blockingUpdateView.show(account, update, check);
         drawerLayoutContainer.setAllowOpenDrawer(false, false);
     }
 
@@ -2118,12 +2120,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             if (response instanceof TLRPC.TL_help_appUpdate) {
                 final TLRPC.TL_help_appUpdate res = (TLRPC.TL_help_appUpdate) response;
                 AndroidUtilities.runOnUIThread(() -> {
-                    if (BuildVars.DEBUG_PRIVATE_VERSION) {
-                        res.popup = Utilities.random.nextBoolean();
-                    }
-                    if (!res.popup) {
-                        (new UpdateAppAlertDialog(LaunchActivity.this, res, accountNum)).show();
-                    } else {
+                    if (res.can_not_skip) {
                         UserConfig.getInstance(0).pendingAppUpdate = res;
                         UserConfig.getInstance(0).pendingAppUpdateBuildVersion = BuildVars.BUILD_VERSION;
                         try {
@@ -2134,7 +2131,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             UserConfig.getInstance(0).pendingAppUpdateInstallTime = 0;
                         }
                         UserConfig.getInstance(0).saveConfig(false);
-                        showUpdateActivity(accountNum, res);
+                        showUpdateActivity(accountNum, res, false);
+                    } else {
+                        (new UpdateAppAlertDialog(LaunchActivity.this, res, accountNum)).show();
                     }
                 });
             }
@@ -2198,6 +2197,29 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         final long did = dids.get(0);
         int lower_part = (int) did;
         int high_id = (int) (did >> 32);
+
+        int attachesCount = 0;
+        if (contactsToSend != null) {
+            attachesCount += contactsToSend.size();
+        }
+        if (videoPath != null) {
+            attachesCount++;
+        }
+        if (photoPathsArray != null) {
+            attachesCount += photoPathsArray.size();
+        }
+        if (documentsPathsArray != null) {
+            attachesCount += documentsPathsArray.size();
+        }
+        if (documentsUrisArray != null) {
+            attachesCount += documentsUrisArray.size();
+        }
+        if (videoPath == null && photoPathsArray == null && documentsPathsArray == null && documentsUrisArray == null && sendingText != null) {
+            attachesCount++;
+        }
+        if (AlertsCreator.checkSlowMode(this, currentAccount, did, attachesCount > 1)) {
+            return;
+        }
 
         Bundle args = new Bundle();
         final int account = dialogsFragment != null ? dialogsFragment.getCurrentAccount() : currentAccount;
@@ -2357,51 +2379,48 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 3 || requestCode == 4 || requestCode == 5 || requestCode == 19 || requestCode == 20 || requestCode == 22) {
-            boolean showAlert = true;
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                if (requestCode == 4) {
-                    ImageLoader.getInstance().checkMediaPaths();
-                    return;
-                } else if (requestCode == 5) {
-                    ContactsController.getInstance(currentAccount).forceImportContacts();
-                    return;
-                } else if (requestCode == 3) {
-                    if (SharedConfig.inappCamera) {
-                        CameraController.getInstance().initCamera(null);
-                    }
-                    return;
-                } else if (requestCode == 19 || requestCode == 20 || requestCode == 22) {
-                    showAlert = false;
-                }
+
+        boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+
+        if (requestCode == 4) {
+            if (!granted) {
+                showPermissionErrorAlert(LocaleController.getString("PermissionStorage", R.string.PermissionStorage));
+            } else {
+                ImageLoader.getInstance().checkMediaPaths();
             }
-            if (showAlert) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                if (requestCode == 3) {
-                    builder.setMessage(LocaleController.getString("PermissionNoAudio", R.string.PermissionNoAudio));
-                } else if (requestCode == 4) {
-                    builder.setMessage(LocaleController.getString("PermissionStorage", R.string.PermissionStorage));
-                } else if (requestCode == 5) {
-                    builder.setMessage(LocaleController.getString("PermissionContacts", R.string.PermissionContacts));
-                } else if (requestCode == 19 || requestCode == 20 || requestCode == 22) {
-                    builder.setMessage(LocaleController.getString("PermissionNoCamera", R.string.PermissionNoCamera));
-                }
-                builder.setNegativeButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialog, which) -> {
-                    try {
-                        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                        intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
-                        startActivity(intent);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                });
-                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                builder.show();
+        } else if (requestCode == 5) {
+            if (!granted) {
+                ContactsController.getInstance(currentAccount).forceImportContacts();
+            } else {
+                showPermissionErrorAlert(LocaleController.getString("PermissionContacts", R.string.PermissionContacts));
                 return;
             }
+        } else if (requestCode == 3) {
+            boolean audioGranted = true;
+            boolean cameraGranted = true;
+            for (int i = 0, size = permissions.length; i < size; i++) {
+                if (Manifest.permission.RECORD_AUDIO.equals(permissions[i])) {
+                    audioGranted = grantResults[i] == PackageManager.PERMISSION_GRANTED;
+                } else if (Manifest.permission.CAMERA.equals(permissions[i])) {
+                    cameraGranted = grantResults[i] == PackageManager.PERMISSION_GRANTED;
+                }
+            }
+            if (!audioGranted) {
+                showPermissionErrorAlert(LocaleController.getString("PermissionNoAudio", R.string.PermissionNoAudio));
+            } else if (!cameraGranted) {
+                showPermissionErrorAlert(LocaleController.getString("PermissionNoCamera", R.string.PermissionNoCamera));
+            } else {
+                if (SharedConfig.inappCamera) {
+                    CameraController.getInstance().initCamera(null);
+                }
+                return;
+            }
+        } else if (requestCode == 18 || requestCode == 19 || requestCode == 20 || requestCode == 22) {
+            if (!granted) {
+                showPermissionErrorAlert(LocaleController.getString("PermissionNoCamera", R.string.PermissionNoCamera));
+            }
         } else if (requestCode == 2) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (granted) {
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.locationPermissionGranted);
             }
         }
@@ -2421,9 +2440,27 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
     }
 
+    private void showPermissionErrorAlert(String message) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        builder.setMessage(message);
+        builder.setNegativeButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), (dialog, which) -> {
+            try {
+                Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
+                startActivity(intent);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+        builder.show();
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 4096);
         SharedConfig.lastAppPauseTime = System.currentTimeMillis();
         ApplicationLoader.mainInterfacePaused = true;
         Utilities.stageQueue.postRunnable(() -> {
@@ -2512,7 +2549,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     @Override
     protected void onResume() {
-        super.onResume();
+        try {
+            super.onResume();
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 4096);
         MediaController.getInstance().setFeedbackView(actionBarLayout, true);
         ApplicationLoader.mainInterfacePaused = false;
         showLanguageAlert(false);
@@ -2554,7 +2596,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         if (UserConfig.getInstance(UserConfig.selectedAccount).unacceptedTermsOfService != null) {
             showTosActivity(UserConfig.selectedAccount, UserConfig.getInstance(UserConfig.selectedAccount).unacceptedTermsOfService);
         } else if (UserConfig.getInstance(0).pendingAppUpdate != null) {
-            showUpdateActivity(UserConfig.selectedAccount, UserConfig.getInstance(0).pendingAppUpdate);
+            showUpdateActivity(UserConfig.selectedAccount, UserConfig.getInstance(0).pendingAppUpdate, true);
         }
         checkAppUpdate(false);
     }
@@ -2789,6 +2831,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     }
 
     private void checkFreeDiscSpace() {
+        SharedConfig.checkKeepMedia();
         if (Build.VERSION.SDK_INT >= 26) {
             return;
         }

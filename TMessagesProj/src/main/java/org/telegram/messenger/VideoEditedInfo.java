@@ -15,6 +15,8 @@ import java.util.Locale;
 public class VideoEditedInfo {
     public long startTime;
     public long endTime;
+    public float start;
+    public float end;
     public int rotationValue;
     public int originalWidth;
     public int originalHeight;

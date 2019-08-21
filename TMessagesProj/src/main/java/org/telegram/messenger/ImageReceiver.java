@@ -31,6 +31,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     public interface ImageReceiverDelegate {
         void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb);
+        default void onAnimationReady(ImageReceiver imageReceiver) {
+        }
     }
 
     public static class BitmapHolder {
@@ -152,6 +154,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private boolean allowStartAnimation = true;
     private boolean useSharedAnimationQueue;
     private boolean allowDecodeSingleFrame;
+    private int autoRepeat = 1;
+    private boolean animationReadySent;
 
     private boolean crossfadeWithOldImage;
     private boolean crossfadingWithThumb;
@@ -936,6 +940,12 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             if (lottieDrawable != null) {
                 lottieDrawable.setCurrentParentView(parentView);
             }
+            if ((animation != null || lottieDrawable != null) && !animationNotReady && !animationReadySent) {
+                animationReadySent = true;
+                if (delegate != null) {
+                    delegate.onAnimationReady(this);
+                }
+            }
             int orientation = 0;
             BitmapShader shaderToUse = null;
             if (!forcePreview && currentMediaDrawable != null && !animationNotReady) {
@@ -1399,6 +1409,14 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         allowDecodeSingleFrame = value;
     }
 
+    public void setAutoRepeat(int value) {
+        autoRepeat = value;
+        RLottieDrawable drawable = getLottieAnimation();
+        if (drawable != null) {
+            drawable.setAutoRepeat(value);
+        }
+    }
+
     public void setUseSharedAnimationQueue(boolean value) {
         useSharedAnimationQueue = value;
     }
@@ -1618,6 +1636,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 fileDrawable.start();
             }
             fileDrawable.setAllowDecodeSingleFrame(allowDecodeSingleFrame);
+            animationReadySent = false;
         } else if (drawable instanceof RLottieDrawable) {
             RLottieDrawable fileDrawable = (RLottieDrawable) drawable;
             fileDrawable.addParentView(parentView);
@@ -1625,6 +1644,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 fileDrawable.start();
             }
             fileDrawable.setAllowDecodeSingleFrame(true);
+            fileDrawable.setAutoRepeat(autoRepeat);
+            animationReadySent = false;
         }
         if (parentView != null) {
             if (invalidateAll) {

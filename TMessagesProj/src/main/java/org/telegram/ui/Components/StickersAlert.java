@@ -17,7 +17,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.*;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Selection;
 import android.text.Spannable;
@@ -104,7 +103,6 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
     private BackupImageView stickerImageView;
     private TextView stickerEmojiTextView;
     private RecyclerListView.OnItemClickListener stickersOnItemClickListener;
-    private Drawable shadowDrawable;
     private AnimatorSet[] shadowAnimation = new AnimatorSet[2];
     private View[] shadow = new View[2];
     private FrameLayout emptyView;
@@ -262,9 +260,6 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
     }
 
     private void init(Context context) {
-        shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
-        shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
-
         containerView = new FrameLayout(context) {
 
             private int lastNotifyWidth;
@@ -293,7 +288,6 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                     setPadding(backgroundPaddingLeft, AndroidUtilities.statusBarHeight, backgroundPaddingLeft, 0);
                     ignoreLayout = false;
                 }
-                int measuredWidth = getMeasuredWidth();
                 itemSize = (MeasureSpec.getSize(widthMeasureSpec) - AndroidUtilities.dp(36)) / 5;
                 int contentSize;
                 if (stickerSetCovereds != null) {

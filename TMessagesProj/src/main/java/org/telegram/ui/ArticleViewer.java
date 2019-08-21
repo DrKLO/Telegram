@@ -40,6 +40,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import androidx.annotation.Keep;
+import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -49,12 +50,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 import android.text.Layout;
+import android.text.Selection;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
 import android.text.style.MetricAffectingSpan;
 import android.text.style.URLSpan;
 import android.util.LongSparseArray;
@@ -156,6 +159,7 @@ import org.telegram.ui.Components.TextPaintSpan;
 import org.telegram.ui.Components.TextPaintUrlSpan;
 import org.telegram.ui.Components.TextPaintWebpageUrlSpan;
 import org.telegram.ui.Components.TypefaceSpan;
+import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.Components.WebPlayerView;
 
@@ -3707,7 +3711,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         captionTextViewNext = new TextView(activity);
         captionTextViewNext.setMaxLines(10);
         captionTextViewNext.setBackgroundColor(0x7f000000);
-        captionTextViewNext.setMovementMethod(new PhotoViewer.LinkMovementMethodMy());
+        captionTextViewNext.setMovementMethod(new LinkMovementMethodMy());
         captionTextViewNext.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(8), AndroidUtilities.dp(20), AndroidUtilities.dp(8));
         captionTextViewNext.setLinkTextColor(0xffffffff);
         captionTextViewNext.setTextColor(0xffffffff);
@@ -3720,7 +3724,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         captionTextView = new TextView(activity);
         captionTextView.setMaxLines(10);
         captionTextView.setBackgroundColor(0x7f000000);
-        captionTextView.setMovementMethod(new PhotoViewer.LinkMovementMethodMy());
+        captionTextView.setMovementMethod(new LinkMovementMethodMy());
         captionTextView.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(8), AndroidUtilities.dp(20), AndroidUtilities.dp(8));
         captionTextView.setLinkTextColor(0xffffffff);
         captionTextView.setTextColor(0xffffffff);
@@ -10408,6 +10412,22 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
 
     //------------ photo viewer
+
+    private class LinkMovementMethodMy extends LinkMovementMethod {
+        @Override
+        public boolean onTouchEvent(@NonNull TextView widget, @NonNull Spannable buffer, @NonNull MotionEvent event) {
+            try {
+                boolean result = super.onTouchEvent(widget, buffer, event);
+                if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    Selection.removeSelection(buffer);
+                }
+                return result;
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            return false;
+        }
+    }
 
     private int[] coords = new int[2];
 

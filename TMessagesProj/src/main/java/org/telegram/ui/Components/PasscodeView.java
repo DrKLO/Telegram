@@ -977,7 +977,11 @@ public class PasscodeView extends FrameLayout {
                     builder.setOnDismissListener(dialog -> {
                         if (cancellationSignal != null) {
                             selfCancelled = true;
-                            cancellationSignal.cancel();
+                            try {
+                                cancellationSignal.cancel();
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
                             cancellationSignal = null;
                         }
                     });

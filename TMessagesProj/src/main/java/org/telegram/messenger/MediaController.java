@@ -139,6 +139,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     public static class AlbumEntry {
         public int bucketId;
+        public boolean videoOnly;
         public String bucketName;
         public PhotoEntry coverPhoto;
         public ArrayList<PhotoEntry> photos = new ArrayList<>();
@@ -358,6 +359,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     public static AlbumEntry allMediaAlbumEntry;
     public static AlbumEntry allPhotosAlbumEntry;
     public static AlbumEntry allVideosAlbumEntry;
+    public static ArrayList<AlbumEntry> allMediaAlbums = new ArrayList<>();
+    public static ArrayList<AlbumEntry> allPhotoAlbums = new ArrayList<>();
     private static Runnable broadcastPhotosRunnable;
 
     private boolean isPaused = false;
@@ -1763,7 +1766,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private void playNextMessageWithoutOrder(boolean byStop) {
         ArrayList<MessageObject> currentPlayList = SharedConfig.shuffleMusic ? shuffledPlaylist : playlist;
 
-        if (byStop && SharedConfig.repeatMode == 2 && !forceLoopCurrentPlaylist) {
+        if (byStop && (SharedConfig.repeatMode == 2 || SharedConfig.repeatMode == 1 && currentPlayList.size() == 1) && !forceLoopCurrentPlaylist) {
             cleanupPlayer(false, false);
             MessageObject messageObject = currentPlayList.get(currentPlaylistNum);
             messageObject.audioProgress = 0;
@@ -2081,7 +2084,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         return currentPlaybackSpeed;
     }
 
-    private void updateVideoState(MessageObject messageObject, int playCount[], boolean destroyAtEnd, boolean playWhenReady, int playbackState) {
+    private void updateVideoState(MessageObject messageObject, int[] playCount, boolean destroyAtEnd, boolean playWhenReady, int playbackState) {
         if (videoPlayer == null) {
             return;
         }
@@ -2495,7 +2498,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     @Override
                     public void onStateChanged(boolean playWhenReady, int playbackState) {
                         if (playbackState == ExoPlayer.STATE_ENDED || (playbackState == ExoPlayer.STATE_IDLE || playbackState == ExoPlayer.STATE_BUFFERING) && playWhenReady && messageObject.audioProgress >= 0.999f) {
-                            if (!playlist.isEmpty() && playlist.size() > 1) {
+                            if (!playlist.isEmpty() && (playlist.size() > 1 || !messageObject.isVoice())) {
                                 playNextMessageWithoutOrder(true);
                             } else {
                                 cleanupPlayer(true, true, messageObject != null && messageObject.isVoice(), false);
@@ -3017,13 +3020,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     if (!destFile.exists()) {
                         destFile.createNewFile();
                     }
-                    FileChannel source = null;
-                    FileChannel destination = null;
                     boolean result = true;
                     long lastProgress = System.currentTimeMillis() - 500;
-                    try {
-                        source = new FileInputStream(sourceFile).getChannel();
-                        destination = new FileOutputStream(destFile).getChannel();
+                    try (FileChannel source = new FileInputStream(sourceFile).getChannel(); FileChannel destination = new FileOutputStream(destFile).getChannel()) {
                         long size = source.size();
                         for (long a = 0; a < size; a += 4096) {
                             if (cancelled[0]) {
@@ -3047,21 +3046,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     } catch (Exception e) {
                         FileLog.e(e);
                         result = false;
-                    } finally {
-                        try {
-                            if (source != null) {
-                                source.close();
-                            }
-                        } catch (Exception e) {
-                            //
-                        }
-                        try {
-                            if (destination != null) {
-                                destination.close();
-                            }
-                        } catch (Exception e) {
-                            //
-                        }
                     }
                     if (cancelled[0]) {
                         destFile.delete();
@@ -3148,18 +3132,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     public static String getFileName(Uri uri) {
         String result = null;
         if (uri.getScheme().equals("content")) {
-            Cursor cursor = null;
-            try {
-                cursor = ApplicationLoader.applicationContext.getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null);
+            try (Cursor cursor = ApplicationLoader.applicationContext.getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
                 if (cursor.moveToFirst()) {
                     result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
                 }
             } catch (Exception e) {
                 FileLog.e(e);
-            } finally {
-                if (cursor != null) {
-                    cursor.close();
-                }
             }
         }
         if (result == null) {
@@ -3340,6 +3318,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
                             if (allVideosAlbum == null) {
                                 allVideosAlbum = new AlbumEntry(0, LocaleController.getString("AllVideos", R.string.AllVideos), photoEntry);
+                                allVideosAlbum.videoOnly = true;
                                 int index = 0;
                                 if (allMediaAlbum != null) {
                                     index++;
@@ -3408,6 +3387,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 broadcastNewPhotos(guid, mediaAlbumsSorted, photoAlbumsSorted, cameraAlbumIdFinal, allMediaAlbumFinal, allPhotosAlbumFinal, allVideosAlbumFinal, 1000);
                 return;
             }
+            allMediaAlbums = mediaAlbumsSorted;
+            allPhotoAlbums = photoAlbumsSorted;
             broadcastPhotosRunnable = null;
             allPhotosAlbumEntry = allPhotosAlbumFinal;
             allMediaAlbumEntry = allMediaAlbumFinal;

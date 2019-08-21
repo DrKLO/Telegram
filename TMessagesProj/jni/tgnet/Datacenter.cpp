@@ -43,17 +43,6 @@ Datacenter::Datacenter(int32_t instance, uint32_t id) {
     }
 }
 
-inline char char2int(char input) {
-    if (input >= '0' && input <= '9') {
-        return input - '0';
-    } else if (input >= 'A' && input <= 'F') {
-        return (char) (input - 'A' + 10);
-    } else if (input >= 'a' && input <= 'f') {
-        return (char) (input - 'a' + 10);
-    }
-    return 0;
-}
-
 Datacenter::Datacenter(int32_t instance, NativeByteBuffer *data) {
     instanceNum = instance;
     for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
@@ -108,8 +97,19 @@ Datacenter::Datacenter(int32_t instance, NativeByteBuffer *data) {
                 } else {
                     flags = 0;
                 }
-                if (currentVersion >= 9) {
+                if (currentVersion >= 11) {
                     secret = data->readString(nullptr);
+                } else if (currentVersion >= 9) {
+                    secret = data->readString(nullptr);
+                    if (!secret.empty()) {
+                        size_t size = secret.size() / 2;
+                        char *result = new char[size];
+                        for (int32_t i = 0; i < size; i++) {
+                            result[i] = (char) (char2int(secret[i * 2]) * 16 + char2int(secret[i * 2 + 1]));
+                        }
+                        secret = std::string(result, size);
+                        delete[] result;
+                    }
                 }
                 (*array).push_back(TcpAddress(address, port, flags, secret));
             }

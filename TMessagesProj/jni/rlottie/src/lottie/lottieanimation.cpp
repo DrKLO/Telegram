@@ -136,7 +136,7 @@ std::unique_ptr<Animation> Animation::loadFromData(
     return nullptr;
 }
 
-std::unique_ptr<Animation> Animation::loadFromFile(const std::string &path)
+std::unique_ptr<Animation> Animation::loadFromFile(const std::string &path, std::map<int32_t, int32_t> &colorReplacement)
 {
     if (path.empty()) {
         vWarning << "File path is empty";
@@ -144,7 +144,7 @@ std::unique_ptr<Animation> Animation::loadFromFile(const std::string &path)
     }
 
     LottieLoader loader;
-    if (loader.load(path)) {
+    if (loader.load(path, colorReplacement)) {
         auto animation = std::unique_ptr<Animation>(new Animation);
         animation->d->init(loader.model());
         return animation;

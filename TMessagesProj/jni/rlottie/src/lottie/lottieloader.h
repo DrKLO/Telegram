@@ -19,14 +19,15 @@
 #ifndef LOTTIELOADER_H
 #define LOTTIELOADER_H
 
-#include<sstream>
-#include<memory>
+#include <sstream>
+#include <memory>
+#include <map>
 
 class LOTModel;
 class LottieLoader
 {
 public:
-   bool load(const std::string &filePath);
+   bool load(const std::string &filePath, std::map<int32_t, int32_t> &colorReplacement);
    bool loadFromData(std::string &&jsonData, const std::string &key, const std::string &resourcePath);
    std::shared_ptr<LOTModel> model();
 private:

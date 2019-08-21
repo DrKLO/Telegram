@@ -92,7 +92,7 @@ bool TL_api_request::isNeedLayer() {
     return true;
 }
 
-TLObject *TL_api_request::deserializeResponse(NativeByteBuffer *stream, uint32_t bytes, bool &error) {
+TLObject *TL_api_request::deserializeResponse(NativeByteBuffer *stream, uint32_t bytes, int32_t instanceNum, bool &error) {
     TL_api_response *result = new TL_api_response();
     result->readParamsEx(stream, bytes, error);
     return result;

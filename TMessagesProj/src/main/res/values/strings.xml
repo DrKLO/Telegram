@@ -388,6 +388,8 @@
     <string name="ChannelSignMessages">Sign Messages</string>
     <string name="ChannelSignMessagesInfo">Add names of the admins to the messages they post.</string>
     <string name="EditAdmin">Admin Rights</string>
+    <string name="EditAdminRank">Custom title</string>
+    <string name="EditAdminRankInfo">A custom title that will be shown to all members instead of \'%1$s\'.</string>
     <string name="EditAdminWhatCanDo">What can this admin do?</string>
     <string name="EditAdminChangeChannelInfo">Change Channel Info</string>
     <string name="EditAdminChangeGroupInfo">Change Group Info</string>
@@ -501,6 +503,16 @@
     <string name="DiscussionUnlinkChannelAlert">Are you sure you want to unlink **%1$s** from this channel?</string>
     <string name="ChannelDiscuss">DISCUSS</string>
     <string name="DiscussChannel">channel</string>
+    <string name="Slowmode">Slow Mode</string>
+    <string name="SlowmodeOff">Off</string>
+    <string name="SlowmodeSeconds">%1$ds</string>
+    <string name="SlowmodeMinutes">%1$dm</string>
+    <string name="SlowmodeHours">%1$dh</string>
+    <string name="SlowmodeInfoOff">Choose how often members can send a message.</string>
+    <string name="SlowmodeInfoSelected">Members will be able to send only one message every %1$s.</string>
+    <string name="SlowmodeSendError">Slow Mode is enabled. You can\'t send more than one message at once.</string>
+    <string name="SlowmodeSelectSendError">Slow Mode is enabled. You can\'t select more items.</string>
+    <string name="SlowmodeSendErrorTooLong">Sorry, this text is too long to send as one message.\n\nSlow Mode is enabled. You can\'t send more than one message at once.</string>
     <!--polls-->
     <string name="NewPoll">New Poll</string>
     <string name="Poll">Poll</string>
@@ -611,6 +623,8 @@
     <string name="EventLogPromotedAddAdmins">Add admins</string>
     <string name="EventLogPromotedBanUsers">Ban users</string>
     <string name="EventLogPromotedAddUsers">Add users</string>
+    <string name="EventLogPromotedTitle">Title: %1$s</string>
+    <string name="EventLogPromotedRemovedTitle">Title</string>
     <string name="EventLogPromotedPinMessages">Pin messages</string>
     <string name="EventLogFilterAll">All actions</string>
     <string name="EventLogFilterNewRestrictions">New exceptions</string>
@@ -622,6 +636,8 @@
     <string name="EventLogFilterEditedMessages">Edited messages</string>
     <string name="EventLogFilterPinnedMessages">Pinned messages</string>
     <string name="EventLogFilterLeavingMembers">Leaving members</string>
+    <string name="EventLogToggledSlowmodeOn">un1 set the slow mode timer to %1$s</string>
+    <string name="EventLogToggledSlowmodeOff">un1 disabled the slow mode</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">New Broadcast List</string>
     <string name="EnterListName">Enter list name</string>
@@ -860,6 +876,9 @@
     <string name="ScamMessage">SCAM</string>
     <string name="ViaBot">via</string>
     <string name="MessageNotFound">Message doesn\'t exist</string>
+    <string name="SlowModeHint">Slow Mode is enabled. You can send\nyour next message in %1$s</string>
+    <string name="TapForVideo">Tap for photo, hold for video</string>
+    <string name="SendWithoutSound">Send without sound</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -1113,6 +1132,7 @@
     <string name="ErrorOccurred">An error occurred.</string>
     <!--stickers view-->
     <string name="StickersName">Stickers and Masks</string>
+    <string name="LoopAnimatedStickers">Loop Animated Stickers</string>
     <string name="AddStickers">Add Stickers</string>
     <string name="AddStickersCount">ADD %1$s</string>
     <string name="RemoveStickersCount">REMOVE %1$s</string>
@@ -1465,7 +1485,7 @@
     <string name="DirectShare">Direct Share</string>
     <string name="DirectShareInfo">Show recent chats in Android share menu</string>
     <string name="Emoji">Emoji</string>
-    <string name="EmojiBigSize">Draw single big emoji</string>
+    <string name="LargeEmoji">Large Emoji</string>
     <string name="EmojiUseDefault">Use system default emoji</string>
     <string name="TelegramVersion">Telegram for Android %1$s</string>
     <string name="DebugMenu">Debug Menu</string>
@@ -1922,12 +1942,16 @@
     <string name="VideoDoesNotSupportStreaming">This video is not optimized for streaming. You may need to download it in full to play it.</string>
     <string name="CantPlayVideo">App was unable to play this video. Try to play it with external player?</string>
     <string name="NoRecentPhotos">No recent photos</string>
+    <string name="ImagesTab">IMAGES</string>
+    <string name="GifsTab">GIFS</string>
     <string name="NoRecentGIFs">No recent GIFs</string>
     <string name="SearchImages">FIND IMAGES</string>
     <string name="SearchImagesInfo">WEB SEARCH</string>
     <string name="SearchGifs">FIND GIFS</string>
     <string name="SearchImagesTitle">Search web</string>
-    <string name="SearchGifsTitle">Search GIFs</string>
+    <string name="SearchGifsTitle">Search Giphy</string>
+    <string name="CameraPermissionText">Tap to allow access to your Camera</string>
+    <string name="GalleryPermissionText">Tap to allow access to your Gallery</string>
     <string name="CropImage">Crop image</string>
     <string name="Enhance">Enhance</string>
     <string name="Highlights">Highlights</string>
@@ -1972,6 +1996,8 @@
     <string name="CropSquare">Square</string>
     <string name="SinglePhotosHelp">Show media as separate messages</string>
     <string name="GroupPhotosHelp">Group media into one message</string>
+    <string name="SendWithoutGrouping">Send without grouping</string>
+    <string name="SendWithoutCompression">Send without compression</string>
     <!--password view-->
     <string name="TwoStepVerification">Two-Step Verification</string>
     <string name="TwoStepVerificationTitle">Two-Step Verification</string>
@@ -2346,10 +2372,10 @@
     <string name="SecretLinkPreviewAlert">Would you like to enable extended link previews in Secret Chats? Note that link previews are generated on Telegram servers.</string>
     <string name="SecretChatContextBotAlert">Please note that inline bots are provided by third-party developers. For the bot to work, the symbols you type after the bot\'s username are sent to the respective developer.</string>
     <string name="EditMessageError">Sorry, you can\'t edit this message.</string>
-    <string name="AllowReadSms">Please allow Telegram to receive SMS so that we can automatically enter your code for you.</string>
     <string name="AllowReadCall">Please allow Telegram to receive calls so that we can automatically enter your code for you.</string>
+    <string name="AllowReadCallAndLog">Please allow Telegram to receive calls and read the call log so that we can automatically enter your code for you.</string>
+    <string name="AllowReadCallLog">Please allow Telegram to read the call log so that we can automatically enter your code for you.</string>
     <string name="AllowFillNumber">Please allow Telegram to receive calls so that we can automatically confirm your phone number.</string>
-    <string name="AllowReadCallAndSms">Please allow Telegram to receive calls so that we can automatically confirm your phone number.</string>
     <string name="UserRestricted">Sorry, you are not allowed to do this.</string>
     <string name="YouBlockedUser">Sorry, you can\'t add this user or bot to groups because you\'ve blocked them. Please unblock to proceed.</string>
     <string name="JoinGroup">JOIN GROUP</string>
@@ -2815,6 +2841,24 @@
     <string name="AndOther_few">and %1$d others</string>
     <string name="AndOther_many">and %1$d others</string>
     <string name="AndOther_other">and %1$d others</string>
+    <string name="PhotosSelected_zero">%1$d photos selected</string>
+    <string name="PhotosSelected_one">%1$d photo selected</string>
+    <string name="PhotosSelected_two">%1$d photos selected</string>
+    <string name="PhotosSelected_few">%1$d photos selected</string>
+    <string name="PhotosSelected_many">%1$d photos selected</string>
+    <string name="PhotosSelected_other">%1$d photos selected</string>
+    <string name="VideosSelected_zero">%1$d videos selected</string>
+    <string name="VideosSelected_one">%1$d video selected</string>
+    <string name="VideosSelected_two">%1$d videos selected</string>
+    <string name="VideosSelected_few">%1$d videos selected</string>
+    <string name="VideosSelected_many">%1$d videos selected</string>
+    <string name="VideosSelected_other">%1$d videos selected</string>
+    <string name="MediaSelected_zero">%1$d media selected</string>
+    <string name="MediaSelected_one">%1$d media selected</string>
+    <string name="MediaSelected_two">%1$d media selected</string>
+    <string name="MediaSelected_few">%1$d media selected</string>
+    <string name="MediaSelected_many">%1$d media selected</string>
+    <string name="MediaSelected_other">%1$d media selected</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Group</string>
     <string name="AccDescrChannel">Channel</string>

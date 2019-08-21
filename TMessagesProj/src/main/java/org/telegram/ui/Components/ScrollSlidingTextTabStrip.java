@@ -58,6 +58,11 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
 
     private GradientDrawable selectorDrawable;
 
+    private String tabLineColorKey = Theme.key_actionBarTabLine;
+    private String activeTextColorKey = Theme.key_actionBarTabActiveText;
+    private String unactiveTextColorKey = Theme.key_actionBarTabUnactiveText;
+    private String selectorColorKey = Theme.key_actionBarTabSelector;
+
     private CubicBezierInterpolator interpolator = CubicBezierInterpolator.EASE_OUT_QUINT;
 
     private SparseIntArray positionToId = new SparseIntArray(5);
@@ -102,7 +107,7 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
         selectorDrawable = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, null);
         float rad = AndroidUtilities.dpf2(3);
         selectorDrawable.setCornerRadii(new float[]{rad, rad, rad, rad, 0, 0, 0, 0});
-        selectorDrawable.setColor(Theme.getColor(Theme.key_actionBarTabLine));
+        selectorDrawable.setColor(Theme.getColor(tabLineColorKey));
 
         setFillViewport(true);
         setWillNotDraw(false);
@@ -123,8 +128,8 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
     }
 
     private void setAnimationProgressInernal(TextView newTab, TextView prevTab, float value) {
-        int newColor = Theme.getColor(Theme.key_actionBarTabActiveText);
-        int prevColor = Theme.getColor(Theme.key_actionBarTabUnactiveText);
+        int newColor = Theme.getColor(activeTextColorKey);
+        int prevColor = Theme.getColor(unactiveTextColorKey);
 
         int r1 = Color.red(newColor);
         int g1 = Color.green(newColor);
@@ -207,7 +212,7 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
         TextView tab = new TextView(getContext());
         tab.setGravity(Gravity.CENTER);
         tab.setText(text);
-        tab.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_actionBarTabSelector), 3));
+        tab.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(selectorColorKey), 3));
         tab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         tab.setSingleLine(true);
         tab.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -254,9 +259,17 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
         int count = tabsContainer.getChildCount();
         for (int a = 0; a < count; a++) {
             TextView tab = (TextView) tabsContainer.getChildAt(a);
-            tab.setTag(currentPosition == a ? Theme.key_actionBarTabActiveText : Theme.key_actionBarTabUnactiveText);
-            tab.setTextColor(Theme.getColor(currentPosition == a ? Theme.key_actionBarTabActiveText : Theme.key_actionBarTabUnactiveText));
+            tab.setTag(currentPosition == a ? activeTextColorKey : unactiveTextColorKey);
+            tab.setTextColor(Theme.getColor(currentPosition == a ? activeTextColorKey : unactiveTextColorKey));
         }
+    }
+
+    public void setColors(String line, String active, String unactive, String selector) {
+        tabLineColorKey = line;
+        activeTextColorKey = active;
+        unactiveTextColorKey = unactive;
+        selectorColorKey = selector;
+        selectorDrawable.setColor(Theme.getColor(tabLineColorKey));
     }
 
     public int getCurrentTabId() {

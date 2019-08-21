@@ -81,7 +81,6 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.BrightnessControlCell;
 import org.telegram.ui.Cells.ChatListCell;
 import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.NotificationsCheckCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
@@ -536,6 +535,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             customTabsRow = rowCount++;
             directShareRow = rowCount++;
             enableAnimationsRow = rowCount++;
+            emojiRow = rowCount++;
             raiseToSpeakRow = rowCount++;
             sendByEnterRow = rowCount++;
             saveToGalleryRow = rowCount++;
@@ -821,61 +821,10 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             } else if (position == showThemesRows) {
                 presentFragment(new ThemeActivity(THEME_TYPE_ALL));
             } else if (position == emojiRow) {
-                if (getParentActivity() == null) {
-                    return;
+                SharedConfig.toggleBigEmoji();
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(SharedConfig.allowBigEmoji);
                 }
-                final boolean[] maskValues = new boolean[2];
-                BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
-
-                builder.setApplyTopPadding(false);
-                builder.setApplyBottomPadding(false);
-                LinearLayout linearLayout = new LinearLayout(getParentActivity());
-                linearLayout.setOrientation(LinearLayout.VERTICAL);
-                for (int a = 0; a < (Build.VERSION.SDK_INT >= 19 ? 2 : 1); a++) {
-                    String name = null;
-                    if (a == 0) {
-                        maskValues[a] = SharedConfig.allowBigEmoji;
-                        name = LocaleController.getString("EmojiBigSize", R.string.EmojiBigSize);
-                    } else if (a == 1) {
-                        maskValues[a] = SharedConfig.useSystemEmoji;
-                        name = LocaleController.getString("EmojiUseDefault", R.string.EmojiUseDefault);
-                    }
-                    CheckBoxCell checkBoxCell = new CheckBoxCell(getParentActivity(), 1, 21);
-                    checkBoxCell.setTag(a);
-                    checkBoxCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-                    linearLayout.addView(checkBoxCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
-                    checkBoxCell.setText(name, "", maskValues[a], true);
-                    checkBoxCell.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-                    checkBoxCell.setOnClickListener(v -> {
-                        CheckBoxCell cell = (CheckBoxCell) v;
-                        int num = (Integer) cell.getTag();
-                        maskValues[num] = !maskValues[num];
-                        cell.setChecked(maskValues[num], true);
-                    });
-                }
-                BottomSheet.BottomSheetCell cell = new BottomSheet.BottomSheetCell(getParentActivity(), 1);
-                cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-                cell.setTextAndIcon(LocaleController.getString("Save", R.string.Save).toUpperCase(), 0);
-                cell.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
-                cell.setOnClickListener(v -> {
-                    try {
-                        if (visibleDialog != null) {
-                            visibleDialog.dismiss();
-                        }
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                    SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
-                    editor.putBoolean("allowBigEmoji", SharedConfig.allowBigEmoji = maskValues[0]);
-                    editor.putBoolean("useSystemEmoji", SharedConfig.useSystemEmoji = maskValues[1]);
-                    editor.commit();
-                    if (listAdapter != null) {
-                        listAdapter.notifyItemChanged(position);
-                    }
-                });
-                linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
-                builder.setCustomView(linearLayout);
-                showDialog(builder.create());
             } else if (position >= themeStartRow && position < themeEndRow || position >= themeStart2Row && position < themeEnd2Row) {
                 int p;
                 ArrayList<Theme.ThemeInfo> themes;
@@ -1677,8 +1626,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         cell.setText(LocaleController.getString("ImportContacts", R.string.ImportContacts), true);
                     } else if (position == stickersRow) {
                         cell.setText(LocaleController.getString("StickersAndMasks", R.string.StickersAndMasks), false);
-                    } else if (position == emojiRow) {
-                        cell.setText(LocaleController.getString("Emoji", R.string.Emoji), true);
                     } else if (position == showThemesRows) {
                         cell.setText(LocaleController.getString("ShowAllThemes", R.string.ShowAllThemes), false);
                     } else if (position == distanceRow) {
@@ -1770,6 +1717,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         textCheckCell.setTextAndValueAndCheck(LocaleController.getString("ChromeCustomTabs", R.string.ChromeCustomTabs), LocaleController.getString("ChromeCustomTabsInfo", R.string.ChromeCustomTabsInfo), SharedConfig.customTabs, false, true);
                     } else if (position == directShareRow) {
                         textCheckCell.setTextAndValueAndCheck(LocaleController.getString("DirectShare", R.string.DirectShare), LocaleController.getString("DirectShareInfo", R.string.DirectShareInfo), SharedConfig.directShare, false, true);
+                    } else if (position == emojiRow) {
+                        textCheckCell.setTextAndCheck(LocaleController.getString("LargeEmoji", R.string.LargeEmoji), SharedConfig.allowBigEmoji, true);
                     }
                     break;
                 }
@@ -1804,10 +1753,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public int getItemViewType(int position) {
-            if (position == scheduleFromRow || position == emojiRow || position == showThemesRows ||
+            if (position == scheduleFromRow || position == showThemesRows || position == distanceRow ||
                     position == scheduleToRow || position == scheduleUpdateLocationRow || position == backgroundRow ||
-                    position == contactsReimportRow || position == contactsSortRow || position == stickersRow ||
-                    position == distanceRow) {
+                    position == contactsReimportRow || position == contactsSortRow || position == stickersRow) {
                 return 1;
             } else if (position == automaticBrightnessInfoRow || position == scheduleLocationInfoRow) {
                 return 2;
@@ -1825,7 +1773,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 return 6;
             } else if (position == scheduleLocationRow || position == enableAnimationsRow || position == sendByEnterRow ||
                     position == saveToGalleryRow || position == raiseToSpeakRow || position == customTabsRow ||
-                    position == directShareRow) {
+                    position == directShareRow || position == emojiRow) {
                 return 7;
             } else if (position == textSizeRow) {
                 return 8;

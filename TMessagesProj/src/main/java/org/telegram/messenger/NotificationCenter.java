@@ -93,6 +93,7 @@ public class NotificationCenter {
     public static final int newPeopleNearbyAvailable = totalEvents++;
     public static final int stopAllHeavyOperations = totalEvents++;
     public static final int startAllHeavyOperations = totalEvents++;
+    public static final int sendingMessagesChanged = totalEvents++;
 
     public static final int httpFileDidLoad = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;

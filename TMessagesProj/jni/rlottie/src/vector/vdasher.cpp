@@ -209,6 +209,9 @@ VPath VDasher::dashed(const VPath &path)
         }
         }
     }
+    if (mResult.points().size() > SHRT_MAX) {
+        mResult.reset();
+    }
     return std::move(mResult);
 }
 

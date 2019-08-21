@@ -41,7 +41,6 @@ import org.telegram.messenger.support.customtabsclient.shared.ServiceConnectionC
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.LaunchActivity;
 
 import java.lang.ref.WeakReference;
@@ -287,7 +286,7 @@ public class Browser {
 
                     CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder(getSession());
                     builder.addMenuItem(LocaleController.getString("CopyLink", R.string.CopyLink), copy);
-                    builder.setToolbarColor(Theme.getColor(Theme.key_actionBarDefault));
+                    builder.setToolbarColor(0xffffffff);
                     builder.setShowTitle(true);
                     builder.setActionButton(BitmapFactory.decodeResource(context.getResources(), R.drawable.abc_ic_menu_share_mtrl_alpha), LocaleController.getString("ShareFile", R.string.ShareFile), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, share, 0), false);
                     CustomTabsIntent intent = builder.build();

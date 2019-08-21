@@ -495,11 +495,9 @@ public class PollCreateActivity extends BaseFragment {
 
         @Override
         public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
-            switch (holder.getItemViewType()) {
-                case 0: {
-                    setTextLeft(holder.itemView, holder.getAdapterPosition() == questionHeaderRow ? -1 : 0);
-                    break;
-                }
+            int viewType = holder.getItemViewType();
+            if (viewType == 0 || viewType == 5) {
+                setTextLeft(holder.itemView, holder.getAdapterPosition() == questionHeaderRow ? -1 : 0);
             }
         }
 

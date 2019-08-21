@@ -416,6 +416,11 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             public void needShowMediaBanHint() {
 
             }
+
+            @Override
+            public void onUpdateSlowModeButton(View button, boolean show, CharSequence time) {
+
+            }
         });
 
         messageContainer = new FrameLayoutTouch(this);

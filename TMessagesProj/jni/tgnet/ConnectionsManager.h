@@ -69,7 +69,7 @@ public:
     void setSystemLangCode(std::string langCode);
     void updateDcSettings(uint32_t datacenterId, bool workaround);
     void setPushConnectionEnabled(bool value);
-    void applyDnsConfig(NativeByteBuffer *buffer, std::string phone);
+    void applyDnsConfig(NativeByteBuffer *buffer, std::string phone, int32_t date);
     void setMtProtoVersion(int version);
     int32_t getMtProtoVersion();
     int64_t checkProxy(std::string address, uint16_t port, std::string username, std::string password, std::string secret, onRequestTimeFunc requestTimeFunc, jobject ptr1);
@@ -92,7 +92,7 @@ private:
     void sendPing(Datacenter *datacenter, bool usePushConnection);
     void sendMessagesToConnection(std::vector<std::unique_ptr<NetworkMessage>> &messages, Connection *connection, bool reportAck);
     void sendMessagesToConnectionWithConfirmation(std::vector<std::unique_ptr<NetworkMessage>> &messages, Connection *connection, bool reportAck);
-    void requestSaltsForDatacenter(Datacenter *datacenter);
+    void requestSaltsForDatacenter(Datacenter *datacenter, bool useTempConnection);
     void clearRequestsForDatacenter(Datacenter *datacenter, HandshakeType type);
     void registerForInternalPushUpdates();
     void processRequestQueue(uint32_t connectionType, uint32_t datacenterId);
@@ -153,6 +153,7 @@ private:
     bool updatingDcSettings = false;
     bool updatingDcSettingsWorkaround = false;
     int32_t disconnectTimeoutAmount = 0;
+    bool requestingSecondAddressByTlsHashMismatch = false;
     int32_t requestingSecondAddress = 0;
     int32_t updatingDcStartTime = 0;
     int32_t lastDcUpdateTime = 0;

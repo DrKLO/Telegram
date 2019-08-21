@@ -34,6 +34,8 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import android.util.Log;
 
+import org.telegram.messenger.FileLog;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -162,8 +164,13 @@ public abstract class JobIntentService extends Service {
                     mServiceProcessing = true;
                     // Keep the device awake, but only for at most 10 minutes at a time
                     // (Similar to JobScheduler.)
-                    mRunWakeLock.acquire(2 * 60 * 1000L);
-                    mLaunchWakeLock.release();
+                    try {
+                        mRunWakeLock.acquire(2 * 60 * 1000L);
+                        mLaunchWakeLock.release();
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                        mServiceProcessing = false;
+                    }
                 }
             }
         }
@@ -344,7 +351,11 @@ public abstract class JobIntentService extends Service {
                 if (DEBUG) Log.d(TAG, "Processing next work: " + work);
                 onHandleWork(work.getIntent());
                 if (DEBUG) Log.d(TAG, "Completing work: " + work);
-                work.complete();
+                try {
+                    work.complete();
+                } catch (Throwable ignore) {
+
+                }
             }
 
             if (DEBUG) Log.d(TAG, "Done processing work!");

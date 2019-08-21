@@ -2004,10 +2004,11 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public void didPressUrl(MessageObject messageObject, final CharacterStyle url, boolean longPress) {
+                    public void didPressUrl(ChatMessageCell cell, final CharacterStyle url, boolean longPress) {
                         if (url == null) {
                             return;
                         }
+                        MessageObject messageObject = cell.getMessageObject();
                         if (url instanceof URLSpanMono) {
                             ((URLSpanMono) url).copyToClipboard();
                             Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
@@ -2175,11 +2176,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                 Browser.openUrl(getParentActivity(), messageObject.messageOwner.media.webpage.url);
                             }
                         }
-                    }
-
-                    @Override
-                    public boolean isChatAdminCell(int uid) {
-                        return false;
                     }
                 });
                 chatMessageCell.setAllowAssistant(true);

@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <cstring>
 #include <openssl/sha.h>
+#include <algorithm>
 #include "Connection.h"
 #include "ConnectionsManager.h"
 #include "BuffersStorage.h"
@@ -219,7 +220,7 @@ void Connection::onReceivedData(NativeByteBuffer *buffer) {
             len = currentPacketLength + 4;
         }
 
-        if (currentProtocolType != ProtocolTypeDD && currentPacketLength % 4 != 0 || currentPacketLength > 2 * 1024 * 1024) {
+        if (currentProtocolType != ProtocolTypeDD && currentProtocolType != ProtocolTypeTLS && currentPacketLength % 4 != 0 || currentPacketLength > 2 * 1024 * 1024) {
             if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received invalid packet length", this, currentDatacenter->instanceNum, currentDatacenter->getDatacenterId(), connectionType);
             reconnect();
             return;
@@ -348,7 +349,7 @@ void Connection::connect() {
     lastPacketLength = 0;
     wasConnected = false;
     hasSomeDataSinceLastConnect = false;
-    openConnection(hostAddress, hostPort, ipv6 != 0, ConnectionsManager::getInstance(currentDatacenter->instanceNum).currentNetworkType);
+    openConnection(hostAddress, hostPort, secret, ipv6 != 0, ConnectionsManager::getInstance(currentDatacenter->instanceNum).currentNetworkType);
     if (connectionType == ConnectionTypeProxy) {
         setTimeout(5);
     } else if (connectionType == ConnectionTypePush) {
@@ -408,7 +409,7 @@ void Connection::setHasUsefullData() {
 }
 
 bool Connection::allowsCustomPadding() {
-    return currentProtocolType == ProtocolTypeDD || currentProtocolType == ProtocolTypeEF;
+    return currentProtocolType == ProtocolTypeTLS || currentProtocolType == ProtocolTypeDD || currentProtocolType == ProtocolTypeEF;
 }
 
 void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted) {
@@ -444,8 +445,10 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
         }
         if (useSecret != 0) {
             std::string *currentSecret = getCurrentSecret(useSecret);
-            if (currentSecret->length() == 34 && (*currentSecret)[0] == 'd' && (*currentSecret)[1] == 'd') {
+            if (currentSecret->length() >= 17 && (*currentSecret)[0] == '\xdd') {
                 currentProtocolType = ProtocolTypeDD;
+            } else if (currentSecret->length() > 17 && (*currentSecret)[0] == '\xee') {
+                currentProtocolType = ProtocolTypeTLS;
             } else {
                 currentProtocolType = ProtocolTypeEF;
             }
@@ -464,7 +467,7 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
         }
     } else {
         packetLength = buff->limit();
-        if (currentProtocolType == ProtocolTypeDD) {
+        if (currentProtocolType == ProtocolTypeDD || currentProtocolType == ProtocolTypeTLS) {
             RAND_bytes((uint8_t *) &additinalPacketSize, 4);
             if (!encrypted) {
                 additinalPacketSize = additinalPacketSize % 257;
@@ -506,10 +509,10 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
             RAND_bytes(bytes, 64);
             uint32_t val = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | (bytes[0]);
             uint32_t val2 = (bytes[7] << 24) | (bytes[6] << 16) | (bytes[5] << 8) | (bytes[4]);
-            if (bytes[0] != 0xef && val != 0x44414548 && val != 0x54534f50 && val != 0x20544547 && val != 0x4954504f && val != 0xeeeeeeee && val != 0xdddddddd && val2 != 0x00000000) {
+            if (currentProtocolType == ProtocolTypeTLS || bytes[0] != 0xef && val != 0x44414548 && val != 0x54534f50 && val != 0x20544547 && val != 0x4954504f && val != 0xeeeeeeee && val != 0xdddddddd && val != 0x02010316 && val2 != 0x00000000) {
                 if (currentProtocolType == ProtocolTypeEF) {
                     bytes[56] = bytes[57] = bytes[58] = bytes[59] = 0xef;
-                } else if (currentProtocolType == ProtocolTypeDD) {
+                } else if (currentProtocolType == ProtocolTypeDD || currentProtocolType == ProtocolTypeTLS) {
                     bytes[56] = bytes[57] = bytes[58] = bytes[59] = 0xdd;
                 } else if (currentProtocolType == ProtocolTypeEE) {
                     bytes[56] = bytes[57] = bytes[58] = bytes[59] = 0xee;
@@ -603,17 +606,6 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
     }
 }
 
-inline char char2int(char input) {
-    if (input >= '0' && input <= '9') {
-        return input - '0';
-    } else if (input >= 'A' && input <= 'F') {
-        return (char) (input - 'A' + 10);
-    } else if (input >= 'a' && input <= 'f') {
-        return (char) (input - 'a' + 10);
-    }
-    return 0;
-}
-
 inline std::string *Connection::getCurrentSecret(uint8_t secretType) {
     if (secretType == 2) {
         return &secret;
@@ -630,16 +622,18 @@ inline void Connection::encryptKeyWithSecret(uint8_t *bytes, uint8_t secretType)
     }
     std::string *currentSecret = getCurrentSecret(secretType);
     size_t a = 0;
-    if (currentSecret->length() == 34 && (*currentSecret)[0] == 'd' && (*currentSecret)[1] == 'd') {
+    size_t size = std::min((size_t) 16, currentSecret->length());
+    if (currentSecret->length() >= 17 && ((*currentSecret)[0] == '\xdd' || (*currentSecret)[0] == '\xee')) {
         a = 1;
+        size = 17;
     }
 
     SHA256_CTX sha256Ctx;
     SHA256_Init(&sha256Ctx);
     SHA256_Update(&sha256Ctx, bytes, 32);
     char b[1];
-    for (; a < currentSecret->size() / 2; a++) {
-        b[0] = (char) (char2int((*currentSecret)[a * 2]) * 16 + char2int((*currentSecret)[a * 2 + 1]));
+    for (; a < size; a++) {
+        b[0] = (char) (*currentSecret)[a];
         SHA256_Update(&sha256Ctx, b, 1);
     }
     SHA256_Final(bytes, &sha256Ctx);

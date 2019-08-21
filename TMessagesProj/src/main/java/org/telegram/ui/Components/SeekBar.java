@@ -20,11 +20,15 @@ public class SeekBar {
 
     public interface SeekBarDelegate {
         void onSeekBarDrag(float progress);
+        default void onSeekBarContinuousDrag(float progress) {
+
+        }
     }
 
     private static Paint paint;
     private static int thumbWidth;
     private int thumbX = 0;
+    private int draggingThumbX = 0;
     private int thumbDX = 0;
     private boolean pressed = false;
     private int width;
@@ -56,11 +60,13 @@ public class SeekBar {
             int additionWidth = (height - thumbWidth) / 2;
             if (thumbX - additionWidth <= x && x <= thumbX + thumbWidth + additionWidth && y >= 0 && y <= height) {
                 pressed = true;
+                draggingThumbX = thumbX;
                 thumbDX = (int) (x - thumbX);
                 return true;
             }
         } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             if (pressed) {
+                thumbX = draggingThumbX;
                 if (action == MotionEvent.ACTION_UP && delegate != null) {
                     delegate.onSeekBarDrag((float) thumbX / (float) (width - thumbWidth));
                 }
@@ -69,11 +75,14 @@ public class SeekBar {
             }
         } else if (action == MotionEvent.ACTION_MOVE) {
             if (pressed) {
-                thumbX = (int) (x - thumbDX);
-                if (thumbX < 0) {
-                    thumbX = 0;
-                } else if (thumbX > width - thumbWidth) {
-                    thumbX = width - thumbWidth;
+                draggingThumbX = (int) (x - thumbDX);
+                if (draggingThumbX < 0) {
+                    draggingThumbX = 0;
+                } else if (draggingThumbX > width - thumbWidth) {
+                    draggingThumbX = width - thumbWidth;
+                }
+                if (delegate != null) {
+                    delegate.onSeekBarContinuousDrag((float) draggingThumbX / (float) (width - thumbWidth));
                 }
                 return true;
             }
@@ -106,6 +115,10 @@ public class SeekBar {
         return (float) thumbX / (float) (width - thumbWidth);
     }
 
+    public int getThumbX() {
+        return (pressed ? draggingThumbX : thumbX) + thumbWidth / 2;
+    }
+
     public boolean isDragging() {
         return pressed;
     }
@@ -117,6 +130,10 @@ public class SeekBar {
     public void setSize(int w, int h) {
         width = w;
         height = h;
+    }
+
+    public int getWidth() {
+        return width - thumbWidth;
     }
 
     public void setLineHeight(int value) {
@@ -136,6 +153,6 @@ public class SeekBar {
         paint.setColor(progressColor);
         canvas.drawRoundRect(rect, thumbWidth / 2, thumbWidth / 2, paint);
         paint.setColor(circleColor);
-        canvas.drawCircle(thumbX + thumbWidth / 2, height / 2, AndroidUtilities.dp(pressed ? 8 : 6), paint);
+        canvas.drawCircle((pressed ? draggingThumbX : thumbX) + thumbWidth / 2, height / 2, AndroidUtilities.dp(pressed ? 8 : 6), paint);
     }
 }

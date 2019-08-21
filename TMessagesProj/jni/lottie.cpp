@@ -5,6 +5,7 @@
 #include <lz4.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <map>
 #include <tgnet/ConnectionsManager.h>
 #include <tgnet/FileLog.h>
 #include "c_utils.h"
@@ -35,12 +36,24 @@ typedef struct LottieInfo {
     bool nextFrameIsCacheFrame = false;
 };
 
-jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *env, jclass clazz, jstring src, jintArray data, jboolean precache) {
+jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *env, jclass clazz, jstring src, jintArray data, jboolean precache, jintArray colorReplacement) {
     LottieInfo *info = new LottieInfo();
+
+    std::map<int32_t, int32_t> colors;
+    if (colorReplacement != nullptr) {
+        jint *arr = env->GetIntArrayElements(colorReplacement, 0);
+        if (arr != nullptr) {
+            jsize len = env->GetArrayLength(colorReplacement);
+            for (int32_t a = 0; a < len / 2; a++) {
+                colors[arr[a * 2]] = arr[a * 2 + 1];
+            }
+            env->ReleaseIntArrayElements(colorReplacement, arr, 0);
+        }
+    }
 
     char const *srcString = env->GetStringUTFChars(src, 0);
     info->path = srcString;
-    info->animation = rlottie::Animation::loadFromFile(info->path);
+    info->animation = rlottie::Animation::loadFromFile(info->path, colors);
     if (srcString != 0) {
         env->ReleaseStringUTFChars(src, srcString);
     }

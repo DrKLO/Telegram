@@ -128,7 +128,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     private Drawable pinnedHeaderShadowDrawable;
     private boolean ignoreSearchCollapse;
     private NumberTextView selectedMessagesCountTextView;
-    private ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout;
     private ArrayList<SharedPhotoVideoCell> cellCache = new ArrayList<>(10);
     private ArrayList<SharedPhotoVideoCell> cache = new ArrayList<>(10);
     private ArrayList<SharedAudioCell> audioCellCache = new ArrayList<>(10);

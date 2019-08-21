@@ -24,7 +24,7 @@ public class URLSpanReplacement extends URLSpan {
     }
 
     public URLSpanReplacement(String url, TextStyleSpan.TextStyleRun run) {
-        super(url);
+        super(url != null ? url.replace('\u202E', ' ') : url);
         style = run;
     }
 

@@ -242,6 +242,10 @@ public class CameraController implements MediaRecorder.OnInfoListener {
         return cameraInitied && cameraInfos != null && !cameraInfos.isEmpty();
     }
 
+    public void runOnThreadPool(Runnable runnable) {
+        threadPool.execute(runnable);
+    }
+
     public void close(final CameraSession session, final CountDownLatch countDownLatch, final Runnable beforeDestroyRunnable) {
         session.destroy();
         threadPool.execute(() -> {

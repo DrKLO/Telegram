@@ -136,12 +136,6 @@ public class SimpleTextView extends View implements Drawable.Callback {
             textWidth = (int) Math.ceil(layout.getLineWidth(0));
             textHeight = layout.getLineBottom(0);
 
-            if ((gravity & Gravity.VERTICAL_GRAVITY_MASK) == Gravity.CENTER_VERTICAL) {
-                offsetY = (getMeasuredHeight() - textHeight) / 2;
-            } else {
-                offsetY = 0;
-            }
-
             if ((gravity & Gravity.HORIZONTAL_GRAVITY_MASK) == Gravity.LEFT) {
                 offsetX = -(int) layout.getLineLeft(0);
             } else if (layout.getLineLeft(0) == 0) {
@@ -207,6 +201,12 @@ public class SimpleTextView extends View implements Drawable.Callback {
             finalHeight = textHeight;
         }
         setMeasuredDimension(width, finalHeight);
+
+        if ((gravity & Gravity.VERTICAL_GRAVITY_MASK) == Gravity.CENTER_VERTICAL) {
+            offsetY = (getMeasuredHeight() - textHeight) / 2;
+        } else {
+            offsetY = 0;
+        }
     }
 
     @Override
@@ -306,7 +306,13 @@ public class SimpleTextView extends View implements Drawable.Callback {
 
     private boolean recreateLayoutMaybe() {
         if (wasLayout && getMeasuredHeight() != 0) {
-            return createLayout(getMeasuredWidth());
+            boolean result = createLayout(getMeasuredWidth() - getPaddingLeft() - getPaddingRight());
+            if ((gravity & Gravity.VERTICAL_GRAVITY_MASK) == Gravity.CENTER_VERTICAL) {
+                offsetY = (getMeasuredHeight() - textHeight) / 2;
+            } else {
+                offsetY = 0;
+            }
+            return result;
         } else {
             requestLayout();
         }

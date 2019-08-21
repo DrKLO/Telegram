@@ -168,17 +168,13 @@ public class UserCell extends FrameLayout {
         addButton.setVisibility(value ? VISIBLE : GONE);
     }
 
-    public void setIsAdmin(int value) {
+    public void setAdminRole(String role) {
         if (adminTextView == null) {
             return;
         }
-        adminTextView.setVisibility(value != 0 ? VISIBLE : GONE);
-        if (value == 1) {
-            adminTextView.setText(LocaleController.getString("ChannelCreator", R.string.ChannelCreator));
-        } else if (value == 2) {
-            adminTextView.setText(LocaleController.getString("ChannelAdmin", R.string.ChannelAdmin));
-        }
-        if (value != 0) {
+        adminTextView.setVisibility(role != null ? VISIBLE : GONE);
+        adminTextView.setText(role);
+        if (role != null) {
             CharSequence text = adminTextView.getText();
             int size = (int) Math.ceil(adminTextView.getPaint().measureText(text, 0, text.length()));
             nameTextView.setPadding(LocaleController.isRTL ? size + AndroidUtilities.dp(6) : 0, 0, !LocaleController.isRTL ? size + AndroidUtilities.dp(6) : 0, 0);
@@ -447,6 +443,8 @@ public class UserCell extends FrameLayout {
             avatarImageView.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
         } else if (currentChat != null) {
             avatarImageView.setImage(ImageLocation.getForChat(currentChat, false), "50_50", avatarDrawable, currentChat);
+        } else {
+            avatarImageView.setImageDrawable(avatarDrawable);
         }
     }
 

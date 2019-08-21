@@ -96,7 +96,8 @@ public class LetterDrawable extends Drawable {
 
     @Override
     public void setAlpha(int alpha) {
-
+        namePaint.setAlpha(alpha);
+        paint.setAlpha(alpha);
     }
 
     @Override

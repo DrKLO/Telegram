@@ -37,11 +37,11 @@ import java.util.concurrent.TimeUnit;
 
 public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
 
-    private static native long createDecoder(String src, int[] params, int account, long streamFileSize, Object readCallback);
+    private static native long createDecoder(String src, int[] params, int account, long streamFileSize, Object readCallback, boolean preview);
     private static native void destroyDecoder(long ptr);
     private static native void stopDecoder(long ptr);
-    private static native int getVideoFrame(long ptr, Bitmap bitmap, int[] params, int stride);
-    private static native void seekToMs(long ptr, long ms);
+    private static native int getVideoFrame(long ptr, Bitmap bitmap, int[] params, int stride, boolean preview);
+    private static native void seekToMs(long ptr, long ms, boolean precise);
     private static native void prepareToSeek(long ptr);
     public static native void getVideoInfo(String src, int[] params);
 
@@ -102,8 +102,8 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     public volatile long nativePtr;
     private DispatchQueue decodeQueue;
 
-    private View parentView = null;
-    private View secondParentView = null;
+    private View parentView;
+    private View secondParentView;
 
     private AnimatedFileDrawableStream stream;
 
@@ -206,7 +206,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         public void run() {
             if (!isRecycled) {
                 if (!decoderCreated && nativePtr == 0) {
-                    nativePtr = createDecoder(path.getAbsolutePath(), metaData, currentAccount, streamFileSize, stream);
+                    nativePtr = createDecoder(path.getAbsolutePath(), metaData, currentAccount, streamFileSize, stream, false);
                     decoderCreated = true;
                 }
                 try {
@@ -232,11 +232,11 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                             if (stream != null) {
                                 stream.reset();
                             }
-                            seekToMs(nativePtr, seekTo);
+                            seekToMs(nativePtr, seekTo, true);
                         }
                         if (backgroundBitmap != null) {
                             lastFrameDecodeTime = System.currentTimeMillis();
-                            if (getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes()) == 0) {
+                            if (getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), false) == 0) {
                                 AndroidUtilities.runOnUIThread(uiRunnableNoFrame);
                                 return;
                             }
@@ -265,18 +265,34 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         }
     };
 
-    public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, TLRPC.Document document, Object parentObject, int account) {
+    public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, TLRPC.Document document, Object parentObject, int account, boolean preview) {
         path = file;
         streamFileSize = streamSize;
         currentAccount = account;
         getPaint().setFlags(Paint.FILTER_BITMAP_FLAG);
         if (streamSize != 0 && document != null) {
-            stream = new AnimatedFileDrawableStream(document, parentObject, account);
+            stream = new AnimatedFileDrawableStream(document, parentObject, account, preview);
         }
         if (createDecoder) {
-            nativePtr = createDecoder(file.getAbsolutePath(), metaData, currentAccount, streamFileSize, stream);
+            nativePtr = createDecoder(file.getAbsolutePath(), metaData, currentAccount, streamFileSize, stream, preview);
             decoderCreated = true;
         }
+    }
+
+    public Bitmap getFrameAtTime(long ms) {
+        if (!decoderCreated || nativePtr == 0) {
+            return null;
+        }
+        if (stream != null) {
+            stream.cancel(false);
+            stream.reset();
+        }
+        seekToMs(nativePtr, ms, false);
+        if (backgroundBitmap == null) {
+            backgroundBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
+        }
+        int result = getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), true);
+        return result != 0 ? backgroundBitmap : null;
     }
 
     public void setParentView(View view) {
@@ -342,6 +358,19 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         }
         if (stream != null) {
             stream.cancel(true);
+        }
+    }
+
+    public void resetStream(boolean stop) {
+        if (stream != null) {
+            stream.cancel(true);
+        }
+        if (nativePtr != 0) {
+            if (stop) {
+                stopDecoder(nativePtr);
+            } else {
+                prepareToSeek(nativePtr);
+            }
         }
     }
 
@@ -606,9 +635,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     public AnimatedFileDrawable makeCopy() {
         AnimatedFileDrawable drawable;
         if (stream != null) {
-            drawable = new AnimatedFileDrawable(path, false, streamFileSize, stream.getDocument(), stream.getParentObject(), currentAccount);
+            drawable = new AnimatedFileDrawable(path, false, streamFileSize, stream.getDocument(), stream.getParentObject(), currentAccount, stream != null && stream.isPreview());
         } else {
-            drawable = new AnimatedFileDrawable(path, false, streamFileSize, null, null, currentAccount);
+            drawable = new AnimatedFileDrawable(path, false, streamFileSize, null, null, currentAccount, stream != null && stream.isPreview());
         }
         drawable.metaData[0] = metaData[0];
         drawable.metaData[1] = metaData[1];

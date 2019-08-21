@@ -8,12 +8,15 @@
 
 #include <unistd.h>
 #include <fcntl.h>
-#include <errno.h>
+#include <cerrno>
 #include <sys/socket.h>
 #include <memory.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <openssl/rand.h>
+#include <openssl/hmac.h>
+#include <algorithm>
 #include "ByteStream.h"
 #include "ConnectionSocket.h"
 #include "FileLog.h"
@@ -23,10 +26,196 @@
 #include "Timer.h"
 #include "NativeByteBuffer.h"
 #include "BuffersStorage.h"
+#include "Connection.h"
 
 #ifndef EPOLLRDHUP
 #define EPOLLRDHUP 0x2000
 #endif
+
+#define MAX_GREASE 8
+
+class TlsHello {
+public:
+
+    TlsHello() {
+        RAND_bytes(grease, MAX_GREASE);
+        for (int a = 0; a < MAX_GREASE; a++) {
+            grease[a] = (uint8_t) ((grease[a] & 0xf0) + 0x0A);
+        }
+        for (size_t i = 1; i < MAX_GREASE; i += 2) {
+            if (grease[i] == grease[i - 1]) {
+                grease[i] ^= 0x10;
+            }
+        }
+    }
+
+    struct Op {
+        enum class Type {
+            String, Random, Zero, Domain, Grease, BeginScope, EndScope
+        };
+        Type type;
+        size_t length;
+        int seed;
+        std::string data;
+
+        static Op string(const char str[], size_t len) {
+            Op res;
+            res.type = Type::String;
+            res.data = std::string(str, len);
+            return res;
+        }
+
+        static Op random(size_t length) {
+            Op res;
+            res.type = Type::Random;
+            res.length = length;
+            return res;
+        }
+
+        static Op zero(size_t length) {
+            Op res;
+            res.type = Type::Zero;
+            res.length = length;
+            return res;
+        }
+
+        static Op domain() {
+            Op res;
+            res.type = Type::Domain;
+            return res;
+        }
+
+        static Op grease(int seed) {
+            Op res;
+            res.type = Type::Grease;
+            res.seed = seed;
+            return res;
+        }
+
+        static Op begin_scope() {
+            Op res;
+            res.type = Type::BeginScope;
+            return res;
+        }
+
+        static Op end_scope() {
+            Op res;
+            res.type = Type::EndScope;
+            return res;
+        }
+    };
+
+    static const TlsHello &getDefault() {
+        static TlsHello result = [] {
+            TlsHello res;
+            res.ops = {
+                    Op::string("\x16\x03\x01\x02\x00\x01\x00\x01\xfc\x03\x03", 11),
+                    Op::zero(32),
+                    Op::string("\x20", 1),
+                    Op::random(32),
+                    Op::string("\x00\x22", 2),
+                    Op::grease(0),
+                    Op::string("\x13\x01\x13\x02\x13\x03\xc0\x2b\xc0\x2f\xc0\x2c\xc0\x30\xcc\xa9\xcc\xa8\xc0\x13\xc0\x14\x00\x9c"
+                               "\x00\x9d\x00\x2f\x00\x35\x00\x0a\x01\x00\x01\x91", 36),
+                    Op::grease(2),
+                    Op::string("\x00\x00\x00\x00", 4),
+                    Op::begin_scope(),
+                    Op::begin_scope(),
+                    Op::string("\x00", 1),
+                    Op::begin_scope(),
+                    Op::domain(),
+                    Op::end_scope(),
+                    Op::end_scope(),
+                    Op::end_scope(),
+                    Op::string("\x00\x17\x00\x00\xff\x01\x00\x01\x00\x00\x0a\x00\x0a\x00\x08", 15),
+                    Op::grease(4),
+                    Op::string(
+                            "\x00\x1d\x00\x17\x00\x18\x00\x0b\x00\x02\x01\x00\x00\x23\x00\x00\x00\x10\x00\x0e\x00\x0c\x02\x68\x32\x08"
+                            "\x68\x74\x74\x70\x2f\x31\x2e\x31\x00\x05\x00\x05\x01\x00\x00\x00\x00\x00\x0d\x00\x14\x00\x12\x04\x03\x08"
+                            "\x04\x04\x01\x05\x03\x08\x05\x05\x01\x08\x06\x06\x01\x02\x01\x00\x12\x00\x00\x00\x33\x00\x2b\x00\x29", 77),
+                    Op::grease(4),
+                    Op::string("\x00\x01\x00\x00\x1d\x00\x20", 7),
+                    Op::random(32),
+                    Op::string("\x00\x2d\x00\x02\x01\x01\x00\x2b\x00\x0b\x0a", 11),
+                    Op::grease(6),
+                    Op::string("\x03\x04\x03\x03\x03\x02\x03\x01\x00\x1b\x00\x03\x02\x00\x02", 15),
+                    Op::grease(3),
+                    Op::string("\x00\x01\x00\x00\x15", 5)};
+            return res;
+        }();
+        return result;
+    }
+
+    uint32_t writeToBuffer(uint8_t *data) {
+        uint32_t offset = 0;
+        for (auto op : ops) {
+            writeOp(op, data, offset);
+        }
+        return offset;
+    }
+
+    uint32_t writePadding(uint8_t *data, uint32_t length) {
+        if (length > 515) {
+            return 0;
+        }
+        uint32_t size = 515 - length;
+        memset(data + length + 2, 0, size);
+        data[length] = static_cast<uint8_t>((size >> 8) & 0xff);
+        data[length + 1] = static_cast<uint8_t>(size & 0xff);
+        return length + size + 2;
+    }
+
+    void setDomain(std::string value) {
+        domain = std::move(value);
+    }
+
+private:
+    std::vector<Op> ops;
+    uint8_t grease[MAX_GREASE];
+    std::vector<size_t> scopeOffset;
+    std::string domain;
+
+    void writeOp(const TlsHello::Op &op, uint8_t *data, uint32_t &offset) {
+        using Type = TlsHello::Op::Type;
+        switch (op.type) {
+            case Type::String:
+                memcpy(data + offset, op.data.data(), op.data.size());
+                offset += op.data.size();
+                break;
+            case Type::Random:
+                RAND_bytes(data + offset, (size_t) op.length);
+                offset += op.length;
+                break;
+            case Type::Zero:
+                std::memset(data + offset, 0, op.length);
+                offset += op.length;
+                break;
+            case Type::Domain: {
+                memcpy(data + offset, domain.data(), domain.size());
+                offset += domain.size();
+                break;
+            }
+            case Type::Grease: {
+                data[offset] = grease[op.seed];
+                data[offset + 1] = grease[op.seed];
+                offset += 2;
+                break;
+            }
+            case Type::BeginScope:
+                scopeOffset.push_back(offset);
+                offset += 2;
+                break;
+            case Type::EndScope: {
+                auto begin_offset = scopeOffset.back();
+                scopeOffset.pop_back();
+                size_t size = offset - begin_offset - 2;
+                data[begin_offset] = static_cast<uint8_t>((size >> 8) & 0xff);
+                data[begin_offset + 1] = static_cast<uint8_t>(size & 0xff);
+                break;
+            }
+        }
+    }
+};
 
 ConnectionSocket::ConnectionSocket(int32_t instance) {
     instanceNum = instance;
@@ -44,15 +233,24 @@ ConnectionSocket::~ConnectionSocket() {
         delete eventObject;
         eventObject = nullptr;
     }
+    if (tempBuffer != nullptr) {
+        delete tempBuffer;
+        tempBuffer = nullptr;
+    }
+    if (tlsBuffer != nullptr) {
+        tlsBuffer->reuse();
+        tlsBuffer = nullptr;
+    }
 }
 
-void ConnectionSocket::openConnection(std::string address, uint16_t port, bool ipv6, int32_t networkType) {
+void ConnectionSocket::openConnection(std::string address, uint16_t port, std::string secret, bool ipv6, int32_t networkType) {
     currentNetworkType = networkType;
     isIpv6 = ipv6;
     currentAddress = address;
     currentPort = port;
     waitingForHostResolve = "";
     adjustWriteOpAfterResolve = false;
+    tlsState = 0;
     ConnectionsManager::getInstance(instanceNum).attachConnection(this);
 
     memset(&socketAddress, 0, sizeof(sockaddr_in));
@@ -67,16 +265,33 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
         proxySecret = &ConnectionsManager::getInstance(instanceNum).proxySecret;
     }
 
-    if (proxyAddress != nullptr && !proxyAddress->empty()) {
+    if (!proxyAddress->empty()) {
+        if (LOGS_ENABLED) DEBUG_D("connection(%p) connecting via proxy %s:%d secret[%d]", this, proxyAddress->c_str(), proxyPort, (int) proxySecret->size());
         if ((socketFd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
             if (LOGS_ENABLED) DEBUG_E("connection(%p) can't create proxy socket", this);
             closeSocket(1, -1);
             return;
         }
+        uint32_t tempBuffLength;
         if (proxySecret->empty()) {
             proxyAuthState = 1;
+            tempBuffLength = 1024;
+        } else if (proxySecret->size() > 17 && (*proxySecret)[0] == '\xee') {
+            proxyAuthState = 10;
+            currentSecret = proxySecret->substr(1, 16);
+            currentSecretDomain = proxySecret->substr(17);
+            tempBuffLength = 65 * 1024;
         } else {
             proxyAuthState = 0;
+            tempBuffLength = 0;
+        }
+        if (tempBuffLength > 0) {
+            if (tempBuffer == nullptr || tempBuffer->length < tempBuffLength) {
+                if (tempBuffer != nullptr) {
+                    delete tempBuffer;
+                }
+                tempBuffer = new ByteArray(tempBuffLength);
+            }
         }
         socketAddress.sin_family = AF_INET;
         socketAddress.sin_port = htons(proxyPort);
@@ -145,6 +360,24 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, bool i
                 return;
             }
         }
+        uint32_t tempBuffLength;
+        if (secret.size() > 17 && secret[0] == '\xee') {
+            proxyAuthState = 10;
+            currentSecret = secret.substr(1, 16);
+            currentSecretDomain = secret.substr(17);
+            tempBuffLength = 65 * 1024;
+        } else {
+            proxyAuthState = 0;
+            tempBuffLength = 0;
+        }
+        if (tempBuffLength > 0) {
+            if (tempBuffer == nullptr || tempBuffer->length < tempBuffLength) {
+                if (tempBuffer != nullptr) {
+                    delete tempBuffer;
+                }
+                tempBuffer = new ByteArray(tempBuffLength);
+            }
+        }
     }
 
     openConnectionInternal(ipv6);
@@ -197,7 +430,7 @@ void ConnectionSocket::closeSocket(int32_t reason, int32_t error) {
     lastEventTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMonotonicMillis();
     ConnectionsManager::getInstance(instanceNum).detachConnection(this);
     if (socketFd >= 0) {
-        epoll_ctl(ConnectionsManager::getInstance(instanceNum).epolFd, EPOLL_CTL_DEL, socketFd, NULL);
+        epoll_ctl(ConnectionsManager::getInstance(instanceNum).epolFd, EPOLL_CTL_DEL, socketFd, nullptr);
         if (close(socketFd) != 0) {
             if (LOGS_ENABLED) DEBUG_E("connection(%p) unable to close socket", this);
         }
@@ -206,8 +439,13 @@ void ConnectionSocket::closeSocket(int32_t reason, int32_t error) {
     waitingForHostResolve = "";
     adjustWriteOpAfterResolve = false;
     proxyAuthState = 0;
+    tlsState = 0;
     onConnectedSent = false;
     outgoingByteStream->clean();
+    if (tlsBuffer != nullptr) {
+        tlsBuffer->reuse();
+        tlsBuffer = nullptr;
+    }
     onDisconnected(reason, error);
 }
 
@@ -222,6 +460,7 @@ void ConnectionSocket::onEvent(uint32_t events) {
             NativeByteBuffer *buffer = ConnectionsManager::getInstance(instanceNum).networkBuffer;
             while (true) {
                 buffer->rewind();
+                Connection *connection = (Connection *) this;
                 readCount = recv(socketFd, buffer->bytes(), READ_BUFFER_SIZE, 0);
                 if (readCount < 0) {
                     closeSocket(1, -1);
@@ -231,7 +470,75 @@ void ConnectionSocket::onEvent(uint32_t events) {
                 if (readCount > 0) {
                     buffer->limit((uint32_t) readCount);
                     lastEventTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMonotonicMillis();
-                    if (proxyAuthState == 2) {
+                    if (proxyAuthState == 11) {
+                        if (LOGS_ENABLED) DEBUG_D("connection(%p) TLS received %d", this, (int) readCount);
+                        size_t newBytesRead = bytesRead + readCount;
+                        if (newBytesRead > 64 * 1024) {
+                            closeSocket(1, -1);
+                            if (LOGS_ENABLED) DEBUG_E("connection(%p) TLS client hello too much data", this);
+                            return;
+                        }
+                        if (newBytesRead >= 16) {
+                            std::memcpy(tempBuffer->bytes + bytesRead, buffer->bytes(), (size_t) readCount);
+
+                            static std::string hello1 = std::string("\x16\x03\x03", 3);
+                            if (std::memcmp(hello1.data(), tempBuffer->bytes, hello1.size()) != 0) {
+                                closeSocket(1, -1);
+                                if (LOGS_ENABLED) DEBUG_E("connection(%p) TLS hello1 mismatch", this);
+                                return;
+                            }
+                            size_t len1 = (tempBuffer->bytes[3] << 8) + tempBuffer->bytes[4];
+                            if (len1 > 64 * 1024 - 5) {
+                                closeSocket(1, -1);
+                                if (LOGS_ENABLED) DEBUG_E("connection(%p) TLS len1 invalid", this);
+                                return;
+                            } else if (newBytesRead < len1 + 5) {
+                                if (LOGS_ENABLED) DEBUG_D("connection(%p) TLS client hello wait for more data", this);
+                                bytesRead = newBytesRead;
+                                return;
+                            }
+
+                            static std::string hello2 = std::string("\x14\x03\x03\x00\x01\x01\x17\x03\x03", 9);
+                            if (std::memcmp(hello2.data(), tempBuffer->bytes + 5 + len1, hello2.size()) != 0) {
+                                closeSocket(1, -1);
+                                if (LOGS_ENABLED) DEBUG_E("connection(%p) TLS hello2 mismatch", this);
+                                return;
+                            }
+                            size_t len2 = (tempBuffer->bytes[5 + 9 + len1] << 8) + tempBuffer->bytes[5 + 9 + len1 + 1];
+                            if (len2 > 64 * 1024 - len1 - 5 - 11) {
+                                closeSocket(1, -1);
+                                if (LOGS_ENABLED) DEBUG_E("connection(%p) TLS len2 invalid", this);
+                                return;
+                            } else if (newBytesRead < len2 + len1 + 5 + 11) {
+                                if (LOGS_ENABLED) DEBUG_D("connection(%p) TLS client hello wait for more data", this);
+                                bytesRead = newBytesRead;
+                                return;
+                            }
+                            std::memcpy(tempBuffer->bytes + 64 * 1024 + 32, tempBuffer->bytes + 11, 32);
+                            std::memset(tempBuffer->bytes + 11, 0, 32);
+
+                            uint8_t *temp = new uint8_t[32 + newBytesRead];
+                            memcpy(temp, tempBuffer->bytes + 64 * 1024, 32);
+                            memcpy(temp + 32, tempBuffer->bytes, newBytesRead);
+                            uint32_t outLength;
+                            HMAC(EVP_sha256(), currentSecret.data(), currentSecret.size(), temp, 32 + newBytesRead, tempBuffer->bytes + 64 * 1024, &outLength);
+                            delete[] temp;
+                            if (std::memcmp(tempBuffer->bytes + 64 * 1024, tempBuffer->bytes + 64 * 1024 + 32, 32) != 0) {
+                                tlsHashMismatch = true;
+                                closeSocket(1, -1);
+                                if (LOGS_ENABLED) DEBUG_E("connection(%p) TLS hash mismatch", this);
+                                return;
+                            }
+                            if (LOGS_ENABLED) DEBUG_D("connection(%p) TLS hello complete", this);
+                            tlsState = 1;
+                            proxyAuthState = 0;
+                            bytesRead = 0;
+                            adjustWriteOp();
+                        } else {
+                            std::memcpy(tempBuffer->bytes + bytesRead, buffer->bytes(), (size_t) readCount);
+                            bytesRead = newBytesRead;
+                        }
+                    } else if (proxyAuthState == 2) {
                         if (readCount == 2) {
                             uint8_t auth_method = buffer->bytes()[1];
                             if (auth_method == 0xff) {
@@ -281,7 +588,65 @@ void ConnectionSocket::onEvent(uint32_t events) {
                         if (ConnectionsManager::getInstance(instanceNum).delegate != nullptr) {
                             ConnectionsManager::getInstance(instanceNum).delegate->onBytesReceived((int32_t) readCount, currentNetworkType, instanceNum);
                         }
-                        onReceivedData(buffer);
+                        if (tlsState != 0) {
+                            while (buffer->hasRemaining()) {
+                                size_t newBytesRead = (tlsBuffer != nullptr ? tlsBuffer->position() : 0) + buffer->remaining();
+                                if (newBytesRead >= 5) {
+                                    if (tlsBuffer == nullptr || tlsBuffer->limit() < 5) {
+                                        uint32_t pos = buffer->position();
+
+                                        uint8_t offset = 0;
+                                        uint8_t header[5];
+                                        if (tlsBuffer != nullptr) {
+                                            offset = (uint8_t) tlsBuffer->position();
+                                            memcpy(header, tlsBuffer->bytes(), offset);
+                                            tlsBuffer->reuse();
+                                        }
+                                        memcpy(header + offset, buffer->bytes() + pos, (uint8_t) (5 - offset));
+
+                                        static std::string header1 = std::string("\x17\x03\x03", 3);
+                                        if (std::memcmp(header1.data(), header, header1.size()) != 0) {
+                                            closeSocket(1, -1);
+                                            if (LOGS_ENABLED) DEBUG_E("connection(%p) TLS response header1 mismatch", this);
+                                            return;
+                                        }
+                                        uint32_t len1 = (header[3] << 8) + header[4];
+                                        if (len1 > 64 * 1024) {
+                                            closeSocket(1, -1);
+                                            if (LOGS_ENABLED) DEBUG_E("connection(%p) TLS response len1 invalid", this);
+                                            return;
+                                        } else {
+                                            tlsBuffer = BuffersStorage::getInstance().getFreeBuffer(len1);
+                                            buffer->position(pos + (5 - offset));
+                                        }
+                                    } else {
+                                        if (LOGS_ENABLED) DEBUG_D("connection(%p) TLS response new data %d", this, buffer->remaining());
+                                    }
+                                    buffer->limit(std::min(buffer->position() + tlsBuffer->remaining(), buffer->limit()));
+                                    tlsBuffer->writeBytes(buffer);
+                                    buffer->limit((uint32_t) readCount);
+                                    if (tlsBuffer->remaining() == 0) {
+                                        tlsBuffer->rewind();
+                                        onReceivedData(tlsBuffer);
+                                        if (tlsBuffer == nullptr) {
+                                            return;
+                                        }
+                                        tlsBuffer->reuse();
+                                        tlsBuffer = nullptr;
+                                    } else {
+                                        if (LOGS_ENABLED) DEBUG_D("connection(%p) TLS response wait for more data, total size %d, left %d", this, tlsBuffer->limit(), tlsBuffer->remaining());
+                                    }
+                                } else {
+                                    if (tlsBuffer == nullptr) {
+                                        tlsBuffer = BuffersStorage::getInstance().getFreeBuffer(4);
+                                    }
+                                    tlsBuffer->writeBytes(buffer);
+                                    if (LOGS_ENABLED) DEBUG_D("connection(%p) TLS response wait for more data, not enough bytes for header, total = %d", this, (int) tlsBuffer->position());
+                                }
+                            }
+                        } else {
+                            onReceivedData(buffer);
+                        }
                     }
                 }
                 if (readCount != READ_BUFFER_SIZE) {
@@ -297,58 +662,90 @@ void ConnectionSocket::onEvent(uint32_t events) {
             return;
         } else {
             if (proxyAuthState != 0) {
-                if (proxyAuthState == 1) {
-                    lastEventTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMonotonicMillis();
-                    proxyAuthState = 2;
-                    buffer[0] = 0x05;
-                    buffer[1] = 0x02;
-                    buffer[2] = 0x00;
-                    buffer[3] = 0x02;
-                    if (send(socketFd, buffer, 4, 0) < 0) {
-                        if (LOGS_ENABLED) DEBUG_E("connection(%p) send failed", this);
-                        closeSocket(1, -1);
-                        return;
+                if (proxyAuthState >= 10) {
+                    if (proxyAuthState == 10) {
+                        lastEventTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMonotonicMillis();
+                        tlsHashMismatch = false;
+                        proxyAuthState = 11;
+                        TlsHello hello = TlsHello::getDefault();
+                        hello.setDomain(currentSecretDomain);
+                        uint32_t size = hello.writeToBuffer(tempBuffer->bytes);
+                        if (!(size = hello.writePadding(tempBuffer->bytes, size))) {
+                            if (LOGS_ENABLED) DEBUG_E("connection(%p) too much data for padding", this);
+                            closeSocket(1, -1);
+                            return;
+                        }
+                        uint32_t outLength;
+                        HMAC(EVP_sha256(), currentSecret.data(), currentSecret.size(), tempBuffer->bytes, size, tempBuffer->bytes + 64 * 1024, &outLength);
+
+                        int32_t currentTime = ConnectionsManager::getInstance(instanceNum).getCurrentTime();
+                        int32_t old = ((int32_t *) (tempBuffer->bytes + 64 * 1024 + 28))[0];
+                        ((int32_t *) (tempBuffer->bytes + 64 * 1024 + 28))[0] = old ^ currentTime;
+
+                        memcpy(tempBuffer->bytes + 11, tempBuffer->bytes + 64 * 1024, 32);
+                        bytesRead = 0;
+
+                        if (send(socketFd, tempBuffer->bytes, size, 0) < 0) {
+                            if (LOGS_ENABLED) DEBUG_E("connection(%p) send failed", this);
+                            closeSocket(1, -1);
+                            return;
+                        }
+                        adjustWriteOp();
                     }
-                    adjustWriteOp();
-                } else if (proxyAuthState == 3) {
-                    buffer[0] = 0x01;
-                    std::string *proxyUser;
-                    std::string *proxyPassword;
-                    if (!overrideProxyAddress.empty()) {
-                        proxyUser = &overrideProxyUser;
-                        proxyPassword = &overrideProxyPassword;
-                    } else {
-                        proxyUser = &ConnectionsManager::getInstance(instanceNum).proxyUser;
-                        proxyPassword = &ConnectionsManager::getInstance(instanceNum).proxyPassword;
+                } else {
+                    if (proxyAuthState == 1) {
+                        lastEventTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMonotonicMillis();
+                        proxyAuthState = 2;
+                        tempBuffer->bytes[0] = 0x05;
+                        tempBuffer->bytes[1] = 0x02;
+                        tempBuffer->bytes[2] = 0x00;
+                        tempBuffer->bytes[3] = 0x02;
+                        if (send(socketFd, tempBuffer->bytes, 4, 0) < 0) {
+                            if (LOGS_ENABLED) DEBUG_E("connection(%p) send failed", this);
+                            closeSocket(1, -1);
+                            return;
+                        }
+                        adjustWriteOp();
+                    } else if (proxyAuthState == 3) {
+                        tempBuffer->bytes[0] = 0x01;
+                        std::string *proxyUser;
+                        std::string *proxyPassword;
+                        if (!overrideProxyAddress.empty()) {
+                            proxyUser = &overrideProxyUser;
+                            proxyPassword = &overrideProxyPassword;
+                        } else {
+                            proxyUser = &ConnectionsManager::getInstance(instanceNum).proxyUser;
+                            proxyPassword = &ConnectionsManager::getInstance(instanceNum).proxyPassword;
+                        }
+                        uint8_t len1 = (uint8_t) proxyUser->length();
+                        uint8_t len2 = (uint8_t) proxyPassword->length();
+                        tempBuffer->bytes[1] = len1;
+                        memcpy(tempBuffer->bytes + 2, proxyUser->c_str(), len1);
+                        tempBuffer->bytes[2 + len1] = len2;
+                        memcpy(tempBuffer->bytes + 3 + len1, proxyPassword->c_str(), len2);
+                        proxyAuthState = 4;
+                        if (send(socketFd, tempBuffer->bytes, 3 + len1 + len2, 0) < 0) {
+                            if (LOGS_ENABLED) DEBUG_E("connection(%p) send failed", this);
+                            closeSocket(1, -1);
+                            return;
+                        }
+                        adjustWriteOp();
+                    } else if (proxyAuthState == 5) {
+                        tempBuffer->bytes[0] = 0x05;
+                        tempBuffer->bytes[1] = 0x01;
+                        tempBuffer->bytes[2] = 0x00;
+                        tempBuffer->bytes[3] = (uint8_t) (isIpv6 ? 0x04 : 0x01);
+                        uint16_t networkPort = ntohs(currentPort);
+                        inet_pton(isIpv6 ? AF_INET6 : AF_INET, currentAddress.c_str(), tempBuffer->bytes + 4);
+                        memcpy(tempBuffer->bytes + 4 + (isIpv6 ? 16 : 4), &networkPort, sizeof(uint16_t));
+                        proxyAuthState = 6;
+                        if (send(socketFd, tempBuffer->bytes, 4 + (isIpv6 ? 16 : 4) + 2, 0) < 0) {
+                            if (LOGS_ENABLED) DEBUG_E("connection(%p) send failed", this);
+                            closeSocket(1, -1);
+                            return;
+                        }
+                        adjustWriteOp();
                     }
-                    uint8_t len1 = (uint8_t) proxyUser->length();
-                    uint8_t len2 = (uint8_t) proxyPassword->length();
-                    buffer[1] = len1;
-                    memcpy(&buffer[2], proxyUser->c_str(), len1);
-                    buffer[2 + len1] = len2;
-                    memcpy(&buffer[3 + len1], proxyPassword->c_str(), len2);
-                    proxyAuthState = 4;
-                    if (send(socketFd, buffer, 3 + len1 + len2, 0) < 0) {
-                        if (LOGS_ENABLED) DEBUG_E("connection(%p) send failed", this);
-                        closeSocket(1, -1);
-                        return;
-                    }
-                    adjustWriteOp();
-                } else if (proxyAuthState == 5) {
-                    buffer[0] = 0x05;
-                    buffer[1] = 0x01;
-                    buffer[2] = 0x00;
-                    buffer[3] = (uint8_t) (isIpv6 ? 0x04 : 0x01);
-                    uint16_t networkPort = ntohs(currentPort);
-                    inet_pton(isIpv6 ? AF_INET6 : AF_INET, currentAddress.c_str(), &buffer[4]);
-                    memcpy(&buffer[4 + (isIpv6 ? 16 : 4)], &networkPort, sizeof(uint16_t));
-                    proxyAuthState = 6;
-                    if (send(socketFd, buffer, 4 + (isIpv6 ? 16 : 4) + 2, 0) < 0) {
-                        if (LOGS_ENABLED) DEBUG_E("connection(%p) send failed", this);
-                        closeSocket(1, -1);
-                        return;
-                    }
-                    adjustWriteOp();
                 }
             } else {
                 if (!onConnectedSent) {
@@ -365,16 +762,50 @@ void ConnectionSocket::onEvent(uint32_t events) {
                 uint32_t remaining = buffer->remaining();
                 if (remaining) {
                     ssize_t sentLength;
-                    if ((sentLength = send(socketFd, buffer->bytes(), remaining, 0)) < 0) {
-                        if (LOGS_ENABLED) DEBUG_E("connection(%p) send failed", this);
-                        closeSocket(1, -1);
-                        return;
-                    } else {
-                        if (ConnectionsManager::getInstance(instanceNum).delegate != nullptr) {
-                            ConnectionsManager::getInstance(instanceNum).delegate->onBytesSent((int32_t) sentLength, currentNetworkType, instanceNum);
+                    if (tlsState != 0) {
+                        if (remaining > 2878) {
+                            remaining = 2878;
                         }
-                        outgoingByteStream->discard((uint32_t) sentLength);
-                        adjustWriteOp();
+                        size_t headersSize = 0;
+                        if (tlsState == 1) {
+                            static std::string header1 = std::string("\x14\x03\x03\x00\x01\x01", 6);
+                            std::memcpy(tempBuffer->bytes, header1.data(), header1.size());
+                            headersSize += header1.size();
+                            tlsState = 2;
+                        }
+                        static std::string header2 = std::string("\x17\x03\x03", 3);
+                        std::memcpy(tempBuffer->bytes + headersSize, header2.data(), header2.size());
+                        headersSize += header2.size();
+
+                        tempBuffer->bytes[headersSize] = static_cast<uint8_t>((remaining >> 8) & 0xff);
+                        tempBuffer->bytes[headersSize + 1] = static_cast<uint8_t>(remaining & 0xff);
+                        headersSize += 2;
+
+                        std::memcpy(tempBuffer->bytes + headersSize, buffer->bytes(), remaining);
+
+                        if ((sentLength = send(socketFd, tempBuffer->bytes, headersSize + remaining, 0)) < headersSize) {
+                            if (LOGS_ENABLED) DEBUG_E("connection(%p) send failed", this);
+                            closeSocket(1, -1);
+                            return;
+                        } else {
+                            if (ConnectionsManager::getInstance(instanceNum).delegate != nullptr) {
+                                ConnectionsManager::getInstance(instanceNum).delegate->onBytesSent((int32_t) sentLength, currentNetworkType, instanceNum);
+                            }
+                            outgoingByteStream->discard((uint32_t) (sentLength - headersSize));
+                            adjustWriteOp();
+                        }
+                    } else {
+                        if ((sentLength = send(socketFd, buffer->bytes(), remaining, 0)) < 0) {
+                            if (LOGS_ENABLED) DEBUG_D("connection(%p) send failed", this);
+                            closeSocket(1, -1);
+                            return;
+                        } else {
+                            if (ConnectionsManager::getInstance(instanceNum).delegate != nullptr) {
+                                ConnectionsManager::getInstance(instanceNum).delegate->onBytesSent((int32_t) sentLength, currentNetworkType, instanceNum);
+                            }
+                            outgoingByteStream->discard((uint32_t) sentLength);
+                            adjustWriteOp();
+                        }
                     }
                 }
             }
@@ -413,7 +844,7 @@ void ConnectionSocket::adjustWriteOp() {
         return;
     }
     eventMask.events = EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLET;
-    if (proxyAuthState == 0 && (outgoingByteStream->hasData() || !onConnectedSent) || proxyAuthState == 1 || proxyAuthState == 3 || proxyAuthState == 5) {
+    if (proxyAuthState == 0 && (outgoingByteStream->hasData() || !onConnectedSent) || proxyAuthState == 1 || proxyAuthState == 3 || proxyAuthState == 5 || proxyAuthState == 10) {
         eventMask.events |= EPOLLOUT;
     }
     eventMask.data.ptr = eventObject;
@@ -442,6 +873,10 @@ void ConnectionSocket::checkTimeout(int64_t now) {
             if (LOGS_ENABLED) DEBUG_D("connection(%p) reset last event time, no requests", this);
         }
     }
+}
+
+bool ConnectionSocket::hasTlsHashMismatch() {
+    return tlsHashMismatch;
 }
 
 void ConnectionSocket::resetLastEventTime() {

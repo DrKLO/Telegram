@@ -67,7 +67,7 @@ public class MessagesStorage extends BaseController {
     private CountDownLatch openSync = new CountDownLatch(1);
 
     private static volatile MessagesStorage[] Instance = new MessagesStorage[UserConfig.MAX_ACCOUNT_COUNT];
-    private final static int LAST_DB_VERSION = 60;
+    private final static int LAST_DB_VERSION = 62;
 
     public static MessagesStorage getInstance(int num) {
         MessagesStorage localInstance = Instance[num];
@@ -224,7 +224,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("CREATE INDEX IF NOT EXISTS uid_date_mid_idx_messages ON messages(uid, date, mid);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS mid_out_idx_messages ON messages(mid, out);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS task_idx_messages ON messages(uid, out, read_state, ttl, date, send_state);").stepThis().dispose();
-                database.executeFast("CREATE INDEX IF NOT EXISTS send_state_idx_messages ON messages(mid, send_state, date) WHERE mid < 0 AND send_state = 1;").stepThis().dispose();
+                database.executeFast("CREATE INDEX IF NOT EXISTS send_state_idx_messages2 ON messages(mid, send_state, date);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS uid_mention_idx_messages ON messages(uid, mention, read_state);").stepThis().dispose();
 
                 database.executeFast("CREATE TABLE download_queue(uid INTEGER, type INTEGER, date INTEGER, data BLOB, parent TEXT, PRIMARY KEY (uid, type));").stepThis().dispose();
@@ -280,10 +280,9 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("CREATE TABLE chats(uid INTEGER PRIMARY KEY, name TEXT, data BLOB)").stepThis().dispose();
                 database.executeFast("CREATE TABLE enc_chats(uid INTEGER PRIMARY KEY, user INTEGER, name TEXT, data BLOB, g BLOB, authkey BLOB, ttl INTEGER, layer INTEGER, seq_in INTEGER, seq_out INTEGER, use_count INTEGER, exchange_id INTEGER, key_date INTEGER, fprint INTEGER, fauthkey BLOB, khash BLOB, in_seq_no INTEGER, admin_id INTEGER, mtproto_seq INTEGER)").stepThis().dispose();
                 database.executeFast("CREATE TABLE channel_users_v2(did INTEGER, uid INTEGER, date INTEGER, data BLOB, PRIMARY KEY(did, uid))").stepThis().dispose();
-                database.executeFast("CREATE TABLE channel_admins(did INTEGER, uid INTEGER, PRIMARY KEY(did, uid))").stepThis().dispose();
+                database.executeFast("CREATE TABLE channel_admins_v2(did INTEGER, uid INTEGER, rank TEXT, PRIMARY KEY(did, uid))").stepThis().dispose();
                 database.executeFast("CREATE TABLE contacts(uid INTEGER PRIMARY KEY, mutual INTEGER)").stepThis().dispose();
                 database.executeFast("CREATE TABLE user_photos(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
-                database.executeFast("CREATE TABLE blocked_users(uid INTEGER PRIMARY KEY)").stepThis().dispose();
                 database.executeFast("CREATE TABLE dialog_settings(did INTEGER PRIMARY KEY, flags INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE web_recent_v3(id TEXT, type INTEGER, image_url TEXT, thumb_url TEXT, local_url TEXT, width INTEGER, height INTEGER, size INTEGER, date INTEGER, document BLOB, PRIMARY KEY (id, type));").stepThis().dispose();
                 database.executeFast("CREATE TABLE stickers_v2(id INTEGER PRIMARY KEY, data BLOB, date INTEGER, hash TEXT);").stepThis().dispose();
@@ -407,14 +406,10 @@ public class MessagesStorage extends BaseController {
 
                     database.executeFast("CREATE TABLE IF NOT EXISTS sent_files_v2(uid TEXT, type INTEGER, data BLOB, PRIMARY KEY (uid, type))").stepThis().dispose();
 
-                    database.executeFast("CREATE TABLE IF NOT EXISTS blocked_users(uid INTEGER PRIMARY KEY)").stepThis().dispose();
-
                     database.executeFast("CREATE TABLE IF NOT EXISTS download_queue(uid INTEGER, type INTEGER, date INTEGER, data BLOB, PRIMARY KEY (uid, type));").stepThis().dispose();
                     database.executeFast("CREATE INDEX IF NOT EXISTS type_date_idx_download_queue ON download_queue(type, date);").stepThis().dispose();
 
                     database.executeFast("CREATE TABLE IF NOT EXISTS dialog_settings(did INTEGER PRIMARY KEY, flags INTEGER);").stepThis().dispose();
-
-                    database.executeFast("CREATE INDEX IF NOT EXISTS send_state_idx_messages ON messages(mid, send_state, date) WHERE mid < 0 AND send_state = 1;").stepThis().dispose();
 
                     database.executeFast("CREATE INDEX IF NOT EXISTS unread_count_idx_dialogs ON dialogs(unread_count);").stepThis().dispose();
 
@@ -690,7 +685,6 @@ public class MessagesStorage extends BaseController {
                     version = 43;
                 }
                 if (version == 43) {
-                    database.executeFast("CREATE TABLE IF NOT EXISTS channel_admins(did INTEGER, uid INTEGER, PRIMARY KEY(did, uid))").stepThis().dispose();
                     database.executeFast("PRAGMA user_version = 44").stepThis().dispose();
                     version = 44;
                 }
@@ -785,6 +779,19 @@ public class MessagesStorage extends BaseController {
                     version = 60;
                 }
                 if (version == 60) {
+                    database.executeFast("DROP TABLE IF EXISTS channel_admins;").stepThis().dispose();
+                    database.executeFast("DROP TABLE IF EXISTS blocked_users;").stepThis().dispose();
+                    database.executeFast("CREATE TABLE IF NOT EXISTS channel_admins_v2(did INTEGER, uid INTEGER, rank TEXT, PRIMARY KEY(did, uid))").stepThis().dispose();
+                    database.executeFast("PRAGMA user_version = 61").stepThis().dispose();
+                    version = 61;
+                }
+                if (version == 61) {
+                    database.executeFast("DROP INDEX IF EXISTS send_state_idx_messages;").stepThis().dispose();
+                    database.executeFast("CREATE INDEX IF NOT EXISTS send_state_idx_messages2 ON messages(mid, send_state, date);").stepThis().dispose();
+                    database.executeFast("PRAGMA user_version = 62").stepThis().dispose();
+                    version = 62;
+                }
+                if (version == 62) {
 
                 }
             } catch (Exception e) {
@@ -1487,16 +1494,16 @@ public class MessagesStorage extends BaseController {
                         getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
                         for (int a = 0; a < chats.size(); a++) {
                             TLRPC.Chat chat = chats.get(a);
-                            if (chat != null && (chat.left || chat.migrated_to != null)) {
+                            if (chat != null && (ChatObject.isNotInChat(chat) || chat.migrated_to != null)) {
                                 long did = -chat.id;
                                 database.executeFast("UPDATE dialogs SET unread_count = 0 WHERE did = " + did).stepThis().dispose();
                                 database.executeFast(String.format(Locale.US, "UPDATE messages SET read_state = 3 WHERE uid = %d AND mid > 0 AND read_state IN(0,2) AND out = 0", did)).stepThis().dispose();
                                 chats.remove(a);
                                 a--;
-                                pushDialogs.remove((long) -chat.id);
+                                pushDialogs.remove(did);
                                 for (int b = 0; b < messages.size(); b++) {
                                     TLRPC.Message message = messages.get(b);
-                                    if (message.dialog_id == -chat.id) {
+                                    if (message.dialog_id == did) {
                                         messages.remove(b);
                                         b--;
                                     }
@@ -1715,68 +1722,6 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    public void getBlockedUsers() {
-        storageQueue.postRunnable(() -> {
-            try {
-                SparseIntArray ids = new SparseIntArray();
-                ArrayList<TLRPC.User> users = new ArrayList<>();
-                SQLiteCursor cursor = database.queryFinalized("SELECT * FROM blocked_users WHERE 1");
-                StringBuilder usersToLoad = new StringBuilder();
-                while (cursor.next()) {
-                    int user_id = cursor.intValue(0);
-                    ids.put(user_id, 1);
-                    if (usersToLoad.length() != 0) {
-                        usersToLoad.append(",");
-                    }
-                    usersToLoad.append(user_id);
-                }
-                cursor.dispose();
-
-                if (usersToLoad.length() != 0) {
-                    getUsersInternal(usersToLoad.toString(), users);
-                }
-
-                getMessagesController().processLoadedBlockedUsers(ids, users, true);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        });
-    }
-
-    public void deleteBlockedUser(final int id) {
-        storageQueue.postRunnable(() -> {
-            try {
-                database.executeFast("DELETE FROM blocked_users WHERE uid = " + id).stepThis().dispose();
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        });
-    }
-
-    public void putBlockedUsers(final SparseIntArray ids, final boolean replace) {
-        if (ids == null || ids.size() == 0) {
-            return;
-        }
-        storageQueue.postRunnable(() -> {
-            try {
-                if (replace) {
-                    database.executeFast("DELETE FROM blocked_users WHERE 1").stepThis().dispose();
-                }
-                database.beginTransaction();
-                SQLitePreparedStatement state = database.executeFast("REPLACE INTO blocked_users VALUES(?)");
-                for (int a = 0, size = ids.size(); a < size; a++) {
-                    state.requery();
-                    state.bindInteger(1, ids.keyAt(a));
-                    state.step();
-                }
-                state.dispose();
-                database.commitTransaction();
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        });
-    }
-
     public void deleteUserChannelHistory(final int channelId, final int uid) {
         storageQueue.postRunnable(() -> {
             try {
@@ -1793,27 +1738,7 @@ public class MessagesStorage extends BaseController {
                             data.reuse();
                             if (message != null && message.from_id == uid && message.id != 1) {
                                 mids.add(message.id);
-                                if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
-                                    for (int a = 0, N = message.media.photo.sizes.size(); a < N; a++) {
-                                        TLRPC.PhotoSize photoSize = message.media.photo.sizes.get(a);
-                                        File file = FileLoader.getPathToAttach(photoSize);
-                                        if (file != null && file.toString().length() > 0) {
-                                            filesToDelete.add(file);
-                                        }
-                                    }
-                                } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-                                    File file = FileLoader.getPathToAttach(message.media.document);
-                                    if (file != null && file.toString().length() > 0) {
-                                        filesToDelete.add(file);
-                                    }
-                                    for (int a = 0, N = message.media.document.thumbs.size(); a < N; a++) {
-                                        TLRPC.PhotoSize photoSize = message.media.document.thumbs.get(a);
-                                        file = FileLoader.getPathToAttach(photoSize);
-                                        if (file != null && file.toString().length() > 0) {
-                                            filesToDelete.add(file);
-                                        }
-                                    }
-                                }
+                                addFilesToDelete(message, filesToDelete, false);
                             }
                         }
                     }
@@ -1822,7 +1747,7 @@ public class MessagesStorage extends BaseController {
                 }
                 cursor.dispose();
                 AndroidUtilities.runOnUIThread(() -> getMessagesController().markChannelDialogMessageAsDeleted(mids, channelId));
-                markMessagesAsDeletedInternal(mids, channelId);
+                markMessagesAsDeletedInternal(mids, channelId, false);
                 updateDialogsWithDeletedMessagesInternal(mids, null, channelId);
                 getFileLoader().deleteFiles(filesToDelete, 0);
                 if (!mids.isEmpty()) {
@@ -1832,6 +1757,36 @@ public class MessagesStorage extends BaseController {
                 FileLog.e(e);
             }
         });
+    }
+
+    private boolean addFilesToDelete(TLRPC.Message message, ArrayList<File> filesToDelete, boolean forceCache) {
+        if (message == null) {
+            return false;
+        }
+        if (message.media instanceof TLRPC.TL_messageMediaPhoto && message.media.photo != null) {
+            for (int a = 0, N = message.media.photo.sizes.size(); a < N; a++) {
+                TLRPC.PhotoSize photoSize = message.media.photo.sizes.get(a);
+                File file = FileLoader.getPathToAttach(photoSize);
+                if (file != null && file.toString().length() > 0) {
+                    filesToDelete.add(file);
+                }
+            }
+            return true;
+        } else if (message.media instanceof TLRPC.TL_messageMediaDocument && message.media.document != null) {
+            File file = FileLoader.getPathToAttach(message.media.document, forceCache);
+            if (file != null && file.toString().length() > 0) {
+                filesToDelete.add(file);
+            }
+            for (int a = 0, N = message.media.document.thumbs.size(); a < N; a++) {
+                TLRPC.PhotoSize photoSize = message.media.document.thumbs.get(a);
+                file = FileLoader.getPathToAttach(photoSize);
+                if (file != null && file.toString().length() > 0) {
+                    filesToDelete.add(file);
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     public void deleteDialog(final long did, final int messagesOnly) {
@@ -1858,29 +1813,7 @@ public class MessagesStorage extends BaseController {
                                 TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                 message.readAttachPath(data, getUserConfig().clientUserId);
                                 data.reuse();
-                                if (message != null && message.media != null) {
-                                    if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
-                                        for (int a = 0, N = message.media.photo.sizes.size(); a < N; a++) {
-                                            TLRPC.PhotoSize photoSize = message.media.photo.sizes.get(a);
-                                            File file = FileLoader.getPathToAttach(photoSize);
-                                            if (file != null && file.toString().length() > 0) {
-                                                filesToDelete.add(file);
-                                            }
-                                        }
-                                    } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-                                        File file = FileLoader.getPathToAttach(message.media.document);
-                                        if (file != null && file.toString().length() > 0) {
-                                            filesToDelete.add(file);
-                                        }
-                                        for (int a = 0, N = message.media.document.thumbs.size(); a < N; a++) {
-                                            TLRPC.PhotoSize photoSize = message.media.document.thumbs.get(a);
-                                            file = FileLoader.getPathToAttach(photoSize);
-                                            if (file != null && file.toString().length() > 0) {
-                                                filesToDelete.add(file);
-                                            }
-                                        }
-                                    }
-                                }
+                                addFilesToDelete(message, filesToDelete, false);
                             }
                         }
                     } catch (Exception e) {
@@ -2219,29 +2152,7 @@ public class MessagesStorage extends BaseController {
                         message.readAttachPath(data, getUserConfig().clientUserId);
                         data.reuse();
                         if (message.media != null) {
-                            if (message.media.document != null) {
-                                File file = FileLoader.getPathToAttach(message.media.document, true);
-                                if (file != null && file.toString().length() > 0) {
-                                    filesToDelete.add(file);
-                                }
-                                for (int a = 0, N = message.media.document.thumbs.size(); a < N; a++) {
-                                    TLRPC.PhotoSize photoSize = message.media.document.thumbs.get(a);
-                                    file = FileLoader.getPathToAttach(photoSize);
-                                    if (file != null && file.toString().length() > 0) {
-                                        filesToDelete.add(file);
-                                    }
-                                }
-                                message.media.document = new TLRPC.TL_documentEmpty();
-                            } else if (message.media.photo != null) {
-                                for (int a = 0, N = message.media.photo.sizes.size(); a < N; a++) {
-                                    TLRPC.PhotoSize photoSize = message.media.photo.sizes.get(a);
-                                    File file = FileLoader.getPathToAttach(photoSize);
-                                    if (file != null && file.toString().length() > 0) {
-                                        filesToDelete.add(file);
-                                    }
-                                }
-                                message.media.photo = new TLRPC.TL_photoEmpty();
-                            } else {
+                            if (!addFilesToDelete(message, filesToDelete, true)) {
                                 continue;
                             }
                             message.media.flags = message.media.flags &~ 1;
@@ -2747,10 +2658,10 @@ public class MessagesStorage extends BaseController {
     public void loadChannelAdmins(final int chatId) {
         storageQueue.postRunnable(() -> {
             try {
-                SQLiteCursor cursor = database.queryFinalized("SELECT uid FROM channel_admins WHERE did = " + chatId);
-                ArrayList<Integer> ids = new ArrayList<>();
+                SQLiteCursor cursor = database.queryFinalized("SELECT uid, rank FROM channel_admins_v2 WHERE did = " + chatId);
+                SparseArray<String> ids = new SparseArray<>();
                 while (cursor.next()) {
-                    ids.add(cursor.intValue(0));
+                    ids.put(cursor.intValue(0), cursor.stringValue(1));
                 }
                 cursor.dispose();
                 getMessagesController().processLoadedChannelAdmins(ids, chatId, true);
@@ -2760,17 +2671,18 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    public void putChannelAdmins(final int chatId, final ArrayList<Integer> ids) {
+    public void putChannelAdmins(final int chatId, final SparseArray<String> ids) {
         storageQueue.postRunnable(() -> {
             try {
-                database.executeFast("DELETE FROM channel_admins WHERE did = " + chatId).stepThis().dispose();
+                database.executeFast("DELETE FROM channel_admins_v2 WHERE did = " + chatId).stepThis().dispose();
                 database.beginTransaction();
-                SQLitePreparedStatement state = database.executeFast("REPLACE INTO channel_admins VALUES(?, ?)");
+                SQLitePreparedStatement state = database.executeFast("REPLACE INTO channel_admins_v2 VALUES(?, ?, ?)");
                 int date = (int) (System.currentTimeMillis() / 1000);
                 for (int a = 0; a < ids.size(); a++) {
                     state.requery();
                     state.bindInteger(1, chatId);
-                    state.bindInteger(2, ids.get(a));
+                    state.bindInteger(2, ids.keyAt(a));
+                    state.bindString(3, ids.valueAt(a));
                     state.step();
                 }
                 state.dispose();
@@ -3192,7 +3104,8 @@ public class MessagesStorage extends BaseController {
         return result[0];
     }
 
-    public void loadChatInfo(final int chat_id, final CountDownLatch countDownLatch, final boolean force, final boolean byChannelUsers) {
+    public TLRPC.ChatFull loadChatInfo(final int chat_id, final CountDownLatch countDownLatch, final boolean force, final boolean byChannelUsers) {
+        TLRPC.ChatFull[] result = new TLRPC.ChatFull[1];
         storageQueue.postRunnable(() -> {
             MessageObject pinnedMessageObject = null;
             TLRPC.ChatFull info = null;
@@ -3269,21 +3182,27 @@ public class MessagesStorage extends BaseController {
                         getUsersInternal(usersToLoad.toString(), loadedUsers);
                     }
                 }
-                if (countDownLatch != null) {
-                    countDownLatch.countDown();
-                }
                 if (info != null && info.pinned_msg_id != 0) {
                     pinnedMessageObject = getMediaDataController().loadPinnedMessage(-chat_id, info instanceof TLRPC.TL_channelFull ? chat_id : 0, info.pinned_msg_id, false);
                 }
             } catch (Exception e) {
                 FileLog.e(e);
             } finally {
+                result[0] = info;
                 getMessagesController().processChatInfo(chat_id, info, loadedUsers, true, force, byChannelUsers, pinnedMessageObject);
                 if (countDownLatch != null) {
                     countDownLatch.countDown();
                 }
             }
         });
+        if (countDownLatch != null) {
+            try {
+                countDownLatch.await();
+            } catch (Throwable ignore) {
+
+            }
+        }
+        return result[0];
     }
 
     public void processPendingRead(final long dialog_id, final long maxPositiveId, final long maxNegativeId, final boolean isChannel) {
@@ -3683,6 +3602,7 @@ public class MessagesStorage extends BaseController {
                 ArrayList<Integer> chatsToLoad = new ArrayList<>();
                 ArrayList<Integer> broadcastIds = new ArrayList<>();
                 ArrayList<Integer> encryptedChatIds = new ArrayList<>();
+
                 SQLiteCursor cursor = database.queryFinalized("SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.uid, s.seq_in, s.seq_out, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid LEFT JOIN messages_seq as s ON m.mid = s.mid WHERE (m.mid < 0 AND m.send_state = 1) OR (m.mid > 0 AND m.send_state = 3) ORDER BY m.mid DESC LIMIT " + count);
                 while (cursor.next()) {
                     NativeByteBuffer data = cursor.byteBufferValue(1);
@@ -6291,7 +6211,7 @@ public class MessagesStorage extends BaseController {
                 if (!mids.isEmpty()) {
                     AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, mids, 0));
                     updateDialogsWithReadMessagesInternal(mids, null, null, null);
-                    markMessagesAsDeletedInternal(mids, 0);
+                    markMessagesAsDeletedInternal(mids, 0, true);
                     updateDialogsWithDeletedMessagesInternal(mids, null, 0);
                 }
             } catch (Exception e) {
@@ -6308,7 +6228,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    private ArrayList<Long> markMessagesAsDeletedInternal(final ArrayList<Integer> messages, int channelId) {
+    private ArrayList<Long> markMessagesAsDeletedInternal(final ArrayList<Integer> messages, int channelId, boolean deleteFiles) {
         try {
             String ids;
             final ArrayList<Integer> temp = new ArrayList<>(messages);
@@ -6354,7 +6274,7 @@ public class MessagesStorage extends BaseController {
                             unread_count[0]++;
                         }
                     }
-                    if ((int) did != 0) {
+                    if ((int) did != 0 && !deleteFiles) {
                         continue;
                     }
                     NativeByteBuffer data = cursor.byteBufferValue(1);
@@ -6362,29 +6282,7 @@ public class MessagesStorage extends BaseController {
                         TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                         message.readAttachPath(data, getUserConfig().clientUserId);
                         data.reuse();
-                        if (message != null) {
-                            if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
-                                for (int a = 0, N = message.media.photo.sizes.size(); a < N; a++) {
-                                    TLRPC.PhotoSize photoSize = message.media.photo.sizes.get(a);
-                                    File file = FileLoader.getPathToAttach(photoSize);
-                                    if (file != null && file.toString().length() > 0) {
-                                        filesToDelete.add(file);
-                                    }
-                                }
-                            } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-                                File file = FileLoader.getPathToAttach(message.media.document);
-                                if (file != null && file.toString().length() > 0) {
-                                    filesToDelete.add(file);
-                                }
-                                for (int a = 0, N = message.media.document.thumbs.size(); a < N; a++) {
-                                    TLRPC.PhotoSize photoSize = message.media.document.thumbs.get(a);
-                                    file = FileLoader.getPathToAttach(photoSize);
-                                    if (file != null && file.toString().length() > 0) {
-                                        filesToDelete.add(file);
-                                    }
-                                }
-                            }
-                        }
+                        addFilesToDelete(message, filesToDelete, false);
                     }
                 }
             } catch (Exception e) {
@@ -6650,19 +6548,19 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public ArrayList<Long> markMessagesAsDeleted(final ArrayList<Integer> messages, boolean useQueue, final int channelId) {
+    public ArrayList<Long> markMessagesAsDeleted(final ArrayList<Integer> messages, boolean useQueue, final int channelId, boolean deleteFiles) {
         if (messages.isEmpty()) {
             return null;
         }
         if (useQueue) {
-            storageQueue.postRunnable(() -> markMessagesAsDeletedInternal(messages, channelId));
+            storageQueue.postRunnable(() -> markMessagesAsDeletedInternal(messages, channelId, deleteFiles));
         } else {
-            return markMessagesAsDeletedInternal(messages, channelId);
+            return markMessagesAsDeletedInternal(messages, channelId, deleteFiles);
         }
         return null;
     }
 
-    private ArrayList<Long> markMessagesAsDeletedInternal(final int channelId, final int mid) {
+    private ArrayList<Long> markMessagesAsDeletedInternal(final int channelId, final int mid, boolean deleteFiles) {
         try {
             String ids;
             ArrayList<Long> dialogsIds = new ArrayList<>();
@@ -6695,7 +6593,7 @@ public class MessagesStorage extends BaseController {
                             unread_count[0]++;
                         }
                     }
-                    if ((int) did != 0) {
+                    if ((int) did != 0 && !deleteFiles) {
                         continue;
                     }
                     NativeByteBuffer data = cursor.byteBufferValue(1);
@@ -6703,29 +6601,7 @@ public class MessagesStorage extends BaseController {
                         TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                         message.readAttachPath(data, getUserConfig().clientUserId);
                         data.reuse();
-                        if (message != null) {
-                            if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
-                                for (int a = 0, N = message.media.photo.sizes.size(); a < N; a++) {
-                                    TLRPC.PhotoSize photoSize = message.media.photo.sizes.get(a);
-                                    File file = FileLoader.getPathToAttach(photoSize);
-                                    if (file != null && file.toString().length() > 0) {
-                                        filesToDelete.add(file);
-                                    }
-                                }
-                            } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-                                File file = FileLoader.getPathToAttach(message.media.document);
-                                if (file != null && file.toString().length() > 0) {
-                                    filesToDelete.add(file);
-                                }
-                                for (int a = 0, N = message.media.document.thumbs.size(); a < N; a++) {
-                                    TLRPC.PhotoSize photoSize = message.media.document.thumbs.get(a);
-                                    file = FileLoader.getPathToAttach(photoSize);
-                                    if (file != null && file.toString().length() > 0) {
-                                        filesToDelete.add(file);
-                                    }
-                                }
-                            }
-                        }
+                        addFilesToDelete(message, filesToDelete, false);
                     }
                 }
             } catch (Exception e) {
@@ -6768,11 +6644,11 @@ public class MessagesStorage extends BaseController {
         return null;
     }
 
-    public ArrayList<Long> markMessagesAsDeleted(final int channelId, final int mid, boolean useQueue) {
+    public ArrayList<Long> markMessagesAsDeleted(final int channelId, final int mid, boolean useQueue, boolean deleteFiles) {
         if (useQueue) {
-            storageQueue.postRunnable(() -> markMessagesAsDeletedInternal(channelId, mid));
+            storageQueue.postRunnable(() -> markMessagesAsDeletedInternal(channelId, mid, deleteFiles));
         } else {
-            return markMessagesAsDeletedInternal(channelId, mid);
+            return markMessagesAsDeletedInternal(channelId, mid, deleteFiles);
         }
         return null;
     }
@@ -7129,6 +7005,7 @@ public class MessagesStorage extends BaseController {
                 int minChannelMessageId = Integer.MAX_VALUE;
                 int maxChannelMessageId = 0;
                 int channelId = 0;
+                ArrayList<File> filesToDelete = new ArrayList<>();
                 for (int a = 0; a < count; a++) {
                     TLRPC.Message message = messages.messages.get(a);
 
@@ -7153,6 +7030,15 @@ public class MessagesStorage extends BaseController {
                                 if (oldMessage != null && send_state != 3) {
                                     message.attachPath = oldMessage.attachPath;
                                     message.ttl = cursor.intValue(2);
+                                }
+                                boolean sameMedia = false;
+                                if (oldMessage.media instanceof TLRPC.TL_messageMediaPhoto && message.media instanceof TLRPC.TL_messageMediaPhoto && oldMessage.media.photo != null && message.media.photo != null) {
+                                    sameMedia = oldMessage.media.photo.id == message.media.photo.id;
+                                } else if (oldMessage.media instanceof TLRPC.TL_messageMediaDocument && message.media instanceof TLRPC.TL_messageMediaDocument && oldMessage.media.document != null && message.media.document != null) {
+                                    sameMedia = oldMessage.media.document.id == message.media.document.id;
+                                }
+                                if (!sameMedia) {
+                                    addFilesToDelete(oldMessage, filesToDelete, false);
                                 }
                             }
                             boolean oldMention = cursor.intValue(3) != 0;
@@ -7294,6 +7180,7 @@ public class MessagesStorage extends BaseController {
                 if (botKeyboard != null) {
                     getMediaDataController().putBotKeyboard(dialog_id, botKeyboard);
                 }
+                getFileLoader().deleteFiles(filesToDelete, 0);
 
                 putUsersInternal(messages.users);
                 putChatsInternal(messages.chats);

@@ -7,6 +7,7 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -19,6 +20,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 
@@ -30,6 +32,7 @@ public class HintView extends FrameLayout {
     private ImageView imageView;
     private ImageView arrowImageView;
     private ChatMessageCell messageCell;
+    private View currentView;
     private AnimatorSet animatorSet;
     private Runnable hideRunnable;
     private int currentType;
@@ -53,7 +56,11 @@ public class HintView extends FrameLayout {
         textView.setMaxWidth(AndroidUtilities.dp(250));
         textView.setGravity(Gravity.LEFT | Gravity.TOP);
         textView.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(3), Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
-        textView.setPadding(AndroidUtilities.dp(currentType == 0 ? 54 : 5), AndroidUtilities.dp(6), AndroidUtilities.dp(5), AndroidUtilities.dp(7));
+        if (currentType == 2) {
+            textView.setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(6), AndroidUtilities.dp(7), AndroidUtilities.dp(7));
+        } else {
+            textView.setPadding(AndroidUtilities.dp(currentType == 0 ? 54 : 5), AndroidUtilities.dp(6), AndroidUtilities.dp(5), AndroidUtilities.dp(7));
+        }
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, topArrow ? 6 : 0, 0, topArrow ? 0 : 6));
 
         if (type == 0) {
@@ -186,6 +193,96 @@ public class HintView extends FrameLayout {
         return true;
     }
 
+    public boolean showForView(View view, boolean animated) {
+        if (currentView == view || getTag() != null) {
+            return false;
+        }
+        if (hideRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(hideRunnable);
+            hideRunnable = null;
+        }
+        measure(MeasureSpec.makeMeasureSpec(1000, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(1000, MeasureSpec.AT_MOST));
+
+        int[] position = new int[2];
+        view.getLocationInWindow(position);
+
+        int centerX = position[0] + view.getMeasuredWidth() / 2;
+        int top = position[1] - AndroidUtilities.dp(4);
+
+        View parentView = (View) getParent();
+        parentView.getLocationInWindow(position);
+        centerX -= position[0];
+        top -= position[1];
+
+        if (Build.VERSION.SDK_INT >= 21) {
+            top -= AndroidUtilities.statusBarHeight;
+        }
+
+
+        int parentWidth = parentView.getMeasuredWidth();
+        if (isTopArrow) {
+            setTranslationY(AndroidUtilities.dp(44));
+        } else {
+            setTranslationY(top - getMeasuredHeight() - ActionBar.getCurrentActionBarHeight());
+        }
+        int iconX = centerX;
+        int left = AndroidUtilities.dp(19);
+        if (iconX > parentView.getMeasuredWidth() / 2) {
+            int offset = parentWidth - getMeasuredWidth() - AndroidUtilities.dp(28);
+            setTranslationX(offset);
+            left += offset;
+        } else {
+            setTranslationX(0);
+        }
+        float arrowX = centerX - left - arrowImageView.getMeasuredWidth() / 2;
+        arrowImageView.setTranslationX(arrowX);
+        if (iconX > parentView.getMeasuredWidth() / 2) {
+            if (arrowX < AndroidUtilities.dp(10)) {
+                float diff = arrowX - AndroidUtilities.dp(10);
+                setTranslationX(getTranslationX() + diff);
+                arrowImageView.setTranslationX(arrowX - diff);
+            }
+        } else {
+            if (arrowX > getMeasuredWidth() - AndroidUtilities.dp(14 + 10)) {
+                float diff = arrowX - getMeasuredWidth() + AndroidUtilities.dp(14 + 10);
+                setTranslationX(diff);
+                arrowImageView.setTranslationX(arrowX - diff);
+            } else if (arrowX < AndroidUtilities.dp(10)) {
+                float diff = arrowX - AndroidUtilities.dp(10);
+                setTranslationX(getTranslationX() + diff);
+                arrowImageView.setTranslationX(arrowX - diff);
+            }
+        }
+
+        currentView = view;
+        if (animatorSet != null) {
+            animatorSet.cancel();
+            animatorSet = null;
+        }
+
+        setTag(1);
+        setVisibility(VISIBLE);
+        if (animated) {
+            animatorSet = new AnimatorSet();
+            animatorSet.playTogether(
+                    ObjectAnimator.ofFloat(this, "alpha", 0.0f, 1.0f)
+            );
+            animatorSet.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    animatorSet = null;
+                    AndroidUtilities.runOnUIThread(hideRunnable = () -> hide(), 2000);
+                }
+            });
+            animatorSet.setDuration(300);
+            animatorSet.start();
+        } else {
+            setAlpha(1.0f);
+        }
+
+        return true;
+    }
+
     public void hide() {
         if (getTag() == null) {
             return;
@@ -207,12 +304,17 @@ public class HintView extends FrameLayout {
             @Override
             public void onAnimationEnd(Animator animation) {
                 setVisibility(View.INVISIBLE);
+                currentView = null;
                 messageCell = null;
                 animatorSet = null;
             }
         });
         animatorSet.setDuration(300);
         animatorSet.start();
+    }
+
+    public void setText(CharSequence text) {
+        textView.setText(text);
     }
 
     public ChatMessageCell getMessageCell() {

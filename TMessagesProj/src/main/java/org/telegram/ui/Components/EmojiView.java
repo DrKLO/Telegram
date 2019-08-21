@@ -228,7 +228,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         }
 
-        default void onStickerSelected(TLRPC.Document sticker, Object parent) {
+        default void onStickerSelected(View view, TLRPC.Document sticker, Object parent) {
 
         }
 
@@ -240,7 +240,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         }
 
-        default void onGifSelected(Object gif, Object parent) {
+        default void onGifSelected(View view, Object gif, Object parent) {
 
         }
 
@@ -287,7 +287,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private ContentPreviewViewer.ContentPreviewViewerDelegate contentPreviewViewerDelegate = new ContentPreviewViewer.ContentPreviewViewerDelegate() {
         @Override
         public void sendSticker(TLRPC.Document sticker, Object parent) {
-            delegate.onStickerSelected(sticker, parent);
+            delegate.onStickerSelected(null, sticker, parent);
         }
 
         @Override
@@ -306,9 +306,9 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         @Override
         public void sendGif(Object gif) {
             if (gifGridView.getAdapter() == gifAdapter) {
-                delegate.onGifSelected(gif, "gif");
+                delegate.onGifSelected(null, gif, "gif");
             } else if (gifGridView.getAdapter() == gifSearchAdapter) {
-                delegate.onGifSelected(gif, gifSearchAdapter.bot);
+                delegate.onGifSelected(null, gif, gifSearchAdapter.bot);
             }
         }
 
@@ -1264,12 +1264,12 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                         if (position < 0 || position >= recentGifs.size()) {
                             return;
                         }
-                        delegate.onGifSelected(recentGifs.get(position), "gif");
+                        delegate.onGifSelected(view, recentGifs.get(position), "gif");
                     } else if (gifGridView.getAdapter() == gifSearchAdapter) {
                         if (position < 0 || position >= gifSearchAdapter.results.size()) {
                             return;
                         }
-                        delegate.onGifSelected(gifSearchAdapter.results.get(position), gifSearchAdapter.bot);
+                        delegate.onGifSelected(view, gifSearchAdapter.results.get(position), gifSearchAdapter.bot);
                         recentGifs = MediaDataController.getInstance(currentAccount).getRecentGifs();
                         if (gifAdapter != null) {
                             gifAdapter.notifyDataSetChanged();
@@ -1377,7 +1377,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     return;
                 }
                 cell.disable();
-                delegate.onStickerSelected(cell.getSticker(), cell.getParentObject());
+                delegate.onStickerSelected(cell, cell.getSticker(), cell.getParentObject());
             };
             stickersGridView.setOnItemClickListener(stickersOnItemClickListener);
             stickersGridView.setGlowColor(Theme.getColor(Theme.key_chat_emojiPanelBackground));
@@ -2782,7 +2782,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         super.requestLayout();
     }
 
-    public void updateUIColors() {
+    public void updateColors() {
         if (AndroidUtilities.isInMultiwindow || forseMultiwindowLayout) {
             Drawable background = getBackground();
             if (background != null) {
@@ -2839,6 +2839,8 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
         if (backspaceButton != null) {
             backspaceButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_emojiPanelBackspace), PorterDuff.Mode.MULTIPLY));
+            Theme.setSelectorDrawableColor(backspaceButton.getBackground(), Theme.getColor(Theme.key_chat_emojiPanelBackground), false);
+            Theme.setSelectorDrawableColor(backspaceButton.getBackground(), Theme.getColor(Theme.key_chat_emojiPanelBackground), true);
         }
         if (stickerSettingsButton != null) {
             stickerSettingsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_emojiPanelBackspace), PorterDuff.Mode.MULTIPLY));

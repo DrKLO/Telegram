@@ -13,9 +13,12 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -24,17 +27,20 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.PhotoViewer;
 
 public class PhotoPickerPhotoCell extends FrameLayout {
 
-    public BackupImageView photoImage;
+    public BackupImageView imageView;
     public FrameLayout checkFrame;
     public CheckBox checkBox;
     public TextView videoTextView;
@@ -43,14 +49,17 @@ public class PhotoPickerPhotoCell extends FrameLayout {
     private AnimatorSet animatorSet;
     public int itemWidth;
     private boolean zoomOnSelect;
+    private Paint backgroundPaint = new Paint();
+    private MediaController.PhotoEntry photoEntry;
 
     public PhotoPickerPhotoCell(Context context, boolean zoom) {
         super(context);
+        setWillNotDraw(false);
 
         zoomOnSelect = zoom;
 
-        photoImage = new BackupImageView(context);
-        addView(photoImage, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        imageView = new BackupImageView(context);
+        addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         checkFrame = new FrameLayout(context);
         addView(checkFrame, LayoutHelper.createFrame(42, 42, Gravity.RIGHT | Gravity.TOP));
@@ -111,21 +120,45 @@ public class PhotoPickerPhotoCell extends FrameLayout {
         checkBox.setNum(num);
     }
 
+    public void setImage(MediaController.PhotoEntry entry) {
+        Drawable thumb = zoomOnSelect ? Theme.chat_attachEmptyDrawable : getResources().getDrawable(R.drawable.nophotos);
+        photoEntry = entry;
+        if (photoEntry.thumbPath != null) {
+            imageView.setImage(photoEntry.thumbPath, null, thumb);
+        } else if (photoEntry.path != null) {
+            imageView.setOrientation(photoEntry.orientation, true);
+            if (photoEntry.isVideo) {
+                videoInfoContainer.setVisibility(View.VISIBLE);
+                int minutes = photoEntry.duration / 60;
+                int seconds = photoEntry.duration - minutes * 60;
+                videoTextView.setText(String.format("%d:%02d", minutes, seconds));
+                setContentDescription(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatCallDuration(photoEntry.duration));
+                imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, thumb);
+            } else {
+                videoInfoContainer.setVisibility(View.INVISIBLE);
+                setContentDescription(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
+                imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, thumb);
+            }
+        } else {
+            imageView.setImageDrawable(thumb);
+        }
+    }
+
     public void setImage(MediaController.SearchImage searchImage) {
-        Drawable thumb = getResources().getDrawable(R.drawable.nophotos);
+        Drawable thumb = zoomOnSelect ? Theme.chat_attachEmptyDrawable : getResources().getDrawable(R.drawable.nophotos);
         if (searchImage.thumbPhotoSize != null) {
-            photoImage.setImage(ImageLocation.getForPhoto(searchImage.thumbPhotoSize, searchImage.photo), null, thumb, searchImage);
+            imageView.setImage(ImageLocation.getForPhoto(searchImage.thumbPhotoSize, searchImage.photo), null, thumb, searchImage);
         } else if (searchImage.photoSize != null) {
-            photoImage.setImage(ImageLocation.getForPhoto(searchImage.photoSize, searchImage.photo), "80_80", thumb, searchImage);
+            imageView.setImage(ImageLocation.getForPhoto(searchImage.photoSize, searchImage.photo), "80_80", thumb, searchImage);
         } else if (searchImage.thumbPath != null) {
-            photoImage.setImage(searchImage.thumbPath, null, thumb);
+            imageView.setImage(searchImage.thumbPath, null, thumb);
         } else if (searchImage.thumbUrl != null && searchImage.thumbUrl.length() > 0) {
-            photoImage.setImage(searchImage.thumbUrl, null, thumb);
+            imageView.setImage(searchImage.thumbUrl, null, thumb);
         } else if (MessageObject.isDocumentHasThumb(searchImage.document)) {
             TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(searchImage.document.thumbs, 320);
-            photoImage.setImage(ImageLocation.getForDocument(photoSize, searchImage.document), null, thumb, searchImage);
+            imageView.setImage(ImageLocation.getForDocument(photoSize, searchImage.document), null, thumb, searchImage);
         } else {
-            photoImage.setImageDrawable(thumb);
+            imageView.setImageDrawable(thumb);
         }
     }
 
@@ -137,12 +170,9 @@ public class PhotoPickerPhotoCell extends FrameLayout {
         }
         if (zoomOnSelect) {
             if (animated) {
-                if (checked) {
-                    setBackgroundColor(0xff0a0a0a);
-                }
                 animator = new AnimatorSet();
-                animator.playTogether(ObjectAnimator.ofFloat(photoImage, "scaleX", checked ? 0.85f : 1.0f),
-                        ObjectAnimator.ofFloat(photoImage, "scaleY", checked ? 0.85f : 1.0f));
+                animator.playTogether(ObjectAnimator.ofFloat(imageView, View.SCALE_X, checked ? 0.85f : 1.0f),
+                        ObjectAnimator.ofFloat(imageView, View.SCALE_Y, checked ? 0.85f : 1.0f));
                 animator.setDuration(200);
                 animator.addListener(new AnimatorListenerAdapter() {
                     @Override
@@ -164,10 +194,20 @@ public class PhotoPickerPhotoCell extends FrameLayout {
                 });
                 animator.start();
             } else {
-                setBackgroundColor(checked ? 0xff0A0A0A : 0);
-                photoImage.setScaleX(checked ? 0.85f : 1.0f);
-                photoImage.setScaleY(checked ? 0.85f : 1.0f);
+                imageView.setScaleX(checked ? 0.85f : 1.0f);
+                imageView.setScaleY(checked ? 0.85f : 1.0f);
             }
+        }
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        if (!zoomOnSelect) {
+            return;
+        }
+        if (checkBox.isChecked() || imageView.getScaleX() != 1.0f || !imageView.getImageReceiver().hasNotThumb() || imageView.getImageReceiver().getCurrentAlpha() != 1.0f || photoEntry != null && PhotoViewer.isShowingImage(photoEntry.path)) {
+            backgroundPaint.setColor(Theme.getColor(Theme.key_chat_attachPhotoBackground));
+            canvas.drawRect(0, 0, imageView.getMeasuredWidth(), imageView.getMeasuredHeight(), backgroundPaint);
         }
     }
 }

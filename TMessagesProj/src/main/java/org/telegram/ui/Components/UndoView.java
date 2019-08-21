@@ -17,6 +17,7 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -42,6 +43,7 @@ public class UndoView extends FrameLayout {
     private ImageView undoImageView;
     private RLottieImageView leftImageView;
     private LinearLayout undoButton;
+    private int undoViewHeight;
 
     private int currentAccount = UserConfig.selectedAccount;
 
@@ -190,7 +192,7 @@ public class UndoView extends FrameLayout {
         if (animated != 0) {
             AnimatorSet animatorSet = new AnimatorSet();
             if (animated == 1) {
-                animatorSet.playTogether(ObjectAnimator.ofFloat(this, View.TRANSLATION_Y, AndroidUtilities.dp(8 + (hasSubInfo() ? 52 : 48))));
+                animatorSet.playTogether(ObjectAnimator.ofFloat(this, View.TRANSLATION_Y, AndroidUtilities.dp(8) + undoViewHeight));
                 animatorSet.setDuration(250);
             } else {
                 animatorSet.playTogether(
@@ -211,7 +213,7 @@ public class UndoView extends FrameLayout {
             });
             animatorSet.start();
         } else {
-            setTranslationY(AndroidUtilities.dp(8 + (hasSubInfo() ? 52 : 48)));
+            setTranslationY(AndroidUtilities.dp(8) + undoViewHeight);
             setVisibility(INVISIBLE);
         }
     }
@@ -354,11 +356,23 @@ public class UndoView extends FrameLayout {
 
         AndroidUtilities.makeAccessibilityAnnouncement(infoTextView.getText() + (subinfoTextView.getVisibility() == VISIBLE ? ". " + subinfoTextView.getText() : ""));
 
+        if (hasSubInfo()) {
+            undoViewHeight = AndroidUtilities.dp(52);
+        } else if (getParent() instanceof ViewGroup) {
+            ViewGroup parent = (ViewGroup) getParent();
+            int width = parent.getMeasuredWidth();
+            if (width == 0) {
+                width = AndroidUtilities.displaySize.x;
+            }
+            measureChildWithMargins(infoTextView, MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), 0, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), 0);
+            undoViewHeight = infoTextView.getMeasuredHeight() + AndroidUtilities.dp(28);
+        }
+
         if (getVisibility() != VISIBLE) {
             setVisibility(VISIBLE);
-            setTranslationY(AndroidUtilities.dp(8 + (hasSubInfo() ? 52 : 48)));
+            setTranslationY(AndroidUtilities.dp(8) + undoViewHeight);
             AnimatorSet animatorSet = new AnimatorSet();
-            animatorSet.playTogether(ObjectAnimator.ofFloat(this, View.TRANSLATION_Y, AndroidUtilities.dp(8 + (hasSubInfo() ? 52 : 48)), -additionalTranslationY));
+            animatorSet.playTogether(ObjectAnimator.ofFloat(this, View.TRANSLATION_Y, AndroidUtilities.dp(8) + undoViewHeight, -additionalTranslationY));
             animatorSet.setInterpolator(new DecelerateInterpolator());
             animatorSet.setDuration(180);
             animatorSet.start();
@@ -371,7 +385,7 @@ public class UndoView extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(hasSubInfo() ? 52 : 48), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(undoViewHeight, MeasureSpec.EXACTLY));
     }
 
     @Override

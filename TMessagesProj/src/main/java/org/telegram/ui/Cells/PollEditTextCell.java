@@ -13,6 +13,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -143,6 +144,9 @@ public class PollEditTextCell extends FrameLayout {
             deleteImageView.setTag(null);
         }
         textView.setText(text);
+        if (!TextUtils.isEmpty(text)) {
+            textView.setSelection(text.length());
+        }
         textView.setHint(hint);
         needDivider = divider;
         setWillNotDraw(!divider);

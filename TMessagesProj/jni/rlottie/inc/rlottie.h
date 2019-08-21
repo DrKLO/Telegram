@@ -22,6 +22,7 @@
 #include <future>
 #include <vector>
 #include <memory>
+#include <map>
 
 #ifdef _WIN32
 #ifdef LOT_BUILD
@@ -257,7 +258,7 @@ public:
      *  @internal
      */
     static std::unique_ptr<Animation>
-    loadFromFile(const std::string &path);
+    loadFromFile(const std::string &path, std::map<int32_t, int32_t> &colorReplacement);
 
     /**
      *  @brief Constructs an animation object from JSON string data.

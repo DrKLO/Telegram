@@ -14,9 +14,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.Dialog;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -31,7 +29,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.telephony.PhoneNumberUtils;
-import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -53,7 +50,6 @@ import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -61,7 +57,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SmsReceiver;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
@@ -218,7 +213,7 @@ public class ChangePhoneActivity extends BaseFragment {
     @Override
     protected void onDialogDismiss(Dialog dialog) {
         if (Build.VERSION.SDK_INT >= 23 && dialog == permissionsDialog && !permissionsItems.isEmpty()) {
-            getParentActivity().requestPermissions(permissionsItems.toArray(new String[permissionsItems.size()]), 6);
+            getParentActivity().requestPermissions(permissionsItems.toArray(new String[0]), 6);
         }
     }
 
@@ -452,14 +447,14 @@ public class ChangePhoneActivity extends BaseFragment {
                                 country = codesMap.get(sub);
                                 if (country != null) {
                                     ok = true;
-                                    textToSet = text.substring(a, text.length()) + phoneField.getText().toString();
+                                    textToSet = text.substring(a) + phoneField.getText().toString();
                                     codeField.setText(text = sub);
                                     break;
                                 }
                             }
                             if (!ok) {
                                 ignoreOnTextChange = true;
-                                textToSet = text.substring(1, text.length()) + phoneField.getText().toString();
+                                textToSet = text.substring(1) + phoneField.getText().toString();
                                 codeField.setText(text = text.substring(0, 1));
                             }
                         }
@@ -552,7 +547,7 @@ public class ChangePhoneActivity extends BaseFragment {
                     String phoneChars = "0123456789";
                     String str = phoneField.getText().toString();
                     if (characterAction == 3) {
-                        str = str.substring(0, actionPosition) + str.substring(actionPosition + 1, str.length());
+                        str = str.substring(0, actionPosition) + str.substring(actionPosition + 1);
                         start--;
                     }
                     StringBuilder builder = new StringBuilder(str.length());
@@ -735,7 +730,7 @@ public class ChangePhoneActivity extends BaseFragment {
                             builder.setMessage(LocaleController.getString("AllowReadCall", R.string.AllowReadCall));
                             permissionsDialog = showDialog(builder.create());
                         } else {
-                            getParentActivity().requestPermissions(permissionsItems.toArray(new String[permissionsItems.size()]), 6);
+                            getParentActivity().requestPermissions(permissionsItems.toArray(new String[0]), 6);
                         }
                         return;
                     }
@@ -755,23 +750,7 @@ public class ChangePhoneActivity extends BaseFragment {
             req.phone_number = phone;
             req.settings = new TLRPC.TL_codeSettings();
             req.settings.allow_flashcall = simcardAvailable && allowCall;
-            if (Build.VERSION.SDK_INT >= 26) {
-                try {
-                    req.settings.app_hash = SmsManager.getDefault().createAppSpecificSmsToken(PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, new Intent(ApplicationLoader.applicationContext, SmsReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT));
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                }
-            } else {
-                req.settings.app_hash = BuildVars.SMS_HASH;
-                req.settings.app_hash_persistent = true;
-            }
-            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-            if (!TextUtils.isEmpty(req.settings.app_hash)) {
-                req.settings.flags |= 8;
-                preferences.edit().putString("sms_hash", req.settings.app_hash).commit();
-            } else {
-                preferences.edit().remove("sms_hash").commit();
-            }
+            req.settings.allow_app_hash = ApplicationLoader.hasPlayServices;
             if (req.settings.allow_flashcall) {
                 try {
                     @SuppressLint("HardwareIds") String number = tm.getLine1Number();
@@ -1658,6 +1637,6 @@ public class ChangePhoneActivity extends BaseFragment {
         arrayList.add(new ThemeDescription(smsView4.blackImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         arrayList.add(new ThemeDescription(smsView4.blueImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chats_actionBackground));
 
-        return arrayList.toArray(new ThemeDescription[arrayList.size()]);
+        return arrayList.toArray(new ThemeDescription[0]);
     }
 }

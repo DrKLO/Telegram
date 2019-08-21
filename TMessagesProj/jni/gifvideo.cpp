@@ -338,7 +338,7 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *e
     }
 }
 
-jlong Java_org_telegram_ui_Components_AnimatedFileDrawable_createDecoder(JNIEnv *env, jclass clazz, jstring src, jintArray data, jint account, jlong streamFileSize, jobject stream) {
+jlong Java_org_telegram_ui_Components_AnimatedFileDrawable_createDecoder(JNIEnv *env, jclass clazz, jstring src, jintArray data, jint account, jlong streamFileSize, jobject stream, jboolean preview) {
     VideoInfo *info = new VideoInfo();
     
     char const *srcString = env->GetStringUTFChars(src, 0);
@@ -377,6 +377,9 @@ jlong Java_org_telegram_ui_Components_AnimatedFileDrawable_createDecoder(JNIEnv 
             return 0;
         }
         info->fmt_ctx->flags |= AVFMT_FLAG_FAST_SEEK;
+        if (preview) {
+            info->fmt_ctx->flags |= AVFMT_FLAG_NOBUFFER;
+        }
     } else {
         if ((ret = avformat_open_input(&info->fmt_ctx, info->src, NULL, NULL)) < 0) {
             LOGE("can't open source file %s, %s", info->src, av_err2str(ret));
@@ -478,7 +481,7 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_prepareToSeek(JNIEnv *
     info->seeking = true;
 }
 
-void Java_org_telegram_ui_Components_AnimatedFileDrawable_seekToMs(JNIEnv *env, jclass clazz, jlong ptr, jlong ms) {
+void Java_org_telegram_ui_Components_AnimatedFileDrawable_seekToMs(JNIEnv *env, jclass clazz, jlong ptr, jlong ms, jboolean precise) {
     if (ptr == NULL) {
         return;
     }
@@ -491,6 +494,9 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_seekToMs(JNIEnv *env, 
         return;
     } else {
         avcodec_flush_buffers(info->video_dec_ctx);
+        if (!precise) {
+            return;
+        }
         int got_frame = 0;
         int32_t tries = 1000;
         while (tries > 0) {
@@ -544,7 +550,7 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_seekToMs(JNIEnv *env, 
     }
 }
     
-jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *env, jclass clazz, jlong ptr, jobject bitmap, jintArray data, jint stride) {
+jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *env, jclass clazz, jlong ptr, jobject bitmap, jintArray data, jint stride, jboolean preview) {
     if (ptr == NULL || bitmap == nullptr) {
         return 0;
     }
@@ -552,7 +558,8 @@ jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *
     VideoInfo *info = (VideoInfo *) (intptr_t) ptr;
     int ret = 0;
     int got_frame = 0;
-    int32_t triesCount = 6;
+    int32_t triesCount = preview ? 50 : 6;
+    //info->has_decoded_frames = false;
     while (!info->stopped && triesCount != 0) {
         if (info->pkt.size == 0) {
             ret = av_read_frame(info->fmt_ctx, &info->pkt);
@@ -586,7 +593,7 @@ jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *
                 LOGE("can't decode packet flushed %s", info->src);
                 return 0;
             }
-            if (got_frame == 0) {
+            if (!preview && got_frame == 0) {
                 if (info->has_decoded_frames) {
                     if ((ret = av_seek_frame(info->fmt_ctx, info->video_stream_idx, 0, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME)) < 0) {
                         LOGE("can't seek to begin of file %s, %s", info->src, av_err2str(ret));

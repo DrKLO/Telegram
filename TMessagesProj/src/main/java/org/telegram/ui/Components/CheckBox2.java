@@ -8,18 +8,26 @@ public class CheckBox2 extends View {
 
     private CheckBoxBase checkBoxBase;
 
-    public CheckBox2(Context context) {
+    public CheckBox2(Context context, int sz) {
         super(context);
 
-        checkBoxBase = new CheckBoxBase(this);
+        checkBoxBase = new CheckBoxBase(this, sz);
     }
 
     public void setProgressDelegate(CheckBoxBase.ProgressDelegate delegate) {
         checkBoxBase.setProgressDelegate(delegate);
     }
 
+    public void setChecked(int num, boolean checked, boolean animated) {
+        checkBoxBase.setChecked(num, checked, animated);
+    }
+
     public void setChecked(boolean checked, boolean animated) {
         checkBoxBase.setChecked(checked, animated);
+    }
+
+    public void setNum(int num) {
+        checkBoxBase.setNum(num);
     }
 
     public boolean isChecked() {
@@ -28,10 +36,6 @@ public class CheckBox2 extends View {
 
     public void setColor(String background, String background2, String check) {
         checkBoxBase.setColor(background, background2, check);
-    }
-
-    public void setSize(int size) {
-        checkBoxBase.setSize(size);
     }
 
     @Override

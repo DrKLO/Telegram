@@ -13,7 +13,10 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -33,16 +36,18 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.CheckBox;
+import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.PhotoViewer;
 
 public class PhotoAttachPhotoCell extends FrameLayout {
 
     private BackupImageView imageView;
+    private FrameLayout container;
     private FrameLayout checkFrame;
-    private CheckBox checkBox;
+    private CheckBox2 checkBox;
     private TextView videoTextView;
     private FrameLayout videoInfoContainer;
     private AnimatorSet animatorSet;
@@ -50,8 +55,13 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     private boolean pressed;
     private static Rect rect = new Rect();
     private PhotoAttachPhotoCellDelegate delegate;
-    private boolean isVertical;
+    private boolean itemSizeChanged;
     private boolean needCheckShow;
+    private int itemSize;
+    private boolean isVertical;
+
+    private Paint backgroundPaint = new Paint();
+    private AnimatorSet animator;
 
     public interface PhotoAttachPhotoCellDelegate {
         void onCheckClick(PhotoAttachPhotoCell v);
@@ -62,46 +72,85 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     public PhotoAttachPhotoCell(Context context) {
         super(context);
 
-        imageView = new BackupImageView(context);
-        addView(imageView, LayoutHelper.createFrame(80, 80));
-        checkFrame = new FrameLayout(context);
-        addView(checkFrame, LayoutHelper.createFrame(42, 42, Gravity.LEFT | Gravity.TOP, 38, 0, 0, 0));
+        setWillNotDraw(false);
 
-        videoInfoContainer = new FrameLayout(context);
-        videoInfoContainer.setBackgroundResource(R.drawable.phototime);
-        videoInfoContainer.setPadding(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(3), 0);
-        addView(videoInfoContainer, LayoutHelper.createFrame(80, 16, Gravity.BOTTOM | Gravity.LEFT));
+        container = new FrameLayout(context);
+        addView(container, LayoutHelper.createFrame(80, 80));
+
+        imageView = new BackupImageView(context);
+        container.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        videoInfoContainer = new FrameLayout(context) {
+
+            private RectF rect = new RectF();
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                canvas.drawRoundRect(rect, AndroidUtilities.dp(4), AndroidUtilities.dp(4), Theme.chat_timeBackgroundPaint);
+            }
+        };
+        videoInfoContainer.setWillNotDraw(false);
+        videoInfoContainer.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), 0);
+        container.addView(videoInfoContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 17, Gravity.BOTTOM | Gravity.LEFT, 4, 0, 0, 4));
 
         ImageView imageView1 = new ImageView(context);
-        imageView1.setImageResource(R.drawable.ic_video);
+        imageView1.setImageResource(R.drawable.play_mini_video);
         videoInfoContainer.addView(imageView1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
         videoTextView = new TextView(context);
         videoTextView.setTextColor(0xffffffff);
+        videoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         videoTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-        videoInfoContainer.addView(videoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 18, -0.7f, 0, 0));
+        videoInfoContainer.addView(videoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 13, -0.7f, 0, 0));
 
-        checkBox = new CheckBox(context, R.drawable.checkbig);
-        checkBox.setSize(30);
-        checkBox.setCheckOffset(AndroidUtilities.dp(1));
-        checkBox.setDrawBackground(true);
-        checkBox.setColor(0xff3ccaef, 0xffffffff);
-        addView(checkBox, LayoutHelper.createFrame(30, 30, Gravity.LEFT | Gravity.TOP, 46, 4, 0, 0));
+        checkBox = new CheckBox2(context, 24);
+        checkBox.setDrawBackgroundAsArc(7);
+        checkBox.setColor(Theme.key_chat_attachCheckBoxBackground, Theme.key_chat_attachPhotoBackground, Theme.key_chat_attachCheckBoxCheck);
+        addView(checkBox, LayoutHelper.createFrame(26, 26, Gravity.LEFT | Gravity.TOP, 52, 4, 0, 0));
         checkBox.setVisibility(VISIBLE);
         setFocusable(true);
+
+        checkFrame = new FrameLayout(context);
+        addView(checkFrame, LayoutHelper.createFrame(42, 42, Gravity.LEFT | Gravity.TOP, 38, 0, 0, 0));
+
+        itemSize = AndroidUtilities.dp(80);
     }
 
     public void setIsVertical(boolean value) {
         isVertical = value;
     }
 
+    public void setItemSize(int size) {
+        itemSize = size;
+
+        LayoutParams layoutParams = (LayoutParams) container.getLayoutParams();
+        layoutParams.width = layoutParams.height = itemSize;
+
+        layoutParams = (LayoutParams) checkFrame.getLayoutParams();
+        layoutParams.gravity = Gravity.RIGHT | Gravity.TOP;
+        layoutParams.leftMargin = 0;
+
+        layoutParams = (LayoutParams) checkBox.getLayoutParams();
+        layoutParams.gravity = Gravity.RIGHT | Gravity.TOP;
+        layoutParams.leftMargin = 0;
+        layoutParams.rightMargin = layoutParams.topMargin = AndroidUtilities.dp(5);
+        checkBox.setDrawBackgroundAsArc(6);
+
+        itemSizeChanged = true;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (isVertical) {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80 + (isLast ? 0 : 6)), MeasureSpec.EXACTLY));
+        if (itemSizeChanged) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(itemSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(itemSize + AndroidUtilities.dp(5), MeasureSpec.EXACTLY));
         } else {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80 + (isLast ? 0 : 6)), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80), MeasureSpec.EXACTLY));
+            if (isVertical) {
+                super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80 + (isLast ? 0 : 6)), MeasureSpec.EXACTLY));
+            } else {
+                super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80 + (isLast ? 0 : 6)), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80), MeasureSpec.EXACTLY));
+            }
         }
     }
 
@@ -113,7 +162,11 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         return imageView;
     }
 
-    public CheckBox getCheckBox() {
+    public float getScale() {
+        return container.getScaleX();
+    }
+
+    public CheckBox2 getCheckBox() {
         return checkBox;
     }
 
@@ -139,16 +192,16 @@ public class PhotoAttachPhotoCell extends FrameLayout {
             videoInfoContainer.setVisibility(INVISIBLE);
         }
         if (photoEntry.thumbPath != null) {
-            imageView.setImage(photoEntry.thumbPath, null, getResources().getDrawable(R.drawable.nophotos));
+            imageView.setImage(photoEntry.thumbPath, null, Theme.chat_attachEmptyDrawable);
         } else if (photoEntry.path != null) {
             if (photoEntry.isVideo) {
-                imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, getResources().getDrawable(R.drawable.nophotos));
+                imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, Theme.chat_attachEmptyDrawable);
             } else {
                 imageView.setOrientation(photoEntry.orientation, true);
-                imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, getResources().getDrawable(R.drawable.nophotos));
+                imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, Theme.chat_attachEmptyDrawable);
             }
         } else {
-            imageView.setImageResource(R.drawable.nophotos);
+            imageView.setImageDrawable(Theme.chat_attachEmptyDrawable);
         }
         boolean showing = needCheckShow && PhotoViewer.isShowingImage(photoEntry.path);
         imageView.getImageReceiver().setVisible(!showing, true);
@@ -157,8 +210,43 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         requestLayout();
     }
 
-    public void setChecked(int num, boolean value, boolean animated) {
-        checkBox.setChecked(num, value, animated);
+    public void setChecked(int num, boolean checked, boolean animated) {
+        checkBox.setChecked(num, checked, animated);
+        if (itemSizeChanged) {
+            if (animator != null) {
+                animator.cancel();
+                animator = null;
+            }
+            if (animated) {
+                animator = new AnimatorSet();
+                animator.playTogether(
+                        ObjectAnimator.ofFloat(container, View.SCALE_X, checked ? 0.787f : 1.0f),
+                        ObjectAnimator.ofFloat(container, View.SCALE_Y, checked ? 0.787f : 1.0f));
+                animator.setDuration(200);
+                animator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (animator != null && animator.equals(animation)) {
+                            animator = null;
+                            if (!checked) {
+                                setBackgroundColor(0);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Animator animation) {
+                        if (animator != null && animator.equals(animation)) {
+                            animator = null;
+                        }
+                    }
+                });
+                animator.start();
+            } else {
+                container.setScaleX(checked ? 0.787f : 1.0f);
+                container.setScaleY(checked ? 0.787f : 1.0f);
+            }
+        }
     }
 
     public void setNum(int num) {
@@ -193,8 +281,8 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         animatorSet.setInterpolator(new DecelerateInterpolator());
         animatorSet.setDuration(180);
         animatorSet.playTogether(
-                ObjectAnimator.ofFloat(videoInfoContainer, "alpha", show ? 1.0f : 0.0f),
-                ObjectAnimator.ofFloat(checkBox, "alpha", show ? 1.0f : 0.0f));
+                ObjectAnimator.ofFloat(videoInfoContainer, View.ALPHA, show ? 1.0f : 0.0f),
+                ObjectAnimator.ofFloat(checkBox, View.ALPHA, show ? 1.0f : 0.0f));
         animatorSet.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -204,6 +292,18 @@ public class PhotoAttachPhotoCell extends FrameLayout {
             }
         });
         animatorSet.start();
+    }
+
+    @Override
+    public void clearAnimation() {
+        super.clearAnimation();
+        if (animator != null) {
+            animator.cancel();
+            animator = null;
+
+            container.setScaleX(checkBox.isChecked() ? 0.787f : 1.0f);
+            container.setScaleY(checkBox.isChecked() ? 0.787f : 1.0f);
+        }
     }
 
     @Override
@@ -243,6 +343,14 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     }
 
     @Override
+    protected void onDraw(Canvas canvas) {
+        if (checkBox.isChecked() || container.getScaleX() != 1.0f || !imageView.getImageReceiver().hasNotThumb() || imageView.getImageReceiver().getCurrentAlpha() != 1.0f || PhotoViewer.isShowingImage(photoEntry.path)) {
+            backgroundPaint.setColor(Theme.getColor(Theme.key_chat_attachPhotoBackground));
+            canvas.drawRect(0, 0, imageView.getMeasuredWidth(), imageView.getMeasuredHeight(), backgroundPaint);
+        }
+    }
+
+    @Override
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setEnabled(true);
@@ -251,8 +359,9 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         } else {
             info.setText(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
         }
-        if (checkBox.isChecked())
+        if (checkBox.isChecked()) {
             info.setSelected(true);
+        }
         if (Build.VERSION.SDK_INT >= 21) {
             info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_photo, LocaleController.getString("Open", R.string.Open)));
         }
@@ -261,7 +370,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
         if (action == R.id.acc_action_open_photo) {
-            View parent = (View)getParent();
+            View parent = (View) getParent();
             parent.dispatchTouchEvent(MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), MotionEvent.ACTION_DOWN, getLeft(), getTop() + getHeight() - 1, 0));
             parent.dispatchTouchEvent(MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, getLeft(), getTop() + getHeight() - 1, 0));
         }

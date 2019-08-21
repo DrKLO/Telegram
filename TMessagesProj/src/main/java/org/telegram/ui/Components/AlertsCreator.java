@@ -78,6 +78,7 @@ import org.telegram.ui.ReportOtherActivity;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
 
 public class AlertsCreator {
 
@@ -101,10 +102,11 @@ public class AlertsCreator {
                 request instanceof TLRPC.TL_messages_addChatUser ||
                 request instanceof TLRPC.TL_messages_startBot ||
                 request instanceof TLRPC.TL_channels_editBanned ||
-                request instanceof TLRPC.TL_messages_editChatDefaultBannedRights||
-                request instanceof TLRPC.TL_messages_editChatAdmin) {
+                request instanceof TLRPC.TL_messages_editChatDefaultBannedRights ||
+                request instanceof TLRPC.TL_messages_editChatAdmin ||
+                request instanceof TLRPC.TL_messages_migrateChat) {
             if (fragment != null) {
-                AlertsCreator.showAddUserAlert(error.text, fragment, (Boolean) args[0]);
+                AlertsCreator.showAddUserAlert(error.text, fragment, args != null && args.length > 0 ? (Boolean) args[0] : false);
             } else {
                 if (error.text.equals("PEER_FLOOD")) {
                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 1);
@@ -388,22 +390,53 @@ public class AlertsCreator {
         return builder;
     }
 
+    public static boolean checkSlowMode(Context context, int currentAccount, long did, boolean few) {
+        int lowerId = (int) did;
+        if (lowerId < 0) {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+            if (chat != null && chat.slowmode_enabled && !ChatObject.hasAdminRights(chat)) {
+                if (!few) {
+                    TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chat.id);
+                    if (chatFull == null) {
+                        chatFull = MessagesStorage.getInstance(currentAccount).loadChatInfo(chat.id, new CountDownLatch(1), false, false);
+                    }
+                    if (chatFull != null && chatFull.slowmode_next_send_date >= ConnectionsManager.getInstance(currentAccount).getCurrentTime()) {
+                        few = true;
+                    }
+                }
+                if (few) {
+                    AlertsCreator.createSimpleAlert(context, chat.title, LocaleController.getString("SlowmodeSendError", R.string.SlowmodeSendError)).show();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public static AlertDialog.Builder createSimpleAlert(Context context, final String text) {
+        return createSimpleAlert(context, null, text);
+    }
+
+    public static AlertDialog.Builder createSimpleAlert(Context context, final String title, final String text) {
         if (text == null) {
             return null;
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        builder.setTitle(title == null ? LocaleController.getString("AppName", R.string.AppName) : title);
         builder.setMessage(text);
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
         return builder;
     }
 
     public static Dialog showSimpleAlert(BaseFragment baseFragment, final String text) {
+        return showSimpleAlert(baseFragment, null, text);
+    }
+
+    public static Dialog showSimpleAlert(BaseFragment baseFragment, final String title, final String text) {
         if (text == null || baseFragment == null || baseFragment.getParentActivity() == null) {
             return null;
         }
-        AlertDialog.Builder builder = createSimpleAlert(baseFragment.getParentActivity(), text);
+        AlertDialog.Builder builder = createSimpleAlert(baseFragment.getParentActivity(), title, text);
         Dialog dialog = builder.create();
         baseFragment.showDialog(dialog);
         return dialog;
@@ -1646,15 +1679,13 @@ public class AlertsCreator {
     public static Dialog createFreeSpaceDialog(final LaunchActivity parentActivity) {
         final int[] selected = new int[1];
 
-        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        int keepMedia = preferences.getInt("keep_media", 2);
-        if (keepMedia == 2) {
+        if (SharedConfig.keepMedia == 2) {
             selected[0] = 3;
-        } else if (keepMedia == 0) {
+        } else if (SharedConfig.keepMedia == 0) {
             selected[0] = 1;
-        } else if (keepMedia == 1) {
+        } else if (SharedConfig.keepMedia == 1) {
             selected[0] = 2;
-        } else if (keepMedia == 3) {
+        } else if (SharedConfig.keepMedia == 3) {
             selected[0] = 0;
         }
 
@@ -1707,7 +1738,7 @@ public class AlertsCreator {
         builder.setTitle(LocaleController.getString("LowDiskSpaceTitle", R.string.LowDiskSpaceTitle));
         builder.setMessage(LocaleController.getString("LowDiskSpaceMessage", R.string.LowDiskSpaceMessage));
         builder.setView(linearLayout);
-        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> MessagesController.getGlobalMainSettings().edit().putInt("keep_media", selected[0]).commit());
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> SharedConfig.setKeepMedia(selected[0]));
         builder.setNeutralButton(LocaleController.getString("ClearMediaCache", R.string.ClearMediaCache), (dialog, which) -> parentActivity.presentFragment(new CacheControlActivity()));
         return builder.create();
     }

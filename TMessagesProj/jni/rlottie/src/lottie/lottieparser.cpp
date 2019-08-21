@@ -55,6 +55,7 @@
 
 #include <array>
 #include <sstream>
+#include <tgnet/FileLog.h>
 
 #include "lottiemodel.h"
 #include "rapidjson/document.h"
@@ -181,8 +182,8 @@ protected:
 
 class LottieParserImpl : protected LookaheadParserHandler {
 public:
-    LottieParserImpl(char *str, const char *dir_path)
-        : LookaheadParserHandler(str), mDirPath(dir_path)
+    LottieParserImpl(char *str, const char *dir_path, std::map<int32_t, int32_t> &colorReplacement)
+        : LookaheadParserHandler(str), mDirPath(dir_path), colorMap(colorReplacement)
     {
     }
 
@@ -286,6 +287,8 @@ protected:
     std::vector<std::shared_ptr<LOTLayerData>> mLayersToUpdate;
     std::string                                mDirPath;
     std::vector<LayerInfo>                     mLayerInfoList;
+    std::map<int32_t, int32_t>                 colorMap;
+
     void                                       SkipOut(int depth);
     bool                                       parsingError{false};
 };
@@ -840,17 +843,31 @@ LottieColor LottieParserImpl::toColor(const char *str)
     }
 
     char tmp[3] = {'\0', '\0', '\0'};
+
     tmp[0] = str[1];
     tmp[1] = str[2];
-    color.b = std::strtol(tmp, NULL, 16) / 255.0;
-
+    long b = std::strtol(tmp, NULL, 16);
     tmp[0] = str[3];
     tmp[1] = str[4];
-    color.g = std::strtol(tmp, NULL, 16) / 255.0;
-
+    long g = std::strtol(tmp, NULL, 16);
     tmp[0] = str[5];
     tmp[1] = str[6];
-    color.r = std::strtol(tmp, NULL, 16) / 255.0;
+    long r = std::strtol(tmp, NULL, 16);
+
+    if (!colorMap.empty()) {
+        int32_t c = (int32_t) (((b & 0xff) << 16) | ((g & 0xff) << 8) | (r & 0xff));
+        std::map<int32_t, int32_t>::iterator iter = colorMap.find(c);
+        if (iter != colorMap.end()) {
+            c = iter->second;
+            b = (c >> 16) & 0xff;
+            g = (c >> 8) & 0xff;
+            r = (c) & 0xff;
+        }
+    }
+
+    color.r = r / 255.0f;
+    color.g = g / 255.0f;
+    color.b = b / 255.0f;
 
     return color;
 }
@@ -1095,6 +1112,10 @@ std::shared_ptr<LOTMaskData> LottieParserImpl::parseMaskObject()
             obj->mInv = GetBool();
         } else if (0 == strcmp(key, "mode")) {
             const char *str = GetString();
+            if (str == nullptr) {
+                parsingError = true;
+                return sharedMask;
+            }
             switch (str[0]) {
             case 'n':
                 obj->mMode = LOTMaskData::Mode::None;
@@ -1260,7 +1281,9 @@ std::shared_ptr<LOTData> LottieParserImpl::parseGroupObject() {
         staticFlag &= child.get()->isStatic();
     }
 
-    group->setStatic(staticFlag && group->mTransform->isStatic());
+    if (group->mTransform) {
+        group->setStatic(staticFlag && group->mTransform->isStatic());
+    }
 
     return sharedGroup;
 }
@@ -2005,6 +2028,20 @@ void LottieParserImpl::getValue(LottieColor &color)
         parsingError = true;
         return;
     }
+    if (!colorMap.empty()) {
+        int32_t r = (int32_t) (val[2] * 255);
+        int32_t g = (int32_t) (val[1] * 255);
+        int32_t b = (int32_t) (val[0] * 255);
+
+        int32_t c = (int32_t) (((b & 0xff) << 16) | ((g & 0xff) << 8) | (r & 0xff));
+        std::map<int32_t, int32_t>::iterator iter = colorMap.find(c);
+        if (iter != colorMap.end()) {
+            c = iter->second;
+            val[0] = ((c >> 16) & 0xff) / 255.0f;
+            val[1] = ((c >> 8) & 0xff) / 255.0f;
+            val[2] = ((c) & 0xff) / 255.0f;
+        }
+    }
     color.r = val[2];
     color.g = val[1];
     color.b = val[0];
@@ -2590,8 +2627,8 @@ LottieParser::~LottieParser()
     delete d;
 }
 
-LottieParser::LottieParser(char *str, const char *dir_path)
-    : d(new LottieParserImpl(str, dir_path))
+LottieParser::LottieParser(char *str, const char *dir_path, std::map<int32_t, int32_t> &colorReplacement)
+    : d(new LottieParserImpl(str, dir_path, colorReplacement))
 {
     d->parseComposition();
     if (d->hasParsingError()) {

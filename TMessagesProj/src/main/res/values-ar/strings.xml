@@ -161,7 +161,7 @@
     <string name="DeleteChat">حذف وخروج</string>
     <string name="HideOnTop">إخفاء</string>
     <string name="UnhideFromTop">تثبيت</string>
-    <string name="Archive">أرشفة</string>
+    <string name="Archive">أرشفة--</string>
     <string name="Unarchive">إلغاء الأرشفة</string>
     <string name="ArchivedChats">المحادثات المؤرشفة</string>
     <string name="DeleteChatUser">حذف المحادثة</string>
@@ -388,6 +388,8 @@
     <string name="ChannelSignMessages">توقيع الرسائل</string>
     <string name="ChannelSignMessagesInfo">إضافة أسماء المشرفين للمنشورات التي ينشرونها.</string>
     <string name="EditAdmin">صلاحيات المشرف</string>
+    <string name="EditAdminRank">لقب مخصص</string>
+    <string name="EditAdminRankInfo">قم باختيار لقب مخصص كي يظهر لجميع الأعضاء بدلًا من \'%1$s\'.</string>
     <string name="EditAdminWhatCanDo">ما هي صلاحيات هذا المشرف؟</string>
     <string name="EditAdminChangeChannelInfo">تغيير معلومات القناة</string>
     <string name="EditAdminChangeGroupInfo">تغيير معلومات المجموعة</string>
@@ -404,7 +406,7 @@
     <string name="EditChannelAdminTransferAlertText">تستطيع نقل هذه القناة إلى **%1$s** فقط إذا:</string>
     <string name="EditAdminTransferAlertText1">فعّلتَ **التحقق بخطوتين** منذ أكثر من **سبعة أيام**.</string>
     <string name="EditAdminTransferAlertText2">سجّلتَ دخولك على هذا الجهاز منذ أكثر من **24 ساعة**.</string>
-    <string name="EditAdminTransferAlertText3">قم المحاولة لاحقًا.</string>
+    <string name="EditAdminTransferAlertText3">يرجى المحاولة لاحقًا.</string>
     <string name="EditAdminTransferSetPassword">تعيين كلمة مرور</string>
     <string name="EditAdminTransferReadyAlertText">سيؤدي هذا لنقل **جميع حقوق الملكية** الخاصة بـ **%1$s** إلى **%2$s**.</string>
     <string name="EditAdminTransferChangeOwner">تغيير المالك</string>
@@ -427,7 +429,7 @@
     <string name="UserRestrictionsSendMedia">إرسال الوسائط</string>
     <string name="UserRestrictionsSendPolls">إرسال الاستفتاءات</string>
     <string name="UserRestrictionsSendStickers">إرسال الملصقات والصور المتحركة</string>
-    <string name="UserRestrictionsEmbedLinks">تضمين روابط</string>
+    <string name="UserRestrictionsEmbedLinks">تضمين الروابط</string>
     <string name="UserRestrictionsChangeInfo">تغيير معلومات المحادثة</string>
     <string name="UserRestrictionsPinMessages">تثبيت الرسائل</string>
     <string name="UserRestrictionsInviteUsers">إضافة مستخدمين</string>
@@ -445,7 +447,7 @@
     <string name="UserRestrictionsBlock">حظر وإزالة من المجموعة</string>
     <string name="UserRestrictionsApplyChanges">تطبيق التغييرات؟</string>
     <string name="UserRestrictionsApplyChangesText">لقد قمت بتغيير صلاحيات هذا المستخدم في **%1$s**؛ تطبيق التغييرات؟</string>
-    <string name="UserRestrictionsCustom">Custom</string>
+    <string name="UserRestrictionsCustom">مخصصة</string>
     <string name="ManageGroup">إدارة المجموعة</string>
     <string name="ManageChannel">إدارة القناة</string>
     <string name="ManageGroupMenu">إدارة المجموعة</string>
@@ -501,6 +503,16 @@
     <string name="DiscussionUnlinkChannelAlert">هل ترغب حقًا بإلغاء ربط **%1$s** من هذه القناة؟</string>
     <string name="ChannelDiscuss">مناقشة</string>
     <string name="DiscussChannel">قناة</string>
+    <string name="Slowmode">الوضع البطيء</string>
+    <string name="SlowmodeOff">معطَّل</string>
+    <string name="SlowmodeSeconds">%1$dثا</string>
+    <string name="SlowmodeMinutes">%1$dد</string>
+    <string name="SlowmodeHours">%1$dسا</string>
+    <string name="SlowmodeInfoOff">اختر الفترة الزمنية التي يجب على كل عضو انتظارها قبل إرسال رسالته التالية.</string>
+    <string name="SlowmodeInfoSelected">سيتمكن الأعضاء من إرسال رسالة واحدة فقط كل %1$s.</string>
+    <string name="SlowmodeSendError">تم تفعيل الوضع البطيء. لا يمكنك إرسال أكثر من رسالة مرةً واحدة.</string>
+    <string name="SlowmodeSelectSendError">تم تفعيل الوضع البطيء. لا يمكنك تحديد المزيد من العناصر.</string>
+    <string name="SlowmodeSendErrorTooLong">Sorry, this text is too long to send as one message.\n\nSlow Mode is enabled. You can\'t send more than one message at once.</string>
     <!--polls-->
     <string name="NewPoll">استفتاء جديد</string>
     <string name="Poll">استفتاء</string>
@@ -547,14 +559,14 @@
     <string name="EventLogEditedGroupTitle">غيَّر un1 اسم المجموعة إلى «%1$s»</string>
     <string name="EventLogEditedChannelTitle">غيَّر un1 اسمَ القناة إلى «%1$s»</string>
     <string name="EventLogLeftGroup">غادر un1 المجموعة</string>
-    <string name="EventLogLeftChannel">un1 غادر القناة</string>
+    <string name="EventLogLeftChannel">غادر un1 القناة</string>
     <string name="EventLogAdded">un1 أضاف un2</string>
     <string name="EventLogGroupJoined">un1 انضم للمجموعة</string>
     <string name="EventLogChannelRestricted">حظر %1$s</string>
     <string name="EventLogChannelUnrestricted">ألغى حظر %1$s</string>
     <string name="EventLogChannelJoined">un1 انضم للقناة</string>
-    <string name="EventLogEditedGroupPhoto">un1 عيّن صورة جديدة للمجموعة</string>
-    <string name="EventLogEditedChannelPhoto">un1 عيّن صورة جديدة للقناة</string>
+    <string name="EventLogEditedGroupPhoto">عيّن un1 صورة جديدة للمجموعة</string>
+    <string name="EventLogEditedChannelPhoto">عيّن un1 صورة جديدة للقناة</string>
     <string name="EventLogRemovedWGroupPhoto">أزال un1 صورة المجموعة</string>
     <string name="EventLogRemovedChannelPhoto">أزال un1 صورة القناة</string>
     <string name="EventLogEditedMessages">عدّل un1 هذه الرسالة:</string>
@@ -570,7 +582,7 @@
     <string name="EventLogDeletedMessages">حذف un1 هذه الرسالة:</string>
     <string name="EventLogChangedLocation">غيّرَ un1 موقع المجموعة ليصبح «%1$s»</string>
     <string name="EventLogRemovedLocation">أزال un1 موقع المجموعة</string>
-    <string name="EventLogChangedOwnership">نقلَ ملكية المجموعة لـ %1$s</string>
+    <string name="EventLogChangedOwnership">نقلَ الملكية لـ %1$s</string>
     <string name="EventLogChangedStickersSet">un1 غير حزمة ملصقات المجموعة</string>
     <string name="EventLogRemovedStickersSet">\nun1 أزال حزمة ملصقات المجموعة</string>
     <string name="EventLogChangedLinkedGroup">جعل un1 un2 مجموعة نقاشات هذه القناة</string>
@@ -600,7 +612,7 @@
     <string name="EventLogRestrictedPinMessages">تثبيت الرسائل</string>
     <string name="EventLogRestrictedSendPolls">إرسال الاستفتاءات</string>
     <string name="EventLogRestrictedSendMessages">إرسال الرسائل</string>
-    <string name="EventLogRestrictedSendEmbed">تضمين روابط</string>
+    <string name="EventLogRestrictedSendEmbed">تضمين الروابط</string>
     <string name="EventLogRestrictedReadMessages">قراءة الرسائل</string>
     <string name="EventLogPromoted">غيّرَ صلاحيات %1$s</string>
     <string name="EventLogPromotedChangeChannelInfo">تغيير معلومات القناة</string>
@@ -611,6 +623,8 @@
     <string name="EventLogPromotedAddAdmins">إضافة مشرفين</string>
     <string name="EventLogPromotedBanUsers">حظر المستخدمين</string>
     <string name="EventLogPromotedAddUsers">إضافة مستخدمين</string>
+    <string name="EventLogPromotedTitle">اللقب: %1$s</string>
+    <string name="EventLogPromotedRemovedTitle">اللقب</string>
     <string name="EventLogPromotedPinMessages">تثبيت الرسائل</string>
     <string name="EventLogFilterAll">كافة الأحداث</string>
     <string name="EventLogFilterNewRestrictions">استثناءات جديدة</string>
@@ -622,6 +636,8 @@
     <string name="EventLogFilterEditedMessages">رسائل معدلة</string>
     <string name="EventLogFilterPinnedMessages">رسائل مثبتة</string>
     <string name="EventLogFilterLeavingMembers">الأعضاء المغادرون</string>
+    <string name="EventLogToggledSlowmodeOn">عيّن un1 عداد الوضع البطيء ليصبح %1$s</string>
+    <string name="EventLogToggledSlowmodeOff">عطّل un1 الوضع البطيء</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">رسالة جماعية جديدة</string>
     <string name="EnterListName">أدخل اسم القائمة</string>
@@ -732,8 +748,8 @@
     <string name="OpenInExternalApp">فتح باستخدام...</string>
     <string name="SendItems">إرسال %1$s</string>
     <string name="UploadItems">رفع %1$s</string>
-    <string name="SendAsFile">إرسال كملف</string>
-    <string name="SendAsFiles">إرسال كملفات</string>
+    <string name="SendAsFile">إرسال دون ضغط</string>
+    <string name="SendAsFiles">إرسال بدون ضغط</string>
     <string name="OpenUrlTitle">فتح الرابط</string>
     <string name="OpenUrlAlert2">هل ترغب في فتح %1$s؟</string>
     <string name="OpenUrlOption1">تسجيل الدخول إلى %1$s من حساب **%2$s**</string>
@@ -830,12 +846,12 @@
     <string name="DiscardVideoMessageDescription">هل ترغب حقًا في إيقاف التسجيل وتجاهل الرسالة المرئية؟</string>
     <string name="DiscardVoiceMessageAction">تجاهل</string>
     <string name="AttachMediaRestricted">مشرفو هذه المجموعة قيدوك من إرسال الوسائط إليها حتى %1$s</string>
-    <string name="AttachInlineRestricted">مشرفو هذه المجموعة قيدوك من من إرسال محتوى استعلامي إليها حتى %1$s</string>
+    <string name="AttachInlineRestricted">قام مشرفو هذه المجموعة بتقييدك من إرسال أي محتوى استعلامي إليها حتى %1$s</string>
     <string name="AttachStickersRestricted">مشرفو هذه المجموعة قيدوك من إرسال الملصقات إليها حتى %1$s</string>
     <string name="AttachGifRestricted">قام مشرفو هذه المجموعة بتقييدك من إرسال الصور المتحركة إليها حتى %1$s</string>
     <string name="SendMessageRestricted">مشرفو هذه المجموعة قيدوك من الكتابة فيها حتى %1$s</string>
     <string name="AttachMediaRestrictedForever">قام مشرفو هذه المجموعة بتقييدك من إرسال الوسائط إليها.</string>
-    <string name="AttachInlineRestrictedForever">مشرفو هذه المجموعة قيدوك من إرسال محتوى استعلامي إليها</string>
+    <string name="AttachInlineRestrictedForever">قام مشرفو هذه المجموعة بتقييدك من إرسال أي محتوى استعلامي إليها</string>
     <string name="AttachStickersRestrictedForever">قام مشرفو هذه المجموعة بتقييدك من إرسال الملصقات.</string>
     <string name="AttachGifRestrictedForever">قام مشرفو هذه المجموعة بتقييدك من إرسال الصور المتحركة إليها.</string>
     <string name="SendMessageRestrictedForever">قام مشرفو هذه المجموعة بتقييدك من الكتابة هنا.</string>
@@ -859,7 +875,10 @@
     <string name="InstallGoogleMaps">تثبيت خرائط جوجل؟</string>
     <string name="ScamMessage">احتيالي</string>
     <string name="ViaBot">عبر</string>
-    <string name="MessageNotFound">Message doesn\'t exist</string>
+    <string name="MessageNotFound">الرسالة غير موجودة</string>
+    <string name="SlowModeHint">تم تفعيل الوضع البطيء. يمكنك إرسال\nرسالتك التالية خلال %1$s</string>
+    <string name="TapForVideo">انقر لأخذ صورة، اضغط باستمرار لتصوير مقطع مرئي</string>
+    <string name="SendWithoutSound">إرسال بدون صوت</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">عيّن %1$s عداد التدمير الذاتي ليصبح %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">قمت بتعيين عداد التدمير الذاتي ليصبح %1$s</string>
@@ -1113,6 +1132,7 @@
     <string name="ErrorOccurred">حدث خطأ ما.</string>
     <!--stickers view-->
     <string name="StickersName">الملصقات والأقنعة</string>
+    <string name="LoopAnimatedStickers">تكرار الملصقات المتحركة</string>
     <string name="AddStickers">إضافة الملصقات</string>
     <string name="AddStickersCount">إضافة %1$s</string>
     <string name="RemoveStickersCount">إزالة %1$s</string>
@@ -1465,7 +1485,7 @@
     <string name="DirectShare">مشاركة مباشرة</string>
     <string name="DirectShareInfo">إظهار آخر المحادثات في قائمة المشاركة</string>
     <string name="Emoji">الرموز التعبيرية</string>
-    <string name="EmojiBigSize">رسمُ رمز تعبيري واحد كبير</string>
+    <string name="LargeEmoji">رموز تعبيرية كبيرة</string>
     <string name="EmojiUseDefault">استخدم الرموز التعبيرية الافتراضية</string>
     <string name="TelegramVersion">تيليجرام للأندرويد %1$s</string>
     <string name="DebugMenu">قائمة المعالجة</string>
@@ -1558,11 +1578,11 @@
     <string name="SettingsNoResults">لم يتم العثور على نتائج</string>
     <string name="SettingsNoRecent">ما من عمليات بحث تمت مؤخرًا</string>
     <string name="SettingsSearchFaq">الأسئلة الشائعة</string>
-    <string name="DistanceUnits">Distance Units</string>
-    <string name="DistanceUnitsTitle">Distance units</string>
-    <string name="DistanceUnitsAutomatic">Automatic</string>
-    <string name="DistanceUnitsKilometers">Kilometers</string>
-    <string name="DistanceUnitsMiles">Miles</string>
+    <string name="DistanceUnits">وحدة القياس</string>
+    <string name="DistanceUnitsTitle">وحدة القياس</string>
+    <string name="DistanceUnitsAutomatic">تلقائي</string>
+    <string name="DistanceUnitsKilometers">كيلومتر</string>
+    <string name="DistanceUnitsMiles">ميل</string>
     <!--cache view-->
     <string name="LocalDatabase">قاعدة البيانات على الجهاز</string>
     <string name="LocalDatabaseClear">هل ترغب في مسح الرسائل النصية من الذاكرة المؤقتة؟</string>
@@ -1854,10 +1874,10 @@
     <string name="Map">الخريطة</string>
     <string name="Satellite">قمر صناعي</string>
     <string name="Hybrid">مختلطة</string>
-    <string name="MetersAway2">%1$s m away</string>
-    <string name="KMetersAway2">%1$s km away</string>
-    <string name="FootsAway">%1$s ft away</string>
-    <string name="MilesAway">%1$s mi away</string>
+    <string name="MetersAway2">على بُعد %1$s م</string>
+    <string name="KMetersAway2">على بُعد %1$s ك.م</string>
+    <string name="FootsAway">على بُعد %1$s قدم</string>
+    <string name="MilesAway">على بُعد %1$s ميل</string>
     <string name="SendLocation">إرسال موقعي الحالي</string>
     <string name="SendLiveLocation">شارك موقعي الحي لمدة...</string>
     <string name="StopLiveLocation">إيقاف مشاركة الموقع</string>
@@ -1922,12 +1942,16 @@
     <string name="VideoDoesNotSupportStreaming">هذا المقطع ليس معالَجا ليتم عرضُه فورَ تشغيله، قد تحتاج لتنزيله بالكامل قبل مشاهدته.</string>
     <string name="CantPlayVideo">لم يتمكن التطبيق من تشغيل هذا المقطع المرئي، هل ترغب في تشغيله بمشغل خارجي؟</string>
     <string name="NoRecentPhotos">لا توجد صور حديثة</string>
+    <string name="ImagesTab">الصور</string>
+    <string name="GifsTab">الصور المتحركة</string>
     <string name="NoRecentGIFs">لا يوجد صور متحركة حديثة</string>
     <string name="SearchImages">بحث الصور</string>
     <string name="SearchImagesInfo">البحث في الويب</string>
     <string name="SearchGifs">بحث الصور المتحركة</string>
     <string name="SearchImagesTitle">البحث في الويب</string>
     <string name="SearchGifsTitle">بحث عن صور متحركة</string>
+    <string name="CameraPermissionText">انقر للسماح بالوصول إلى الكاميرا</string>
+    <string name="GalleryPermissionText">انقر للسماح بالوصول إلى المعرض</string>
     <string name="CropImage">قص الصورة</string>
     <string name="Enhance">تحسين</string>
     <string name="Highlights">التفتيح</string>
@@ -1972,6 +1996,8 @@
     <string name="CropSquare">مربع</string>
     <string name="SinglePhotosHelp">إرسال الوسائط في رسائل متفرقة</string>
     <string name="GroupPhotosHelp">تجميع الوسائط في رسالة واحدة</string>
+    <string name="SendWithoutGrouping">إرسال دون تجميع</string>
+    <string name="SendWithoutCompression">إرسال دون ضغط</string>
     <!--password view-->
     <string name="TwoStepVerification">التحقق بخطوتين</string>
     <string name="TwoStepVerificationTitle">التحقق بخطوتين</string>
@@ -2218,7 +2244,7 @@
     <string name="ActionKickUserYou">un1 أزالك</string>
     <string name="ActionAddUserYou">un1 قام بإضافتك</string>
     <string name="ActionAddUserSelf">عاد un1 للمجموعة</string>
-    <string name="ActionAddUserSelfMega">un1 انضم للمجموعة</string>
+    <string name="ActionAddUserSelfMega">انضم un1 للمجموعة</string>
     <string name="ActionAddUserSelfYou">لقد عُدتَ للمجموعة</string>
     <string name="ActionBotAllowed">لقد سمحت لهذا البوت بمراسلتك عندما تسجل دخولك إلى %1$s</string>
     <string name="ActionBotDocuments">استلم %1$s الوثائق التالية: %2$s</string>
@@ -2346,10 +2372,10 @@
     <string name="SecretLinkPreviewAlert">هل ترغب في تفعيل معاينة الروابط المطولة في المحادثات السرية؟ علمًا أنه يتم توليدها في خوادم تيليجرام.</string>
     <string name="SecretChatContextBotAlert">يرجى ملاحظة أن بوتات المحتوى الاستعلامي يتم تطويرها من مطورين مستقلين. لكي تعمل هذه البوتات، ما تكتبه بعد اسم مستخدم البوت يذهب لمطور البوت.</string>
     <string name="EditMessageError">المعذرة، لا يمكنك تعديل هذه الرسالة.</string>
-    <string name="AllowReadSms">فضلًا قم بالسماح لتيليجرام بتلقي رسائل SMS القصيرة ليتمكن من تفعيل حسابك تلقائيًا.</string>
-    <string name="AllowReadCall">فصلًا قم بالسماح لتيليجرام باستقبال اتصالات ليتمكن من إدخال الرمز لك تلقائيًا.</string>
+    <string name="AllowReadCall">رجاءً قم بالسماح لتيليجرام بتلقي المكالمات للتمكن من إدخال الرمز تلقائيًا.</string>
+    <string name="AllowReadCallAndLog">رجاءً قم بالسماح لتيليجرام بتلقي المكالمات وقراءة سجل المكالمات للتمكن من إدخال الرمز تلقائيًا.</string>
+    <string name="AllowReadCallLog">رجاءً قم بالسماح لتيليجرام بقراءة سجل المكالمات للتمكن من إدخال الرمز تلقائيًا.</string>
     <string name="AllowFillNumber">رجاءً قم بالسماح لتيليجرام بتلقي المكالمات للتمكن من تفعيل رقم هاتفك تلقائيًا.</string>
-    <string name="AllowReadCallAndSms">رجاءً قم بالسماح لتيليجرام بتلقي المكالمات للتمكن من تفعيل رقم هاتفك تلقائيًا.</string>
     <string name="UserRestricted">المعذرة، ليس من المسموح لك القيام بهذا.</string>
     <string name="YouBlockedUser">المعذرة، لا يمكنك إضافة هذا المستخدم أو البوت للمجموعات بسبب أنك قمت بحظره. فضلًا قم بإزالة الحظر للاستمرار.</string>
     <string name="JoinGroup">انضمام للمجموعة</string>
@@ -2815,6 +2841,24 @@
     <string name="AndOther_few">و%1$d آخرون</string>
     <string name="AndOther_many">و%1$d آخرون</string>
     <string name="AndOther_other">و%1$d آخرون</string>
+    <string name="PhotosSelected_zero">%1$d صورة محددة</string>
+    <string name="PhotosSelected_one">صورة واحدة محددة</string>
+    <string name="PhotosSelected_two">صورتان محددتان</string>
+    <string name="PhotosSelected_few">%1$d صور محددة</string>
+    <string name="PhotosSelected_many">%1$d صورةً محددة</string>
+    <string name="PhotosSelected_other">%1$d صورة محددة</string>
+    <string name="VideosSelected_zero">%1$d مقطع مرئي محدد</string>
+    <string name="VideosSelected_one">مقطع مرئي واحد محدد</string>
+    <string name="VideosSelected_two">مقطعان مرئيان محددان</string>
+    <string name="VideosSelected_few">%1$d مقاطع مرئية محددة</string>
+    <string name="VideosSelected_many">%1$d مقطعًا مرئيًا محددًا</string>
+    <string name="VideosSelected_other">%1$d مقطع مرئي محدد</string>
+    <string name="MediaSelected_zero">%1$d عنصر محدد</string>
+    <string name="MediaSelected_one">عنصر واحد محدد</string>
+    <string name="MediaSelected_two">عنصران محددان</string>
+    <string name="MediaSelected_few">%1$d عناصر محددة</string>
+    <string name="MediaSelected_many">%1$d عنصرًا محددًا</string>
+    <string name="MediaSelected_other">%1$d عنصر محدد</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">مجموعة</string>
     <string name="AccDescrChannel">قناة</string>
