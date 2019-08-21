@@ -43,7 +43,10 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.StateSet;
+
+import androidx.core.graphics.ColorUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -57,6 +60,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.ColorUtilities;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.time.SunDate;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -76,7 +80,6 @@ import java.util.Collections;
 import java.util.HashMap;
 
 public class Theme {
-
     public static class ThemeInfo {
         public String name;
         public String pathToFile;
@@ -86,6 +89,10 @@ public class Theme {
         public int previewInColor;
         public int previewOutColor;
         public int sortIndex;
+
+        public boolean hasAccentColor;
+        public int accentColor;
+        public int defaultAccentColor;
 
         public JSONObject getSaveJson() {
             try {
@@ -106,18 +113,18 @@ public class Theme {
                 return LocaleController.getString("ThemeBlue", R.string.ThemeBlue);
             } else if ("Dark".equals(name)) {
                 return LocaleController.getString("ThemeDark", R.string.ThemeDark);
-            } else if ("Dark Blue".equals(name)) {
+            } else if ("Dark Tint".equals(name)) {
                 return LocaleController.getString("ThemeDarkBlue", R.string.ThemeDarkBlue);
             } else if ("Graphite".equals(name)) {
                 return LocaleController.getString("ThemeGraphite", R.string.ThemeGraphite);
-            } else if ("Arctic Blue".equals(name)) {
+            } else if ("Arctic".equals(name)) {
                 return LocaleController.getString("ThemeArcticBlue", R.string.ThemeArcticBlue);
             }
             return name;
         }
 
         public boolean isDark() {
-            return "Dark".equals(name) || "Dark Blue".equals(name) || "Graphite".equals(name);
+            return "Dark".equals(name) || "Dark Tint".equals(name) || "Graphite".equals(name);
         }
 
         public boolean isLight() {
@@ -153,6 +160,7 @@ public class Theme {
             return themeInfo;
         }
     }
+
 
     private static final Object sync = new Object();
     private static final Object wallpaperSync = new Object();
@@ -1172,6 +1180,403 @@ public class Theme {
     private static HashMap<String, Integer> currentColors;
     private static HashMap<String, Integer> animatingColors;
 
+    private static final String[] accentColorKeys = new String[]{
+            key_chat_unreadMessagesStartText,
+            key_radioBackgroundChecked,
+            key_dialogTextBlue,
+            key_dialogRoundCheckBox,
+            key_actionBarTabLine,
+            key_windowBackgroundWhiteBlueIcon,
+            key_chat_inSentClockSelected,
+            key_chat_goDownButtonCounterBackground,
+            key_dialogCheckboxSquareBackground,
+            key_dialogTextGray,
+            key_dialogRadioBackgroundChecked,
+            key_picker_badge,
+            key_profile_actionPressedBackground,
+            key_chat_topPanelTitle,
+            key_chat_inPreviewInstantSelectedText,
+            key_chat_outContactIcon,
+            key_chat_inPreviewLine,
+            key_location_sendLocationBackground,
+            key_profile_creatorIcon,
+            key_profile_actionBackground,
+            key_chats_sentCheck,
+            key_chat_inAudioSeekbarFill,
+            key_chats_nameMessage,
+            key_progressCircle,
+            key_chat_inContactBackground,
+            key_chat_outBubbleShadow,
+            key_chat_outFileProgressSelected,
+            key_chats_menuCloudBackgroundCats,
+            key_chats_verifiedBackground,
+            key_windowBackgroundWhiteBlueButton,
+            key_chat_inViaBotNameText,
+            key_picker_enabledButton,
+            key_chats_menuTopShadowCats,
+            key_musicPicker_buttonBackground,
+            key_avatar_nameInMessageBlue,
+            key_chats_menuTopShadow,
+            key_chats_unreadCounter,
+            key_inappPlayerPlayPause,
+            key_chat_replyPanelIcons,
+            key_featuredStickers_addedIcon,
+            key_musicPicker_checkbox,
+            key_chat_attachSendBackground,
+            key_chat_emojiPanelNewTrending,
+            key_dialogBadgeBackground,
+            key_chat_outBubbleSelected,
+            key_avatar_backgroundInProfileBlue,
+            key_dialogTextLink,
+            key_chat_inInstantSelected,
+            key_chat_status,
+            key_windowBackgroundWhiteBlueHeader,
+            key_chat_messagePanelVoiceBackground,
+            key_switchTrackBlueChecked,
+            key_fastScrollActive,
+            key_profile_status,
+            key_chat_selectedBackground,
+            key_chat_recordedVoiceBackground,
+            key_chat_topPanelLine,
+            key_chats_actionMessage,
+            key_chat_addContact,
+            key_switchTrackChecked,
+            key_chat_inLoader,
+            key_dialogButton,
+            key_chat_inlineResultIcon,
+            key_dialogLineProgress,
+            key_chat_outBubble,
+            key_chat_inLoaderSelected,
+            key_chat_inBubbleShadow,
+            key_chat_outAudioProgress,
+            key_dialogProgressCircle,
+            key_player_progress,
+            key_chat_inReplyLine,
+            key_chat_textSelectBackground,
+            key_chat_inReplyNameText,
+            key_player_buttonActive,
+            key_chat_outAudioSelectedProgress,
+            key_chat_inInstant,
+            key_groupcreate_cursor,
+            key_windowBackgroundWhiteBlueText7,
+            key_avatar_backgroundSaved,
+            key_returnToCallBackground,
+            key_windowBackgroundWhiteBlueText3,
+            key_chat_fieldOverlayText,
+            key_windowBackgroundWhiteBlueText5,
+            key_windowBackgroundWhiteBlueText4,
+            key_chat_messagePanelSend,
+            key_avatar_backgroundBlue,
+            key_windowBackgroundWhiteLinkSelection,
+            key_chat_outMediaIcon,
+            key_chats_sentClock,
+            key_chat_botSwitchToInlineText,
+            key_dialogFloatingButton,
+            key_chats_archiveBackground,
+            key_chat_inPreviewInstantText,
+            key_dialogTextBlue2,
+            key_dialogTextBlue3,
+            key_dialogTextBlue4,
+            key_actionBarTabActiveText,
+            key_chat_emojiPanelBadgeBackground,
+            key_chat_inForwardedNameText,
+            key_chats_actionBackground,
+            key_chat_inVoiceSeekbarFill,
+            key_chat_inSiteNameText,
+            key_chat_linkSelectBackground,
+            key_windowBackgroundWhiteBlueText,
+            key_chat_outFileProgress,
+            key_chats_actionPressedBackground,
+            key_switch2TrackChecked,
+            key_contextProgressOuter1,
+            key_chat_replyPanelName,
+            key_contextProgressOuter2,
+            key_chat_outMediaIconSelected,
+            key_windowBackgroundWhiteValueText,
+            key_windowBackgroundWhiteLinkText,
+            key_chat_messageLinkIn,
+            key_chats_attachMessage
+    };
+
+    private static final String[] accentTintColorKeys = new String[]{
+            key_chat_inVoiceSeekbarSelected,
+            key_chat_messageLinkOut,
+            key_chat_outViews,
+            key_chat_outFileInfoSelectedText,
+            key_chat_outAudioDurationSelectedText,
+            key_chat_inAudioCacheSeekbar,
+            key_chat_inFileInfoText,
+            key_chat_inAudioSelectedProgress,
+            key_chat_outVenueInfoSelectedText,
+            key_player_time,
+            key_chat_outTimeSelectedText,
+            key_chat_inTimeSelectedText,
+            key_chat_outFileBackgroundSelected,
+            key_chat_outVoiceSeekbarSelected,
+            key_chat_outVoiceSeekbar,
+            key_chat_outFileIcon,
+            key_windowBackgroundWhiteGrayText,
+            key_chat_inContactPhoneSelectedText,
+            key_actionBarDefaultSelector,
+            key_chat_serviceBackgroundSelected,
+            key_chat_inVenueInfoText,
+            key_chat_outSentClockSelected,
+            key_chat_inReplyMediaMessageSelectedText,
+            key_chat_outFileBackground,
+            key_chat_outFileInfoText,
+            key_chat_outContactPhoneSelectedText,
+            key_chat_inFileInfoSelectedText,
+            key_chat_wallpaper,
+            key_chat_outMenuSelected,
+            key_chat_outLoaderPhotoSelected,
+            key_actionBarDefaultIcon,
+            key_chat_outSentCheck,
+            key_graySectionText,
+            key_avatar_actionBarSelectorBlue,
+            key_chat_outFileSelectedIcon,
+            key_chat_adminSelectedText,
+            key_actionBarDefaultSubtitle,
+            key_contextProgressInner2,
+            key_chat_inContactPhoneText,
+            key_avatar_actionBarIconBlue,
+            key_chat_outTimeText,
+            key_chat_inMenuSelected,
+            key_actionBarDefaultArchivedTitle,
+            key_chats_menuTopBackgroundCats,
+            key_chat_outReplyMediaMessageText,
+            key_dialogLineProgressBackground,
+            key_actionBarTabSelector,
+            key_chat_outLocationBackground,
+            key_chat_inViewsSelected,
+            key_chat_inSentClock,
+            key_chat_outLoaderPhoto,
+            key_chat_outAudioCacheSeekbar,
+            key_chat_outSentCheckSelected,
+            key_chat_inVenueInfoSelectedText,
+            key_chats_archivePinBackground,
+            key_chat_inAudioDurationSelectedText,
+            key_chat_outAudioSeekbarSelected,
+            key_chat_outLoaderPhotoIconSelected,
+            key_chat_outAudioSeekbar,
+            key_chat_inVoiceSeekbar,
+            key_chat_outAudioDurationText,
+            key_chat_outMenu,
+            key_chat_outVenueInfoText,
+            key_chat_outReplyMediaMessageSelectedText,
+            key_chat_outContactPhoneText,
+            key_chat_inAudioTitleText,
+            key_actionBarDefaultArchivedIcon,
+            key_chat_serviceBackground,
+            key_chat_inBubbleSelected,
+            key_chat_outSentClock
+    };
+
+    private static String[] darkThemeSecondaryColorKeys = new String[]{
+            key_chat_inFileBackgroundSelected,
+            key_chat_outViews,
+            key_chat_inAudioSelectedProgress,
+            key_chat_outAudioSeekbarFill,
+            key_chat_outVoiceSeekbar,
+            key_chat_outFileIcon,
+            key_passport_authorizeBackgroundSelected,
+            key_windowBackgroundWhiteInputFieldActivated,
+            key_chat_outFileSelectedIcon,
+            key_chats_onlineCircle,
+            key_passport_authorizeBackground,
+            key_chat_outLoaderPhoto,
+            key_avatar_backgroundGroupCreateSpanBlue,
+            key_dialogLinkSelection,
+            key_avatar_nameInMessageCyan,
+            key_chat_searchPanelIcons,
+            key_chat_inAudioSeekbarSelected,
+            key_chat_outVenueInfoText,
+            key_chat_outContactPhoneText,
+            key_actionBarActionModeDefaultSelector,
+            key_chat_inVoiceSeekbarSelected,
+            key_chat_attachCameraIcon3,
+            key_chat_emojiPanelIconSelected,
+            key_checkboxSquareBackground,
+            key_chat_outFileBackgroundSelected,
+            key_chat_outVoiceSeekbarSelected,
+            key_sharedMedia_startStopLoadIcon,
+            key_chat_outFileBackground,
+            key_chat_outFileInfoText,
+            key_chat_outMenuSelected,
+            key_chat_outLoaderPhotoSelected,
+            key_dialogInputFieldActivated,
+            key_chat_outTimeText,
+            key_chat_attachFileBackground,
+            key_chat_outReplyMediaMessageText,
+            key_chat_outLoaderPhotoIcon,
+            key_chat_outContactBackground,
+            key_chat_outLocationBackground,
+            key_windowBackgroundWhiteBlueText2,
+            key_chat_inViewsSelected,
+            key_chat_attachContactBackground,
+            key_chat_outAudioCacheSeekbar,
+            key_chat_outLoaderSelected,
+            key_chat_outAudioSeekbarSelected,
+            key_chat_inLoaderPhotoSelected,
+            key_chat_outAudioSeekbar,
+            key_profile_verifiedBackground,
+            key_chat_outLoader,
+            key_chat_outAudioDurationText,
+            key_chat_outMenu,
+            key_chat_inFileSelectedIcon,
+            key_chat_outSentClock,
+            key_chat_searchPanelText
+    };
+
+    private static String[] darkThemeAdditionalAccentColorKeys = new String[]{
+            key_chats_menuPhone,
+            key_chat_outViaBotNameText,
+            key_chat_inFileProgressSelected,
+            key_chat_outPreviewLine,
+            key_dialogScrollGlow,
+            key_chat_emojiPanelStickerPackSelector,
+            key_contextProgressInner1,
+            key_chat_inLoaderPhotoIconSelected,
+            key_chat_outPreviewInstantText,
+            key_chat_outLocationIcon,
+            key_chat_outViewsSelected,
+            key_chat_outInstant,
+            key_chat_outForwardedNameText,
+            key_chat_emojiPanelTrendingTitle,
+            key_chat_outSiteNameText,
+            key_chat_outVoiceSeekbarFill,
+            key_chat_outReplyLine,
+            key_switchTrackBlueSelectorChecked,
+            key_switchTrackBlueSelector,
+            key_chat_outPreviewInstantSelectedText,
+            key_chat_outReplyNameText,
+    };
+
+    private static String[] darkBackgroundTintColorKeys = new String[]{
+            key_windowBackgroundChecked,
+            key_actionBarActionModeDefault,
+            key_actionBarActionModeDefaultTop,
+            key_chat_secretChatStatusText,
+            key_switchTrack,
+            key_actionBarDefaultSubmenuBackground,
+            key_switchTrackBlueThumb,
+            key_emptyListPlaceholder,
+            key_actionBarDefaultArchived,
+            key_chat_messagePanelCancelInlineBot,
+            key_dialogSearchBackground,
+            key_chat_botKeyboardButtonBackgroundPressed,
+            key_changephoneinfo_image,
+            key_chat_inContactNameText,
+            key_chats_menuPhoneCats,
+            key_chat_messagePanelHint,
+            key_windowBackgroundGray,
+            key_dialogGrayLine,
+            key_chats_nameMessage_threeLines,
+            key_dialogIcon,
+            key_chat_emojiPanelEmptyText,
+            key_chat_emojiPanelBackspace,
+            key_chat_replyPanelClose,
+            key_chat_emojiPanelBackground,
+            key_groupcreate_hintText,
+            key_dialogCheckboxSquareUnchecked,
+            key_chat_inBubble,
+            key_chat_unreadMessagesStartArrowIcon,
+            key_avatar_backgroundActionBarBlue,
+            key_files_folderIconBackground,
+            key_dialogInputField,
+            key_chat_outInstantSelected,
+            key_player_placeholder,
+            key_picker_disabledButton,
+            key_groupcreate_spanBackground,
+            key_location_liveLocationProgress,
+            key_stickers_menu,
+            key_dialogBackground,
+            key_checkboxSquareUnchecked,
+            key_dialogCheckboxSquareDisabled,
+            key_player_actionBar,
+            key_chats_nameIcon,
+            key_chats_nameMessageArchived,
+            key_chats_pinnedIcon,
+            key_chat_replyPanelLine,
+            key_dialogSearchHint,
+            key_switchTrackBlueThumbChecked,
+            key_chat_emojiPanelIcon,
+            key_chat_topPanelMessage,
+            key_chat_emojiPanelTrendingDescription,
+            key_windowBackgroundWhiteInputField,
+            key_chat_inLocationBackground,
+            key_radioBackground,
+            key_chat_inFileIcon,
+            key_dialogTextGray3,
+            key_dialogTextGray2,
+            key_dialogTextGray4,
+            key_chats_menuBackground,
+            key_chat_inFileBackground,
+            key_chat_stickersHintPanel,
+            key_windowBackgroundWhite,
+            key_avatar_backgroundArchived,
+            key_undo_background,
+            key_dialogTextHint,
+            key_avatar_subtitleInProfileBlue,
+            key_chats_unreadCounterMuted,
+            key_chat_messagePanelIcons,
+            key_chat_inReplyMediaMessageText,
+            key_inappPlayerTitle,
+            key_chat_botKeyboardButtonBackground,
+            key_chats_menuItemIcon,
+            key_files_folderIcon,
+            key_switchTrackBlue,
+            key_chat_topPanelClose,
+            key_windowBackgroundWhiteGrayIcon,
+            key_inappPlayerBackground,
+            key_actionBarDefault,
+            key_location_placeLocationBackground,
+            key_windowBackgroundUnchecked,
+            key_checkboxSquareDisabled,
+            key_fastScrollInactive,
+            key_chat_goDownButtonCounter,
+            key_chats_name,
+            key_chat_unreadMessagesStartBackground,
+            key_chat_inLoaderPhoto,
+            key_chat_muteIcon,
+            key_chat_inAudioDurationText,
+            key_chat_secretTimeText,
+            key_groupcreate_sectionText,
+            key_player_placeholderBackground,
+            key_windowBackgroundWhiteHintText,
+            key_player_actionBarSelector,
+            key_chat_attachHideBackground,
+            key_chats_message,
+            key_chats_date,
+            key_sharedMedia_linkPlaceholder,
+            key_chat_replyPanelMessage,
+            key_player_background,
+            key_inappPlayerClose,
+            key_chats_message_threeLines,
+            key_player_actionBarSubtitle,
+            key_chat_inAudioSeekbar,
+            key_dialogSearchIcon,
+            key_dialog_liveLocationProgress,
+            key_chat_inViews,
+            key_player_progressBackground,
+            key_windowBackgroundWhiteGrayText2,
+            key_player_actionBarTop,
+            key_windowBackgroundWhiteGrayText8,
+            key_windowBackgroundWhiteGrayText5,
+            key_windowBackgroundWhiteGrayText6,
+            key_windowBackgroundWhiteGrayText3,
+            key_windowBackgroundWhiteGrayText4,
+            key_chat_inTimeText,
+            key_dialogRadioBackground,
+            key_chat_messagePanelBackground,
+            key_graySection,
+            key_chats_muteIcon,
+            key_chat_goDownButton,
+            key_chat_inMenu,
+            key_chat_recordVoiceCancel,
+            key_chat_topPanelBackground,
+            key_dialogBackgroundGray
+    };
+
     static {
         defaultColors.put(key_dialogBackground, 0xffffffff);
         defaultColors.put(key_dialogBackgroundGray, 0xfff0f0f0);
@@ -1899,6 +2304,8 @@ public class Theme {
         themesDict = new HashMap<>();
         currentColors = new HashMap<>();
 
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+
         ThemeInfo themeInfo = new ThemeInfo();
         themeInfo.name = "Default";
         themeInfo.previewBackgroundColor = 0xffcfd9e3;
@@ -1914,7 +2321,10 @@ public class Theme {
         themeInfo.previewBackgroundColor = 0xff5a5d61;
         themeInfo.previewInColor = 0xff747a84;
         themeInfo.previewOutColor = 0xff82a8e3;
+        themeInfo.defaultAccentColor = 0xff3e6588;
         themeInfo.sortIndex = 3;
+        themeInfo.hasAccentColor = true;
+        themeInfo.accentColor = preferences.getInt("theme_accent_color_" + themeInfo.name, themeInfo.defaultAccentColor);
         themes.add(themeInfo);
         themesDict.put("Dark", themeInfo);
 
@@ -1929,14 +2339,17 @@ public class Theme {
         themesDict.put("Blue", themeInfo);
 
         themeInfo = new ThemeInfo();
-        themeInfo.name = "Dark Blue";
+        themeInfo.name = "Dark Tint";
         themeInfo.assetName = "darkblue.attheme";
         themeInfo.previewBackgroundColor = 0xff5f6e82;
         themeInfo.previewInColor = 0xff76869c;
         themeInfo.previewOutColor = 0xff82a8e3;
         themeInfo.sortIndex = 2;
+        themeInfo.defaultAccentColor = 0xff3e618a;
+        themeInfo.hasAccentColor = true;
+        themeInfo.accentColor = preferences.getInt("theme_accent_color_" + themeInfo.name, themeInfo.defaultAccentColor);
         themes.add(themeInfo);
-        themesDict.put("Dark Blue", currentNightTheme = themeInfo);
+        themesDict.put("Dark Tint", currentNightTheme = themeInfo);
 
         if (BuildVars.DEBUG_VERSION) {
             themeInfo = new ThemeInfo();
@@ -1951,16 +2364,19 @@ public class Theme {
         }
 
         themeInfo = new ThemeInfo();
-        themeInfo.name = "Arctic Blue";
+        themeInfo.name = "Arctic";
         themeInfo.assetName = "arctic.attheme";
         themeInfo.previewBackgroundColor = 0xffffffff;
         themeInfo.previewInColor = 0xffebeef4;
         themeInfo.previewOutColor = 0xff7cb2fe;
+        themeInfo.defaultAccentColor = 0xff3490eb;
+        themeInfo.accentColor = preferences.getInt("theme_accent_color_" + themeInfo.name, themeInfo.defaultAccentColor);
         themeInfo.sortIndex = 5;
+        themeInfo.hasAccentColor = true;
         themes.add(themeInfo);
-        themesDict.put("Arctic Blue", themeInfo);
+        themesDict.put("Arctic", themeInfo);
 
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
+        preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
         String themesString = preferences.getString("themes2", null);
         if (!TextUtils.isEmpty(themesString)) {
             try {
@@ -2495,7 +2911,7 @@ public class Theme {
 
     public static ThemeInfo applyThemeFile(File file, String themeName, boolean temporary) {
         try {
-            if (themeName.equals("Default") || themeName.equals("Dark") || themeName.equals("Blue") || themeName.equals("Dark Blue") || themeName.equals("Graphite") || themeName.equals("Arctic Blue")) {
+            if (themeName.equals("Default") || themeName.equals("Dark") || themeName.equals("Blue") || themeName.equals("Dark Tint") || themeName.equals("Graphite") || themeName.equals("Arctic")) {
                 return null;
             }
             File finalFile = new File(ApplicationLoader.getFilesDirFixed(), themeName);
@@ -2557,12 +2973,18 @@ public class Theme {
                     if (removeWallpaperOverride) {
                         editor.remove("overrideThemeWallpaper");
                     }
+                    if (themeInfo.hasAccentColor && themeInfo.accentColor != themeInfo.defaultAccentColor) {
+                        editor.putInt("theme_accent_color_" + themeInfo.name, themeInfo.accentColor);
+                    }
                     editor.commit();
                 }
                 if (themeInfo.assetName != null) {
                     currentColors = getThemeFileValues(null, themeInfo.assetName);
                 } else {
                     currentColors = getThemeFileValues(new File(themeInfo.pathToFile), null);
+                }
+                if (themeInfo.hasAccentColor && themeInfo.accentColor != themeInfo.defaultAccentColor) {
+                    overrideColorsToAccent(themeInfo, currentColors, themeInfo.defaultAccentColor, themeInfo.accentColor);
                 }
             } else {
                 if (!nightTheme && save) {
@@ -2919,7 +3341,7 @@ public class Theme {
         return file;
     }
 
-    private static HashMap<String, Integer> getThemeFileValues(File file, String assetName) {
+    public static HashMap<String, Integer> getThemeFileValues(File file, String assetName) {
         FileInputStream stream = null;
         HashMap<String, Integer> stringMap = new HashMap<>();
         try {
@@ -4242,5 +4664,142 @@ public class Theme {
 
     public static boolean isPatternWallpaper() {
         return isPatternWallpaper;
+    }
+
+    public static void applyAccentColor(int color, HashMap<String, Integer> themeColors) {
+        if (!currentTheme.hasAccentColor) return;
+        currentTheme.accentColor = color;
+
+        currentColors.clear();
+        currentColors.putAll(themeColors);
+
+        overrideColorsToAccent(currentTheme, currentColors, currentTheme.defaultAccentColor, color);
+
+        reloadWallpaper();
+        applyCommonTheme();
+        applyDialogsTheme();
+        applyProfileTheme();
+        applyChatTheme(false);
+    }
+
+    public static void saveAccentColor(int color) {
+        if(!currentTheme.hasAccentColor) return;
+        currentTheme.accentColor = color;
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, currentTheme, false);
+    }
+
+    private static class AccentColorParams {
+        float[] hslAccent;
+        int accentColor;
+        float accentBrightness;
+        int defaultAccentColor;
+        boolean isDarkTheme;
+    }
+
+    private static void overrideColorsToAccent(ThemeInfo themeInfo, HashMap<String, Integer> currentColors, int defaultAccentColor, int accentColor) {
+        AccentColorParams params = new AccentColorParams();
+        params.isDarkTheme = themeInfo.isDark();
+        params.defaultAccentColor = defaultAccentColor;
+        params.accentColor = accentColor;
+        params.hslAccent = new float[3];
+        ColorUtils.colorToHSL(accentColor, params.hslAccent);
+        params.accentBrightness = (float) Math.sqrt(
+                Color.red(accentColor) * Color.red(accentColor) * 0.241f +
+                        Color.green(accentColor) * Color.green(accentColor) * 0.691f +  Color.blue(accentColor) * Color.blue(accentColor) * 0.068f);
+        int primaryTextColor = Color.WHITE;
+        int secondaryTextColor = ColorUtils.blendARGB(accentColor, primaryTextColor, 0.4f + 0.6f * params.accentBrightness / 255f);
+        for(int i = 0; i < accentColorKeys.length; i++){
+            String key = accentColorKeys[i];
+            if(!currentColors.containsKey(key)) continue;
+            currentColors.put(key, transformColorToAccent(params,currentColors.get(key)));
+        }
+        for(int i = 0; i < accentTintColorKeys.length; i++){
+            String key = accentTintColorKeys[i];
+            if(!currentColors.containsKey(key)) continue;
+            currentColors.put(key, transformColorToAccent(params,currentColors.get(key)));
+        }
+        if(themeInfo.isDark()) {
+            int secondaryColor = ColorUtils.blendARGB(accentColor, params.accentBrightness > 200f ? Color.BLACK : Color.WHITE, 0.2f + 0.4f * params.accentBrightness / 255f);
+            for(int i = 0; i < darkThemeSecondaryColorKeys.length; i++){
+                String key = darkThemeSecondaryColorKeys[i];
+                if(!currentColors.containsKey(key)) continue;
+                int color = currentColors.get(key);
+                currentColors.put(key, ColorUtils.setAlphaComponent(secondaryColor, color >>> 24));
+            }
+            for(int i = 0; i < darkThemeAdditionalAccentColorKeys.length; i++){
+                String key = darkThemeAdditionalAccentColorKeys[i];
+                if(!currentColors.containsKey(key)) continue;
+                currentColors.put(key, transformColorToAccent(params,currentColors.get(key)));
+            }
+            if (params.accentBrightness / 255 > 0.75f) {
+                int darkColor = ColorUtils.blendARGB(accentColor, Color.BLACK, 0.2f + 0.4f * params.accentBrightness / 255f);
+                currentColors.put(key_profile_actionIcon, darkColor);
+                currentColors.put(key_chat_inMediaIcon, darkColor);
+                currentColors.put(key_chat_unreadMessagesStartText,darkColor);
+            }
+        }
+        if (themeInfo.name.equals("Dark Tint")) {
+            for (int i = 0; i < darkBackgroundTintColorKeys.length; i++) {
+                String key = darkBackgroundTintColorKeys[i];
+                if (!currentColors.containsKey(key)) continue;
+                currentColors.put(key, transformColorToAccent(params, currentColors.get(key)));
+            }
+        }
+
+        currentColors.put(key_chat_messageTextOut, primaryTextColor);
+        currentColors.put(key_chat_outSentCheckSelected, secondaryTextColor);
+        currentColors.put(key_chat_outSentCheck, secondaryTextColor);
+        currentColors.put(key_chat_outTimeText, secondaryTextColor);
+    }
+
+    private static int transformColorToAccent(AccentColorParams params, int color) {
+        float[] hslTmp = ColorUtilities.hslTmp;
+        float[] hsvTmp = ColorUtilities.hsvTmp;
+        float[] hsvTmp2 = ColorUtilities.hsvTmp2;
+
+        ColorUtils.colorToHSL(color, hslTmp);
+        hslTmp[0] = params.hslAccent[0];
+        if (hslTmp[1] > 0.35f && hslTmp[2] < 0.75f) {
+            Color.colorToHSV(color, hsvTmp);
+            Color.colorToHSV(params.defaultAccentColor, hsvTmp2);
+            float dif = hsvTmp2[1] - hslTmp[1];
+            Color.colorToHSV(params.accentColor, hsvTmp);
+            float k = params.isDarkTheme ? params.accentBrightness / 255f : (1f - params.accentBrightness / 255f);
+            hsvTmp[2] = clamp(hsvTmp[2] - dif * k,0f,1f);
+
+            ColorUtils.colorToHSL(Color.HSVToColor(hsvTmp), hslTmp);
+        } else {
+            hslTmp[1] *= params.accentBrightness / 255f;
+        }
+        if (Color.red(params.accentColor) == Color.blue(params.accentColor) && Color.blue(params.accentColor) == Color.green(params.accentColor)) {
+            hslTmp[1] = 0;
+        }
+        clamp(hslTmp[1], 0, 1f);
+        clamp(hslTmp[2], 0, 1f);
+        return ColorUtils.setAlphaComponent(ColorUtils.HSLToColor(hslTmp), color >>> 24);
+    }
+
+    private static float clamp(float val, float min, float max) {
+        return Math.max(min, Math.min(max, val));
+    }
+
+    public static HashMap<String, Integer> getThemeColors(ThemeInfo themeInfo) {
+        if(themeInfo == getCurrentTheme()){
+            return currentColors;
+        } else if(themeInfo.pathToFile == null && themeInfo.assetName == null) {
+            return defaultColors;
+        }
+
+        HashMap<String,Integer> colors;
+        if (themeInfo.assetName != null) {
+            colors = getThemeFileValues(null, themeInfo.assetName);
+        } else {
+            colors = getThemeFileValues(new File(themeInfo.pathToFile), null);
+        }
+        if (themeInfo.hasAccentColor && themeInfo.accentColor != themeInfo.defaultAccentColor) {
+            overrideColorsToAccent(themeInfo, colors, themeInfo.defaultAccentColor, themeInfo.accentColor);
+        }
+
+        return colors;
     }
 }

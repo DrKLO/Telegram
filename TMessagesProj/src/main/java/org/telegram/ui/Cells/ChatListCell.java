@@ -39,7 +39,7 @@ public class ChatListCell extends LinearLayout {
                 @Override
                 public void invalidate() {
                     super.invalidate();
-                    ListView.this.invalidate();
+                    //remove endless redraw
                 }
             };
             button.setSize(AndroidUtilities.dp(20));

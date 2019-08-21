@@ -109,6 +109,7 @@ public class BottomSheet extends Dialog {
     protected AnimatorSet currentSheetAnimation;
 
     protected View nestedScrollChild;
+    private int softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
 
     protected class ContainerView extends FrameLayout implements NestedScrollingParent {
 
@@ -661,7 +662,7 @@ public class BottomSheet extends Dialog {
         params.dimAmount = 0;
         params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
         if (focusable) {
-            params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
+            params.softInputMode = softInputMode;
         } else {
             params.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
         }
@@ -693,7 +694,7 @@ public class BottomSheet extends Dialog {
     public void show() {
         super.show();
         if (focusable) {
-            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+            getWindow().setSoftInputMode(softInputMode);
         }
         dismissed = false;
         cancelSheetAnimation();
@@ -1090,6 +1091,11 @@ public class BottomSheet extends Dialog {
         public BottomSheet setUseFullscreen(boolean value) {
             bottomSheet.isFullscreen = value;
             return bottomSheet;
+        }
+
+        public Builder setSoftInputAdjustMode(int mode){
+            bottomSheet.softInputMode = mode;
+            return this;
         }
     }
 
