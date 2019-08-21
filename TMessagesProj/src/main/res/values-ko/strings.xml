@@ -1179,7 +1179,6 @@
     <string name="AutoNightBrightness">밝기 경계</string>
     <string name="AutoNightBrightnessInfo">주변 밝기가 %1$d%% 아래일 때 선호하시는 야간 테마로 전환합니다.</string>
     <string name="ThemeDark">다크</string>
-    <string name="ThemeDarkBlue">검푸른색</string>
     <string name="ThemeGraphite">흑연색</string>
     <string name="ThemeArcticBlue">북극 파랑</string>
     <string name="ThemeBlue">파랑</string>

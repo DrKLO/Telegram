@@ -1179,7 +1179,6 @@
     <string name="AutoNightBrightness">Helligkeitsgrenze</string>
     <string name="AutoNightBrightnessInfo">Zum Nachtthema wechseln, wenn die Umgebungshelligkeit weniger als %1$d%% beträgt.</string>
     <string name="ThemeDark">Dunkel</string>
-    <string name="ThemeDarkBlue">Dunkel (Blau)</string>
     <string name="ThemeGraphite">Graphit</string>
     <string name="ThemeArcticBlue">Arktisblau</string>
     <string name="ThemeBlue">Blau</string>

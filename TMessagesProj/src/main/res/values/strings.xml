@@ -1179,7 +1179,7 @@
     <string name="AutoNightBrightness">Brightness threshold</string>
     <string name="AutoNightBrightnessInfo">Switch to your preferred night theme when ambient lighting falls below %1$d%%.</string>
     <string name="ThemeDark">Dark</string>
-    <string name="ThemeDarkBlue">Dark Blue</string>
+    <string name="ThemeDarkTint">Dark Tint</string>
     <string name="ThemeGraphite">Graphite</string>
     <string name="ThemeArcticBlue">Arctic Blue</string>
     <string name="ThemeBlue">Blue</string>

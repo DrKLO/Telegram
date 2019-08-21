@@ -1179,7 +1179,6 @@
     <string name="AutoNightBrightness">Nivel de luminosidad</string>
     <string name="AutoNightBrightnessInfo">Cambia a tu tema nocturno preferido cuando la luminosidad del entorno sea menor a un %1$d%%.</string>
     <string name="ThemeDark">Oscuro</string>
-    <string name="ThemeDarkBlue">Azul oscuro</string>
     <string name="ThemeGraphite">Grafito</string>
     <string name="ThemeArcticBlue">Azul ártico</string>
     <string name="ThemeBlue">Azul</string>

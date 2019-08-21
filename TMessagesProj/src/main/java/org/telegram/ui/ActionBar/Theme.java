@@ -43,7 +43,6 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.StateSet;
 
 import androidx.core.graphics.ColorUtils;
@@ -114,7 +113,7 @@ public class Theme {
             } else if ("Dark".equals(name)) {
                 return LocaleController.getString("ThemeDark", R.string.ThemeDark);
             } else if ("Dark Tint".equals(name)) {
-                return LocaleController.getString("ThemeDarkBlue", R.string.ThemeDarkBlue);
+                return LocaleController.getString("ThemeDarkTint", R.string.ThemeDarkTint);
             } else if ("Graphite".equals(name)) {
                 return LocaleController.getString("ThemeGraphite", R.string.ThemeGraphite);
             } else if ("Arctic".equals(name)) {

@@ -1179,7 +1179,6 @@
     <string name="AutoNightBrightness">مؤشر السطوع</string>
     <string name="AutoNightBrightnessInfo">قم بالتبديل للنمط الليلي عند انخفاض الإضاءة المحيطة إلى %1$d%% أو أقل.</string>
     <string name="ThemeDark">مظلم</string>
-    <string name="ThemeDarkBlue">أزرق غامق</string>
     <string name="ThemeGraphite">غرافيت</string>
     <string name="ThemeArcticBlue">ثلجي</string>
     <string name="ThemeBlue">أزرق</string>
