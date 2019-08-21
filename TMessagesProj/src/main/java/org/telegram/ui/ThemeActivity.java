@@ -549,8 +549,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 }
                 hasCustomThemes = true;
             }
-
-
             Collections.sort(defaultThemes, (o1, o2) -> {
                 if (o1.sortIndex > o2.sortIndex) {
                     return 1;
@@ -568,15 +566,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             themeListRow = rowCount++;
 
             themeHasAccentColor = Theme.getCurrentTheme().hasAccentColor;
-            if (themeHasAccentColor) {
-                themeAccentColorsRow = rowCount++;
-            }
+            if (themeHasAccentColor) themeAccentColorsRow = rowCount++;
+            if (hasCustomThemes) showThemesRows = rowCount++;
 
-            if (hasCustomThemes) {
-                showThemesRows = rowCount++;
-            }
+
             themeInfoRow = rowCount++;
-
             chatListHeaderRow = rowCount++;
             chatListRow = rowCount++;
             chatListInfoRow = rowCount++;
