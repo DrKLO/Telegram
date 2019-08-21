@@ -71,9 +71,11 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class Theme {
 
@@ -86,6 +88,12 @@ public class Theme {
         public int previewInColor;
         public int previewOutColor;
         public int sortIndex;
+
+        public int[] accentColorOptions;
+        public int accentBaseColor;
+        public int accentColor;
+        final float[] accentBaseColorHsv = new float[3];
+        final float[] accentColorHsv = new float[3];
 
         public JSONObject getSaveJson() {
             try {
@@ -104,10 +112,8 @@ public class Theme {
                 return LocaleController.getString("Default", R.string.Default);
             } else if ("Blue".equals(name)) {
                 return LocaleController.getString("ThemeBlue", R.string.ThemeBlue);
-            } else if ("Dark".equals(name)) {
-                return LocaleController.getString("ThemeDark", R.string.ThemeDark);
             } else if ("Dark Blue".equals(name)) {
-                return LocaleController.getString("ThemeDarkBlue", R.string.ThemeDarkBlue);
+                return LocaleController.getString("ThemeDark", R.string.ThemeDark);
             } else if ("Graphite".equals(name)) {
                 return LocaleController.getString("ThemeGraphite", R.string.ThemeGraphite);
             } else if ("Arctic Blue".equals(name)) {
@@ -117,7 +123,7 @@ public class Theme {
         }
 
         public boolean isDark() {
-            return "Dark".equals(name) || "Dark Blue".equals(name) || "Graphite".equals(name);
+            return "Dark Blue".equals(name) || "Graphite".equals(name);
         }
 
         public boolean isLight() {
@@ -151,6 +157,18 @@ public class Theme {
             themeInfo.name = args[0];
             themeInfo.pathToFile = args[1];
             return themeInfo;
+        }
+
+        void setAccentColorOptions(int[] options) {
+            accentColorOptions = options;
+            accentBaseColor = options[0];
+            Color.colorToHSV(accentBaseColor, accentBaseColorHsv);
+            setAccentColor(accentBaseColor);
+        }
+
+        void setAccentColor(int color) {
+            accentColor = color;
+            Color.colorToHSV(accentColor, accentColorHsv);
         }
     }
 
@@ -962,6 +980,7 @@ public class Theme {
     public static final String key_chat_messagePanelShadow = "chat_messagePanelShadow";
     public static final String key_chat_messagePanelText = "chat_messagePanelText";
     public static final String key_chat_messagePanelHint = "chat_messagePanelHint";
+    public static final String key_chat_messagePanelCursor = "chat_messagePanelCursor";
     public static final String key_chat_messagePanelIcons = "chat_messagePanelIcons";
     public static final String key_chat_messagePanelSend = "chat_messagePanelSend";
     public static final String key_chat_messagePanelVoiceLock = "key_chat_messagePanelVoiceLock";
@@ -1169,8 +1188,12 @@ public class Theme {
 
     private static HashMap<String, Integer> defaultColors = new HashMap<>();
     private static HashMap<String, String> fallbackKeys = new HashMap<>();
+    private static HashSet<String> themeAccentExclusionKeys = new HashSet<>();
+    private static HashMap<String, Integer> currentColorsNoAccent;
     private static HashMap<String, Integer> currentColors;
     private static HashMap<String, Integer> animatingColors;
+
+    private static float[] hsv = new float[3];
 
     static {
         defaultColors.put(key_dialogBackground, 0xffffffff);
@@ -1642,6 +1665,7 @@ public class Theme {
         defaultColors.put(key_chat_messagePanelBackground, 0xffffffff);
         defaultColors.put(key_chat_messagePanelText, 0xff000000);
         defaultColors.put(key_chat_messagePanelHint, 0xffa4acb3);
+        defaultColors.put(key_chat_messagePanelCursor, 0xff54a1db);
         defaultColors.put(key_chat_messagePanelShadow, 0xff000000);
         defaultColors.put(key_chat_messagePanelIcons, 0xff8e959b);
         defaultColors.put(key_chat_recordedVoicePlayPause, 0xffffffff);
@@ -1894,9 +1918,15 @@ public class Theme {
         fallbackKeys.put(key_profile_status, key_avatar_subtitleInProfileBlue);
         fallbackKeys.put(key_chats_menuTopBackgroundCats, key_avatar_backgroundActionBarBlue);
 
+        themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_background));
+        themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_nameInMessage));
+        themeAccentExclusionKeys.add(key_chat_attachFileBackground);
+        themeAccentExclusionKeys.add(key_chat_attachContactBackground);
+
         themes = new ArrayList<>();
         otherThemes = new ArrayList<>();
         themesDict = new HashMap<>();
+        currentColorsNoAccent = new HashMap<>();
         currentColors = new HashMap<>();
 
         ThemeInfo themeInfo = new ThemeInfo();
@@ -1907,16 +1937,6 @@ public class Theme {
         themeInfo.sortIndex = 0;
         themes.add(currentDayTheme = currentTheme = defaultTheme = themeInfo);
         themesDict.put("Default", defaultTheme);
-
-        themeInfo = new ThemeInfo();
-        themeInfo.name = "Dark";
-        themeInfo.assetName = "dark.attheme";
-        themeInfo.previewBackgroundColor = 0xff5a5d61;
-        themeInfo.previewInColor = 0xff747a84;
-        themeInfo.previewOutColor = 0xff82a8e3;
-        themeInfo.sortIndex = 3;
-        themes.add(themeInfo);
-        themesDict.put("Dark", themeInfo);
 
         themeInfo = new ThemeInfo();
         themeInfo.name = "Blue";
@@ -1935,6 +1955,7 @@ public class Theme {
         themeInfo.previewInColor = 0xff76869c;
         themeInfo.previewOutColor = 0xff82a8e3;
         themeInfo.sortIndex = 2;
+        themeInfo.setAccentColorOptions(new int[] { 0xff3685fa, 0xff46c8ed, 0xff4ab841, 0xffeb7cb1, 0xffee902a, 0xffa281f0, 0xffd34324, 0xffeebd34, 0xff7f8fab });
         themes.add(themeInfo);
         themesDict.put("Dark Blue", currentNightTheme = themeInfo);
 
@@ -1945,7 +1966,7 @@ public class Theme {
             themeInfo.previewBackgroundColor = 0xff7a7e89;
             themeInfo.previewInColor = 0xff989ba3;
             themeInfo.previewOutColor = 0xffa4bff9;
-            themeInfo.sortIndex = 4;
+            themeInfo.sortIndex = 3;
             themes.add(themeInfo);
             themesDict.put("Graphite", themeInfo);
         }
@@ -1956,7 +1977,8 @@ public class Theme {
         themeInfo.previewBackgroundColor = 0xffffffff;
         themeInfo.previewInColor = 0xffebeef4;
         themeInfo.previewOutColor = 0xff7cb2fe;
-        themeInfo.sortIndex = 5;
+        themeInfo.sortIndex = 4;
+        themeInfo.setAccentColorOptions(new int[] { 0xff3490eb, 0xff46c8ed, 0xff4ab841, 0xffeb7cb1, 0xffee902a, 0xffa281f0, 0xffd34324, 0xffeebd34, 0xff7f8fab });
         themes.add(themeInfo);
         themesDict.put("Arctic Blue", themeInfo);
 
@@ -1997,18 +2019,32 @@ public class Theme {
 
         ThemeInfo applyingTheme = null;
         try {
+            final ThemeInfo themeDarkBlue = themesDict.get("Dark Blue");
+            final ThemeInfo themeArcticBlue = themesDict.get("Arctic Blue");
+
             preferences = MessagesController.getGlobalMainSettings();
             String theme = preferences.getString("theme", null);
-            if (theme != null) {
+            if ("Dark".equals(theme)) { // Old theme. Fallback to "Dark Blue" with specific accent.
+                applyingTheme = themeDarkBlue;
+                themeDarkBlue.setAccentColor(0xff7f8fab);
+            } else if (theme != null) {
                 applyingTheme = themesDict.get(theme);
             }
+
             theme = preferences.getString("nighttheme", null);
-            if (theme != null) {
+            if ("Dark".equals(theme)) { // Old theme. Fallback to "Dark Blue" with specific accent.
+                currentNightTheme = themeDarkBlue;
+                themeDarkBlue.setAccentColor(0xff7f8fab);
+            } else if (theme != null) {
                 ThemeInfo t = themesDict.get(theme);
                 if (t !=  null) {
                     currentNightTheme = t;
                 }
             }
+
+            themeDarkBlue.setAccentColor(preferences.getInt("accentForDarkBlue", themeDarkBlue.accentColor));
+            themeArcticBlue.setAccentColor(preferences.getInt("accentForArcticBlue", themeArcticBlue.accentColor));
+
             selectedAutoNightType = preferences.getInt("selectedAutoNightType", AUTO_NIGHT_TYPE_NONE);
             autoNightScheduleByLocation = preferences.getBoolean("autoNightScheduleByLocation", false);
             autoNightBrighnessThreshold = preferences.getFloat("autoNightBrighnessThreshold", 0.25f);
@@ -2495,7 +2531,7 @@ public class Theme {
 
     public static ThemeInfo applyThemeFile(File file, String themeName, boolean temporary) {
         try {
-            if (themeName.equals("Default") || themeName.equals("Dark") || themeName.equals("Blue") || themeName.equals("Dark Blue") || themeName.equals("Graphite") || themeName.equals("Arctic Blue")) {
+            if (themeName.equals("Default") || themeName.equals("Blue") || themeName.equals("Dark Blue") || themeName.equals("Graphite") || themeName.equals("Arctic Blue")) {
                 return null;
             }
             File finalFile = new File(ApplicationLoader.getFilesDirFixed(), themeName);
@@ -2540,7 +2576,7 @@ public class Theme {
         applyTheme(themeInfo, true, true, nightTheme);
     }
 
-    public static void applyTheme(ThemeInfo themeInfo, boolean save, boolean removeWallpaperOverride, final boolean nightTheme) {
+    private static void applyTheme(ThemeInfo themeInfo, boolean save, boolean removeWallpaperOverride, final boolean nightTheme) {
         if (themeInfo == null) {
             return;
         }
@@ -2560,10 +2596,11 @@ public class Theme {
                     editor.commit();
                 }
                 if (themeInfo.assetName != null) {
-                    currentColors = getThemeFileValues(null, themeInfo.assetName);
+                    currentColorsNoAccent = getThemeFileValues(null, themeInfo.assetName);
                 } else {
-                    currentColors = getThemeFileValues(new File(themeInfo.pathToFile), null);
+                    currentColorsNoAccent = getThemeFileValues(new File(themeInfo.pathToFile), null);
                 }
+                applyThemeAccent(currentColorsNoAccent, currentColors, themeInfo);
             } else {
                 if (!nightTheme && save) {
                     SharedPreferences preferences = MessagesController.getGlobalMainSettings();
@@ -2591,6 +2628,16 @@ public class Theme {
             AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewTheme, nightTheme));
         } catch (Exception e) {
             FileLog.e(e);
+        }
+    }
+
+    public static void saveThemeAccent(ThemeInfo themeInfo, int accent) {
+        if ("Dark Blue".equals(themeInfo.name)) {
+            MessagesController.getGlobalMainSettings().edit().putInt("accentForDarkBlue", accent).commit();
+            themeInfo.setAccentColor(accent);
+        } else if ("Arctic Blue".equals(themeInfo.name)) {
+            MessagesController.getGlobalMainSettings().edit().putInt("accentForArcticBlue", accent).commit();
+            themeInfo.setAccentColor(accent);
         }
     }
 
@@ -2643,8 +2690,12 @@ public class Theme {
         return currentTheme == currentNightTheme;
     }
 
-    public static boolean isCurrentThemeDefault() {
+    private static boolean isCurrentThemeDefault() {
         return currentTheme == defaultTheme;
+    }
+
+    public static boolean isThemeDefault(ThemeInfo themeInfo) {
+        return themeInfo == defaultTheme;
     }
 
     private static long getAutoNightSwitchThemeDelay() {
@@ -2985,6 +3036,61 @@ public class Theme {
             }
         }
         return stringMap;
+    }
+
+    private static void applyThemeAccent(HashMap<String, Integer> source, HashMap<String, Integer> destination, ThemeInfo themeInfo) {
+        destination.clear();
+        destination.putAll(source);
+
+        if (themeInfo.accentColor == 0 || themeInfo.accentBaseColor == 0 || themeInfo.accentColor == themeInfo.accentBaseColor) {
+            return;
+        }
+
+        for (String key: source.keySet()) {
+            if (!themeAccentExclusionKeys.contains(key)) {
+                int color = source.get(key);
+                int newColor = changeColorAccent(themeInfo.accentBaseColorHsv, themeInfo.accentColorHsv, color);
+                if (newColor != color) destination.put(key, newColor);
+            }
+        }
+    }
+
+    public static int changeColorAccent(ThemeInfo themeInfo, int accent, int color) {
+        if (accent == 0 || themeInfo.accentBaseColor == 0 || accent == themeInfo.accentBaseColor) {
+            return color;
+        }
+
+        Color.colorToHSV(accent, hsv);
+        return changeColorAccent(themeInfo.accentBaseColorHsv, hsv, color);
+    }
+
+    private static int changeColorAccent(float[] baseHsv, float[] accentHsv, int color) {
+        final float baseH = baseHsv[0];
+        final float baseS = baseHsv[1];
+        final float baseV = baseHsv[2];
+
+        final float accentH = accentHsv[0];
+        final float accentS = accentHsv[1];
+        final float accentV = accentHsv[2];
+
+        Color.colorToHSV(color, hsv);
+        final float colorH = hsv[0];
+        final float colorS = hsv[1];
+        final float colorV = hsv[2];
+
+        // Only changing color's accent if its hue is close to base accent
+        final float diffH = Math.min(Math.abs(colorH - baseH), Math.abs(colorH - baseH - 360f));
+        if (diffH > 30f) return color;
+
+        // Calculating saturation distance between the color and its base. To preserve better
+        // contrast colors closer to base color will receive the most brightness change.
+        float dist = Math.min(1.5f * colorS / baseS, 1f);
+
+        hsv[0] = colorH + accentH - baseH;
+        hsv[1] = colorS * accentS / baseS;
+        hsv[2] = colorV * (1f - dist + dist * accentV / baseV);
+
+        return Color.HSVToColor(Color.alpha(color), hsv);
     }
 
     public static void createCommonResources(Context context) {

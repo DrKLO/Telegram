@@ -963,6 +963,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         messageEditText.setTextColor(Theme.getColor(Theme.key_chat_messagePanelText));
         messageEditText.setHintColor(Theme.getColor(Theme.key_chat_messagePanelHint));
         messageEditText.setHintTextColor(Theme.getColor(Theme.key_chat_messagePanelHint));
+        messageEditText.setCursorColor(Theme.getColor(Theme.key_chat_messagePanelCursor));
         frameLayout.addView(messageEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 52, 0, isChat ? 50 : 2, 0));
         messageEditText.setOnKeyListener(new OnKeyListener() {
 
