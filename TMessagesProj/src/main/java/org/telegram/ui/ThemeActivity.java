@@ -1967,23 +1967,23 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                             int softInputMode = getParentActivity().getWindow().getAttributes().softInputMode;
                             getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
                             bottomSheetDidAction = false;
-                            if(colorPickerBottomSheet == null) {
-                                colorPickerBottomSheet = new BottomSheet.Builder(getParentActivity(), true, 0)
-                                        .setCustomView(colorPickerContentView)
-                                        .setSoftInputAdjustMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
-                                        .setApplyBottomPadding(false)
-                                        .setApplyTopPadding(false)
-                                        .setDimBehind(false);
-                                colorPickerBottomSheet.setOnDismissListener(dialog -> {
-                                    getParentActivity().getWindow().setSoftInputMode(softInputMode);
-                                    clearSelfDescriptions();
-                                    if (!bottomSheetDidAction) {
-                                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, Theme.getCurrentTheme(), false);
-                                        updateAccentColorsRow();
-                                        updateInnerItems();
-                                    }
-                                });
-                            }
+
+                            colorPickerBottomSheet = new BottomSheet.Builder(getParentActivity(), true, 0)
+                                    .setCustomView(colorPickerContentView)
+                                    .setSoftInputAdjustMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
+                                    .setApplyBottomPadding(false)
+                                    .setApplyTopPadding(false)
+                                    .setDimBehind(false);
+                            colorPickerBottomSheet.setOnDismissListener(dialog -> {
+                                getParentActivity().getWindow().setSoftInputMode(softInputMode);
+                                clearSelfDescriptions();
+                                if (!bottomSheetDidAction) {
+                                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, Theme.getCurrentTheme(), false);
+                                    updateAccentColorsRow();
+                                    updateInnerItems();
+                                }
+                            });
+
                             colorPickerBottomSheet.show();
                         } else {
                             Theme.saveAccentColor(colors[position]);
