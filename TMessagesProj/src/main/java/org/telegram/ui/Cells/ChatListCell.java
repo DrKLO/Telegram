@@ -36,10 +36,16 @@ public class ChatListCell extends LinearLayout {
             textPaint.setTextSize(AndroidUtilities.dp(13));
 
             button = new RadioButton(context) {
+
+                float lastButtonProgress;
                 @Override
                 public void invalidate() {
                     super.invalidate();
                     //remove endless redraw
+                    if(lastButtonProgress != button.getProgress()){
+                        ListView.this.invalidate();
+                    }
+                    lastButtonProgress = button.getProgress();
                 }
             };
             button.setSize(AndroidUtilities.dp(20));

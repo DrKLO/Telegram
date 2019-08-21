@@ -211,16 +211,35 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
     HashMap<String,Integer> colorPickerThemeColors;
 
-    final static int colors[] = new int[]{
-            0xff3490eb,
-            0xfff44336,
-            0xff9c27b0,
-            0xff3f51b5,
-            0xff03a9f4,
-            0xff009688,
-            0xff8bc34a,
-            0xffe5bd00
-    };
+
+    private final static HashMap<String,int[]> defaultPickerColors = new HashMap<>();
+    int defaultPickerColorsSize = 6;
+    static {
+        defaultPickerColors.put("Arctic",new int[]{
+                0xff3490eb,
+                0xfff44336,
+                0xff9c27b0,
+                0xff3f51b5,
+                0xff009688,
+                0xffe5bd00
+        });
+        defaultPickerColors.put("Dark",new int[]{
+                0xff3e6588,
+                0xffe1503f,
+                0xffb048ae,
+                0xff3960c4,
+                0xff009688,
+                0xffe5d764
+        });
+        defaultPickerColors.put("Dark Tint",new int[]{
+                0xff3e618a,
+                0xffe1503f,
+                0xff614576,
+                0xff3960c4,
+                0xff009688,
+                0xff948b41
+        });
+    }
 
     private class GpsLocationListener implements LocationListener {
 
@@ -1475,14 +1494,16 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             ColorCheckView colorCheckView = (ColorCheckView) holder.itemView;
-            if (position >= colors.length) {
-                if (hasCustomColor && position == colors.length) {
+            if (position >= defaultPickerColorsSize) {
+                if (hasCustomColor && position == defaultPickerColorsSize) {
                     colorCheckView.setColor(customColor);
                 } else {
                     colorCheckView.setPickerStyle();
                 }
+                colorCheckView.setPosition(-1);
             } else {
-                colorCheckView.setColor(colors[position]);
+                colorCheckView.setPosition(position);
+                colorCheckView.setColor(getDefaultPickerColor(position));
             }
         }
 
@@ -1493,35 +1514,35 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public int getItemCount() {
-            return colors.length + 1 + (hasCustomColor ? 1 : 0);
+            return defaultPickerColorsSize + 1 + (hasCustomColor ? 1 : 0);
         }
 
         public void setCustomColor(int customColor) {
             boolean isCustomColor = true;
-            for (int i = 0; i < colors.length; i++) {
-                if (colors[i] == customColor) {
+            for (int i = 0; i < defaultPickerColorsSize; i++) {
+                if (getDefaultPickerColor(i) == customColor) {
                     isCustomColor = false;
                     break;
                 }
             }
 
             if (isCustomColor != this.hasCustomColor && isCustomColor)
-                notifyItemInserted(colors.length);
+                notifyItemInserted(defaultPickerColorsSize);
 
             if (isCustomColor) {
                 hasCustomColor = true;
                 this.customColor = customColor;
                 if (accentColorsListView != null) {
-                    RecyclerView.ViewHolder h = accentColorsListView.findViewHolderForAdapterPosition(colors.length);
+                    RecyclerView.ViewHolder h = accentColorsListView.findViewHolderForAdapterPosition(defaultPickerColorsSize);
                     if (h != null) {
                         ColorCheckView checkView = ((ColorCheckView) h.itemView);
                         checkView.setColor(customColor);
-                        checkView.updateCheck();
+                        checkView.update();
                     }
                 }
             } else if (hasCustomColor) {
-                RecyclerView.ViewHolder viewHolder = accentColorsListView.findViewHolderForAdapterPosition(colors.length);
-                if (viewHolder != null) ((ColorCheckView) viewHolder.itemView).updateCheck();
+                RecyclerView.ViewHolder viewHolder = accentColorsListView.findViewHolderForAdapterPosition(defaultPickerColorsSize);
+                if (viewHolder != null) ((ColorCheckView) viewHolder.itemView).update();
             }
         }
 
@@ -1535,6 +1556,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             boolean attached;
             int radius = AndroidUtilities.dp(19);
             boolean isPicker;
+            int position;
 
             public ColorCheckView(Context context) {
                 super(context);
@@ -1548,15 +1570,24 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
 
+            public void setPosition(int position) {
+                this.position = position;
+            }
             public void setColor(int color) {
-                setChecked(Theme.getCurrentTheme().accentColor == color, this.color == color);
                 this.color = color;
                 paint.setColor(color);
                 isPicker = false;
+                setChecked(Theme.getCurrentTheme().accentColor == color, true);
+                invalidate();
             }
 
-            public void updateCheck() {
-                setChecked(Theme.getCurrentTheme().accentColor == color, true);
+            public void update() {
+                if (position >= 0) {
+                    setColor(getDefaultPickerColor(position));
+                    setChecked(Theme.getCurrentTheme().accentColor == color, true);
+                } else {
+                    setChecked(Theme.getCurrentTheme().accentColor == color, true);
+                }
             }
 
             ValueAnimator checkAnimator;
@@ -1919,11 +1950,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     horizontalListView.setOnItemClickListener((view1, position) -> {
                         if (innerListView != null) innerListView.cancelClickRunnables(false);
                         lastSelectedAccentColor = Theme.getCurrentTheme().accentColor;
-                        if (position == colors.length && accentColorsAdapter.hasCustomColor) {
+                        if (position == defaultPickerColorsSize && accentColorsAdapter.hasCustomColor) {
                             Theme.saveAccentColor(accentColorsAdapter.customColor);
                             updateAccentColorsRow();
                             updateInnerItems();
-                        } else if (position >= colors.length) {
+                        } else if (position >= defaultPickerColorsSize) {
                             if (colorPickerContentView == null) {
                                 colorPickerContentView = new ColorPickerView.ColorPickerDialogView(mContext);
                                 colorPickerContentView.colorPickerView.setListener(color -> {
@@ -1986,7 +2017,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
                             colorPickerBottomSheet.show();
                         } else {
-                            Theme.saveAccentColor(colors[position]);
+                            Theme.saveAccentColor(getDefaultPickerColor(position));
                             updateAccentColorsRow();
                             updateInnerItems();
                         }
@@ -2264,13 +2295,21 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         accentColorsAdapter.setCustomColor(Theme.getCurrentTheme().accentColor);
         int n = accentColorsListView.getChildCount();
         for (int i = 0; i < n; i++) {
-            ((AccentColorsAdapter.ColorCheckView) accentColorsListView.getChildAt(i)).updateCheck();
+            ((AccentColorsAdapter.ColorCheckView) accentColorsListView.getChildAt(i)).update();
         }
 
         n = accentColorsListView.getCachedChildCount();
         for (int i = 0; i < n; i++) {
-            ((AccentColorsAdapter.ColorCheckView) accentColorsListView.getCachedChildAt(i)).updateCheck();
+            ((AccentColorsAdapter.ColorCheckView) accentColorsListView.getCachedChildAt(i)).update();
         }
+    }
+
+    private int getDefaultPickerColor(int position){
+        int [] colors = defaultPickerColors.get(Theme.getCurrentThemeName());
+        if(colors != null) {
+            return colors[position];
+        }
+        return 0;
     }
 
     @Override
