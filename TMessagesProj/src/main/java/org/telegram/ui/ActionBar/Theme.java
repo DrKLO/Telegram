@@ -1840,7 +1840,7 @@ public class Theme {
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_background));
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_nameInMessage));
         themeAccentExclusionKeys.add(key_chat_attachFileBackground);
-        themeAccentExclusionKeys.add(key_chat_attachContactBackground);
+        themeAccentExclusionKeys.add(key_chat_attachGalleryBackground);
 
         themes = new ArrayList<>();
         otherThemes = new ArrayList<>();
