@@ -1083,9 +1083,15 @@ public class Theme {
     private static HashMap<String, Integer> currentColors;
     private static HashMap<String, Integer> animatingColors;
 
-    // keys for theme was generated and hardcoded for easy editing
-    // colors always ned transform
+    // color keys below was generated and hardcoded for easy editing
+    // this colors always ned transform
     private static final String[] accentColorKeys = new String[]{
+            key_chats_menuName,
+            key_chats_menuPhone,
+            key_avatar_backgroundGroupCreateSpanBlue,
+            key_featuredStickers_addButton,
+            key_featuredStickers_addButtonPressed,
+            key_changephoneinfo_image2,
             key_chat_unreadMessagesStartText,
             key_radioBackgroundChecked,
             key_dialogTextBlue,
@@ -1253,6 +1259,7 @@ public class Theme {
             key_chat_inMenuSelected,
             key_actionBarDefaultArchivedTitle,
             key_chats_menuTopBackgroundCats,
+            key_chats_menuTopBackground,
             key_chat_outReplyMediaMessageText,
             key_dialogLineProgressBackground,
             key_actionBarTabSelector,
@@ -1282,6 +1289,7 @@ public class Theme {
             key_windowBackgroundWhiteValueText
     };
 
+    //this colors draw over accent color, they totally replace
     private static String[] darkThemeSecondaryColorKeys = new String[]{
             key_chat_inFileBackgroundSelected,
             key_chat_outViews,
@@ -1334,6 +1342,7 @@ public class Theme {
             key_chat_searchPanelText
     };
 
+    //this colors is accent only for dark theme
     private static String[] darkThemeAdditionalAccentColorKeys = new String[]{
             key_chats_menuPhone,
             key_chat_outViaBotNameText,
@@ -1358,6 +1367,7 @@ public class Theme {
             key_chat_outReplyNameText,
     };
 
+    //this colors is background for tinting
     private static String[] darkBackgroundTintColorKeys = new String[]{
             key_windowBackgroundChecked,
             key_actionBarActionModeDefault,
