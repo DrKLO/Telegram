@@ -27,6 +27,8 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class AvatarDrawable extends Drawable {
 
+    private static final int ID_PLACEHOLDER = 5;
+
     private TextPaint namePaint;
     private int color;
     private StaticLayout textLayout;
@@ -164,7 +166,9 @@ public class AvatarDrawable extends Drawable {
     }
 
     public void setInfo(int id, String firstName, String lastName, boolean isBroadcast, String custom) {
-        if (isProfile) {
+        if (id == ID_PLACEHOLDER) {
+            color = Theme.getColor(Theme.key_avatar_backgroundInProfileBlue);
+        } else if (isProfile) {
             color = getProfileColorForId(id);
         } else {
             color = getColorForId(id);
