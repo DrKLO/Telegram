@@ -28,6 +28,8 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.MediaDataController;
@@ -1914,7 +1916,11 @@ public class DialogCell extends BaseCell {
             if (drawCount) {
                 Paint paint = dialogMuted || currentDialogFolderId != 0 ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint;
                 paint.setAlpha((int) ((1.0f - reorderIconProgress) * 255));
-                Theme.dialogs_countTextPaint.setAlpha((int) ((1.0f - reorderIconProgress) * 255));
+                Theme.dialogs_countTextPaint.setColor(ColorUtils.setAlphaComponent(
+                        dialogMuted || currentDialogFolderId != 0 ?
+                                Theme.getColor(Theme.key_chats_unreadCounterTextMuted) :
+                                Theme.getColor(Theme.key_chats_unreadCounterText),
+                        (int) ((1.0f - reorderIconProgress) * 255)));
 
                 int x = countLeft - AndroidUtilities.dp(5.5f);
                 rect.set(x, countTop, x + countWidth + AndroidUtilities.dp(11), countTop + AndroidUtilities.dp(23));
@@ -1934,7 +1940,11 @@ public class DialogCell extends BaseCell {
                 Paint paint = dialogMuted && folderId != 0 ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint;
                 canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, paint);
                 if (mentionLayout != null) {
-                    Theme.dialogs_countTextPaint.setAlpha((int) ((1.0f - reorderIconProgress) * 255));
+                    Theme.dialogs_countTextPaint.setColor(ColorUtils.setAlphaComponent(
+                            dialogMuted || currentDialogFolderId != 0 ?
+                                    Theme.getColor(Theme.key_chats_unreadCounterTextMuted) :
+                                    Theme.getColor(Theme.key_chats_unreadCounterText),
+                            (int) ((1.0f - reorderIconProgress) * 255)));
 
                     canvas.save();
                     canvas.translate(mentionLeft, countTop + AndroidUtilities.dp(4));
