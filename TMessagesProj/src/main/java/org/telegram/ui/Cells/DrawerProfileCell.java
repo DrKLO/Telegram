@@ -15,6 +15,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.Region;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -173,6 +174,13 @@ public class DrawerProfileCell extends FrameLayout {
 
         if (snowflakesEffect != null) {
             snowflakesEffect.onDraw(this, canvas);
+        }
+
+        if (!accountsShowed) {
+            Rect r = new Rect(0, 0, getWidth(), getHeight() + 1);
+            canvas.clipRect(r, Region.Op.REPLACE);
+            canvas.drawLine(0, getHeight(), getWidth(),
+                    getHeight(), Theme.dividerPaint);
         }
     }
 
