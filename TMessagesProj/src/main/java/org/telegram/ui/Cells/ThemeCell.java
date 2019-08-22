@@ -197,6 +197,9 @@ public class ThemeCell extends FrameLayout {
             paint.setColor(Theme.getDefaultColor(Theme.key_actionBarDefault));
         }
         paintStroke.setColor(themeInfo.accentColor);
+        if (themeInfo.accentColor != 0) {
+            paintStroke.setAlpha(180);
+        }
     }
 
     public void updateCurrentThemeCheck() {

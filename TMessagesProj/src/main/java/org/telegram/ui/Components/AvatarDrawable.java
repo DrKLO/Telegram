@@ -29,6 +29,7 @@ public class AvatarDrawable extends Drawable {
 
     private TextPaint namePaint;
     private int color;
+    private boolean needApplyColorAccent;
     private StaticLayout textLayout;
     private float textWidth;
     private float textHeight;
@@ -82,7 +83,7 @@ public class AvatarDrawable extends Drawable {
         isProfile = value;
     }
 
-    public static int getColorIndex(int id) {
+    private static int getColorIndex(int id) {
         if (id >= 0 && id < 7) {
             return id;
         }
@@ -131,6 +132,7 @@ public class AvatarDrawable extends Drawable {
         } else {
             color = Theme.getColor(Theme.key_avatar_backgroundSaved);
         }
+        needApplyColorAccent = false;
     }
 
     public void setArchivedAvatarHiddenProgress(float progress) {
@@ -149,6 +151,7 @@ public class AvatarDrawable extends Drawable {
 
     public void setColor(int value) {
         color = value;
+        needApplyColorAccent = false;
     }
 
     public void setTextSize(int size) {
@@ -160,7 +163,7 @@ public class AvatarDrawable extends Drawable {
     }
 
     public int getColor() {
-        return color;
+        return needApplyColorAccent ? Theme.changeColorAccent(color) : color;
     }
 
     public void setInfo(int id, String firstName, String lastName, boolean isBroadcast, String custom) {
@@ -169,6 +172,7 @@ public class AvatarDrawable extends Drawable {
         } else {
             color = getColorForId(id);
         }
+        needApplyColorAccent = id == 5; // Tinting manually set blue color
 
         drawBrodcast = isBroadcast;
         avatarType = AVATAR_TYPE_NORMAL;
@@ -238,7 +242,7 @@ public class AvatarDrawable extends Drawable {
         }
         int size = bounds.width();
         namePaint.setColor(Theme.getColor(Theme.key_avatar_text));
-        Theme.avatar_backgroundPaint.setColor(color);
+        Theme.avatar_backgroundPaint.setColor(getColor());
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
         canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, Theme.avatar_backgroundPaint);

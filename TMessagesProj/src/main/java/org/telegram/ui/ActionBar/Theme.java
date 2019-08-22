@@ -95,7 +95,26 @@ public class Theme {
         final float[] accentBaseColorHsv = new float[3];
         final float[] accentColorHsv = new float[3];
 
-        public JSONObject getSaveJson() {
+        ThemeInfo() {}
+
+        public ThemeInfo(ThemeInfo other) {
+            name = other.name;
+            pathToFile = other.pathToFile;
+            assetName = other.assetName;
+            previewBackgroundColor = other.previewBackgroundColor;
+            previewInColor = other.previewInColor;
+            previewOutColor = other.previewOutColor;
+            sortIndex = other.sortIndex;
+            accentColorOptions = other.accentColorOptions;
+            accentBaseColor = other.accentBaseColor;
+            accentColor = other.accentColor;
+            accentBaseColor = other.accentBaseColor;
+
+            Color.colorToHSV(accentBaseColor, accentBaseColorHsv);
+            Color.colorToHSV(accentColor, accentColorHsv);
+        }
+
+        JSONObject getSaveJson() {
             try {
                 JSONObject jsonObject = new JSONObject();
                 jsonObject.put("name", name);
@@ -2529,39 +2548,48 @@ public class Theme {
         });
     }
 
-    public static ThemeInfo applyThemeFile(File file, String themeName, boolean temporary) {
-        try {
-            if (themeName.equals("Default") || themeName.equals("Blue") || themeName.equals("Dark Blue") || themeName.equals("Graphite") || themeName.equals("Arctic Blue")) {
-                return null;
-            }
-            File finalFile = new File(ApplicationLoader.getFilesDirFixed(), themeName);
-            if (!AndroidUtilities.copyFile(file, finalFile)) {
-                return null;
-            }
+    public static void applyThemeTemporary(ThemeInfo themeInfo) {
+        previousTheme = getCurrentTheme();
+        applyTheme(themeInfo, false, false, false);
+    }
 
-            boolean newTheme = false;
-            ThemeInfo themeInfo = themesDict.get(themeName);
-            if (themeInfo == null) {
-                newTheme = true;
-                themeInfo = new ThemeInfo();
+    public static ThemeInfo applyThemeFile(File file, String themeName, boolean temporary) {
+        if (themeName.equals("Default") || themeName.equals("Blue") || themeName.equals("Dark Blue") || themeName.equals("Graphite") || themeName.equals("Arctic Blue")) {
+            return null;
+        }
+
+        try {
+            if (temporary) {
+                ThemeInfo themeInfo = new ThemeInfo();
                 themeInfo.name = themeName;
-                themeInfo.pathToFile = finalFile.getAbsolutePath();
-            }
-            if (!temporary) {
+                themeInfo.pathToFile = file.getAbsolutePath();
+                applyThemeTemporary(themeInfo);
+                return themeInfo;
+            } else {
+                File finalFile = new File(ApplicationLoader.getFilesDirFixed(), themeName);
+                if (!AndroidUtilities.copyFile(file, finalFile)) {
+                    Theme.applyPreviousTheme();
+                    return null;
+                }
+
                 previousTheme = null;
-                if (newTheme) {
+
+                ThemeInfo themeInfo = themesDict.get(themeName);
+                if (themeInfo == null) {
+                    themeInfo = new ThemeInfo();
+                    themeInfo.name = themeName;
+                    themeInfo.pathToFile = finalFile.getAbsolutePath();
+
                     themes.add(themeInfo);
                     themesDict.put(themeInfo.name, themeInfo);
                     otherThemes.add(themeInfo);
                     sortThemes();
                     saveOtherThemes();
                 }
-            } else {
-                previousTheme = currentTheme;
-            }
 
-            applyTheme(themeInfo, !temporary, true, false);
-            return themeInfo;
+                applyTheme(themeInfo, true, true, false);
+                return themeInfo;
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -2600,7 +2628,6 @@ public class Theme {
                 } else {
                     currentColorsNoAccent = getThemeFileValues(new File(themeInfo.pathToFile), null);
                 }
-                applyThemeAccent(currentColorsNoAccent, currentColors, themeInfo);
             } else {
                 if (!nightTheme && save) {
                     SharedPreferences preferences = MessagesController.getGlobalMainSettings();
@@ -2611,7 +2638,7 @@ public class Theme {
                     }
                     editor.commit();
                 }
-                currentColors.clear();
+                currentColorsNoAccent.clear();
                 themedWallpaperFileOffset = 0;
                 wallpaper = null;
                 themedWallpaper = null;
@@ -2620,15 +2647,80 @@ public class Theme {
             if (!nightTheme) {
                 currentDayTheme = currentTheme;
             }
-            reloadWallpaper();
-            applyCommonTheme();
-            applyDialogsTheme();
-            applyProfileTheme();
-            applyChatTheme(false);
-            AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewTheme, nightTheme));
+            refreshThemeColors();
         } catch (Exception e) {
             FileLog.e(e);
         }
+    }
+
+    private static void refreshThemeColors() {
+        currentColors.clear();
+        currentColors.putAll(currentColorsNoAccent);
+        ThemeInfo themeInfo = currentTheme;
+
+        if (themeInfo.accentColor != 0 && themeInfo.accentBaseColor != 0 && themeInfo.accentColor != themeInfo.accentBaseColor) {
+            for (String key: currentColorsNoAccent.keySet()) {
+                if (!themeAccentExclusionKeys.contains(key)) {
+                    int color = currentColorsNoAccent.get(key);
+                    int newColor = changeColorAccent(themeInfo.accentBaseColorHsv, themeInfo.accentColorHsv, color);
+                    if (newColor != color) currentColors.put(key, newColor);
+                }
+            }
+        }
+
+        reloadWallpaper();
+        applyCommonTheme();
+        applyDialogsTheme();
+        applyProfileTheme();
+        applyChatTheme(false);
+        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewTheme, false));
+    }
+
+    public static int changeColorAccent(ThemeInfo themeInfo, int accent, int color) {
+        if (accent == 0 || themeInfo.accentBaseColor == 0 || accent == themeInfo.accentBaseColor) {
+            return color;
+        }
+
+        Color.colorToHSV(accent, hsv);
+        return changeColorAccent(themeInfo.accentBaseColorHsv, hsv, color);
+    }
+
+    public static int changeColorAccent(int color) {
+        return changeColorAccent(currentTheme, currentTheme.accentColor, color);
+    }
+
+    private static int changeColorAccent(float[] baseHsv, float[] accentHsv, int color) {
+        final float baseH = baseHsv[0];
+        final float baseS = baseHsv[1];
+        final float baseV = baseHsv[2];
+
+        final float accentH = accentHsv[0];
+        final float accentS = accentHsv[1];
+        final float accentV = accentHsv[2];
+
+        Color.colorToHSV(color, hsv);
+        final float colorH = hsv[0];
+        final float colorS = hsv[1];
+        final float colorV = hsv[2];
+
+        // Only changing color's accent if its hue is close to base accent
+        final float diffH = Math.min(Math.abs(colorH - baseH), Math.abs(colorH - baseH - 360f));
+        if (diffH > 30f) return color;
+
+        // Calculating saturation distance between the color and its base. To preserve better
+        // contrast colors closer to base color will receive the most brightness change.
+        float dist = Math.min(1.5f * colorS / baseS, 1f);
+
+        hsv[0] = colorH + accentH - baseH;
+        hsv[1] = colorS * accentS / baseS;
+        hsv[2] = colorV * (1f - dist + dist * accentV / baseV);
+
+        return Color.HSVToColor(Color.alpha(color), hsv);
+    }
+
+    public static void applyCurrentThemeAccent(int accent) {
+        currentTheme.setAccentColor(accent);
+        refreshThemeColors();
     }
 
     public static void saveThemeAccent(ThemeInfo themeInfo, int accent) {
@@ -2863,6 +2955,8 @@ public class Theme {
     }
 
     private static void applyDayNightThemeMaybe(boolean night) {
+        if (previousTheme != null) return; // Avoiding theme switch if showing temporary theme
+
         if (night) {
             if (currentTheme != currentNightTheme) {
                 lastThemeSwitchTime = SystemClock.elapsedRealtime();
@@ -3036,61 +3130,6 @@ public class Theme {
             }
         }
         return stringMap;
-    }
-
-    private static void applyThemeAccent(HashMap<String, Integer> source, HashMap<String, Integer> destination, ThemeInfo themeInfo) {
-        destination.clear();
-        destination.putAll(source);
-
-        if (themeInfo.accentColor == 0 || themeInfo.accentBaseColor == 0 || themeInfo.accentColor == themeInfo.accentBaseColor) {
-            return;
-        }
-
-        for (String key: source.keySet()) {
-            if (!themeAccentExclusionKeys.contains(key)) {
-                int color = source.get(key);
-                int newColor = changeColorAccent(themeInfo.accentBaseColorHsv, themeInfo.accentColorHsv, color);
-                if (newColor != color) destination.put(key, newColor);
-            }
-        }
-    }
-
-    public static int changeColorAccent(ThemeInfo themeInfo, int accent, int color) {
-        if (accent == 0 || themeInfo.accentBaseColor == 0 || accent == themeInfo.accentBaseColor) {
-            return color;
-        }
-
-        Color.colorToHSV(accent, hsv);
-        return changeColorAccent(themeInfo.accentBaseColorHsv, hsv, color);
-    }
-
-    private static int changeColorAccent(float[] baseHsv, float[] accentHsv, int color) {
-        final float baseH = baseHsv[0];
-        final float baseS = baseHsv[1];
-        final float baseV = baseHsv[2];
-
-        final float accentH = accentHsv[0];
-        final float accentS = accentHsv[1];
-        final float accentV = accentHsv[2];
-
-        Color.colorToHSV(color, hsv);
-        final float colorH = hsv[0];
-        final float colorS = hsv[1];
-        final float colorV = hsv[2];
-
-        // Only changing color's accent if its hue is close to base accent
-        final float diffH = Math.min(Math.abs(colorH - baseH), Math.abs(colorH - baseH - 360f));
-        if (diffH > 30f) return color;
-
-        // Calculating saturation distance between the color and its base. To preserve better
-        // contrast colors closer to base color will receive the most brightness change.
-        float dist = Math.min(1.5f * colorS / baseS, 1f);
-
-        hsv[0] = colorH + accentH - baseH;
-        hsv[1] = colorS * accentS / baseS;
-        hsv[2] = colorV * (1f - dist + dist * accentV / baseV);
-
-        return Color.HSVToColor(Color.alpha(color), hsv);
     }
 
     public static void createCommonResources(Context context) {

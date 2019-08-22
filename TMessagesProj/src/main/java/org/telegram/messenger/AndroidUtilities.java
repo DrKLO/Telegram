@@ -2047,7 +2047,7 @@ public class AndroidUtilities {
             if (parentFragment != null && f.getName().toLowerCase().endsWith("attheme")) {
                 Theme.ThemeInfo themeInfo = Theme.applyThemeFile(f, message.getDocumentName(), true);
                 if (themeInfo != null) {
-                    parentFragment.presentFragment(new ThemePreviewActivity(f, themeInfo));
+                    parentFragment.presentFragment(new ThemePreviewActivity(themeInfo));
                 } else {
                     AlertDialog.Builder builder = new AlertDialog.Builder(activity);
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));

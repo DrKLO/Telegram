@@ -71,6 +71,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.support.ArrayUtils;
 import org.telegram.messenger.time.SunDate;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -1396,25 +1397,28 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         }
     }
 
-    private static class InnerAccentView extends View {
-        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private int currentColor;
-        private float checkedState;
-        private ObjectAnimator checkAnimator;
+    private abstract static class InnerAccentViewBase extends View {
+        final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        final float radius = AndroidUtilities.dp(20);
+        ObjectAnimator checkAnimator;
+        float checkedState;
+        Theme.ThemeInfo currentTheme;
+        int currentColor;
 
-        public InnerAccentView(Context context) {
+        InnerAccentViewBase(Context context) {
             super(context);
-            paint.setStrokeWidth(AndroidUtilities.dp(3));
         }
 
-        void setColor(int color) {
+        void setThemeAndColor(Theme.ThemeInfo themeInfo, int color) {
+            currentTheme = themeInfo;
             currentColor = color;
-            paint.setColor(color);
             invalidate();
         }
 
+        abstract boolean isChecked();
+
         void updateCheckedState(boolean animate) {
-            boolean checked = Theme.getCurrentTheme().accentColor == currentColor;
+            boolean checked = isChecked();
 
             if (checkAnimator != null) {
                 checkAnimator.cancel();
@@ -1456,16 +1460,90 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         protected void onDraw(Canvas canvas) {
-            float center = 0.5f * getMeasuredWidth();
-            float rad = AndroidUtilities.dp(20);
+            paint.setColor(currentColor);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(AndroidUtilities.dp(3));
+            paint.setAlpha(Math.round(255f * checkedState));
+            canvas.drawCircle(0.5f * getMeasuredWidth(), 0.5f * getMeasuredHeight(), radius - 0.5f * paint.getStrokeWidth(), paint);
+
+            paint.setAlpha(255);
+            paint.setStyle(Paint.Style.FILL);
+        }
+    }
+
+
+    private static class InnerAccentView extends InnerAccentViewBase {
+        InnerAccentView(Context context) {
+            super(context);
+        }
+
+        @Override
+        boolean isChecked() {
+            return Theme.getCurrentTheme().accentColor == currentColor;
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            canvas.drawCircle(0.5f * getMeasuredWidth(), 0.5f * getMeasuredHeight(), radius - AndroidUtilities.dp(5) * checkedState, paint);
+        }
+    }
+
+    private static class InnerCustomAccentView extends InnerAccentViewBase {
+        private int[] colors = new int[7];
+
+        InnerCustomAccentView(Context context) {
+            super(context);
+        }
+
+        @Override
+        void setThemeAndColor(Theme.ThemeInfo themeInfo, int color) {
+            int[] options = themeInfo == null ? null : themeInfo.accentColorOptions;
+            if (options != null && options.length >= 8) {
+                colors = new int[] { options[6], options[4], options[7], options[2], options[0], options[5], options[3] };
+            } else {
+                colors = new int[7];
+            }
+            super.setThemeAndColor(themeInfo, color);
+        }
+
+        @Override
+        boolean isChecked() {
+            return ArrayUtils.indexOf(currentTheme.accentColorOptions, currentTheme.accentColor) == -1;
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+
+            float centerX = 0.5f * getMeasuredWidth();
+            float centerY = 0.5f * getMeasuredHeight();
 
             paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(radius - AndroidUtilities.dp(10) * checkedState);
             paint.setAlpha(Math.round(255f * checkedState));
-            canvas.drawCircle(center, center, rad - 0.5f * paint.getStrokeWidth(), paint);
+            canvas.drawCircle(centerX, centerY, AndroidUtilities.dp(10), paint);
+
+            float radSmall = AndroidUtilities.dp(5);
+            float radRing = (radius - radSmall) * (1f - checkedState);
 
             paint.setStyle(Paint.Style.FILL);
-            paint.setAlpha(255);
-            canvas.drawCircle(center, center, rad - AndroidUtilities.dp(5) * checkedState, paint);
+
+            paint.setColor(colors[0]);
+            paint.setAlpha(Math.round(255f * (1f - checkedState)));
+            canvas.drawCircle(centerX, centerY, radSmall, paint);
+
+            double angle = 0.0;
+            for (int a = 0; a < 6; a++) {
+                float cx = centerX + radRing * (float) Math.sin(angle);
+                float cy = centerY - radRing * (float) Math.cos(angle);
+
+                paint.setColor(colors[a + 1]);
+                paint.setAlpha(Math.round(255f * (1f - checkedState)));
+                canvas.drawCircle(cx, cy, radSmall, paint);
+
+                angle += Math.PI / 3;
+            }
         }
     }
 
@@ -1521,19 +1599,40 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         }
 
         @Override
+        public int getItemViewType(int position) {
+            return position == getItemCount() - 1 ? 1 : 0;
+        }
+
+        @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            return new RecyclerListView.Holder(new InnerAccentView(mContext));
+            switch (viewType) {
+                case 0:
+                    return new RecyclerListView.Holder(new InnerAccentView(mContext));
+                case 1:
+                default:
+                    return new RecyclerListView.Holder(new InnerCustomAccentView(mContext));
+            }
         }
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            InnerAccentView view = (InnerAccentView) holder.itemView;
-            view.setColor(currentTheme.accentColorOptions[position]);
+            switch (getItemViewType(position)) {
+                case 0: {
+                    InnerAccentView view = (InnerAccentView) holder.itemView;
+                    view.setThemeAndColor(currentTheme, currentTheme.accentColorOptions[position]);
+                    break;
+                }
+                case 1: {
+                    InnerCustomAccentView view = (InnerCustomAccentView) holder.itemView;
+                    view.setThemeAndColor(currentTheme, currentTheme.accentColor);
+                    break;
+                }
+            }
         }
 
         @Override
         public int getItemCount() {
-            return currentTheme.accentColorOptions == null ? 0 : currentTheme.accentColorOptions.length;
+            return currentTheme.accentColorOptions == null ? 0 : currentTheme.accentColorOptions.length + 1;
         }
 
         int getAccentColor(int pos) {
@@ -1541,15 +1640,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         }
 
         int findCurrentAccent() {
-            int[] options = currentTheme.accentColorOptions;
-            if (options != null) {
-                for (int a = 0, count = options.length; a < count; a++) {
-                    if (options[a] == currentTheme.accentColor) {
-                        return a;
-                    }
-                }
-            }
-            return -1;
+            return ArrayUtils.indexOf(currentTheme.accentColorOptions, currentTheme.accentColor);
         }
     }
 
@@ -1837,11 +1928,16 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     ThemeAccentsListAdapter accentsAdapter = new ThemeAccentsListAdapter(mContext);
                     accentsListView.setAdapter(accentsAdapter);
                     accentsListView.setOnItemClickListener((view1, position) -> {
-                        int newAccent = accentsAdapter.getAccentColor(position);
                         Theme.ThemeInfo currentTheme = Theme.getCurrentTheme();
-                        if (currentTheme.accentColor != newAccent) {
-                            Theme.saveThemeAccent(currentTheme, newAccent);
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, currentTheme, false);
+
+                        if (position == accentsAdapter.getItemCount() - 1) {
+                            presentFragment(new ThemePreviewActivity(currentTheme, ThemePreviewActivity.SCREEN_TYPE_ACCENT_COLOR));
+                        } else {
+                            int newAccent = accentsAdapter.getAccentColor(position);
+                            if (currentTheme.accentColor != newAccent) {
+                                Theme.saveThemeAccent(currentTheme, newAccent);
+                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, currentTheme, false);
+                            }
                         }
 
                         int left = view1.getLeft();
@@ -1856,8 +1952,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         int count = accentsListView.getChildCount();
                         for (int a = 0; a < count; a++) {
                             View child = accentsListView.getChildAt(a);
-                            if (child instanceof InnerAccentView) {
-                                ((InnerAccentView) child).updateCheckedState(true);
+                            if (child instanceof InnerAccentViewBase) {
+                                ((InnerAccentViewBase) child).updateCheckedState(true);
                             }
                         }
                     });
@@ -2052,6 +2148,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     ThemeAccentsListAdapter adapter = (ThemeAccentsListAdapter) accentsList.getAdapter();
                     adapter.notifyDataSetChanged();
                     int pos = adapter.findCurrentAccent();
+                    if (pos == -1) {
+                        pos = adapter.getItemCount() - 1;
+                    }
                     if (pos != -1) {
                         ((LinearLayoutManager) accentsList.getLayoutManager()).scrollToPositionWithOffset(pos, listView.getMeasuredWidth() / 2 - AndroidUtilities.dp(42));
                     }
