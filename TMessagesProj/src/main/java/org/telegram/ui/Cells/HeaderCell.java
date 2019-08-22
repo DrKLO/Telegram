@@ -31,7 +31,7 @@ public class HeaderCell extends FrameLayout {
 
     private TextView textView;
     private SimpleTextView textView2;
-    private int height = 40;
+    public static final int HEIGHT = 40;
 
     public HeaderCell(Context context) {
         this(context, false, 21, 15, false);
@@ -49,7 +49,7 @@ public class HeaderCell extends FrameLayout {
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        textView.setMinHeight(AndroidUtilities.dp(height - topMargin));
+        textView.setMinHeight(AndroidUtilities.dp(HEIGHT - topMargin));
         if (dialog) {
             textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
         } else {
@@ -66,7 +66,7 @@ public class HeaderCell extends FrameLayout {
     }
 
     public void setHeight(int value) {
-        textView.setMinHeight(AndroidUtilities.dp(height) - ((LayoutParams) textView.getLayoutParams()).topMargin);
+        textView.setMinHeight(AndroidUtilities.dp(HEIGHT) - ((LayoutParams) textView.getLayoutParams()).topMargin);
     }
 
     public void setEnabled(boolean value, ArrayList<Animator> animators) {

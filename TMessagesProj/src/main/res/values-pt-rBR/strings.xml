@@ -1199,7 +1199,6 @@
     <string name="AutoNightBrightness">Porcentagem do brilho</string>
     <string name="AutoNightBrightnessInfo">Alterna para o seu tema noturno preferido quando a luz ambiente estiver abaixo de %1$d%%.</string>
     <string name="ThemeDark">Escuro</string>
-    <string name="ThemeDarkBlue">Azul Escuro</string>
     <string name="ThemeGraphite">Grafite</string>
     <string name="ThemeArcticBlue">Azul Ártico</string>
     <string name="ThemeBlue">Azul</string>

@@ -1199,7 +1199,6 @@
     <string name="AutoNightBrightness">Drempelwaarde omgevingslicht</string>
     <string name="AutoNightBrightnessInfo">Schakel om naar je nachtthema als het omgevingslicht minder dan  %1$d%% is.</string>
     <string name="ThemeDark">Donker</string>
-    <string name="ThemeDarkBlue">Donkerblauw</string>
     <string name="ThemeGraphite">Grafiet</string>
     <string name="ThemeArcticBlue">Arctisch Blauw</string>
     <string name="ThemeBlue">Blauw</string>
