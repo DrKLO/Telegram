@@ -229,14 +229,6 @@
             </intent-filter>
         </receiver>
 
-        <receiver
-            android:name=".SmsReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.google.android.gms.auth.api.phone.SMS_RETRIEVED"/>
-            </intent-filter>
-        </receiver>
-
         <receiver android:name=".CallReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE"/>
@@ -276,7 +268,6 @@
         <service android:name=".BringAppForegroundService" android:enabled="true"/>
         <service android:name=".NotificationsService" android:enabled="true"/>
         <service android:name=".NotificationRepeat" android:exported="false"/>
-        <service android:name=".ClearCacheService" android:exported="false"/>
         <service android:name=".VideoEncodingService" android:enabled="true"/>
         <service android:name=".LocationSharingService" android:enabled="true"/>
         <service android:name=".voip.VoIPService" android:enabled="true"/>

@@ -124,10 +124,9 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         progressView.setProgressColor(Theme.getColor(Theme.key_sharedMedia_startStopLoadIcon));
         addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 2, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 72, 54, LocaleController.isRTL ? 72 : 0, 0));
 
-        checkBox = new CheckBox2(context);
+        checkBox = new CheckBox2(context, 21);
         checkBox.setVisibility(INVISIBLE);
         checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
-        checkBox.setSize(21);
         checkBox.setDrawUnchecked(false);
         checkBox.setDrawBackgroundAsArc(2);
         addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 33, 28, LocaleController.isRTL ? 33 : 0, 0));

@@ -211,7 +211,7 @@ public class DownloadController extends BaseController implements NotificationCe
         mediumPreset = new Preset(preferences.getString("preset1", "13_13_13_13_1048576_10485760_1048576_524288_1_1_1_0"));
         highPreset = new Preset(preferences.getString("preset2", "13_13_13_13_1048576_15728640_3145728_524288_1_1_1_0"));
         boolean newConfig;
-        if (newConfig = preferences.contains("newConfig") || !getUserConfig().isClientActivated()) {
+        if ((newConfig = preferences.contains("newConfig")) || !getUserConfig().isClientActivated()) {
             mobilePreset = new Preset(preferences.getString("mobilePreset", mediumPreset.toString()));
             wifiPreset = new Preset(preferences.getString("wifiPreset", highPreset.toString()));
             roamingPreset = new Preset(preferences.getString("roamingPreset", lowPreset.toString()));

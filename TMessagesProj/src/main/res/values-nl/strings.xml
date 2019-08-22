@@ -11,11 +11,11 @@
     <string name="YourPhone">Je telefoon</string>
     <string name="StartText">Bevestig je landnummer en voer je telefoonnummer in.</string>
     <string name="ChooseCountry">Kies een land</string>
-    <string name="WrongCountry">Onjuist landnummer</string>
+    <string name="WrongCountry">Ongeldig landnummer</string>
     <string name="AccountAlreadyLoggedIn">Dit account heeft al een actieve sessie in deze app.</string>
     <string name="AccountSwitch">Wissel</string>
     <string name="SyncContacts">Contacten synchroniseren</string>
-    <string name="SyncContactsDeleteInfo">Hiermee verwijder je je contacten van de Telegram-servers.\nals \'Contacten Synchroniseren\' is ingeschakeld worden je contacten opnieuw gesynchroniseerd.</string>
+    <string name="SyncContactsDeleteInfo">Hiermee verwijder je je contacten van de Telegram-servers.\nAls \'Contacten Synchroniseren\' is ingeschakeld worden je contacten opnieuw gesynchroniseerd.</string>
     <string name="SyncContactsOn">Contacten van dit apparaat worden aan dit account toegevoegd</string>
     <string name="SyncContactsOff">Contacten van dit apparaat worden niet aan dit account toegevoegd.</string>
     <string name="SyncContactsInfoOn">Contacten van dit apparaat worden aan je account toegevoegd.</string>
@@ -23,7 +23,7 @@
     <string name="SyncContactsAdded">Contacten van dit apparaat zijn aan je account toegevoegd.</string>
     <!--code enter view-->
     <string name="YourCode">Telefoonverificatie</string>
-    <string name="SentSmsCode">We hebben een sms-bericht met activatiecode verzonden naar **%1$s**.</string>
+    <string name="SentSmsCode">Een SMS met activatiecode is verzonden naar **%1$s**.</string>
     <string name="SentAppCode">We hebben de code naar je andere  **Telegram**-app gestuurd.</string>
     <string name="SentAppCodeTitle">Controleer je Telegramberichten</string>
     <string name="SentSmsCodeTitle">Code invoeren</string>
@@ -49,7 +49,7 @@
     <string name="OtherLoginCode">Je logincode is **%1$s**. Voer de code in in de Telegram-app waarop je probeert in te loggen.\n\nGeef deze code nooit aan iemand anders.</string>
     <!--signup view-->
     <string name="YourName">Je naam</string>
-    <string name="RegisterText2">Geef je volledige naam in upload je profielfoto</string>
+    <string name="RegisterText2">Geef je naam in upload je profielfoto</string>
     <string name="FirstName">Voornaam (verplicht)</string>
     <string name="LastName">Achternaam (optioneel)</string>
     <string name="CancelRegistration">Registratie annuleren</string>
@@ -195,7 +195,7 @@
     <string name="SendGifPreview">GIF sturen</string>
     <string name="ViewPackPreview">Bundel bekijken</string>
     <string name="PinToTop">Vastzetten</string>
-    <string name="PinToTopLimitReached">Je kunt maxmimaal %1$s vastzetten.</string>
+    <string name="PinToTopLimitReached">Je kunt maxmimaal %1$s vastzetten. Wil je je chats anders organiseren? Probeer wat chats te archiveren, in je archief kun je onbeperkt chats vastzetten.</string>
     <string name="UnpinFromTop">Losmaken</string>
     <string name="MarkAsUnread">Markeer als ongelezen</string>
     <string name="MarkAsRead">Markeer als gelezen</string>
@@ -231,7 +231,7 @@
     <string name="MegaLeaveAlertWithName">**%1$s** echt verlaten?</string>
     <string name="GroupUserCantAdd">Je kunt deze gebruiker niet toevoegen aan groepen.</string>
     <string name="GroupUserAddLimit">Sorry, deze groep is vol.</string>
-    <string name="GroupUserLeftError">Deze gebruiker heeft de groep verlaten. Je kunt hem/haar niet meer uitnodigen.</string>
+    <string name="GroupUserLeftError">Deze gebruiker heeft de groep verlaten. Opnieuw toevoegen kan alleen door wederzijdse contactpersonen.\n\nZolang deze gebruiker niet in de lijst met verwijderde gebruikers staat kan hij/zij altijd nog lid worden via de uitnodigingslink van de groep.</string>
     <string name="GroupUserCantAdmin">Maximaal aantal beheerders bereikt.</string>
     <string name="PublicChannelsTooMuch">Sorry, de gebruiker heeft al teveel locatiegebonden groepen of kanalen. Vraag of ze er eerst 1 willen overdragen of verwijderen.</string>
     <string name="LocatedChannelsTooMuch">Sorry, de gebruiker heeft al teveel locatiegebonden groepen. Vraag of ze er eerst 1 willen overdragen of verwijderen.</string>
@@ -388,6 +388,8 @@
     <string name="ChannelSignMessages">Ondertekenen</string>
     <string name="ChannelSignMessagesInfo">Beheerdersnaam bij alle uitgaande berichten.</string>
     <string name="EditAdmin">Beheerdersrechten</string>
+    <string name="EditAdminRank">Aangepaste titel</string>
+    <string name="EditAdminRankInfo">Een aangepaste titel die zal worden weergegeven aan alle leden i.p.v. \'%1$s\'.</string>
     <string name="EditAdminWhatCanDo">Wat mag deze beheerder?</string>
     <string name="EditAdminChangeChannelInfo">Informatie aanpassen</string>
     <string name="EditAdminChangeGroupInfo">Informatie aanpassen</string>
@@ -445,7 +447,7 @@
     <string name="UserRestrictionsBlock">Blokkeer en verwijder uit groep</string>
     <string name="UserRestrictionsApplyChanges">Wijzigingen toepassen?</string>
     <string name="UserRestrictionsApplyChangesText">Je hebt de rechten van deze gebruiker in **%1$s** aangepast. Wijzigingen toepassen?</string>
-    <string name="UserRestrictionsCustom">Custom</string>
+    <string name="UserRestrictionsCustom">Aangepast</string>
     <string name="ManageGroup">Groep beheren</string>
     <string name="ManageChannel">Kanaal beheren</string>
     <string name="ManageGroupMenu">Groep beheren</string>
@@ -501,6 +503,16 @@
     <string name="DiscussionUnlinkChannelAlert">**%1$s** echt ontkoppelen van dit kanaal?</string>
     <string name="ChannelDiscuss">Discussiëren</string>
     <string name="DiscussChannel">kanaal</string>
+    <string name="Slowmode">Tempolimiet</string>
+    <string name="SlowmodeOff">Uit</string>
+    <string name="SlowmodeSeconds">%1$ds</string>
+    <string name="SlowmodeMinutes">%1$dm</string>
+    <string name="SlowmodeHours">%1$du</string>
+    <string name="SlowmodeInfoOff">Kies hoe lang leden moeten wachten voordat ze een volgend bericht kunnen sturen.</string>
+    <string name="SlowmodeInfoSelected">Leden kunnen maar 1 bericht sturen per %1$s.</string>
+    <string name="SlowmodeSendError">Tempolimiet ingeschakeld. Je kunt niet meer dan 1 bericht tegelijkertijd sturen.</string>
+    <string name="SlowmodeSelectSendError">Tempolimiet ingeschakeld. Je kunt niet meer dan 1 item selecteren.</string>
+    <string name="SlowmodeSendErrorTooLong">Sorry, deze tekst is te lang om als 1 bericht te sturen.\n\nTempolimiet is ingeschakeld, je kunt niet meer dan 1 bericht tegelijkertijd sturen.</string>
     <!--polls-->
     <string name="NewPoll">Nieuwe poll</string>
     <string name="Poll">Poll</string>
@@ -611,6 +623,8 @@
     <string name="EventLogPromotedAddAdmins">Beheerders toevoegen</string>
     <string name="EventLogPromotedBanUsers">Leden blokkeren</string>
     <string name="EventLogPromotedAddUsers">Leden toevoegen</string>
+    <string name="EventLogPromotedTitle">Titel: %1$s</string>
+    <string name="EventLogPromotedRemovedTitle">Titel</string>
     <string name="EventLogPromotedPinMessages">Berichten vastzetten</string>
     <string name="EventLogFilterAll">Alle gebeurtenissen</string>
     <string name="EventLogFilterNewRestrictions">Nieuwe uitzonderingen</string>
@@ -622,6 +636,8 @@
     <string name="EventLogFilterEditedMessages">Gewijzigde berichten</string>
     <string name="EventLogFilterPinnedMessages">Vastgezette berichten</string>
     <string name="EventLogFilterLeavingMembers">Vertrokken leden</string>
+    <string name="EventLogToggledSlowmodeOn">un1 heeft tempolimiet ingesteld op %1$s</string>
+    <string name="EventLogToggledSlowmodeOff">un1 heeft tempolimiet uitgeschakeld</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nieuwe verzendlijst</string>
     <string name="EnterListName">Naam van lijst</string>
@@ -859,7 +875,10 @@
     <string name="InstallGoogleMaps">Google Maps installeren?</string>
     <string name="ScamMessage">OPLICHTING</string>
     <string name="ViaBot">via</string>
-    <string name="MessageNotFound">Message doesn\'t exist</string>
+    <string name="MessageNotFound">Bericht bestaat niet</string>
+    <string name="SlowModeHint">Tempolimiet is ingeschakeld. Je kunt het\nvolgende bericht sturen over %1$s.</string>
+    <string name="TapForVideo">Tik voor foto, hou vast voor video</string>
+    <string name="SendWithoutSound">Stuur zonder geluid</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -1113,6 +1132,7 @@
     <string name="ErrorOccurred">Er is een fout opgetreden.</string>
     <!--stickers view-->
     <string name="StickersName">Stickers en Maskers</string>
+    <string name="LoopAnimatedStickers">Geanimeerde stickers herhalen</string>
     <string name="AddStickers">Stickers toevoegen</string>
     <string name="AddStickersCount">VOEG %1$s TOE</string>
     <string name="RemoveStickersCount">VERWIJDER %1$s</string>
@@ -1465,7 +1485,7 @@
     <string name="DirectShare">Snel delen</string>
     <string name="DirectShareInfo">Recente chats in snel delen weergeven</string>
     <string name="Emoji">Emoji</string>
-    <string name="EmojiBigSize">Grote emoji gebruiken</string>
+    <string name="LargeEmoji">Grote emoji</string>
     <string name="EmojiUseDefault">Systeem-emoji gebruiken</string>
     <string name="TelegramVersion">Telegram voor Android %1$s</string>
     <string name="DebugMenu">Debug-menu</string>
@@ -1558,11 +1578,11 @@
     <string name="SettingsNoResults">Geen resultaten</string>
     <string name="SettingsNoRecent">Geen recente zoekopdrachten</string>
     <string name="SettingsSearchFaq">Veelgestelde vragen</string>
-    <string name="DistanceUnits">Distance Units</string>
-    <string name="DistanceUnitsTitle">Distance units</string>
-    <string name="DistanceUnitsAutomatic">Automatic</string>
-    <string name="DistanceUnitsKilometers">Kilometers</string>
-    <string name="DistanceUnitsMiles">Miles</string>
+    <string name="DistanceUnits">Afstandseenheden</string>
+    <string name="DistanceUnitsTitle">Afstandseenheden</string>
+    <string name="DistanceUnitsAutomatic">Automatisch</string>
+    <string name="DistanceUnitsKilometers">Kilometer</string>
+    <string name="DistanceUnitsMiles">Mijlen</string>
     <!--cache view-->
     <string name="LocalDatabase">Lokale database</string>
     <string name="LocalDatabaseClear">Gecachet tekstberichten wissen?</string>
@@ -1854,10 +1874,10 @@
     <string name="Map">Kaart</string>
     <string name="Satellite">Satelliet</string>
     <string name="Hybrid">Hybride</string>
-    <string name="MetersAway2">%1$s m away</string>
-    <string name="KMetersAway2">%1$s km away</string>
-    <string name="FootsAway">%1$s ft away</string>
-    <string name="MilesAway">%1$s mi away</string>
+    <string name="MetersAway2">%1$s m afstand</string>
+    <string name="KMetersAway2">%1$s km afstand</string>
+    <string name="FootsAway">%1$s voet afstand</string>
+    <string name="MilesAway">%1$s mijl afstand</string>
     <string name="SendLocation">Huidige locatie sturen</string>
     <string name="SendLiveLocation">Deel mijn live-locatie</string>
     <string name="StopLiveLocation">Delen van locatie stoppen</string>
@@ -1898,7 +1918,7 @@
     <string name="PeopleNearbyEmpty">Zoeken naar gebruikers in de buurt</string>
     <string name="NearbyCreateGroup">Maak een lokale groep</string>
     <string name="NearbyStartGroup">Groep starten</string>
-    <string name="NearbyCreateGroupInfo">Iedereen die hier dichtbijt is (buren, collega\'s, medestudenten, etc.) zien je groep in de \"Mensen dichtbij\"-sectie.</string>
+    <string name="NearbyCreateGroupInfo">Iedereen die hier dichtbij is (buren, collega\'s, medestudenten, etc.) zien je groep in de \"Mensen dichtbij\"-sectie.</string>
     <string name="NearbyCreateGroupInfo2">Als je een ongerelateerde groep op deze plek start kun je beperkt worden in het maken van nieuwe lokatie-afhankelijke groepen.</string>
     <string name="ChatSetLocation">Locatie instellen</string>
     <string name="ChatSetThisLocation">Stel deze locatie in</string>
@@ -1922,12 +1942,16 @@
     <string name="VideoDoesNotSupportStreaming">Deze video is niet geoptimaliseerd om te streamen, een volledige download kan nodig zijn om deze af te spelen.</string>
     <string name="CantPlayVideo">De app kon deze video niet afspelen. Afspelen proberen met externe speler?</string>
     <string name="NoRecentPhotos">Niets recents</string>
+    <string name="ImagesTab">AFBEELDINGEN</string>
+    <string name="GifsTab">GIF\'S</string>
     <string name="NoRecentGIFs">Niets recents</string>
     <string name="SearchImages">ONLINE ZOEKEN</string>
     <string name="SearchImagesInfo">ZOEK OP HET WEB</string>
     <string name="SearchGifs">"GIF\'S ZOEKEN "</string>
     <string name="SearchImagesTitle">Online zoeken</string>
     <string name="SearchGifsTitle">GIF\'s zoeken</string>
+    <string name="CameraPermissionText">Tik om toegang tot je camera toe te staan</string>
+    <string name="GalleryPermissionText">Tik om toegang tot je galerij toe te staan</string>
     <string name="CropImage">Foto bijsnijden</string>
     <string name="Enhance">Verbeteren</string>
     <string name="Highlights">Accent</string>
@@ -1972,6 +1996,8 @@
     <string name="CropSquare">Vierkant</string>
     <string name="SinglePhotosHelp">Geeft media als aparte berichten weer</string>
     <string name="GroupPhotosHelp">Geef media als een enkel bericht weer</string>
+    <string name="SendWithoutGrouping">Stuur zonder groeperen</string>
+    <string name="SendWithoutCompression">Stuur zonder compressie</string>
     <!--password view-->
     <string name="TwoStepVerification">Twee-staps-verificatie</string>
     <string name="TwoStepVerificationTitle">Twee-staps-verificatie</string>
@@ -2263,7 +2289,7 @@
     <string name="InvalidPhoneNumber">Ongeldig telefoonnummer, controleer het nummer en probeer opnieuw.</string>
     <string name="PleaseLoginPassport">Log in op Telegram om Telegram Passport te gebruiken.</string>
     <string name="BannedPhoneNumber">Dit nummer is geblokkeerd.</string>
-    <string name="CodeExpired">Code verlopen. Log opnieuw in.</string>
+    <string name="CodeExpired">Code verlopen, log opnieuw in.</string>
     <string name="FloodWait">Te veel pogingen. Probeer het later opnieuw.</string>
     <string name="FloodWaitTime">Te veel pogingen, probeer het over %1$s opnieuw</string>
     <string name="InvalidCode">Ongeldige code</string>
@@ -2346,10 +2372,10 @@
     <string name="SecretLinkPreviewAlert">Wil je uitgebreide link-voorbeelden inschakelen voor geheime chats? Let op: deze worden gegenereerd op onze servers.</string>
     <string name="SecretChatContextBotAlert">Let op: inline-bots worden aangeboden door externe ontwikkelaars. Voor de werking van de bot worden de karakters die je na de botnaam typt naar deze ontwikkelaar verstuurd.</string>
     <string name="EditMessageError">Je mag dit bericht niet wijzigen.</string>
-    <string name="AllowReadSms">Sta het ontvangen van SMS toe zodat we automatisch je inlogcode kunnen invoeren.</string>
     <string name="AllowReadCall">Sta het ontvangen van oproepen toe zodat we automatisch je inlogcode kunnen invoeren.</string>
+    <string name="AllowReadCallAndLog">Sta Telegram toe om oproepen te ontvangen en de oproepenlijst te lezen zodat we automatisch de code voor je kunnen ingeven.</string>
+    <string name="AllowReadCallLog">Sta Telegram toe om de oproepenlijst te lezen zodat we automatisch de code voor je in kunnen voeren.</string>
     <string name="AllowFillNumber">Sta het ontvangen van oproepen toe zodat we automatisch je telefoonnummer kunnen bevestigen.</string>
-    <string name="AllowReadCallAndSms">Sta het ontvangen van oproepen toe zodat we automatisch je telefoonnummer kunnen bevestigen.</string>
     <string name="UserRestricted">Je mag deze actie niet uitvoeren.</string>
     <string name="YouBlockedUser">Je hebt deze gebruiker of bot geblokkeerd, toevoegen aan een groep kan pas na deblokkeren.</string>
     <string name="JoinGroup">LID WORDEN</string>
@@ -2815,6 +2841,24 @@
     <string name="AndOther_few">en %1$d anderen</string>
     <string name="AndOther_many">en %1$d anderen</string>
     <string name="AndOther_other">en %1$d anderen</string>
+    <string name="PhotosSelected_zero">%1$d foto\'s geselecteerd</string>
+    <string name="PhotosSelected_one">%1$d foto geselecteerd</string>
+    <string name="PhotosSelected_two">%1$d foto\'s geselecteerd</string>
+    <string name="PhotosSelected_few">%1$d foto\'s geselecteerd</string>
+    <string name="PhotosSelected_many">%1$d foto\'s geselecteerd</string>
+    <string name="PhotosSelected_other">%1$d foto\'s geselecteerd</string>
+    <string name="VideosSelected_zero">%1$d video\'s geselecteerd</string>
+    <string name="VideosSelected_one">%1$d video geselecteerd</string>
+    <string name="VideosSelected_two">%1$d video\'s geselecteerd</string>
+    <string name="VideosSelected_few">%1$d video\'s geselecteerd</string>
+    <string name="VideosSelected_many">%1$d video\'s geselecteerd</string>
+    <string name="VideosSelected_other">%1$d video\'s geselecteerd</string>
+    <string name="MediaSelected_zero">%1$d media geselecteerd</string>
+    <string name="MediaSelected_one">%1$d media geselecteerd</string>
+    <string name="MediaSelected_two">%1$d media geselecteerd</string>
+    <string name="MediaSelected_few">%1$d media geselecteerd</string>
+    <string name="MediaSelected_many">%1$d media geselecteerd</string>
+    <string name="MediaSelected_other">%1$d media geselecteerd</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Groep</string>
     <string name="AccDescrChannel">Kanaal</string>

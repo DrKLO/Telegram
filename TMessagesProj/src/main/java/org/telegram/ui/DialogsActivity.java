@@ -152,6 +152,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private int lastItemsCount;
 
+    private int messagesCount;
+
     private PacmanAnimation pacmanAnimation;
 
     private DialogCell slidingView;
@@ -525,8 +527,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             }
                         }
                         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                        boolean hintShowed = preferences.getBoolean("archivehint_l", false);
-                        preferences.edit().putBoolean("archivehint_l", true).commit();
+                        boolean hintShowed = preferences.getBoolean("archivehint_l", false) || SharedConfig.archiveHidden;
+                        if (!hintShowed) {
+                            preferences.edit().putBoolean("archivehint_l", true).commit();
+                        }
                         getUndoView().showWithAction(dialog.id, hintShowed ? UndoView.ACTION_ARCHIVE : UndoView.ACTION_ARCHIVE_HINT, null, () -> {
                             dialogsListFrozen = true;
                             getMessagesController().addDialogToFolder(dialog.id, 0, pinnedNum, 0);
@@ -641,6 +645,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             checkCanWrite = arguments.getBoolean("checkCanWrite", true);
             folderId = arguments.getInt("folderId", 0);
             resetDelegate = arguments.getBoolean("resetDelegate", true);
+            messagesCount = arguments.getInt("messagesCount", 0);
         }
 
         if (dialogsType == 0) {
@@ -686,6 +691,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             getMediaDataController().checkFeaturedStickers();
             dialogsLoaded[currentAccount] = true;
         }
+        getMediaDataController().checkStickers(MediaDataController.TYPE_EMOJI);
         getMessagesController().loadPinnedDialogs(folderId, 0, null);
         return true;
     }
@@ -1265,6 +1271,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
 
             if (onlySelect) {
+                if (!validateSlowModeDialog(dialog_id)) {
+                    return;
+                }
                 if (dialogsAdapter.hasSelectedDialogs()) {
                     dialogsAdapter.addOrRemoveSelectedDialog(dialog_id, view);
                     updateSelectedCount();
@@ -1406,6 +1415,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 dialog = dialogs.get(position);
                 if (onlySelect) {
                     if (dialogsType != 3 || selectAlertString != null) {
+                        return false;
+                    }
+                    if (!validateSlowModeDialog(dialog.id)) {
                         return false;
                     }
                     dialogsAdapter.addOrRemoveSelectedDialog(dialog.id, view);
@@ -1692,6 +1704,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             @Override
             public void didPressedOnSubDialog(long did) {
                 if (onlySelect) {
+                    if (!validateSlowModeDialog(did)) {
+                        return;
+                    }
                     if (dialogsAdapter.hasSelectedDialogs()) {
                         dialogsAdapter.addOrRemoveSelectedDialog(did, null);
                         updateSelectedCount();
@@ -1889,6 +1904,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                 @Override
                 public void needShowMediaBanHint() {
+
+                }
+
+                @Override
+                public void onUpdateSlowModeButton(View button, boolean show, CharSequence time) {
 
                 }
             });
@@ -2115,8 +2135,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             hideActionMode(false);
             if (folderId == 0) {
                 SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                boolean hintShowed = preferences.getBoolean("archivehint_l", false);
-                preferences.edit().putBoolean("archivehint_l", true).commit();
+                boolean hintShowed = preferences.getBoolean("archivehint_l", false) || SharedConfig.archiveHidden;
+                if (!hintShowed) {
+                    preferences.edit().putBoolean("archivehint_l", true).commit();
+                }
                 int undoAction;
                 if (hintShowed) {
                     undoAction = copy.size() > 1 ? UndoView.ACTION_ARCHIVE_FEW : UndoView.ACTION_ARCHIVE;
@@ -2175,7 +2197,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 maxPinnedCount = getMessagesController().maxPinnedDialogsCount;
             }
             if (newPinnedSecretCount + pinnedSecretCount > maxPinnedCount || newPinnedCount + pinnedCount > maxPinnedCount) {
-                AlertsCreator.showSimpleToast(DialogsActivity.this, LocaleController.formatString("PinToTopLimitReached", R.string.PinToTopLimitReached, LocaleController.formatPluralString("Chats", maxPinnedCount)));
+                AlertsCreator.showSimpleAlert(DialogsActivity.this, LocaleController.formatString("PinToTopLimitReached", R.string.PinToTopLimitReached, LocaleController.formatPluralString("Chats", maxPinnedCount)));
                 AndroidUtilities.shakeView(pinItem, 2, 0);
                 Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
                 if (v != null) {
@@ -2504,6 +2526,22 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             pinItem.setIcon(R.drawable.msg_unpin);
             pinItem.setContentDescription(LocaleController.getString("UnpinFromTop", R.string.UnpinFromTop));
         }
+    }
+
+    private boolean validateSlowModeDialog(long dialogId) {
+        if (messagesCount <= 1 && (commentView == null || commentView.getVisibility() != View.VISIBLE || TextUtils.isEmpty(commentView.getFieldText()))) {
+            return true;
+        }
+        int lowerId = (int) dialogId;
+        if (lowerId >= 0) {
+            return true;
+        }
+        TLRPC.Chat chat = getMessagesController().getChat(-lowerId);
+        if (chat != null && !ChatObject.hasAdminRights(chat) && chat.slowmode_enabled) {
+            AlertsCreator.showSimpleAlert(DialogsActivity.this, LocaleController.getString("Slowmode", R.string.Slowmode), LocaleController.getString("SlowmodeSendError", R.string.SlowmodeSendError));
+            return false;
+        }
+        return true;
     }
 
     private void showOrUpdateActionMode(TLRPC.Dialog dialog, View cell) {

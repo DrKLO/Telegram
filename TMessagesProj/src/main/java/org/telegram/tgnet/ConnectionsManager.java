@@ -502,14 +502,7 @@ public class ConnectionsManager extends BaseController {
                 return;
             }
             lastDnsRequestTime = System.currentTimeMillis();
-            if (second == 2) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("start azure dns task");
-                }
-                AzureLoadTask task = new AzureLoadTask(currentAccount);
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
-                currentTask = task;
-            } else if (second == 1) {
+            if (second == 1) {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("start dns txt task");
                 }
@@ -631,7 +624,7 @@ public class ConnectionsManager extends BaseController {
     public static native void native_seSystemLangCode(int currentAccount, String langCode);
     public static native void native_setJava(boolean useJavaByteBuffers);
     public static native void native_setPushConnectionEnabled(int currentAccount, boolean value);
-    public static native void native_applyDnsConfig(int currentAccount, long address, String phone);
+    public static native void native_applyDnsConfig(int currentAccount, long address, String phone, int date);
     public static native long native_checkProxy(int currentAccount, String address, int port, String username, String password, String secret, RequestTimeDelegate requestTimeDelegate);
     public static native void native_onHostNameResolved(String host, long address, String ip);
 
@@ -832,6 +825,7 @@ public class ConnectionsManager extends BaseController {
     private static class DnsTxtLoadTask extends AsyncTask<Void, Void, NativeByteBuffer> {
 
         private int currentAccount;
+        private int responseDate;
 
         public DnsTxtLoadTask(int instance) {
             super();
@@ -851,7 +845,7 @@ public class ConnectionsManager extends BaseController {
                     } else {
                         googleDomain = "google.com";
                     }
-                    String domain = native_isTestBackend(currentAccount) != 0 ? "tapv2.stel.com" : AccountInstance.getInstance(currentAccount).getMessagesController().dcDomainName;
+                    String domain = native_isTestBackend(currentAccount) != 0 ? "tapv3.stel.com" : AccountInstance.getInstance(currentAccount).getMessagesController().dcDomainName;
                     int len = Utilities.random.nextInt(116) + 13;
                     final String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -867,6 +861,7 @@ public class ConnectionsManager extends BaseController {
                     httpConnection.setReadTimeout(5000);
                     httpConnection.connect();
                     httpConnectionStream = httpConnection.getInputStream();
+                    responseDate = (int) (httpConnection.getDate() / 1000);
 
                     outbuf = new ByteArrayOutputStream();
 
@@ -941,17 +936,13 @@ public class ConnectionsManager extends BaseController {
         protected void onPostExecute(final NativeByteBuffer result) {
             Utilities.stageQueue.postRunnable(() -> {
                 if (result != null) {
-                    currentTask = null;
-                    native_applyDnsConfig(currentAccount, result.address, AccountInstance.getInstance(currentAccount).getUserConfig().getClientPhone());
+                    native_applyDnsConfig(currentAccount, result.address, AccountInstance.getInstance(currentAccount).getUserConfig().getClientPhone(), responseDate);
                 } else {
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d("failed to get dns txt result");
-                        FileLog.d("start azure task");
                     }
-                    AzureLoadTask task = new AzureLoadTask(currentAccount);
-                    task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
-                    currentTask = task;
                 }
+                currentTask = null;
             });
         }
     }
@@ -974,7 +965,7 @@ public class ConnectionsManager extends BaseController {
                 firebaseRemoteConfig = FirebaseRemoteConfig.getInstance();
                 FirebaseRemoteConfigSettings configSettings = new FirebaseRemoteConfigSettings.Builder().setDeveloperModeEnabled(BuildConfig.DEBUG).build();
                 firebaseRemoteConfig.setConfigSettings(configSettings);
-                String currentValue = firebaseRemoteConfig.getString("ipconfigv2");
+                String currentValue = firebaseRemoteConfig.getString("ipconfigv3");
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("current firebase value = " + currentValue);
                 }
@@ -993,7 +984,8 @@ public class ConnectionsManager extends BaseController {
                             try {
                                 NativeByteBuffer buffer = new NativeByteBuffer(bytes.length);
                                 buffer.writeBytes(bytes);
-                                native_applyDnsConfig(currentAccount, buffer.address, AccountInstance.getInstance(currentAccount).getUserConfig().getClientPhone());
+                                int date = (int) (firebaseRemoteConfig.getInfo().getFetchTimeMillis() / 1000);
+                                native_applyDnsConfig(currentAccount, buffer.address, AccountInstance.getInstance(currentAccount).getUserConfig().getClientPhone(), date);
                             } catch (Exception e) {
                                 FileLog.e(e);
                             }
@@ -1026,89 +1018,6 @@ public class ConnectionsManager extends BaseController {
         @Override
         protected void onPostExecute(NativeByteBuffer result) {
 
-        }
-    }
-
-    private static class AzureLoadTask extends AsyncTask<Void, Void, NativeByteBuffer> {
-
-        private int currentAccount;
-
-        public AzureLoadTask(int instance) {
-            super();
-            currentAccount = instance;
-        }
-
-        protected NativeByteBuffer doInBackground(Void... voids) {
-            ByteArrayOutputStream outbuf = null;
-            InputStream httpConnectionStream = null;
-            try {
-                URL downloadUrl;
-                if (native_isTestBackend(currentAccount) != 0) {
-                    downloadUrl = new URL("https://software-download.microsoft.com/testv2/config.txt");
-                } else {
-                    downloadUrl = new URL("https://software-download.microsoft.com/prodv2/config.txt");
-                }
-                URLConnection httpConnection = downloadUrl.openConnection();
-                httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/10.0 Mobile/14A5297c Safari/602.1");
-                httpConnection.addRequestProperty("Host", "tcdnb.azureedge.net");
-                httpConnection.setConnectTimeout(5000);
-                httpConnection.setReadTimeout(5000);
-                httpConnection.connect();
-                httpConnectionStream = httpConnection.getInputStream();
-
-                outbuf = new ByteArrayOutputStream();
-
-                byte[] data = new byte[1024 * 32];
-                while (true) {
-                    if (isCancelled()) {
-                        break;
-                    }
-                    int read = httpConnectionStream.read(data);
-                    if (read > 0) {
-                        outbuf.write(data, 0, read);
-                    } else if (read == -1) {
-                        break;
-                    } else {
-                        break;
-                    }
-                }
-                byte[] bytes = Base64.decode(outbuf.toByteArray(), Base64.DEFAULT);
-                NativeByteBuffer buffer = new NativeByteBuffer(bytes.length);
-                buffer.writeBytes(bytes);
-                return buffer;
-            } catch (Throwable e) {
-                FileLog.e(e);
-            } finally {
-                try {
-                    if (httpConnectionStream != null) {
-                        httpConnectionStream.close();
-                    }
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                }
-                try {
-                    if (outbuf != null) {
-                        outbuf.close();
-                    }
-                } catch (Exception ignore) {
-
-                }
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(final NativeByteBuffer result) {
-            Utilities.stageQueue.postRunnable(() -> {
-                if (result != null) {
-                    native_applyDnsConfig(currentAccount, result.address, AccountInstance.getInstance(currentAccount).getUserConfig().getClientPhone());
-                } else {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("failed to get azure result");
-                    }
-                }
-                currentTask = null;
-            });
         }
     }
 }

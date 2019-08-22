@@ -24,6 +24,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.Configuration;
+import android.database.ContentObserver;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -40,6 +41,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.PowerManager;
+import android.provider.CallLog;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.Settings;
@@ -1317,6 +1319,8 @@ public class AndroidUtilities {
         }
     }*/
 
+    private static ContentObserver callLogContentObserver;
+    private static Runnable unregisterRunnable;
     private static boolean hasCallPermissions = Build.VERSION.SDK_INT >= 23;
 
     @SuppressWarnings("unchecked")
@@ -1333,9 +1337,38 @@ public class AndroidUtilities {
             telephonyService = (ITelephony) m.invoke(tm);
             telephonyService.silenceRinger();
             telephonyService.endCall();
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    public static String obtainLoginPhoneCall(String pattern) {
+        if (!hasCallPermissions) {
+            return null;
+        }
+        try (Cursor cursor = ApplicationLoader.applicationContext.getContentResolver().query(
+                CallLog.Calls.CONTENT_URI,
+                new String[]{CallLog.Calls.NUMBER, CallLog.Calls.DATE},
+                CallLog.Calls.TYPE + " IN (" + CallLog.Calls.MISSED_TYPE + "," + CallLog.Calls.INCOMING_TYPE + "," + CallLog.Calls.REJECTED_TYPE + ")",
+                null,
+                "date DESC LIMIT 5")) {
+            while (cursor.moveToNext()) {
+                String number = cursor.getString(0);
+                long date = cursor.getLong(1);
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("number = " + number);
+                }
+                if (Math.abs(System.currentTimeMillis() - date) >= 60 * 60 * 1000) {
+                    continue;
+                }
+                if (checkPhonePattern(pattern, number)) {
+                    return number;
+                }
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }
+        return null;
     }
 
     public static boolean checkPhonePattern(String pattern, String phone) {

@@ -115,10 +115,9 @@ public class SharedPhotoVideoCell extends FrameLayout {
             selector.setBackgroundDrawable(Theme.getSelectorDrawable(false));
             addView(selector, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-            checkBox = new CheckBox2(context);
+            checkBox = new CheckBox2(context, 21);
             checkBox.setVisibility(INVISIBLE);
             checkBox.setColor(null, Theme.key_sharedMedia_photoPlaceholder, Theme.key_checkboxCheck);
-            checkBox.setSize(21);
             checkBox.setDrawUnchecked(false);
             checkBox.setDrawBackgroundAsArc(1);
             addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.TOP, 0, 1, 1, 0));
@@ -144,8 +143,8 @@ public class SharedPhotoVideoCell extends FrameLayout {
             if (animated) {
                 animator = new AnimatorSet();
                 animator.playTogether(
-                        ObjectAnimator.ofFloat(container, "scaleX", checked ? 0.81f : 1.0f),
-                        ObjectAnimator.ofFloat(container, "scaleY", checked ? 0.81f : 1.0f));
+                        ObjectAnimator.ofFloat(container, View.SCALE_X, checked ? 0.81f : 1.0f),
+                        ObjectAnimator.ofFloat(container, View.SCALE_Y, checked ? 0.81f : 1.0f));
                 animator.setDuration(200);
                 animator.addListener(new AnimatorListenerAdapter() {
                     @Override

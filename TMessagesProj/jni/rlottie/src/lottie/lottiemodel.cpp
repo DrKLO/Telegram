@@ -210,7 +210,7 @@ void LOTGradient::populate(VGradientStops &stops, int frameNo)
     int j = 0;
     for (int i = 0; i < colorPoints; i++) {
         float       colorStop = ptr[0];
-        LottieColor color = LottieColor(ptr[1], ptr[2], ptr[3]);
+        LottieColor color = LottieColor(ptr[3], ptr[2], ptr[1]);
         if (opacityArraySize) {
             if (j == opacityArraySize) {
                 // already reached the end

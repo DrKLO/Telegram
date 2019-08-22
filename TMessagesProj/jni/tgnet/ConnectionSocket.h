@@ -17,6 +17,7 @@ class NativeByteBuffer;
 class ConnectionsManager;
 class ByteStream;
 class EventObject;
+class ByteArray;
 
 class ConnectionSocket {
 
@@ -26,7 +27,7 @@ public:
 
     void writeBuffer(uint8_t *data, uint32_t size);
     void writeBuffer(NativeByteBuffer *buffer);
-    void openConnection(std::string address, uint16_t port, bool ipv6, int32_t networkType);
+    void openConnection(std::string address, uint16_t port, std::string secret, bool ipv6, int32_t networkType);
     void setTimeout(time_t timeout);
     time_t getTimeout();
     bool isDisconnected();
@@ -39,6 +40,7 @@ protected:
     void onEvent(uint32_t events);
     void checkTimeout(int64_t now);
     void resetLastEventTime();
+    bool hasTlsHashMismatch();
     virtual void onReceivedData(NativeByteBuffer *buffer) = 0;
     virtual void onDisconnected(int32_t reason, int32_t error) = 0;
     virtual void onConnected() = 0;
@@ -68,7 +70,14 @@ private:
     std::string waitingForHostResolve;
     bool adjustWriteOpAfterResolve;
 
-    uint8_t buffer[1024];
+    std::string currentSecret;
+    std::string currentSecretDomain;
+
+    bool tlsHashMismatch = false;
+    NativeByteBuffer *tlsBuffer = nullptr;
+    ByteArray *tempBuffer = nullptr;
+    size_t bytesRead = 0;
+    int8_t tlsState = 0;
 
     uint8_t proxyAuthState;
 

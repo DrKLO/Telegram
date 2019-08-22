@@ -60,6 +60,11 @@ public class PhotoFace {
         }
 
         if (leftEyePoint != null && rightEyePoint != null) {
+            if (leftEyePoint.x < rightEyePoint.x) {
+                Point temp = leftEyePoint;
+                leftEyePoint = rightEyePoint;
+                rightEyePoint = temp;
+            }
             eyesCenterPoint = new Point(0.5f * leftEyePoint.x + 0.5f * rightEyePoint.x,
                     0.5f * leftEyePoint.y + 0.5f * rightEyePoint.y);
             eyesDistance = (float)Math.hypot(rightEyePoint.x - leftEyePoint.x, rightEyePoint.y - leftEyePoint.y);
@@ -74,6 +79,11 @@ public class PhotoFace {
         }
 
         if (leftMouthPoint != null && rightMouthPoint != null) {
+            if (leftMouthPoint.x < rightMouthPoint.x) {
+                Point temp = leftMouthPoint;
+                leftMouthPoint = rightMouthPoint;
+                rightMouthPoint = temp;
+            }
             mouthPoint = new Point(0.5f * leftMouthPoint.x + 0.5f * rightMouthPoint.x,
                     0.5f * leftMouthPoint.y + 0.5f * rightMouthPoint.y);
 

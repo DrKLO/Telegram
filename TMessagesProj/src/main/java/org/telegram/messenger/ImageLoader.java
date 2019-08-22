@@ -777,6 +777,8 @@ public class ImageLoader {
                 int h = Math.min(512, AndroidUtilities.dp(170.6f));
                 boolean precache = false;
                 boolean limitFps = false;
+                int autoRepeat = 1;
+                int[] colors = null;
                 if (cacheImage.filter != null) {
                     String[] args = cacheImage.filter.split("_");
                     if (args.length >= 2) {
@@ -791,8 +793,29 @@ public class ImageLoader {
                             precache = SharedConfig.getDevicePerfomanceClass() != SharedConfig.PERFORMANCE_CLASS_HIGH;
                         }
                     }
+                    if (args.length >= 3) {
+                        if ("nr".equals(args[2])) {
+                            autoRepeat = 2;
+                        } else if ("nrs".equals(args[2])) {
+                            autoRepeat = 3;
+                        }
+                    }
+                    if (args.length >= 5) {
+                        if ("c1".equals(args[4])) {
+                            colors = new int[]{0xf77e41, 0xca907a, 0xffb139, 0xedc5a5, 0xffd140, 0xf7e3c3, 0xffdf79, 0xfbefd6};
+                        } else if ("c2".equals(args[4])) {
+                            colors = new int[]{0xf77e41, 0xaa7c60, 0xffb139, 0xc8a987, 0xffd140, 0xddc89f, 0xffdf79, 0xe6d6b2};
+                        } else if ("c3".equals(args[4])) {
+                            colors = new int[]{0xf77e41, 0x8c6148, 0xffb139, 0xad8562, 0xffd140, 0xc49e76, 0xffdf79, 0xd4b188};
+                        } else if ("c4".equals(args[4])) {
+                            colors = new int[]{0xf77e41, 0x6e3c2c, 0xffb139, 0x925a34, 0xffd140, 0xa16e46, 0xffdf79, 0xac7a52};
+                        } else if ("c5".equals(args[4])) {
+                            colors = new int[]{0xf77e41, 0x291c12, 0xffb139, 0x472a22, 0xffd140, 0x573b30, 0xffdf79, 0x68493c};
+                        }
+                    }
                 }
-                RLottieDrawable lottieDrawable = new RLottieDrawable(cacheImage.finalFilePath, w, h, precache, limitFps);
+                RLottieDrawable lottieDrawable = new RLottieDrawable(cacheImage.finalFilePath, w, h, precache, limitFps, colors);
+                lottieDrawable.setAutoRepeat(autoRepeat);
                 onPostExecute(lottieDrawable);
             } else if (cacheImage.animatedFile) {
                 synchronized (sync) {
@@ -802,9 +825,9 @@ public class ImageLoader {
                 }
                 AnimatedFileDrawable fileDrawable;
                 if (AUTOPLAY_FILTER.equals(cacheImage.filter) && !(cacheImage.imageLocation.document instanceof TLRPC.TL_documentEncrypted)) {
-                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, false, cacheImage.size, cacheImage.imageLocation.document instanceof TLRPC.Document ? cacheImage.imageLocation.document : null, cacheImage.parentObject, cacheImage.currentAccount);
+                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, false, cacheImage.size, cacheImage.imageLocation.document instanceof TLRPC.Document ? cacheImage.imageLocation.document : null, cacheImage.parentObject, cacheImage.currentAccount, false);
                 } else {
-                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, "d".equals(cacheImage.filter), 0, null, null, cacheImage.currentAccount);
+                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, "d".equals(cacheImage.filter), 0, null, null, cacheImage.currentAccount, false);
                 }
                 Thread.interrupted();
                 onPostExecute(fileDrawable);

@@ -118,28 +118,14 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     public boolean onFragmentCreate() {
         currentChat = getMessagesController().getChat(chatId);
         if (currentChat == null) {
-            final CountDownLatch countDownLatch = new CountDownLatch(1);
-            getMessagesStorage().getStorageQueue().postRunnable(() -> {
-                currentChat = getMessagesStorage().getChat(chatId);
-                countDownLatch.countDown();
-            });
-            try {
-                countDownLatch.await();
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
+            currentChat = getMessagesStorage().getChatSync(chatId);
             if (currentChat != null) {
                 getMessagesController().putChat(currentChat, true);
             } else {
                 return false;
             }
             if (info == null) {
-                getMessagesStorage().loadChatInfo(chatId, countDownLatch, false, false);
-                try {
-                    countDownLatch.await();
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
+                info = getMessagesStorage().loadChatInfo(chatId, new CountDownLatch(1), false, false);
                 if (info == null) {
                     return false;
                 }
@@ -497,7 +483,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         String newUserName = isPrivate ? "" : usernameTextView.getText().toString();
         if (!oldUserName.equals(newUserName)) {
             if (!ChatObject.isChannel(currentChat)) {
-                getMessagesController().convertToMegaGroup(getParentActivity(), chatId, param -> {
+                getMessagesController().convertToMegaGroup(getParentActivity(), chatId, this, param -> {
                     chatId = param;
                     currentChat = getMessagesController().getChat(param);
                     processDone();

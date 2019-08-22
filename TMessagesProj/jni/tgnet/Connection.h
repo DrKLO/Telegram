@@ -64,7 +64,8 @@ private:
     enum ProtocolType {
         ProtocolTypeEF,
         ProtocolTypeEE,
-        ProtocolTypeDD
+        ProtocolTypeDD,
+        ProtocolTypeTLS
     };
 
     inline void encryptKeyWithSecret(uint8_t *array, uint8_t secretType);

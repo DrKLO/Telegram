@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.Surface;
 import android.view.View;
@@ -31,8 +32,8 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.PhotoPickerAlbumsCell;
-import org.telegram.ui.Cells.PhotoPickerSearchCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PickerBottomLayout;
 import org.telegram.ui.Components.RadialProgressView;
@@ -48,6 +49,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
     public interface PhotoAlbumPickerActivityDelegate {
         void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos);
+
         void startPhotoSelectActivity();
     }
 
@@ -66,6 +68,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     private RecyclerListView listView;
     private ListAdapter listAdapter;
     private FrameLayout progressView;
+    private View shadowView;
     private TextView emptyView;
     private PickerBottomLayout pickerBottomLayout;
     private boolean sendPressed;
@@ -75,6 +78,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     private boolean allowCaption;
     private ChatActivity chatActivity;
     private int maxSelectedPhotos;
+    private boolean allowOrder = true;
 
     private PhotoAlbumPickerActivityDelegate delegate;
 
@@ -88,7 +92,12 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
     @Override
     public boolean onFragmentCreate() {
-        loading = true;
+        if (selectPhotoType != 0 || !allowSearchImages) {
+            albumsSorted = MediaController.allPhotoAlbums;
+        } else {
+            albumsSorted = MediaController.allMediaAlbums;
+        }
+        loading = albumsSorted == null;
         MediaController.loadGalleryPhotosAlbums(classGuid);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.albumsDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.recentImagesDidLoad);
@@ -106,10 +115,10 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
     @Override
     public View createView(Context context) {
-        actionBar.setBackgroundColor(Theme.ACTION_BAR_MEDIA_PICKER_COLOR);
-        actionBar.setTitleColor(0xffffffff);
-        actionBar.setItemsColor(0xffffffff, false);
-        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, false);
+        actionBar.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
+        actionBar.setTitleColor(Theme.getColor(Theme.key_dialogTextBlack));
+        actionBar.setItemsColor(Theme.getColor(Theme.key_dialogTextBlack), false);
+        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_dialogButtonSelector), false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -121,17 +130,22 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                         finishFragment(false);
                         delegate.startPhotoSelectActivity();
                     }
+                } else if (id == 2) {
+                    openPhotoPicker(null, 0);
                 }
             }
         });
 
         ActionBarMenu menu = actionBar.createMenu();
+        if (allowSearchImages) {
+            menu.addItem(2, R.drawable.ic_ab_search).setContentDescription(LocaleController.getString("Search", R.string.Search));
+        }
         menu.addItem(1, R.drawable.ic_ab_other).setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
 
         fragmentView = new FrameLayout(context);
 
         FrameLayout frameLayout = (FrameLayout) fragmentView;
-        frameLayout.setBackgroundColor(0xff000000);
+        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
 
         actionBar.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
 
@@ -142,14 +156,9 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         listView.setVerticalScrollBarEnabled(false);
         listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         listView.setDrawingCacheEnabled(false);
-        frameLayout.addView(listView);
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.bottomMargin = AndroidUtilities.dp(48);
-        listView.setLayoutParams(layoutParams);
+        frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 48));
         listView.setAdapter(listAdapter = new ListAdapter(context));
-        listView.setGlowColor(0xff333333);
+        listView.setGlowColor(Theme.getColor(Theme.key_dialogBackground));
 
         emptyView = new TextView(context);
         emptyView.setTextColor(0xff808080);
@@ -157,38 +166,23 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         emptyView.setGravity(Gravity.CENTER);
         emptyView.setVisibility(View.GONE);
         emptyView.setText(LocaleController.getString("NoPhotos", R.string.NoPhotos));
-        frameLayout.addView(emptyView);
-        layoutParams = (FrameLayout.LayoutParams) emptyView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.bottomMargin = AndroidUtilities.dp(48);
-        emptyView.setLayoutParams(layoutParams);
+        frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 48));
         emptyView.setOnTouchListener((v, event) -> true);
 
         progressView = new FrameLayout(context);
         progressView.setVisibility(View.GONE);
-        frameLayout.addView(progressView);
-        layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.bottomMargin = AndroidUtilities.dp(48);
-        progressView.setLayoutParams(layoutParams);
+        frameLayout.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 48));
 
         RadialProgressView progressBar = new RadialProgressView(context);
-        progressView.addView(progressBar);
-        layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.gravity = Gravity.CENTER;
-        progressView.setLayoutParams(layoutParams);
+        progressBar.setProgressColor(0xff527da3);
+        progressView.addView(progressBar, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+
+        shadowView = new View(context);
+        shadowView.setBackgroundColor(Theme.getColor(Theme.key_dialogShadowLine));
+        frameLayout.addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 48));
 
         pickerBottomLayout = new PickerBottomLayout(context);
-        frameLayout.addView(pickerBottomLayout);
-        layoutParams = (FrameLayout.LayoutParams) pickerBottomLayout.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = AndroidUtilities.dp(48);
-        layoutParams.gravity = Gravity.BOTTOM;
-        pickerBottomLayout.setLayoutParams(layoutParams);
+        frameLayout.addView(pickerBottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
         pickerBottomLayout.cancelButton.setOnClickListener(view -> finishFragment());
         pickerBottomLayout.doneButton.setOnClickListener(view -> {
             sendSelectedPhotos(selectedPhotos, selectedPhotosOrder);
@@ -264,8 +258,9 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         }
     }
 
-    public void setMaxSelectedPhotos(int value) {
+    public void setMaxSelectedPhotos(int value, boolean order) {
         maxSelectedPhotos = value;
+        allowOrder = order;
     }
 
     public void setAllowSearchImages(boolean value) {
@@ -389,10 +384,8 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 recentImages = recentGifImages;
             }
         }
-
-        PhotoPickerActivity fragment;
         if (albumEntry != null) {
-            fragment = new PhotoPickerActivity(type, albumEntry, selectedPhotos, selectedPhotosOrder, recentImages, selectPhotoType, allowCaption, chatActivity);
+            PhotoPickerActivity fragment = new PhotoPickerActivity(type, albumEntry, selectedPhotos, selectedPhotosOrder, recentImages, selectPhotoType, allowCaption, chatActivity);
             fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
                 @Override
                 public void selectedPhotosChanged() {
@@ -409,27 +402,49 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                     }
                 }
             });
+            fragment.setMaxSelectedPhotos(maxSelectedPhotos, allowOrder);
+            presentFragment(fragment);
         } else {
             final HashMap<Object, Object> photos = new HashMap<>();
             final ArrayList<Object> order = new ArrayList<>();
-            fragment = new PhotoPickerActivity(type, albumEntry, photos, order, recentImages, selectPhotoType, allowCaption, chatActivity);
-            fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
-                @Override
-                public void selectedPhotosChanged() {
+            if (allowGifs) {
+                PhotoPickerSearchActivity fragment = new PhotoPickerSearchActivity(photos, order, recentImages, selectPhotoType, allowCaption, chatActivity);
+                fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
+                    @Override
+                    public void selectedPhotosChanged() {
 
-                }
-
-                @Override
-                public void actionButtonPressed(boolean canceled) {
-                    removeSelfFromStack();
-                    if (!canceled) {
-                        sendSelectedPhotos(photos, order);
                     }
-                }
-            });
+
+                    @Override
+                    public void actionButtonPressed(boolean canceled) {
+                        removeSelfFromStack();
+                        if (!canceled) {
+                            sendSelectedPhotos(photos, order);
+                        }
+                    }
+                });
+                fragment.setMaxSelectedPhotos(maxSelectedPhotos, allowOrder);
+                presentFragment(fragment);
+            } else {
+                PhotoPickerActivity fragment = new PhotoPickerActivity(0, albumEntry, photos, order, recentImages, selectPhotoType, allowCaption, chatActivity);
+                fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
+                    @Override
+                    public void selectedPhotosChanged() {
+
+                    }
+
+                    @Override
+                    public void actionButtonPressed(boolean canceled) {
+                        removeSelfFromStack();
+                        if (!canceled) {
+                            sendSelectedPhotos(photos, order);
+                        }
+                    }
+                });
+                fragment.setMaxSelectedPhotos(maxSelectedPhotos, allowOrder);
+                presentFragment(fragment);
+            }
         }
-        fragment.setMaxSelectedPhotos(maxSelectedPhotos);
-        presentFragment(fragment);
     }
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
@@ -447,65 +462,61 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
         @Override
         public int getItemCount() {
-            if (!allowSearchImages) {
-                return albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0;
-            }
-            return 1 + (albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0);
+            return albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0;
         }
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view;
-            switch (viewType) {
-                case 0: {
-                    PhotoPickerAlbumsCell cell = new PhotoPickerAlbumsCell(mContext);
-                    cell.setDelegate(albumEntry -> openPhotoPicker(albumEntry, 0));
-                    view = cell;
-                    break;
-                }
-                case 1:
-                default: {
-                    PhotoPickerSearchCell cell = new PhotoPickerSearchCell(mContext, allowGifs);
-                    cell.setDelegate(index -> openPhotoPicker(null, index));
-                    view = cell;
-                    break;
-                }
-            }
-            return new RecyclerListView.Holder(view);
+            PhotoPickerAlbumsCell cell = new PhotoPickerAlbumsCell(mContext);
+            cell.setDelegate(albumEntry -> openPhotoPicker(albumEntry, 0));
+            return new RecyclerListView.Holder(cell);
         }
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            if (holder.getItemViewType() == 0) {
-                PhotoPickerAlbumsCell photoPickerAlbumsCell = (PhotoPickerAlbumsCell) holder.itemView;
-                photoPickerAlbumsCell.setAlbumsCount(columnsCount);
-                for (int a = 0; a < columnsCount; a++) {
-                    int index;
-                    if (!allowSearchImages) {
-                        index = position * columnsCount + a;
-                    } else {
-                        index = (position - 1) * columnsCount + a;
-                    }
-                    if (index < albumsSorted.size()) {
-                        MediaController.AlbumEntry albumEntry = albumsSorted.get(index);
-                        photoPickerAlbumsCell.setAlbum(a, albumEntry);
-                    } else {
-                        photoPickerAlbumsCell.setAlbum(a, null);
-                    }
+            PhotoPickerAlbumsCell photoPickerAlbumsCell = (PhotoPickerAlbumsCell) holder.itemView;
+            photoPickerAlbumsCell.setAlbumsCount(columnsCount);
+            for (int a = 0; a < columnsCount; a++) {
+                int index = position * columnsCount + a;
+                if (index < albumsSorted.size()) {
+                    MediaController.AlbumEntry albumEntry = albumsSorted.get(index);
+                    photoPickerAlbumsCell.setAlbum(a, albumEntry);
+                } else {
+                    photoPickerAlbumsCell.setAlbum(a, null);
                 }
-                photoPickerAlbumsCell.requestLayout();
             }
+            photoPickerAlbumsCell.requestLayout();
         }
 
         @Override
         public int getItemViewType(int i) {
-            if (!allowSearchImages) {
-                return 0;
-            }
-            if (i == 0) {
-                return 1;
-            }
             return 0;
         }
+    }
+
+    @Override
+    public ThemeDescription[] getThemeDescriptions() {
+        return new ThemeDescription[]{
+                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogBackground),
+
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogBackground),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_dialogTextBlack),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_dialogTextBlack),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_dialogButtonSelector),
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_dialogBackground),
+
+                new ThemeDescription(shadowView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogShadowLine),
+
+                new ThemeDescription(pickerBottomLayout, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogBackground),
+                new ThemeDescription(pickerBottomLayout, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{PickerBottomLayout.class}, new String[]{"cancelButton"}, null, null, null, Theme.key_picker_enabledButton),
+                new ThemeDescription(pickerBottomLayout, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{PickerBottomLayout.class}, new String[]{"doneButtonTextView"}, null, null, null, Theme.key_picker_enabledButton),
+                new ThemeDescription(pickerBottomLayout, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{PickerBottomLayout.class}, new String[]{"doneButtonTextView"}, null, null, null, Theme.key_picker_disabledButton),
+                new ThemeDescription(pickerBottomLayout, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{PickerBottomLayout.class}, new String[]{"doneButtonBadgeTextView"}, null, null, null, Theme.key_picker_badgeText),
+                new ThemeDescription(pickerBottomLayout, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, new Class[]{PickerBottomLayout.class}, new String[]{"doneButtonBadgeTextView"}, null, null, null, Theme.key_picker_badge),
+
+                new ThemeDescription(listView, 0, new Class[]{View.class}, null, new Drawable[]{Theme.chat_attachEmptyDrawable}, null, Theme.key_chat_attachEmptyImage),
+                new ThemeDescription(listView, 0, new Class[]{View.class}, null, null, null, Theme.key_chat_attachPhotoBackground),
+        };
     }
 }

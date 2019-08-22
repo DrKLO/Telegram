@@ -13,12 +13,9 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.Dialog;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -29,7 +26,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.telephony.PhoneNumberUtils;
-import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.InputType;
@@ -50,12 +46,10 @@ import android.widget.TextView;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SmsReceiver;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -388,24 +382,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
             req.hash = hash;
             req.settings = new TLRPC.TL_codeSettings();
             req.settings.allow_flashcall = false;//simcardAvailable && allowCall;
-            if (Build.VERSION.SDK_INT >= 26) {
-                try {
-                    req.settings.app_hash = SmsManager.getDefault().createAppSpecificSmsToken(PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, new Intent(ApplicationLoader.applicationContext, SmsReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT));
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                }
-            } else {
-                req.settings.app_hash = BuildVars.SMS_HASH;
-                req.settings.app_hash_persistent = true;
-            }
-            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-            if (!TextUtils.isEmpty(req.settings.app_hash)) {
-                req.settings.flags |= 8;
-                preferences.edit().putString("sms_hash", req.settings.app_hash).commit();
-            } else {
-                preferences.edit().remove("sms_hash").commit();
-            }
-
+            req.settings.allow_app_hash = ApplicationLoader.hasPlayServices;
             if (req.settings.allow_flashcall) {
                 try {
                     @SuppressLint("HardwareIds") String number = tm.getLine1Number();

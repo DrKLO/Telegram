@@ -8,6 +8,7 @@
 
 package org.telegram.ui.ActionBar;
 
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -96,6 +97,7 @@ public class ThemeDescription {
     public static int FLAG_AB_SUBMENUBACKGROUND         = 0x80000000;
 
     private View viewToInvalidate;
+    private int alphaOverride = -1;
     private Paint[] paintToUpdate;
     private Drawable[] drawablesToUpdate;
     private Class[] listClasses;
@@ -157,6 +159,10 @@ public class ThemeDescription {
     }
 
     public ThemeDescription(View view, int flags, Class[] classes, String[] classesFields, Paint[] paint, Drawable[] drawables, ThemeDescriptionDelegate themeDescriptionDelegate, String key) {
+        this(view, flags, classes, classesFields, paint, drawables, -1, themeDescriptionDelegate, key);
+    }
+
+    public ThemeDescription(View view, int flags, Class[] classes, String[] classesFields, Paint[] paint, Drawable[] drawables, int alpha, ThemeDescriptionDelegate themeDescriptionDelegate, String key) {
         currentKey = key;
         paintToUpdate = paint;
         drawablesToUpdate = drawables;
@@ -164,6 +170,7 @@ public class ThemeDescription {
         changeFlags = flags;
         listClasses = classes;
         listClassesFieldName = classesFields;
+        alphaOverride = alpha;
         delegate = themeDescriptionDelegate;
         cachedFields = new HashMap<>();
         notFoundCachedFields = new HashMap<>();
@@ -210,6 +217,10 @@ public class ThemeDescription {
     public void setColor(int color, boolean useDefault, boolean save) {
         if (save) {
             Theme.setColor(currentKey, color, useDefault);
+        }
+        currentColor = color;
+        if (alphaOverride > 0) {
+            color = Color.argb(alphaOverride, Color.red(color), Color.green(color), Color.blue(color));
         }
         if (paintToUpdate != null) {
             for (int a = 0; a < paintToUpdate.length; a++) {
@@ -465,7 +476,6 @@ public class ThemeDescription {
             }
             processViewColor(viewToInvalidate, color);
         }
-        currentColor = color;
         if (delegate != null) {
             delegate.didSetColor();
         }

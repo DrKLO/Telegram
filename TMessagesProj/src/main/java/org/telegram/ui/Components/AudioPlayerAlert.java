@@ -299,11 +299,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         actionBar.addView(avatarContainer, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 56, 0, 40, 0));
 
         ActionBarMenu menu = actionBar.createMenu();
-        menu.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
         menuItem = menu.addItem(0, R.drawable.ic_ab_other);
         menuItem.addSubItem(1, R.drawable.msg_forward, LocaleController.getString("Forward", R.string.Forward));
         menuItem.addSubItem(2, R.drawable.msg_shareout, LocaleController.getString("ShareFile", R.string.ShareFile));
         menuItem.addSubItem(4, R.drawable.msg_message, LocaleController.getString("ShowInChat", R.string.ShowInChat));
+        menuItem.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
         menuItem.setTranslationX(AndroidUtilities.dp(48));
         menuItem.setAlpha(0.0f);
 
@@ -449,9 +449,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             isInFullMode = !isInFullMode;
             listView.setScrollEnabled(false);
             if (isInFullMode) {
-                shuffleButton.setAdditionalOffset(-AndroidUtilities.dp(20 + 48));
+                shuffleButton.setAdditionalYOffset(-AndroidUtilities.dp(20 + 48));
             } else {
-                shuffleButton.setAdditionalOffset(-AndroidUtilities.dp(10));
+                shuffleButton.setAdditionalYOffset(-AndroidUtilities.dp(10));
             }
         });
 
@@ -473,7 +473,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         optionsButton = new ActionBarMenuItem(context, null, 0, Theme.getColor(Theme.key_player_actionBarItems));
         optionsButton.setLongClickEnabled(false);
         optionsButton.setIcon(R.drawable.ic_ab_other);
-        optionsButton.setAdditionalOffset(-AndroidUtilities.dp(120));
+        optionsButton.setAdditionalYOffset(-AndroidUtilities.dp(120));
         playerLayout.addView(optionsButton, LayoutHelper.createFrame(40, 40, Gravity.TOP | Gravity.RIGHT, 0, 19, 10, 0));
         optionsButton.addSubItem(1, R.drawable.msg_forward, LocaleController.getString("Forward", R.string.Forward));
         optionsButton.addSubItem(2, R.drawable.msg_shareout, LocaleController.getString("ShareFile", R.string.ShareFile));
@@ -519,7 +519,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
         buttons[0] = shuffleButton = new ActionBarMenuItem(context, null, 0, 0);
         shuffleButton.setLongClickEnabled(false);
-        shuffleButton.setAdditionalOffset(-AndroidUtilities.dp(10));
+        shuffleButton.setAdditionalYOffset(-AndroidUtilities.dp(10));
         bottomView.addView(shuffleButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
         shuffleButton.setOnClickListener(v -> shuffleButton.toggleSubMenu());
 

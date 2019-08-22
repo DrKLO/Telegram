@@ -214,6 +214,21 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
         }
     }
 
+    public void updateColors() {
+        if (currentStyle == STYLE_FRAGMENT) {
+            editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+            editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        } else {
+            editText.setHintTextColor(Theme.getColor(Theme.key_dialogTextHint));
+            editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        }
+        emojiButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
+        if (emojiView != null) {
+            emojiView.updateColors();
+        }
+    }
+
     public void setMaxLines(int value) {
         editText.setMaxLines(value);
     }

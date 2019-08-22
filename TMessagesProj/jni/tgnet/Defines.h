@@ -179,4 +179,15 @@ inline std::string to_string_uint64(uint64_t value) {
     return std::string(buf, (uint32_t) len);
 }
 
+inline int32_t char2int(char input) {
+    if (input >= '0' && input <= '9') {
+        return input - '0';
+    } else if (input >= 'A' && input <= 'F') {
+        return (char) (input - 'A' + 10);
+    } else if (input >= 'a' && input <= 'f') {
+        return (char) (input - 'a' + 10);
+    }
+    return 0;
+}
+
 #endif

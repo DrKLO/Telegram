@@ -236,6 +236,16 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
         lastSticker = emoji.toString();
         stickersToLoad.clear();
         boolean isValidEmoji = searchEmoji && (Emoji.isValidEmoji(originalEmoji) || Emoji.isValidEmoji(lastSticker));
+        if (isValidEmoji) {
+            TLRPC.Document animatedSticker = MediaDataController.getInstance(currentAccount).getEmojiAnimatedSticker(emoji);
+            if (animatedSticker != null) {
+                ArrayList<TLRPC.TL_messages_stickerSet> sets = MediaDataController.getInstance(currentAccount).getStickerSets(MediaDataController.TYPE_EMOJI);
+                File f = FileLoader.getPathToAttach(animatedSticker, true);
+                if (!f.exists()) {
+                    FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForDocument(animatedSticker), sets.get(0), null, 1, 1);
+                }
+            }
+        }
         if (emojiOnly || SharedConfig.suggestStickers == 2 || !isValidEmoji) {
             if (visible && (keywordResults == null || keywordResults.isEmpty())) {
                 visible = false;

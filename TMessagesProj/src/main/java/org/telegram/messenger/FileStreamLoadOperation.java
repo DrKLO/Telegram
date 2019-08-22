@@ -69,7 +69,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
         } else if (document.mime_type.startsWith("audio")) {
             document.attributes.add(new TLRPC.TL_documentAttributeAudio());
         }
-        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, parentObject, currentOffset = (int) dataSpec.position);
+        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, parentObject, currentOffset = (int) dataSpec.position, false);
         bytesRemaining = dataSpec.length == C.LENGTH_UNSET ? document.size - dataSpec.position : dataSpec.length;
         if (bytesRemaining < 0) {
             throw new EOFException();
@@ -95,14 +95,16 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                 if (bytesRemaining < readLength) {
                     readLength = (int) bytesRemaining;
                 }
-                while (availableLength == 0) {
+                while (availableLength == 0 && opened) {
                     availableLength = loadOperation.getDownloadedLengthFromOffset(currentOffset, readLength);
                     if (availableLength == 0) {
-                        FileLog.d("not found bytes " + offset);
-                        FileLoader.getInstance(currentAccount).loadStreamFile(this, document, parentObject, currentOffset);
+                        FileLoader.getInstance(currentAccount).loadStreamFile(this, document, parentObject, currentOffset, false);
                         countDownLatch = new CountDownLatch(1);
                         countDownLatch.await();
                     }
+                }
+                if (!opened) {
+                    return 0;
                 }
                 file.readFully(buffer, offset, availableLength);
                 currentOffset += availableLength;
@@ -125,9 +127,6 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
         if (loadOperation != null) {
             loadOperation.removeStreamListener(this);
         }
-        if (countDownLatch != null) {
-            countDownLatch.countDown();
-        }
         if (file != null) {
             try {
                 file.close();
@@ -140,6 +139,9 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
         if (opened) {
             opened = false;
             transferEnded();
+        }
+        if (countDownLatch != null) {
+            countDownLatch.countDown();
         }
     }
 

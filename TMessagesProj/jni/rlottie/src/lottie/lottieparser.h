@@ -20,12 +20,13 @@
 #define LOTTIEPARSER_H
 
 #include "lottiemodel.h"
+#include <map>
 
 class LottieParserImpl;
 class LottieParser {
 public:
     ~LottieParser();
-    LottieParser(char* str, const char *dir_path);
+    LottieParser(char* str, const char *dir_path, std::map<int32_t, int32_t> &colorReplacement);
     std::shared_ptr<LOTModel> model();
     bool hasParsingError();
 private:

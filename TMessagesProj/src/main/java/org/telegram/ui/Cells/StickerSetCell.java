@@ -28,6 +28,7 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
@@ -53,12 +54,13 @@ public class StickerSetCell extends FrameLayout {
         textView = new TextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textView.setLines(1);
         textView.setMaxLines(1);
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 40 : 71, 10, LocaleController.isRTL ? 71 : 40, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 40 : 71, 9, LocaleController.isRTL ? 71 : 40, 0));
 
         valueTextView = new TextView(context);
         valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
@@ -67,18 +69,18 @@ public class StickerSetCell extends FrameLayout {
         valueTextView.setMaxLines(1);
         valueTextView.setSingleLine(true);
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 40 : 71, 35, LocaleController.isRTL ? 71 : 40, 0));
+        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 40 : 71, 32, LocaleController.isRTL ? 71 : 40, 0));
 
         imageView = new BackupImageView(context);
         imageView.setAspectFit(true);
         imageView.setLayerNum(1);
-        addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
+        addView(imageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 13, 9, LocaleController.isRTL ? 13 : 0, 0));
 
         if (option == 2) {
             progressView = new RadialProgressView(getContext());
             progressView.setProgressColor(Theme.getColor(Theme.key_dialogProgressCircle));
             progressView.setSize(AndroidUtilities.dp(30));
-            addView(progressView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
+            addView(progressView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 5, LocaleController.isRTL ? 12 : 0, 0));
         } else if (option != 0) {
             optionsButton = new ImageView(context);
             optionsButton.setFocusable(false);
@@ -87,18 +89,18 @@ public class StickerSetCell extends FrameLayout {
             if (option == 1) {
                 optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
                 optionsButton.setImageResource(R.drawable.msg_actions);
-                addView(optionsButton, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP));
+                addView(optionsButton, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL));
             } else if (option == 3) {
                 optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addedIcon), PorterDuff.Mode.MULTIPLY));
                 optionsButton.setImageResource(R.drawable.sticker_added);
-                addView(optionsButton, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, (LocaleController.isRTL ? 10 : 0), 12, (LocaleController.isRTL ? 0 : 10), 0));
+                addView(optionsButton, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, (LocaleController.isRTL ? 10 : 0), 9, (LocaleController.isRTL ? 0 : 10), 0));
             }
         }
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(58) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
     }
 
     public void setText(String title, String subtitle, int icon, boolean divider) {
@@ -145,15 +147,34 @@ public class StickerSetCell extends FrameLayout {
             valueTextView.setAlpha(1.0f);
             imageView.setAlpha(1.0f);
         }
+
         ArrayList<TLRPC.Document> documents = set.documents;
         if (documents != null && !documents.isEmpty()) {
             valueTextView.setText(LocaleController.formatPluralString("Stickers", documents.size()));
-            TLRPC.Document document = documents.get(0);
-            TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-            if (MessageObject.canAutoplayAnimatedSticker(document)) {
-                imageView.setImage(ImageLocation.getForDocument(document), "80_80", ImageLocation.getForDocument(thumb, document), null, 0, set);
+
+            TLRPC.Document sticker = documents.get(0);
+            TLObject object;
+            if (set.set.thumb instanceof TLRPC.TL_photoSize) {
+                object = set.set.thumb;
             } else {
-                imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", null, set);
+                object = sticker;
+            }
+            ImageLocation imageLocation;
+
+            if (object instanceof TLRPC.Document) {
+                TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
+                imageLocation = ImageLocation.getForDocument(thumb, sticker);
+            } else {
+                TLRPC.PhotoSize thumb = (TLRPC.PhotoSize) object;
+                imageLocation = ImageLocation.getForSticker(thumb, sticker);
+            }
+
+            if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker)) {
+                imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", imageLocation, null, 0, set);
+            } else if (imageLocation != null && imageLocation.lottieAnimation) {
+                imageView.setImage(imageLocation, "50_50", "tgs", null, set);
+            } else {
+                imageView.setImage(imageLocation, "50_50", "webp", null, set);
             }
         } else {
             valueTextView.setText(LocaleController.formatPluralString("Stickers", 0));

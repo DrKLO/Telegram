@@ -63,7 +63,7 @@ public class Switch extends View {
     private boolean drawRipple;
     private RippleDrawable rippleDrawable;
     private Paint ripplePaint;
-    private int pressedState[] = new int[]{android.R.attr.state_enabled, android.R.attr.state_pressed};
+    private int[] pressedState = new int[]{android.R.attr.state_enabled, android.R.attr.state_pressed};
     private int colorSet;
 
     private boolean bitmapsCreated;

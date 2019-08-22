@@ -8,10 +8,8 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -30,7 +28,6 @@ import android.provider.MediaStore;
 import androidx.core.content.FileProvider;
 
 import android.telephony.PhoneNumberUtils;
-import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -70,7 +67,6 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -87,7 +83,6 @@ import org.telegram.messenger.SecureDocument;
 import org.telegram.messenger.SecureDocumentKey;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.SmsReceiver;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -6281,23 +6276,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         req.phone_number = phone;
         req.settings = new TLRPC.TL_codeSettings();
         req.settings.allow_flashcall = simcardAvailable && allowCall;
-        if (Build.VERSION.SDK_INT >= 26) {
-            try {
-                req.settings.app_hash = SmsManager.getDefault().createAppSpecificSmsToken(PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, new Intent(ApplicationLoader.applicationContext, SmsReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT));
-            } catch (Throwable e) {
-                FileLog.e(e);
-            }
-        } else {
-            req.settings.app_hash = BuildVars.SMS_HASH;
-            req.settings.app_hash_persistent = true;
-        }
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        if (!TextUtils.isEmpty(req.settings.app_hash)) {
-            req.settings.flags |= 8;
-            preferences.edit().putString("sms_hash", req.settings.app_hash).commit();
-        } else {
-            preferences.edit().remove("sms_hash").commit();
-        }
+        req.settings.allow_app_hash = ApplicationLoader.hasPlayServices;
         if (req.settings.allow_flashcall) {
             try {
                 @SuppressLint("HardwareIds")
@@ -6807,7 +6786,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
         createChatAttachView();
         chatAttachAlert.setOpenWithFrontFaceCamera(uploadingFileType == UPLOADING_TYPE_SELFIE);
-        chatAttachAlert.setMaxSelectedPhotos(getMaxSelectedDocuments());
+        chatAttachAlert.setMaxSelectedPhotos(getMaxSelectedDocuments(), false);
         chatAttachAlert.loadGalleryPhotos();
         if (Build.VERSION.SDK_INT == 21 || Build.VERSION.SDK_INT == 22) {
             AndroidUtilities.hideKeyboard(fragmentView.findFocus());
@@ -6825,7 +6804,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             chatAttachAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
 
                 @Override
-                public void didPressedButton(int button) {
+                public void didPressedButton(int button, boolean arg) {
                     if (getParentActivity() == null || chatAttachAlert == null) {
                         return;
                     }
@@ -6874,8 +6853,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }
 
                 @Override
-                public boolean allowGroupPhotos() {
-                    return false;
+                public void needEnterComment() {
+
                 }
             });
         }
@@ -6921,7 +6900,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
             PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(0, false, false, null);
             fragment.setCurrentAccount(currentAccount);
-            fragment.setMaxSelectedPhotos(getMaxSelectedDocuments());
+            fragment.setMaxSelectedPhotos(getMaxSelectedDocuments(), false);
             fragment.setAllowSearchImages(false);
             fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
                 @Override

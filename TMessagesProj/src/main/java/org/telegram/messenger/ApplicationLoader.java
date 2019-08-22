@@ -53,6 +53,8 @@ public class ApplicationLoader extends Application {
     public static volatile boolean mainInterfacePausedStageQueue = true;
     public static volatile long mainInterfacePausedStageQueueTime;
 
+    public static boolean hasPlayServices;
+
     public static File getFilesDirFixed() {
         for (int a = 0; a < 10; a++) {
             File path = ApplicationLoader.applicationContext.getFilesDir();
@@ -140,7 +142,6 @@ public class ApplicationLoader extends Application {
             TLRPC.User user = UserConfig.getInstance(a).getCurrentUser();
             if (user != null) {
                 MessagesController.getInstance(a).putUser(user, true);
-                MessagesController.getInstance(a).getBlockedUsers(true);
                 SendMessagesHelper.getInstance(a).checkUnsentMessages();
             }
         }
@@ -221,7 +222,7 @@ public class ApplicationLoader extends Application {
 
     private void initPlayServices() {
         AndroidUtilities.runOnUIThread(() -> {
-            if (checkPlayServices()) {
+            if (hasPlayServices = checkPlayServices()) {
                 final String currentPushString = SharedConfig.pushString;
                 if (!TextUtils.isEmpty(currentPushString)) {
                     if (BuildVars.DEBUG_PRIVATE_VERSION && BuildVars.LOGS_ENABLED) {

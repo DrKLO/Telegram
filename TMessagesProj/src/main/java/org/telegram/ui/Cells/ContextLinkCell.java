@@ -637,6 +637,11 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
         }
 
         if (!mediaWebpage) {
+            if (drawLinkImageView && !PhotoViewer.isShowingImage(inlineResult)) {
+                letterDrawable.setAlpha((int) (255 * (1.0f - linkImageView.getCurrentAlpha())));
+            } else {
+                letterDrawable.setAlpha(255);
+            }
             if (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC) {
                 radialProgress.setProgressColor(Theme.getColor(buttonPressed ? Theme.key_chat_inAudioSelectedProgress : Theme.key_chat_inAudioProgress));
                 radialProgress.draw(canvas);

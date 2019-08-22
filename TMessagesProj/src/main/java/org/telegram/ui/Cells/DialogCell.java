@@ -216,9 +216,8 @@ public class DialogCell extends BaseCell {
         useForceThreeLines = forceThreeLines;
 
         if (needCheck) {
-            checkBox = new CheckBox2(context);
+            checkBox = new CheckBox2(context, 21);
             checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
-            checkBox.setSize(21);
             checkBox.setDrawUnchecked(false);
             checkBox.setDrawBackgroundAsArc(3);
             addView(checkBox);

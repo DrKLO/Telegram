@@ -315,8 +315,355 @@ public:
     void serializeToStream(NativeByteBuffer *stream);
 };
 
-class TL_auth_authorization : public TLObject {
+class InputPeer : public TLObject {
 
+public:
+    int32_t user_id;
+    int32_t chat_id;
+    int32_t channel_id;
+    int64_t access_hash;
+
+    static InputPeer *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+};
+
+class TL_inputPeerSelf : public InputPeer {
+
+public:
+    static const uint32_t constructor = 0x7da07ec9;
+
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_inputPeerUser : public InputPeer {
+
+public:
+    static const uint32_t constructor = 0x7b8e7de6;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_inputPeerChat : public InputPeer {
+
+public:
+    static const uint32_t constructor = 0x179be863;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_inputPeerUserFromMessage : public InputPeer {
+
+public:
+    static const uint32_t constructor = 0x17bae2e6;
+
+    std::unique_ptr<InputPeer> peer;
+    int32_t msg_id;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_inputPeerChannelFromMessage : public InputPeer {
+    
+public:
+    static const uint32_t constructor = 0x9c95f7bb;
+
+    std::unique_ptr<InputPeer> peer;
+    int32_t msg_id;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_inputPeerChannel : public InputPeer {
+    
+public:
+    static const uint32_t constructor = 0x20adaef8;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_inputPeerEmpty : public InputPeer {
+
+public:
+    static const uint32_t constructor = 0x7f3b18ea;
+
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class InputUser : public TLObject {
+
+public:
+    int32_t user_id;
+    int64_t access_hash;
+
+    static InputUser *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+};
+
+class TL_inputUserSelf : public InputUser {
+    
+public:
+    static const uint32_t constructor = 0xf7c1b13f;
+
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_inputUser : public InputUser {
+
+public:
+    static const uint32_t constructor = 0xd8292816;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_inputUserEmpty : public InputUser {
+    
+public:
+    static const uint32_t constructor = 0xb98886cf;
+
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_inputUserFromMessage : public InputUser {
+
+public:
+    static const uint32_t constructor = 0x2d117597;
+
+    std::unique_ptr<InputPeer> peer;
+    int32_t msg_id;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class MessageEntity : public TLObject {
+
+public:
+    int32_t offset;
+    int32_t length;
+    std::string url;
+    std::string language;
+
+    static MessageEntity *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+};
+
+class TL_messageEntityTextUrl : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0x76a6d327;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityBotCommand : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0x6cef8ac7;
+    
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityEmail : public MessageEntity {
+    
+public:
+    static const uint32_t constructor = 0x64e475c2;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityPre : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0x73924be0;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityUnknown : public MessageEntity {
+public:
+    static const uint32_t constructor = 0xbb92ba95;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityUrl : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0x6ed02538;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityItalic : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0x826f8b60;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityMention : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0xfa04579d;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityMentionName : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0x352dca58;
+
+    int32_t user_id;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_inputMessageEntityMentionName : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0x208e68c9;
+
+    std::unique_ptr<InputUser> user_id;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityCashtag : public MessageEntity {
+    
+public:
+    static const uint32_t constructor = 0x4c4e743f;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityBold : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0xbd610bc9;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityHashtag : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0x6f635b0d;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityCode : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0x28a20571;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityStrike : public MessageEntity {
+    
+public:
+    static const uint32_t constructor = 0xbf0693d4;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityBlockquote : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0x20df5d0;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityUnderline : public MessageEntity {
+
+public:
+    static const uint32_t constructor = 0x9c4e7e8b;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_messageEntityPhone : public MessageEntity {
+    
+public:
+    static const uint32_t constructor = 0x9b69e34b;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_dataJSON : public TLObject {
+
+public:
+    static const uint32_t constructor = 0x7d748d04;
+
+    std::string data;
+
+    static TL_dataJSON *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_help_termsOfService : public TLObject {
+
+public:
+    static const uint32_t constructor = 0x780a0310;
+
+    int32_t flags;
+    bool popup;
+    std::unique_ptr<TL_dataJSON> id;
+    std::string text;
+    std::vector<std::unique_ptr<MessageEntity>> entities;
+    int32_t min_age_confirm;
+
+    static TL_help_termsOfService *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class auth_Authorization : public TLObject {
+
+public:
+    static auth_Authorization *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+};
+
+class TL_auth_authorizationSignUpRequired : public auth_Authorization {
+
+public:
+    static const uint32_t constructor = 0x44747e9a;
+
+    int32_t flags;
+    std::unique_ptr<TL_help_termsOfService> terms_of_service;
+
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
+class TL_auth_authorization : public auth_Authorization {
+    
 public:
     static const uint32_t constructor = 0xcd050916;
 
@@ -324,8 +671,8 @@ public:
     int32_t tmp_sessions;
     std::unique_ptr<User> user;
 
-    static TL_auth_authorization *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
 };
 
 class TL_auth_exportedAuthorization : public TLObject {

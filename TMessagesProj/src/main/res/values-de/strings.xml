@@ -195,7 +195,7 @@
     <string name="SendGifPreview">GIF senden</string>
     <string name="ViewPackPreview">Paket anzeigen</string>
     <string name="PinToTop">Oben anheften</string>
-    <string name="PinToTopLimitReached">Mehr als %1$s kann man leider nicht oben anheften.</string>
+    <string name="PinToTopLimitReached">Bis zu %1$s kann man in der Chatliste oben anheften.\n\nWenn du mehr Ordnung brauchst, versuche einige Chats zu archivieren. Der Ordner \"Archivierte Chats\" erlaubt das Anheften von beliebig vielen Chats.</string>
     <string name="UnpinFromTop">Oben entfernen</string>
     <string name="MarkAsUnread">Als ungelesen markieren</string>
     <string name="MarkAsRead">Als gelesen markieren</string>
@@ -231,7 +231,7 @@
     <string name="MegaLeaveAlertWithName">Wirklich **%1$s** verlassen?</string>
     <string name="GroupUserCantAdd">Du kannst diesen Nutzer nicht hinzufügen.</string>
     <string name="GroupUserAddLimit">Leider ist diese Gruppe schon voll.</string>
-    <string name="GroupUserLeftError">Dieser Nutzer hat die Gruppe verlassen, deshalb kannst du ihn nicht wieder hinzufügen.</string>
+    <string name="GroupUserLeftError">Wenn jemand eine Gruppe verlassen hat, musst du in der Kontaktliste der Person sein, um sie wieder hinzufügen zu können.\n\nMan kann die Gruppe auch über einen Einladungslink betreten, so lange die Person nicht in der Liste \"Entfernte Nutzer\" der Gruppe steht.</string>
     <string name="GroupUserCantAdmin">Es gibt bereits zu viele Administratoren.</string>
     <string name="PublicChannelsTooMuch">Der ausgewählte Nutzer hat zu viele öffentliche Gruppen oder Kanäle. Bitte die Person, einfach einen Kanal oder eine Gruppe privat zu stellen.</string>
     <string name="LocatedChannelsTooMuch">Der ausgewählte Nutzer hat zu viele lokale Gruppen. Bitte die Person, Gruppen bei sich zu löschen oder Inhaber-Rechte an andere zu vergeben.</string>
@@ -336,7 +336,7 @@
     <string name="ChannelAdmin">Admin</string>
     <string name="ChannelMute">STUMM</string>
     <string name="ChannelUnmute">STUMM AUS</string>
-    <string name="ChannelAddAdmin">Administrator hinzufügen</string>
+    <string name="ChannelAddAdmin">Admin hinzufügen</string>
     <string name="ChannelBlockUser">Nutzer entfernen</string>
     <string name="Unban">Entsperren</string>
     <string name="UnbanText">Gedrückt halten um zu entsperren</string>
@@ -388,6 +388,8 @@
     <string name="ChannelSignMessages">Nachrichten unterschreiben</string>
     <string name="ChannelSignMessagesInfo">Zeigt Namen der Admins in ausgehenden Nachrichten.</string>
     <string name="EditAdmin">Adminrechte</string>
+    <string name="EditAdminRank">Eigene Bezeichnung</string>
+    <string name="EditAdminRankInfo">Diese Bezeichnung wird anstatt \'%1$s\' angezeigt.</string>
     <string name="EditAdminWhatCanDo">Was kann dieser Admin machen?</string>
     <string name="EditAdminChangeChannelInfo">Kanal-Info ändern</string>
     <string name="EditAdminChangeGroupInfo">Gruppen-Info ändern</string>
@@ -445,7 +447,7 @@
     <string name="UserRestrictionsBlock">Sperren und aus der Gruppe entfernen</string>
     <string name="UserRestrictionsApplyChanges">Änderungen anwenden</string>
     <string name="UserRestrictionsApplyChangesText">Du hast die Rechte des Nutzers bei ** %1$s** geändert. Änderungen anwenden?</string>
-    <string name="UserRestrictionsCustom">Custom</string>
+    <string name="UserRestrictionsCustom">Eigener</string>
     <string name="ManageGroup">Gruppe verwalten</string>
     <string name="ManageChannel">Kanal verwalten</string>
     <string name="ManageGroupMenu">Gruppe verwalten</string>
@@ -501,6 +503,16 @@
     <string name="DiscussionUnlinkChannelAlert">Wirklich Verknüpfung von **%1$s** mit diesem Kanal entfernen?</string>
     <string name="ChannelDiscuss">DISKUTIEREN</string>
     <string name="DiscussChannel">Kanal</string>
+    <string name="Slowmode">Langsamer Modus</string>
+    <string name="SlowmodeOff">Aus</string>
+    <string name="SlowmodeSeconds">%1$ds</string>
+    <string name="SlowmodeMinutes">%1$dm</string>
+    <string name="SlowmodeHours">%1$dh</string>
+    <string name="SlowmodeInfoOff">Wie lange jedes Mitglied warten muss, bevor es seine nächste Nachricht senden darf.</string>
+    <string name="SlowmodeInfoSelected">Intervall zwischen einzelnen Nachrichten: %1$s</string>
+    <string name="SlowmodeSendError">Langsamer Modus ist aktiv, du kannst nicht mehr als eine Nachricht gleichzeitig senden.</string>
+    <string name="SlowmodeSelectSendError">Langsamer Modus ist aktiv, du kannst nicht mehr Elemente auswählen.</string>
+    <string name="SlowmodeSendErrorTooLong">Dieser Text ist für eine einzelne Nachricht leider zu lang.\n\nLangsamer Modus ist aktiv, du kannst nicht mehr als eine gleichzeitig senden.</string>
     <!--polls-->
     <string name="NewPoll">Neue Umfrage</string>
     <string name="Poll">Umfrage</string>
@@ -611,6 +623,8 @@
     <string name="EventLogPromotedAddAdmins">Admins hinzufügen</string>
     <string name="EventLogPromotedBanUsers">Nutzer sperren</string>
     <string name="EventLogPromotedAddUsers">Nutzer hinzufügen</string>
+    <string name="EventLogPromotedTitle">Bezeichnung: %1$s</string>
+    <string name="EventLogPromotedRemovedTitle">Bezeichnung</string>
     <string name="EventLogPromotedPinMessages">Nachrichten anheften</string>
     <string name="EventLogFilterAll">Alle Aktionen</string>
     <string name="EventLogFilterNewRestrictions">Neue Ausnahmen</string>
@@ -622,6 +636,8 @@
     <string name="EventLogFilterEditedMessages">Bearbeitete Nachrichten</string>
     <string name="EventLogFilterPinnedMessages">Angeheftete Nachrichten</string>
     <string name="EventLogFilterLeavingMembers">Ehemalige Mitglieder</string>
+    <string name="EventLogToggledSlowmodeOn">un1 hat den Timer des langsamen Modus auf %1$s gestellt</string>
+    <string name="EventLogToggledSlowmodeOff">un1 hat den langsamen Modus deaktiviert</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Neue Broadcast Liste</string>
     <string name="EnterListName">Listenname</string>
@@ -686,7 +702,7 @@
     <string name="SendingAudio">schickt Audio...</string>
     <string name="SendingPhoto">schickt Bild...</string>
     <string name="SendingGame">spielt ein Spiel...</string>
-    <string name="SendingVideoStatus">schickt Video...</string>
+    <string name="SendingVideoStatus">sendet ein Video...</string>
     <string name="SendingFile">schickt Datei...</string>
     <string name="GotAQuestion">Hast du eine Frage\nzu Telegram?</string>
     <string name="ChatGallery">Galerie</string>
@@ -860,6 +876,9 @@
     <string name="ScamMessage">BETRUG</string>
     <string name="ViaBot">via</string>
     <string name="MessageNotFound">Nachricht existiert nicht</string>
+    <string name="SlowModeHint">Langsamer Modus aktiv.\nBitte warte %1$s.</string>
+    <string name="TapForVideo">Tippen für Foto, halten für Video</string>
+    <string name="SendWithoutSound">Ohne Ton senden</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s hat den Selbstzerstörungs-Timer auf %2$s gesetzt</string>
     <string name="MessageLifetimeChangedOutgoing">Du hast den Selbstzerstörungs-Timer auf %1$s gesetzt</string>
@@ -1075,7 +1094,7 @@
     <string name="StartEncryptedChat">Geheimen Chat starten</string>
     <string name="GroupsInCommon">Gemeinsame Gruppen</string>
     <string name="GroupsInCommonTitle">Gemeinsame Gruppen</string>
-    <string name="NoGroupsInCommon">Noch keine gemeinsamen Gruppen</string>
+    <string name="NoGroupsInCommon">Keine gemeinsamen Gruppen</string>
     <string name="CreateEncryptedChatError">Es ist ein Fehler aufgetreten.</string>
     <string name="EncryptionKey">Geheimer Schlüssel</string>
     <string name="MessageLifetime">Selbstzerstörungs-Timer</string>
@@ -1113,6 +1132,7 @@
     <string name="ErrorOccurred">Es ist ein Fehler aufgetreten.</string>
     <!--stickers view-->
     <string name="StickersName">Sticker</string>
+    <string name="LoopAnimatedStickers">Animationen wiederholen</string>
     <string name="AddStickers">Sticker hinzufügen</string>
     <string name="AddStickersCount">%1$s HINZUFÜGEN</string>
     <string name="RemoveStickersCount">%1$s ENTFERNEN</string>
@@ -1465,7 +1485,7 @@
     <string name="DirectShare">Direktes Teilen</string>
     <string name="DirectShareInfo">Letzte Chats im Teilen-Menü anzeigen</string>
     <string name="Emoji">Emoji</string>
-    <string name="EmojiBigSize">Draw single big emoji</string>
+    <string name="LargeEmoji">Große Emoji</string>
     <string name="EmojiUseDefault">Benutze System-Emoji</string>
     <string name="TelegramVersion">Telegram für Android %1$s</string>
     <string name="DebugMenu">Debug-Menü</string>
@@ -1700,11 +1720,11 @@
     <string name="PassportDocuments">Scans</string>
     <string name="PassportDeleteDocument">Dokument löschen</string>
     <string name="PassportDeleteInfo">Löschen</string>
-    <string name="PassportDeleteScanAlert">Möchtest du diesen Scan wirklich löschen?</string>
-    <string name="PassportDeleteSelfieAlert">Möchtest du dieses Selfie wirklich löschen?</string>
-    <string name="PassportDeleteDocumentAlert">Bist du sicher, dass du dieses Dokument wirklich löschen willst?</string>
+    <string name="PassportDeleteScanAlert">Möchtest du diesen Scan löschen?</string>
+    <string name="PassportDeleteSelfieAlert">Möchtest du dieses Selfie löschen?</string>
+    <string name="PassportDeleteDocumentAlert">Möchtest du dieses Dokument löschen?</string>
     <string name="PassportDeletePersonalAlert">Möchtest du wirklich deine persönlichen Daten löschen?</string>
-    <string name="PassportDeleteAddressAlert">Deine Adressinformationen wirklich löschen?</string>
+    <string name="PassportDeleteAddressAlert">Möchtest du deine Adressdaten löschen?</string>
     <string name="PassportDeleteDocumentPersonal">Persönliche Daten löschen</string>
     <string name="PassportDeleteDocumentAddress">Adressinformationen löschen</string>
     <string name="PassportDeleteScan">Scan löschen?</string>
@@ -1774,7 +1794,7 @@
     <string name="CurrentSession">Aktuelle Sitzung</string>
     <string name="NoOtherSessions">Keine anderen Sitzungen</string>
     <string name="NoOtherSessionsInfo">Du kannst dich von jedem Handy, Tablet und Computer bei Telegram mit derselben Telefonnummer anmelden. Alles wird immer sofort synchronisiert.</string>
-    <string name="OtherSessions">Andere Sitzungen</string>
+    <string name="OtherSessions">Aktive Sitzungen</string>
     <string name="SessionsInfo">Überprüfe alle deine angemeldeten Sitzungen.</string>
     <string name="TerminateSessionInfo">Tippe auf eine Sitzung um sie zu beenden.</string>
     <string name="TerminateSessionQuestion">Diese Sitzung abmelden?</string>
@@ -1816,7 +1836,7 @@
     <string name="FingerprintNotRecognized">Fingerabdruck wurde nicht erkannt. Bitte erneut versuchen.</string>
     <string name="ScreenCapture">App-Inhalte nach Sperrung anzeigen</string>
     <string name="ScreenCaptureInfo">Wenn du diese Funktion deaktivierst, wirst du keine Bildschirmfotos mehr in der App aufnehmen können und Chatinhalte werden in der Liste der geöffneten App ausgeblendet.</string>
-    <string name="ScreenCaptureAlert">Das wird die Inhalte der Chatliste oder Chats in der Liste der geöffneten Apps verstecken, du wirst jedch keine Bildschirmfotos aufnehmen können. \n\nDu wirst die App nach der Änderung neu starten müssen.</string>
+    <string name="ScreenCaptureAlert">Das wird die Inhalte der Chatliste oder Chats in der Liste der geöffneten Apps verstecken, du wirst jedoch keine Bildschirmfotos aufnehmen können. \n\nDu wirst die App nach der Änderung neu starten müssen.</string>
     <string name="TooManyTries">Zu viele Versuche.\nBitte erneut in %1$s versuchen.</string>
     <!--media view-->
     <string name="January">Januar</string>
@@ -1922,12 +1942,16 @@
     <string name="VideoDoesNotSupportStreaming">Dieses Video ist nicht für Streaming optimiert. Du musst es vollständig herunterladen, um es abzuspielen.</string>
     <string name="CantPlayVideo">App konnte dieses Video nicht abspielen. Möchtest du es mit einem externen Player abspielen?</string>
     <string name="NoRecentPhotos">Suchverlauf</string>
+    <string name="ImagesTab">BILDER</string>
+    <string name="GifsTab">GIFS</string>
     <string name="NoRecentGIFs">Suchverlauf</string>
     <string name="SearchImages">BILDERSUCHE</string>
     <string name="SearchImagesInfo">SUCHE IM WEB</string>
     <string name="SearchGifs">GIF-SUCHE</string>
     <string name="SearchImagesTitle">Suche Bilder</string>
     <string name="SearchGifsTitle">Suche GIFs</string>
+    <string name="CameraPermissionText">Antippen, um Zugriff auf deine Kamera zu erlauben</string>
+    <string name="GalleryPermissionText">Antippen, um Zugriff auf deine Galerie zu erlauben</string>
     <string name="CropImage">Bild zuschneiden</string>
     <string name="Enhance">Verbessern</string>
     <string name="Highlights">Lichter</string>
@@ -1972,6 +1996,8 @@
     <string name="CropSquare">Quadrat</string>
     <string name="SinglePhotosHelp">Zeigt Medien als einzelne Nachrichten</string>
     <string name="GroupPhotosHelp">Zeigt alle Medien in einer Nachricht</string>
+    <string name="SendWithoutGrouping">Ohne Gruppierung senden</string>
+    <string name="SendWithoutCompression">Ohne Komprimierung senden</string>
     <!--password view-->
     <string name="TwoStepVerification">Zweistufige Bestätigung</string>
     <string name="TwoStepVerificationTitle">Zweistufige Bestätigung</string>
@@ -2192,7 +2218,7 @@
     <string name="Deactivate">JETZT LÖSCHEN</string>
     <string name="Back">Zurück</string>
     <string name="SignUp">Registrieren</string>
-    <string name="DeclineDeactivate">Ablehnen &amp; Deaktivieren</string>
+    <string name="DeclineDeactivate">Ablehnen &amp; Löschen</string>
     <string name="Next">Weiter</string>
     <!--messages-->
     <string name="ActionInviteYou">Du bist der Gruppe per Link beigetreten</string>
@@ -2220,7 +2246,7 @@
     <string name="ActionAddUserSelf">un1 ist in die Gruppe zurückgekehrt</string>
     <string name="ActionAddUserSelfMega">un1 ist der Gruppe beigetreten</string>
     <string name="ActionAddUserSelfYou">Du bist in die Gruppe zurückgekehrt</string>
-    <string name="ActionBotAllowed">Du hast diesem Bot erlaubt, dich anschreiben, als du dich auf %1$s angemeldet hast.</string>
+    <string name="ActionBotAllowed">Du hast diesem Bot erlaubt, dich anzuschreiben, als du dich auf %1$s angemeldet hast.</string>
     <string name="ActionBotDocuments">%1$s hat die folgenden Dokumente erhalten: %2$s</string>
     <string name="ActionBotDocumentIdentity">Persönliche Daten</string>
     <string name="ActionBotDocumentAddress">Adresse</string>
@@ -2346,15 +2372,15 @@
     <string name="SecretLinkPreviewAlert">Möchtest du die erweiterte Linkvorschau in Geheimen Chats aktivieren? Die Vorschau wird auf den Telegram Servern generiert.</string>
     <string name="SecretChatContextBotAlert">Inline Bots werden von Drittentwicklern erstellt. Symbole, die du nach dem Botnamen eingibst, werden an den jeweiligen Entwickler geschickt, damit der Bot funktioniert.</string>
     <string name="EditMessageError">Du kannst diese Nachricht nicht bearbeiten.</string>
-    <string name="AllowReadSms">Bitte erlaube Telegram den Zugriff auf SMS, so dass wir den Code automatisch in der App für dich eingeben können.</string>
     <string name="AllowReadCall">Bitte erlaube Telegram den Zugriff auf Anrufe, so dass wir den Code automatisch in der App eingeben können.</string>
+    <string name="AllowReadCallAndLog">Bitte erlaube Telegram, Anrufe zu empfangen und die Anrufliste einzusehen , so dass wir den Code automatisch für dich eingeben können.</string>
+    <string name="AllowReadCallLog">Bitte erlaube Telegram auf die Anrufliste zuzugreifen, so dass wir den Code für dich automatisch eingeben können.</string>
     <string name="AllowFillNumber">Bitte erlaube Telegram, Anrufe zu empfangen, damit wir deine Telefonnummer automatisch bestätigen können.</string>
-    <string name="AllowReadCallAndSms">Bitte erlaube Telegram Anrufe zu empfangen, damit wir deine Telefonnummer automatisch bestätigen können.</string>
     <string name="UserRestricted">Du kannst diese Aktion nicht durchführen.</string>
     <string name="YouBlockedUser">Du kannst diesen Nutzer oder Bot Gruppen leider nicht hinzufügen, da du ihn blockiert hast. Gebe ihn wieder frei, um fortzufahren.</string>
     <string name="JoinGroup">GRUPPE BEITRETEN</string>
     <string name="AddAdminErrorNotAMember">Du kannst diesen Nutzer nicht als Admin festlegen, da er kein Mitglied dieser Gruppe ist oder du keine Erlaubnis hast, ihn einzuladen.</string>
-    <string name="AddAdminErrorBlacklisted">Du kannst diesen Nutzer nicht als Admin festlegen, da er sich in der Sperrliste befindet und du ihn nicht entsperren darfst.</string>
+    <string name="AddAdminErrorBlacklisted">Du kannst diesen Nutzer nicht als Admin festlegen, da er sich in der Liste \"Entfernte Nutzer\" befindet und du ihn nicht entfernen darfst.</string>
     <string name="AddBannedErrorAdmin">Du kannst diesen Nutzer nicht sperren, da er ein Admin dieser Gruppe ist und du keine Berechtigung hast, ihn zurückzustufen.</string>
     <string name="ErrorSendRestrictedStickers">Die Admins dieser Gruppe haben dir die Berechtigung entzogen, Sticker zu senden.</string>
     <string name="ErrorSendRestrictedMedia">Die Admins dieser Gruppe haben dir die Berechtigung entzogen, Medien zu senden.</string>
@@ -2815,6 +2841,24 @@
     <string name="AndOther_few">und %1$d andere</string>
     <string name="AndOther_many">und %1$d andere</string>
     <string name="AndOther_other">und %1$d andere</string>
+    <string name="PhotosSelected_zero">%1$d Bilder ausgewählt</string>
+    <string name="PhotosSelected_one">%1$d Bild ausgewählt</string>
+    <string name="PhotosSelected_two">%1$d Bilder ausgewählt</string>
+    <string name="PhotosSelected_few">%1$d Bilder ausgewählt</string>
+    <string name="PhotosSelected_many">%1$d Bilder ausgewählt</string>
+    <string name="PhotosSelected_other">%1$d Bilder ausgewählt</string>
+    <string name="VideosSelected_zero">%1$d Videos ausgewählt</string>
+    <string name="VideosSelected_one">%1$d Video ausgewählt</string>
+    <string name="VideosSelected_two">%1$d Videos ausgewählt</string>
+    <string name="VideosSelected_few">%1$d Videos ausgewählt</string>
+    <string name="VideosSelected_many">%1$d Videos ausgewählt</string>
+    <string name="VideosSelected_other">%1$d Videos ausgewählt</string>
+    <string name="MediaSelected_zero">%1$d Medien ausgewählt</string>
+    <string name="MediaSelected_one">%1$d Medium ausgewählt</string>
+    <string name="MediaSelected_two">%1$d Medien ausgewählt</string>
+    <string name="MediaSelected_few">%1$d Medien ausgewählt</string>
+    <string name="MediaSelected_many">%1$d Medien ausgewählt</string>
+    <string name="MediaSelected_other">%1$d Medien ausgewählt</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Gruppe</string>
     <string name="AccDescrChannel">Kanal</string>

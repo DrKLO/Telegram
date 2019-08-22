@@ -806,7 +806,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         if (ContactsController.getInstance(currentAccount).getLoadingPrivicyInfo(ContactsController.PRIVACY_RULES_TYPE_P2P)) {
                             value = LocaleController.getString("Loading", R.string.Loading);
                         } else {
-                            value = PrivacySettingsActivity.formatRulesString(currentAccount, ContactsController.PRIVACY_RULES_TYPE_P2P);
+                            value = PrivacySettingsActivity.formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_P2P);
                         }
                         textCell.setTextAndValue(LocaleController.getString("PrivacyP2P2", R.string.PrivacyP2P2), value, false);
                     }

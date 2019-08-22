@@ -15,12 +15,14 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     private final Object sync = new Object();
     private int lastOffset;
     private boolean waitingForLoad;
+    private boolean preview;
 
-    public AnimatedFileDrawableStream(TLRPC.Document d, Object p, int a) {
+    public AnimatedFileDrawableStream(TLRPC.Document d, Object p, int a, boolean prev) {
         document = d;
         parentObject = p;
         currentAccount = a;
-        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, parentObject, 0);
+        preview = prev;
+        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, parentObject, 0, preview);
     }
 
     public int read(int offset, int readLength) {
@@ -37,8 +39,8 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
                 while (availableLength == 0) {
                     availableLength = loadOperation.getDownloadedLengthFromOffset(offset, readLength);
                     if (availableLength == 0) {
-                        if (loadOperation.isPaused() || lastOffset != offset) {
-                            FileLoader.getInstance(currentAccount).loadStreamFile(this, document, parentObject, offset);
+                        if (loadOperation.isPaused() || lastOffset != offset || preview) {
+                            FileLoader.getInstance(currentAccount).loadStreamFile(this, document, parentObject, offset, preview);
                         }
                         synchronized (sync) {
                             if (canceled) {
@@ -46,7 +48,9 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
                             }
                             countDownLatch = new CountDownLatch(1);
                         }
-                        FileLoader.getInstance(currentAccount).setLoadingVideo(document, false, true);
+                        if (!preview) {
+                            FileLoader.getInstance(currentAccount).setLoadingVideo(document, false, true);
+                        }
                         waitingForLoad = true;
                         countDownLatch.await();
                         waitingForLoad = false;
@@ -68,7 +72,7 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
         synchronized (sync) {
             if (countDownLatch != null) {
                 countDownLatch.countDown();
-                if (removeLoading && !canceled) {
+                if (removeLoading && !canceled && !preview) {
                     FileLoader.getInstance(currentAccount).removeLoadingVideo(document, false, true);
                 }
             }
@@ -88,6 +92,10 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
 
     public Object getParentObject() {
         return document;
+    }
+
+    public boolean isPreview() {
+        return preview;
     }
 
     public int getCurrentAccount() {

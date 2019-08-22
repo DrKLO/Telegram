@@ -1045,6 +1045,9 @@ public class SecretChatHelper extends BaseController {
                     newMessage.media.ttl_seconds = newMessage.ttl;
                     newMessage.media.flags |= 4;
                 }
+                if (newMessage.message != null) {
+                    newMessage.message = newMessage.message.replace('\u202E', ' ');
+                }
                 return newMessage;
             } else if (object instanceof TLRPC.TL_decryptedMessageService) {
                 final TLRPC.TL_decryptedMessageService serviceMessage = (TLRPC.TL_decryptedMessageService) object;

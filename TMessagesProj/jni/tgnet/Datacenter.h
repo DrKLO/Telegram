@@ -122,7 +122,7 @@ private:
 
     std::vector<std::unique_ptr<Handshake>> handshakes;
 
-    const uint32_t configVersion = 10;
+    const uint32_t configVersion = 11;
     const uint32_t paramsConfigVersion = 1;
 
     Connection *createProxyConnection(uint8_t num);

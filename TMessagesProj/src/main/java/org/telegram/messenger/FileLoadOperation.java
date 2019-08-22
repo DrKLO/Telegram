@@ -22,6 +22,7 @@ import java.io.File;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.zip.GZIPInputStream;
@@ -114,6 +115,8 @@ public class FileLoadOperation {
     private int totalBytesCount;
     private int bytesCountPadding;
     private int streamStartOffset;
+    private int streamPriorityStartOffset;
+    private RequestInfo priorityRequestInfo;
     private FileLoadOperationDelegate delegate;
     private byte[] key;
     private byte[] iv;
@@ -386,6 +389,23 @@ public class FileLoadOperation {
                 break;
             }
         }
+        Collections.sort(ranges, (o1, o2) -> {
+            if (o1.start > o2.start) {
+                return 1;
+            } else if (o1.start < o2.start) {
+                return -1;
+            }
+            return 0;
+        });
+        for (int a = 0; a < ranges.size() - 1; a++) {
+            Range r1 = ranges.get(a);
+            Range r2 = ranges.get(a + 1);
+            if (r1.end == r2.start) {
+                r1.end = r2.end;
+                ranges.remove(a + 1);
+                a--;
+            }
+        }
         if (!modified) {
             ranges.add(new Range(start, end));
         }
@@ -533,7 +553,7 @@ public class FileLoadOperation {
         }
     }
 
-    protected void removeStreamListener(final FileStreamLoadOperation operation) {
+    protected void removeStreamListener(final FileLoadOperationStream operation) {
         Utilities.stageQueue.postRunnable(() -> {
             if (streamListeners == null) {
                 return;
@@ -557,10 +577,10 @@ public class FileLoadOperation {
     }
 
     public boolean start() {
-        return start(null, 0);
+        return start(null, 0, false);
     }
 
-    public boolean start(final FileLoadOperationStream stream, final int streamOffset) {
+    public boolean start(final FileLoadOperationStream stream, final int streamOffset, final boolean steamPriority) {
         if (currentDownloadChunkSize == 0) {
             currentDownloadChunkSize = totalBytesCount >= bigFileSizeFrom ? downloadChunkSizeBig : downloadChunkSize;
             currentMaxDownloadRequests = totalBytesCount >= bigFileSizeFrom ? maxDownloadRequestsBig : maxDownloadRequests;
@@ -573,7 +593,27 @@ public class FileLoadOperation {
                 if (streamListeners == null) {
                     streamListeners = new ArrayList<>();
                 }
-                streamStartOffset = streamOffset / currentDownloadChunkSize * currentDownloadChunkSize;
+                if (steamPriority) {
+                    int offset = streamOffset / currentDownloadChunkSize * currentDownloadChunkSize;
+                    if (priorityRequestInfo != null && priorityRequestInfo.offset != offset) {
+                        requestInfos.remove(priorityRequestInfo);
+                        requestedBytesCount -= currentDownloadChunkSize;
+                        removePart(notRequestedBytesRanges, priorityRequestInfo.offset, priorityRequestInfo.offset + currentDownloadChunkSize);
+                        if (priorityRequestInfo.requestToken != 0) {
+                            ConnectionsManager.getInstance(currentAccount).cancelRequest(priorityRequestInfo.requestToken, true);
+                            requestsCount--;
+                        }
+                        if (BuildVars.DEBUG_VERSION) {
+                            FileLog.d("frame get cancel request at offset " + priorityRequestInfo.offset);
+                        }
+                        priorityRequestInfo = null;
+                    }
+                    if (priorityRequestInfo == null) {
+                        streamPriorityStartOffset = offset;
+                    }
+                } else {
+                    streamStartOffset = streamOffset / currentDownloadChunkSize * currentDownloadChunkSize;
+                }
                 streamListeners.add(stream);
                 if (alreadyStarted) {
                     if (preloadedBytesRanges != null && getDownloadedLengthFromOffsetInternal(notLoadedBytesRanges, streamStartOffset, 1) == 0) {
@@ -1549,12 +1589,13 @@ public class FileLoadOperation {
     protected void startDownloadRequest() {
         if (paused ||
                 state != stateDownloading ||
-                !nextPartWasPreloaded && (requestInfos.size() + delayedRequestInfos.size() >= currentMaxDownloadRequests) ||
-                isPreloadVideoOperation && (requestedBytesCount > preloadMaxBytes || moovFound != 0 && requestInfos.size() > 0)) {
+                streamPriorityStartOffset == 0 && (
+                        !nextPartWasPreloaded && (requestInfos.size() + delayedRequestInfos.size() >= currentMaxDownloadRequests) ||
+                        isPreloadVideoOperation && (requestedBytesCount > preloadMaxBytes || moovFound != 0 && requestInfos.size() > 0))) {
             return;
         }
         int count = 1;
-        if (!nextPartWasPreloaded && (!isPreloadVideoOperation || moovFound != 0) && totalBytesCount > 0) {
+        if (streamPriorityStartOffset == 0 && !nextPartWasPreloaded && (!isPreloadVideoOperation || moovFound != 0) && totalBytesCount > 0) {
             count = Math.max(0, currentMaxDownloadRequests - requestInfos.size());
         }
 
@@ -1598,18 +1639,19 @@ public class FileLoadOperation {
                 preloadNotRequestedBytesCount -= currentDownloadChunkSize;
             } else {
                 if (notRequestedBytesRanges != null) {
+                    int sreamOffset = streamPriorityStartOffset != 0 ? streamPriorityStartOffset : streamStartOffset;
                     int size = notRequestedBytesRanges.size();
                     int minStart = Integer.MAX_VALUE;
                     int minStreamStart = Integer.MAX_VALUE;
                     for (int b = 0; b < size; b++) {
                         Range range = notRequestedBytesRanges.get(b);
-                        if (streamStartOffset != 0) {
-                            if (range.start <= streamStartOffset && range.end > streamStartOffset) {
-                                minStreamStart = streamStartOffset;
+                        if (sreamOffset != 0) {
+                            if (range.start <= sreamOffset && range.end > sreamOffset) {
+                                minStreamStart = sreamOffset;
                                 minStart = Integer.MAX_VALUE;
                                 break;
                             }
-                            if (streamStartOffset < range.start && range.start < minStreamStart) {
+                            if (sreamOffset < range.start && range.start < minStreamStart) {
                                 minStreamStart = range.start;
                             }
                         }
@@ -1687,10 +1729,23 @@ public class FileLoadOperation {
                     }
                 }
             }
+            if (streamPriorityStartOffset != 0) {
+                if (BuildVars.DEBUG_VERSION) {
+                    FileLog.d("frame get offset = " + streamPriorityStartOffset);
+                }
+                streamPriorityStartOffset = 0;
+                priorityRequestInfo = requestInfo;
+            }
 
             requestInfo.requestToken = ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> {
                 if (!requestInfos.contains(requestInfo)) {
                     return;
+                }
+                if (requestInfo == priorityRequestInfo) {
+                    if (BuildVars.DEBUG_VERSION) {
+                        FileLog.d("frame get request completed " + priorityRequestInfo.offset);
+                    }
+                    priorityRequestInfo = null;
                 }
                 if (error != null) {
                     if (FileRefController.isFileRefError(error.text)) {

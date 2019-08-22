@@ -420,7 +420,7 @@ public class FileRefController extends BaseController {
             }
             if (done) {
                 multiMediaCache.remove(multiMedia);
-                getSendMessagesHelper().performSendMessageRequestMulti(multiMedia, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4]);
+                AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequestMulti(multiMedia, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4]));
             }
         } else if (requester.args[0] instanceof TLRPC.TL_messages_sendMedia) {
             TLRPC.TL_messages_sendMedia req = (TLRPC.TL_messages_sendMedia) requester.args[0];
@@ -431,7 +431,7 @@ public class FileRefController extends BaseController {
                 TLRPC.TL_inputMediaPhoto mediaPhoto = (TLRPC.TL_inputMediaPhoto) req.media;
                 mediaPhoto.id.file_reference = file_reference;
             }
-            getSendMessagesHelper().performSendMessageRequest((TLObject) requester.args[0], (MessageObject) requester.args[1], (String) requester.args[2], (SendMessagesHelper.DelayedMessage) requester.args[3], (Boolean) requester.args[4], (SendMessagesHelper.DelayedMessage) requester.args[5], null);
+            AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequest((TLObject) requester.args[0], (MessageObject) requester.args[1], (String) requester.args[2], (SendMessagesHelper.DelayedMessage) requester.args[3], (Boolean) requester.args[4], (SendMessagesHelper.DelayedMessage) requester.args[5], null));
         } else if (requester.args[0] instanceof TLRPC.TL_messages_editMessage) {
             TLRPC.TL_messages_editMessage req = (TLRPC.TL_messages_editMessage) requester.args[0];
             if (req.media instanceof TLRPC.TL_inputMediaDocument) {
@@ -441,7 +441,7 @@ public class FileRefController extends BaseController {
                 TLRPC.TL_inputMediaPhoto mediaPhoto = (TLRPC.TL_inputMediaPhoto) req.media;
                 mediaPhoto.id.file_reference = file_reference;
             }
-            getSendMessagesHelper().performSendMessageRequest((TLObject) requester.args[0], (MessageObject) requester.args[1], (String) requester.args[2], (SendMessagesHelper.DelayedMessage) requester.args[3], (Boolean) requester.args[4], (SendMessagesHelper.DelayedMessage) requester.args[5], null);
+            AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequest((TLObject) requester.args[0], (MessageObject) requester.args[1], (String) requester.args[2], (SendMessagesHelper.DelayedMessage) requester.args[3], (Boolean) requester.args[4], (SendMessagesHelper.DelayedMessage) requester.args[5], null));
         } else if (requester.args[0] instanceof TLRPC.TL_messages_saveGif) {
             TLRPC.TL_messages_saveGif req = (TLRPC.TL_messages_saveGif) requester.args[0];
             req.id.file_reference = file_reference;
@@ -489,10 +489,10 @@ public class FileRefController extends BaseController {
             Object[] objects = multiMediaCache.get(req);
             if (objects != null) {
                 multiMediaCache.remove(req);
-                getSendMessagesHelper().performSendMessageRequestMulti(req, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4]);
+                AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequestMulti(req, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4]));
             }
         } else if (args[0] instanceof TLRPC.TL_messages_sendMedia || args[0] instanceof TLRPC.TL_messages_editMessage) {
-            getSendMessagesHelper().performSendMessageRequest((TLObject) args[0], (MessageObject) args[1], (String) args[2], (SendMessagesHelper.DelayedMessage) args[3], (Boolean) args[4], (SendMessagesHelper.DelayedMessage) args[5], null);
+            AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequest((TLObject) args[0], (MessageObject) args[1], (String) args[2], (SendMessagesHelper.DelayedMessage) args[3], (Boolean) args[4], (SendMessagesHelper.DelayedMessage) args[5], null));
         } else if (args[0] instanceof TLRPC.TL_messages_saveGif) {
             TLRPC.TL_messages_saveGif req = (TLRPC.TL_messages_saveGif) args[0];
             //do nothing

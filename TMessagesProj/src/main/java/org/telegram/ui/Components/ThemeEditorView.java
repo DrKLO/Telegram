@@ -947,6 +947,14 @@ public class ThemeEditorView {
             }
         }
 
+        @Override
+        public void dismissInternal() {
+            super.dismissInternal();
+            if (searchField.searchEditText.isFocused()) {
+                AndroidUtilities.hideKeyboard(searchField.searchEditText);
+            }
+        }
+
         private void setColorPickerVisible(boolean visible) {
             if (visible) {
                 animationInProgress = true;

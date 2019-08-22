@@ -444,7 +444,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
             return;
         }
         if (!ChatObject.isChannel(chat)) {
-            MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chat.id, param -> {
+            MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chat.id, this, param -> {
                 MessagesController.getInstance(currentAccount).toogleChannelInvitesHistory(param, false);
                 linkChat(getMessagesController().getChat(param), createFragment);
             });

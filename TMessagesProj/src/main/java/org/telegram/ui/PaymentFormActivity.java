@@ -3033,7 +3033,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 if (response instanceof TLRPC.TL_payments_paymentResult) {
                     MessagesController.getInstance(currentAccount).processUpdates(((TLRPC.TL_payments_paymentResult) response).updates, false);
                     AndroidUtilities.runOnUIThread(this::goToNextStep);
-                } else if (response instanceof TLRPC.TL_payments_paymentVerficationNeeded) {
+                } else if (response instanceof TLRPC.TL_payments_paymentVerificationNeeded) {
                     AndroidUtilities.runOnUIThread(() -> {
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.paymentFinished);
                         setDonePressed(false);
@@ -3043,7 +3043,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         progressView.setVisibility(View.VISIBLE);
                         doneItem.setEnabled(false);
                         doneItem.getContentView().setVisibility(View.INVISIBLE);
-                        webView.loadUrl(webViewUrl = ((TLRPC.TL_payments_paymentVerficationNeeded) response).url);
+                        webView.loadUrl(webViewUrl = ((TLRPC.TL_payments_paymentVerificationNeeded) response).url);
                     });
                 }
             } else {

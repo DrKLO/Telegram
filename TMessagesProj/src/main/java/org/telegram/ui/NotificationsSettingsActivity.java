@@ -384,6 +384,9 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     type = NotificationsController.TYPE_CHANNEL;
                     exceptions = exceptionChannels;
                 }
+                if (exceptions == null) {
+                    return;
+                }
 
                 NotificationsCheckCell checkCell = (NotificationsCheckCell) view;
                 enabled = NotificationsController.getInstance(currentAccount).isGlobalNotificationsEnabled(type);

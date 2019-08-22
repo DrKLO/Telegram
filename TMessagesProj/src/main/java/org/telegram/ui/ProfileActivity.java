@@ -373,14 +373,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             sortedUsers = new ArrayList<>();
             updateOnlineCount();
-
+            if (chatInfo == null) {
+                chatInfo = getMessagesController().getChatFull(chat_id);
+            }
             if (ChatObject.isChannel(currentChat)) {
                 MessagesController.getInstance(currentAccount).loadFullChat(chat_id, classGuid, true);
             } else if (chatInfo == null) {
-                MessagesController.getInstance(currentAccount).loadChatInfo(chat_id, null, false);
-            }
-            if (chatInfo == null) {
-                chatInfo = getMessagesController().getChatFull(chat_id);
+                chatInfo = getMessagesStorage().loadChatInfo(chat_id, null, false, false);
             }
         } else {
             return false;
@@ -995,11 +994,21 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             AlertDialog.Builder builder2 = new AlertDialog.Builder(getParentActivity());
                             builder2.setTitle(LocaleController.getString("AppName", R.string.AppName));
                             builder2.setMessage(LocaleController.formatString("AdminWillBeRemoved", R.string.AdminWillBeRemoved, ContactsController.formatName(user.first_name, user.last_name)));
-                            builder2.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> openRightsEdit(action, user.id, participant, channelParticipant != null ? channelParticipant.admin_rights : null, channelParticipant != null ? channelParticipant.banned_rights : null));
+                            builder2.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+                                if (channelParticipant != null) {
+                                    openRightsEdit(action, user.id, participant, channelParticipant.admin_rights, channelParticipant.banned_rights, channelParticipant.rank);
+                                } else {
+                                    openRightsEdit(action, user.id, participant, null, null, "");
+                                }
+                            });
                             builder2.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                             showDialog(builder2.create());
                         } else {
-                            openRightsEdit(action, user.id, participant, channelParticipant != null ? channelParticipant.admin_rights : null, channelParticipant != null ? channelParticipant.banned_rights : null);
+                            if (channelParticipant != null) {
+                                openRightsEdit(action, user.id, participant, channelParticipant.admin_rights, channelParticipant.banned_rights, channelParticipant.rank);
+                            } else {
+                                openRightsEdit(action, user.id, participant, null, null, "");
+                            }
                         }
                     }
                 });
@@ -1039,10 +1048,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             frameLayout.addView(frameLayout1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 51, Gravity.LEFT | Gravity.BOTTOM));
             frameLayout1.setOnClickListener(v -> {
-                ChatRightsEditActivity fragment = new ChatRightsEditActivity(user_id, banFromGroup, null, chat.default_banned_rights, currentChannelParticipant != null ? currentChannelParticipant.banned_rights : null, ChatRightsEditActivity.TYPE_BANNED, true, false);
+                ChatRightsEditActivity fragment = new ChatRightsEditActivity(user_id, banFromGroup, null, chat.default_banned_rights, currentChannelParticipant != null ? currentChannelParticipant.banned_rights : null, "", ChatRightsEditActivity.TYPE_BANNED, true, false);
                 fragment.setDelegate(new ChatRightsEditActivity.ChatRightsEditActivityDelegate() {
                     @Override
-                    public void didSetRights(int rights, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBanned) {
+                    public void didSetRights(int rights, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBanned, String rank) {
                         removeSelfFromStack();
                     }
 
@@ -1199,16 +1208,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         return fragmentView;
     }
 
-    private void openRightsEdit(int action, int user_id, TLRPC.ChatParticipant participant, TLRPC.TL_chatAdminRights adminRights, TLRPC.TL_chatBannedRights bannedRights) {
-        ChatRightsEditActivity fragment = new ChatRightsEditActivity(user_id, chat_id, adminRights, currentChat.default_banned_rights, bannedRights, action, true, false);
+    private void openRightsEdit(int action, int user_id, TLRPC.ChatParticipant participant, TLRPC.TL_chatAdminRights adminRights, TLRPC.TL_chatBannedRights bannedRights, String rank) {
+        ChatRightsEditActivity fragment = new ChatRightsEditActivity(user_id, chat_id, adminRights, currentChat.default_banned_rights, bannedRights, rank, action, true, false);
         fragment.setDelegate(new ChatRightsEditActivity.ChatRightsEditActivityDelegate() {
             @Override
-            public void didSetRights(int rights, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBanned) {
+            public void didSetRights(int rights, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBanned, String rank) {
                 if (action == 0) {
                     if (participant instanceof TLRPC.TL_chatChannelParticipant) {
                         TLRPC.TL_chatChannelParticipant channelParticipant1 = ((TLRPC.TL_chatChannelParticipant) participant);
                         if (rights == 1) {
                             channelParticipant1.channelParticipant = new TLRPC.TL_channelParticipantAdmin();
+                            channelParticipant1.channelParticipant.flags |= 4;
                         } else {
                             channelParticipant1.channelParticipant = new TLRPC.TL_channelParticipant();
                         }
@@ -1217,6 +1227,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         channelParticipant1.channelParticipant.date = participant.date;
                         channelParticipant1.channelParticipant.banned_rights = rightsBanned;
                         channelParticipant1.channelParticipant.admin_rights = rightsAdmin;
+                        channelParticipant1.channelParticipant.rank = rank;
                     } else if (participant instanceof TLRPC.ChatParticipant) {
                         TLRPC.ChatParticipant newParticipant;
                         if (rights == 1) {
@@ -2025,10 +2036,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
-        if (!isOpen || !backward) {
-            if (!backward && playProfileAnimation && allowProfileAnimation) {
-                openAnimationInProgress = true;
-            }
+        if ((!isOpen && backward || isOpen && !backward) && playProfileAnimation && allowProfileAnimation) {
+            openAnimationInProgress = true;
         }
         if (isOpen) {
             NotificationCenter.getInstance(currentAccount).setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats, NotificationCenter.mediaCountDidLoad, NotificationCenter.mediaCountsDidLoad});
@@ -3376,24 +3385,30 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         part = chatInfo.participants.participants.get(position - membersStartRow);
                     }
                     if (part != null) {
+                        String role;
                         if (part instanceof TLRPC.TL_chatChannelParticipant) {
                             TLRPC.ChannelParticipant channelParticipant = ((TLRPC.TL_chatChannelParticipant) part).channelParticipant;
-                            if (channelParticipant instanceof TLRPC.TL_channelParticipantCreator) {
-                                userCell.setIsAdmin(1);
-                            } else if (channelParticipant instanceof TLRPC.TL_channelParticipantAdmin) {
-                                userCell.setIsAdmin(2);
+                            if (!TextUtils.isEmpty(channelParticipant.rank)) {
+                                role = channelParticipant.rank;
                             } else {
-                                userCell.setIsAdmin(0);
+                                if (channelParticipant instanceof TLRPC.TL_channelParticipantCreator) {
+                                    role = LocaleController.getString("ChannelCreator", R.string.ChannelCreator);
+                                } else if (channelParticipant instanceof TLRPC.TL_channelParticipantAdmin) {
+                                    role = LocaleController.getString("ChannelAdmin", R.string.ChannelAdmin);
+                                } else {
+                                    role = null;
+                                }
                             }
                         } else {
                             if (part instanceof TLRPC.TL_chatParticipantCreator) {
-                                userCell.setIsAdmin(1);
+                                role = LocaleController.getString("ChannelCreator", R.string.ChannelCreator);
                             } else if (part instanceof TLRPC.TL_chatParticipantAdmin) {
-                                userCell.setIsAdmin(2);
+                                role = LocaleController.getString("ChannelAdmin", R.string.ChannelAdmin);
                             } else {
-                                userCell.setIsAdmin(0);
+                                role = null;
                             }
                         }
+                        userCell.setAdminRole(role);
                         userCell.setData(MessagesController.getInstance(currentAccount).getUser(part.user_id), null, null, 0, position != membersEndRow - 1);
                     }
                     break;

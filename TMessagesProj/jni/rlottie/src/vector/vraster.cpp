@@ -19,6 +19,7 @@
 #include "vraster.h"
 #include <cstring>
 #include <memory>
+#include <tgnet/FileLog.h>
 #include "config.h"
 #include "v_ft_raster.h"
 #include "v_ft_stroker.h"
@@ -102,6 +103,9 @@ void FTOutline::convert(const VPath &path)
 {
     const std::vector<VPath::Element> &elements = path.elements();
     const std::vector<VPointF> &       points = path.points();
+    if (points.size() > SHRT_MAX) {
+        return;
+    }
 
     grow(points.size(), path.segments());
 

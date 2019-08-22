@@ -99,7 +99,8 @@ public class ActionBarMenuItem extends FrameLayout {
     private boolean animationEnabled = true;
     private boolean ignoreOnTextChange;
     private CloseProgressDrawable2 progressDrawable;
-    private int additionalOffset;
+    private int additionalYOffset;
+    private int additionalXOffset;
     private boolean longClickEnabled = true;
     private boolean animateClear = true;
 
@@ -261,6 +262,13 @@ public class ActionBarMenuItem extends FrameLayout {
         });
     }
 
+    public void removeAllSubItems() {
+        if (popupLayout == null) {
+            return;
+        }
+        popupLayout.removeInnerViews();
+    }
+
     public void addSubItem(View view, int width, int height) {
         createPopupLayout();
         popupLayout.addView(view, new LinearLayout.LayoutParams(width, height));
@@ -301,6 +309,8 @@ public class ActionBarMenuItem extends FrameLayout {
         textView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setMinWidth(AndroidUtilities.dp(196));
+        textView.setSingleLine(true);
+        textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setTag(id);
         textView.setText(text);
         popupLayout.addView(textView);
@@ -531,6 +541,12 @@ public class ActionBarMenuItem extends FrameLayout {
         searchField.setText(text);
         if (!TextUtils.isEmpty(text)) {
             searchField.setSelection(text.length());
+        }
+    }
+
+    public void onSearchPressed() {
+        if (listener != null) {
+            listener.onSearchPressed(searchField);
         }
     }
 
@@ -827,8 +843,12 @@ public class ActionBarMenuItem extends FrameLayout {
         }
     }
 
-    public void setAdditionalOffset(int value) {
-        additionalOffset = value;
+    public void setAdditionalYOffset(int value) {
+        additionalYOffset = value;
+    }
+
+    public void setAdditionalXOffset(int value) {
+        additionalXOffset = value;
     }
 
     private void updateOrShowPopup(boolean show, boolean update) {
@@ -838,7 +858,7 @@ public class ActionBarMenuItem extends FrameLayout {
             offsetY = -parentMenu.parentActionBar.getMeasuredHeight() + parentMenu.getTop() + parentMenu.getPaddingTop();
         } else {
             float scaleY = getScaleY();
-            offsetY = -(int) (getMeasuredHeight() * scaleY - (subMenuOpenSide != 2 ? getTranslationY() : 0) / scaleY) + additionalOffset;
+            offsetY = -(int) (getMeasuredHeight() * scaleY - (subMenuOpenSide != 2 ? getTranslationY() : 0) / scaleY) + additionalYOffset;
         }
         offsetY += yOffset;
 
@@ -868,25 +888,25 @@ public class ActionBarMenuItem extends FrameLayout {
                 if (getParent() != null) {
                     View parent = (View) getParent();
                     if (show) {
-                        popupWindow.showAsDropDown(parent, getLeft() + getMeasuredWidth() - popupLayout.getMeasuredWidth(), offsetY);
+                        popupWindow.showAsDropDown(parent, getLeft() + getMeasuredWidth() - popupLayout.getMeasuredWidth() + additionalXOffset, offsetY);
                     }
                     if (update) {
-                        popupWindow.update(parent, getLeft() + getMeasuredWidth() - popupLayout.getMeasuredWidth(), offsetY, -1, -1);
+                        popupWindow.update(parent, getLeft() + getMeasuredWidth() - popupLayout.getMeasuredWidth() + additionalXOffset, offsetY, -1, -1);
                     }
                 }
             } else if (subMenuOpenSide == 1) {
                 if (show) {
-                    popupWindow.showAsDropDown(this, -AndroidUtilities.dp(8), offsetY);
+                    popupWindow.showAsDropDown(this, -AndroidUtilities.dp(8) + additionalXOffset, offsetY);
                 }
                 if (update) {
-                    popupWindow.update(this, -AndroidUtilities.dp(8), offsetY, -1, -1);
+                    popupWindow.update(this, -AndroidUtilities.dp(8) + additionalXOffset, offsetY, -1, -1);
                 }
             } else {
                 if (show) {
-                    popupWindow.showAsDropDown(this, getMeasuredWidth() - popupLayout.getMeasuredWidth(), offsetY);
+                    popupWindow.showAsDropDown(this, getMeasuredWidth() - popupLayout.getMeasuredWidth() + additionalXOffset, offsetY);
                 }
                 if (update) {
-                    popupWindow.update(this, getMeasuredWidth() - popupLayout.getMeasuredWidth(), offsetY, -1, -1);
+                    popupWindow.update(this, getMeasuredWidth() - popupLayout.getMeasuredWidth() + additionalXOffset, offsetY, -1, -1);
                 }
             }
         }
