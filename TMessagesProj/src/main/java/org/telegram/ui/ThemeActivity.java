@@ -123,8 +123,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private ArrayList<Theme.ThemeInfo> darkThemes = new ArrayList<>();
     private ArrayList<Theme.ThemeInfo> defaultThemes = new ArrayList<>();
 
-    private boolean animateThemeAccents;
-
     boolean hasCustomThemes;
     boolean hasThemeAccents;
 
@@ -948,7 +946,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     public void onResume() {
         super.onResume();
         if (listAdapter != null) {
-            animateThemeAccents = false;
             updateRows();
         }
     }
@@ -1821,7 +1818,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         }
                         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false);
                         updateRows();
-                        animateThemeAccents = true;
 
                         int left = view1.getLeft();
                         int right = view1.getRight();
@@ -1910,11 +1906,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     int pos = accentsAdapter.findCurrentAccent();
                     if (pos != -1) {
                         accentsLayoutManager.scrollToPositionWithOffset(pos, listView.getMeasuredWidth() / 2 - AndroidUtilities.dp(42));
-                    }
-
-                    if (animateThemeAccents) {
-                        accentsListView.setAlpha(0f);
-                        accentsListView.animate().alpha(1f).setDuration(200);
                     }
 
                     view = accentsListView;
