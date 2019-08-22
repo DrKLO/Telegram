@@ -51,6 +51,7 @@ public class DrawerProfileCell extends FrameLayout {
     private Rect destRect = new Rect();
     private Paint paint = new Paint();
     private Integer currentColor;
+    private Integer currentArrowColor;
     private SnowflakesEffect snowflakesEffect;
     private boolean accountsShowed;
 
@@ -130,7 +131,12 @@ public class DrawerProfileCell extends FrameLayout {
             currentColor = color;
             shadowView.getDrawable().setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
         }
-        nameTextView.setTextColor(Theme.getColor(Theme.key_chats_menuName));
+        int nameColor = Theme.getColor(Theme.key_chats_menuName);
+        if (currentArrowColor == null || currentArrowColor != nameColor) {
+            currentArrowColor = nameColor;
+            arrowView.setColorFilter(new PorterDuffColorFilter(nameColor, PorterDuff.Mode.MULTIPLY));
+        }
+        nameTextView.setTextColor(nameColor);
         if (useImageBackground) {
             phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuPhone));
             if (shadowView.getVisibility() != VISIBLE) {
