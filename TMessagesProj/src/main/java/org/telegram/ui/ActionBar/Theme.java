@@ -1083,6 +1083,8 @@ public class Theme {
     private static HashMap<String, Integer> currentColors;
     private static HashMap<String, Integer> animatingColors;
 
+    // keys for theme was generated and hardcoded for easy editing
+    // colors always ned transform
     private static final String[] accentColorKeys = new String[]{
             key_chat_unreadMessagesStartText,
             key_radioBackgroundChecked,
@@ -1194,7 +1196,6 @@ public class Theme {
             key_chat_replyPanelName,
             key_contextProgressOuter2,
             key_chat_outMediaIconSelected,
-            key_windowBackgroundWhiteValueText,
             key_windowBackgroundWhiteLinkText,
             key_chat_messageLinkIn,
             key_chats_attachMessage,
@@ -1206,9 +1207,8 @@ public class Theme {
             key_chat_attachPermissionMark,
             key_chat_attachPermissionText,
             key_chat_attachEmptyImage,
-    };
-
-    private static final String[] accentTintColorKeys = new String[]{
+            key_windowBackgroundWhiteInputField,
+            key_windowBackgroundWhiteInputFieldActivated,
             key_chat_inVoiceSeekbarSelected,
             key_chat_messageLinkOut,
             key_chat_outViews,
@@ -1278,7 +1278,8 @@ public class Theme {
             key_actionBarDefaultArchivedIcon,
             key_chat_serviceBackground,
             key_chat_inBubbleSelected,
-            key_chat_outSentClock
+            key_chat_outSentClock,
+            key_windowBackgroundWhiteValueText
     };
 
     private static String[] darkThemeSecondaryColorKeys = new String[]{
@@ -1289,7 +1290,6 @@ public class Theme {
             key_chat_outVoiceSeekbar,
             key_chat_outFileIcon,
             key_passport_authorizeBackgroundSelected,
-            key_windowBackgroundWhiteInputFieldActivated,
             key_chat_outFileSelectedIcon,
             key_chats_onlineCircle,
             key_passport_authorizeBackground,
@@ -1409,7 +1409,6 @@ public class Theme {
             key_chat_emojiPanelIcon,
             key_chat_topPanelMessage,
             key_chat_emojiPanelTrendingDescription,
-            key_windowBackgroundWhiteInputField,
             key_chat_inLocationBackground,
             key_radioBackground,
             key_chat_inFileIcon,
@@ -4601,13 +4600,14 @@ public class Theme {
         int secondaryTextColor = ColorUtils.blendARGB(accentColor, primaryTextColor, 0.4f + 0.6f * params.accentBrightness / 255f);
         for(int i = 0; i < accentColorKeys.length; i++){
             String key = accentColorKeys[i];
-            if(!currentColors.containsKey(key)) continue;
-            currentColors.put(key, transformColorToAccent(params,currentColors.get(key)));
-        }
-        for(int i = 0; i < accentTintColorKeys.length; i++){
-            String key = accentTintColorKeys[i];
-            if(!currentColors.containsKey(key)) continue;
-            currentColors.put(key, transformColorToAccent(params,currentColors.get(key)));
+            int color;
+            if(!currentColors.containsKey(key)) {
+                if (!defaultColors.containsKey(key)) continue;
+                color = defaultColors.get(key);
+            } else {
+                color = currentColors.get(key);
+            }
+            currentColors.put(key, transformColorToAccent(params,color));
         }
         if(themeInfo.isDark()) {
             int secondaryColor = ColorUtils.blendARGB(accentColor, params.accentBrightness > 200f ? Color.BLACK : Color.WHITE, 0.2f + 0.4f * params.accentBrightness / 255f);
@@ -4619,8 +4619,14 @@ public class Theme {
             }
             for(int i = 0; i < darkThemeAdditionalAccentColorKeys.length; i++){
                 String key = darkThemeAdditionalAccentColorKeys[i];
-                if(!currentColors.containsKey(key)) continue;
-                currentColors.put(key, transformColorToAccent(params,currentColors.get(key)));
+                int color;
+                if(!currentColors.containsKey(key)) {
+                    if (!defaultColors.containsKey(key)) continue;
+                    color = defaultColors.get(key);
+                } else {
+                    color = currentColors.get(key);
+                }
+                currentColors.put(key, transformColorToAccent(params,color));
             }
             if (params.accentBrightness / 255 > 0.75f) {
                 int darkColor = ColorUtils.blendARGB(accentColor, Color.BLACK, 0.2f + 0.4f * params.accentBrightness / 255f);
@@ -4629,11 +4635,17 @@ public class Theme {
                 currentColors.put(key_chat_unreadMessagesStartText,darkColor);
             }
         }
-        if (themeInfo.name.equals("Dark Tint")) {
+        if (themeInfo.assetName != null && themeInfo.assetName.equals("darkblue.attheme")) {
             for (int i = 0; i < darkBackgroundTintColorKeys.length; i++) {
                 String key = darkBackgroundTintColorKeys[i];
-                if (!currentColors.containsKey(key)) continue;
-                currentColors.put(key, transformColorToAccent(params, currentColors.get(key)));
+                int color;
+                if(!currentColors.containsKey(key)) {
+                    if (!defaultColors.containsKey(key)) continue;
+                    color = defaultColors.get(key);
+                } else {
+                    color = currentColors.get(key);
+                }
+                currentColors.put(key, transformColorToAccent(params, color));
             }
         }
 
