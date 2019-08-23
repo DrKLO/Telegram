@@ -24,7 +24,6 @@ import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import androidx.annotation.Keep;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
@@ -38,6 +37,8 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+
+import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -1345,6 +1346,10 @@ public class ActionBarLayout extends FrameLayout {
     }
 
     public void animateThemedValues(Theme.ThemeInfo theme, boolean nightTheme) {
+        animateThemedValues(theme, nightTheme, true, true);
+    }
+
+    public void animateThemedValues(Theme.ThemeInfo theme, boolean nightTheme, boolean animated, boolean removeWallpaperOverride) {
         if (transitionAnimationInProgress || startedTracking) {
             animateThemeAfterAnimation = true;
             animateSetThemeAfterAnimation = theme;
@@ -1382,7 +1387,7 @@ public class ActionBarLayout extends FrameLayout {
                     }
                 }
                 if (i == 0) {
-                    Theme.applyTheme(theme, nightTheme);
+                    Theme.applyTheme(theme, nightTheme, removeWallpaperOverride);
                 }
                 animateEndColors[i] = new int[themeAnimatorDescriptions[i].length];
                 for (int a = 0; a < themeAnimatorDescriptions[i].length; a++) {
@@ -1431,7 +1436,7 @@ public class ActionBarLayout extends FrameLayout {
             }
             Theme.setAnimatingColor(true);
             themeAnimatorSet.playTogether(ObjectAnimator.ofFloat(this, "themeAnimationValue", 0.0f, 1.0f));
-            themeAnimatorSet.setDuration(200);
+            themeAnimatorSet.setDuration(animated ? 200 : 0);
             themeAnimatorSet.start();
         }
     }

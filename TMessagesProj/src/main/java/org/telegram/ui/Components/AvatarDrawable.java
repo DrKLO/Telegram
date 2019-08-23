@@ -92,7 +92,9 @@ public class AvatarDrawable extends Drawable {
     }
 
     public static int getColorForId(int id) {
-        return Theme.getColor(Theme.keys_avatar_background[getColorIndex(id)]);
+        if (id == ID_PLACEHOLDER) {
+            return Theme.getColor(Theme.key_avatar_backgroundInProfileBlue);
+        } else return Theme.getColor(Theme.keys_avatar_background[getColorIndex(id)]);
     }
 
     public static int getButtonColorForId(int id) {
@@ -104,7 +106,9 @@ public class AvatarDrawable extends Drawable {
     }
 
     public static int getProfileColorForId(int id) {
-        return Theme.getColor(Theme.keys_avatar_background[getColorIndex(id)]);
+        if (id == ID_PLACEHOLDER) {
+            return Theme.getColor(Theme.key_avatar_backgroundInProfileBlue);
+        } else return Theme.getColor(Theme.keys_avatar_background[getColorIndex(id)]);
     }
 
     public static int getProfileTextColorForId(int id) {
@@ -116,7 +120,9 @@ public class AvatarDrawable extends Drawable {
     }
 
     public static int getNameColorForId(int id) {
-        return Theme.getColor(Theme.keys_avatar_nameInMessage[getColorIndex(id)]);
+        if (id == ID_PLACEHOLDER) {
+            return Theme.getColor(Theme.key_avatar_backgroundInProfileBlue);
+        } else return Theme.getColor(Theme.keys_avatar_nameInMessage[getColorIndex(id)]);
     }
 
     public void setInfo(TLRPC.User user) {
@@ -166,9 +172,7 @@ public class AvatarDrawable extends Drawable {
     }
 
     public void setInfo(int id, String firstName, String lastName, boolean isBroadcast, String custom) {
-        if (id == ID_PLACEHOLDER) {
-            color = Theme.getColor(Theme.key_avatar_backgroundInProfileBlue);
-        } else if (isProfile) {
+        if (isProfile) {
             color = getProfileColorForId(id);
         } else {
             color = getColorForId(id);

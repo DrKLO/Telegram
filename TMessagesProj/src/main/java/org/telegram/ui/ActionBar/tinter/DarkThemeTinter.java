@@ -6,7 +6,60 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.telegram.ui.ActionBar.Theme.*;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_backgroundBlue;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_backgroundCyan;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_backgroundGreen;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_backgroundOrange;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_backgroundPink;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_backgroundRed;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_backgroundViolet;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_nameInMessageBlue;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_nameInMessageCyan;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_nameInMessageGreen;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_nameInMessageOrange;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_nameInMessagePink;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_nameInMessageRed;
+import static org.telegram.ui.ActionBar.Theme.key_avatar_nameInMessageViolet;
+import static org.telegram.ui.ActionBar.Theme.key_calls_callReceivedGreenIcon;
+import static org.telegram.ui.ActionBar.Theme.key_calls_callReceivedRedIcon;
+import static org.telegram.ui.ActionBar.Theme.key_chat_attachAudioBackground;
+import static org.telegram.ui.ActionBar.Theme.key_chat_attachContactBackground;
+import static org.telegram.ui.ActionBar.Theme.key_chat_attachEmptyImage;
+import static org.telegram.ui.ActionBar.Theme.key_chat_attachFileBackground;
+import static org.telegram.ui.ActionBar.Theme.key_chat_attachGalleryBackground;
+import static org.telegram.ui.ActionBar.Theme.key_chat_attachLocationBackground;
+import static org.telegram.ui.ActionBar.Theme.key_chat_attachMediaBanBackground;
+import static org.telegram.ui.ActionBar.Theme.key_chat_attachPermissionImage;
+import static org.telegram.ui.ActionBar.Theme.key_chat_attachPermissionMark;
+import static org.telegram.ui.ActionBar.Theme.key_chat_attachPermissionText;
+import static org.telegram.ui.ActionBar.Theme.key_chat_attachPhotoBackground;
+import static org.telegram.ui.ActionBar.Theme.key_chat_attachPollBackground;
+import static org.telegram.ui.ActionBar.Theme.key_chat_outBroadcast;
+import static org.telegram.ui.ActionBar.Theme.key_chat_outGreenCall;
+import static org.telegram.ui.ActionBar.Theme.key_chat_recordedVoiceDot;
+import static org.telegram.ui.ActionBar.Theme.key_chat_reportSpam;
+import static org.telegram.ui.ActionBar.Theme.key_chat_sentError;
+import static org.telegram.ui.ActionBar.Theme.key_chats_draft;
+import static org.telegram.ui.ActionBar.Theme.key_chats_secretIcon;
+import static org.telegram.ui.ActionBar.Theme.key_chats_secretName;
+import static org.telegram.ui.ActionBar.Theme.key_chats_sentError;
+import static org.telegram.ui.ActionBar.Theme.key_checkbox;
+import static org.telegram.ui.ActionBar.Theme.key_contacts_inviteBackground;
+import static org.telegram.ui.ActionBar.Theme.key_dialogRedIcon;
+import static org.telegram.ui.ActionBar.Theme.key_dialogTextRed;
+import static org.telegram.ui.ActionBar.Theme.key_dialogTextRed2;
+import static org.telegram.ui.ActionBar.Theme.key_featuredStickers_delButton;
+import static org.telegram.ui.ActionBar.Theme.key_featuredStickers_delButtonPressed;
+import static org.telegram.ui.ActionBar.Theme.key_location_sendLiveLocationBackground;
+import static org.telegram.ui.ActionBar.Theme.key_switch2Track;
+import static org.telegram.ui.ActionBar.Theme.key_windowBackgroundWhiteGreenText;
+import static org.telegram.ui.ActionBar.Theme.key_windowBackgroundWhiteGreenText2;
+import static org.telegram.ui.ActionBar.Theme.key_windowBackgroundWhiteRedText;
+import static org.telegram.ui.ActionBar.Theme.key_windowBackgroundWhiteRedText2;
+import static org.telegram.ui.ActionBar.Theme.key_windowBackgroundWhiteRedText3;
+import static org.telegram.ui.ActionBar.Theme.key_windowBackgroundWhiteRedText4;
+import static org.telegram.ui.ActionBar.Theme.key_windowBackgroundWhiteRedText5;
+import static org.telegram.ui.ActionBar.Theme.key_windowBackgroundWhiteRedText6;
 
 public class DarkThemeTinter implements ThemeTinter {
 
@@ -81,9 +134,27 @@ public class DarkThemeTinter implements ThemeTinter {
     }
 
     @Override
+    public int[] getBaseTintColors() {
+        return new int[] {
+                Color.parseColor("#3A8BE9"), // blue
+                Color.parseColor("#01c1ec"), // lightblue
+                Color.parseColor("#28b227"), // green
+                Color.parseColor("#ea6ba3"), // pink
+                Color.parseColor("#ef8201"), // orange
+                Color.parseColor("#9471ee"), // violet
+                Color.parseColor("#d23213"), // red
+                Color.parseColor("#ecb304"), // yellow
+                Color.parseColor("#6d819e"), // gray
+        };
+    }
+
+    @Override
     public void tint(int tintColor, int themeAccentColor, Map<String, Integer>[] inColors, Map<String, Integer>[] outColors) {
         final float[] tintColorHsv = new float[3];
         Color.colorToHSV(tintColor, tintColorHsv);
+
+        tintColorHsv[1] *= 0.731f;
+        tintColorHsv[2] *= 0.59f;
 
         final float[] themeAccentColorHsv = new float[3];
         Color.colorToHSV(themeAccentColor, themeAccentColorHsv);

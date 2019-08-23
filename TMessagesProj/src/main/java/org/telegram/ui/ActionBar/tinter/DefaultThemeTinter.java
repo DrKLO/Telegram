@@ -5,6 +5,11 @@ import java.util.Map;
 public class DefaultThemeTinter implements ThemeTinter {
 
     @Override
+    public int[] getBaseTintColors() {
+        return null;
+    }
+
+    @Override
     public void tint(int tintColor,
                      int themeAccentColor,
                      Map<String, Integer>[] inColors,

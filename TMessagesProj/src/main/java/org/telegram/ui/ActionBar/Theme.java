@@ -42,7 +42,10 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.StateSet;
+
+import androidx.annotation.ColorInt;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -58,6 +61,9 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.time.SunDate;
+import org.telegram.ui.ActionBar.tinter.ArcticThemeTinter;
+import org.telegram.ui.ActionBar.tinter.DarkThemeTinter;
+import org.telegram.ui.ActionBar.tinter.DefaultThemeTinter;
 import org.telegram.ui.ActionBar.tinter.ThemeTinter;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
@@ -79,6 +85,10 @@ import java.util.Map;
 public class Theme {
 
     public static class ThemeInfo {
+
+        private static final ThemeTinter defaultThemeTinter =
+                new DefaultThemeTinter();
+
         public String name;
         public String pathToFile;
         public String assetName;
@@ -87,6 +97,8 @@ public class Theme {
         public int previewInColor;
         public int previewOutColor;
         public int sortIndex;
+
+        public ThemeTinter tinter = defaultThemeTinter;
 
         public JSONObject getSaveJson() {
             try {
@@ -105,16 +117,23 @@ public class Theme {
                 return LocaleController.getString("Default", R.string.Default);
             } else if ("Blue".equals(name)) {
                 return LocaleController.getString("ThemeBlue", R.string.ThemeBlue);
-            } else if ("Dark".equals(name)) {
+            } else if ("Dark".equals(name) || "Dark Blue".equals(name)) {
                 return LocaleController.getString("ThemeDark", R.string.ThemeDark);
-            } else if ("Dark Blue".equals(name)) {
-                return LocaleController.getString("ThemeDarkBlue", R.string.ThemeDarkBlue);
             } else if ("Graphite".equals(name)) {
                 return LocaleController.getString("ThemeGraphite", R.string.ThemeGraphite);
             } else if ("Arctic Blue".equals(name)) {
                 return LocaleController.getString("ThemeArcticBlue", R.string.ThemeArcticBlue);
             }
             return name;
+        }
+
+        public ThemeTinter getTinter() {
+            return tinter;
+        }
+
+        public boolean hasTintColors() {
+            final int[] baseTintColors = tinter.getBaseTintColors();
+            return baseTintColors != null && baseTintColors.length > 0;
         }
 
         public boolean isDark() {
@@ -1082,7 +1101,7 @@ public class Theme {
     private static HashMap<String, Integer> originalCurrentColors;
     private static HashMap<String, Integer> animatingColors;
 
-    private static ThemeTinter tinter;
+    private static HashMap<String, Integer> tintColors = new HashMap<>();
 
     static {
         originalDefaultColors.put(key_dialogBackground, 0xffffffff);
@@ -1819,7 +1838,7 @@ public class Theme {
         themes.add(currentDayTheme = currentTheme = defaultTheme = themeInfo);
         themesDict.put("Default", defaultTheme);
 
-        themeInfo = new ThemeInfo();
+       /* themeInfo = new ThemeInfo();
         themeInfo.name = "Dark";
         themeInfo.assetName = "dark.attheme";
         themeInfo.previewBackgroundColor = 0xff5a5d61;
@@ -1827,7 +1846,7 @@ public class Theme {
         themeInfo.previewOutColor = 0xff82a8e3;
         themeInfo.sortIndex = 3;
         themes.add(themeInfo);
-        themesDict.put("Dark", themeInfo);
+        themesDict.put("Dark", themeInfo);*/
 
         themeInfo = new ThemeInfo();
         themeInfo.name = "Blue";
@@ -1842,6 +1861,7 @@ public class Theme {
         themeInfo = new ThemeInfo();
         themeInfo.name = "Dark Blue";
         themeInfo.assetName = "darkblue.attheme";
+        themeInfo.tinter = new DarkThemeTinter();
         themeInfo.previewBackgroundColor = 0xff5f6e82;
         themeInfo.previewInColor = 0xff76869c;
         themeInfo.previewOutColor = 0xff82a8e3;
@@ -1864,6 +1884,7 @@ public class Theme {
         themeInfo = new ThemeInfo();
         themeInfo.name = "Arctic Blue";
         themeInfo.assetName = "arctic.attheme";
+        themeInfo.tinter = new ArcticThemeTinter();
         themeInfo.previewBackgroundColor = 0xffffffff;
         themeInfo.previewInColor = 0xffebeef4;
         themeInfo.previewOutColor = 0xff7cb2fe;
@@ -2463,7 +2484,11 @@ public class Theme {
     }
 
     public static void applyTheme(ThemeInfo themeInfo, boolean nightTheme) {
-        applyTheme(themeInfo, true, true, nightTheme);
+        applyTheme(themeInfo, nightTheme, true);
+    }
+
+    public static void applyTheme(ThemeInfo themeInfo, boolean nightTheme, boolean removeWallpaperOverride) {
+        applyTheme(themeInfo, true, removeWallpaperOverride, nightTheme);
     }
 
     public static void applyTheme(ThemeInfo themeInfo, boolean save, boolean removeWallpaperOverride, final boolean nightTheme) {
@@ -2487,15 +2512,33 @@ public class Theme {
                 }
                 if (themeInfo.assetName != null) {
                     originalCurrentColors = getThemeFileValues(null, themeInfo.assetName);
-                    tinter = ThemeTinter.get(themeInfo);
-                    currentColors = new HashMap<>(originalCurrentColors.size());
-                    tinter.tint(originalCurrentColors.get(key_chat_outBubble),//Color.parseColor("#3f7c36"),
-                            originalCurrentColors.get(key_chat_outBubble),
-                            new Map[] { originalCurrentColors, originalDefaultColors },
-                            new Map[] { currentColors, defaultColors });
                 } else {
-                    currentColors = originalCurrentColors = getThemeFileValues(new File(themeInfo.pathToFile), null);
-                    tinter = null;
+                    originalCurrentColors = getThemeFileValues(new File(themeInfo.pathToFile), null);
+                }
+                currentColors = new HashMap<>(originalCurrentColors.size());
+                if (themeInfo.hasTintColors()) {
+                    int tintColor;
+
+                    if (tintColors.containsKey(themeInfo.assetName)) {
+                        tintColor = tintColors.get(themeInfo.assetName);
+                    } else {
+                        tintColor = restoreThemeTintColor(themeInfo);
+
+                        if (tintColor == 0) {
+                            tintColor = themeInfo.getTinter().getBaseTintColors()[0];
+                        }
+
+                        tintColors.put(themeInfo.assetName, tintColor);
+                    }
+
+                    themeInfo.getTinter().tint(tintColor,
+                            originalCurrentColors.get(key_chat_outBubble),
+                            new Map[]{originalCurrentColors, originalDefaultColors},
+                            new Map[]{currentColors, defaultColors});
+                } else {
+                    themeInfo.getTinter().tint(0, 0,
+                            new Map[]{originalCurrentColors, originalDefaultColors},
+                            new Map[]{currentColors, defaultColors});
                 }
             } else {
                 if (!nightTheme && save) {
@@ -2509,7 +2552,6 @@ public class Theme {
                 }
                 currentColors.clear();
                 defaultColors.putAll(originalDefaultColors);
-                tinter = ThemeTinter.defaultThemeTinter;
                 themedWallpaperFileOffset = 0;
                 wallpaper = null;
                 themedWallpaper = null;
@@ -2526,6 +2568,7 @@ public class Theme {
             AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewTheme, nightTheme));
         } catch (Exception e) {
             FileLog.e(e);
+            Log.e("tele2077", "err", e);
         }
     }
 
@@ -2564,6 +2607,51 @@ public class Theme {
             text = text.substring(0, text.lastIndexOf('.'));
         }
         return text;
+    }
+
+    public static int getTintColor() {
+        return currentTheme.hasTintColors() ? tintColors.get(currentTheme.assetName) : 0;
+    }
+
+    public static void setTintColor(@ColorInt int tintColor) {
+        setTintColor(tintColor, true, true);
+    }
+
+    public static void setTintColor(@ColorInt int tintColor, boolean animated, boolean save) {
+        if (!currentTheme.hasTintColors()) return;
+        if (tintColors.get(currentTheme.assetName) != tintColor) {
+            tintColors.put(currentTheme.assetName, tintColor);
+            if (save) saveThemeTintColor(currentTheme, tintColor);
+            NotificationCenter.getGlobalInstance().postNotificationName(
+                    NotificationCenter.needSetDayNightTheme,
+                    currentTheme, isCurrentThemeNight(),
+                    animated, false);
+        }
+    }
+
+    public static void saveThemeExtraTintColor(ThemeInfo themeInfo, @ColorInt int extraTintColor) {
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt("theme_tint_color_" + themeInfo.assetName, extraTintColor);
+        editor.putInt("theme_extra_tint_color_" + themeInfo.assetName, extraTintColor);
+        editor.commit();
+    }
+
+    public static int restoreThemeExtraTintColor(ThemeInfo themeInfo) {
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        return preferences.getInt("theme_extra_tint_color_" + themeInfo.assetName, 0);
+    }
+
+    private static void saveThemeTintColor(ThemeInfo themeInfo, @ColorInt int tintColor) {
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt("theme_tint_color_" + themeInfo.assetName, tintColor);
+        editor.commit();
+    }
+
+    public static int restoreThemeTintColor(ThemeInfo themeInfo) {
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        return preferences.getInt("theme_tint_color_" + themeInfo.assetName, 0);
     }
 
     public static ThemeInfo getCurrentTheme() {

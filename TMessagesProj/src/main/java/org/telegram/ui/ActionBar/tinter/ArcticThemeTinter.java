@@ -4,6 +4,8 @@ import android.graphics.Color;
 
 import androidx.core.graphics.ColorUtils;
 
+import org.telegram.messenger.Utilities;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -192,6 +194,8 @@ public class ArcticThemeTinter implements ThemeTinter {
         keys.add(key_chat_outFileProgressSelected);
         keys.add(key_chat_outMediaIconSelected);
         keys.add(key_chat_adminSelectedText);
+        contentColorRules.put(key_chats_verifiedCheck, ColorRule.PRIMARY);
+        contentColorRules.put(key_profile_verifiedCheck, ColorRule.PRIMARY);
         contentColorRules.put(key_chat_attachCheckBoxCheck, ColorRule.PRIMARY);
         contentColorRules.put(key_chat_outAudioSeekbar, ColorRule.TERTIARY);
         contentColorRules.put(key_chat_outAudioSeekbarSelected, ColorRule.TERTIARY);
@@ -256,6 +260,22 @@ public class ArcticThemeTinter implements ThemeTinter {
     }
 
     @Override
+    public int[] getBaseTintColors() {
+        return new int[] {
+                Color.parseColor("#007afe"), // blue
+                Color.parseColor("#01c1ec"), // lightblue
+                Color.parseColor("#28b227"), // green
+                Color.parseColor("#ea6ba3"), // pink
+                Color.parseColor("#ef8201"), // orange
+                Color.parseColor("#9471ee"), // violet
+                Color.parseColor("#d23213"), // red
+                Color.parseColor("#ecb304"), // yellow
+                Color.parseColor("#6d819e"), // gray
+                Color.parseColor("#000000"), // black
+        };
+    }
+
+    @Override
     public void tint(int tintColor,
                      int themeAccentColor,
                      Map<String, Integer>[] inColors,
@@ -305,7 +325,7 @@ public class ArcticThemeTinter implements ThemeTinter {
 
                     int alpha;
                     if (originalSaturation > 0f) {
-                        alpha = (int) (lerp(rule.minAlpha, rule.maxAlpha,
+                        alpha = (int) (Utilities.lerp(rule.minAlpha, rule.maxAlpha,
                                 Math.min(1f, saturation / originalSaturation)) * 255);
                     } else alpha = (int) rule.maxAlpha * 255;
 
@@ -313,10 +333,6 @@ public class ArcticThemeTinter implements ThemeTinter {
                 } else out.put(key, entry.getValue());
             }
         }
-    }
-
-    private static float lerp(float a, float b, float f) {
-        return a + f * (b - a);
     }
 
     private static class ColorRule {
