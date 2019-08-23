@@ -1231,6 +1231,7 @@
     <string name="AskAQuestion">Ask a Question</string>
     <string name="EnableAnimations">Enable Animations</string>
     <string name="ChatSettings">Chat Settings</string>
+    <string name="AccentColor">Accent Color</string>
     <string name="SettingsHelp">Help</string>
     <string name="Account">Account</string>
     <string name="Unblock">Unblock</string>
@@ -1307,6 +1308,10 @@
     <string name="FontSizePreviewReply">Reinhardt, we need to find you some new tunes &#127926;.</string>
     <string name="FontSizePreviewLine1">Ah, you kids today with techno music! You should enjoy the classics, like Hasselhoff!</string>
     <string name="FontSizePreviewLine2">I can\'t even take you seriously right now.</string>
+    <string name="AccentColorPreviewName">Alex Cassio</string>
+    <string name="AccentColorPreviewMessage1">Twenty years from now you will be more disappointed by the things that you didn\'t do than by the ones you did do, so throw off the bowlines, sail away from safe harboor, catch the trade winds in your sails.</string>
+    <string name="AccentColorPreviewMessage2">Mark Twain said that ☝️</string>
+    <string name="AccentColorPreviewMessage3">Reminds me of a Chinese proverb: the best time to plant a tree was 20 years ago. The second best time is now.</string>
     <string name="BackgroundColorSinglePreviewLine1">Press \'Set\' to apply the background.</string>
     <string name="BackgroundColorSinglePreviewLine2">Enjoy the view.</string>
     <string name="SetBackground">SET BACKGROUND</string>

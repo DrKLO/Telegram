@@ -15,6 +15,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.Region;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -51,6 +52,7 @@ public class DrawerProfileCell extends FrameLayout {
     private Rect destRect = new Rect();
     private Paint paint = new Paint();
     private Integer currentColor;
+    private Integer currentArrowColor;
     private SnowflakesEffect snowflakesEffect;
     private boolean accountsShowed;
 
@@ -130,7 +132,12 @@ public class DrawerProfileCell extends FrameLayout {
             currentColor = color;
             shadowView.getDrawable().setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
         }
-        nameTextView.setTextColor(Theme.getColor(Theme.key_chats_menuName));
+        int nameColor = Theme.getColor(Theme.key_chats_menuName);
+        if (currentArrowColor == null || currentArrowColor != nameColor) {
+            currentArrowColor = nameColor;
+            arrowView.setColorFilter(new PorterDuffColorFilter(nameColor, PorterDuff.Mode.MULTIPLY));
+        }
+        nameTextView.setTextColor(nameColor);
         if (useImageBackground) {
             phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuPhone));
             if (shadowView.getVisibility() != VISIBLE) {
@@ -168,6 +175,13 @@ public class DrawerProfileCell extends FrameLayout {
         if (snowflakesEffect != null) {
             snowflakesEffect.onDraw(this, canvas);
         }
+
+        if (!accountsShowed) {
+            Rect r = new Rect(0, 0, getWidth(), getHeight() + 1);
+            canvas.clipRect(r, Region.Op.REPLACE);
+            canvas.drawLine(0, getHeight(), getWidth(),
+                    getHeight(), Theme.dividerPaint);
+        }
     }
 
     public boolean isAccountsShowed() {
@@ -200,7 +214,6 @@ public class DrawerProfileCell extends FrameLayout {
         nameTextView.setText(UserObject.getUserName(user));
         phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
-        avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundInProfileBlue));
         avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
 
         applyBackground(true);

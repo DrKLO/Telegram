@@ -47,9 +47,13 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DownloadController;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
@@ -59,19 +63,17 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.R;
-
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.BackupImageView;
@@ -88,9 +90,6 @@ import org.telegram.ui.Components.WallpaperParallaxEffect;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class WallpaperActivity extends BaseFragment implements DownloadController.FileDownloadProgressListener, NotificationCenter.NotificationCenterDelegate {
 
@@ -724,6 +723,15 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
         }
     }
 
+    private boolean isSelectingAccent;
+    private boolean isColorPickerShowed;
+    private int previousAccentColor;
+
+    public WallpaperActivity() {
+        isSelectingAccent = true;
+        currentWallpaper = Theme.getCachedWallpaperNonBlocking();
+    }
+
     public WallpaperActivity(Object wallPaper, Bitmap bitmap) {
         super();
         currentWallpaper = wallPaper;
@@ -795,11 +803,18 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("BackgroundPreview", R.string.BackgroundPreview));
+        if (!isSelectingAccent) {
+            actionBar.setTitle(LocaleController.getString("BackgroundPreview", R.string.BackgroundPreview));
+        } else {
+            actionBar.setTitle(LocaleController.getString("AccentColor", R.string.AccentColor));
+        }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
+                    if (isSelectingAccent) {
+                        Theme.setTintColor(previousAccentColor, false, false);
+                    }
                     finishFragment();
                 } else if (id == share_item) {
                     if (getParentActivity() == null) {
@@ -892,7 +907,7 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
         } else {
             textsCount = 2;
             startIndex = 0;
-            buttonsAvailable = true;
+            buttonsAvailable = !isSelectingAccent;
         }
         frameLayout.addView(backgroundImage, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 48));
         backgroundImage.getImageReceiver().setDelegate((imageReceiver, set, thumb) -> {
@@ -1210,7 +1225,7 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
             backgroundImage.setTranslationY(offsetY * progress);
         });
 
-        if (currentWallpaper instanceof WallpapersListActivity.ColorWallpaper) {
+        if (currentWallpaper instanceof WallpapersListActivity.ColorWallpaper || isSelectingAccent) {
             isBlurred = false;
 
             for (int a = 0; a < 2; a++) {
@@ -1253,7 +1268,11 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
                 patternsButtonsContainer[a].addView(patternsCancelButton[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
                 patternsCancelButton[a].setOnClickListener(v -> {
                     if (num == 0) {
-                        setBackgroundColor(previousBackgroundColor);
+                        if (!isSelectingAccent) {
+                            setBackgroundColor(previousBackgroundColor);
+                        } else {
+                            Theme.setTintColor(previousAccentColor, false, false);
+                        }
                     } else {
                         selectedPattern = previousSelectedPattern;
                         if (selectedPattern == null) {
@@ -1269,7 +1288,9 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
                         updateButtonState(radialProgress, null, WallpaperActivity.this, false, true);
                         updateSelectedPattern(true);
                     }
-                    showPatternsView(num, false);
+                    if (!isSelectingAccent) {
+                        showPatternsView(num, false);
+                    } else finishFragment();
                 });
 
                 patternsSaveButton[a] = new TextView(context);
@@ -1281,7 +1302,14 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
                 patternsSaveButton[a].setPadding(AndroidUtilities.dp(21), 0, AndroidUtilities.dp(21), 0);
                 patternsSaveButton[a].setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 0));
                 patternsButtonsContainer[a].addView(patternsSaveButton[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.TOP));
-                patternsSaveButton[a].setOnClickListener(v -> showPatternsView(num, false));
+                patternsSaveButton[a].setOnClickListener(v -> {
+                    if (!isSelectingAccent) {
+                        showPatternsView(num, false);
+                    } else {
+                        Theme.saveThemeExtraTintColor(Theme.getCurrentTheme(), Theme.getTintColor());
+                        finishFragment();
+                    }
+                });
 
                 if (a == 1) {
                     patternsListView = new RecyclerListView(context) {
@@ -1388,6 +1416,12 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
     @Override
     public void onResume() {
         super.onResume();
+        if (isSelectingAccent) {
+            if (!isColorPickerShowed) {
+                colorPicker.post(() -> showPatternsView(0, true, false));
+                isColorPickerShowed = true;
+            }
+        }
         if (isMotion) {
             parallaxEffect.setEnabled(true);
         }
@@ -1583,11 +1617,20 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
     }
 
     private void showPatternsView(int num, boolean show) {
+        showPatternsView(num, show, true);
+    }
+
+    private void showPatternsView(int num, boolean show, boolean animated) {
         boolean showMotion = show && num == 1 && selectedPattern != null;
         if (show) {
             if (num == 0) {
-                previousBackgroundColor = backgroundColor;
-                colorPicker.setColor(backgroundColor);
+                if (!isSelectingAccent) {
+                    previousBackgroundColor = backgroundColor;
+                    colorPicker.setColor(backgroundColor);
+                } else {
+                    previousAccentColor = Theme.getTintColor();
+                    colorPicker.setColor(previousAccentColor);
+                }
             } else {
                 previousSelectedPattern = selectedPattern;
                 previousIntensity = currentIntensity;
@@ -1611,8 +1654,10 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
             patternLayout[num].setVisibility(View.VISIBLE);
             animators.add(ObjectAnimator.ofFloat(listView, View.TRANSLATION_Y, -patternLayout[num].getMeasuredHeight() + AndroidUtilities.dp(48)));
             animators.add(ObjectAnimator.ofFloat(buttonsContainer, View.TRANSLATION_Y, -patternLayout[num].getMeasuredHeight() + AndroidUtilities.dp(48)));
-            animators.add(ObjectAnimator.ofFloat(checkBoxView[2], View.ALPHA, showMotion ? 1.0f : 0.0f));
-            animators.add(ObjectAnimator.ofFloat(checkBoxView[0], View.ALPHA, showMotion ? 0.0f : 1.0f));
+            if (!isSelectingAccent) {
+                animators.add(ObjectAnimator.ofFloat(checkBoxView[2], View.ALPHA, showMotion ? 1.0f : 0.0f));
+                animators.add(ObjectAnimator.ofFloat(checkBoxView[0], View.ALPHA, showMotion ? 0.0f : 1.0f));
+            }
             animators.add(ObjectAnimator.ofFloat(backgroundImage, View.ALPHA, 0.0f));
             if (patternLayout[otherNum].getVisibility() == View.VISIBLE) {
                 animators.add(ObjectAnimator.ofFloat(patternLayout[otherNum], View.ALPHA, 0.0f));
@@ -1625,8 +1670,10 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
             animators.add(ObjectAnimator.ofFloat(listView, View.TRANSLATION_Y, 0));
             animators.add(ObjectAnimator.ofFloat(buttonsContainer, View.TRANSLATION_Y, 0));
             animators.add(ObjectAnimator.ofFloat(patternLayout[num], View.TRANSLATION_Y, patternLayout[num].getMeasuredHeight()));
-            animators.add(ObjectAnimator.ofFloat(checkBoxView[0], View.ALPHA, 1.0f));
-            animators.add(ObjectAnimator.ofFloat(checkBoxView[2], View.ALPHA, 0.0f));
+            if (!isSelectingAccent) {
+                animators.add(ObjectAnimator.ofFloat(checkBoxView[0], View.ALPHA, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(checkBoxView[2], View.ALPHA, 0.0f));
+            }
             animators.add(ObjectAnimator.ofFloat(backgroundImage, View.ALPHA, 1.0f));
         }
         animatorSet.playTogether(animators);
@@ -1639,11 +1686,13 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
                 } else if (!show) {
                     patternLayout[num].setVisibility(View.INVISIBLE);
                 }
-                checkBoxView[showMotion ? 0 : 2].setVisibility(View.INVISIBLE);
+                if (!isSelectingAccent) {
+                    checkBoxView[showMotion ? 0 : 2].setVisibility(View.INVISIBLE);
+                }
             }
         });
         animatorSet.setInterpolator(CubicBezierInterpolator.EASE_OUT);
-        animatorSet.setDuration(200);
+        animatorSet.setDuration(animated ? 200 : 0);
         animatorSet.start();
     }
 
@@ -1674,6 +1723,11 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
     }
 
     private void setBackgroundColor(int color) {
+        if (isSelectingAccent) {
+            Theme.setTintColor(color, false, false);
+            return;
+        }
+
         backgroundColor = color;
         backgroundImage.setBackgroundColor(backgroundColor);
         if (checkBoxView[0] != null) {
@@ -1739,6 +1793,8 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
             } else {
                 backgroundImage.setImage(wallPaper.imageUrl, imageFilter, wallPaper.thumbUrl, "100_100_b");
             }
+        } else if (currentWallpaper instanceof Drawable) {
+            backgroundImage.setImageDrawable((Drawable) currentWallpaper);
         }
     }
 
@@ -1796,60 +1852,114 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
 
             int date = (int) (System.currentTimeMillis() / 1000) - 60 * 60;
 
-            TLRPC.Message message;
+            if (!isSelectingAccent) {
+                TLRPC.Message message;
 
-            message = new TLRPC.TL_message();
-            if (currentWallpaper instanceof WallpapersListActivity.ColorWallpaper) {
-                message.message = LocaleController.getString("BackgroundColorSinglePreviewLine2", R.string.BackgroundColorSinglePreviewLine2);
-                //message.message = LocaleController.getString("BackgroundColorPreviewLine2", R.string.BackgroundColorPreviewLine2);
+                message = new TLRPC.TL_message();
+                if (currentWallpaper instanceof WallpapersListActivity.ColorWallpaper) {
+                    message.message = LocaleController.getString("BackgroundColorSinglePreviewLine2", R.string.BackgroundColorSinglePreviewLine2);
+                    //message.message = LocaleController.getString("BackgroundColorPreviewLine2", R.string.BackgroundColorPreviewLine2);
+                } else {
+                    message.message = LocaleController.getString("BackgroundPreviewLine2", R.string.BackgroundPreviewLine2);
+                }
+                message.date = date + 60;
+                message.dialog_id = 1;
+                message.flags = 259;
+                message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
+                message.id = 1;
+                message.media = new TLRPC.TL_messageMediaEmpty();
+                message.out = true;
+                message.to_id = new TLRPC.TL_peerUser();
+                message.to_id.user_id = 0;
+                MessageObject messageObject = new MessageObject(currentAccount, message, true);
+                messageObject.eventId = 1;
+                messageObject.resetLayout();
+                messages.add(messageObject);
+
+                message = new TLRPC.TL_message();
+                if (currentWallpaper instanceof WallpapersListActivity.ColorWallpaper) {
+                    message.message = LocaleController.getString("BackgroundColorSinglePreviewLine1", R.string.BackgroundColorSinglePreviewLine1);
+                    //message.message = LocaleController.getString("BackgroundColorPreviewLine1", R.string.BackgroundColorPreviewLine1);
+                } else {
+                    message.message = LocaleController.getString("BackgroundPreviewLine1", R.string.BackgroundPreviewLine1);
+                }
+                message.date = date + 60;
+                message.dialog_id = 1;
+                message.flags = 257 + 8;
+                message.from_id = 0;
+                message.id = 1;
+                message.reply_to_msg_id = 5;
+                message.media = new TLRPC.TL_messageMediaEmpty();
+                message.out = false;
+                message.to_id = new TLRPC.TL_peerUser();
+                message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
+                messageObject = new MessageObject(currentAccount, message, true);
+                messageObject.eventId = 1;
+                messageObject.resetLayout();
+                messages.add(messageObject);
+
+                message = new TLRPC.TL_message();
+                message.message = LocaleController.formatDateChat(date);
+                message.id = 0;
+                message.date = date;
+                messageObject = new MessageObject(currentAccount, message, false);
+                messageObject.type = 10;
+                messageObject.contentType = 1;
+                messageObject.isDateObject = true;
+                messages.add(messageObject);
             } else {
-                message.message = LocaleController.getString("BackgroundPreviewLine2", R.string.BackgroundPreviewLine2);
-            }
-            message.date = date + 60;
-            message.dialog_id = 1;
-            message.flags = 259;
-            message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
-            message.id = 1;
-            message.media = new TLRPC.TL_messageMediaEmpty();
-            message.out = true;
-            message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = 0;
-            MessageObject messageObject = new MessageObject(currentAccount, message, true);
-            messageObject.eventId = 1;
-            messageObject.resetLayout();
-            messages.add(messageObject);
+                TLRPC.Message message = new TLRPC.TL_message();
 
-            message = new TLRPC.TL_message();
-            if (currentWallpaper instanceof WallpapersListActivity.ColorWallpaper) {
-                message.message = LocaleController.getString("BackgroundColorSinglePreviewLine1", R.string.BackgroundColorSinglePreviewLine1);
-                //message.message = LocaleController.getString("BackgroundColorPreviewLine1", R.string.BackgroundColorPreviewLine1);
-            } else {
-                message.message = LocaleController.getString("BackgroundPreviewLine1", R.string.BackgroundPreviewLine1);
-            }
-            message.date = date + 60;
-            message.dialog_id = 1;
-            message.flags = 257 + 8;
-            message.from_id = 0;
-            message.id = 1;
-            message.reply_to_msg_id = 5;
-            message.media = new TLRPC.TL_messageMediaEmpty();
-            message.out = false;
-            message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
-            messageObject = new MessageObject(currentAccount, message, true);
-            messageObject.eventId = 1;
-            messageObject.resetLayout();
-            messages.add(messageObject);
+                message.message = LocaleController.getString("AccentColorPreviewMessage1", R.string.AccentColorPreviewMessage1);
+                message.date = date + 60;
+                message.dialog_id = 1;
+                message.flags = 259;
+                message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
+                message.id = 1;
+                message.media = new TLRPC.TL_messageMediaEmpty();
+                message.out = true;
+                message.to_id = new TLRPC.TL_peerUser();
+                message.to_id.user_id = 0;
+                MessageObject message0 = new MessageObject(currentAccount, message, true);
+                message0.resetLayout();
+                message0.eventId = 1;
+                messages.add(message0);
 
-            message = new TLRPC.TL_message();
-            message.message = LocaleController.formatDateChat(date);
-            message.id = 0;
-            message.date = date;
-            messageObject = new MessageObject(currentAccount, message, false);
-            messageObject.type = 10;
-            messageObject.contentType = 1;
-            messageObject.isDateObject = true;
-            messages.add(messageObject);
+                message = new TLRPC.TL_message();
+                message.message = LocaleController.getString("AccentColorPreviewMessage2", R.string.AccentColorPreviewMessage2);
+                message.date = date + 960;
+                message.dialog_id = 1;
+                message.flags = 259;
+                message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
+                message.id = 1;
+                message.media = new TLRPC.TL_messageMediaEmpty();
+                message.out = true;
+                message.to_id = new TLRPC.TL_peerUser();
+                message.to_id.user_id = 0;
+                MessageObject message1 = new MessageObject(currentAccount, message, true);
+                message1.resetLayout();
+                message1.eventId = 1;
+                messages.add(0, message1);
+
+                message = new TLRPC.TL_message();
+                message.message = LocaleController.getString("AccentColorPreviewMessage3", R.string.AccentColorPreviewMessage3);
+                message.date = date + 60;
+                message.dialog_id = 1;
+                message.flags = 257 + 8;
+                message.from_id = 0;
+                message.id = 1;
+                message.reply_to_msg_id = 5;
+                message.media = new TLRPC.TL_messageMediaEmpty();
+                message.out = false;
+                message.to_id = new TLRPC.TL_peerUser();
+                message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
+                MessageObject message2 = new MessageObject(currentAccount, message, true);
+                message2.customReplyName = LocaleController.getString("AccentColorPreviewName", R.string.AccentColorPreviewName);
+                message2.eventId = 1;
+                message2.resetLayout();
+                message2.replyMessageObject = message1;
+                messages.add(0, message2);
+            }
         }
 
         @Override
@@ -1952,8 +2062,8 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
         arrayList.add(new ThemeDescription(bottomOverlayChat, 0, null, Theme.chat_composeBackgroundPaint, null, null, Theme.key_chat_messagePanelBackground));
         arrayList.add(new ThemeDescription(bottomOverlayChatText, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_fieldOverlayText));
 
-        for (int a = 0; a < patternsSaveButton.length; a++) {
-            arrayList.add(new ThemeDescription(patternsSaveButton[a], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_fieldOverlayText));
+        for (int a = 0; a < patternsCancelButton.length; a++) {
+            arrayList.add(new ThemeDescription(patternsCancelButton[a], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_fieldOverlayText));
         }
         for (int a = 0; a < patternsSaveButton.length; a++) {
             arrayList.add(new ThemeDescription(patternsSaveButton[a], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_fieldOverlayText));

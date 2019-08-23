@@ -982,6 +982,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         messageEditText.setGravity(Gravity.BOTTOM);
         messageEditText.setPadding(0, AndroidUtilities.dp(11), 0, AndroidUtilities.dp(12));
         messageEditText.setBackgroundDrawable(null);
+        messageEditText.setCursorColor(Theme.getColor(Theme.key_groupcreate_cursor));
         messageEditText.setTextColor(Theme.getColor(Theme.key_chat_messagePanelText));
         messageEditText.setHintColor(Theme.getColor(Theme.key_chat_messagePanelHint));
         messageEditText.setHintTextColor(Theme.getColor(Theme.key_chat_messagePanelHint));

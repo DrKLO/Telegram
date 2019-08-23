@@ -27,6 +27,8 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class AvatarDrawable extends Drawable {
 
+    private static final int ID_PLACEHOLDER = 5;
+
     private TextPaint namePaint;
     private int color;
     private StaticLayout textLayout;
@@ -90,7 +92,9 @@ public class AvatarDrawable extends Drawable {
     }
 
     public static int getColorForId(int id) {
-        return Theme.getColor(Theme.keys_avatar_background[getColorIndex(id)]);
+        if (id == ID_PLACEHOLDER) {
+            return Theme.getColor(Theme.key_avatar_backgroundInProfileBlue);
+        } else return Theme.getColor(Theme.keys_avatar_background[getColorIndex(id)]);
     }
 
     public static int getButtonColorForId(int id) {
@@ -102,7 +106,9 @@ public class AvatarDrawable extends Drawable {
     }
 
     public static int getProfileColorForId(int id) {
-        return Theme.getColor(Theme.keys_avatar_background[getColorIndex(id)]);
+        if (id == ID_PLACEHOLDER) {
+            return Theme.getColor(Theme.key_avatar_backgroundInProfileBlue);
+        } else return Theme.getColor(Theme.keys_avatar_background[getColorIndex(id)]);
     }
 
     public static int getProfileTextColorForId(int id) {
@@ -114,7 +120,9 @@ public class AvatarDrawable extends Drawable {
     }
 
     public static int getNameColorForId(int id) {
-        return Theme.getColor(Theme.keys_avatar_nameInMessage[getColorIndex(id)]);
+        if (id == ID_PLACEHOLDER) {
+            return Theme.getColor(Theme.key_avatar_backgroundInProfileBlue);
+        } else return Theme.getColor(Theme.keys_avatar_nameInMessage[getColorIndex(id)]);
     }
 
     public void setInfo(TLRPC.User user) {

@@ -622,7 +622,10 @@ public class ProfileSearchCell extends BaseCell {
         if (countLayout != null) {
             int x = countLeft - AndroidUtilities.dp(5.5f);
             rect.set(x, countTop, x + countWidth + AndroidUtilities.dp(11), countTop + AndroidUtilities.dp(23));
-            canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, MessagesController.getInstance(currentAccount).isDialogMuted(dialog_id) ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint);
+            final boolean isMuted = MessagesController.getInstance(currentAccount).isDialogMuted(dialog_id);
+            Theme.dialogs_countTextPaint.setColor(isMuted ? Theme.getColor(Theme.key_chats_unreadCounterTextMuted) :
+                    Theme.getColor(Theme.key_chats_unreadCounterText));
+            canvas.drawRoundRect(rect, 11.5f * AndroidUtilities.density, 11.5f * AndroidUtilities.density, isMuted ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint);
             canvas.save();
             canvas.translate(countLeft, countTop + AndroidUtilities.dp(4));
             countLayout.draw(canvas);
