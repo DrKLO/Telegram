@@ -1897,7 +1897,7 @@ public class Theme {
         themeInfo.previewInColor = 0xffebeef4;
         themeInfo.previewOutColor = 0xff7cb2fe;
         themeInfo.sortIndex = 4;
-        themeInfo.setAccentColorOptions(new int[] { 0xff3490eb, 0xff46c8ed, 0xff4ab841, 0xffeb7cb1, 0xffee902a, 0xffa281f0, 0xffd34324, 0xffeebd34, 0xff7f8fab });
+        themeInfo.setAccentColorOptions(new int[] { 0xFF3490EB, 0xFF43ACC7, 0xFF52AC44, 0xFFCD5F93, 0xFFD28036, 0xFF8366CC, 0xFFCE4E57, 0xFFD3AE40, 0xFF7B88AB });
         themes.add(themeInfo);
         themesDict.put("Arctic Blue", themeInfo);
 
