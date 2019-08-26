@@ -483,6 +483,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
 
         themeDescriptions = getThemeDescriptionsInternal();
 
+        viewPager.setCurrentItem(1, false); // Opening chat page
+
         return fragmentView;
     }
 

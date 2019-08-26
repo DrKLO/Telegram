@@ -1194,7 +1194,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         private Theme.ThemeInfo themeInfo;
         private RectF rect = new RectF();
         private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private Paint paintFrame = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         private Drawable inDrawable;
@@ -1218,8 +1217,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             outDrawable = context.getResources().getDrawable(R.drawable.minibubble_out).mutate();
 
             textPaint.setTextSize(AndroidUtilities.dp(13));
-            paintFrame.setStyle(Paint.Style.STROKE);
-            paintFrame.setStrokeWidth(AndroidUtilities.dp(2));
 
             button = new RadioButton(context) {
                 @Override
@@ -1305,8 +1302,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             }
 
             int x = isFirst ? AndroidUtilities.dp(22) : 0;
-            float strokeHalf = 0.5f * paintFrame.getStrokeWidth();
-            rect.set(x + strokeHalf, AndroidUtilities.dp(11) + strokeHalf, x + AndroidUtilities.dp(76) - strokeHalf, AndroidUtilities.dp(11 + 97) - strokeHalf);
+            rect.set(x, AndroidUtilities.dp(11), x + AndroidUtilities.dp(76), AndroidUtilities.dp(11 + 97));
             canvas.drawRoundRect(rect, AndroidUtilities.dp(6), AndroidUtilities.dp(6), paint);
 
             button.setColor(0x66ffffff, 0xffffffff);
@@ -1314,10 +1310,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             if (themeInfo.accentBaseColor != 0) {
                 if (!themeInfo.isDark()) {
                     button.setColor(0xffb3b3b3, tint(themeInfo.accentBaseColor));
+                    Theme.chat_instantViewRectPaint.setColor(0x2bb0b5ba);
+                    canvas.drawRoundRect(rect, AndroidUtilities.dp(6), AndroidUtilities.dp(6), Theme.chat_instantViewRectPaint);
                 }
-
-                paintFrame.setColor(tint(themeInfo.accentBaseColor));
-                canvas.drawRoundRect(rect, AndroidUtilities.dp(6), AndroidUtilities.dp(6), paintFrame);
             }
 
             inDrawable.setBounds(x + AndroidUtilities.dp(6), AndroidUtilities.dp(22), x + AndroidUtilities.dp(6 + 43), AndroidUtilities.dp(22 + 14));
