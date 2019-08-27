@@ -390,13 +390,18 @@ public class ColorPickerView extends FrameLayout {
         public TextView saveButton;
         public TextView cancelButton;
 
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(390), MeasureSpec.EXACTLY));
+        }
+
         public ColorPickerDialogView(@NonNull Context context) {
             super(context);
-
+            setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,390));
             colorPickerView = new ColorPickerView(context);
             colorPickerView.setColor(Theme.getCurrentTheme().accentColor);
 
-            addView(colorPickerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            addView(colorPickerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
             FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) colorPickerView.getLayoutParams();
             lp.bottomMargin = AndroidUtilities.dp(40);
 

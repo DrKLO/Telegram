@@ -66,4 +66,12 @@ public class ColorUtilities {
         }
         return ColorUtils.HSLToColor(hslTmp);
     }
+
+    public static int clampLightness(int color, float v, float v1) {
+        ColorUtils.colorToHSL(color,hslTmp);
+        if(hslTmp[2] >= v && hslTmp[2] <= v1) return color;
+        if(hslTmp[2] < v) hslTmp[2] = v;
+        if(hslTmp[2] > v1) hslTmp[2] = v1;
+        return ColorUtils.HSLToColor(hslTmp);
+    }
 }

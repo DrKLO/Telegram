@@ -51,6 +51,7 @@ import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.ColorUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -58,7 +59,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.ColorUtilities;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.time.SunDate;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -1176,7 +1176,6 @@ public class Theme {
             key_windowBackgroundWhiteBlueText5,
             key_windowBackgroundWhiteBlueText4,
             key_chat_messagePanelSend,
-            key_avatar_backgroundBlue,
             key_windowBackgroundWhiteLinkSelection,
             key_chat_outMediaIcon,
             key_chats_sentClock,
@@ -2274,7 +2273,7 @@ public class Theme {
             themesDict.put("Graphite", themeInfo);
         }
 
-        themeInfo = new ThemeInfo();
+        ThemeInfo arctic = themeInfo = new ThemeInfo();
         themeInfo.name = "Arctic";
         themeInfo.assetName = "arctic.attheme";
         themeInfo.previewBackgroundColor = 0xffffffff;
@@ -2901,6 +2900,8 @@ public class Theme {
                     }
                     if (themeInfo.hasAccentColor && themeInfo.accentColor != themeInfo.defaultAccentColor) {
                         editor.putInt("theme_accent_color_" + themeInfo.name, themeInfo.accentColor);
+                    } else if (themeInfo.hasAccentColor) {
+                        editor.remove("theme_accent_color_" + themeInfo.name);
                     }
                     editor.commit();
                 }
@@ -4592,6 +4593,7 @@ public class Theme {
         float[] hslAccent;
         int accentColor;
         float accentBrightness;
+        float defaultAccentBrightness;
         int defaultAccentColor;
         boolean isDarkTheme;
     }
@@ -4606,6 +4608,12 @@ public class Theme {
         params.accentBrightness = (float) Math.sqrt(
                 Color.red(accentColor) * Color.red(accentColor) * 0.241f +
                         Color.green(accentColor) * Color.green(accentColor) * 0.691f +  Color.blue(accentColor) * Color.blue(accentColor) * 0.068f);
+
+
+        params.defaultAccentBrightness = params.accentBrightness = (float) Math.sqrt(
+                Color.red(defaultAccentColor) * Color.red(defaultAccentColor) * 0.241f +
+                        Color.green(defaultAccentColor) * Color.green(defaultAccentColor) * 0.691f +  Color.blue(defaultAccentColor) * Color.blue(defaultAccentColor) * 0.068f);
+
         int primaryTextColor = Color.WHITE;
         int secondaryTextColor = ColorUtils.blendARGB(accentColor, primaryTextColor, 0.4f + 0.6f * params.accentBrightness / 255f);
         for(int i = 0; i < accentColorKeys.length; i++){
@@ -4663,10 +4671,15 @@ public class Theme {
         currentColors.put(key_chat_outSentCheckSelected, secondaryTextColor);
         currentColors.put(key_chat_outSentCheck, secondaryTextColor);
         currentColors.put(key_chat_outTimeText, secondaryTextColor);
+
+        if(themeInfo.isLight()){
+            currentColors.put(key_chat_outGreenCall, secondaryTextColor);
+        }
     }
 
     private static int transformColorToAccent(AccentColorParams params, int color) {
         float[] hslTmp = ColorUtilities.hslTmp;
+        float[] hslTmp2 = ColorUtilities.hslTmp2;
         float[] hsvTmp = ColorUtilities.hsvTmp;
         float[] hsvTmp2 = ColorUtilities.hsvTmp2;
 
@@ -4675,14 +4688,27 @@ public class Theme {
         if (hslTmp[1] > 0.35f && hslTmp[2] < 0.75f) {
             Color.colorToHSV(color, hsvTmp);
             Color.colorToHSV(params.defaultAccentColor, hsvTmp2);
-            float dif = hsvTmp2[1] - hslTmp[1];
+            float difV = hsvTmp2[2] - hsvTmp[2];
+            float difS = hsvTmp2[1] - hsvTmp[1];
             Color.colorToHSV(params.accentColor, hsvTmp);
-            float k = params.isDarkTheme ? params.accentBrightness / 255f : (1f - params.accentBrightness / 255f);
-            hsvTmp[2] = clamp(hsvTmp[2] - dif * k,0f,1f);
+
+            float k = 1f;
+            if(hsvTmp[2] < hsvTmp2[2]) {
+                k = hsvTmp[2] / hsvTmp2[2];
+            }
+           // float k = params.isDarkTheme ? params.accentBrightness / 255f : (1f - params.accentBrightness / 255f);
+            hsvTmp[2] = clamp(hsvTmp[2] - difV * k,0f,1f);
+            hsvTmp[1] = clamp(hsvTmp[1] - difS * k,0f,1f);
 
             ColorUtils.colorToHSL(Color.HSVToColor(hsvTmp), hslTmp);
         } else {
-            hslTmp[1] *= params.accentBrightness / 255f;
+            Color.colorToHSV(params.accentColor, hsvTmp);
+            Color.colorToHSV(params.defaultAccentColor, hsvTmp2);
+
+            if(hsvTmp[2] < hsvTmp2[2]) {
+                float k = hsvTmp[2] / hsvTmp2[2];
+                hslTmp[1] *= k * k;
+            }
         }
         if (Color.red(params.accentColor) == Color.blue(params.accentColor) && Color.blue(params.accentColor) == Color.green(params.accentColor)) {
             hslTmp[1] = 0;

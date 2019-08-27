@@ -212,31 +212,41 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
 
     private final static HashMap<String,int[]> defaultPickerColors = new HashMap<>();
-    int defaultPickerColorsSize = 6;
+    int defaultPickerColorsSize = 9;
     static {
         defaultPickerColors.put("arctic.attheme",new int[]{
-                0xff3490eb,
-                0xfff44336,
-                0xff9c27b0,
-                0xff3f51b5,
-                0xff009688,
-                0xffe5bd00
+                0xff3490eb,//default blue
+                0xff46a7be,//cyan
+                0xff54a548,//green
+                0xffc77f39,//oragne
+                0xffc2608f,//pink
+                0xff7484a9,//steel
+                0xffc25059,//red
+                0xff7f63c6,//purpule
+                0xffcaa944 //yellow
+
         });
         defaultPickerColors.put("dark.attheme",new int[]{
-                0xff3e6588,
-                0xffe1503f,
-                0xffb048ae,
-                0xff3960c4,
-                0xff009688,
-                0xffe5d764
+                0xff3e6588,//default blue
+                0xff2a7e84,//cyan
+                0xff347b33,//green
+                0xffc77f39,//oragne
+                0xff7e3e58,//pink
+                0xff49536a,//steel
+                0xff81332f,//red
+                0xff4d4089,//purpule
+                0xff7f6a2b //yellow
         });
         defaultPickerColors.put("darkblue.attheme",new int[]{
-                0xff3e618a,
-                0xffe1503f,
-                0xff614576,
-                0xff3960c4,
-                0xff009688,
-                0xff948b41
+                0xff3e618a,//default blue
+                0xff296254,//cyan
+                0xff2c6329,//green
+                0xff746127,//oragne
+                0xff6c354f,//pink
+                0xff56627d,//steel
+                0xff672a2f,//red
+                0xff48326c,//purpule
+                0xff5b4b2c //yellow
         });
     }
 
@@ -1285,6 +1295,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         private boolean isFirst;
 
         private static final float BLEND_ALPHA = 0.34f;
+        private static final float BLEND_ALPHA_DARK = 0.1f;
 
         public InnerThemeView(Context context) {
             super(context);
@@ -1320,7 +1331,10 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 inDrawable.setColorFilter(new PorterDuffColorFilter(theme.previewInColor, PorterDuff.Mode.MULTIPLY));
             }
             if (theme.hasAccentColor) {
-                outDrawable.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(theme.accentColor, Color.WHITE, BLEND_ALPHA), PorterDuff.Mode.MULTIPLY));
+                int color = ColorUtils.blendARGB(theme.accentColor, Color.WHITE,
+                        theme.isDark() ? BLEND_ALPHA_DARK : BLEND_ALPHA);
+                color = ColorUtilities.clampLightness(color,0.6f,1f);
+                outDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
             } else {
                 outDrawable.setColorFilter(new PorterDuffColorFilter(theme.previewOutColor, PorterDuff.Mode.MULTIPLY));
             }
@@ -1336,7 +1350,12 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         public void update() {
             button.setChecked(themeInfo == Theme.getCurrentTheme(), true);
             if (themeInfo.hasAccentColor) {
-                outDrawable.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(themeInfo.accentColor, Color.WHITE, BLEND_ALPHA), PorterDuff.Mode.MULTIPLY));
+
+                int color = ColorUtils.blendARGB(themeInfo.accentColor, Color.WHITE,
+                        themeInfo.isDark() ? BLEND_ALPHA_DARK : BLEND_ALPHA);
+                color = ColorUtilities.clampLightness(color,0.6f,1f);
+
+                outDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
 
                 if(themeInfo.name.equals("Dark Tint")){
                     inDrawable.setColorFilter(new PorterDuffColorFilter(ColorUtilities.replaceHue(themeInfo.previewInColor,themeInfo.accentColor), PorterDuff.Mode.MULTIPLY));
@@ -1361,7 +1380,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 int g = Color.green(color);
                 int b = Color.blue(color);
 
-                button.setColor(0xffb3b3b3, ColorUtils.blendARGB(themeInfo.accentColor, Color.WHITE, BLEND_ALPHA));
+                int buttonSelectedColor = ColorUtils.blendARGB(themeInfo.accentColor, Color.WHITE, themeInfo.isDark() ? BLEND_ALPHA_DARK : BLEND_ALPHA);
+                buttonSelectedColor = ColorUtilities.clampLightness(buttonSelectedColor,0.6f,1f);
+                button.setColor(0xffb3b3b3, buttonSelectedColor);
                 Theme.chat_instantViewRectPaint.setColor(Color.argb(43, r, g, b));
                 canvas.drawRoundRect(rect, AndroidUtilities.dp(6), AndroidUtilities.dp(6), Theme.chat_instantViewRectPaint);
             } else {
