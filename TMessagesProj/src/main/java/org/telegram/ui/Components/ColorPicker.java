@@ -67,6 +67,9 @@ public class ColorPicker extends FrameLayout {
     private boolean circlePressed;
     private boolean colorPressed;
 
+    private BrightnessLimit minBrightness;
+    private BrightnessLimit maxBrightness;
+
     public ColorPicker(Context context, ColorPickerDelegate delegate) {
         this(context, delegate, false);
 
@@ -154,13 +157,16 @@ public class ColorPicker extends FrameLayout {
                         } else if (editable.charAt(0) != '#') {
                             editable.insert(0, "#");
                         }
+                        if (editable.length() != 7) {
+                            ignoreTextChange = false;
+                            return;
+                        }
+
                         try {
                             setColor(Integer.parseInt(editable.toString().substring(1), 16) | 0xff000000);
                         } catch (Exception e) {
                             setColor(0xffffffff);
                         }
-                        colorEditText[1].setText(String.valueOf((int) (255 * colorHSV[2])));
-                        delegate.setColor(getColor());
                     } else {
                         int value = Utilities.parseInt(editable.toString());
                         if (value > 255 || value < 0) {
@@ -172,13 +178,16 @@ public class ColorPicker extends FrameLayout {
                             editable.replace(0, editable.length(), "" + value);
                         }
                         colorHSV[2] = value / 255.0f;
-                        int color = getColor();
-                        int red = Color.red(color);
-                        int green = Color.green(color);
-                        int blue = Color.blue(color);
-                        colorEditText[0].setText(String.format("#%02x%02x%02x", (byte) red, (byte) green, (byte) blue));
-                        delegate.setColor(color);
                     }
+
+                    int color = getColor();
+                    int red = Color.red(color);
+                    int green = Color.green(color);
+                    int blue = Color.blue(color);
+                    colorEditText[0].setTextKeepState(String.format("#%02x%02x%02x", (byte) red, (byte) green, (byte) blue));
+                    colorEditText[1].setTextKeepState(String.valueOf((int) (255 * getBrightness())));
+                    delegate.setColor(color);
+
                     ignoreTextChange = false;
                 }
             });
@@ -227,7 +236,7 @@ public class ColorPicker extends FrameLayout {
         }
         valueSliderPaint.setShader(colorGradient);
         canvas.drawRect(lx, ly, lx + width, ly + height, valueSliderPaint);
-        drawPointerArrow(canvas, lx + width / 2, (int) (ly + colorHSV[2] * height), Color.HSVToColor(colorHSV));
+        drawPointerArrow(canvas, lx + width / 2, (int) (ly + getBrightness() * height), getColor());
     }
 
     private void drawPointerArrow(Canvas canvas, int x, int y, int color) {
@@ -325,7 +334,7 @@ public class ColorPicker extends FrameLayout {
                         int blue = Color.blue(color);
                         ignoreTextChange = true;
                         colorEditText[0].setText(String.format("#%02x%02x%02x", (byte) red, (byte) green, (byte) blue));
-                        colorEditText[1].setText(String.valueOf((int) (255 * colorHSV[2])));
+                        colorEditText[1].setText(String.valueOf((int) (255 * getBrightness())));
                         for (int b = 0; b < 2; b++) {
                             colorEditText[b].setSelection(colorEditText[b].length());
                         }
@@ -352,7 +361,7 @@ public class ColorPicker extends FrameLayout {
             int blue = Color.blue(color);
             Color.colorToHSV(color, colorHSV);
             colorEditText[0].setText(String.format("#%02x%02x%02x", (byte) red, (byte) green, (byte) blue));
-            colorEditText[1].setText(String.valueOf((int) (255 * colorHSV[2])));
+            colorEditText[1].setText(String.valueOf((int) (255 * getBrightness())));
             for (int b = 0; b < 2; b++) {
                 colorEditText[b].setSelection(colorEditText[b].length());
             }
@@ -365,7 +374,32 @@ public class ColorPicker extends FrameLayout {
     }
 
     public int getColor() {
-        return (Color.HSVToColor(colorHSV) & 0x00ffffff) | 0xff000000;
+        hsvTemp[0] = colorHSV[0];
+        hsvTemp[1] = colorHSV[1];
+        hsvTemp[2] = getBrightness();
+        return (Color.HSVToColor(hsvTemp) & 0x00ffffff) | 0xff000000;
+    }
+
+    private float getBrightness() {
+        float brightness = colorHSV[2];
+        colorHSV[2] = 1f;
+        int color = Color.HSVToColor(colorHSV);
+        int red = Color.red(color);
+        int green = Color.green(color);
+        int blue = Color.blue(color);
+        colorHSV[2] = brightness;
+
+        float min = minBrightness == null ? 0f : minBrightness.getLimit(red, green, blue);
+        float max = maxBrightness == null ? 1f : maxBrightness.getLimit(red, green, blue);
+        return Math.max(min, Math.min(brightness, max));
+    }
+
+    public void setMinBrightness(BrightnessLimit limit) {
+        minBrightness = limit;
+    }
+
+    public void setMaxBrightness(BrightnessLimit limit) {
+        maxBrightness = limit;
     }
 
 
@@ -383,6 +417,10 @@ public class ColorPicker extends FrameLayout {
 
     public interface ColorPickerDelegate {
         void setColor(int color);
+    }
+
+    public interface BrightnessLimit {
+        float getLimit(int r, int g, int b);
     }
 
 }

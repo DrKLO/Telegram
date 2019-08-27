@@ -416,6 +416,13 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             linearLayout.addView(colorPickerFrame, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
 
             colorPicker = new ColorPicker(context, this::scheduleApplyAccent, true);
+
+            if (applyingTheme.isDark()) {
+                colorPicker.setMinBrightness((r, g, b) -> 255f / (0.5f * r + 0.8f * g + 0.1f * b + 500f));
+            } else {
+                colorPicker.setMaxBrightness((r, g, b) -> 255f / (0.1f * r + 1.0f * g + 0.1f * b + 50f));
+            }
+
             colorPicker.setColor(applyingTheme.accentColor);
             colorPickerFrame.addView(colorPicker, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 342, Gravity.CENTER_HORIZONTAL));
 
