@@ -1199,7 +1199,6 @@
     <string name="AutoNightBrightness">Soglia luminosità</string>
     <string name="AutoNightBrightnessInfo">Passa al tema notte quando la luce ambientale è inferiore al %1$d%%.</string>
     <string name="ThemeDark">Scuro</string>
-    <string name="ThemeDarkBlue">Blu scuro</string>
     <string name="ThemeGraphite">Grafite</string>
     <string name="ThemeArcticBlue">Blu artico</string>
     <string name="ThemeBlue">Blu</string>

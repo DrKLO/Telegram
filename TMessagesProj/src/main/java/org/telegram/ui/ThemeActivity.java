@@ -9,12 +9,14 @@
 package org.telegram.ui;
 
 import android.Manifest;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -36,6 +38,7 @@ import android.os.Bundle;
 import android.os.Vibrator;
 
 import androidx.core.content.FileProvider;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -43,11 +46,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.text.InputType;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -66,6 +71,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.ColorUtilities;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.time.SunDate;
@@ -89,6 +95,7 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Cells.ThemeCell;
 import org.telegram.ui.Cells.ThemeTypeCell;
+import org.telegram.ui.Components.ColorPickerView;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadioButton;
@@ -105,6 +112,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
+import static org.telegram.ui.Cells.HeaderCell.HEIGHT;
+
 public class ThemeActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     public final static int THEME_TYPE_BASIC = 0;
@@ -113,7 +122,12 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
     private ListAdapter listAdapter;
     private RecyclerListView innerListView;
+    private RecyclerListView accentColorsListView;
     private RecyclerListView listView;
+    private ColorPickerView.ColorPickerDialogView colorPickerContentView;
+    private BottomSheet colorPickerBottomSheet;
+    private AccentColorsAdapter accentColorsAdapter;
+    private boolean bottomSheetDidAction;
     @SuppressWarnings("FieldCanBeLocal")
     private LinearLayoutManager layoutManager;
 
@@ -121,6 +135,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private ArrayList<Theme.ThemeInfo> defaultThemes = new ArrayList<>();
 
     boolean hasCustomThemes;
+    boolean themeHasAccentColor;
 
     private int backgroundRow;
     private int textSizeHeaderRow;
@@ -171,6 +186,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int themeStart2Row;
     private int themeEnd2Row;
     private int themeInfo2Row;
+    private int themeAccentColorsRow;
 
     private int rowCount;
 
@@ -179,10 +195,60 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int previousUpdatedType;
     private boolean previousByLocation;
 
+    private int textSizeRowHeight;
+
     private GpsLocationListener gpsLocationListener = new GpsLocationListener();
     private GpsLocationListener networkLocationListener = new GpsLocationListener();
 
     private final static int create_theme = 1;
+    private int lastSelectedAccentColor;
+
+    ThemeDescription[] selfDescriptions;
+    ThemeDescription[] colorPickerDescriptions;
+
+    Bitmap colorPickerWheelBitmap;
+
+    HashMap<String,Integer> colorPickerThemeColors;
+
+
+    private final static HashMap<String,int[]> defaultPickerColors = new HashMap<>();
+    int defaultPickerColorsSize = 9;
+    static {
+        defaultPickerColors.put("arctic.attheme",new int[]{
+                0xff3490eb,//default blue
+                0xff46a7be,//cyan
+                0xff54a548,//green
+                0xffc77f39,//oragne
+                0xffc2608f,//pink
+                0xff7484a9,//steel
+                0xffc25059,//red
+                0xff7f63c6,//purpule
+                0xffcaa944 //yellow
+
+        });
+        defaultPickerColors.put("dark.attheme",new int[]{
+                0xff3e6588,//default blue
+                0xff2d6a5a,//cyan
+                0xff336132,//green
+                0xff7c491c,//oragne
+                0xff663d4f,//pink
+                0xff465262,//steel
+                0xff7c2d30,//red
+                0xff5d527f,//purpule
+                0xff745627 //yellow
+        });
+        defaultPickerColors.put("darkblue.attheme",new int[]{
+                0xff3e618a,//default blue
+                0xff2d6a5a,//cyan
+                0xff336132,//green
+                0xff7c491c,//oragne
+                0xff663d4f,//pink
+                0xff465262,//steel
+                0xff7c2d30,//red
+                0xff5d527f,//purpule
+                0xff745627 //yellow
+        });
+    }
 
     private class GpsLocationListener implements LocationListener {
 
@@ -416,6 +482,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            textSizeRowHeight = getMeasuredHeight();
             int w = MeasureSpec.getSize(widthMeasureSpec);
             if (lastWidth != w) {
                 sizeBar.setProgress((SharedConfig.fontSize - startFontSize) / (float) (endFontSize - startFontSize));
@@ -443,8 +510,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void updateRows() {
-        int oldRowCount = rowCount;
+        updateRows(true);
+    }
 
+    private void updateRows(boolean updateList) {
+        int oldRowCount = rowCount;
         rowCount = 0;
         emojiRow = -1;
         contactsReimportRow = -1;
@@ -468,6 +538,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         themeStart2Row = -1;
         themeEnd2Row = -1;
         themeListRow = -1;
+        themeAccentColorsRow = -1;
         themeEndRow = -1;
         showThemesRows = -1;
         themeInfoRow = -1;
@@ -521,11 +592,13 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             newThemeInfoRow = rowCount++;
             themeHeaderRow = rowCount++;
             themeListRow = rowCount++;
-            if (hasCustomThemes) {
-                showThemesRows = rowCount++;
-            }
-            themeInfoRow = rowCount++;
 
+            themeHasAccentColor = Theme.getCurrentTheme().hasAccentColor;
+            if (themeHasAccentColor) themeAccentColorsRow = rowCount++;
+            if (hasCustomThemes) showThemesRows = rowCount++;
+
+
+            themeInfoRow = rowCount++;
             chatListHeaderRow = rowCount++;
             chatListRow = rowCount++;
             chatListInfoRow = rowCount++;
@@ -607,7 +680,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             }
         }
 
-        if (listAdapter != null) {
+        if (listAdapter != null && updateList) {
             if (currentType != THEME_TYPE_NIGHT || previousUpdatedType == -1) {
                 listAdapter.notifyDataSetChanged();
             } else {
@@ -728,7 +801,34 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         fragmentView = frameLayout;
 
         listView = new RecyclerListView(context);
-        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
+
+            SparseIntArray childSizesMap = new SparseIntArray();
+
+            @Override
+            public void onLayoutCompleted(RecyclerView.State state) {
+                super.onLayoutCompleted(state);
+                int n = getChildCount();
+                for (int i = 0; i < n; i++) {
+                    View v = getChildAt(i);
+                    childSizesMap.put(getPosition(v), v.getHeight());
+                }
+            }
+
+            //super.computeVerticalScrollOffset() work bad :( save height all views to improve
+            //this one need to scroll recycler to preview cell when showing colorPicker
+            @Override
+            public int computeVerticalScrollOffset(RecyclerView.State state) {
+                int firstChildPosition = findFirstVisibleItemPosition();
+                int scrolledY = (int) -findViewByPosition(firstChildPosition).getY();
+                for (int i = 0; i < firstChildPosition; i++) {
+                    int v = childSizesMap.get(i,-1);
+                    if(v == -1) return super.computeVerticalScrollOffset(state);
+                    scrolledY += v;
+                }
+                return scrolledY;
+            }
+        });
         listView.setVerticalScrollBarEnabled(false);
         listView.setAdapter(listAdapter);
         ((DefaultItemAnimator) listView.getItemAnimator()).setDelayAnimations(false);
@@ -941,9 +1041,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public void onResume() {
         super.onResume();
-        if (listAdapter != null) {
-            listAdapter.notifyDataSetChanged();
-        }
+        updateRows();
     }
 
     private void openThemeCreate() {
@@ -970,6 +1068,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        editText.setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated), Theme.getColor(Theme.key_windowBackgroundWhiteRedText3));
         editText.setMaxLines(1);
         editText.setLines(1);
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
@@ -1196,6 +1295,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         private boolean isLast;
         private boolean isFirst;
 
+        private static final float BLEND_ALPHA = 0.34f;
+        private static final float BLEND_ALPHA_DARK = 0.1f;
+
         public InnerThemeView(Context context) {
             super(context);
             setWillNotDraw(false);
@@ -1205,13 +1307,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
             textPaint.setTextSize(AndroidUtilities.dp(13));
 
-            button = new RadioButton(context) {
-                @Override
-                public void invalidate() {
-                    super.invalidate();
-                    //ListView.this.invalidate();
-                }
-            };
+            button = new RadioButton(context);
             button.setSize(AndroidUtilities.dp(20));
             button.setColor(0x66ffffff, 0xffffffff);
             addView(button, LayoutHelper.createFrame(22, 22, Gravity.LEFT | Gravity.TOP, 27, 75, 0, 0));
@@ -1229,8 +1325,21 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) button.getLayoutParams();
             layoutParams.leftMargin = AndroidUtilities.dp(isFirst ? 22 + 27 : 27);
             button.setLayoutParams(layoutParams);
-            inDrawable.setColorFilter(new PorterDuffColorFilter(theme.previewInColor, PorterDuff.Mode.MULTIPLY));
-            outDrawable.setColorFilter(new PorterDuffColorFilter(theme.previewOutColor, PorterDuff.Mode.MULTIPLY));
+
+            if (themeInfo.name.equals("Dark Tint")) {
+                inDrawable.setColorFilter(new PorterDuffColorFilter(ColorUtilities.replaceHue(themeInfo.previewInColor, themeInfo.accentColor), PorterDuff.Mode.MULTIPLY));
+            } else {
+                inDrawable.setColorFilter(new PorterDuffColorFilter(theme.previewInColor, PorterDuff.Mode.MULTIPLY));
+            }
+            if (theme.hasAccentColor) {
+                int color = ColorUtils.blendARGB(theme.accentColor, Color.WHITE,
+                        theme.isDark() ? BLEND_ALPHA_DARK : BLEND_ALPHA);
+                color = ColorUtilities.clampLightness(color,0.6f,1f);
+                outDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+            } else {
+                outDrawable.setColorFilter(new PorterDuffColorFilter(theme.previewOutColor, PorterDuff.Mode.MULTIPLY));
+            }
+
         }
 
         @Override
@@ -1239,24 +1348,42 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             button.setChecked(themeInfo == Theme.getCurrentTheme(), false);
         }
 
-        public void updateCurrentThemeCheck() {
+        public void update() {
             button.setChecked(themeInfo == Theme.getCurrentTheme(), true);
+            if (themeInfo.hasAccentColor) {
+
+                int color = ColorUtils.blendARGB(themeInfo.accentColor, Color.WHITE,
+                        themeInfo.isDark() ? BLEND_ALPHA_DARK : BLEND_ALPHA);
+                color = ColorUtilities.clampLightness(color,0.6f,1f);
+
+                outDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+
+                if(themeInfo.name.equals("Dark Tint")){
+                    inDrawable.setColorFilter(new PorterDuffColorFilter(ColorUtilities.replaceHue(themeInfo.previewInColor,themeInfo.accentColor), PorterDuff.Mode.MULTIPLY));
+                }
+            }
         }
 
         @Override
         protected void onDraw(Canvas canvas) {
-            paint.setColor(themeInfo.previewBackgroundColor);
+            if(themeInfo.name.equals("Dark Tint")){
+                paint.setColor(ColorUtilities.replaceHue(themeInfo.previewBackgroundColor,themeInfo.accentColor));
+            } else {
+                paint.setColor(themeInfo.previewBackgroundColor);
+            }
             int x = isFirst ? AndroidUtilities.dp(22) : 0;
             rect.set(x, AndroidUtilities.dp(11), x + AndroidUtilities.dp(76), AndroidUtilities.dp(11 + 97));
             canvas.drawRoundRect(rect, AndroidUtilities.dp(6), AndroidUtilities.dp(6), paint);
 
-            if ("Arctic Blue".equals(themeInfo.name)) {
+            if (themeInfo.hasAccentColor) {
                 int color = 0xffb0b5ba;
                 int r = Color.red(color);
                 int g = Color.green(color);
                 int b = Color.blue(color);
 
-                button.setColor(0xffb3b3b3, 0xff37a9f0);
+                int buttonSelectedColor = ColorUtils.blendARGB(themeInfo.accentColor, Color.WHITE, themeInfo.isDark() ? BLEND_ALPHA_DARK : BLEND_ALPHA);
+                buttonSelectedColor = ColorUtilities.clampLightness(buttonSelectedColor,0.6f,1f);
+                button.setColor(0xffb3b3b3, buttonSelectedColor);
                 Theme.chat_instantViewRectPaint.setColor(Color.argb(43, r, g, b));
                 canvas.drawRoundRect(rect, AndroidUtilities.dp(6), AndroidUtilities.dp(6), Theme.chat_instantViewRectPaint);
             } else {
@@ -1311,6 +1438,190 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         }
     }
 
+    private class AccentColorsAdapter extends RecyclerListView.SelectionAdapter {
+
+        private Context mContext;
+
+        private boolean hasCustomColor = false;
+        private int customColor;
+
+        public AccentColorsAdapter(Context context) {
+            mContext = context;
+            setCustomColor(Theme.getCurrentTheme().accentColor);
+        }
+
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return false;
+        }
+
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            ColorCheckView v = new ColorCheckView(mContext);
+            v.setLayoutParams(new RecyclerView.LayoutParams(AndroidUtilities.dp(56), AndroidUtilities.dp(80)));
+            return new RecyclerListView.Holder(v);
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            ColorCheckView colorCheckView = (ColorCheckView) holder.itemView;
+            if (position >= defaultPickerColorsSize) {
+                if (hasCustomColor && position == defaultPickerColorsSize) {
+                    colorCheckView.setColor(customColor);
+                } else {
+                    colorCheckView.setPickerStyle();
+                }
+                colorCheckView.setPosition(-1);
+            } else {
+                colorCheckView.setPosition(position);
+                colorCheckView.setColor(getDefaultPickerColor(position));
+            }
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            return 0;
+        }
+
+        @Override
+        public int getItemCount() {
+            return defaultPickerColorsSize + 1 + (hasCustomColor ? 1 : 0);
+        }
+
+        public void setCustomColor(int customColor) {
+            boolean isCustomColor = true;
+            for (int i = 0; i < defaultPickerColorsSize; i++) {
+                if (getDefaultPickerColor(i) == customColor) {
+                    isCustomColor = false;
+                    break;
+                }
+            }
+
+            if (isCustomColor != this.hasCustomColor && isCustomColor)
+                notifyItemInserted(defaultPickerColorsSize);
+
+            if (isCustomColor) {
+                hasCustomColor = true;
+                this.customColor = customColor;
+                if (accentColorsListView != null) {
+                    RecyclerView.ViewHolder h = accentColorsListView.findViewHolderForAdapterPosition(defaultPickerColorsSize);
+                    if (h != null) {
+                        ColorCheckView checkView = ((ColorCheckView) h.itemView);
+                        checkView.setColor(customColor);
+                        checkView.update();
+                    }
+                }
+            } else if (hasCustomColor) {
+                RecyclerView.ViewHolder viewHolder = accentColorsListView.findViewHolderForAdapterPosition(defaultPickerColorsSize);
+                if (viewHolder != null) ((ColorCheckView) viewHolder.itemView).update();
+            }
+        }
+
+        class ColorCheckView extends View {
+
+            Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            Paint checkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            int color;
+            float progress;
+            boolean checked;
+            boolean attached;
+            int radius = AndroidUtilities.dp(19);
+            boolean isPicker;
+            int position;
+
+            public ColorCheckView(Context context) {
+                super(context);
+                checkPaint.setStyle(Paint.Style.STROKE);
+                checkPaint.setStrokeCap(Paint.Cap.ROUND);
+                checkPaint.setStrokeWidth(AndroidUtilities.dp(2));
+                checkPaint.setColor(Color.WHITE);
+                if (colorPickerWheelBitmap == null) {
+                    colorPickerWheelBitmap = ColorPickerView.createColorWheelBitmap(radius * 2,
+                            radius * 2, radius, new Paint(Paint.ANTI_ALIAS_FLAG));
+                }
+            }
+
+            public void setPosition(int position) {
+                this.position = position;
+            }
+            public void setColor(int color) {
+                this.color = color;
+                paint.setColor(color);
+                isPicker = false;
+                setChecked(Theme.getCurrentTheme().accentColor == color, true);
+                invalidate();
+            }
+
+            public void update() {
+                if (position >= 0) {
+                    setColor(getDefaultPickerColor(position));
+                    setChecked(Theme.getCurrentTheme().accentColor == color, true);
+                } else {
+                    setChecked(Theme.getCurrentTheme().accentColor == color, true);
+                }
+            }
+
+            ValueAnimator checkAnimator;
+
+            public void setChecked(boolean checked, boolean animated) {
+                if (this.checked == checked) return;
+                this.checked = checked;
+                if (attached && !animated) {
+                    progress = checked ? 1f : 0f;
+                } else {
+                    if (checkAnimator != null) {
+                        checkAnimator.removeAllListeners();
+                        checkAnimator.cancel();
+                    }
+                    checkAnimator = ValueAnimator.ofFloat(progress, checked ? 1 : 0);
+                    checkAnimator.addUpdateListener(animation -> {
+                        progress = (float) animation.getAnimatedValue();
+                        invalidate();
+                    });
+                    checkAnimator.setDuration(150);
+                    checkAnimator.start();
+                }
+            }
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                attached = true;
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                attached = false;
+            }
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                if (isPicker) {
+                    canvas.drawBitmap(colorPickerWheelBitmap, (getMeasuredWidth() >> 1) - radius, (getMeasuredHeight() >> 1) - radius, paint);
+                } else {
+                    canvas.drawCircle(getMeasuredWidth() >> 1, getMeasuredHeight() >> 1, radius, paint);
+
+                    if (progress > 0) {
+                        canvas.save();
+                        canvas.translate(AndroidUtilities.dp(18), AndroidUtilities.dp(32));
+                        int endX = (int) (AndroidUtilities.dpf2(7.5f) - AndroidUtilities.dp(4) * progress);
+                        int endY = (int) (AndroidUtilities.dpf2(13.5f) - AndroidUtilities.dp(4) * progress);
+                        canvas.drawLine(AndroidUtilities.dpf2(7.5f), (int) AndroidUtilities.dpf2(13.5f), endX, endY, checkPaint);
+                        endX = (int) (AndroidUtilities.dpf2(7.5f) + AndroidUtilities.dp(8) * progress);
+                        endY = (int) (AndroidUtilities.dpf2(13f) - AndroidUtilities.dp(8) * progress);
+                        canvas.drawLine((int) AndroidUtilities.dpf2(8f), (int) AndroidUtilities.dpf2(13f), endX, endY, checkPaint);
+                        canvas.restore();
+                    }
+                }
+            }
+
+            public void setPickerStyle() {
+                isPicker = true;
+            }
+        }
+    }
+
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context mContext;
@@ -1327,7 +1638,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int type = holder.getItemViewType();
-            return type == 0 || type == 1 || type == 4 || type == 7 || type == 10 || type == 11;
+            return type == 0 || type == 1 || type == 4 || type == 7 || type == 10 || type == 11 || type == 12;
         }
 
         private void showOptionsForTheme(Theme.ThemeInfo themeInfo) {
@@ -1350,12 +1661,19 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             builder.setItems(items, (dialog, which) -> {
                 if (which == 0) {
                     File currentFile;
-                    if (themeInfo.pathToFile == null && themeInfo.assetName == null) {
+                    if ((themeInfo.pathToFile == null && themeInfo.assetName == null) || (themeInfo.hasAccentColor && themeInfo.accentColor != themeInfo.defaultAccentColor)) {
                         StringBuilder result = new StringBuilder();
-                        for (HashMap.Entry<String, Integer> entry : Theme.getDefaultColors().entrySet()) {
+                        HashMap<String,Integer> colors = Theme.getThemeColors(themeInfo);
+                        for (HashMap.Entry<String, Integer> entry : colors.entrySet()) {
                             result.append(entry.getKey()).append("=").append(entry.getValue()).append("\n");
                         }
-                        currentFile = new File(ApplicationLoader.getFilesDirFixed(), "default_theme.attheme");
+                        String fileName;
+                        if (themeInfo.pathToFile == null && themeInfo.assetName == null) {
+                            fileName = "default_theme.attheme";
+                        } else {
+                            fileName = themeInfo.name + "_#" + Integer.toHexString(themeInfo.accentColor & 0xffffff) + ".attheme";
+                        }
+                        currentFile = new File(ApplicationLoader.getFilesDirFixed(), fileName);
                         FileOutputStream stream = null;
                         try {
                             stream = new FileOutputStream(currentFile);
@@ -1493,8 +1811,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     view = new NotificationsCheckCell(mContext, 21, 64);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
-                case 11:
-                default: {
+                case 11: {
                     RecyclerListView horizontalListView = new RecyclerListView(mContext) {
                         @Override
                         public boolean onInterceptTouchEvent(MotionEvent e) {
@@ -1507,7 +1824,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         @Override
                         public void onDraw(Canvas canvas) {
                             super.onDraw(canvas);
-                            if (hasCustomThemes) {
+                            if (hasCustomThemes || themeHasAccentColor) {
                                 canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
                             }
                         }
@@ -1516,6 +1833,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         public void setBackgroundColor(int color) {
                             super.setBackgroundColor(color);
                             invalidateViews();
+                            //getThemeDescriptions() invoke before accentColorsListView created
+                            if (accentColorsListView != null) accentColorsListView.setBackgroundColor(color);
                         }
                     };
                     horizontalListView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -1533,6 +1852,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     horizontalListView.setLayoutManager(layoutManager);
                     horizontalListView.setAdapter(new InnerListAdapter(mContext));
                     horizontalListView.setOnItemClickListener((view1, position) -> {
+                        if (accentColorsListView != null) accentColorsListView.cancelClickRunnables(false);
                         InnerThemeView innerThemeView = (InnerThemeView) view1;
                         Theme.ThemeInfo themeInfo = innerThemeView.themeInfo;
                         if (themeInfo == Theme.getCurrentTheme()) {
@@ -1546,13 +1866,18 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         } else if (right > horizontalListView.getMeasuredWidth()) {
                             horizontalListView.smoothScrollBy(right - horizontalListView.getMeasuredWidth(), 0);
                         }
-
-                        int count = innerListView.getChildCount();
-                        for (int a = 0; a < count; a++) {
-                            View child = innerListView.getChildAt(a);
-                            if (child instanceof InnerThemeView) {
-                                ((InnerThemeView) child).updateCurrentThemeCheck();
+                        updateInnerItems();
+                        if (themeHasAccentColor != themeInfo.hasAccentColor) {
+                            if (themeInfo.hasAccentColor) {
+                                updateRows(false);
+                                listAdapter.notifyItemInserted(themeAccentColorsRow);
+                            } else {
+                                int oldRow = themeAccentColorsRow;
+                                updateRows(false);
+                                listAdapter.notifyItemRemoved(oldRow);
                             }
+                        } else if (themeHasAccentColor && accentColorsListView != null) {
+                            updateAccentColorsRow();
                         }
                     });
                     horizontalListView.setOnItemLongClickListener((view12, position) -> {
@@ -1562,6 +1887,114 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     });
                     view = innerListView = horizontalListView;
                     view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(148)));
+                    break;
+                }
+                case 12:
+                default: {
+                    RecyclerListView horizontalListView = new RecyclerListView(mContext) {
+                        @Override
+                        public void onDraw(Canvas canvas) {
+                            super.onDraw(canvas);
+                            if (hasCustomThemes) {
+                                canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+                            }
+                        }
+
+                        @Override
+                        public void setBackgroundColor(int color) {
+                            super.setBackgroundColor(color);
+                            invalidateViews();
+                        }
+                    };
+                    horizontalListView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    LinearLayoutManager layoutManager = new LinearLayoutManager(mContext) {
+                        @Override
+                        public boolean supportsPredictiveItemAnimations() {
+                            return false;
+                        }
+                    };
+                    horizontalListView.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(14), 0);
+                    horizontalListView.setClipToPadding(false);
+                    layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
+                    horizontalListView.setLayoutManager(layoutManager);
+                    horizontalListView.setAdapter(accentColorsAdapter = new AccentColorsAdapter(mContext));
+                    horizontalListView.setOnItemClickListener((view1, position) -> {
+                        if (innerListView != null) innerListView.cancelClickRunnables(false);
+                        lastSelectedAccentColor = Theme.getCurrentTheme().accentColor;
+                        if (position == defaultPickerColorsSize && accentColorsAdapter.hasCustomColor) {
+                            Theme.saveAccentColor(accentColorsAdapter.customColor);
+                            updateAccentColorsRow();
+                            updateInnerItems();
+                        } else if (position >= defaultPickerColorsSize) {
+                            if (colorPickerContentView == null) {
+                                colorPickerContentView = new ColorPickerView.ColorPickerDialogView(mContext);
+                                colorPickerContentView.colorPickerView.setListener(color -> {
+                                    float[] yuv = ColorUtilities.yuvTmp;
+                                    ColorUtilities.colorToYuv(color, yuv);
+                                    if (yuv[0] > 0.75f) {
+                                        yuv[0] = 0.75f;
+                                        color = ColorUtilities.YuvToColor(yuv);
+                                    }
+                                    Theme.applyAccentColor(color,colorPickerThemeColors);
+                                    updateSelfDescriptions();
+                                });
+                                colorPickerContentView.saveButton.setOnClickListener(v -> {
+                                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, Theme.getCurrentTheme(), false);
+                                    bottomSheetDidAction = true;
+                                    updateAccentColorsRow();
+                                    updateInnerItems();
+
+                                    colorPickerBottomSheet.dismiss();
+                                });
+                                colorPickerContentView.cancelButton.setOnClickListener(v -> {
+                                    Theme.saveAccentColor(lastSelectedAccentColor);
+                                    bottomSheetDidAction = true;
+
+                                    colorPickerBottomSheet.dismiss();
+                                });
+                            }
+                            createSelfDescriptions();
+                            updateSelfDescriptions();
+                            colorPickerThemeColors = Theme.getThemeFileValues(null, Theme.getCurrentTheme().assetName);
+
+                            colorPickerContentView.colorPickerView.setColor(lastSelectedAccentColor);
+
+                            listView.postDelayed(() -> {
+                                int bottom = textSizeRowHeight + AndroidUtilities.dp(HEIGHT) - listView.computeVerticalScrollOffset();
+                                int dif = listView.getMeasuredHeight() - colorPickerContentView.getMeasuredHeight();
+                                if (dif < 0) return;
+                                listView.smoothScrollBy(0, bottom - dif);
+                            },150);
+
+                            int softInputMode = getParentActivity().getWindow().getAttributes().softInputMode;
+                            getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
+                            bottomSheetDidAction = false;
+
+                            colorPickerBottomSheet = new BottomSheet.Builder(getParentActivity(), true, 0)
+                                    .setCustomView(colorPickerContentView)
+                                    .setSoftInputAdjustMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
+                                    .setApplyBottomPadding(false)
+                                    .setApplyTopPadding(false)
+                                    .setDimBehind(false);
+                            colorPickerBottomSheet.setOnDismissListener(dialog -> {
+                                getParentActivity().getWindow().setSoftInputMode(softInputMode);
+                                clearSelfDescriptions();
+                                if (!bottomSheetDidAction) {
+                                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, Theme.getCurrentTheme(), false);
+                                    updateAccentColorsRow();
+                                    updateInnerItems();
+                                }
+                            });
+
+                            colorPickerBottomSheet.show();
+                        } else {
+                            Theme.saveAccentColor(getDefaultPickerColor(position));
+                            updateAccentColorsRow();
+                            updateInnerItems();
+                        }
+                    });
+                    view = accentColorsListView = horizontalListView;
+                    view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(80)));
                     break;
                 }
             }
@@ -1783,9 +2216,70 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 return 10;
             } else if (position == themeListRow) {
                 return 11;
+            } else if (position == themeAccentColorsRow) {
+                return 12;
             }
             return 0;
         }
+    }
+
+    private void updateInnerItems() {
+        int count = innerListView.getChildCount();
+        for (int a = 0; a < count; a++) {
+            View child = innerListView.getChildAt(a);
+            if (child instanceof InnerThemeView) {
+                ((InnerThemeView) child).update();
+            }
+        }
+    }
+
+    private void clearSelfDescriptions() {
+        selfDescriptions = null;
+        colorPickerDescriptions = null;
+    }
+
+    private void createSelfDescriptions() {
+        selfDescriptions = getThemeDescriptions();
+        ArrayList<ThemeDescription> list = new ArrayList<>();
+        if (colorPickerContentView != null) colorPickerContentView.addThemeDescriptions(list);
+        colorPickerDescriptions = list.toArray(new ThemeDescription[0]);
+    }
+
+    private void updateSelfDescriptions() {
+        if (selfDescriptions == null) return;
+        for (int i = 0; i < selfDescriptions.length; i++) {
+            String key = selfDescriptions[i].getCurrentKey();
+            selfDescriptions[i].setColor(Theme.getColor(key), false, false);
+        }
+
+        for (int i = 0; i < colorPickerDescriptions.length; i++) {
+            String key = colorPickerDescriptions[i].getCurrentKey();
+            colorPickerDescriptions[i].setColor(Theme.getColor(key), false, false);
+        }
+        if (colorPickerBottomSheet != null)
+            colorPickerBottomSheet.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+    }
+
+    private void updateAccentColorsRow() {
+        if (accentColorsListView == null) return;
+        accentColorsAdapter.setCustomColor(Theme.getCurrentTheme().accentColor);
+        int n = accentColorsListView.getChildCount();
+        for (int i = 0; i < n; i++) {
+            ((AccentColorsAdapter.ColorCheckView) accentColorsListView.getChildAt(i)).update();
+        }
+
+        n = accentColorsListView.getCachedChildCount();
+        for (int i = 0; i < n; i++) {
+            ((AccentColorsAdapter.ColorCheckView) accentColorsListView.getCachedChildAt(i)).update();
+        }
+    }
+
+    private int getDefaultPickerColor(int position){
+        int [] colors = defaultPickerColors.get(Theme.getCurrentTheme().assetName);
+        if(colors != null) {
+            return colors[position];
+        }
+        return 0;
     }
 
     @Override
@@ -1794,7 +2288,6 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextSettingsCell.class, TextCheckCell.class, HeaderCell.class, BrightnessControlCell.class, ThemeTypeCell.class, ThemeCell.class, TextSizeCell.class, ChatListCell.class, NotificationsCheckCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
                 new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray),
                 new ThemeDescription(innerListView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
-
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
                 new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault),
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
