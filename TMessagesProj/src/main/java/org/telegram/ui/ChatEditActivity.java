@@ -391,7 +391,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         frameLayout.addView(avatarImage, LayoutHelper.createFrame(64, 64, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 16, 12, LocaleController.isRTL ? 16 : 0, 12));
 
         if (ChatObject.canChangeChatInfo(currentChat)) {
-            avatarDrawable.setInfo(5, null, null, false);
+            avatarDrawable.setInfo(7, null, null, false);
 
             Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
             paint.setColor(0x55000000);

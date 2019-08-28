@@ -141,7 +141,7 @@ public class GroupCreateSpan extends View {
         textPaint.setColor(text);
         deleteDrawable.setColorFilter(new PorterDuffColorFilter(delete, PorterDuff.Mode.MULTIPLY));
         backPaint.setColor(back);
-        avatarDrawable.setColor(AvatarDrawable.getColorForId(5));
+        avatarDrawable.setColor(AvatarDrawable.getColorForId(7));
     }
 
     public boolean isDeleting() {
