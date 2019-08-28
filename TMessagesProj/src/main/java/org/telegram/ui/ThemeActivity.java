@@ -228,25 +228,25 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         });
         defaultPickerColors.put("dark.attheme",new int[]{
                 0xff3e6588,//default blue
-                0xff2a7e84,//cyan
-                0xff347b33,//green
-                0xffc77f39,//oragne
-                0xff7e3e58,//pink
-                0xff49536a,//steel
-                0xff81332f,//red
-                0xff4d4089,//purpule
-                0xff7f6a2b //yellow
+                0xff2d6a5a,//cyan
+                0xff336132,//green
+                0xff7c491c,//oragne
+                0xff663d4f,//pink
+                0xff465262,//steel
+                0xff7c2d30,//red
+                0xff5d527f,//purpule
+                0xff745627 //yellow
         });
         defaultPickerColors.put("darkblue.attheme",new int[]{
                 0xff3e618a,//default blue
-                0xff296254,//cyan
-                0xff2c6329,//green
-                0xff746127,//oragne
-                0xff6c354f,//pink
-                0xff56627d,//steel
-                0xff672a2f,//red
-                0xff48326c,//purpule
-                0xff5b4b2c //yellow
+                0xff2d6a5a,//cyan
+                0xff336132,//green
+                0xff7c491c,//oragne
+                0xff663d4f,//pink
+                0xff465262,//steel
+                0xff7c2d30,//red
+                0xff5d527f,//purpule
+                0xff745627 //yellow
         });
     }
 
@@ -1068,6 +1068,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        editText.setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated), Theme.getColor(Theme.key_windowBackgroundWhiteRedText3));
         editText.setMaxLines(1);
         editText.setLines(1);
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);

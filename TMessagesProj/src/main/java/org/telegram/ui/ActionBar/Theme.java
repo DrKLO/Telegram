@@ -594,6 +594,7 @@ public class Theme {
     public static final String key_avatar_backgroundCyan = "avatar_backgroundCyan";
     public static final String key_avatar_backgroundBlue = "avatar_backgroundBlue";
     public static final String key_avatar_backgroundPink = "avatar_backgroundPink";
+    public static final String key_avatar_backgroundAccent = "avatar_backgroundAccent";
     public static final String key_avatar_backgroundGroupCreateSpanBlue = "avatar_backgroundGroupCreateSpanBlue";
 
     public static final String key_avatar_backgroundInProfileBlue = "avatar_backgroundInProfileBlue";
@@ -609,9 +610,10 @@ public class Theme {
     public static final String key_avatar_nameInMessageCyan = "avatar_nameInMessageCyan";
     public static final String key_avatar_nameInMessageBlue = "avatar_nameInMessageBlue";
     public static final String key_avatar_nameInMessagePink = "avatar_nameInMessagePink";
+    public static final String key_avatar_nameInMessageAccent = "avatar_nameInMessageAccent";
 
-    public static String[] keys_avatar_background = {key_avatar_backgroundRed, key_avatar_backgroundOrange, key_avatar_backgroundViolet, key_avatar_backgroundGreen, key_avatar_backgroundCyan, key_avatar_backgroundBlue, key_avatar_backgroundPink};
-    public static String[] keys_avatar_nameInMessage = {key_avatar_nameInMessageRed, key_avatar_nameInMessageOrange, key_avatar_nameInMessageViolet, key_avatar_nameInMessageGreen, key_avatar_nameInMessageCyan, key_avatar_nameInMessageBlue, key_avatar_nameInMessagePink};
+    public static String[] keys_avatar_background = {key_avatar_backgroundRed, key_avatar_backgroundOrange, key_avatar_backgroundViolet, key_avatar_backgroundGreen, key_avatar_backgroundCyan, key_avatar_backgroundBlue, key_avatar_backgroundPink,key_avatar_backgroundAccent};
+    public static String[] keys_avatar_nameInMessage = {key_avatar_nameInMessageRed, key_avatar_nameInMessageOrange, key_avatar_nameInMessageViolet, key_avatar_nameInMessageGreen, key_avatar_nameInMessageCyan, key_avatar_nameInMessageBlue, key_avatar_nameInMessagePink,key_avatar_nameInMessageAccent};
 
     public static final String key_actionBarDefault = "actionBarDefault";
     public static final String key_actionBarDefaultSelector = "actionBarDefaultSelector";
@@ -1086,6 +1088,18 @@ public class Theme {
     // color keys below was generated and hardcoded for easy editing
     // this colors always ned transform
     private static final String[] accentColorKeys = new String[]{
+            key_windowBackgroundWhiteBlueText,
+            key_avatar_nameInMessageAccent,
+            key_avatar_backgroundAccent,
+            key_chat_recordedVoicePlayPausePressed,
+            key_dialogLinkSelection,
+            key_dialogInputFieldActivated,
+            key_chat_inAudioPerformerSelectedText,
+            key_chat_inAudioPerformerText,
+            key_chat_outAudioPerformerSelectedText,
+            key_chat_outAudioPerformerText,
+            key_chat_recordedVoiceProgress,
+            key_undo_cancelColor,
             key_chats_menuName,
             key_chats_menuPhone,
             key_avatar_backgroundGroupCreateSpanBlue,
@@ -1126,7 +1140,6 @@ public class Theme {
             key_picker_enabledButton,
             key_chats_menuTopShadowCats,
             key_musicPicker_buttonBackground,
-            key_avatar_nameInMessageBlue,
             key_chats_menuTopShadow,
             key_chats_unreadCounter,
             key_inappPlayerPlayPause,
@@ -1285,11 +1298,16 @@ public class Theme {
             key_chat_serviceBackground,
             key_chat_inBubbleSelected,
             key_chat_outSentClock,
-            key_windowBackgroundWhiteValueText
+            key_windowBackgroundWhiteValueText,
+            key_chat_emojiPanelIcon,
+            key_chat_emojiPanelIconSelected,
+            key_chat_emojiPanelStickerPackSelectorLine
     };
 
     //this colors draw over accent color, they totally replace
     private static String[] darkThemeSecondaryColorKeys = new String[]{
+            key_chat_messagePanelVoiceLockBackground,
+            key_chat_messagePanelVoiceLockShadow,
             key_chat_inFileBackgroundSelected,
             key_chat_outViews,
             key_chat_inAudioSelectedProgress,
@@ -1302,15 +1320,12 @@ public class Theme {
             key_passport_authorizeBackground,
             key_chat_outLoaderPhoto,
             key_avatar_backgroundGroupCreateSpanBlue,
-            key_dialogLinkSelection,
-            key_avatar_nameInMessageCyan,
             key_chat_searchPanelIcons,
             key_chat_inAudioSeekbarSelected,
             key_chat_outVenueInfoText,
             key_chat_outContactPhoneText,
             key_actionBarActionModeDefaultSelector,
             key_chat_inVoiceSeekbarSelected,
-            key_chat_emojiPanelIconSelected,
             key_checkboxSquareBackground,
             key_chat_outFileBackgroundSelected,
             key_chat_outVoiceSeekbarSelected,
@@ -1319,7 +1334,6 @@ public class Theme {
             key_chat_outFileInfoText,
             key_chat_outMenuSelected,
             key_chat_outLoaderPhotoSelected,
-            key_dialogInputFieldActivated,
             key_chat_outTimeText,
             key_chat_outReplyMediaMessageText,
             key_chat_outLoaderPhotoIcon,
@@ -1338,7 +1352,8 @@ public class Theme {
             key_chat_outMenu,
             key_chat_inFileSelectedIcon,
             key_chat_outSentClock,
-            key_chat_searchPanelText
+            key_chat_searchPanelText,
+            key_chat_emojiPanelStickerPackSelector,
     };
 
     //this colors is accent only for dark theme
@@ -1348,7 +1363,6 @@ public class Theme {
             key_chat_inFileProgressSelected,
             key_chat_outPreviewLine,
             key_dialogScrollGlow,
-            key_chat_emojiPanelStickerPackSelector,
             key_contextProgressInner1,
             key_chat_inLoaderPhotoIconSelected,
             key_chat_outPreviewInstantText,
@@ -1364,6 +1378,7 @@ public class Theme {
             key_switchTrackBlueSelector,
             key_chat_outPreviewInstantSelectedText,
             key_chat_outReplyNameText,
+            key_actionBarTabUnactiveText
     };
 
     //this colors is background for tinting
@@ -1415,7 +1430,6 @@ public class Theme {
             key_chat_replyPanelLine,
             key_dialogSearchHint,
             key_switchTrackBlueThumbChecked,
-            key_chat_emojiPanelIcon,
             key_chat_topPanelMessage,
             key_chat_emojiPanelTrendingDescription,
             key_chat_inLocationBackground,
@@ -1629,6 +1643,7 @@ public class Theme {
         defaultColors.put(key_avatar_backgroundCyan, 0xff5fbed5);
         defaultColors.put(key_avatar_backgroundBlue, 0xff549cdd);
         defaultColors.put(key_avatar_backgroundPink, 0xfff2749a);
+        defaultColors.put(key_avatar_backgroundAccent, 0xff549cdd);
         defaultColors.put(key_avatar_backgroundGroupCreateSpanBlue, 0xffe6eff7);
 
         defaultColors.put(key_avatar_backgroundInProfileBlue, 0xff5085b1);
@@ -1644,6 +1659,7 @@ public class Theme {
         defaultColors.put(key_avatar_nameInMessageCyan, 0xff379eb8);
         defaultColors.put(key_avatar_nameInMessageBlue, 0xff4e92cc);
         defaultColors.put(key_avatar_nameInMessagePink, 0xff4e92cc);
+        defaultColors.put(key_avatar_nameInMessageAccent, 0xff4e92cc);
 
         defaultColors.put(key_actionBarDefault, 0xff527da3);
         defaultColors.put(key_actionBarDefaultIcon, 0xffffffff);
@@ -2273,7 +2289,7 @@ public class Theme {
             themesDict.put("Graphite", themeInfo);
         }
 
-        ThemeInfo arctic = themeInfo = new ThemeInfo();
+        themeInfo = new ThemeInfo();
         themeInfo.name = "Arctic";
         themeInfo.assetName = "arctic.attheme";
         themeInfo.previewBackgroundColor = 0xffffffff;
@@ -4671,6 +4687,8 @@ public class Theme {
         currentColors.put(key_chat_outSentCheckSelected, secondaryTextColor);
         currentColors.put(key_chat_outSentCheck, secondaryTextColor);
         currentColors.put(key_chat_outTimeText, secondaryTextColor);
+        currentColors.put(key_chat_outFileInfoText, secondaryTextColor);
+        currentColors.put(key_chat_outAudioDurationText, secondaryTextColor);
 
         if(themeInfo.isLight()){
             currentColors.put(key_chat_outGreenCall, secondaryTextColor);
@@ -4679,7 +4697,6 @@ public class Theme {
 
     private static int transformColorToAccent(AccentColorParams params, int color) {
         float[] hslTmp = ColorUtilities.hslTmp;
-        float[] hslTmp2 = ColorUtilities.hslTmp2;
         float[] hsvTmp = ColorUtilities.hsvTmp;
         float[] hsvTmp2 = ColorUtilities.hsvTmp2;
 
@@ -4696,7 +4713,6 @@ public class Theme {
             if(hsvTmp[2] < hsvTmp2[2]) {
                 k = hsvTmp[2] / hsvTmp2[2];
             }
-           // float k = params.isDarkTheme ? params.accentBrightness / 255f : (1f - params.accentBrightness / 255f);
             hsvTmp[2] = clamp(hsvTmp[2] - difV * k,0f,1f);
             hsvTmp[1] = clamp(hsvTmp[1] - difS * k,0f,1f);
 

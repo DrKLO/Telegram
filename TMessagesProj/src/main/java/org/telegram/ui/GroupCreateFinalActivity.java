@@ -391,7 +391,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             }
         };
         avatarImage.setRoundRadius(AndroidUtilities.dp(32));
-        avatarDrawable.setInfo(5, null, null, chatType == ChatObject.CHAT_TYPE_BROADCAST);
+        avatarDrawable.setInfo(7, null, null, chatType == ChatObject.CHAT_TYPE_BROADCAST);
         avatarImage.setImageDrawable(avatarDrawable);
         avatarImage.setContentDescription(LocaleController.getString("ChoosePhoto", R.string.ChoosePhoto));
         editTextContainer.addView(avatarImage, LayoutHelper.createFrame(64, 64, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 16, 16, LocaleController.isRTL ? 16 : 0, 16));
