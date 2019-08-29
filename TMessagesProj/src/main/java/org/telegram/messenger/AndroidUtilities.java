@@ -99,6 +99,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
+import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PickerBottomLayout;
@@ -248,6 +249,11 @@ public class AndroidUtilities {
                 }
             } else if (drawable instanceof ColorDrawable) {
                 bitmapColor = ((ColorDrawable) drawable).getColor();
+            } else if (drawable instanceof BackgroundGradientDrawable) {
+                int[] colors = ((BackgroundGradientDrawable) drawable).getColorsList();
+                if (colors != null && colors.length > 0) {
+                    bitmapColor = colors[0];
+                }
             }
         } catch (Exception e) {
             FileLog.e(e);

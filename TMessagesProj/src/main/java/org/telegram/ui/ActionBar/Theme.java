@@ -28,6 +28,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.NinePatchDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.ShapeDrawable;
@@ -58,6 +59,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.time.SunDate;
+import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.ScamDrawable;
@@ -107,7 +109,6 @@ public class Theme {
             accentColorOptions = other.accentColorOptions;
             accentBaseColor = other.accentBaseColor;
             accentColor = other.accentColor;
-            accentBaseColor = other.accentBaseColor;
 
             Color.colorToHSV(accentBaseColor, accentBaseColorHsv);
             Color.colorToHSV(accentColor, accentColorHsv);
@@ -148,7 +149,7 @@ public class Theme {
             return pathToFile == null && !isDark();
         }
 
-        public static ThemeInfo createWithJson(JSONObject object) {
+        static ThemeInfo createWithJson(JSONObject object) {
             if (object == null) {
                 return null;
             }
@@ -163,7 +164,7 @@ public class Theme {
             return null;
         }
 
-        public static ThemeInfo createWithString(String string) {
+        static ThemeInfo createWithString(String string) {
             if (TextUtils.isEmpty(string)) {
                 return null;
             }
@@ -898,6 +899,7 @@ public class Theme {
     public static final String key_chat_linkSelectBackground = "chat_linkSelectBackground";
     public static final String key_chat_textSelectBackground = "chat_textSelectBackground";
     public static final String key_chat_wallpaper = "chat_wallpaper";
+    public static final String key_chat_wallpaper_gradient_to = "chat_wallpaper_gradient_to";
     public static final String key_chat_messagePanelBackground = "chat_messagePanelBackground";
     public static final String key_chat_messagePanelShadow = "chat_messagePanelShadow";
     public static final String key_chat_messagePanelText = "chat_messagePanelText";
@@ -1864,6 +1866,7 @@ public class Theme {
         themeInfo.previewInColor = 0xffffffff;
         themeInfo.previewOutColor = 0xffd0e6ff;
         themeInfo.sortIndex = 1;
+        themeInfo.setAccentColorOptions(new int[] { 0xFF328ACF, 0xFF43ACC7, 0xFF52AC44, 0xFFCD5F93, 0xFFD28036, 0xFF8366CC, 0xFFCE4E57, 0xFFD3AE40, 0xFF7B88AB });
         themes.add(themeInfo);
         themesDict.put("Blue", themeInfo);
 
@@ -1939,7 +1942,6 @@ public class Theme {
         ThemeInfo applyingTheme = null;
         try {
             final ThemeInfo themeDarkBlue = themesDict.get("Dark Blue");
-            final ThemeInfo themeArcticBlue = themesDict.get("Arctic Blue");
 
             preferences = MessagesController.getGlobalMainSettings();
             String theme = preferences.getString("theme", null);
@@ -1961,8 +1963,11 @@ public class Theme {
                 }
             }
 
-            themeDarkBlue.setAccentColor(preferences.getInt("accentForDarkBlue", themeDarkBlue.accentColor));
-            themeArcticBlue.setAccentColor(preferences.getInt("accentForArcticBlue", themeArcticBlue.accentColor));
+            for (ThemeInfo info: themesDict.values()) {
+                if (info.assetName != null && info.accentBaseColor != 0) {
+                    info.setAccentColor(preferences.getInt("accent_for_" + info.assetName, info.accentColor));
+                }
+            }
 
             selectedAutoNightType = preferences.getInt("selectedAutoNightType", AUTO_NIGHT_TYPE_NONE);
             autoNightScheduleByLocation = preferences.getBoolean("autoNightScheduleByLocation", false);
@@ -2574,12 +2579,24 @@ public class Theme {
         ThemeInfo themeInfo = currentTheme;
 
         if (themeInfo.accentColor != 0 && themeInfo.accentBaseColor != 0 && themeInfo.accentColor != themeInfo.accentBaseColor) {
-            for (String key: currentColorsNoAccent.keySet()) {
-                if (!themeAccentExclusionKeys.contains(key)) {
-                    int color = currentColorsNoAccent.get(key);
-                    int newColor = changeColorAccent(themeInfo.accentBaseColorHsv, themeInfo.accentColorHsv, color);
-                    if (newColor != color) currentColors.put(key, newColor);
+            HashSet<String> keys = new HashSet<>(currentColorsNoAccent.keySet());
+            keys.addAll(defaultColors.keySet());
+            keys.removeAll(themeAccentExclusionKeys);
+
+            for (String key: keys) {
+                Integer color = currentColorsNoAccent.get(key);
+                if (color == null) {
+                    String fallbackKey = fallbackKeys.get(key);
+                    if (fallbackKey != null && currentColorsNoAccent.get(fallbackKey) != null) {
+                        continue; // We'll fallback to correct color automatically
+                    }
                 }
+                if (color == null) {
+                    color = defaultColors.get(key);
+                }
+
+                int newColor = changeColorAccent(themeInfo.accentBaseColorHsv, themeInfo.accentColorHsv, color);
+                if (newColor != color) currentColors.put(key, newColor);
             }
         }
 
@@ -2639,11 +2656,8 @@ public class Theme {
     }
 
     public static void saveThemeAccent(ThemeInfo themeInfo, int accent) {
-        if ("Dark Blue".equals(themeInfo.name)) {
-            MessagesController.getGlobalMainSettings().edit().putInt("accentForDarkBlue", accent).commit();
-            themeInfo.setAccentColor(accent);
-        } else if ("Arctic Blue".equals(themeInfo.name)) {
-            MessagesController.getGlobalMainSettings().edit().putInt("accentForArcticBlue", accent).commit();
+        if (themeInfo.assetName != null) {
+            MessagesController.getGlobalMainSettings().edit().putInt("accent_for_" + themeInfo.assetName, accent).commit();
             themeInfo.setAccentColor(accent);
         }
     }
@@ -4110,12 +4124,16 @@ public class Theme {
                 if (!overrideTheme) {
                     Integer backgroundColor = currentColors.get(key_chat_wallpaper);
                     if (backgroundColor != null) {
-                        wallpaper = new ColorDrawable(backgroundColor);
+                        Integer gradientToColor = currentColors.get(key_chat_wallpaper_gradient_to);
+                        if (gradientToColor == null) {
+                            wallpaper = new ColorDrawable(backgroundColor);
+                        } else {
+                            wallpaper = new BackgroundGradientDrawable(GradientDrawable.Orientation.BL_TR, new int[] { backgroundColor, gradientToColor });
+                        }
                         isCustomTheme = true;
                     } else if (themedWallpaperFileOffset > 0 && (currentTheme.pathToFile != null || currentTheme.assetName != null)) {
                         FileInputStream stream = null;
                         try {
-                            int currentPosition = 0;
                             File file;
                             if (currentTheme.assetName != null) {
                                 file = Theme.getAssetFile(currentTheme.assetName);

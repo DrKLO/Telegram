@@ -18,7 +18,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -27,6 +26,7 @@ import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -292,7 +292,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         } else {
                             drawable.setAlpha(255);
                         }
-                        if (drawable instanceof ColorDrawable) {
+                        if (drawable instanceof ColorDrawable || drawable instanceof GradientDrawable) {
                             drawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
                             drawable.draw(canvas);
                         } else if (drawable instanceof BitmapDrawable) {
@@ -1308,7 +1308,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             button.setColor(0x66ffffff, 0xffffffff);
 
             if (themeInfo.accentBaseColor != 0) {
-                if (!themeInfo.isDark()) {
+                if ("Arctic Blue".equals(themeInfo.name)) {
                     button.setColor(0xffb3b3b3, tint(themeInfo.accentBaseColor));
                     Theme.chat_instantViewRectPaint.setColor(0x2bb0b5ba);
                     canvas.drawRoundRect(rect, AndroidUtilities.dp(6), AndroidUtilities.dp(6), Theme.chat_instantViewRectPaint);
