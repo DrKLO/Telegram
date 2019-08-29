@@ -30,12 +30,11 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class ColorPicker extends FrameLayout {
 
     private final ColorPickerDelegate delegate;
-    private final boolean useDefaultTheme;
 
     private LinearLayout linearLayout;
 
@@ -71,15 +70,9 @@ public class ColorPicker extends FrameLayout {
     private BrightnessLimit maxBrightness;
 
     public ColorPicker(Context context, ColorPickerDelegate delegate) {
-        this(context, delegate, false);
-
-    }
-
-    public ColorPicker(Context context, ColorPickerDelegate delegate, boolean useDefaultTheme) {
         super(context);
 
         this.delegate = delegate;
-        this.useDefaultTheme = useDefaultTheme;
 
         setWillNotDraw(false);
 
@@ -96,24 +89,22 @@ public class ColorPicker extends FrameLayout {
 
         linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-        addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 64, Gravity.LEFT | Gravity.TOP, 12, 14, 21, 0));
+        addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 46, Gravity.LEFT | Gravity.TOP, 12, 20, 21, 14));
         for (int a = 0; a < 2; a++) {
             final int num = a;
 
             colorEditText[a] = new EditTextBoldCursor(context);
             colorEditText[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            colorEditText[a].setHintColor(getThemedColor(Theme.key_windowBackgroundWhiteHintText));
-            colorEditText[a].setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            colorEditText[a].setBackgroundDrawable(null);
-            colorEditText[a].setCursorColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            colorEditText[a].setHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+            colorEditText[a].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            colorEditText[a].setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
+            colorEditText[a].setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             colorEditText[a].setCursorSize(AndroidUtilities.dp(20));
             colorEditText[a].setCursorWidth(1.5f);
             colorEditText[a].setSingleLine(true);
             colorEditText[a].setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-            colorEditText[a].setHeaderHintColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueHeader));
+            colorEditText[a].setHeaderHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
             colorEditText[a].setTransformHintToHeader(true);
-            colorEditText[a].setLineColors(getThemedColor(Theme.key_windowBackgroundWhiteInputField), getThemedColor(Theme.key_windowBackgroundWhiteInputFieldActivated), getThemedColor(Theme.key_windowBackgroundWhiteRedText3));
-            colorEditText[a].setPadding(0, 0, 0, 0);
             if (a == 0) {
                 colorEditText[a].setInputType(InputType.TYPE_CLASS_TEXT);
                 colorEditText[a].setHintText(
@@ -126,6 +117,7 @@ public class ColorPicker extends FrameLayout {
             InputFilter[] inputFilters = new InputFilter[1];
             inputFilters[0] = new InputFilter.LengthFilter(a == 0 ? 7 : 3);
             colorEditText[a].setFilters(inputFilters);
+            colorEditText[a].setPadding(0, AndroidUtilities.dp(6), 0, 0);
             linearLayout.addView(colorEditText[a], LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, a == 0 ? 0.67f : 0.31f, 0, 0, a != 1 ? 23 : 0, 0));
             colorEditText[a].addTextChangedListener(new TextWatcher() {
                 @Override
@@ -184,7 +176,7 @@ public class ColorPicker extends FrameLayout {
                     int red = Color.red(color);
                     int green = Color.green(color);
                     int blue = Color.blue(color);
-                    colorEditText[0].setTextKeepState(String.format("#%02x%02x%02x", (byte) red, (byte) green, (byte) blue));
+                    colorEditText[0].setTextKeepState(String.format("#%02x%02x%02x", (byte) red, (byte) green, (byte) blue).toUpperCase());
                     colorEditText[1].setTextKeepState(String.valueOf((int) (255 * getBrightness())));
                     delegate.setColor(color);
 
@@ -284,10 +276,6 @@ public class ColorPicker extends FrameLayout {
         return bitmap;
     }
 
-    private int getThemedColor(String key) {
-        return useDefaultTheme ? Theme.getDefaultColor(key) : Theme.getColor(key);
-    }
-
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int action = event.getAction();
@@ -333,7 +321,7 @@ public class ColorPicker extends FrameLayout {
                         int green = Color.green(color);
                         int blue = Color.blue(color);
                         ignoreTextChange = true;
-                        colorEditText[0].setText(String.format("#%02x%02x%02x", (byte) red, (byte) green, (byte) blue));
+                        colorEditText[0].setText(String.format("#%02x%02x%02x", (byte) red, (byte) green, (byte) blue).toUpperCase());
                         colorEditText[1].setText(String.valueOf((int) (255 * getBrightness())));
                         for (int b = 0; b < 2; b++) {
                             colorEditText[b].setSelection(colorEditText[b].length());
@@ -360,7 +348,7 @@ public class ColorPicker extends FrameLayout {
             int green = Color.green(color);
             int blue = Color.blue(color);
             Color.colorToHSV(color, colorHSV);
-            colorEditText[0].setText(String.format("#%02x%02x%02x", (byte) red, (byte) green, (byte) blue));
+            colorEditText[0].setText(String.format("#%02x%02x%02x", (byte) red, (byte) green, (byte) blue).toUpperCase());
             colorEditText[1].setText(String.valueOf((int) (255 * getBrightness())));
             for (int b = 0; b < 2; b++) {
                 colorEditText[b].setSelection(colorEditText[b].length());
@@ -403,14 +391,14 @@ public class ColorPicker extends FrameLayout {
     }
 
 
-    public void provideThemeDescriptions(ArrayList<ThemeDescription> arrayList) {
+    public void provideThemeDescriptions(List<ThemeDescription> arrayList) {
         for (int a = 0; a < colorEditText.length; a++) {
             arrayList.add(new ThemeDescription(colorEditText[a], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+            arrayList.add(new ThemeDescription(colorEditText[a], ThemeDescription.FLAG_CURSORCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
             arrayList.add(new ThemeDescription(colorEditText[a], ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
             arrayList.add(new ThemeDescription(colorEditText[a], ThemeDescription.FLAG_HINTTEXTCOLOR | ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
             arrayList.add(new ThemeDescription(colorEditText[a], ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
             arrayList.add(new ThemeDescription(colorEditText[a], ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
-            arrayList.add(new ThemeDescription(colorEditText[a], ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_windowBackgroundWhiteRedText3));
         }
     }
 
