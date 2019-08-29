@@ -40,6 +40,7 @@ public class ThemeCell extends FrameLayout {
     private ImageView optionsButton;
     private boolean needDivider;
     private Paint paint;
+    private Paint paintStroke;
     private Theme.ThemeInfo currentThemeInfo;
     private boolean isNightTheme;
     private static byte[] bytes = new byte[1024];
@@ -52,6 +53,9 @@ public class ThemeCell extends FrameLayout {
         isNightTheme = nightTheme;
 
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paintStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paintStroke.setStyle(Paint.Style.STROKE);
+        paintStroke.setStrokeWidth(AndroidUtilities.dp(2));
 
         textView = new TextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -122,16 +126,14 @@ public class ThemeCell extends FrameLayout {
         updateCurrentThemeCheck();
 
         boolean finished = false;
-        if (themeInfo.pathToFile != null || themeInfo.assetName != null) {
+        if (Theme.isThemeDefault(themeInfo) || themeInfo.assetName != null) {
+            paint.setColor(Theme.changeColorAccent(themeInfo, themeInfo.accentColor, themeInfo.previewBackgroundColor));
+            finished = true;
+        } else if (themeInfo.pathToFile != null) {
             FileInputStream stream = null;
             try {
                 int currentPosition = 0;
-                File file;
-                if (themeInfo.assetName != null) {
-                    file = Theme.getAssetFile(themeInfo.assetName);
-                } else {
-                    file = new File(themeInfo.pathToFile);
-                }
+                File file = new File(themeInfo.pathToFile);
                 stream = new FileInputStream(file);
                 int idx;
                 int read;
@@ -194,6 +196,10 @@ public class ThemeCell extends FrameLayout {
         if (!finished) {
             paint.setColor(Theme.getDefaultColor(Theme.key_actionBarDefault));
         }
+        paintStroke.setColor(themeInfo.accentColor);
+        if (themeInfo.accentColor != 0) {
+            paintStroke.setAlpha(180);
+        }
     }
 
     public void updateCurrentThemeCheck() {
@@ -219,6 +225,7 @@ public class ThemeCell extends FrameLayout {
             x = getWidth() - x;
         }
         canvas.drawCircle(x, AndroidUtilities.dp(13 + 11), AndroidUtilities.dp(11), paint);
+        canvas.drawCircle(x, AndroidUtilities.dp(13 + 11), AndroidUtilities.dp(10), paintStroke);
     }
 
     @Override

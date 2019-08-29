@@ -571,6 +571,8 @@ public class ThemeDescription {
                                     if ((changeFlags & FLAG_HINTTEXTCOLOR) != 0) {
                                         ((EditTextCaption) object).setHintColor(color);
                                         ((EditTextCaption) object).setHintTextColor(color);
+                                    } else if ((changeFlags & FLAG_CURSORCOLOR) != 0) {
+                                        ((EditTextCaption) object).setCursorColor(color);
                                     } else {
                                         ((EditTextCaption) object).setTextColor(color);
                                     }

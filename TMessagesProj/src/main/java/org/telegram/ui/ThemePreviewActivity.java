@@ -33,6 +33,7 @@ import android.view.ViewOutlineProvider;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -53,10 +54,12 @@ import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.MenuDrawable;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.LoadingCell;
+import org.telegram.ui.Components.ColorPicker;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
@@ -64,29 +67,58 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ThemePreviewActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+
+    public static final int SCREEN_TYPE_PREVIEW = 0;
+    public static final int SCREEN_TYPE_ACCENT_COLOR = 1;
+
+    private final int screenType;
+    private boolean useDefaultThemeForButtons = true;
+
+    private ViewPager viewPager;
 
     private FrameLayout page1;
     private RecyclerListView listView;
     private DialogsAdapter dialogsAdapter;
     private ImageView floatingButton;
-    private View dotsContainer;
-    private ActionBar actionBar2;
 
+    private ActionBar actionBar2;
     private SizeNotifierFrameLayout page2;
     private RecyclerListView listView2;
     private MessagesAdapter messagesAdapter;
 
-    private Theme.ThemeInfo applyingTheme;
-    private File themeFile;
-    private boolean applied;
+    private ColorPicker colorPicker;
+    private int lastPickedColor;
+    private Runnable applyAccentAction = () -> {
+        applyAccentScheduled = false;
+        applyAccent(lastPickedColor);
+    };
+    private boolean applyAccentScheduled;
 
-    public ThemePreviewActivity(File file, Theme.ThemeInfo themeInfo) {
+    private View dotsContainer;
+    private FrameLayout buttonsContainer;
+    private TextView doneButton;
+    private TextView cancelButton;
+
+    private Theme.ThemeInfo applyingTheme;
+    private List<ThemeDescription> themeDescriptions;
+
+    public ThemePreviewActivity(Theme.ThemeInfo themeInfo) {
+        this(themeInfo, SCREEN_TYPE_PREVIEW);
+    }
+
+    public ThemePreviewActivity(Theme.ThemeInfo themeInfo, int screenType) {
         super();
+        this.screenType = screenType;
         swipeBackEnabled = false;
         applyingTheme = themeInfo;
-        themeFile = file;
+
+        if (screenType == SCREEN_TYPE_ACCENT_COLOR) {
+            Theme.applyThemeTemporary(new Theme.ThemeInfo(applyingTheme));
+            useDefaultThemeForButtons = false;
+        }
     }
 
     @Override
@@ -322,10 +354,11 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
 
         listView2.setAdapter(messagesAdapter);
 
-        fragmentView = new FrameLayout(context);
-        FrameLayout frameLayout = (FrameLayout) fragmentView;
+        LinearLayout linearLayout = new LinearLayout(context);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+        fragmentView = linearLayout;
 
-        final ViewPager viewPager = new ViewPager(context);
+        viewPager = new ViewPager(context);
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
@@ -379,15 +412,35 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             }
         });
         AndroidUtilities.setViewPagerEdgeEffectColor(viewPager, Theme.getColor(Theme.key_actionBarDefault));
-        frameLayout.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 48));
+        linearLayout.addView(viewPager, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1f));
 
         View shadow = new View(context);
         shadow.setBackgroundResource(R.drawable.header_shadow_reverse);
-        frameLayout.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 48));
+        linearLayout.addView(shadow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 3, Gravity.NO_GRAVITY, 0, -3, 0, 0));
 
-        FrameLayout bottomLayout = new FrameLayout(context);
-        bottomLayout.setBackgroundColor(0xffffffff);
-        frameLayout.addView(bottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
+        if (screenType == SCREEN_TYPE_ACCENT_COLOR) {
+            FrameLayout colorPickerFrame = new FrameLayout(context);
+            linearLayout.addView(colorPickerFrame, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
+
+            colorPicker = new ColorPicker(context, this::scheduleApplyAccent);
+
+            if (applyingTheme.isDark()) {
+                colorPicker.setMinBrightness((r, g, b) -> 255f / (0.5f * r + 0.8f * g + 0.1f * b + 500f));
+            } else {
+                colorPicker.setMaxBrightness((r, g, b) -> 255f / (0.1f * r + 1.0f * g + 0.1f * b + 50f));
+            }
+
+            colorPicker.setColor(applyingTheme.accentColor);
+            colorPickerFrame.addView(colorPicker, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 342, Gravity.CENTER_HORIZONTAL));
+
+            View shadow2 = new View(context);
+            shadow2.setBackgroundColor(0x12000000);
+            linearLayout.addView(shadow2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 2, Gravity.NO_GRAVITY, 0, -2, 0, 0));
+        }
+
+        buttonsContainer = new FrameLayout(context);
+        buttonsContainer.setBackgroundColor(getButtonsColor(Theme.key_windowBackgroundWhite));
+        linearLayout.addView(buttonsContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
         dotsContainer = new View(context) {
 
@@ -396,44 +449,56 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             @Override
             protected void onDraw(Canvas canvas) {
                 int selected = viewPager.getCurrentItem();
+                paint.setColor(getButtonsColor(Theme.key_chat_fieldOverlayText));
                 for (int a = 0; a < 2; a++) {
-                    paint.setColor(a == selected ? 0xff999999 : 0xffcccccc);
+                    paint.setAlpha(a == selected ? 255 : 127);
                     canvas.drawCircle(AndroidUtilities.dp(3 + 15 * a), AndroidUtilities.dp(4), AndroidUtilities.dp(3), paint);
                 }
             }
         };
-        bottomLayout.addView(dotsContainer, LayoutHelper.createFrame(22, 8, Gravity.CENTER));
+        buttonsContainer.addView(dotsContainer, LayoutHelper.createFrame(22, 8, Gravity.CENTER));
 
-        TextView cancelButton = new TextView(context);
+        cancelButton = new TextView(context);
         cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        cancelButton.setTextColor(0xff19a7e8);
+        cancelButton.setTextColor(getButtonsColor(Theme.key_chat_fieldOverlayText));
         cancelButton.setGravity(Gravity.CENTER);
         cancelButton.setBackgroundDrawable(Theme.createSelectorDrawable(0x2f000000, 0));
         cancelButton.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
         cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
         cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        bottomLayout.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+        buttonsContainer.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         cancelButton.setOnClickListener(v -> {
             Theme.applyPreviousTheme();
-            parentLayout.rebuildAllFragmentViews(false, false);
+            if (screenType != SCREEN_TYPE_ACCENT_COLOR) {
+                parentLayout.rebuildAllFragmentViews(false, false);
+            }
             finishFragment();
         });
 
-        TextView doneButton = new TextView(context);
+        doneButton = new TextView(context);
         doneButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        doneButton.setTextColor(0xff19a7e8);
+        doneButton.setTextColor(getButtonsColor(Theme.key_chat_fieldOverlayText));
         doneButton.setGravity(Gravity.CENTER);
         doneButton.setBackgroundDrawable(Theme.createSelectorDrawable(0x2f000000, 0));
         doneButton.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
         doneButton.setText(LocaleController.getString("ApplyTheme", R.string.ApplyTheme).toUpperCase());
         doneButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        bottomLayout.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
+        buttonsContainer.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
         doneButton.setOnClickListener(v -> {
-            applied = true;
-            parentLayout.rebuildAllFragmentViews(false, false);
-            Theme.applyThemeFile(themeFile, applyingTheme.name, false);
+            if (screenType == SCREEN_TYPE_PREVIEW) {
+                parentLayout.rebuildAllFragmentViews(false, false);
+                Theme.applyThemeFile(new File(applyingTheme.pathToFile), applyingTheme.name, false);
+            } else if (screenType == SCREEN_TYPE_ACCENT_COLOR) {
+                Theme.saveThemeAccent(applyingTheme, colorPicker.getColor());
+                Theme.applyPreviousTheme();
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, applyingTheme, false);
+            }
             finishFragment();
         });
+
+        themeDescriptions = getThemeDescriptionsInternal();
+
+        viewPager.setCurrentItem(1, false); // Opening chat page
 
         return fragmentView;
     }
@@ -441,12 +506,14 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
     @Override
     public boolean onFragmentCreate() {
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewWallpapper);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewWallpapper);
         super.onFragmentDestroy();
     }
 
@@ -475,7 +542,9 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
     @Override
     public boolean onBackPressed() {
         Theme.applyPreviousTheme();
-        parentLayout.rebuildAllFragmentViews(false, false);
+        if (screenType != SCREEN_TYPE_ACCENT_COLOR) {
+            parentLayout.rebuildAllFragmentViews(false, false);
+        }
         return super.onBackPressed();
     }
 
@@ -493,7 +562,36 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                     cell.update(0);
                 }
             }
+        } else if (id == NotificationCenter.didSetNewWallpapper) {
+            if (page2 != null) {
+                page2.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
+            }
         }
+    }
+
+    private int getButtonsColor(String key) {
+        return useDefaultThemeForButtons ? Theme.getDefaultColor(key) : Theme.getColor(key);
+    }
+
+    private void scheduleApplyAccent(int accent) {
+        lastPickedColor = accent;
+        if (!applyAccentScheduled) {
+            applyAccentScheduled = true;
+            fragmentView.postDelayed(applyAccentAction, 16L); // To not apply accent color too often
+        }
+    }
+
+    private void applyAccent(int accent) {
+        Theme.applyCurrentThemeAccent(accent);
+
+        for (int i = 0, size = themeDescriptions.size(); i < size; i++) {
+            ThemeDescription description = themeDescriptions.get(i);
+            description.setColor(Theme.getColor(description.getCurrentKey()), false, false);
+        }
+
+        listView.invalidateViews();
+        listView2.invalidateViews();
+        dotsContainer.invalidate();
     }
 
     public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
@@ -936,4 +1034,42 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             return 4;
         }
     }
+
+
+    private List<ThemeDescription> getThemeDescriptionsInternal() {
+        List<ThemeDescription> items = new ArrayList<>();
+        items.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+        items.add(new ThemeDescription(viewPager, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
+
+        items.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+        items.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
+        items.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
+        items.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCH, null, null, null, null, Theme.key_actionBarDefaultSearch));
+        items.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCHPLACEHOLDER, null, null, null, null, Theme.key_actionBarDefaultSearchPlaceholder));
+
+        items.add(new ThemeDescription(actionBar2, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+        items.add(new ThemeDescription(actionBar2, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
+        items.add(new ThemeDescription(actionBar2, ThemeDescription.FLAG_AB_SUBTITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultSubtitle));
+        items.add(new ThemeDescription(actionBar2, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
+
+        items.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
+        items.add(new ThemeDescription(listView2, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
+
+        items.add(new ThemeDescription(floatingButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chats_actionIcon));
+        items.add(new ThemeDescription(floatingButton, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_chats_actionBackground));
+        items.add(new ThemeDescription(floatingButton, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_chats_actionPressedBackground));
+
+        if (!useDefaultThemeForButtons) {
+            items.add(new ThemeDescription(buttonsContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+            items.add(new ThemeDescription(cancelButton, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_fieldOverlayText));
+            items.add(new ThemeDescription(doneButton, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_fieldOverlayText));
+        }
+
+        if (colorPicker != null) {
+            colorPicker.provideThemeDescriptions(items);
+        }
+
+        return items;
+    }
+
 }
