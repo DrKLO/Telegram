@@ -1,7 +1,7 @@
 package org.telegram.messenger;
 
 import android.content.Context;
-import android.support.multidex.MultiDex;
+import androidx.multidex.MultiDex;
 
 public class MultiDexApplicationLoader extends ApplicationLoader{
 

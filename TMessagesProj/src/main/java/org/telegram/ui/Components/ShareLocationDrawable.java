@@ -11,6 +11,7 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -19,15 +20,23 @@ import org.telegram.messenger.R;
 public class ShareLocationDrawable extends Drawable {
 
     private long lastUpdateTime = 0;
-    private float progress[] = new float[] {0.0f, -0.5f};
+    private float[] progress = new float[]{0.0f, -0.5f};
     private Drawable drawable;
     private Drawable drawableLeft;
     private Drawable drawableRight;
-    private boolean isSmall;
+    private int currentType;
 
-    public ShareLocationDrawable(Context context, boolean small) {
-        isSmall = small;
-        if (small) {
+    public ShareLocationDrawable(Context context, int type) {
+        currentType = type;
+        if (type == 3) {
+            drawable = context.getResources().getDrawable(R.drawable.nearby_l);
+            drawableLeft = context.getResources().getDrawable(R.drawable.animationpinleft);
+            drawableRight = context.getResources().getDrawable(R.drawable.animationpinright);
+        } else if (type == 2) {
+            drawable = context.getResources().getDrawable(R.drawable.nearby_m);
+            drawableLeft = context.getResources().getDrawable(R.drawable.animationpinleft);
+            drawableRight = context.getResources().getDrawable(R.drawable.animationpinright);
+        } else if (type == 1) {
             drawable = context.getResources().getDrawable(R.drawable.smallanimationpin);
             drawableLeft = context.getResources().getDrawable(R.drawable.smallanimationpinleft);
             drawableRight = context.getResources().getDrawable(R.drawable.smallanimationpinright);
@@ -59,7 +68,16 @@ public class ShareLocationDrawable extends Drawable {
 
     @Override
     public void draw(Canvas canvas) {
-        int size = AndroidUtilities.dp(isSmall ? 30 : 120);
+        int size;
+        if (currentType == 3) {
+            size = AndroidUtilities.dp(44);
+        } else if (currentType == 2) {
+            size = AndroidUtilities.dp(32);
+        } else if (currentType == 1) {
+            size = AndroidUtilities.dp(30);
+        } else {
+            size = AndroidUtilities.dp(120);
+        }
         int y = getBounds().top + (getIntrinsicHeight() - size) / 2;
         int x = getBounds().left + (getIntrinsicWidth() - size) / 2;
 
@@ -71,9 +89,45 @@ public class ShareLocationDrawable extends Drawable {
                 continue;
             }
             float scale = 0.5f + 0.5f * progress[a];
-            int w = AndroidUtilities.dp((isSmall ? 2.5f : 5) * scale);
-            int h = AndroidUtilities.dp((isSmall ? 6.5f : 18) * scale);
-            int tx = AndroidUtilities.dp((isSmall ? 6.0f : 15) * progress[a]);
+            int w;
+            int h;
+            int tx;
+            int cx;
+            int cx2;
+            int cy;
+            if (currentType == 3) {
+                w = AndroidUtilities.dp((5) * scale);
+                h = AndroidUtilities.dp((18) * scale);
+                tx = AndroidUtilities.dp((15) * progress[a]);
+
+                cx = x + AndroidUtilities.dp(2) - tx;
+                cy = y + drawable.getIntrinsicHeight() / 2 - AndroidUtilities.dp(7);
+                cx2 = x + drawable.getIntrinsicWidth() - AndroidUtilities.dp(2) + tx;
+            } else if (currentType == 2) {
+                w = AndroidUtilities.dp((5) * scale);
+                h = AndroidUtilities.dp((18) * scale);
+                tx = AndroidUtilities.dp((15) * progress[a]);
+
+                cx = x + AndroidUtilities.dp(2) - tx;
+                cy = y + drawable.getIntrinsicHeight() / 2;
+                cx2 = x + drawable.getIntrinsicWidth() - AndroidUtilities.dp(2) + tx;
+            } else if (currentType == 1) {
+                w = AndroidUtilities.dp((2.5f) * scale);
+                h = AndroidUtilities.dp((6.5f) * scale);
+                tx = AndroidUtilities.dp((6.0f) * progress[a]);
+
+                cx = x + AndroidUtilities.dp(7) - tx;
+                cy = y + drawable.getIntrinsicHeight() / 2;
+                cx2 = x + drawable.getIntrinsicWidth() - AndroidUtilities.dp(7) + tx;
+            } else {
+                w = AndroidUtilities.dp((5) * scale);
+                h = AndroidUtilities.dp((18) * scale);
+                tx = AndroidUtilities.dp((15) * progress[a]);
+
+                cx = x + AndroidUtilities.dp(42) - tx;
+                cy = y + drawable.getIntrinsicHeight() / 2 - AndroidUtilities.dp(7);
+                cx2 = x + drawable.getIntrinsicWidth() - AndroidUtilities.dp(42) + tx;
+            }
             float alpha;
             if (progress[a] < 0.5f) {
                 alpha = progress[a] / 0.5f;
@@ -81,17 +135,12 @@ public class ShareLocationDrawable extends Drawable {
                 alpha = 1.0f - (progress[a] - 0.5f) / 0.5f;
             }
 
-            int cx = x + AndroidUtilities.dp(isSmall ? 7 : 42) - tx;
-            int cy = y + drawable.getIntrinsicHeight() / 2 - (isSmall ? 0 : AndroidUtilities.dp(7));
-
             drawableLeft.setAlpha((int) (alpha * 255));
             drawableLeft.setBounds(cx - w, cy - h, cx + w, cy + h);
             drawableLeft.draw(canvas);
 
-            cx = x + drawable.getIntrinsicWidth() - AndroidUtilities.dp(isSmall ? 7 : 42) + tx;
-
             drawableRight.setAlpha((int) (alpha * 255));
-            drawableRight.setBounds(cx - w, cy - h, cx + w, cy + h);
+            drawableRight.setBounds(cx2 - w, cy - h, cx2 + w, cy + h);
             drawableRight.draw(canvas);
         }
 
@@ -112,16 +161,30 @@ public class ShareLocationDrawable extends Drawable {
 
     @Override
     public int getOpacity() {
-        return 0;
+        return PixelFormat.TRANSPARENT;
     }
 
     @Override
     public int getIntrinsicWidth() {
-        return AndroidUtilities.dp(isSmall ? 40 : 120);
+        if (currentType == 3) {
+            return AndroidUtilities.dp(100);
+        } else if (currentType == 2) {
+            return AndroidUtilities.dp(74);
+        } else if (currentType == 1) {
+            return AndroidUtilities.dp(40);
+        }
+        return AndroidUtilities.dp(120);
     }
 
     @Override
     public int getIntrinsicHeight() {
-        return AndroidUtilities.dp(isSmall ? 40 : 180);
+        if (currentType == 3) {
+            return AndroidUtilities.dp(100);
+        } else if (currentType == 2) {
+            return AndroidUtilities.dp(74);
+        } else if (currentType == 1) {
+            return AndroidUtilities.dp(40);
+        }
+        return AndroidUtilities.dp(180);
     }
 }

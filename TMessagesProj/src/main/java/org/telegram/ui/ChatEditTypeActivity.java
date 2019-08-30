@@ -32,7 +32,6 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
@@ -104,65 +103,55 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     private boolean loadingInvite;
     private TLRPC.ExportedChatInvite invite;
 
+    private boolean ignoreTextChanges;
+
+    private boolean isForcePublic;
+
     private final static int done_button = 1;
 
-    public ChatEditTypeActivity(int id) {
+    public ChatEditTypeActivity(int id, boolean forcePublic) {
         chatId = id;
+        isForcePublic = forcePublic;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public boolean onFragmentCreate() {
-        currentChat = MessagesController.getInstance(currentAccount).getChat(chatId);
+        currentChat = getMessagesController().getChat(chatId);
         if (currentChat == null) {
-            final CountDownLatch countDownLatch = new CountDownLatch(1);
-            MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
-                currentChat = MessagesStorage.getInstance(currentAccount).getChat(chatId);
-                countDownLatch.countDown();
-            });
-            try {
-                countDownLatch.await();
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
+            currentChat = getMessagesStorage().getChatSync(chatId);
             if (currentChat != null) {
-                MessagesController.getInstance(currentAccount).putChat(currentChat, true);
+                getMessagesController().putChat(currentChat, true);
             } else {
                 return false;
             }
             if (info == null) {
-                MessagesStorage.getInstance(currentAccount).loadChatInfo(chatId, countDownLatch, false, false);
-                try {
-                    countDownLatch.await();
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
+                info = getMessagesStorage().loadChatInfo(chatId, new CountDownLatch(1), false, false);
                 if (info == null) {
                     return false;
                 }
             }
         }
-        isPrivate = TextUtils.isEmpty(currentChat.username);
+        isPrivate = !isForcePublic && TextUtils.isEmpty(currentChat.username);
         isChannel = ChatObject.isChannel(currentChat) && !currentChat.megagroup;
-        if (isPrivate && currentChat.creator) {
+        if (isForcePublic && TextUtils.isEmpty(currentChat.username) || isPrivate && currentChat.creator) {
             TLRPC.TL_channels_checkUsername req = new TLRPC.TL_channels_checkUsername();
             req.username = "1";
             req.channel = new TLRPC.TL_inputChannelEmpty();
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 canCreatePublic = error == null || !error.text.equals("CHANNELS_ADMIN_PUBLIC_TOO_MUCH");
                 if (!canCreatePublic) {
                     loadAdminedChannels();
                 }
             }));
         }
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
+        getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoad);
+        getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
         AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
     }
 
@@ -176,6 +165,15 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
             } else {
                 textCell2.setText(LocaleController.getString("GroupStickers", R.string.GroupStickers), false);
             }
+        }
+    }
+
+    @Override
+    protected void onBecomeFullyVisible() {
+        super.onBecomeFullyVisible();
+        if (isForcePublic && usernameTextView != null) {
+            usernameTextView.requestFocus();
+            AndroidUtilities.showKeyboard(usernameTextView);
         }
     }
 
@@ -213,7 +211,9 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
 
         linearLayout.setOrientation(LinearLayout.VERTICAL);
 
-        if (isChannel) {
+        if (isForcePublic) {
+            actionBar.setTitle(LocaleController.getString("TypeLocationGroup", R.string.TypeLocationGroup));
+        } else if (isChannel) {
             actionBar.setTitle(LocaleController.getString("ChannelSettingsTitle", R.string.ChannelSettingsTitle));
         } else {
             actionBar.setTitle(LocaleController.getString("GroupSettingsTitle", R.string.GroupSettingsTitle));
@@ -268,6 +268,13 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         sectionCell2 = new ShadowSectionCell(context);
         linearLayout.addView(sectionCell2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+        if (isForcePublic) {
+            radioButtonCell2.setVisibility(View.GONE);
+            radioButtonCell1.setVisibility(View.GONE);
+            sectionCell2.setVisibility(View.GONE);
+            headerCell2.setVisibility(View.GONE);
+        }
+
         linkContainer = new LinearLayout(context);
         linkContainer.setOrientation(LinearLayout.VERTICAL);
         linkContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -281,7 +288,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         linkContainer.addView(publicContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 23, 7, 23, 0));
 
         editText = new EditText(context);
-        editText.setText(MessagesController.getInstance(currentAccount).linkPrefix + "/");
+        editText.setText(getMessagesController().linkPrefix + "/");
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -297,9 +304,6 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
 
         usernameTextView = new EditTextBoldCursor(context);
         usernameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        if (!isPrivate) {
-            usernameTextView.setText(currentChat.username);
-        }
         usernameTextView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         usernameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         usernameTextView.setMaxLines(1);
@@ -322,6 +326,9 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                if (ignoreTextChanges) {
+                    return;
+                }
                 checkUserName(usernameTextView.getText().toString());
             }
 
@@ -420,6 +427,12 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         adminedInfoCell = new ShadowSectionCell(context);
         linearLayout.addView(adminedInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+        if (!isPrivate && currentChat.username != null) {
+            ignoreTextChanges = true;
+            usernameTextView.setText(currentChat.username);
+            usernameTextView.setSelection(currentChat.username.length());
+            ignoreTextChanges = false;
+        }
         updatePrivatePublic();
 
         return fragmentView;
@@ -449,6 +462,12 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     }
 
     private void processDone() {
+        if (trySetUsername()) {
+            finishFragment();
+        }
+    }
+
+    private boolean trySetUsername() {
         if (!isPrivate && ((currentChat.username == null && usernameTextView.length() != 0) || (currentChat.username != null && !currentChat.username.equalsIgnoreCase(usernameTextView.getText().toString())))) {
             if (usernameTextView.length() != 0 && !lastNameAvailable) {
                 Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
@@ -456,25 +475,26 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                     v.vibrate(200);
                 }
                 AndroidUtilities.shakeView(checkTextView, 2, 0);
-                return;
+                return false;
             }
         }
+
         String oldUserName = currentChat.username != null ? currentChat.username : "";
         String newUserName = isPrivate ? "" : usernameTextView.getText().toString();
         if (!oldUserName.equals(newUserName)) {
             if (!ChatObject.isChannel(currentChat)) {
-                MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chatId, param -> {
+                getMessagesController().convertToMegaGroup(getParentActivity(), chatId, this, param -> {
                     chatId = param;
-                    currentChat = MessagesController.getInstance(currentAccount).getChat(param);
+                    currentChat = getMessagesController().getChat(param);
                     processDone();
                 });
-                return;
+                return false;
             } else {
-                MessagesController.getInstance(currentAccount).updateChannelUserName(chatId, newUserName);
+                getMessagesController().updateChannelUserName(chatId, newUserName);
                 currentChat.username = newUserName;
             }
         }
-        finishFragment();
+        return true;
     }
 
     private void loadAdminedChannels() {
@@ -484,7 +504,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         loadingAdminedChannels = true;
         updatePrivatePublic();
         TLRPC.TL_channels_getAdminedPublicChannels req = new TLRPC.TL_channels_getAdminedPublicChannels();
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             loadingAdminedChannels = false;
             if (response != null) {
                 if (getParentActivity() == null) {
@@ -503,16 +523,16 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         if (isChannel) {
-                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlertChannel", R.string.RevokeLinkAlertChannel, MessagesController.getInstance(currentAccount).linkPrefix + "/" + channel.username, channel.title)));
+                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlertChannel", R.string.RevokeLinkAlertChannel, getMessagesController().linkPrefix + "/" + channel.username, channel.title)));
                         } else {
-                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlert", R.string.RevokeLinkAlert, MessagesController.getInstance(currentAccount).linkPrefix + "/" + channel.username, channel.title)));
+                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlert", R.string.RevokeLinkAlert, getMessagesController().linkPrefix + "/" + channel.username, channel.title)));
                         }
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         builder.setPositiveButton(LocaleController.getString("RevokeButton", R.string.RevokeButton), (dialogInterface, i) -> {
                             TLRPC.TL_channels_updateUsername req1 = new TLRPC.TL_channels_updateUsername();
                             req1.channel = MessagesController.getInputChannel(channel);
                             req1.username = "";
-                            ConnectionsManager.getInstance(currentAccount).sendRequest(req1, (response1, error1) -> {
+                            getConnectionsManager().sendRequest(req1, (response1, error1) -> {
                                 if (response1 instanceof TLRPC.TL_boolTrue) {
                                     AndroidUtilities.runOnUIThread(() -> {
                                         canCreatePublic = true;
@@ -544,6 +564,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
             typeInfoCell.setTag(Theme.key_windowBackgroundWhiteRedText4);
             typeInfoCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText4));
             linkContainer.setVisibility(View.GONE);
+            checkTextView.setVisibility(View.GONE);
             sectionCell2.setVisibility(View.GONE);
             adminedInfoCell.setVisibility(View.VISIBLE);
             if (loadingAdminedChannels) {
@@ -560,7 +581,11 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         } else {
             typeInfoCell.setTag(Theme.key_windowBackgroundWhiteGrayText4);
             typeInfoCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
-            sectionCell2.setVisibility(View.VISIBLE);
+            if (isForcePublic) {
+                sectionCell2.setVisibility(View.GONE);
+            } else {
+                sectionCell2.setVisibility(View.VISIBLE);
+            }
             adminedInfoCell.setVisibility(View.GONE);
             typeInfoCell.setBackgroundDrawable(Theme.getThemedDrawable(typeInfoCell.getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
             adminnedChannelsLayout.setVisibility(View.GONE);
@@ -597,7 +622,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
             checkRunnable = null;
             lastCheckName = null;
             if (checkReqId != 0) {
-                ConnectionsManager.getInstance(currentAccount).cancelRequest(checkReqId, true);
+                getConnectionsManager().cancelRequest(checkReqId, true);
             }
         }
         lastNameAvailable = false;
@@ -646,8 +671,8 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         checkRunnable = () -> {
             TLRPC.TL_channels_checkUsername req = new TLRPC.TL_channels_checkUsername();
             req.username = name;
-            req.channel = MessagesController.getInstance(currentAccount).getInputChannel(chatId);
-            checkReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            req.channel = getMessagesController().getInputChannel(chatId);
+            checkReqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 checkReqId = 0;
                 if (lastCheckName != null && lastCheckName.equals(name)) {
                     if (error == null && response instanceof TLRPC.TL_boolTrue) {
@@ -674,8 +699,8 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     private void generateLink(final boolean newRequest) {
         loadingInvite = true;
         TLRPC.TL_messages_exportChatInvite req = new TLRPC.TL_messages_exportChatInvite();
-        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(-chatId);
-        final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+        req.peer = getMessagesController().getInputPeer(-chatId);
+        final int reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (error == null) {
                 invite = (TLRPC.ExportedChatInvite) response;
                 if (info != null) {
@@ -697,7 +722,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 privateTextView.setText(invite != null ? invite.link : LocaleController.getString("Loading", R.string.Loading), true);
             }
         }));
-        ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
+        getConnectionsManager().bindRequestToGuid(reqId, classGuid);
     }
 
     @Override

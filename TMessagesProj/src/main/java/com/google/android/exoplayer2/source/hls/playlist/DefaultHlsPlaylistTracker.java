@@ -18,7 +18,7 @@ package com.google.android.exoplayer2.source.hls.playlist;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.SystemClock;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.source.MediaSourceEventListener.EventDispatcher;

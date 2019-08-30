@@ -6,6 +6,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Outline;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -23,14 +24,13 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -51,6 +51,9 @@ import org.telegram.ui.Components.voip.VoIPHelper;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class CallLogActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -87,7 +90,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		if (id == NotificationCenter.didReceiveNewMessages && firstLoaded) {
 			ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[1];
 			for (MessageObject msg : arr) {
-				if (msg.messageOwner.action != null && msg.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall) {
+				if (msg.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall) {
 					int userID = msg.messageOwner.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? msg.messageOwner.to_id.user_id : msg.messageOwner.from_id;
 					int callType = msg.messageOwner.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? TYPE_OUT : TYPE_IN;
 					TLRPC.PhoneCallDiscardReason reason = msg.messageOwner.action.reason;
@@ -135,8 +138,28 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 	private class CustomCell extends FrameLayout {
 
+		private ImageView imageView;
+		private ProfileSearchCell profileSearchCell;
+
 		public CustomCell(Context context) {
 			super(context);
+
+			setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+
+			profileSearchCell = new ProfileSearchCell(context);
+			profileSearchCell.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(32) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(32), 0);
+			profileSearchCell.setSublabelOffset(AndroidUtilities.dp(LocaleController.isRTL ? 2 : -2), -AndroidUtilities.dp(4));
+			addView(profileSearchCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+			imageView = new ImageView(context);
+			imageView.setImageResource(R.drawable.profile_phone);
+			imageView.setAlpha(214);
+			imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.MULTIPLY));
+			imageView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
+			imageView.setScaleType(ImageView.ScaleType.CENTER);
+			imageView.setOnClickListener(callBtnClickListener);
+			imageView.setContentDescription(LocaleController.getString("Call", R.string.Call));
+			addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 8, 0, 8, 0));
 		}
 	}
 
@@ -209,41 +232,41 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
 		listView.setOnItemClickListener((view, position) -> {
-            if (position < 0 || position >= calls.size()) {
-                return;
-            }
-            CallLogRow row = calls.get(position);
-            Bundle args = new Bundle();
-            args.putInt("user_id", row.user.id);
-            args.putInt("message_id", row.calls.get(0).id);
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
-            presentFragment(new ChatActivity(args), true);
-        });
+			if (position < 0 || position >= calls.size()) {
+				return;
+			}
+			CallLogRow row = calls.get(position);
+			Bundle args = new Bundle();
+			args.putInt("user_id", row.user.id);
+			args.putInt("message_id", row.calls.get(0).id);
+			NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
+			presentFragment(new ChatActivity(args), true);
+		});
 		listView.setOnItemLongClickListener((view, position) -> {
-            if (position < 0 || position >= calls.size()) {
-                return false;
-            }
-            final CallLogRow row = calls.get(position);
-            ArrayList<String> items = new ArrayList<>();
-            items.add(LocaleController.getString("Delete", R.string.Delete));
-            if (VoIPHelper.canRateCall((TLRPC.TL_messageActionPhoneCall) row.calls.get(0).action)) {
-                items.add(LocaleController.getString("CallMessageReportProblem", R.string.CallMessageReportProblem));
-            }
-            new AlertDialog.Builder(getParentActivity())
-                    .setTitle(LocaleController.getString("Calls", R.string.Calls))
-                    .setItems(items.toArray(new String[items.size()]), (dialog, which) -> {
-switch (which) {
-case 0:
-confirmAndDelete(row);
-break;
-case 1:
-VoIPHelper.showRateAlert(getParentActivity(), (TLRPC.TL_messageActionPhoneCall) row.calls.get(0).action);
-break;
-}
-})
-                    .show();
-            return true;
-        });
+			if (position < 0 || position >= calls.size()) {
+				return false;
+			}
+			final CallLogRow row = calls.get(position);
+			ArrayList<String> items = new ArrayList<>();
+			items.add(LocaleController.getString("Delete", R.string.Delete));
+			if (VoIPHelper.canRateCall((TLRPC.TL_messageActionPhoneCall) row.calls.get(0).action)) {
+				items.add(LocaleController.getString("CallMessageReportProblem", R.string.CallMessageReportProblem));
+			}
+			new AlertDialog.Builder(getParentActivity())
+					.setTitle(LocaleController.getString("Calls", R.string.Calls))
+					.setItems(items.toArray(new String[0]), (dialog, which) -> {
+						switch (which) {
+							case 0:
+								confirmAndDelete(row);
+								break;
+							case 1:
+								VoIPHelper.showRateAlert(getParentActivity(), (TLRPC.TL_messageActionPhoneCall) row.calls.get(0).action);
+								break;
+						}
+					})
+					.show();
+			return true;
+		});
 		listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
 			@Override
 			public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
@@ -303,7 +326,8 @@ break;
 		}
 		floatingButton.setBackgroundDrawable(drawable);
 		floatingButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
-		floatingButton.setImageResource(R.drawable.ic_call_white_24dp);
+		floatingButton.setImageResource(R.drawable.ic_call);
+		floatingButton.setContentDescription(LocaleController.getString("Call", R.string.Call));
 		if (Build.VERSION.SDK_INT >= 21) {
 			StateListAnimator animator = new StateListAnimator();
 			animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
@@ -319,14 +343,14 @@ break;
 		}
 		frameLayout.addView(floatingButton, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM, LocaleController.isRTL ? 14 : 0, 0, LocaleController.isRTL ? 0 : 14, 14));
 		floatingButton.setOnClickListener(v -> {
-            Bundle args = new Bundle();
-            args.putBoolean("destroyAfterSelect", true);
-            args.putBoolean("returnAsResult", true);
-            args.putBoolean("onlyUsers", true);
-            ContactsActivity contactsFragment = new ContactsActivity(args);
-            contactsFragment.setDelegate((user, param, activity) -> VoIPHelper.startCall(user, getParentActivity(), null));
-            presentFragment(contactsFragment);
-        });
+			Bundle args = new Bundle();
+			args.putBoolean("destroyAfterSelect", true);
+			args.putBoolean("returnAsResult", true);
+			args.putBoolean("onlyUsers", true);
+			ContactsActivity contactsFragment = new ContactsActivity(args);
+			contactsFragment.setDelegate((user, param, activity) -> VoIPHelper.startCall(user, getParentActivity(), null));
+			presentFragment(contactsFragment);
+		});
 
 		return fragmentView;
 	}
@@ -360,53 +384,53 @@ break;
 		req.q = "";
 		req.offset_id = max_id;
 		int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            if (error == null) {
-                SparseArray<TLRPC.User> users = new SparseArray<>();
-                TLRPC.messages_Messages msgs = (TLRPC.messages_Messages) response;
-                endReached = msgs.messages.isEmpty();
-                for (int a = 0; a < msgs.users.size(); a++) {
-                    TLRPC.User user = msgs.users.get(a);
-                    users.put(user.id, user);
-                }
-                CallLogRow currentRow = calls.size() > 0 ? calls.get(calls.size() - 1) : null;
-                for (int a = 0; a < msgs.messages.size(); a++) {
-                    TLRPC.Message msg = msgs.messages.get(a);
-                    if (msg.action == null || msg.action instanceof TLRPC.TL_messageActionHistoryClear) {
-                        continue;
-                    }
-                    int callType = msg.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? TYPE_OUT : TYPE_IN;
-                    TLRPC.PhoneCallDiscardReason reason = msg.action.reason;
-                    if (callType == TYPE_IN && (reason instanceof TLRPC.TL_phoneCallDiscardReasonMissed || reason instanceof TLRPC.TL_phoneCallDiscardReasonBusy)) {
-                        callType = TYPE_MISSED;
-                    }
-                    int userID = msg.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? msg.to_id.user_id : msg.from_id;
-                    if (currentRow == null || currentRow.user.id != userID || currentRow.type != callType) {
-                        if (currentRow != null && !calls.contains(currentRow)) {
-                            calls.add(currentRow);
-                        }
-                        CallLogRow row = new CallLogRow();
-                        row.calls = new ArrayList<>();
-                        row.user = users.get(userID);
-                        row.type = callType;
-                        currentRow = row;
-                    }
-                    currentRow.calls.add(msg);
-                }
-                if (currentRow != null && currentRow.calls.size() > 0 && !calls.contains(currentRow)) {
-                    calls.add(currentRow);
-                }
-            } else {
-                endReached = true;
-            }
-            loading = false;
-            firstLoaded = true;
-            if (emptyView != null) {
-                emptyView.showTextView();
-            }
-            if (listViewAdapter != null) {
-                listViewAdapter.notifyDataSetChanged();
-            }
-        }), ConnectionsManager.RequestFlagFailOnServerErrors);
+			if (error == null) {
+				SparseArray<TLRPC.User> users = new SparseArray<>();
+				TLRPC.messages_Messages msgs = (TLRPC.messages_Messages) response;
+				endReached = msgs.messages.isEmpty();
+				for (int a = 0; a < msgs.users.size(); a++) {
+					TLRPC.User user = msgs.users.get(a);
+					users.put(user.id, user);
+				}
+				CallLogRow currentRow = calls.size() > 0 ? calls.get(calls.size() - 1) : null;
+				for (int a = 0; a < msgs.messages.size(); a++) {
+					TLRPC.Message msg = msgs.messages.get(a);
+					if (msg.action == null || msg.action instanceof TLRPC.TL_messageActionHistoryClear) {
+						continue;
+					}
+					int callType = msg.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? TYPE_OUT : TYPE_IN;
+					TLRPC.PhoneCallDiscardReason reason = msg.action.reason;
+					if (callType == TYPE_IN && (reason instanceof TLRPC.TL_phoneCallDiscardReasonMissed || reason instanceof TLRPC.TL_phoneCallDiscardReasonBusy)) {
+						callType = TYPE_MISSED;
+					}
+					int userID = msg.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? msg.to_id.user_id : msg.from_id;
+					if (currentRow == null || currentRow.user.id != userID || currentRow.type != callType) {
+						if (currentRow != null && !calls.contains(currentRow)) {
+							calls.add(currentRow);
+						}
+						CallLogRow row = new CallLogRow();
+						row.calls = new ArrayList<>();
+						row.user = users.get(userID);
+						row.type = callType;
+						currentRow = row;
+					}
+					currentRow.calls.add(msg);
+				}
+				if (currentRow != null && currentRow.calls.size() > 0 && !calls.contains(currentRow)) {
+					calls.add(currentRow);
+				}
+			} else {
+				endReached = true;
+			}
+			loading = false;
+			firstLoaded = true;
+			if (emptyView != null) {
+				emptyView.showTextView();
+			}
+			if (listViewAdapter != null) {
+				listViewAdapter.notifyDataSetChanged();
+			}
+		}), ConnectionsManager.RequestFlagFailOnServerErrors);
 		ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
 	}
 
@@ -417,12 +441,12 @@ break;
 				.setTitle(LocaleController.getString("AppName", R.string.AppName))
 				.setMessage(LocaleController.getString("ConfirmDeleteCallLog", R.string.ConfirmDeleteCallLog))
 				.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialog, which) -> {
-                    ArrayList<Integer> ids = new ArrayList<>();
-                    for (TLRPC.Message msg : row.calls) {
-                        ids.add(msg.id);
-                    }
-                    MessagesController.getInstance(currentAccount).deleteMessages(ids, null, null, 0, false);
-                })
+					ArrayList<Integer> ids = new ArrayList<>();
+					for (TLRPC.Message msg : row.calls) {
+						ids.add(msg.id);
+					}
+					MessagesController.getInstance(currentAccount).deleteMessages(ids, null, null, 0, false);
+				})
 				.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
 				.show()
 				.setCanceledOnTouchOutside(true);
@@ -439,9 +463,9 @@ break;
 	@Override
 	public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
 		if (requestCode == 101) {
-			if(grantResults.length>0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+			if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 				VoIPHelper.startCall(lastCallUser, getParentActivity(), null);
-			}else{
+			} else {
 				VoIPHelper.permissionDenied(getParentActivity(), null);
 			}
 		}
@@ -476,28 +500,12 @@ break;
 			View view;
 			switch (viewType) {
 				case 0:
-					CustomCell frameLayout = new CustomCell(mContext);
-					frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-
-					ProfileSearchCell cell = new ProfileSearchCell(mContext);
-					cell.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(32) : 0, 0, LocaleController.isRTL ? 0 : AndroidUtilities.dp(32), 0);
-					frameLayout.addView(cell);
-
-					ImageView imageView = new ImageView(mContext);
-					imageView.setImageResource(R.drawable.profile_phone);
-					imageView.setAlpha(214);
-					imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
-					imageView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
-					imageView.setScaleType(ImageView.ScaleType.CENTER);
-					imageView.setOnClickListener(callBtnClickListener);
-					frameLayout.addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 8, 0, 8, 0));
-
-					view = frameLayout;
-					view.setTag(new ViewItem(imageView, cell));
+					CustomCell cell = new CustomCell(mContext);
+					view = cell;
+					view.setTag(new ViewItem(cell.imageView, cell.profileSearchCell));
 					break;
 				case 1:
 					view = new LoadingCell(mContext);
-					view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 					break;
 				case 2:
 				default:
@@ -525,12 +533,15 @@ break;
 				switch (row.type) {
 					case TYPE_OUT:
 						subtitle.setSpan(iconOut, ldir.length(), ldir.length() + 1, 0);
+						//cell.setContentDescription(LocaleController.getString("CallMessageOutgoing", R.string.CallMessageOutgoing));
 						break;
 					case TYPE_IN:
 						subtitle.setSpan(iconIn, ldir.length(), ldir.length() + 1, 0);
+						//cell.setContentDescription(LocaleController.getString("CallMessageIncoming", R.string.CallMessageIncoming));
 						break;
 					case TYPE_MISSED:
 						subtitle.setSpan(iconMissed, ldir.length(), ldir.length() + 1, 0);
+						//cell.setContentDescription(LocaleController.getString("CallMessageIncomingMissed", R.string.CallMessageIncomingMissed));
 						break;
 				}
 				cell.setData(row.user, null, null, subtitle, false, false);
@@ -569,16 +580,17 @@ break;
 	@Override
 	public ThemeDescription[] getThemeDescriptions() {
 		ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
-            if (listView != null) {
-                int count = listView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    View child = listView.getChildAt(a);
-                    if (child instanceof ProfileSearchCell) {
-                        ((ProfileSearchCell) child).update(0);
-                    }
-                }
-            }
-        };
+			if (listView != null) {
+				int count = listView.getChildCount();
+				for (int a = 0; a < count; a++) {
+					View child = listView.getChildAt(a);
+					if (child instanceof CustomCell) {
+						CustomCell cell = (CustomCell) child;
+						cell.profileSearchCell.update(0);
+					}
+				}
+			}
+		};
 
 		return new ThemeDescription[]{
 				new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{LocationCell.class, CustomCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
@@ -606,12 +618,14 @@ break;
 				new ThemeDescription(floatingButton, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_chats_actionBackground),
 				new ThemeDescription(floatingButton, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_chats_actionPressedBackground),
 
-				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_verifiedCheckDrawable}, null, Theme.key_chats_verifiedCheck),
-				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_verifiedDrawable}, null, Theme.key_chats_verifiedBackground),
-				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, Theme.dialogs_offlinePaint, null, null, Theme.key_windowBackgroundWhiteGrayText3),
-				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, Theme.dialogs_onlinePaint, null, null, Theme.key_windowBackgroundWhiteBlueText3),
-				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, Theme.dialogs_namePaint, null, null, Theme.key_chats_name),
-				new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
+				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_featuredStickers_addButton),
+				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, null, new Drawable[]{Theme.dialogs_verifiedCheckDrawable}, null, Theme.key_chats_verifiedCheck),
+				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, null, new Drawable[]{Theme.dialogs_verifiedDrawable}, null, Theme.key_chats_verifiedBackground),
+				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, Theme.dialogs_offlinePaint, null, null, Theme.key_windowBackgroundWhiteGrayText3),
+				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, Theme.dialogs_onlinePaint, null, null, Theme.key_windowBackgroundWhiteBlueText3),
+				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, null, new Paint[]{Theme.dialogs_namePaint, Theme.dialogs_searchNamePaint}, null, null, Theme.key_chats_name),
+				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, null, new Paint[]{Theme.dialogs_nameEncryptedPaint, Theme.dialogs_searchNameEncryptedPaint}, null, null, Theme.key_chats_secretName),
+				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
 				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
 				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
 				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
@@ -620,8 +634,8 @@ break;
 				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
 				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
 
-				new ThemeDescription(listView, 0, new Class[]{View.class}, null, new Drawable[]{greenDrawable, greenDrawable2, Theme.chat_msgCallUpRedDrawable, Theme.chat_msgCallDownRedDrawable}, null, Theme.key_calls_callReceivedGreenIcon),
-				new ThemeDescription(listView, 0, new Class[]{View.class}, null, new Drawable[]{redDrawable, Theme.chat_msgCallUpGreenDrawable, Theme.chat_msgCallDownGreenDrawable}, null, Theme.key_calls_callReceivedRedIcon),
+				new ThemeDescription(listView, 0, new Class[]{View.class}, null, new Drawable[]{greenDrawable, greenDrawable2, Theme.calllog_msgCallUpRedDrawable, Theme.calllog_msgCallDownRedDrawable}, null, Theme.key_calls_callReceivedGreenIcon),
+				new ThemeDescription(listView, 0, new Class[]{View.class}, null, new Drawable[]{redDrawable, Theme.calllog_msgCallUpGreenDrawable, Theme.calllog_msgCallDownGreenDrawable}, null, Theme.key_calls_callReceivedRedIcon),
 		};
 	}
 }

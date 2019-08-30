@@ -8,10 +8,7 @@
 
 package org.telegram.ui;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,9 +19,7 @@ import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ClearCacheService;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -32,10 +27,9 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -53,10 +47,15 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.io.File;
 import java.util.ArrayList;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 public class CacheControlActivity extends BaseFragment {
 
     private ListAdapter listAdapter;
     private RecyclerListView listView;
+    @SuppressWarnings("FieldCanBeLocal")
+    private LinearLayoutManager layoutManager;
 
     private int databaseRow;
     private int databaseInfoRow;
@@ -74,7 +73,7 @@ public class CacheControlActivity extends BaseFragment {
     private long photoSize = -1;
     private long videoSize = -1;
     private long totalSize = -1;
-    private boolean clear[] = new boolean[6];
+    private boolean[] clear = new boolean[6];
     private boolean calculating = true;
 
     private volatile boolean canceled = false;
@@ -239,7 +238,7 @@ public class CacheControlActivity extends BaseFragment {
 
         listView = new RecyclerListView(context);
         listView.setVerticalScrollBarEnabled(false);
-        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position) -> {
@@ -249,26 +248,19 @@ public class CacheControlActivity extends BaseFragment {
             if (position == keepMediaRow) {
                 BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
                 builder.setItems(new CharSequence[]{LocaleController.formatPluralString("Days", 3), LocaleController.formatPluralString("Weeks", 1), LocaleController.formatPluralString("Months", 1), LocaleController.getString("KeepMediaForever", R.string.KeepMediaForever)}, (dialog, which) -> {
-                    SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
                     if (which == 0) {
-                        editor.putInt("keep_media", 3);
+                        SharedConfig.setKeepMedia(3);
                     } else if (which == 1) {
-                        editor.putInt("keep_media", 0);
+                        SharedConfig.setKeepMedia(0);
                     } else if (which == 2) {
-                        editor.putInt("keep_media", 1);
+                        SharedConfig.setKeepMedia(1);
                     } else if (which == 3) {
-                        editor.putInt("keep_media", 2);
+                        SharedConfig.setKeepMedia(2);
                     }
-                    editor.commit();
                     if (listAdapter != null) {
                         listAdapter.notifyDataSetChanged();
                     }
-                    PendingIntent pintent = PendingIntent.getService(ApplicationLoader.applicationContext, 1, new Intent(ApplicationLoader.applicationContext, ClearCacheService.class), 0);
-                    AlarmManager alarmManager = (AlarmManager) ApplicationLoader.applicationContext.getSystemService(Context.ALARM_SERVICE);
-                    alarmManager.cancel(pintent);
-                    if (which != 3) {
-                        alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, 0, AlarmManager.INTERVAL_DAY, pintent);
-                    }
+                    SharedConfig.checkKeepMedia();
                 });
                 showDialog(builder.create());
             } else if (position == databaseRow) {
@@ -277,6 +269,9 @@ public class CacheControlActivity extends BaseFragment {
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                 builder.setMessage(LocaleController.getString("LocalDatabaseClear", R.string.LocalDatabaseClear));
                 builder.setPositiveButton(LocaleController.getString("CacheClear", R.string.CacheClear), (dialogInterface, i) -> {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
                     final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
                     progressDialog.setCanCacnel(false);
                     progressDialog.show();
@@ -342,7 +337,7 @@ public class CacheControlActivity extends BaseFragment {
                                     database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
                                     database.executeFast("DELETE FROM media_v2 WHERE uid = " + did).stepThis().dispose();
                                     database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
-                                    DataQuery.getInstance(currentAccount).clearBotKeyboard(did, null);
+                                    MediaDataController.getInstance(currentAccount).clearBotKeyboard(did, null);
                                     if (messageId != -1) {
                                         MessagesStorage.createFirstHoles(did, state5, state6, messageId);
                                     }
@@ -504,7 +499,7 @@ public class CacheControlActivity extends BaseFragment {
                         }
                     } else if (position == keepMediaRow) {
                         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                        int keepMedia = preferences.getInt("keep_media", 2);
+                        int keepMedia = SharedConfig.keepMedia;
                         String value;
                         if (keepMedia == 0) {
                             value = LocaleController.formatPluralString("Weeks", 1);

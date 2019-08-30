@@ -15,5 +15,6 @@ public class DownloadObject {
     public int type;
     public long id;
     public boolean secret;
+    public boolean forceCache;
     public String parent;
 }

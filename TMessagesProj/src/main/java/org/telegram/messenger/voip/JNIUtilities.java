@@ -121,4 +121,12 @@ public class JNIUtilities{
 		}catch(Exception ignore){}
 		return null;
 	}
+
+	public static String getSupportedVideoCodecs() {
+		return "";
+	}
+
+	public static int getMaxVideoResolution() {
+		return 320;
+	}
 }

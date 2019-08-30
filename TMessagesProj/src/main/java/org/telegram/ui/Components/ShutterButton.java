@@ -14,12 +14,17 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+
+import androidx.annotation.Keep;
 
 public class ShutterButton extends View {
 
@@ -57,6 +62,7 @@ public class ShutterButton extends View {
         boolean shutterLongPressed();
         void shutterReleased();
         void shutterCancel();
+        boolean onTranslationChanged(float x, float y);
     }
 
     public ShutterButton(Context context) {
@@ -83,12 +89,12 @@ public class ShutterButton extends View {
         AnimatorSet animatorSet = new AnimatorSet();
         if (value) {
             animatorSet.playTogether(
-                    ObjectAnimator.ofFloat(this, "scaleX", 1.06f),
-                    ObjectAnimator.ofFloat(this, "scaleY", 1.06f));
+                    ObjectAnimator.ofFloat(this, View.SCALE_X, 1.06f),
+                    ObjectAnimator.ofFloat(this, View.SCALE_Y, 1.06f));
         } else {
             animatorSet.playTogether(
-                    ObjectAnimator.ofFloat(this, "scaleX", 1.0f),
-                    ObjectAnimator.ofFloat(this, "scaleY", 1.0f));
+                    ObjectAnimator.ofFloat(this, View.SCALE_X, 1.0f),
+                    ObjectAnimator.ofFloat(this, View.SCALE_Y, 1.0f));
             animatorSet.setStartDelay(40);
         }
         animatorSet.setDuration(120);
@@ -96,6 +102,7 @@ public class ShutterButton extends View {
         animatorSet.start();
     }
 
+    @Keep
     @Override
     public void setScaleX(float scaleX) {
         super.setScaleX(scaleX);
@@ -148,7 +155,7 @@ public class ShutterButton extends View {
     @Override
     public boolean onTouchEvent(MotionEvent motionEvent) {
         float x = motionEvent.getX();
-        float y = motionEvent.getX();
+        float y = motionEvent.getY();
         switch (motionEvent.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 AndroidUtilities.runOnUIThread(longPressed, LONG_PRESS_TIME);
@@ -159,14 +166,17 @@ public class ShutterButton extends View {
             case MotionEvent.ACTION_UP:
                 setHighlighted(false);
                 AndroidUtilities.cancelRunOnUIThread(longPressed);
-                if (processRelease && x >= 0 && y >= 0 && x <= getMeasuredWidth() && y <= getMeasuredHeight()) {
+                if (processRelease) {
                     delegate.shutterReleased();
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
-                if (x < 0 || y < 0 || x > getMeasuredWidth() || y > getMeasuredHeight()) {
+                float dx = x >= 0 && x <= getMeasuredWidth() ? 0 : x;
+                float dy = y >= 0 && y <= getMeasuredHeight() ? 0 : y;
+                if (delegate.onTranslationChanged(dx, dy)) {
                     AndroidUtilities.cancelRunOnUIThread(longPressed);
                     if (state == State.RECORDING) {
+                        processRelease = false;
                         setHighlighted(false);
                         delegate.shutterCancel();
                         setState(State.DEFAULT, true);
@@ -197,6 +207,18 @@ public class ShutterButton extends View {
                 }
             }
             invalidate();
+        }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setClassName("android.widget.Button");
+        info.setClickable(true);
+        info.setLongClickable(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK.getId(), LocaleController.getString("AccActionTakePicture", R.string.AccActionTakePicture)));
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_LONG_CLICK.getId(), LocaleController.getString("AccActionRecordVideo", R.string.AccActionRecordVideo)));
         }
     }
 }

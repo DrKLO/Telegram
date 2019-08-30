@@ -13,8 +13,10 @@ import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.GroupCreateSectionCell;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 public class GroupCreateDividerItemDecoration extends RecyclerView.ItemDecoration {
 
@@ -41,8 +43,9 @@ public class GroupCreateDividerItemDecoration extends RecyclerView.ItemDecoratio
         int childCount = parent.getChildCount() - (single ? 0 : 1);
         for (int i = 0; i < childCount; i++) {
             View child = parent.getChildAt(i);
+            View nextChild = i < childCount - 1 ? parent.getChildAt(i + 1) : null;
             int position = parent.getChildAdapterPosition(child);
-            if (position < skipRows) {
+            if (position < skipRows || child instanceof GroupCreateSectionCell || nextChild instanceof GroupCreateSectionCell) {
                 continue;
             }
             top = child.getBottom();

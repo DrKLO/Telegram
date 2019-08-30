@@ -13,12 +13,9 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.Dialog;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -28,7 +25,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.telephony.SmsManager;
+import android.telephony.PhoneNumberUtils;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.InputType;
@@ -49,12 +46,10 @@ import android.widget.TextView;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SmsReceiver;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -216,7 +211,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
     @Override
     protected void onDialogDismiss(Dialog dialog) {
         if (Build.VERSION.SDK_INT >= 23 && dialog == permissionsDialog && !permissionsItems.isEmpty()) {
-            getParentActivity().requestPermissions(permissionsItems.toArray(new String[permissionsItems.size()]), 6);
+            getParentActivity().requestPermissions(permissionsItems.toArray(new String[0]), 6);
         }
         if (dialog == errorDialog) {
             finishFragment();
@@ -387,29 +382,12 @@ public class CancelAccountDeletionActivity extends BaseFragment {
             req.hash = hash;
             req.settings = new TLRPC.TL_codeSettings();
             req.settings.allow_flashcall = false;//simcardAvailable && allowCall;
-            if (Build.VERSION.SDK_INT >= 26) {
-                try {
-                    req.settings.app_hash = SmsManager.getDefault().createAppSpecificSmsToken(PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, new Intent(ApplicationLoader.applicationContext, SmsReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT));
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                }
-            } else {
-                req.settings.app_hash = BuildVars.SMS_HASH;
-                req.settings.app_hash_persistent = true;
-            }
-            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-            if (!TextUtils.isEmpty(req.settings.app_hash)) {
-                req.settings.flags |= 8;
-                preferences.edit().putString("sms_hash", req.settings.app_hash).commit();
-            } else {
-                preferences.edit().remove("sms_hash").commit();
-            }
-
+            req.settings.allow_app_hash = ApplicationLoader.hasPlayServices;
             if (req.settings.allow_flashcall) {
                 try {
                     @SuppressLint("HardwareIds") String number = tm.getLine1Number();
                     if (!TextUtils.isEmpty(number)) {
-                        req.settings.current_number = phone.contains(number) || number.contains(phone);
+                        req.settings.current_number = PhoneNumberUtils.compare(phone, number);
                         if (!req.settings.current_number) {
                             req.settings.allow_flashcall = false;
                         }
@@ -1199,6 +1177,6 @@ public class CancelAccountDeletionActivity extends BaseFragment {
         arrayList.add(new ThemeDescription(smsView4.blackImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         arrayList.add(new ThemeDescription(smsView4.blueImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chats_actionBackground));
 
-        return arrayList.toArray(new ThemeDescription[arrayList.size()]);
+        return arrayList.toArray(new ThemeDescription[0]);
     }
 }

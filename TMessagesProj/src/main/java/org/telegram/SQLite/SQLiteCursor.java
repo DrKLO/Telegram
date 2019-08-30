@@ -32,6 +32,10 @@ public class SQLiteCursor {
 		return columnIsNull(preparedStatement.getStatementHandle(), columnIndex) == 1;
 	}
 
+	public SQLitePreparedStatement getPreparedStatement() {
+		return preparedStatement;
+	}
+
 	public int intValue(int columnIndex) throws SQLiteException {
 		checkRow();
 		return columnIntValue(preparedStatement.getStatementHandle(), columnIndex);
@@ -101,6 +105,10 @@ public class SQLiteCursor {
 		return preparedStatement.getStatementHandle();
 	}
 
+	public int getColumnCount() {
+		return columnCount(preparedStatement.getStatementHandle());
+	}
+
 	public void dispose() {
 		preparedStatement.dispose();
 	}
@@ -112,6 +120,7 @@ public class SQLiteCursor {
 	}
 
 	native int columnType(long statementHandle, int columnIndex);
+	native int columnCount(long statementHandle);
 	native int columnIsNull(long statementHandle, int columnIndex);
 	native int columnIntValue(long statementHandle, int columnIndex);
 	native long columnLongValue(long statementHandle, int columnIndex);

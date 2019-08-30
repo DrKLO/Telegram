@@ -17,6 +17,7 @@ import android.text.TextDirectionHeuristics;
 import android.text.TextPaint;
 import android.text.TextUtils;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 
 import java.lang.reflect.Constructor;
@@ -74,6 +75,23 @@ public class StaticLayoutEx {
         }
     }
 
+    public static StaticLayout createStaticLayout2(CharSequence source, TextPaint paint, int width, Layout.Alignment align, float spacingmult, float spacingadd, boolean includepad, TextUtils.TruncateAt ellipsize, int ellipsisWidth, int maxLines) {
+        if (Build.VERSION.SDK_INT >= 23) {
+            StaticLayout.Builder builder = StaticLayout.Builder.obtain(source, 0, source.length(), paint, ellipsisWidth)
+                    .setAlignment(align)
+                    .setLineSpacing(spacingadd, spacingmult)
+                    .setIncludePad(includepad)
+                    .setEllipsize(TextUtils.TruncateAt.END)
+                    .setEllipsizedWidth(ellipsisWidth)
+                    .setMaxLines(maxLines)
+                    .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
+                    .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE);
+            return builder.build();
+        } else {
+            return createStaticLayout(source, 0, source.length(), paint, width, align, spacingmult, spacingadd, includepad, ellipsize, ellipsisWidth, maxLines, true);
+        }
+    }
+
     public static StaticLayout createStaticLayout(CharSequence source, TextPaint paint, int width, Layout.Alignment align, float spacingmult, float spacingadd, boolean includepad, TextUtils.TruncateAt ellipsize, int ellipsisWidth, int maxLines) {
         return createStaticLayout(source, 0, source.length(), paint, width, align, spacingmult, spacingadd, includepad, ellipsize, ellipsisWidth, maxLines, true);
     }
@@ -117,6 +135,7 @@ public class StaticLayoutEx {
                             .setIncludePad(includePad)
                             .setEllipsize(null)
                             .setEllipsizedWidth(ellipsisWidth)
+                            .setMaxLines(maxLines)
                             .setBreakStrategy(StaticLayout.BREAK_STRATEGY_HIGH_QUALITY)
                             .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE);
                     layout = builder.build();
@@ -127,11 +146,16 @@ public class StaticLayoutEx {
                     return layout;
                 } else {
                     int off;
+                    int start;
                     float left = layout.getLineLeft(maxLines - 1);
+                    float lineWidth = layout.getLineWidth(maxLines - 1);
                     if (left != 0) {
                         off = layout.getOffsetForHorizontal(maxLines - 1, left);
                     } else {
-                        off = layout.getOffsetForHorizontal(maxLines - 1, layout.getLineWidth(maxLines - 1));
+                        off = layout.getOffsetForHorizontal(maxLines - 1, lineWidth);
+                    }
+                    if (lineWidth < ellipsisWidth - AndroidUtilities.dp(10)) {
+                        off += 3;
                     }
                     SpannableStringBuilder stringBuilder = new SpannableStringBuilder(source.subSequence(0, Math.max(0, off - 3)));
                     stringBuilder.append("\u2026");
@@ -140,8 +164,9 @@ public class StaticLayoutEx {
                                 .setAlignment(align)
                                 .setLineSpacing(spacingAdd, spacingMult)
                                 .setIncludePad(includePad)
-                                .setEllipsize(null)
+                                .setEllipsize(TextUtils.TruncateAt.END)
                                 .setEllipsizedWidth(ellipsisWidth)
+                                .setMaxLines(maxLines)
                                 .setBreakStrategy(canContainUrl ? StaticLayout.BREAK_STRATEGY_HIGH_QUALITY : StaticLayout.BREAK_STRATEGY_SIMPLE)
                                 .setHyphenationFrequency(StaticLayout.HYPHENATION_FREQUENCY_NONE);
                         return builder.build();

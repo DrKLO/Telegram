@@ -12,7 +12,6 @@
 #include <stdint.h>
 #include <vector>
 #include <map>
-#include <bits/unique_ptr.h>
 #include "Defines.h"
 
 class TL_future_salt;
@@ -54,12 +53,13 @@ public:
     bool isHandshaking(HandshakeType type);
     bool hasAuthKey(ConnectionType connectionTyoe, int32_t allowPendingKey);
     bool hasPermanentAuthKey();
+    int64_t getPermanentAuthKeyId();
     bool isExportingAuthorization();
     bool hasMediaAddress();
     void resetInitVersion();
 
     Connection *getDownloadConnection(uint8_t num, bool create);
-    Connection *getProxyConnection(uint8_t num, bool create);
+    Connection *getProxyConnection(uint8_t num, bool create, bool connect);
     Connection *getUploadConnection(uint8_t num, bool create);
     Connection *getGenericConnection(bool create, int32_t allowPendingKey);
     Connection *getGenericMediaConnection(bool create, int32_t allowPendingKey);
@@ -67,7 +67,7 @@ public:
     Connection *getTempConnection(bool create);
     Connection *getConnectionByType(uint32_t connectionType, bool create, int32_t allowPendingKey);
 
-    static inline void aesIgeEncryption(uint8_t *buffer, uint8_t *key, uint8_t *iv, bool encrypt, bool changeIv, uint32_t length);
+    static void aesIgeEncryption(uint8_t *buffer, uint8_t *key, uint8_t *iv, bool encrypt, bool changeIv, uint32_t length);
 
 private:
     void onHandshakeConnectionClosed(Connection *connection);
@@ -122,7 +122,7 @@ private:
 
     std::vector<std::unique_ptr<Handshake>> handshakes;
 
-    const uint32_t configVersion = 10;
+    const uint32_t configVersion = 11;
     const uint32_t paramsConfigVersion = 1;
 
     Connection *createProxyConnection(uint8_t num);

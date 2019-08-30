@@ -43,17 +43,6 @@ Datacenter::Datacenter(int32_t instance, uint32_t id) {
     }
 }
 
-inline char char2int(char input) {
-    if (input >= '0' && input <= '9') {
-        return input - '0';
-    } else if (input >= 'A' && input <= 'F') {
-        return (char) (input - 'A' + 10);
-    } else if (input >= 'a' && input <= 'f') {
-        return (char) (input - 'a' + 10);
-    }
-    return 0;
-}
-
 Datacenter::Datacenter(int32_t instance, NativeByteBuffer *data) {
     instanceNum = instance;
     for (uint32_t a = 0; a < UPLOAD_CONNECTIONS_COUNT; a++) {
@@ -108,8 +97,19 @@ Datacenter::Datacenter(int32_t instance, NativeByteBuffer *data) {
                 } else {
                     flags = 0;
                 }
-                if (currentVersion >= 9) {
+                if (currentVersion >= 11) {
                     secret = data->readString(nullptr);
+                } else if (currentVersion >= 9) {
+                    secret = data->readString(nullptr);
+                    if (!secret.empty()) {
+                        size_t size = secret.size() / 2;
+                        char *result = new char[size];
+                        for (int32_t i = 0; i < size; i++) {
+                            result[i] = (char) (char2int(secret[i * 2]) * 16 + char2int(secret[i * 2 + 1]));
+                        }
+                        secret = std::string(result, size);
+                        delete[] result;
+                    }
                 }
                 (*array).push_back(TcpAddress(address, port, flags, secret));
             }
@@ -918,7 +918,7 @@ void Datacenter::onHandshakeConnectionConnected(Connection *connection) {
     }
 }
 
-inline void Datacenter::aesIgeEncryption(uint8_t *buffer, uint8_t *key, uint8_t *iv, bool encrypt, bool changeIv, uint32_t length) {
+void Datacenter::aesIgeEncryption(uint8_t *buffer, uint8_t *key, uint8_t *iv, bool encrypt, bool changeIv, uint32_t length) {
     uint8_t *ivBytes = iv;
     if (!changeIv) {
         ivBytes = new uint8_t[32];
@@ -1228,6 +1228,10 @@ bool Datacenter::hasPermanentAuthKey() {
     return authKeyPerm != nullptr;
 }
 
+int64_t Datacenter::getPermanentAuthKeyId() {
+    return authKeyPermId;
+}
+
 bool Datacenter::hasAuthKey(ConnectionType connectionType, int32_t allowPendingKey) {
     return getAuthKey(connectionType, false, nullptr, allowPendingKey) != nullptr;
 }
@@ -1255,13 +1259,16 @@ Connection *Datacenter::createConnectionByType(uint32_t connectionType) {
     }
 }
 
-Connection *Datacenter::getProxyConnection(uint8_t num, bool create) {
+Connection *Datacenter::getProxyConnection(uint8_t num, bool create, bool connect) {
     ByteArray *authKey = getAuthKey(ConnectionTypeProxy, false, nullptr, 1);
     if (authKey == nullptr) {
         return nullptr;
     }
     if (create) {
-        createProxyConnection(num)->connect();
+        Connection *connection = createProxyConnection(num);
+        if (connect) {
+            connection->connect();
+        }
     }
     return proxyConnection[num];
 }
@@ -1349,7 +1356,7 @@ Connection *Datacenter::getConnectionByType(uint32_t connectionType, bool create
         case ConnectionTypeTemp:
             return getTempConnection(create);
         case ConnectionTypeProxy:
-            return getProxyConnection(connectionNum, create);
+            return getProxyConnection(connectionNum, create, create);
         default:
             return nullptr;
     }

@@ -13,8 +13,9 @@ import android.text.TextPaint;
 import org.telegram.messenger.AndroidUtilities;
 
 public class URLSpanNoUnderlineBold extends URLSpanNoUnderline {
+
     public URLSpanNoUnderlineBold(String url) {
-        super(url);
+        super(url != null ? url.replace('\u202E', ' ') : url);
     }
 
     @Override

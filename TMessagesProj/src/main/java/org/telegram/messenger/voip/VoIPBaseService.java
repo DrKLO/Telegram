@@ -47,7 +47,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.Vibrator;
-import android.provider.Settings;
 import android.telecom.CallAudioState;
 import android.telecom.Connection;
 import android.telecom.DisconnectCause;
@@ -60,7 +59,6 @@ import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.RemoteViews;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -85,7 +83,6 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.voip.VoIPHelper;
-import org.telegram.ui.VoIPActivity;
 import org.telegram.ui.VoIPPermissionActivity;
 
 import java.lang.reflect.Field;
@@ -1046,7 +1043,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			NotificationChannel existingChannel=nm.getNotificationChannel("incoming_calls2"+chanIndex);
 			boolean needCreate=true;
 			if(existingChannel!=null){
-				if(existingChannel.getImportance()<NotificationManager.IMPORTANCE_HIGH || !soundProviderUri.equals(existingChannel.getSound()) || existingChannel.getVibrationPattern()!=null){
+				if(existingChannel.getImportance()<NotificationManager.IMPORTANCE_HIGH || !soundProviderUri.equals(existingChannel.getSound()) || existingChannel.getVibrationPattern()!=null || existingChannel.shouldVibrate()){
 					if(BuildVars.LOGS_ENABLED)
 						FileLog.d("User messed up the notification channel; deleting it and creating a proper one");
 					nm.deleteNotificationChannel("incoming_calls2"+chanIndex);
@@ -1089,7 +1086,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			((SpannableString)answerTitle).setSpan(new ForegroundColorSpan(0xFF00AA00), 0, answerTitle.length(), 0);
 		}
 		PendingIntent answerPendingIntent=PendingIntent.getBroadcast(this, 0, answerIntent, PendingIntent.FLAG_CANCEL_CURRENT);
-		builder.addAction(R.drawable.ic_call_white_24dp, answerTitle, answerPendingIntent);
+		builder.addAction(R.drawable.ic_call, answerTitle, answerPendingIntent);
 		builder.setPriority(Notification.PRIORITY_MAX);
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
 			builder.setShowWhen(false);
@@ -1409,7 +1406,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		PhoneAccountHandle handle=new PhoneAccountHandle(new ComponentName(this, TelegramConnectionService.class), ""+self.id);
 		PhoneAccount account=new PhoneAccount.Builder(handle, ContactsController.formatName(self.first_name, self.last_name))
 				.setCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED)
-				.setIcon(Icon.createWithResource(this, R.drawable.ic_launcher))
+				.setIcon(Icon.createWithResource(this, R.drawable.ic_launcher_dr))
 				.setHighlightColor(0xff2ca5e0)
 				.addSupportedUriScheme("sip")
 				.build();

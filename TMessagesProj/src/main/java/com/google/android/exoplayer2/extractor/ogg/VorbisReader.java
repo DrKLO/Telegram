@@ -15,7 +15,7 @@
  */
 package com.google.android.exoplayer2.extractor.ogg;
 
-import android.support.annotation.VisibleForTesting;
+import androidx.annotation.VisibleForTesting;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.extractor.ogg.VorbisUtil.Mode;

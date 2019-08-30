@@ -32,7 +32,9 @@ public class TypefaceSpan extends MetricAffectingSpan {
 
     public TypefaceSpan(Typeface tf, int size, int textColor) {
         typeface = tf;
-        textSize = size;
+        if (size > 0) {
+            textSize = size;
+        }
         color = textColor;
     }
 

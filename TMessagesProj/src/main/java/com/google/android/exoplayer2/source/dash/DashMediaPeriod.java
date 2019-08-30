@@ -15,8 +15,8 @@
  */
 package com.google.android.exoplayer2.source.dash;
 
-import android.support.annotation.IntDef;
-import android.support.annotation.Nullable;
+import androidx.annotation.IntDef;
+import androidx.annotation.Nullable;
 import android.util.Pair;
 import android.util.SparseIntArray;
 import com.google.android.exoplayer2.C;

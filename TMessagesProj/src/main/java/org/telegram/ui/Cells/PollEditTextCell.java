@@ -13,6 +13,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -72,6 +73,7 @@ public class PollEditTextCell extends FrameLayout {
             deleteImageView.setImageResource(R.drawable.msg_panel_clear);
             deleteImageView.setOnClickListener(onDelete);
             deleteImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.MULTIPLY));
+            deleteImageView.setContentDescription(LocaleController.getString("Delete", R.string.Delete));
             addView(deleteImageView, LayoutHelper.createFrame(48, 50, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 3 : 0, 0, LocaleController.isRTL ? 0 : 3, 0));
 
             textView2 = new SimpleTextView(getContext());
@@ -142,6 +144,9 @@ public class PollEditTextCell extends FrameLayout {
             deleteImageView.setTag(null);
         }
         textView.setText(text);
+        if (!TextUtils.isEmpty(text)) {
+            textView.setSelection(text.length());
+        }
         textView.setHint(hint);
         needDivider = divider;
         setWillNotDraw(!divider);

@@ -26,8 +26,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -43,6 +41,9 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.io.File;
 import java.util.ArrayList;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class AudioSelectActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -192,9 +193,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
             };
 
             final ArrayList<MediaController.AudioEntry> newAudioEntries = new ArrayList<>();
-            Cursor cursor = null;
-            try {
-                cursor = ApplicationLoader.applicationContext.getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.TITLE);
+            try (Cursor cursor = ApplicationLoader.applicationContext.getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.TITLE)) {
                 int id = -2000000000;
                 while (cursor.moveToNext()) {
                     MediaController.AudioEntry audioEntry = new MediaController.AudioEntry();
@@ -248,10 +247,6 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
                 }
             } catch (Exception e) {
                 FileLog.e(e);
-            } finally {
-                if (cursor != null) {
-                    cursor.close();
-                }
             }
             AndroidUtilities.runOnUIThread(() -> {
                 audioEntries = newAudioEntries;

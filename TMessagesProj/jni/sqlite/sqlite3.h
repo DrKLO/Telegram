@@ -123,9 +123,9 @@ extern "C" {
 ** [sqlite3_libversion_number()], [sqlite3_sourceid()],
 ** [sqlite_version()] and [sqlite_source_id()].
 */
-#define SQLITE_VERSION        "3.27.2"
-#define SQLITE_VERSION_NUMBER 3027002
-#define SQLITE_SOURCE_ID      "2019-02-25 16:06:06 bd49a8271d650fa89e446b42e513b595a717b9212c91dd384aab871fc1d0f6d7"
+#define SQLITE_VERSION        "3.28.0"
+#define SQLITE_VERSION_NUMBER 3028000
+#define SQLITE_SOURCE_ID      "2019-04-16 19:49:53 884b4b7e502b4e991677b53971277adfaf0a04a284f8e483e2553d0f83156b50"
 
 /*
 ** CAPI3REF: Run-Time Library Version Numbers
@@ -189,6 +189,9 @@ SQLITE_API int sqlite3_libversion_number(void);
 #ifndef SQLITE_OMIT_COMPILEOPTION_DIAGS
 SQLITE_API int sqlite3_compileoption_used(const char *zOptName);
 SQLITE_API const char *sqlite3_compileoption_get(int N);
+#else
+# define sqlite3_compileoption_used(X) 0
+# define sqlite3_compileoption_get(X)  ((void*)0)
 #endif
 
 /*
@@ -2086,8 +2089,8 @@ struct sqlite3_mem_methods {
 **
 ** [[SQLITE_DBCONFIG_ENABLE_FTS3_TOKENIZER]]
 ** <dt>SQLITE_DBCONFIG_ENABLE_FTS3_TOKENIZER</dt>
-** <dd> ^This option is used to enable or disable the two-argument
-** version of the [fts3_tokenizer()] function which is part of the
+** <dd> ^This option is used to enable or disable the
+** [fts3_tokenizer()] function which is part of the
 ** [FTS3] full-text search engine extension.
 ** There should be two additional arguments.
 ** The first argument is an integer which is 0 to disable fts3_tokenizer() or
@@ -2199,6 +2202,17 @@ struct sqlite3_mem_methods {
 ** <li> Direct writes to [shadow tables].
 ** </ul>
 ** </dd>
+**
+** [[SQLITE_DBCONFIG_WRITABLE_SCHEMA]] <dt>SQLITE_DBCONFIG_WRITABLE_SCHEMA</dt>
+** <dd>The SQLITE_DBCONFIG_WRITABLE_SCHEMA option activates or deactivates the
+** "writable_schema" flag. This has the same effect and is logically equivalent
+** to setting [PRAGMA writable_schema=ON] or [PRAGMA writable_schema=OFF].
+** The first argument to this setting is an integer which is 0 to disable 
+** the writable_schema, positive to enable writable_schema, or negative to
+** leave the setting unchanged. The second parameter is a pointer to an
+** integer into which is written 0 or 1 to indicate whether the writable_schema
+** is enabled or disabled following this call.
+** </dd>
 ** </dl>
 */
 #define SQLITE_DBCONFIG_MAINDBNAME            1000 /* const char* */
@@ -2212,7 +2226,8 @@ struct sqlite3_mem_methods {
 #define SQLITE_DBCONFIG_TRIGGER_EQP           1008 /* int int* */
 #define SQLITE_DBCONFIG_RESET_DATABASE        1009 /* int int* */
 #define SQLITE_DBCONFIG_DEFENSIVE             1010 /* int int* */
-#define SQLITE_DBCONFIG_MAX                   1010 /* Largest DBCONFIG */
+#define SQLITE_DBCONFIG_WRITABLE_SCHEMA       1011 /* int int* */
+#define SQLITE_DBCONFIG_MAX                   1011 /* Largest DBCONFIG */
 
 /*
 ** CAPI3REF: Enable Or Disable Extended Result Codes
@@ -3895,6 +3910,18 @@ SQLITE_API const char *sqlite3_normalized_sql(sqlite3_stmt *pStmt);
 SQLITE_API int sqlite3_stmt_readonly(sqlite3_stmt *pStmt);
 
 /*
+** CAPI3REF: Query The EXPLAIN Setting For A Prepared Statement
+** METHOD: sqlite3_stmt
+**
+** ^The sqlite3_stmt_isexplain(S) interface returns 1 if the
+** prepared statement S is an EXPLAIN statement, or 2 if the
+** statement S is an EXPLAIN QUERY PLAN.
+** ^The sqlite3_stmt_isexplain(S) interface returns 0 if S is
+** an ordinary statement or a NULL pointer.
+*/
+SQLITE_API int sqlite3_stmt_isexplain(sqlite3_stmt *pStmt);
+
+/*
 ** CAPI3REF: Determine If A Prepared Statement Has Been Reset
 ** METHOD: sqlite3_stmt
 **
@@ -4033,7 +4060,9 @@ typedef struct sqlite3_context sqlite3_context;
 ** ^The fifth argument to the BLOB and string binding interfaces
 ** is a destructor used to dispose of the BLOB or
 ** string after SQLite has finished with it.  ^The destructor is called
-** to dispose of the BLOB or string even if the call to bind API fails.
+** to dispose of the BLOB or string even if the call to the bind API fails,
+** except the destructor is not called if the third parameter is a NULL
+** pointer or the fourth parameter is negative.
 ** ^If the fifth argument is
 ** the special value [SQLITE_STATIC], then SQLite assumes that the
 ** information is in static, unmanaged space and does not need to be freed.
@@ -4950,6 +4979,8 @@ SQLITE_API SQLITE_DEPRECATED int sqlite3_memory_alarm(void(*)(void*,sqlite3_int6
 ** <tr><td><b>sqlite3_value_nochange&nbsp;&nbsp;</b>
 ** <td>&rarr;&nbsp;&nbsp;<td>True if the column is unchanged in an UPDATE
 ** against a virtual table.
+** <tr><td><b>sqlite3_value_frombind&nbsp;&nbsp;</b>
+** <td>&rarr;&nbsp;&nbsp;<td>True if value originated from a [bound parameter]
 ** </table></blockquote>
 **
 ** <b>Details:</b>
@@ -5011,6 +5042,11 @@ SQLITE_API SQLITE_DEPRECATED int sqlite3_memory_alarm(void(*)(void*,sqlite3_int6
 ** than within an [xUpdate] method call for an UPDATE statement, then
 ** the return value is arbitrary and meaningless.
 **
+** ^The sqlite3_value_frombind(X) interface returns non-zero if the
+** value X originated from one of the [sqlite3_bind_int|sqlite3_bind()]
+** interfaces.  ^If X comes from an SQL literal value, or a table column,
+** and expression, then sqlite3_value_frombind(X) returns zero.
+**
 ** Please pay particular attention to the fact that the pointer returned
 ** from [sqlite3_value_blob()], [sqlite3_value_text()], or
 ** [sqlite3_value_text16()] can be invalidated by a subsequent call to
@@ -5056,6 +5092,7 @@ SQLITE_API int sqlite3_value_bytes16(sqlite3_value*);
 SQLITE_API int sqlite3_value_type(sqlite3_value*);
 SQLITE_API int sqlite3_value_numeric_type(sqlite3_value*);
 SQLITE_API int sqlite3_value_nochange(sqlite3_value*);
+SQLITE_API int sqlite3_value_frombind(sqlite3_value*);
 
 /*
 ** CAPI3REF: Finding The Subtype Of SQL Values
@@ -5791,7 +5828,7 @@ SQLITE_API sqlite3 *sqlite3_db_handle(sqlite3_stmt*);
 ** associated with database N of connection D.  ^The main database file
 ** has the name "main".  If there is no attached database N on the database
 ** connection D, or if database N is a temporary or in-memory database, then
-** a NULL pointer is returned.
+** this function will return either a NULL pointer or an empty string.
 **
 ** ^The filename returned by this function is the output of the
 ** xFullPathname method of the [VFS].  ^In other words, the filename
@@ -10892,7 +10929,7 @@ SQLITE_API int sqlite3rebaser_configure(
 ** in size. This function allocates and populates a buffer with a copy
 ** of the changeset rebased rebased according to the configuration of the
 ** rebaser object passed as the first argument. If successful, (*ppOut)
-** is set to point to the new buffer containing the rebased changset and 
+** is set to point to the new buffer containing the rebased changeset and 
 ** (*pnOut) to its size in bytes and SQLITE_OK returned. It is the
 ** responsibility of the caller to eventually free the new buffer using
 ** sqlite3_free(). Otherwise, if an error occurs, (*ppOut) and (*pnOut)
@@ -11301,7 +11338,7 @@ struct Fts5PhraseIter {
 **   Save the pointer passed as the second argument as the extension functions 
 **   "auxiliary data". The pointer may then be retrieved by the current or any
 **   future invocation of the same fts5 extension function made as part of
-**   of the same MATCH query using the xGetAuxdata() API.
+**   the same MATCH query using the xGetAuxdata() API.
 **
 **   Each extension function is allocated a single auxiliary data slot for
 **   each FTS query (MATCH expression). If the extension function is invoked 
@@ -11316,7 +11353,7 @@ struct Fts5PhraseIter {
 **   The xDelete callback, if one is specified, is also invoked on the
 **   auxiliary data pointer after the FTS5 query has finished.
 **
-**   If an error (e.g. an OOM condition) occurs within this function, an
+**   If an error (e.g. an OOM condition) occurs within this function,
 **   the auxiliary data is set to NULL and an error code returned. If the
 **   xDelete parameter was not NULL, it is invoked on the auxiliary data
 **   pointer before returning.

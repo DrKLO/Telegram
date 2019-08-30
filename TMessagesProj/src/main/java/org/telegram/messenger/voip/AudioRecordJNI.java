@@ -19,7 +19,6 @@ import android.os.Build;
 import android.text.TextUtils;
 
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
 
 import java.nio.ByteBuffer;
 import java.util.regex.Pattern;
@@ -67,14 +66,10 @@ public class AudioRecordJNI {
 					if(agc!=null)
 						agc.setEnabled(false);
 				}else{
-					if (BuildVars.LOGS_ENABLED) {
-						FileLog.w("AutomaticGainControl is not available on this device :(");
-					}
+					VLog.w("AutomaticGainControl is not available on this device :(");
 				}
 			}catch(Throwable x){
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.e("error creating AutomaticGainControl", x);
-				}
+				VLog.e("error creating AutomaticGainControl", x);
 			}
 			try{
 				if(NoiseSuppressor.isAvailable()){
@@ -82,14 +77,10 @@ public class AudioRecordJNI {
 					if(ns!=null)
 						ns.setEnabled(VoIPServerConfig.getBoolean("use_system_ns", true) && isGoodAudioEffect(ns));
 				}else{
-					if (BuildVars.LOGS_ENABLED) {
-						FileLog.w("NoiseSuppressor is not available on this device :(");
-					}
+					VLog.w("NoiseSuppressor is not available on this device :(");
 				}
 			}catch(Throwable x){
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.e("error creating NoiseSuppressor", x);
-				}
+				VLog.e("error creating NoiseSuppressor", x);
 			}
 			try{
 				if(AcousticEchoCanceler.isAvailable()){
@@ -97,14 +88,10 @@ public class AudioRecordJNI {
 					if(aec!=null)
 						aec.setEnabled(VoIPServerConfig.getBoolean("use_system_aec", true) && isGoodAudioEffect(aec));
 				}else{
-					if (BuildVars.LOGS_ENABLED) {
-						FileLog.w("AcousticEchoCanceler is not available on this device");
-					}
+					VLog.w("AcousticEchoCanceler is not available on this device");
 				}
 			}catch(Throwable x){
-				if (BuildVars.LOGS_ENABLED) {
-					FileLog.e("error creating AcousticEchoCanceler", x);
-				}
+				VLog.e("error creating AcousticEchoCanceler", x);
 			}
 		}
 
@@ -117,14 +104,12 @@ public class AudioRecordJNI {
 				audioRecord.release();
 			}catch(Exception ignore){}
 		}
-		if (BuildVars.LOGS_ENABLED) {
-			FileLog.d("Trying to initialize AudioRecord with source=" + source + " and sample rate=" + sampleRate);
-		}
+		VLog.i("Trying to initialize AudioRecord with source=" + source + " and sample rate=" + sampleRate);
 		int size = getBufferSize(bufferSize, 48000);
 		try{
 			audioRecord=new AudioRecord(source, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, size);
 		}catch(Exception x){
-			FileLog.e("AudioRecord init failed!", x);
+			VLog.e("AudioRecord init failed!", x);
 		}
 		needResampling=sampleRate!=48000;
 		return audioRecord!=null && audioRecord.getState()==AudioRecord.STATE_INITIALIZED;
@@ -143,7 +128,7 @@ public class AudioRecordJNI {
 			try{
 				thread.join();
 			}catch(InterruptedException e){
-				FileLog.e(e);
+				VLog.e(e);
 			}
 			thread = null;
 		}
@@ -179,9 +164,7 @@ public class AudioRecordJNI {
 			}
 			return true;
 		}catch(Exception x){
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.e("Error initializing AudioRecord", x);
-			}
+			VLog.e("Error initializing AudioRecord", x);
 		}
 		return false;
 	}
@@ -209,11 +192,10 @@ public class AudioRecordJNI {
 						}
 						nativeCallback(buffer);
 					} catch (Exception e) {
-						FileLog.e(e);
+						VLog.e(e);
 					}
 				}
-				if(BuildVars.LOGS_ENABLED)
-					FileLog.d("audiorecord thread exits");
+				VLog.i("audiorecord thread exits");
 			}
 		});
 		thread.start();
@@ -235,7 +217,7 @@ public class AudioRecordJNI {
 		try{
 			return Pattern.compile(r);
 		}catch(Exception x){
-			FileLog.e(x);
+			VLog.e(x);
 			return null;
 		}
 	}
@@ -243,7 +225,7 @@ public class AudioRecordJNI {
 	private static boolean isGoodAudioEffect(AudioEffect effect){
 		Pattern globalImpl=makeNonEmptyRegex("adsp_good_impls"), globalName=makeNonEmptyRegex("adsp_good_names");
 		AudioEffect.Descriptor desc=effect.getDescriptor();
-		FileLog.d(effect.getClass().getSimpleName()+": implementor="+desc.implementor+", name="+desc.name);
+		VLog.d(effect.getClass().getSimpleName()+": implementor="+desc.implementor+", name="+desc.name);
 		if(globalImpl!=null && globalImpl.matcher(desc.implementor).find()){
 			return true;
 		}

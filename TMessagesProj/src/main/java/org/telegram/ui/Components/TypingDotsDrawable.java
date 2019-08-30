@@ -103,12 +103,7 @@ public class TypingDotsDrawable extends StatusDrawable {
             if (!NotificationCenter.getInstance(currentAccount).isAnimationInProgress()) {
                 update();
             } else {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        checkUpdate();
-                    }
-                }, 100);
+                AndroidUtilities.runOnUIThread(this::checkUpdate, 100);
             }
         }
     }

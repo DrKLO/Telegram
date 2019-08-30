@@ -16,7 +16,7 @@
 package com.google.android.exoplayer2.upstream;
 
 import android.os.Handler;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /**
  * Provides estimates of the currently available bandwidth.

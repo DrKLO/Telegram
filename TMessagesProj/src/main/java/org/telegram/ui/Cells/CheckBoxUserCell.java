@@ -18,6 +18,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -75,12 +76,8 @@ public class CheckBoxUserCell extends FrameLayout {
         currentUser = user;
         textView.setText(ContactsController.formatName(user.first_name, user.last_name));
         checkBox.setChecked(checked, false);
-        TLRPC.FileLocation photo = null;
         avatarDrawable.setInfo(user);
-        if (user != null && user.photo != null) {
-            photo = user.photo.photo_small;
-        }
-        imageView.setImage(photo, "50_50", avatarDrawable, user);
+        imageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
         needDivider = divider;
         setWillNotDraw(!divider);
     }

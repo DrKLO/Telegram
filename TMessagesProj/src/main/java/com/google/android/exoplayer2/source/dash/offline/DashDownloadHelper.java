@@ -16,7 +16,7 @@
 package com.google.android.exoplayer2.source.dash.offline;
 
 import android.net.Uri;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.RenderersFactory;

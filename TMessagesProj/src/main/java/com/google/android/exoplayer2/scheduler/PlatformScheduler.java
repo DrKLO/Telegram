@@ -24,7 +24,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.PersistableBundle;
-import android.support.annotation.RequiresPermission;
+import androidx.annotation.RequiresPermission;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
 

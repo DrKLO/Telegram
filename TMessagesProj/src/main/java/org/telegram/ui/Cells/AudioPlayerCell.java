@@ -17,6 +17,7 @@ import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
@@ -26,6 +27,7 @@ import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
@@ -63,6 +65,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
         radialProgress = new RadialProgress2(this);
         radialProgress.setColors(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
+        setFocusable(true);
     }
 
     @SuppressLint("DrawAllocation")
@@ -104,13 +107,13 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
         TLRPC.Document document = messageObject.getDocument();
         TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90) : null;
         if (thumb instanceof TLRPC.TL_photoSize) {
-            radialProgress.setImageOverlay(thumb, messageObject);
+            radialProgress.setImageOverlay(thumb, document, messageObject);
         } else {
             String artworkUrl = messageObject.getArtworkUrl(true);
             if (!TextUtils.isEmpty(artworkUrl)) {
                 radialProgress.setImageOverlay(artworkUrl);
             } else {
-                radialProgress.setImageOverlay(null, null);
+                radialProgress.setImageOverlay(null, null, null);
             }
         }
         requestLayout();
@@ -376,7 +379,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
     @Override
     public void onSuccessDownload(String fileName) {
         radialProgress.setProgress(1, true);
-        updateButtonState(false,true);
+        updateButtonState(false, true);
     }
 
     @Override
@@ -401,5 +404,15 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
     @Override
     public int getObserverTag() {
         return TAG;
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (currentMessageObject.isMusic()) {
+            info.setText(LocaleController.formatString("AccDescrMusicInfo", R.string.AccDescrMusicInfo, currentMessageObject.getMusicAuthor(), currentMessageObject.getMusicTitle()));
+        } else { // voice message
+            info.setText(titleLayout.getText() + ", " + descriptionLayout.getText());
+        }
     }
 }

@@ -35,8 +35,6 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -58,6 +56,9 @@ import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
 import javax.microedition.khronos.opengles.GL;
 import javax.microedition.khronos.opengles.GL10;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 @SuppressLint("NewApi")
 public class PhotoFilterView extends FrameLayout {
@@ -935,7 +936,7 @@ public class PhotoFilterView extends FrameLayout {
             gl = eglContext.getGL();
 
 
-            float squareCoordinates[] = {
+            float[] squareCoordinates = {
                     -1.0f, 1.0f,
                     1.0f, 1.0f,
                     -1.0f, -1.0f,
@@ -947,7 +948,7 @@ public class PhotoFilterView extends FrameLayout {
             vertexBuffer.put(squareCoordinates);
             vertexBuffer.position(0);
 
-            float squareCoordinates2[] = {
+            float[] squareCoordinates2 = {
                     -1.0f, -1.0f,
                     1.0f, -1.0f,
                     -1.0f, 1.0f,
@@ -959,7 +960,7 @@ public class PhotoFilterView extends FrameLayout {
             vertexInvertBuffer.put(squareCoordinates2);
             vertexInvertBuffer.position(0);
 
-            float textureCoordinates[] = {
+            float[] textureCoordinates = {
                     0.0f, 0.0f,
                     1.0f, 0.0f,
                     0.0f, 1.0f,
@@ -1517,7 +1518,7 @@ public class PhotoFilterView extends FrameLayout {
                 return null;
             }
             final CountDownLatch countDownLatch = new CountDownLatch(1);
-            final Bitmap object[] = new Bitmap[1];
+            final Bitmap[] object = new Bitmap[1];
             try {
                 postRunnable(() -> {
                     GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[1]);

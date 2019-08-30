@@ -14,19 +14,15 @@ import android.app.Activity;
 import android.app.KeyguardManager;
 import android.app.Notification;
 import android.app.PendingIntent;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.support.annotation.Nullable;
-import android.support.v4.app.NotificationManagerCompat;
-import android.telecom.Connection;
-import android.telecom.PhoneAccount;
-import android.telecom.PhoneAccountHandle;
+import androidx.annotation.Nullable;
+import androidx.core.app.NotificationManagerCompat;
+
 import android.telecom.TelecomManager;
 import android.text.TextUtils;
 import android.view.KeyEvent;
@@ -34,7 +30,6 @@ import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -44,7 +39,6 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.tgnet.ConnectionsManager;
@@ -992,10 +986,7 @@ public class VoIPService extends VoIPBaseService{
 			controller.setConfig(MessagesController.getInstance(currentAccount).callPacketTimeout / 1000.0, MessagesController.getInstance(currentAccount).callConnectTimeout / 1000.0,
 					convertDataSavingMode(preferences.getInt("VoipDataSaving", VoIPHelper.getDataSavingDefault())), call.id);
 			controller.setEncryptionKey(authKey, isOutgoing);
-			TLRPC.TL_phoneConnection[] endpoints = new TLRPC.TL_phoneConnection[1 + call.alternative_connections.size()];
-			endpoints[0] = call.connection;
-			for (int i = 0; i < call.alternative_connections.size(); i++)
-				endpoints[i + 1] = call.alternative_connections.get(i);
+			TLRPC.TL_phoneConnection[] endpoints=call.connections.toArray(new TLRPC.TL_phoneConnection[call.connections.size()]);
 
 			SharedPreferences prefs=MessagesController.getGlobalMainSettings();
 

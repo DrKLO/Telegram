@@ -16,6 +16,7 @@ import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.tgnet.TLRPC;
 
@@ -49,7 +50,7 @@ public class TextPaintImageReceiverSpan extends ReplacementSpan {
             });
         }
         TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-        imageReceiver.setImage(document, filter, thumb, filter, -1, null, parentObject, 1);
+        imageReceiver.setImage(ImageLocation.getForDocument(document), filter, ImageLocation.getForDocument(thumb, document), filter, -1, null, parentObject, 1);
         alignTop = top;
     }
 

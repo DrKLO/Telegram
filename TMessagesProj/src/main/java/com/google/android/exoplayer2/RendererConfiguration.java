@@ -15,7 +15,7 @@
  */
 package com.google.android.exoplayer2;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /**
  * The configuration of a {@link Renderer}.

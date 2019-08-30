@@ -13,9 +13,10 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.drawable.Drawable;
-import android.support.v4.view.ViewPager;
-import android.support.v4.view.ViewPager.OnPageChangeListener;
+import androidx.viewpager.widget.ViewPager;
+import androidx.viewpager.widget.ViewPager.OnPageChangeListener;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
@@ -96,7 +97,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         tabCount = pager.getAdapter().getCount();
         for (int i = 0; i < tabCount; i++) {
             if (pager.getAdapter() instanceof IconTabProvider) {
-                addIconTab(i, ((IconTabProvider) pager.getAdapter()).getPageIconDrawable(i));
+                addIconTab(i, ((IconTabProvider) pager.getAdapter()).getPageIconDrawable(i), pager.getAdapter().getPageTitle(i));
             }
         }
         updateTabStyles();
@@ -117,7 +118,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         return tabsContainer.getChildAt(position);
     }
 
-    private void addIconTab(final int position, Drawable drawable) {
+    private void addIconTab(final int position, Drawable drawable, CharSequence contentDescription) {
         ImageView tab = new ImageView(getContext()) {
             @Override
             protected void onDraw(Canvas canvas) {
@@ -130,19 +131,17 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         tab.setFocusable(true);
         tab.setImageDrawable(drawable);
         tab.setScaleType(ImageView.ScaleType.CENTER);
-        tab.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (pager.getAdapter() instanceof IconTabProvider) {
-                    if (!((IconTabProvider) pager.getAdapter()).canScrollToTab(position)) {
-                        return;
-                    }
+        tab.setOnClickListener(v -> {
+            if (pager.getAdapter() instanceof IconTabProvider) {
+                if (!((IconTabProvider) pager.getAdapter()).canScrollToTab(position)) {
+                    return;
                 }
-                pager.setCurrentItem(position);
             }
+            pager.setCurrentItem(position, false);
         });
         tabsContainer.addView(tab);
         tab.setSelected(position == currentPosition);
+        tab.setContentDescription(contentDescription);
     }
 
     private void updateTabStyles() {
@@ -151,7 +150,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
             v.setLayoutParams(defaultTabLayoutParams);
             if (shouldExpand) {
                 v.setPadding(0, 0, 0, 0);
-                v.setLayoutParams(new LinearLayout.LayoutParams(-1, -1, 1.0F));
+                v.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1.0F));
             } else {
                 v.setPadding(tabPadding, 0, tabPadding, 0);
             }
@@ -192,18 +191,16 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
 
         final int height = getHeight();
 
-        // draw underline
-        rectPaint.setColor(underlineColor);
-        canvas.drawRect(0, height - underlineHeight, tabsContainer.getWidth(), height, rectPaint);
+        if (underlineHeight != 0) {
+            rectPaint.setColor(underlineColor);
+            canvas.drawRect(0, height - underlineHeight, tabsContainer.getWidth(), height, rectPaint);
+        }
 
-        // default: line below current tab
         View currentTab = tabsContainer.getChildAt(currentPosition);
         float lineLeft = currentTab.getLeft();
         float lineRight = currentTab.getRight();
 
-        // if there is an offset, start interpolating left and right coordinates between current and next tab
         if (currentPositionOffset > 0f && currentPosition < tabCount - 1) {
-
             View nextTab = tabsContainer.getChildAt(currentPosition + 1);
             final float nextTabLeft = nextTab.getLeft();
             final float nextTabRight = nextTab.getRight();
@@ -212,9 +209,10 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
             lineRight = (currentPositionOffset * nextTabRight + (1f - currentPositionOffset) * lineRight);
         }
 
-        // draw indicator line
-        rectPaint.setColor(indicatorColor);
-        canvas.drawRect(lineLeft, height - indicatorHeight, lineRight, height, rectPaint);
+        if (indicatorHeight != 0) {
+            rectPaint.setColor(indicatorColor);
+            canvas.drawRect(lineLeft, height - indicatorHeight, lineRight, height, rectPaint);
+        }
     }
 
     private class PageListener implements OnPageChangeListener {
@@ -253,11 +251,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
 
     public void onSizeChanged(int paramInt1, int paramInt2, int paramInt3, int paramInt4) {
         if (!shouldExpand) {
-            post(new Runnable() {
-                public void run() {
-                    PagerSlidingTabStrip.this.notifyDataSetChanged();
-                }
-            });
+            post(PagerSlidingTabStrip.this::notifyDataSetChanged);
         }
     }
 

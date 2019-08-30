@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -73,10 +74,6 @@ public class AdminedChannelCell extends FrameLayout {
     }
 
     public void setChannel(TLRPC.Chat channel, boolean last) {
-        TLRPC.FileLocation photo = null;
-        if (channel.photo != null) {
-            photo = channel.photo.photo_small;
-        }
         final String url = MessagesController.getInstance(currentAccount).linkPrefix + "/";
         currentChannel = channel;
         avatarDrawable.setInfo(channel);
@@ -84,7 +81,7 @@ public class AdminedChannelCell extends FrameLayout {
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder(url + channel.username);
         stringBuilder.setSpan(new URLSpanNoUnderline(""), url.length(), stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         statusTextView.setText(stringBuilder);
-        avatarImageView.setImage(photo, "50_50", avatarDrawable, currentChannel);
+        avatarImageView.setImage(ImageLocation.getForChat(channel, false), "50_50", avatarDrawable, currentChannel);
         isLast = last;
     }
 

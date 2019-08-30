@@ -15,7 +15,7 @@
  */
 package com.google.android.exoplayer2.extractor;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /** Defines a seek point in a media stream. */
 public final class SeekPoint {

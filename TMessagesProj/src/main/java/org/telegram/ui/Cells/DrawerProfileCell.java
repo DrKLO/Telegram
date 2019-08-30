@@ -28,6 +28,8 @@ import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -85,6 +87,7 @@ public class DrawerProfileCell extends FrameLayout {
 
         arrowView = new ImageView(context);
         arrowView.setScaleType(ImageView.ScaleType.CENTER);
+        arrowView.setContentDescription(accountsShowed ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts) : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
         addView(arrowView, LayoutHelper.createFrame(59, 59, Gravity.RIGHT | Gravity.BOTTOM));
 
         if (Theme.getEventType() == 0) {
@@ -109,20 +112,30 @@ public class DrawerProfileCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         Drawable backgroundDrawable = Theme.getCachedWallpaper();
+        String backgroundKey = applyBackground(false);
+        boolean useImageBackground = !backgroundKey.equals(Theme.key_chats_menuTopBackground) && Theme.isCustomTheme() && !Theme.isPatternWallpaper() && backgroundDrawable != null;
+        boolean drawCatsShadow = false;
         int color;
-        if (Theme.hasThemeKey(Theme.key_chats_menuTopShadow)) {
-            color = Theme.getColor(Theme.key_chats_menuTopShadow);
+        if (!useImageBackground && Theme.hasThemeKey(Theme.key_chats_menuTopShadowCats)) {
+            color = Theme.getColor(Theme.key_chats_menuTopShadowCats);
+            drawCatsShadow = true;
         } else {
-            color = Theme.getServiceMessageColor() | 0xff000000;
+            if (Theme.hasThemeKey(Theme.key_chats_menuTopShadow)) {
+                color = Theme.getColor(Theme.key_chats_menuTopShadow);
+            } else {
+                color = Theme.getServiceMessageColor() | 0xff000000;
+            }
         }
         if (currentColor == null || currentColor != color) {
             currentColor = color;
             shadowView.getDrawable().setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
         }
         nameTextView.setTextColor(Theme.getColor(Theme.key_chats_menuName));
-        if (Theme.isCustomTheme() && !Theme.isPatternWallpaper() && backgroundDrawable != null) {
+        if (useImageBackground) {
             phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuPhone));
-            shadowView.setVisibility(VISIBLE);
+            if (shadowView.getVisibility() != VISIBLE) {
+                shadowView.setVisibility(VISIBLE);
+            }
             if (backgroundDrawable instanceof ColorDrawable) {
                 backgroundDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
                 backgroundDrawable.draw(canvas);
@@ -144,7 +157,10 @@ public class DrawerProfileCell extends FrameLayout {
                 }
             }
         } else {
-            shadowView.setVisibility(INVISIBLE);
+            int visibility = drawCatsShadow? VISIBLE : INVISIBLE;
+            if (shadowView.getVisibility() != visibility) {
+                shadowView.setVisibility(visibility);
+            }
             phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuPhoneCats));
             super.onDraw(canvas);
         }
@@ -171,6 +187,7 @@ public class DrawerProfileCell extends FrameLayout {
             accountsShowed = !accountsShowed;
             arrowView.setImageResource(accountsShowed ? R.drawable.collapse_up : R.drawable.collapse_down);
             onClickListener.onClick(DrawerProfileCell.this);
+            arrowView.setContentDescription(accountsShowed ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts) : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
         });
     }
 
@@ -178,16 +195,24 @@ public class DrawerProfileCell extends FrameLayout {
         if (user == null) {
             return;
         }
-        TLRPC.FileLocation photo = null;
-        if (user.photo != null) {
-            photo = user.photo.photo_small;
-        }
         accountsShowed = accounts;
         arrowView.setImageResource(accountsShowed ? R.drawable.collapse_up : R.drawable.collapse_down);
         nameTextView.setText(UserObject.getUserName(user));
         phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
         avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundInProfileBlue));
-        avatarImageView.setImage(photo, "50_50", avatarDrawable, user);
+        avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+
+        applyBackground(true);
+    }
+
+    public String applyBackground(boolean force) {
+        String currentTag = (String) getTag();
+        String backgroundKey = Theme.hasThemeKey(Theme.key_chats_menuTopBackground) && Theme.getColor(Theme.key_chats_menuTopBackground) != 0 ? Theme.key_chats_menuTopBackground : Theme.key_chats_menuTopBackgroundCats;
+        if (force || !backgroundKey.equals(currentTag)) {
+            setBackgroundColor(Theme.getColor(backgroundKey));
+            setTag(backgroundKey);
+        }
+        return backgroundKey;
     }
 }

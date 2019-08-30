@@ -23,8 +23,8 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.IBinder.DeathRecipient;
 import android.os.RemoteException;
-import android.support.annotation.IntDef;
-import android.support.v4.util.ArrayMap;
+import androidx.annotation.IntDef;
+import androidx.collection.ArrayMap;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

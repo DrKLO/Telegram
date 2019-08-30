@@ -16,18 +16,19 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.support.media.ExifInterface;
+import androidx.exifinterface.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.support.v4.content.FileProvider;
+import androidx.core.content.FileProvider;
 import android.util.TypedValue;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -135,9 +136,11 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         BottomSheet sheet = builder.create();
         parentFragment.showDialog(sheet);
         TextView titleView = sheet.getTitleView();
-        titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        if (titleView != null) {
+            titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        }
         sheet.setItemColor(searchAvailable ? 3 : 2, Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogRedIcon));
     }
 
@@ -225,7 +228,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                             NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileDidLoad);
                             NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileDidFailedLoad);
                             uploadingImage = FileLoader.getAttachFileName(photoSize.location);
-                            imageReceiver.setImage(photoSize, null, null, "jpg", null, 1);
+                            imageReceiver.setImage(ImageLocation.getForPhoto(photoSize, info.searchImage.photo), null, null, "jpg", null, 1);
                         }
                     }
                 } else if (info.searchImage.imageUrl != null) {
@@ -426,7 +429,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.FileDidUpload) {
             String location = (String) args[0];
-            if (uploadingImage != null && location.equals(uploadingImage)) {
+            if (location.equals(uploadingImage)) {
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.FileDidUpload);
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.FileDidFailUpload);
                 if (delegate != null) {
@@ -441,7 +444,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             }
         } else if (id == NotificationCenter.FileDidFailUpload) {
             String location = (String) args[0];
-            if (uploadingImage != null && location.equals(uploadingImage)) {
+            if (location.equals(uploadingImage)) {
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.FileDidUpload);
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.FileDidFailUpload);
                 uploadingImage = null;
@@ -453,7 +456,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             }
         } else if (id == NotificationCenter.fileDidLoad || id == NotificationCenter.fileDidFailedLoad || id == NotificationCenter.httpFileDidLoad || id == NotificationCenter.httpFileDidFailedLoad) {
             String path = (String) args[0];
-            if (uploadingImage != null && path.equals(uploadingImage)) {
+            if (path.equals(uploadingImage)) {
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileDidLoad);
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileDidFailedLoad);
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.httpFileDidLoad);

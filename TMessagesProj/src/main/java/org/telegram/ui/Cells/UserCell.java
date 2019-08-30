@@ -15,11 +15,13 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserObject;
@@ -46,13 +48,14 @@ public class UserCell extends FrameLayout {
     private CheckBox checkBox;
     private CheckBoxSquare checkBoxBig;
     private TextView adminTextView;
+    private TextView addButton;
 
     private AvatarDrawable avatarDrawable;
     private TLObject currentObject;
     private TLRPC.EncryptedChat encryptedChat;
 
     private CharSequence currentName;
-    private CharSequence currrntStatus;
+    private CharSequence currentStatus;
     private int currentId;
     private int currentDrawable;
 
@@ -68,7 +71,27 @@ public class UserCell extends FrameLayout {
     private boolean needDivider;
 
     public UserCell(Context context, int padding, int checkbox, boolean admin) {
+        this(context, padding, checkbox, admin, false);
+    }
+
+    public UserCell(Context context, int padding, int checkbox, boolean admin, boolean needAddButton) {
         super(context);
+
+        int additionalPadding;
+        if (needAddButton) {
+            addButton = new TextView(context);
+            addButton.setGravity(Gravity.CENTER);
+            addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            addButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+            addButton.setText(LocaleController.getString("Add", R.string.Add));
+            addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
+            addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? 14 : 0, 15, LocaleController.isRTL ? 0 : 14, 0));
+            additionalPadding = (int) Math.ceil((addButton.getPaint().measureText(addButton.getText().toString()) + AndroidUtilities.dp(34 + 14)) / AndroidUtilities.density);
+        } else {
+            additionalPadding = 0;
+        }
 
         statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText);
         statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
@@ -84,12 +107,12 @@ public class UserCell extends FrameLayout {
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setTextSize(16);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) : (64 + padding), 10, LocaleController.isRTL ? (64 + padding) : 28 + (checkbox == 2 ? 18 : 0), 0));
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) + additionalPadding : (64 + padding), 10, LocaleController.isRTL ? (64 + padding) : 28 + (checkbox == 2 ? 18 : 0) + additionalPadding, 0));
 
         statusTextView = new SimpleTextView(context);
         statusTextView.setTextSize(15);
         statusTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : (64 + padding), 32, LocaleController.isRTL ? (64 + padding) : 28, 0));
+        addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + additionalPadding : (64 + padding), 32, LocaleController.isRTL ? (64 + padding) : 28 + additionalPadding, 0));
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
@@ -111,8 +134,10 @@ public class UserCell extends FrameLayout {
             adminTextView = new TextView(context);
             adminTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon));
-            addView(adminTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 23 : 0, 15, LocaleController.isRTL ? 0 : 23, 0));
+            addView(adminTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 23 : 0, 10, LocaleController.isRTL ? 0 : 23, 0));
         }
+
+        setFocusable(true);
     }
 
     public void setAvatarPadding(int padding) {
@@ -136,17 +161,20 @@ public class UserCell extends FrameLayout {
         }
     }
 
-    public void setIsAdmin(int value) {
+    public void setAddButtonVisible(boolean value) {
+        if (addButton == null) {
+            return;
+        }
+        addButton.setVisibility(value ? VISIBLE : GONE);
+    }
+
+    public void setAdminRole(String role) {
         if (adminTextView == null) {
             return;
         }
-        adminTextView.setVisibility(value != 0 ? VISIBLE : GONE);
-        if (value == 1) {
-            adminTextView.setText(LocaleController.getString("ChannelCreator", R.string.ChannelCreator));
-        } else if (value == 2) {
-            adminTextView.setText(LocaleController.getString("ChannelAdmin", R.string.ChannelAdmin));
-        }
-        if (value != 0) {
+        adminTextView.setVisibility(role != null ? VISIBLE : GONE);
+        adminTextView.setText(role);
+        if (role != null) {
             CharSequence text = adminTextView.getText();
             int size = (int) Math.ceil(adminTextView.getPaint().measureText(text, 0, text.length()));
             nameTextView.setPadding(LocaleController.isRTL ? size + AndroidUtilities.dp(6) : 0, 0, !LocaleController.isRTL ? size + AndroidUtilities.dp(6) : 0, 0);
@@ -165,7 +193,7 @@ public class UserCell extends FrameLayout {
 
     public void setData(TLObject object, TLRPC.EncryptedChat ec, CharSequence name, CharSequence status, int resId, boolean divider) {
         if (object == null && name == null && status == null) {
-            currrntStatus = null;
+            currentStatus = null;
             currentName = null;
             currentObject = null;
             nameTextView.setText("");
@@ -174,7 +202,7 @@ public class UserCell extends FrameLayout {
             return;
         }
         encryptedChat = ec;
-        currrntStatus = status;
+        currentStatus = status;
         currentName = name;
         currentObject = object;
         currentDrawable = resId;
@@ -329,7 +357,7 @@ public class UserCell extends FrameLayout {
         if (mask != 0) {
             boolean continueUpdate = false;
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
-                if (lastAvatar != null && photo == null || lastAvatar == null && photo != null && lastAvatar != null && photo != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
+                if (lastAvatar != null && photo == null || lastAvatar == null && photo != null || lastAvatar != null && photo != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
                     continueUpdate = true;
                 }
             }
@@ -383,9 +411,9 @@ public class UserCell extends FrameLayout {
             }
             nameTextView.setText(lastName);
         }
-        if (currrntStatus != null) {
+        if (currentStatus != null) {
             statusTextView.setTextColor(statusColor);
-            statusTextView.setText(currrntStatus);
+            statusTextView.setText(currentStatus);
         } else if (currentUser != null) {
             if (currentUser.bot) {
                 statusTextView.setTextColor(statusColor);
@@ -409,7 +437,15 @@ public class UserCell extends FrameLayout {
             imageView.setVisibility(currentDrawable == 0 ? GONE : VISIBLE);
             imageView.setImageResource(currentDrawable);
         }
-        avatarImageView.setImage(photo, "50_50", avatarDrawable, currentObject);
+
+        lastAvatar = photo;
+        if (currentUser != null) {
+            avatarImageView.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
+        } else if (currentChat != null) {
+            avatarImageView.setImage(ImageLocation.getForChat(currentChat, false), "50_50", avatarDrawable, currentChat);
+        } else {
+            avatarImageView.setImageDrawable(avatarDrawable);
+        }
     }
 
     @Override
@@ -421,6 +457,20 @@ public class UserCell extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(68), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(68) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+        }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (checkBoxBig != null && checkBoxBig.getVisibility() == VISIBLE) {
+            info.setCheckable(true);
+            info.setChecked(checkBoxBig.isChecked());
+            info.setClassName("android.widget.CheckBox");
+        } else if (checkBox != null && checkBox.getVisibility() == VISIBLE) {
+            info.setCheckable(true);
+            info.setChecked(checkBox.isChecked());
+            info.setClassName("android.widget.CheckBox");
         }
     }
 }

@@ -14,6 +14,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
@@ -69,6 +70,7 @@ public class CropRotationWheel extends FrameLayout {
             if (rotationListener != null)
                 rotationListener.aspectRatioPressed();
         });
+        aspectRatioButton.setContentDescription(LocaleController.getString("AccDescrAspectRatio", R.string.AccDescrAspectRatio));
         addView(aspectRatioButton, LayoutHelper.createFrame(70, 64, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
         ImageView rotation90Button = new ImageView(context);
@@ -80,6 +82,7 @@ public class CropRotationWheel extends FrameLayout {
                 rotationListener.rotate90Pressed();
             }
         });
+        rotation90Button.setContentDescription(LocaleController.getString("AccDescrRotate", R.string.AccDescrRotate));
         addView(rotation90Button, LayoutHelper.createFrame(70, 64, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
 
         degreesLabel = new TextView(context);
@@ -136,6 +139,7 @@ public class CropRotationWheel extends FrameLayout {
         } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             if (rotationListener != null)
                 rotationListener.onEnd(this.rotation);
+            AndroidUtilities.makeAccessibilityAnnouncement(String.format("%.1f°", this.rotation));
         } else if (action == MotionEvent.ACTION_MOVE) {
             float delta = prevX - x;
 

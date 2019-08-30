@@ -18,8 +18,6 @@ import android.widget.FrameLayout;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -36,6 +34,9 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class PhonebookSelectActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -58,7 +59,6 @@ public class PhonebookSelectActivity extends BaseFragment implements Notificatio
         void didSelectContact(TLRPC.User user);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();

@@ -40,7 +40,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private boolean initied;
     private CameraViewDelegate delegate;
     private int clipTop;
-    private int clipLeft;
+    private int clipBottom;
     private boolean isFrontface;
     private Matrix txform = new Matrix();
     private Matrix matrix = new Matrix();
@@ -88,6 +88,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
     public boolean isFrontface() {
         return isFrontface;
+    }
+
+    public TextureView getTextureView() {
+        return textureView;
     }
 
     public boolean hasFrontFaceCamera() {
@@ -168,20 +172,14 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         if (previewSize != null && surfaceTexture != null) {
             surfaceTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
             cameraSession = new CameraSession(info, previewSize, pictureSize, ImageFormat.JPEG);
-            CameraController.getInstance().open(cameraSession, surfaceTexture, new Runnable() {
-                @Override
-                public void run() {
-                    if (cameraSession != null) {
-                        cameraSession.setInitied();
-                    }
-                    checkPreviewMatrix();
+            CameraController.getInstance().open(cameraSession, surfaceTexture, () -> {
+                if (cameraSession != null) {
+                    cameraSession.setInitied();
                 }
-            }, new Runnable() {
-                @Override
-                public void run() {
-                    if (delegate != null) {
-                        delegate.onCameraCreated(cameraSession.cameraInfo.camera);
-                    }
+                checkPreviewMatrix();
+            }, () -> {
+                if (delegate != null) {
+                    delegate.onCameraCreated(cameraSession.cameraInfo.camera);
                 }
             });
         }
@@ -223,8 +221,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         clipTop = value;
     }
 
-    public void setClipLeft(int value) {
-        clipLeft = value;
+    public void setClipBottom(int value) {
+        clipBottom = value;
     }
 
     private void checkPreviewMatrix() {
@@ -244,9 +242,9 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
         float scale;
         if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
-            scale = Math.max((float) (viewHeight + clipTop) / previewWidth, (float) (viewWidth + clipLeft) / previewHeight);
+            scale = Math.max((float) (viewHeight + clipTop + clipBottom) / previewWidth, (float) (viewWidth) / previewHeight);
         } else {
-            scale = Math.max((float) (viewHeight + clipTop) / previewHeight, (float) (viewWidth + clipLeft) / previewWidth);
+            scale = Math.max((float) (viewHeight + clipTop + clipBottom) / previewHeight, (float) (viewWidth) / previewWidth);
         }
 
         float previewWidthScaled = previewWidth * scale;
@@ -268,8 +266,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         if (mirror) {
             txform.postScale(-1, 1, viewCenterX, viewCenterY);
         }
-        if (clipTop != 0 || clipLeft != 0) {
-            txform.postTranslate(-clipLeft / 2, -clipTop / 2);
+        if (clipTop != 0) {
+            txform.postTranslate(0, -clipTop / 2);
+        } else if (clipBottom != 0) {
+            txform.postTranslate(0, clipBottom / 2);
         }
 
         textureView.setTransform(txform);
@@ -320,6 +320,12 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         invalidate();
     }
 
+    public void setZoom(float value) {
+        if (cameraSession != null) {
+            cameraSession.setZoom(value);
+        }
+    }
+
     public void setDelegate(CameraViewDelegate cameraViewDelegate) {
         delegate = cameraViewDelegate;
     }
@@ -337,6 +343,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             cameraSession.destroy();
             CameraController.getInstance().close(cameraSession, !async ? new CountDownLatch(1) : null, beforeDestroyRunnable);
         }
+    }
+
+    public Matrix getMatrix() {
+        return txform;
     }
 
     @Override

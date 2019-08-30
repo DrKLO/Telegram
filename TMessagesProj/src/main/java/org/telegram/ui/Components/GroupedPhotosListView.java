@@ -10,9 +10,9 @@ import android.widget.Scroller;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessageObject;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
     private Paint backgroundPaint = new Paint();
     private ArrayList<ImageReceiver> unusedReceivers = new ArrayList<>();
     private ArrayList<ImageReceiver> imagesToDraw = new ArrayList<>();
-    public ArrayList<TLObject> currentPhotos = new ArrayList<>();
+    public ArrayList<ImageLocation> currentPhotos = new ArrayList<>();
     private ArrayList<Object> currentObjects = new ArrayList<>();
     private int currentImage;
     private long currentGroupId;
@@ -55,7 +55,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         int getCurrentAccount();
         int getAvatarsDialogId();
         int getSlideshowMessageId();
-        ArrayList<TLRPC.FileLocation> getImagesArrLocations();
+        ArrayList<ImageLocation> getImagesArrLocations();
         ArrayList<MessageObject> getImagesArr();
         ArrayList<TLRPC.PageBlock> getPageBlockArr();
         Object getParentObject();
@@ -86,16 +86,17 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         }
 
         int currentIndex = delegate.getCurrentIndex();
-        ArrayList<TLRPC.FileLocation> imagesArrLocations = delegate.getImagesArrLocations();
+        ArrayList<ImageLocation> imagesArrLocations = delegate.getImagesArrLocations();
         ArrayList<MessageObject> imagesArr = delegate.getImagesArr();
         ArrayList<TLRPC.PageBlock> pageBlockArr = delegate.getPageBlockArr();
         int slideshowMessageId = delegate.getSlideshowMessageId();
+        int currentAccount = delegate.getCurrentAccount();
 
         boolean changed = false;
         int newCount = 0;
         Object currentObject = null;
         if (imagesArrLocations != null && !imagesArrLocations.isEmpty()) {
-            TLRPC.FileLocation location = imagesArrLocations.get(currentIndex);
+            ImageLocation location = imagesArrLocations.get(currentIndex);
             newCount = imagesArrLocations.size();
             currentObject = location;
         } else if (imagesArr != null && !imagesArr.isEmpty()) {
@@ -190,7 +191,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                         MessageObject object = imagesArr.get(a);
                         if (slideshowMessageId != 0 || object.getGroupIdForUse() == currentGroupId) {
                             currentObjects.add(object);
-                            currentPhotos.add(FileLoader.getClosestPhotoSizeWithSize(object.photoThumbs, 56, true));
+                            currentPhotos.add(ImageLocation.getForObject(FileLoader.getClosestPhotoSizeWithSize(object.photoThumbs, 56, true), object.photoThumbsObject));
                         } else {
                             break;
                         }
@@ -202,7 +203,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                         MessageObject object = imagesArr.get(a);
                         if (slideshowMessageId != 0 || object.getGroupIdForUse() == currentGroupId) {
                             currentObjects.add(0, object);
-                            currentPhotos.add(0, FileLoader.getClosestPhotoSizeWithSize(object.photoThumbs, 56, true));
+                            currentPhotos.add(0, ImageLocation.getForObject(FileLoader.getClosestPhotoSizeWithSize(object.photoThumbs, 56, true), object.photoThumbsObject));
                             currentImage++;
                         } else {
                             break;
@@ -215,7 +216,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                         TLRPC.PageBlock object = pageBlockArr.get(a);
                         if (object.groupId == currentGroupId) {
                             currentObjects.add(object);
-                            currentPhotos.add(object.thumb);
+                            currentPhotos.add(ImageLocation.getForObject(object.thumb, object.thumbObject));
                         } else {
                             break;
                         }
@@ -226,7 +227,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                         TLRPC.PageBlock object = pageBlockArr.get(a);
                         if (object.groupId == currentGroupId) {
                             currentObjects.add(0, object);
-                            currentPhotos.add(0, object.thumb);
+                            currentPhotos.add(0, ImageLocation.getForObject(object.thumb, object.thumbObject));
                             currentImage++;
                         } else {
                             break;
@@ -324,7 +325,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
             for (int a = addRightIndex; a < count; a++) {
                 int x = startX + (a - currentImage) * (itemWidth + itemSpacing) + dx;
                 if (x < width) {
-                    TLObject location = currentPhotos.get(a);
+                    ImageLocation location = currentPhotos.get(a);
                     ImageReceiver receiver = getFreeReceiver();
                     receiver.setImageCoords(x, itemY, itemWidth, itemHeight);
                     Object parent;
@@ -335,7 +336,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                     } else {
                         parent = "avatar_" + delegate.getAvatarsDialogId();
                     }
-                    receiver.setImage(null, null, null, location, "80_80", 0, null, parent, 1);
+                    receiver.setImage(null, null, location, "80_80", 0, null, parent, 1);
                     receiver.setParam(a);
                 } else {
                     break;
@@ -346,7 +347,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
             for (int a = addLeftIndex; a >= 0; a--) {
                 int x = startX + (a - currentImage) * (itemWidth + itemSpacing) + dx + itemWidth;
                 if (x > 0) {
-                    TLObject location = currentPhotos.get(a);
+                    ImageLocation location = currentPhotos.get(a);
                     ImageReceiver receiver = getFreeReceiver();
                     receiver.setImageCoords(x, itemY, itemWidth, itemHeight);
                     Object parent;
@@ -357,7 +358,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                     } else {
                         parent = "avatar_" + delegate.getAvatarsDialogId();
                     }
-                    receiver.setImage(null, null, null, location, "80_80", 0, null, parent, 1);
+                    receiver.setImage(null, null, location, "80_80", 0, null, parent, 1);
                     receiver.setParam(a);
                 } else {
                     break;
@@ -383,7 +384,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
     @Override
     public boolean onSingleTapUp(MotionEvent e) {
         int currentIndex = delegate.getCurrentIndex();
-        ArrayList<TLRPC.FileLocation> imagesArrLocations = delegate.getImagesArrLocations();
+        ArrayList<ImageLocation> imagesArrLocations = delegate.getImagesArrLocations();
         ArrayList<MessageObject> imagesArr = delegate.getImagesArr();
         ArrayList<TLRPC.PageBlock> pageBlockArr = delegate.getPageBlockArr();
 
@@ -415,7 +416,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                     animateAllLine = true;
                     delegate.setCurrentIndex(idx);
                 } else if (imagesArrLocations != null && !imagesArrLocations.isEmpty()) {
-                    TLRPC.FileLocation location = (TLRPC.FileLocation) currentObjects.get(num);
+                    ImageLocation location = (ImageLocation) currentObjects.get(num);
                     int idx = imagesArrLocations.indexOf(location);
                     if (currentIndex == idx) {
                         return true;
@@ -446,7 +447,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         nextPhotoScrolling = currentImage - indexChange;
 
         int currentIndex = delegate.getCurrentIndex();
-        ArrayList<TLRPC.FileLocation> imagesArrLocations = delegate.getImagesArrLocations();
+        ArrayList<ImageLocation> imagesArrLocations = delegate.getImagesArrLocations();
         ArrayList<MessageObject> imagesArr = delegate.getImagesArr();
         ArrayList<TLRPC.PageBlock> pageBlockArr = delegate.getPageBlockArr();
 
@@ -460,7 +461,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                 TLRPC.PageBlock pageBlock = (TLRPC.PageBlock) photo;
                 nextPhoto = pageBlockArr.indexOf(pageBlock);
             } else if (imagesArrLocations != null && !imagesArrLocations.isEmpty()) {
-                TLRPC.FileLocation location = (TLRPC.FileLocation) photo;
+                ImageLocation location = (ImageLocation) photo;
                 nextPhoto = imagesArrLocations.indexOf(location);
             }
             if (nextPhoto >= 0) {
@@ -559,12 +560,11 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         int maxItemWidth = (int) (itemWidth * 2.0f);
         int padding = AndroidUtilities.dp(8);
 
-        TLObject object = currentPhotos.get(currentImage);
+        ImageLocation object = currentPhotos.get(currentImage);
         int trueWidth;
         int currentPaddings;
-        if (object instanceof TLRPC.PhotoSize) {
-            TLRPC.PhotoSize photoSize = (TLRPC.PhotoSize) object;
-            trueWidth = Math.max(itemWidth, (int) (photoSize.w * (itemHeight / (float) photoSize.h)));
+        if (object != null && object.photoSize != null) {
+            trueWidth = Math.max(itemWidth, (int) (object.photoSize.w * (itemHeight / (float) object.photoSize.h)));
         } else {
             trueWidth = itemHeight;
         }
@@ -576,9 +576,8 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         int nextPaddings;
         if (nextImage >= 0 && nextImage < currentPhotos.size()) {
             object = currentPhotos.get(nextImage);
-            if (object instanceof TLRPC.PhotoSize) {
-                TLRPC.PhotoSize photoSize = (TLRPC.PhotoSize) object;
-                nextTrueWidth = Math.max(itemWidth, (int) (photoSize.w * (itemHeight / (float) photoSize.h)));
+            if (object != null && object.photoSize != null) {
+                nextTrueWidth = Math.max(itemWidth, (int) (object.photoSize.w * (itemHeight / (float) object.photoSize.h)));
             } else {
                 nextTrueWidth = itemHeight;
             }

@@ -210,6 +210,7 @@ public class ProxySettingsActivity extends BaseFragment {
         });
 
         doneItem = actionBar.createMenu().addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        doneItem.setContentDescription(LocaleController.getString("Done", R.string.Done));
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
@@ -393,7 +394,7 @@ public class ProxySettingsActivity extends BaseFragment {
         shareCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
         linearLayout2.addView(shareCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         shareCell.setOnClickListener(v -> {
-            StringBuilder params = new StringBuilder("");
+            StringBuilder params = new StringBuilder();
             String address = inputFields[FIELD_IP].getText().toString();
             String password = inputFields[FIELD_PASSWORD].getText().toString();
             String user = inputFields[FIELD_USER].getText().toString();
@@ -538,6 +539,6 @@ public class ProxySettingsActivity extends BaseFragment {
         arrayList.add(new ThemeDescription(bottomCell, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
         arrayList.add(new ThemeDescription(bottomCell, ThemeDescription.FLAG_LINKCOLOR, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteLinkText));
 
-        return arrayList.toArray(new ThemeDescription[arrayList.size()]);
+        return arrayList.toArray(new ThemeDescription[0]);
     }
 }

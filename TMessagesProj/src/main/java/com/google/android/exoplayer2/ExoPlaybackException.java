@@ -15,7 +15,7 @@
  */
 package com.google.android.exoplayer2;
 
-import android.support.annotation.IntDef;
+import androidx.annotation.IntDef;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.util.Assertions;
 import java.io.IOException;

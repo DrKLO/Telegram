@@ -15,7 +15,7 @@
  */
 package com.google.android.exoplayer2.upstream.cache;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.upstream.DataSink;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory;

@@ -17,7 +17,6 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.LetterSectionCell;
@@ -26,6 +25,8 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 public class PhonebookAdapter extends RecyclerListView.SectionsAdapter {
 

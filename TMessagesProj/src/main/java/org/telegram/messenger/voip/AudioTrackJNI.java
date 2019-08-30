@@ -2,16 +2,7 @@ package org.telegram.messenger.voip;
 
 import android.media.AudioFormat;
 import android.media.AudioManager;
-import android.media.AudioRecord;
 import android.media.AudioTrack;
-import android.media.MediaRecorder;
-import android.media.audiofx.AutomaticGainControl;
-import android.media.audiofx.NoiseSuppressor;
-import android.os.Build;
-import android.util.Log;
-
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
 
 import java.nio.ByteBuffer;
 
@@ -44,13 +35,12 @@ public class AudioTrackJNI{
 		this.bufferSize = bufferSize;
 		audioTrack=new AudioTrack(AudioManager.STREAM_VOICE_CALL, 48000, channels==1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT, size, AudioTrack.MODE_STREAM);
 		if(audioTrack.getState()!=AudioTrack.STATE_INITIALIZED){
+			VLog.w("Error initializing AudioTrack with 48k, trying 44.1k with resampling");
 			try{
 				audioTrack.release();
 			}catch(Throwable ignore){}
 			size=getBufferSize(bufferSize*6, 44100);
-			if (BuildVars.LOGS_ENABLED) {
-				FileLog.d("buffer size: " + size);
-			}
+			VLog.d("buffer size: " + size);
 			audioTrack=new AudioTrack(AudioManager.STREAM_VOICE_CALL, 44100, channels==1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT, size, AudioTrack.MODE_STREAM);
 			needResampling=true;
 		}
@@ -73,7 +63,7 @@ public class AudioTrackJNI{
 			try{
 				thread.join();
 			}catch(InterruptedException e){
-				FileLog.e(e);
+				VLog.e(e);
 			}
 			thread=null;
 		}
@@ -102,9 +92,7 @@ public class AudioTrackJNI{
 				try{
 					audioTrack.play();
 				}catch(Exception x){
-					if (BuildVars.LOGS_ENABLED) {
-						FileLog.e("error starting AudioTrack", x);
-					}
+					VLog.e("error starting AudioTrack", x);
 					return;
 				}
 				ByteBuffer tmp48=needResampling ? ByteBuffer.allocateDirect(960*2) : null;
@@ -128,10 +116,10 @@ public class AudioTrackJNI{
 							break;
 						}
 					} catch (Exception e) {
-						FileLog.e(e);
+						VLog.e(e);
 					}
 				}
-				Log.i("tg-voip", "audiotrack thread exits");
+				VLog.i("audiotrack thread exits");
 			}
 		});
 		thread.start();

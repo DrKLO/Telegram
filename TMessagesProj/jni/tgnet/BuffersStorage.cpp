@@ -111,7 +111,7 @@ void BuffersStorage::reuseFreeBuffer(NativeByteBuffer *buffer) {
         if (arrayToReuse->size() < maxCount) {
             arrayToReuse->push_back(buffer);
         } else {
-            if (LOGS_ENABLED) DEBUG_D("too more %d buffers", capacity);
+            if (LOGS_ENABLED) DEBUG_D("too much %d buffers", capacity);
             delete buffer;
         }
         if (isThreadSafe) {

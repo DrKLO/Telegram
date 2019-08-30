@@ -16,17 +16,22 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -49,30 +54,53 @@ public class GroupCreateSpan extends View {
     private long lastUpdateTime;
     private int[] colors = new int[8];
 
-    public GroupCreateSpan(Context context, TLRPC.User user) {
-        this(context, user, null);
+    public GroupCreateSpan(Context context, TLObject object) {
+        this(context, object, null);
     }
 
     public GroupCreateSpan(Context context, ContactsController.Contact contact) {
         this(context, null, contact);
     }
 
-    public GroupCreateSpan(Context context, TLRPC.User user, ContactsController.Contact contact) {
+    public GroupCreateSpan(Context context, TLObject object, ContactsController.Contact contact) {
         super(context);
 
         currentContact = contact;
         deleteDrawable = getResources().getDrawable(R.drawable.delete);
         textPaint.setTextSize(AndroidUtilities.dp(14));
 
+        String firstName;
+
+        ImageLocation imageLocation;
+        Object imageParent;
+
         avatarDrawable = new AvatarDrawable();
         avatarDrawable.setTextSize(AndroidUtilities.dp(12));
-        if (user != null) {
+        if (object instanceof TLRPC.User) {
+            TLRPC.User user = (TLRPC.User) object;
             avatarDrawable.setInfo(user);
             uid = user.id;
+            firstName = UserObject.getFirstName(user);
+            imageLocation = ImageLocation.getForUser(user, false);
+            imageParent = user;
+        } else if (object instanceof TLRPC.Chat) {
+            TLRPC.Chat chat = (TLRPC.Chat) object;
+            avatarDrawable.setInfo(chat);
+            uid = -chat.id;
+            firstName = chat.title;
+            imageLocation = ImageLocation.getForChat(chat, false);
+            imageParent = chat;
         } else {
             avatarDrawable.setInfo(0, contact.first_name, contact.last_name, false);
             uid = contact.contact_id;
             key = contact.key;
+            if (!TextUtils.isEmpty(contact.first_name)) {
+                firstName = contact.first_name;
+            } else {
+                firstName = contact.last_name;
+            }
+            imageLocation = null;
+            imageParent = null;
         }
 
         imageReceiver = new ImageReceiver();
@@ -86,28 +114,14 @@ public class GroupCreateSpan extends View {
         } else {
             maxNameWidth = (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(32 + 18 + 57 * 2)) / 2;
         }
-        String firstName;
-        if (user != null) {
-            firstName = UserObject.getFirstName(user);
-        } else {
-            if (!TextUtils.isEmpty(contact.first_name)) {
-                firstName = contact.first_name;
-            } else {
-                firstName = contact.last_name;
-            }
-        }
+
         CharSequence name = TextUtils.ellipsize(firstName.replace('\n', ' '), textPaint, maxNameWidth, TextUtils.TruncateAt.END);
         nameLayout = new StaticLayout(name, textPaint, 1000, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         if (nameLayout.getLineCount() > 0) {
             textWidth = (int) Math.ceil(nameLayout.getLineWidth(0));
             textX = -nameLayout.getLineLeft(0);
         }
-
-        TLRPC.FileLocation photo = null;
-        if (user != null && user.photo != null) {
-            photo = user.photo.photo_small;
-        }
-        imageReceiver.setImage(photo, "50_50", avatarDrawable, null, null, 0, null, user, 1);
+        imageReceiver.setImage(imageLocation, "50_50", avatarDrawable, 0, null, imageParent, 1);
         updateColors();
     }
 
@@ -211,5 +225,13 @@ public class GroupCreateSpan extends View {
         canvas.translate(textX + AndroidUtilities.dp(32 + 9), AndroidUtilities.dp(8));
         nameLayout.draw(canvas);
         canvas.restore();
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setText(nameLayout.getText());
+        if (isDeleting() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK.getId(), LocaleController.getString("Delete", R.string.Delete)));
     }
 }

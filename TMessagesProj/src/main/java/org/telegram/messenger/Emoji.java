@@ -27,7 +27,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Spannable;
 import android.text.Spanned;
-import android.text.TextPaint;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
 import android.view.View;
@@ -42,37 +41,42 @@ public class Emoji {
     private static boolean inited = false;
     private static Paint placeholderPaint;
     private static final int splitCount = 4;
-    private static Bitmap emojiBmp[][] = new Bitmap[5][splitCount];
-    private static boolean loadingEmoji[][] = new boolean[5][splitCount];
+    private static Bitmap emojiBmp[][] = new Bitmap[8][splitCount];
+    private static boolean loadingEmoji[][] = new boolean[8][splitCount];
 
     public static HashMap<String, Integer> emojiUseHistory = new HashMap<>();
     public static ArrayList<String> recentEmoji = new ArrayList<>();
     public static HashMap<String, String> emojiColor = new HashMap<>();
     private static boolean recentEmojiLoaded;
 
+    private final static int MAX_RECENT_EMOJI_COUNT = 48;
+
     private static final int[][] cols = {
             {16, 16, 16, 16},
             {6, 6, 6, 6},
-            {9, 9, 9, 9},
-            {9, 9, 9, 9},
-            {10, 10, 10, 10}
+            {5, 5, 5, 5},
+            {7, 7, 7, 7},
+            {5, 5, 5, 5},
+            {7, 7, 7, 7},
+            {8, 8, 8, 8},
+            {8, 8, 8, 8},
     };
 
     static {
         int emojiFullSize;
         int add = 2;
         if (AndroidUtilities.density <= 1.0f) {
-            emojiFullSize = 32;
+            emojiFullSize = 33;
             add = 1;
         } else if (AndroidUtilities.density <= 1.5f) {
-            emojiFullSize = 64;
+            emojiFullSize = 66;
         } else if (AndroidUtilities.density <= 2.0f) {
-            emojiFullSize = 64;
+            emojiFullSize = 66;
         } else {
-            emojiFullSize = 64;
+            emojiFullSize = 66;
         }
         drawImgSize = AndroidUtilities.dp(20);
-        bigImgSize = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 40 : 32);
+        bigImgSize = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 40 : 34);
 
         for (int j = 0; j < EmojiData.data.length; j++) {
             int count2 = (int) Math.ceil(EmojiData.data[j].length / (float) splitCount);
@@ -107,38 +111,11 @@ public class Emoji {
                 scale = 2.0f;
             }
 
-            /*String q = "";
-            for (int a = 0; a < EmojiData.data.length; a++) {
-                String arr[] = EmojiData.data[a];
-                for (int b = 0; b < arr.length; b++) {
-                    String emoji = arr[b];
-                    for (int c = 0; c < emoji.length(); c++) {
-                        if (emoji.charAt(c) == '\ufe0f') {
-                            q += String.format("0x%x, ", (int) emoji.charAt(0));
-                            break;
-                        }
-                    }
-                }
-            }
-            FileLog.e(q);*/
-
             String imageName;
             File imageFile;
 
             try {
-                for (int a = 4; a < 7; a++) {
-                    imageName = String.format(Locale.US, "v%d_emoji%.01fx_%d.jpg", a, scale, page);
-                    imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
-                    if (imageFile.exists()) {
-                        imageFile.delete();
-                    }
-                    imageName = String.format(Locale.US, "v%d_emoji%.01fx_a_%d.jpg", a, scale, page);
-                    imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
-                    if (imageFile.exists()) {
-                        imageFile.delete();
-                    }
-                }
-                for (int a = 8; a < 12; a++) {
+                for (int a = 12; a < 14; a++) {
                     imageName = String.format(Locale.US, "v%d_emoji%.01fx_%d.png", a, scale, page);
                     imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
                     if (imageFile.exists()) {
@@ -150,10 +127,13 @@ public class Emoji {
             }
             Bitmap bitmap = null;
             try {
-                InputStream is = ApplicationLoader.applicationContext.getAssets().open("emoji/" + String.format(Locale.US, "v13_emoji%.01fx_%d_%d.png", scale, page, page2));
+                InputStream is = ApplicationLoader.applicationContext.getAssets().open("emoji/" + String.format(Locale.US, "v14_emoji%.01fx_%d_%d.png", scale, page, page2));
                 BitmapFactory.Options opts = new BitmapFactory.Options();
                 opts.inJustDecodeBounds = false;
                 opts.inSampleSize = imageResize;
+                if (Build.VERSION.SDK_INT >= 26) {
+                    opts.inPreferredConfig = Bitmap.Config.HARDWARE;
+                }
                 bitmap = BitmapFactory.decodeStream(is, null, opts);
                 is.close();
             } catch (Throwable e) {
@@ -265,7 +245,6 @@ public class Emoji {
         private boolean fullSize = false;
         private static Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
         private static Rect rect = new Rect();
-        private static TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 
         public EmojiDrawable(DrawableInfo i) {
             info = i;
@@ -574,15 +553,10 @@ public class Emoji {
         if (count == null) {
             count = 0;
         }
-        if (count == 0 && emojiUseHistory.size() > 50) {
-            for (int a = recentEmoji.size() - 1; a >= 0; a--) {
-                String emoji = recentEmoji.get(a);
-                emojiUseHistory.remove(emoji);
-                recentEmoji.remove(a);
-                if (emojiUseHistory.size() <= 50) {
-                    break;
-                }
-            }
+        if (count == 0 && emojiUseHistory.size() >= MAX_RECENT_EMOJI_COUNT) {
+            String emoji = recentEmoji.get(recentEmoji.size() - 1);
+            emojiUseHistory.remove(emoji);
+            recentEmoji.set(recentEmoji.size() - 1, code);
         }
         emojiUseHistory.put(code, ++count);
     }
@@ -608,7 +582,7 @@ public class Emoji {
             }
             return 0;
         });
-        while (recentEmoji.size() > 50) {
+        while (recentEmoji.size() > MAX_RECENT_EMOJI_COUNT) {
             recentEmoji.remove(recentEmoji.size() - 1);
         }
     }
@@ -727,6 +701,4 @@ public class Emoji {
         }
         preferences.edit().putString("color", stringBuilder.toString()).commit();
     }
-
-    public static native Object[] getSuggestion(String query);
 }

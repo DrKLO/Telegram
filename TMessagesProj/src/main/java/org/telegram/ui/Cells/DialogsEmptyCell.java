@@ -12,8 +12,6 @@ import android.content.Context;
 import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
-import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -43,19 +41,15 @@ public class DialogsEmptyCell extends LinearLayout {
 
         setGravity(Gravity.CENTER);
         setOrientation(VERTICAL);
-        setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
+        setOnTouchListener((v, event) -> true);
 
         emptyTextView1 = new TextView(context);
+        emptyTextView1.setTextColor(Theme.getColor(Theme.key_chats_nameMessage_threeLines));
         emptyTextView1.setText(LocaleController.getString("NoChats", R.string.NoChats));
-        emptyTextView1.setTextColor(Theme.getColor(Theme.key_emptyListPlaceholder));
-        emptyTextView1.setGravity(Gravity.CENTER);
         emptyTextView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        addView(emptyTextView1, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 20, 0, 0));
+        emptyTextView1.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        emptyTextView1.setGravity(Gravity.CENTER);
+        addView(emptyTextView1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 4, 52, 0));
 
         emptyTextView2 = new TextView(context);
         String help = LocaleController.getString("NoChatsHelp", R.string.NoChatsHelp);
@@ -63,12 +57,11 @@ public class DialogsEmptyCell extends LinearLayout {
             help = help.replace('\n', ' ');
         }
         emptyTextView2.setText(help);
-        emptyTextView2.setTextColor(Theme.getColor(Theme.key_emptyListPlaceholder));
-        emptyTextView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        emptyTextView2.setTextColor(Theme.getColor(Theme.key_chats_message));
+        emptyTextView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         emptyTextView2.setGravity(Gravity.CENTER);
-        emptyTextView2.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(6), AndroidUtilities.dp(8), 0);
         emptyTextView2.setLineSpacing(AndroidUtilities.dp(2), 1);
-        addView(emptyTextView2, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 20));
+        addView(emptyTextView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 7, 52, 0));
     }
 
     public void setType(int value) {
@@ -101,7 +94,7 @@ public class DialogsEmptyCell extends LinearLayout {
             }
             super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(totalHeight, MeasureSpec.EXACTLY));
         } else {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(totalHeight, MeasureSpec.AT_MOST));
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(166), MeasureSpec.EXACTLY));
         }
     }
 }

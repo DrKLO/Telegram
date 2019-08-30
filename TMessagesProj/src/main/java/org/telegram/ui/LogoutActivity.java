@@ -23,8 +23,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -38,6 +36,9 @@ import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class LogoutActivity extends BaseFragment {
 
@@ -127,7 +128,7 @@ public class LogoutActivity extends BaseFragment {
             } else if (position == cacheRow) {
                 presentFragment(new CacheControlActivity());
             } else if (position == phoneRow) {
-                presentFragment(new ChangePhoneHelpActivity());
+                presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
             } else if (position == supportRow) {
                 showDialog(AlertsCreator.createSupportAlert(LogoutActivity.this));
             } else if (position == logoutRow) {

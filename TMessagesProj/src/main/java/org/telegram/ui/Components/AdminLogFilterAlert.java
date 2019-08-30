@@ -26,18 +26,19 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.CheckBoxUserCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
-import org.telegram.ui.StickerPreviewViewer;
+import org.telegram.ui.ContentPreviewViewer;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class AdminLogFilterAlert extends BottomSheet {
 
@@ -74,7 +75,7 @@ public class AdminLogFilterAlert extends BottomSheet {
     private int allAdminsRow;
 
     public AdminLogFilterAlert(Context context, TLRPC.TL_channelAdminLogEventsFilter filter, SparseArray<TLRPC.User> admins, boolean megagroup) {
-        super(context, false);
+        super(context, false, 0);
         if (filter != null) {
             currentFilter = new TLRPC.TL_channelAdminLogEventsFilter();
             currentFilter.join = filter.join;
@@ -189,7 +190,7 @@ public class AdminLogFilterAlert extends BottomSheet {
         listView = new RecyclerListView(context) {
             @Override
             public boolean onInterceptTouchEvent(MotionEvent event) {
-                boolean result = StickerPreviewViewer.getInstance().onInterceptTouchEvent(event, listView, 0, null);
+                boolean result = ContentPreviewViewer.getInstance().onInterceptTouchEvent(event, listView, 0, null);
                 return super.onInterceptTouchEvent(event) || result;
             }
 
@@ -401,7 +402,7 @@ public class AdminLogFilterAlert extends BottomSheet {
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = null;
+            FrameLayout view = null;
             switch (viewType) {
                 case 0:
                     view = new CheckBoxCell(context, 1, 21);
@@ -410,7 +411,7 @@ public class AdminLogFilterAlert extends BottomSheet {
                 case 1:
                     ShadowSectionCell shadowSectionCell = new ShadowSectionCell(context, 18);
                     view = new FrameLayout(context);
-                    ((FrameLayout) view).addView(shadowSectionCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+                    view.addView(shadowSectionCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
                     view.setBackgroundColor(Theme.getColor(Theme.key_dialogBackgroundGray));
                     break;
                 case 2:

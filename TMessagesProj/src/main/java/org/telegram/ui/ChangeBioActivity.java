@@ -155,7 +155,7 @@ public class ChangeBioActivity extends BaseFragment {
         helpTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("UserBioInfo", R.string.UserBioInfo)));
         linearLayout.addView(helpTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 24, 10, 24, 0));
 
-        TLRPC.TL_userFull userFull = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
+        TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
         if (userFull != null && userFull.about != null) {
             firstNameField.setText(userFull.about);
             firstNameField.setSelection(firstNameField.length());
@@ -176,7 +176,7 @@ public class ChangeBioActivity extends BaseFragment {
     }
 
     private void saveName() {
-        final TLRPC.TL_userFull userFull = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
+        final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
         if (getParentActivity() == null || userFull == null) {
             return;
         }

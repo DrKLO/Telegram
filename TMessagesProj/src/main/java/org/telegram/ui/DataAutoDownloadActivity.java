@@ -32,9 +32,6 @@ import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.support.widget.DefaultItemAnimator;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -54,10 +51,16 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 public class DataAutoDownloadActivity extends BaseFragment {
 
     private ListAdapter listAdapter;
     private RecyclerListView listView;
+    @SuppressWarnings("FieldCanBeLocal")
+    private LinearLayoutManager layoutManager;
 
     private ArrayList<DownloadController.Preset> presets = new ArrayList<>();
     private int selectedPreset = 1;
@@ -275,7 +278,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
                 } else if (a == presets.size() - 1) {
                     canvas.drawText(text, getMeasuredWidth() - size - AndroidUtilities.dp(22), AndroidUtilities.dp(28), textPaint);
                 } else {
-                    canvas.drawText(text, cx - customSize / 2, AndroidUtilities.dp(28), textPaint);
+                    canvas.drawText(text, cx - size / 2, AndroidUtilities.dp(28), textPaint);
                 }
             }
         }
@@ -350,7 +353,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
         listView = new RecyclerListView(context);
         listView.setVerticalScrollBarEnabled(false);
         ((DefaultItemAnimator) listView.getItemAnimator()).setDelayAnimations(false);
-        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position, x, y) -> {

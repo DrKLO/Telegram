@@ -23,11 +23,13 @@ import com.google.android.gms.maps.model.LatLng;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -62,7 +64,7 @@ public class SharingLiveLocationCell extends FrameLayout {
         }
     };
 
-    public SharingLiveLocationCell(Context context, boolean distance) {
+    public SharingLiveLocationCell(Context context, boolean distance, int padding) {
         super(context);
 
         avatarImageView = new BackupImageView(context);
@@ -79,17 +81,17 @@ public class SharingLiveLocationCell extends FrameLayout {
 
         if (distance) {
             addView(avatarImageView, LayoutHelper.createFrame(40, 40, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 17, 13, LocaleController.isRTL ? 17 : 0, 0));
-            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 54 : 73, 12, LocaleController.isRTL ? 73 : 54, 0));
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? padding : 73, 12, LocaleController.isRTL ? 73 : padding, 0));
 
             distanceTextView = new SimpleTextView(context);
             distanceTextView.setTextSize(14);
             distanceTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
             distanceTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
 
-            addView(distanceTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 54 : 73, 37, LocaleController.isRTL ? 73 : 54, 0));
+            addView(distanceTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? padding : 73, 37, LocaleController.isRTL ? 73 : padding, 0));
         } else {
             addView(avatarImageView, LayoutHelper.createFrame(40, 40, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 17, 7, LocaleController.isRTL ? 17 : 0, 0));
-            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 54 : 74, 17, LocaleController.isRTL ? 74 : 54, 0));
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? padding : 74, 17, LocaleController.isRTL ? 74 : padding, 0));
         }
 
         setWillNotDraw(false);
@@ -112,6 +114,34 @@ public class SharingLiveLocationCell extends FrameLayout {
         AndroidUtilities.runOnUIThread(invalidateRunnable);
     }
 
+    public void setDialog(long dialogId, TLRPC.TL_channelLocation chatLocation) {
+        currentAccount = UserConfig.selectedAccount;
+        String address = chatLocation.address;
+        String name = "";
+        avatarDrawable = null;
+        int lowerId = (int) dialogId;
+        if (lowerId > 0) {
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lowerId);
+            if (user != null) {
+                avatarDrawable = new AvatarDrawable(user);
+                name = UserObject.getUserName(user);
+                avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable,  user);
+            }
+        } else {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+            if (chat != null) {
+                avatarDrawable = new AvatarDrawable(chat);
+                name = chat.title;
+                avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable,  chat);
+            }
+        }
+        nameTextView.setText(name);
+
+        location.setLatitude(chatLocation.geo_point.lat);
+        location.setLongitude(chatLocation.geo_point._long);
+        distanceTextView.setText(address);
+    }
+
     public void setDialog(MessageObject messageObject, Location userLocation) {
         int fromId = messageObject.messageOwner.from_id;
         if (messageObject.isForwarded()) {
@@ -123,7 +153,6 @@ public class SharingLiveLocationCell extends FrameLayout {
         }
         currentAccount = messageObject.currentAccount;
         String address = null;
-        TLRPC.FileLocation photo = null;
         String name;
         if (!TextUtils.isEmpty(messageObject.messageOwner.media.address)) {
             address = messageObject.messageOwner.media.address;
@@ -142,29 +171,21 @@ public class SharingLiveLocationCell extends FrameLayout {
         } else {
             name = "";
             avatarDrawable = null;
-            Object parentObject = null;
             if (fromId > 0) {
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(fromId);
                 if (user != null) {
-                    if (user.photo != null) {
-                        photo = user.photo.photo_small;
-                    }
                     avatarDrawable = new AvatarDrawable(user);
                     name = UserObject.getUserName(user);
-                    parentObject = user;
+                    avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable,  user);
                 }
             } else {
                 TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-fromId);
                 if (chat != null) {
-                    if (chat.photo != null) {
-                        photo = chat.photo.photo_small;
-                    }
                     avatarDrawable = new AvatarDrawable(chat);
                     name = chat.title;
-                    parentObject = chat;
+                    avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable,  chat);
                 }
             }
-            avatarImageView.setImage(photo, null, avatarDrawable, parentObject);
         }
         nameTextView.setText(name);
 
@@ -173,17 +194,9 @@ public class SharingLiveLocationCell extends FrameLayout {
         if (userLocation != null) {
             float distance = location.distanceTo(userLocation);
             if (address != null) {
-                if (distance < 1000) {
-                    distanceTextView.setText(String.format("%s - %d %s", address, (int) (distance), LocaleController.getString("MetersAway", R.string.MetersAway)));
-                } else {
-                    distanceTextView.setText(String.format("%s - %.2f %s", address, distance / 1000.0f, LocaleController.getString("KMetersAway", R.string.KMetersAway)));
-                }
+                distanceTextView.setText(String.format("%s - %s", address, LocaleController.formatDistance(distance)));
             } else {
-                if (distance < 1000) {
-                    distanceTextView.setText(String.format("%d %s", (int) (distance), LocaleController.getString("MetersAway", R.string.MetersAway)));
-                } else {
-                    distanceTextView.setText(String.format("%.2f %s", distance / 1000.0f, LocaleController.getString("KMetersAway", R.string.KMetersAway)));
-                }
+                distanceTextView.setText(LocaleController.formatDistance(distance));
             }
         } else {
             if (address != null) {
@@ -197,27 +210,19 @@ public class SharingLiveLocationCell extends FrameLayout {
     public void setDialog(LocationActivity.LiveLocation info, Location userLocation) {
         liveLocation = info;
         int lower_id = info.id;
-        TLRPC.FileLocation photo = null;
-        Object parentObject = null;
         if (lower_id > 0) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
-            avatarDrawable.setInfo(user);
             if (user != null) {
+                avatarDrawable.setInfo(user);
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
-                if (user.photo != null && user.photo.photo_small != null) {
-                    photo = user.photo.photo_small;
-                }
-                parentObject = user;
+                avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable,  user);
             }
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
             if (chat != null) {
                 avatarDrawable.setInfo(chat);
                 nameTextView.setText(chat.title);
-                if (chat.photo != null && chat.photo.photo_small != null) {
-                    photo = chat.photo.photo_small;
-                }
-                parentObject = chat;
+                avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable,  chat);
             }
         }
 
@@ -227,46 +232,30 @@ public class SharingLiveLocationCell extends FrameLayout {
 
         String time = LocaleController.formatLocationUpdateDate(info.object.edit_date != 0 ? info.object.edit_date : info.object.date);
         if (userLocation != null) {
-            float distance = location.distanceTo(userLocation);
-            if (distance < 1000) {
-                distanceTextView.setText(String.format("%s - %d %s", time, (int) (distance), LocaleController.getString("MetersAway", R.string.MetersAway)));
-            } else {
-                distanceTextView.setText(String.format("%s - %.2f %s", time, distance / 1000.0f, LocaleController.getString("KMetersAway", R.string.KMetersAway)));
-            }
+            distanceTextView.setText(String.format("%s - %s", time, LocaleController.formatDistance(location.distanceTo(userLocation))));
         } else {
             distanceTextView.setText(time);
         }
-
-        avatarImageView.setImage(photo, null, avatarDrawable, parentObject);
     }
 
     public void setDialog(LocationController.SharingLocationInfo info) {
         currentInfo = info;
         int lower_id = (int) info.did;
-        TLRPC.FileLocation photo = null;
-        Object parentObject = null;
         if (lower_id > 0) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
             if (user != null) {
                 avatarDrawable.setInfo(user);
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
-                if (user.photo != null && user.photo.photo_small != null) {
-                    photo = user.photo.photo_small;
-                }
-                parentObject = user;
+                avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable,  user);
             }
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
             if (chat != null) {
                 avatarDrawable.setInfo(chat);
                 nameTextView.setText(chat.title);
-                if (chat.photo != null && chat.photo.photo_small != null) {
-                    photo = chat.photo.photo_small;
-                }
-                parentObject = chat;
+                avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable,  chat);
             }
         }
-        avatarImageView.setImage(photo, null, avatarDrawable,  parentObject);
     }
 
     @Override

@@ -8,10 +8,8 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -27,8 +25,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.provider.MediaStore;
-import android.support.v4.content.FileProvider;
-import android.telephony.SmsManager;
+import androidx.core.content.FileProvider;
+
+import android.telephony.PhoneNumberUtils;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -68,11 +67,11 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
@@ -84,7 +83,6 @@ import org.telegram.messenger.SecureDocument;
 import org.telegram.messenger.SecureDocumentKey;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.SmsReceiver;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -352,7 +350,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 return null;
             }
             SecureDocumentCell cell = (SecureDocumentCell) currentPhotoViewerLayout.getChildAt(index);
-            int coords[] = new int[2];
+            int[] coords = new int[2];
             cell.imageView.getLocationInWindow(coords);
             PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
             object.viewX = coords[0];
@@ -804,30 +802,38 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         } else {
                             hash = "";
                         }
-                        if ("data".equals(target)) {
-                            if (field != null) {
-                                vals.put(field, description);
-                            }
-                        } else if ("files".equals(target)) {
-                            if (file_hash != null) {
-                                vals.put("files" + hash, description);
-                            } else {
-                                vals.put("files_all", description);
-                            }
-                        } else if ("selfie".equals(target)) {
-                            vals.put("selfie" + hash, description);
-                        } else if ("translation".equals(target)) {
-                            if (file_hash != null) {
-                                vals.put("translation" + hash, description);
-                            } else {
-                                vals.put("translation_all", description);
-                            }
-                        } else if ("front".equals(target)) {
-                            vals.put("front" + hash, description);
-                        } else if ("reverse".equals(target)) {
-                            vals.put("reverse" + hash, description);
-                        } else if ("error_all".equals(target)) {
-                            vals.put("error_all", description);
+                        switch (target) {
+                            case "data":
+                                if (field != null) {
+                                    vals.put(field, description);
+                                }
+                                break;
+                            case "files":
+                                if (file_hash != null) {
+                                    vals.put("files" + hash, description);
+                                } else {
+                                    vals.put("files_all", description);
+                                }
+                                break;
+                            case "selfie":
+                                vals.put("selfie" + hash, description);
+                                break;
+                            case "translation":
+                                if (file_hash != null) {
+                                    vals.put("translation" + hash, description);
+                                } else {
+                                    vals.put("translation_all", description);
+                                }
+                                break;
+                            case "front":
+                                vals.put("front" + hash, description);
+                                break;
+                            case "reverse":
+                                vals.put("reverse" + hash, description);
+                                break;
+                            case "error_all":
+                                vals.put("error_all", description);
+                                break;
                         }
                     }
                 } catch (Exception ignore) {
@@ -1445,11 +1451,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setInputType(InputType.TYPE_CLASS_PHONE);
 
             inputFields[a].setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-            switch (a) {
-                case FIELD_EMAIL:
-                    inputFields[a].setHint(LocaleController.getString("PassportEmailCode", R.string.PassportEmailCode));
-                    break;
-            }
+            inputFields[a].setHint(LocaleController.getString("PassportEmailCode", R.string.PassportEmailCode));
             inputFields[a].setSelection(inputFields[a].length());
             inputFields[a].setPadding(0, 0, 0, AndroidUtilities.dp(6));
             inputFields[a].setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
@@ -1522,11 +1524,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         passwordAvatarContainer.addView(avatarImageView, LayoutHelper.createFrame(64, 64, Gravity.CENTER, 0, 8, 0, 0));
 
         AvatarDrawable avatarDrawable = new AvatarDrawable(botUser);
-        TLRPC.FileLocation photo = null;
-        if (botUser.photo != null) {
-            photo = botUser.photo.photo_small;
-        }
-        avatarImageView.setImage(photo, "50_50", avatarDrawable, botUser);
+        avatarImageView.setImage(ImageLocation.getForUser(botUser, false), "50_50", avatarDrawable, botUser);
 
         passwordRequestTextView = new TextInfoPrivacyCell(context);
         passwordRequestTextView.getTextView().setGravity(Gravity.CENTER_HORIZONTAL);
@@ -1698,7 +1696,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         Utilities.globalQueue.postRunnable(() -> {
             TLRPC.TL_account_getPasswordSettings req = new TLRPC.TL_account_getPasswordSettings();
 
-            final byte x_bytes[];
+            final byte[] x_bytes;
             if (saved) {
                 x_bytes = savedPasswordHash;
             } else if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
@@ -2003,11 +2001,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             avatarContainer.addView(avatarImageView, LayoutHelper.createFrame(64, 64, Gravity.CENTER, 0, 8, 0, 0));
 
             AvatarDrawable avatarDrawable = new AvatarDrawable(botUser);
-            TLRPC.FileLocation photo = null;
-            if (botUser.photo != null) {
-                photo = botUser.photo.photo_small;
-            }
-            avatarImageView.setImage(photo, "50_50", avatarDrawable, botUser);
+            avatarImageView.setImage(ImageLocation.getForUser(botUser, false), "50_50", avatarDrawable, botUser);
 
             bottomCell = new TextInfoPrivacyCell(context);
             bottomCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
@@ -2645,7 +2639,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("PassportNoDocumentsAdd", R.string.PassportNoDocumentsAdd));
-        builder.setItems(values.toArray(new CharSequence[values.size()]), (dialog, which) -> {
+        builder.setItems(values.toArray(new CharSequence[0]), (dialog, which) -> {
             TLRPC.TL_secureRequiredType requiredType = null;
             TLRPC.TL_secureRequiredType documentRequiredType = null;
             try {
@@ -2750,18 +2744,13 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setCursorSize(AndroidUtilities.dp(20));
             inputFields[a].setCursorWidth(1.5f);
             inputFields[a].setInputType(EditorInfo.TYPE_CLASS_TEXT | EditorInfo.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-
             inputFields[a].setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-            switch (a) {
-                case FIELD_EMAIL:
-                    inputFields[a].setHint(LocaleController.getString("PaymentShippingEmailPlaceholder", R.string.PaymentShippingEmailPlaceholder));
-                    if (currentTypeValue != null && currentTypeValue.plain_data instanceof TLRPC.TL_securePlainEmail) {
-                        TLRPC.TL_securePlainEmail securePlainEmail = (TLRPC.TL_securePlainEmail) currentTypeValue.plain_data;
-                        if (!TextUtils.isEmpty(securePlainEmail.email)) {
-                            inputFields[a].setText(securePlainEmail.email);
-                        }
-                    }
-                    break;
+            inputFields[a].setHint(LocaleController.getString("PaymentShippingEmailPlaceholder", R.string.PaymentShippingEmailPlaceholder));
+            if (currentTypeValue != null && currentTypeValue.plain_data instanceof TLRPC.TL_securePlainEmail) {
+                TLRPC.TL_securePlainEmail securePlainEmail = (TLRPC.TL_securePlainEmail) currentTypeValue.plain_data;
+                if (!TextUtils.isEmpty(securePlainEmail.email)) {
+                    inputFields[a].setText(securePlainEmail.email);
+                }
             }
             inputFields[a].setSelection(inputFields[a].length());
             inputFields[a].setPadding(0, 0, 0, AndroidUtilities.dp(6));
@@ -3530,7 +3519,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     }
 
     private void createDocumentDeleteAlert() {
-        final boolean checks[] = new boolean[]{true};
+        final boolean[] checks = new boolean[]{true};
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
@@ -4200,7 +4189,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                             int selectedDay = -1;
                             int selectedMonth = -1;
                             int selectedYear = -1;
-                            String args[] = field1.getText().toString().split("\\.");
+                            String[] args = field1.getText().toString().split("\\.");
                             if (args.length == 3) {
                                 selectedDay = Utilities.parseInt(args[0]);
                                 selectedMonth = Utilities.parseInt(args[1]);
@@ -4759,7 +4748,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 case "expiry_date":
                     boolean ok = false;
                     if (!TextUtils.isEmpty(value)) {
-                        String args[] = value.split("\\.");
+                        String[] args = value.split("\\.");
                         if (args.length == 3) {
                             currentExpireDate[0] = Utilities.parseInt(args[2]);
                             currentExpireDate[1] = Utilities.parseInt(args[1]);
@@ -5066,8 +5055,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     return;
                 }
                 values.clear();
-                String keys[] = null;
-                String documentKeys[] = null;
+                String[] keys = null;
+                String[] documentKeys = null;
                 if (requiredType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
                     if (currentActivityType == TYPE_REQUEST && !documentOnly || currentActivityType == TYPE_MANAGE && documentRequiredType == null) {
                         keys = new String[]{
@@ -5104,7 +5093,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 if (keys != null || documentKeys != null) {
                     try {
                         JSONObject jsonObject = null;
-                        String currentKeys[] = null;
+                        String[] currentKeys = null;
                         for (int b = 0; b < 2; b++) {
                             if (b == 0) {
                                 if (json != null) {
@@ -5955,7 +5944,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         }
                     }
 
-                    builder.setItems(strings.toArray(new CharSequence[strings.size()]), (dialog, which) -> openTypeActivity(requiredType, documentRequiredTypes.get(which), documentRequiredTypes, documentOnly));
+                    builder.setItems(strings.toArray(new CharSequence[0]), (dialog, which) -> openTypeActivity(requiredType, documentRequiredTypes.get(which), documentRequiredTypes, documentOnly));
                     showDialog(builder.create());
                     return;
                 }
@@ -6273,7 +6262,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         builder.setMessage(LocaleController.getString("AllowReadCall", R.string.AllowReadCall));
                         permissionsDialog = showDialog(builder.create());
                     } else {
-                        getParentActivity().requestPermissions(permissionsItems.toArray(new String[permissionsItems.size()]), 6);
+                        getParentActivity().requestPermissions(permissionsItems.toArray(new String[0]), 6);
                     }
                     pendingPhone = phone;
                     pendingErrorRunnable = errorRunnable;
@@ -6287,29 +6276,13 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         req.phone_number = phone;
         req.settings = new TLRPC.TL_codeSettings();
         req.settings.allow_flashcall = simcardAvailable && allowCall;
-        if (Build.VERSION.SDK_INT >= 26) {
-            try {
-                req.settings.app_hash = SmsManager.getDefault().createAppSpecificSmsToken(PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, new Intent(ApplicationLoader.applicationContext, SmsReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT));
-            } catch (Throwable e) {
-                FileLog.e(e);
-            }
-        } else {
-            req.settings.app_hash = BuildVars.SMS_HASH;
-            req.settings.app_hash_persistent = true;
-        }
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        if (!TextUtils.isEmpty(req.settings.app_hash)) {
-            req.settings.flags |= 8;
-            preferences.edit().putString("sms_hash", req.settings.app_hash).commit();
-        } else {
-            preferences.edit().remove("sms_hash").commit();
-        }
+        req.settings.allow_app_hash = ApplicationLoader.hasPlayServices;
         if (req.settings.allow_flashcall) {
             try {
                 @SuppressLint("HardwareIds")
                 String number = tm.getLine1Number();
                 if (!TextUtils.isEmpty(number)) {
-                    req.settings.current_number = phone.contains(number) || number.contains(phone);
+                    req.settings.current_number = PhoneNumberUtils.compare(phone, number);
                     if (!req.settings.current_number) {
                         req.settings.allow_flashcall = false;
                     }
@@ -6403,22 +6376,22 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 progressView.setVisibility(View.VISIBLE);
                 doneItem.setEnabled(false);
                 doneItemAnimation.playTogether(
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), View.SCALE_X, 0.1f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), View.SCALE_Y, 0.1f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), View.ALPHA, 0.0f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_X, 0.1f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_Y, 0.1f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.ALPHA, 0.0f),
                         ObjectAnimator.ofFloat(progressView, View.SCALE_X, 1.0f),
                         ObjectAnimator.ofFloat(progressView, View.SCALE_Y, 1.0f),
                         ObjectAnimator.ofFloat(progressView, View.ALPHA, 1.0f));
             } else {
-                doneItem.getImageView().setVisibility(View.VISIBLE);
+                doneItem.getContentView().setVisibility(View.VISIBLE);
                 doneItem.setEnabled(true);
                 doneItemAnimation.playTogether(
                         ObjectAnimator.ofFloat(progressView, View.SCALE_X, 0.1f),
                         ObjectAnimator.ofFloat(progressView, View.SCALE_Y, 0.1f),
                         ObjectAnimator.ofFloat(progressView, View.ALPHA, 0.0f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), View.SCALE_X, 1.0f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), View.SCALE_Y, 1.0f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), View.ALPHA, 1.0f));
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_X, 1.0f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_Y, 1.0f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.ALPHA, 1.0f));
             }
             doneItemAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -6427,7 +6400,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         if (!show) {
                             progressView.setVisibility(View.INVISIBLE);
                         } else {
-                            doneItem.getImageView().setVisibility(View.INVISIBLE);
+                            doneItem.getContentView().setVisibility(View.INVISIBLE);
                         }
                     }
                 }
@@ -6697,7 +6670,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     protected void onDialogDismiss(Dialog dialog) {
         if (currentActivityType == TYPE_PHONE) {
             if (Build.VERSION.SDK_INT >= 23 && dialog == permissionsDialog && !permissionsItems.isEmpty()) {
-                getParentActivity().requestPermissions(permissionsItems.toArray(new String[permissionsItems.size()]), 6);
+                getParentActivity().requestPermissions(permissionsItems.toArray(new String[0]), 6);
             }
         }
     }
@@ -6813,7 +6786,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
         createChatAttachView();
         chatAttachAlert.setOpenWithFrontFaceCamera(uploadingFileType == UPLOADING_TYPE_SELFIE);
-        chatAttachAlert.setMaxSelectedPhotos(getMaxSelectedDocuments());
+        chatAttachAlert.setMaxSelectedPhotos(getMaxSelectedDocuments(), false);
         chatAttachAlert.loadGalleryPhotos();
         if (Build.VERSION.SDK_INT == 21 || Build.VERSION.SDK_INT == 22) {
             AndroidUtilities.hideKeyboard(fragmentView.findFocus());
@@ -6831,7 +6804,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             chatAttachAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
 
                 @Override
-                public void didPressedButton(int button) {
+                public void didPressedButton(int button, boolean arg) {
                     if (getParentActivity() == null || chatAttachAlert == null) {
                         return;
                     }
@@ -6880,8 +6853,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }
 
                 @Override
-                public boolean allowGroupPhotos() {
-                    return false;
+                public void needEnterComment() {
+
                 }
             });
         }
@@ -6927,7 +6900,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
             PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(0, false, false, null);
             fragment.setCurrentAccount(currentAccount);
-            fragment.setMaxSelectedPhotos(getMaxSelectedDocuments());
+            fragment.setMaxSelectedPhotos(getMaxSelectedDocuments(), false);
             fragment.setAllowSearchImages(false);
             fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
                 @Override
@@ -8074,6 +8047,6 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         arrayList.add(new ThemeDescription(emptyTextView2, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
         arrayList.add(new ThemeDescription(emptyTextView3, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueText4));
 
-        return arrayList.toArray(new ThemeDescription[arrayList.size()]);
+        return arrayList.toArray(new ThemeDescription[0]);
     }
 }

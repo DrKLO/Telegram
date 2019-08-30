@@ -12,7 +12,6 @@
 #include <functional>
 #include <list>
 #include <limits.h>
-#include <bits/unique_ptr.h>
 #include <sstream>
 #include <inttypes.h>
 #include "ByteArray.h"
@@ -30,12 +29,7 @@
 #define UPLOAD_CONNECTIONS_COUNT 4
 #define CONNECTION_BACKGROUND_KEEP_TIME 10000
 #define MAX_ACCOUNT_COUNT 3
-
-#define DOWNLOAD_CHUNK_SIZE 1024 * 32
-#define DOWNLOAD_CHUNK_BIG_SIZE 1024 * 128
-#define DOWNLOAD_MAX_REQUESTS 4
-#define DOWNLOAD_MAX_BIG_REQUESTS 4
-#define DOWNLOAD_BIG_FILE_MIN_SIZE 1024 * 1024
+#define USE_DELEGATE_HOST_RESOLVE
 
 #define NETWORK_TYPE_MOBILE 0
 #define NETWORK_TYPE_WIFI 1
@@ -47,8 +41,8 @@ class Request;
 class TL_message;
 class TL_config;
 class NativeByteBuffer;
-class FileLoadOperation;
 class Handshake;
+class ConnectionSocket;
 
 typedef std::function<void(TLObject *response, TL_error *error, int32_t networkType)> onCompleteFunc;
 typedef std::function<void()> onQuickAckFunc;
@@ -151,7 +145,7 @@ typedef struct ConnectiosManagerDelegate {
     virtual void onBytesReceived(int32_t amount, int32_t networkType, int32_t instanceNum) = 0;
     virtual void onRequestNewServerIpAndPort(int32_t second, int32_t instanceNum) = 0;
     virtual void onProxyError(int32_t instanceNum) = 0;
-    virtual std::string getHostByName(std::string domain, int32_t instanceNum) = 0;
+    virtual void getHostByName(std::string domain, int32_t instanceNum, ConnectionSocket *socket) = 0;
     virtual int32_t getInitFlags(int32_t instanceNum) = 0;
 } ConnectiosManagerDelegate;
 
@@ -183,6 +177,17 @@ inline std::string to_string_uint64(uint64_t value) {
     char buf[30];
     int len = sprintf(buf, "%" PRIu64, value);
     return std::string(buf, (uint32_t) len);
+}
+
+inline int32_t char2int(char input) {
+    if (input >= '0' && input <= '9') {
+        return input - '0';
+    } else if (input >= 'A' && input <= 'F') {
+        return (char) (input - 'A' + 10);
+    } else if (input >= 'a' && input <= 'f') {
+        return (char) (input - 'a' + 10);
+    }
+    return 0;
 }
 
 #endif

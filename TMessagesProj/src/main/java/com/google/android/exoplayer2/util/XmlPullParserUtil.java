@@ -15,7 +15,7 @@
  */
 package com.google.android.exoplayer2.util;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 

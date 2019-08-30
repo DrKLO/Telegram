@@ -60,9 +60,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     private ScrollView contentScrollView;
     private LinearLayout scrollContainer;
     private ViewTreeObserver.OnScrollChangedListener onScrollChangedListener;
-    private BitmapDrawable shadow[] = new BitmapDrawable[2];
-    private boolean shadowVisibility[] = new boolean[2];
-    private AnimatorSet shadowAnimation[] = new AnimatorSet[2];
+    private BitmapDrawable[] shadow = new BitmapDrawable[2];
+    private boolean[] shadowVisibility = new boolean[2];
+    private AnimatorSet[] shadowAnimation = new AnimatorSet[2];
     private int customViewOffset = 20;
 
     private OnCancelListener onCancelListener;
@@ -86,6 +86,8 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     private int topBackgroundColor;
     private int progressViewStyle;
     private int currentProgress;
+
+    private boolean messageTextViewClickable = true;
 
     private boolean canCacnel = true;
 
@@ -449,6 +451,10 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         messageTextView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
         messageTextView.setLinkTextColor(getThemeColor(Theme.key_dialogTextLink));
+        if (!messageTextViewClickable) {
+            messageTextView.setClickable(false);
+            messageTextView.setEnabled(false);
+        }
         messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         if (progressViewStyle == 1) {
             progressViewContainer = new FrameLayout(getContext());
@@ -541,7 +547,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                                 if (LocaleController.isRTL) {
                                     child.layout(getPaddingLeft(), getPaddingTop(), getPaddingLeft() + child.getMeasuredWidth(), getPaddingTop() + child.getMeasuredHeight());
                                 } else {
-                                    child.layout(width - getPaddingRight() - child.getMeasuredWidth(), getPaddingTop(), width - getPaddingRight() + child.getMeasuredWidth(), getPaddingTop() + child.getMeasuredHeight());
+                                    child.layout(width - getPaddingRight() - child.getMeasuredWidth(), getPaddingTop(), width - getPaddingRight(), getPaddingTop() + child.getMeasuredHeight());
                                 }
                             } else if (tag == Dialog.BUTTON_NEGATIVE) {
                                 if (LocaleController.isRTL) {
@@ -616,6 +622,12 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                         super.setEnabled(enabled);
                         setAlpha(enabled ? 1.0f : 0.5f);
                     }
+
+                    @Override
+                    public void setTextColor(int color) {
+                        super.setTextColor(color);
+                        setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(color));
+                    }
                 };
                 textView.setMinWidth(AndroidUtilities.dp(64));
                 textView.setTag(Dialog.BUTTON_POSITIVE);
@@ -626,7 +638,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
 //                textView.setLines(1);
 //                textView.setSingleLine(true); //TODO
                 textView.setText(positiveButtonText.toString().toUpperCase());
-                textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable());
+                textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(getThemeColor(Theme.key_dialogButton)));
                 textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
                 buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.TOP | Gravity.RIGHT));
                 textView.setOnClickListener(v -> {
@@ -646,6 +658,12 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                         super.setEnabled(enabled);
                         setAlpha(enabled ? 1.0f : 0.5f);
                     }
+
+                    @Override
+                    public void setTextColor(int color) {
+                        super.setTextColor(color);
+                        setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(color));
+                    }
                 };
                 textView.setMinWidth(AndroidUtilities.dp(64));
                 textView.setTag(Dialog.BUTTON_NEGATIVE);
@@ -656,7 +674,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                 textView.setEllipsize(TextUtils.TruncateAt.END);
                 textView.setSingleLine(true);
                 textView.setText(negativeButtonText.toString().toUpperCase());
-                textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable());
+                textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(getThemeColor(Theme.key_dialogButton)));
                 textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
                 buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.TOP | Gravity.RIGHT));
                 textView.setOnClickListener(v -> {
@@ -676,6 +694,12 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                         super.setEnabled(enabled);
                         setAlpha(enabled ? 1.0f : 0.5f);
                     }
+
+                    @Override
+                    public void setTextColor(int color) {
+                        super.setTextColor(color);
+                        setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(color));
+                    }
                 };
                 textView.setMinWidth(AndroidUtilities.dp(64));
                 textView.setTag(Dialog.BUTTON_NEUTRAL);
@@ -686,7 +710,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                 textView.setEllipsize(TextUtils.TruncateAt.END);
                 textView.setSingleLine(true);
                 textView.setText(neutralButtonText.toString().toUpperCase());
-                textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable());
+                textView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(getThemeColor(Theme.key_dialogButton)));
                 textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
                 buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.TOP | Gravity.LEFT));
                 textView.setOnClickListener(v -> {
@@ -728,6 +752,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
             params.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
         } else {
             params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE;
+        }
+        if (Build.VERSION.SDK_INT >= 28) {
+            params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
         }
         window.setAttributes(params);
     }
@@ -841,7 +868,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         if (cancelDialog != null) {
             cancelDialog.dismiss();
         }
-        super.dismiss();
+        try {
+            super.dismiss();
+        } catch (Throwable ignore) {
+
+        }
     }
 
     @Override
@@ -908,6 +939,10 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                 messageTextView.setVisibility(View.GONE);
             }
         }
+    }
+
+    public void setMessageTextViewClickable(boolean value) {
+        messageTextViewClickable = value;
     }
 
     public void setButton(int type, CharSequence text, final OnClickListener listener) {
@@ -1063,6 +1098,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
 
         public Builder setCustomViewOffset(int offset) {
             alertDialog.customViewOffset = offset;
+            return this;
+        }
+
+        public Builder setMessageTextViewClickable(boolean value) {
+            alertDialog.messageTextViewClickable = value;
             return this;
         }
 

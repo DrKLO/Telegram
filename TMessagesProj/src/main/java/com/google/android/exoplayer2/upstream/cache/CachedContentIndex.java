@@ -15,7 +15,7 @@
  */
 package com.google.android.exoplayer2.upstream.cache;
 
-import android.support.annotation.VisibleForTesting;
+import androidx.annotation.VisibleForTesting;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import com.google.android.exoplayer2.upstream.cache.Cache.CacheException;

@@ -163,15 +163,20 @@ jlong Java_org_telegram_SQLite_SQLiteDatabase_opendb(JNIEnv *env, jobject object
     return (jlong) handle;
 }
 
+jint Java_org_telegram_SQLite_SQLiteCursor_columnCount(JNIEnv *env, jobject object, jlong statementHandle) {
+    sqlite3_stmt *handle = (sqlite3_stmt *) (intptr_t) statementHandle;
+    return sqlite3_column_count(handle);
+}
+
 jint Java_org_telegram_SQLite_SQLiteCursor_columnType(JNIEnv *env, jobject object, jlong statementHandle, jint columnIndex) {
     sqlite3_stmt *handle = (sqlite3_stmt *) (intptr_t) statementHandle;
     return sqlite3_column_type(handle, columnIndex);
 }
 
-jboolean Java_org_telegram_SQLite_SQLiteCursor_columnIsNull(JNIEnv *env, jobject object, jlong statementHandle, jint columnIndex) {
+jint Java_org_telegram_SQLite_SQLiteCursor_columnIsNull(JNIEnv *env, jobject object, jlong statementHandle, jint columnIndex) {
     sqlite3_stmt *handle = (sqlite3_stmt *) (intptr_t) statementHandle;
     int valType = sqlite3_column_type(handle, columnIndex);
-    return (jboolean) (SQLITE_NULL == valType);
+    return SQLITE_NULL == valType ? 1 : 0;
 }
 
 jint Java_org_telegram_SQLite_SQLiteCursor_columnIntValue(JNIEnv *env, jobject object, jlong statementHandle, jint columnIndex) {

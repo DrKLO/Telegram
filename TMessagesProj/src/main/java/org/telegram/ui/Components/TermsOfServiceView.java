@@ -104,7 +104,7 @@ public class TermsOfServiceView extends FrameLayout {
                         }
                         if (response instanceof TLRPC.TL_boolTrue) {
                             MessagesController.getInstance(currentAccount).performLogout(0);
-                        } else {
+                        } else if (error == null || error.code != -1000) {
                             String errorText = LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred);
                             if (error != null) {
                                 errorText += "\n" + error.text;

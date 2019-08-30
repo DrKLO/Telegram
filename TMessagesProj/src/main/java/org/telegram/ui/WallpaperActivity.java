@@ -52,6 +52,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -60,8 +61,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
@@ -89,6 +88,9 @@ import org.telegram.ui.Components.WallpaperParallaxEffect;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class WallpaperActivity extends BaseFragment implements DownloadController.FileDownloadProgressListener, NotificationCenter.NotificationCenterDelegate {
 
@@ -182,7 +184,7 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
 
         private Bitmap colorWheelBitmap;
 
-        private EditTextBoldCursor colorEditText[] = new EditTextBoldCursor[2];
+        private EditTextBoldCursor[] colorEditText = new EditTextBoldCursor[2];
 
         private int colorWheelRadius;
 
@@ -375,8 +377,8 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
 
             int colorCount = 12;
             int colorAngleStep = 360 / 12;
-            int colors[] = new int[colorCount + 1];
-            float hsv[] = new float[] { 0.0f, 1.0f, 1.0f };
+            int[] colors = new int[colorCount + 1];
+            float[] hsv = new float[]{0.0f, 1.0f, 1.0f};
             for (int i = 0; i < colors.length; i++) {
                 hsv[0] = (i * colorAngleStep + 180) % 360;
                 colors[i] = Color.HSVToColor(hsv);
@@ -507,7 +509,7 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
             currentPattern = wallPaper;
             if (wallPaper != null) {
                 TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(wallPaper.document.thumbs, 100);
-                setImage(thumb, "100_100", null, null, "jpg", 0, 1, wallPaper);
+                setImage(ImageLocation.getForDocument(thumb, wallPaper.document), "100_100", null, null, "jpg", 0, 1, wallPaper);
             } else {
                 setImageDrawable(null);
             }
@@ -1257,7 +1259,7 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
                         if (selectedPattern == null) {
                             backgroundImage.setImageDrawable(null);
                         } else {
-                            backgroundImage.setImage(selectedPattern.document, imageFilter, null, null, "jpg", selectedPattern.document.size, 1, selectedPattern);
+                            backgroundImage.setImage(ImageLocation.getForDocument(selectedPattern.document), imageFilter, null, null, "jpg", selectedPattern.document.size, 1, selectedPattern);
                         }
                         checkBoxView[1].setChecked(selectedPattern != null, false);
 
@@ -1314,7 +1316,7 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
                             updateButtonState(radialProgress, null, WallpaperActivity.this, false, true);
                         } else {
                             TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) patterns.get(position - 1);
-                            backgroundImage.setImage(wallPaper.document, imageFilter, null, null, "jpg", wallPaper.document.size, 1, wallPaper);
+                            backgroundImage.setImage(ImageLocation.getForDocument(wallPaper.document), imageFilter, null, null, "jpg", wallPaper.document.size, 1, wallPaper);
                             selectedPattern = wallPaper;
                             isMotion = checkBoxView[2].isChecked();
                             updateButtonState(radialProgress, null, WallpaperActivity.this, false, true);
@@ -1702,12 +1704,12 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
         if (currentWallpaper instanceof TLRPC.TL_wallPaper) {
             TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) currentWallpaper;
             TLRPC.PhotoSize thumb = setThumb ? FileLoader.getClosestPhotoSizeWithSize(wallPaper.document.thumbs, 100) : null;
-            backgroundImage.setImage(wallPaper.document, imageFilter, thumb, "100_100_b", "jpg", wallPaper.document.size, 1, wallPaper);
+            backgroundImage.setImage(ImageLocation.getForDocument(wallPaper.document), imageFilter, ImageLocation.getForDocument(thumb, wallPaper.document), "100_100_b", "jpg", wallPaper.document.size, 1, wallPaper);
         } else if (currentWallpaper instanceof WallpapersListActivity.ColorWallpaper) {
             WallpapersListActivity.ColorWallpaper wallPaper = (WallpapersListActivity.ColorWallpaper) currentWallpaper;
             setBackgroundColor(wallPaper.color);
             if (selectedPattern != null) {
-                backgroundImage.setImage(selectedPattern.document, imageFilter, null, null, "jpg", selectedPattern.document.size, 1, selectedPattern);
+                backgroundImage.setImage(ImageLocation.getForDocument(selectedPattern.document), imageFilter, null, null, "jpg", selectedPattern.document.size, 1, selectedPattern);
             }
         } else if (currentWallpaper instanceof WallpapersListActivity.FileWallpaper) {
             if (currentWallpaperBitmap != null) {
@@ -1733,7 +1735,7 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
                     image = null;
                 }
                 int size = image != null ? image.size : 0;
-                backgroundImage.setImage(image, imageFilter, thumb, "100_100_b", "jpg", size, 1, wallPaper);
+                backgroundImage.setImage(ImageLocation.getForPhoto(image, wallPaper.photo), imageFilter, ImageLocation.getForPhoto(thumb, wallPaper.photo), "100_100_b", "jpg", size, 1, wallPaper);
             } else {
                 backgroundImage.setImage(wallPaper.imageUrl, imageFilter, wallPaper.thumbUrl, "100_100_b");
             }
@@ -1997,6 +1999,6 @@ public class WallpaperActivity extends BaseFragment implements DownloadControlle
         arrayList.add(new ThemeDescription(listView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_inTimeSelectedText));
         arrayList.add(new ThemeDescription(listView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outTimeSelectedText));
 
-        return arrayList.toArray(new ThemeDescription[arrayList.size()]);
+        return arrayList.toArray(new ThemeDescription[0]);
     }
 }

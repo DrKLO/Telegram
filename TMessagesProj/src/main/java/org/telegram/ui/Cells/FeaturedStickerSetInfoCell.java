@@ -23,7 +23,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -160,12 +160,12 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         isUnread = unread;
         if (hasOnClick) {
             addButton.setVisibility(VISIBLE);
-            if (isInstalled = DataQuery.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id)) {
+            if (isInstalled = MediaDataController.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id)) {
                 addButton.setBackgroundDrawable(delDrawable);
-                addButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove).toUpperCase());
+                addButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove));
             } else {
                 addButton.setBackgroundDrawable(addDrawable);
-                addButton.setText(LocaleController.getString("Add", R.string.Add).toUpperCase());
+                addButton.setText(LocaleController.getString("Add", R.string.Add));
             }
             addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
         } else {

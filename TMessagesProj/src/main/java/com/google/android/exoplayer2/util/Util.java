@@ -39,7 +39,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Parcel;
 import android.security.NetworkSecurityPolicy;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.view.Display;

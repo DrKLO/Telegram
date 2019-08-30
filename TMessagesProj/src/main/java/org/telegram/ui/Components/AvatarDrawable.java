@@ -21,6 +21,7 @@ import android.text.TextPaint;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -34,8 +35,15 @@ public class AvatarDrawable extends Drawable {
     private float textLeft;
     private boolean isProfile;
     private boolean drawBrodcast;
-    private int savedMessages;
+    private boolean drawDeleted;
+    private int avatarType;
+    private float archivedAvatarProgress;
     private StringBuilder stringBuilder = new StringBuilder(5);
+
+    public static final int AVATAR_TYPE_NORMAL = 0;
+    public static final int AVATAR_TYPE_SAVED = 1;
+    public static final int AVATAR_TYPE_SAVED_SMALL = 2;
+    public static final int AVATAR_TYPE_ARCHIVED = 3;
 
     public AvatarDrawable() {
         super();
@@ -58,6 +66,7 @@ public class AvatarDrawable extends Drawable {
         isProfile = profile;
         if (user != null) {
             setInfo(user.id, user.first_name, user.last_name, false, null);
+            drawDeleted = UserObject.isDeleted(user);
         }
     }
 
@@ -111,12 +120,25 @@ public class AvatarDrawable extends Drawable {
     public void setInfo(TLRPC.User user) {
         if (user != null) {
             setInfo(user.id, user.first_name, user.last_name, false, null);
+            drawDeleted = UserObject.isDeleted(user);
         }
     }
 
-    public void setSavedMessages(int value) {
-        savedMessages = value;
-        color = Theme.getColor(Theme.key_avatar_backgroundSaved);
+    public void setAvatarType(int value) {
+        avatarType = value;
+        if (avatarType == AVATAR_TYPE_ARCHIVED) {
+            color = Theme.getColor(Theme.key_avatar_backgroundArchivedHidden);
+        } else {
+            color = Theme.getColor(Theme.key_avatar_backgroundSaved);
+        }
+    }
+
+    public void setArchivedAvatarHiddenProgress(float progress) {
+        archivedAvatarProgress = progress;
+    }
+
+    public int getAvatarType() {
+        return avatarType;
     }
 
     public void setInfo(TLRPC.Chat chat) {
@@ -149,7 +171,8 @@ public class AvatarDrawable extends Drawable {
         }
 
         drawBrodcast = isBroadcast;
-        savedMessages = 0;
+        avatarType = AVATAR_TYPE_NORMAL;
+        drawDeleted = false;
 
         if (firstName == null || firstName.length() == 0) {
             firstName = lastName;
@@ -220,10 +243,38 @@ public class AvatarDrawable extends Drawable {
         canvas.translate(bounds.left, bounds.top);
         canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, Theme.avatar_backgroundPaint);
 
-        if (savedMessages != 0 && Theme.avatar_savedDrawable != null) {
+        if (avatarType == AVATAR_TYPE_ARCHIVED) {
+            if (archivedAvatarProgress != 0) {
+                Theme.avatar_backgroundPaint.setColor(Theme.getColor(Theme.key_avatar_backgroundArchived));
+                canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f * archivedAvatarProgress, Theme.avatar_backgroundPaint);
+                if (Theme.dialogs_archiveAvatarDrawableRecolored) {
+                    Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
+                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", Theme.getColor(Theme.key_avatar_backgroundArchived));
+                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", Theme.getColor(Theme.key_avatar_backgroundArchived));
+                    Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
+                    Theme.dialogs_archiveAvatarDrawableRecolored = false;
+                }
+            } else {
+                if (!Theme.dialogs_archiveAvatarDrawableRecolored) {
+                    Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
+                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", Theme.getColor(Theme.key_avatar_backgroundArchivedHidden));
+                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", Theme.getColor(Theme.key_avatar_backgroundArchivedHidden));
+                    Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
+                    Theme.dialogs_archiveAvatarDrawableRecolored = true;
+                }
+            }
+            int w = Theme.dialogs_archiveAvatarDrawable.getIntrinsicWidth();
+            int h = Theme.dialogs_archiveAvatarDrawable.getIntrinsicHeight();
+            int x = (size - w) / 2;
+            int y = (size - h) / 2;
+            canvas.save();
+            Theme.dialogs_archiveAvatarDrawable.setBounds(x, y, x + w, y + h);
+            Theme.dialogs_archiveAvatarDrawable.draw(canvas);
+            canvas.restore();
+        } else if (avatarType != 0 && Theme.avatar_savedDrawable != null) {
             int w = Theme.avatar_savedDrawable.getIntrinsicWidth();
             int h = Theme.avatar_savedDrawable.getIntrinsicHeight();
-            if (savedMessages == 2) {
+            if (avatarType == AVATAR_TYPE_SAVED_SMALL) {
                 w *= 0.8f;
                 h *= 0.8f;
             }
@@ -236,6 +287,11 @@ public class AvatarDrawable extends Drawable {
             int y = (size - Theme.avatar_broadcastDrawable.getIntrinsicHeight()) / 2;
             Theme.avatar_broadcastDrawable.setBounds(x, y, x + Theme.avatar_broadcastDrawable.getIntrinsicWidth(), y + Theme.avatar_broadcastDrawable.getIntrinsicHeight());
             Theme.avatar_broadcastDrawable.draw(canvas);
+        } else if (drawDeleted && Theme.avatar_ghostDrawable != null) {
+            int x = (size - Theme.avatar_ghostDrawable.getIntrinsicWidth()) / 2;
+            int y = (size - Theme.avatar_ghostDrawable.getIntrinsicHeight()) / 2;
+            Theme.avatar_ghostDrawable.setBounds(x, y, x + Theme.avatar_ghostDrawable.getIntrinsicWidth(), y + Theme.avatar_ghostDrawable.getIntrinsicHeight());
+            Theme.avatar_ghostDrawable.draw(canvas);
         } else {
             if (textLayout != null) {
                 canvas.translate((size - textWidth) / 2 - textLeft, (size - textHeight) / 2);

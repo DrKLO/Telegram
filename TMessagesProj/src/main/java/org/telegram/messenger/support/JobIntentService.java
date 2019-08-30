@@ -29,10 +29,12 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import android.util.Log;
+
+import org.telegram.messenger.FileLog;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -162,8 +164,13 @@ public abstract class JobIntentService extends Service {
                     mServiceProcessing = true;
                     // Keep the device awake, but only for at most 10 minutes at a time
                     // (Similar to JobScheduler.)
-                    mRunWakeLock.acquire(2 * 60 * 1000L);
-                    mLaunchWakeLock.release();
+                    try {
+                        mRunWakeLock.acquire(2 * 60 * 1000L);
+                        mLaunchWakeLock.release();
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                        mServiceProcessing = false;
+                    }
                 }
             }
         }
@@ -344,7 +351,11 @@ public abstract class JobIntentService extends Service {
                 if (DEBUG) Log.d(TAG, "Processing next work: " + work);
                 onHandleWork(work.getIntent());
                 if (DEBUG) Log.d(TAG, "Completing work: " + work);
-                work.complete();
+                try {
+                    work.complete();
+                } catch (Throwable ignore) {
+
+                }
             }
 
             if (DEBUG) Log.d(TAG, "Done processing work!");
@@ -436,7 +447,7 @@ public abstract class JobIntentService extends Service {
     }
 
     /**
-     * Call this to enqueue work for your subclass of {@link android.support.v4.app.JobIntentService}.  This will
+     * Call this to enqueue work for your subclass of {@link androidx.core.app.JobIntentService}.  This will
      * either directly start the service (when running on pre-O platforms) or enqueue work
      * for it as a job (when running on O and later).  In either case, a wake lock will be
      * held for you to ensure you continue running.  The work you enqueue will ultimately

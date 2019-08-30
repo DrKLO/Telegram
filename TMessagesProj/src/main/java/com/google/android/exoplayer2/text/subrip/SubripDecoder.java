@@ -15,7 +15,7 @@
  */
 package com.google.android.exoplayer2.text.subrip;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.text.Html;
 import android.text.Spanned;
 import android.text.TextUtils;

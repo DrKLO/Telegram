@@ -22,6 +22,7 @@ import org.telegram.ui.Components.LayoutHelper;
 public class GraySectionCell extends FrameLayout {
 
     private TextView textView;
+    private TextView righTextView;
 
     public GraySectionCell(Context context) {
         super(context);
@@ -34,6 +35,12 @@ public class GraySectionCell extends FrameLayout {
         textView.setTextColor(Theme.getColor(Theme.key_graySectionText));
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 16, 0, 16, 0));
+
+        righTextView = new TextView(getContext());
+        righTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        righTextView.setTextColor(Theme.getColor(Theme.key_graySectionText));
+        righTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
+        addView(righTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 16, 0, 16, 0));
     }
 
     @Override
@@ -43,5 +50,13 @@ public class GraySectionCell extends FrameLayout {
 
     public void setText(String text) {
         textView.setText(text);
+        righTextView.setVisibility(GONE);
+    }
+
+    public void setText(String left, String right, OnClickListener onClickListener) {
+        textView.setText(left);
+        righTextView.setText(right);
+        righTextView.setOnClickListener(onClickListener);
+        righTextView.setVisibility(VISIBLE);
     }
 }

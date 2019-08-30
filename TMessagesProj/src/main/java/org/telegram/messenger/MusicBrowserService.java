@@ -156,7 +156,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
                 try {
                     ArrayList<Integer> usersToLoad = new ArrayList<>();
                     ArrayList<Integer> chatsToLoad = new ArrayList<>();
-                    SQLiteCursor cursor = messagesStorage.getDatabase().queryFinalized(String.format(Locale.US, "SELECT DISTINCT uid FROM media_v2 WHERE uid != 0 AND mid > 0 AND type = %d", DataQuery.MEDIA_MUSIC));
+                    SQLiteCursor cursor = messagesStorage.getDatabase().queryFinalized(String.format(Locale.US, "SELECT DISTINCT uid FROM media_v2 WHERE uid != 0 AND mid > 0 AND type = %d", MediaDataController.MEDIA_MUSIC));
                     while (cursor.next()) {
                         int lower_part = (int) cursor.longValue(0);
                         if (lower_part == 0) {
@@ -172,7 +172,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
                     cursor.dispose();
                     if (!dialogs.isEmpty()) {
                         String ids = TextUtils.join(",", dialogs);
-                        cursor = messagesStorage.getDatabase().queryFinalized(String.format(Locale.US, "SELECT uid, data, mid FROM media_v2 WHERE uid IN (%s) AND mid > 0 AND type = %d ORDER BY date DESC, mid DESC", ids, DataQuery.MEDIA_MUSIC));
+                        cursor = messagesStorage.getDatabase().queryFinalized(String.format(Locale.US, "SELECT uid, data, mid FROM media_v2 WHERE uid IN (%s) AND mid > 0 AND type = %d ORDER BY date DESC, mid DESC", ids, MediaDataController.MEDIA_MUSIC));
                         while (cursor.next()) {
                             NativeByteBuffer data = cursor.byteBufferValue(1);
                             if (data != null) {
@@ -276,7 +276,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
                     TLRPC.User user = users.get(did);
                     if (user != null) {
                         builder.setTitle(ContactsController.formatName(user.first_name, user.last_name));
-                        if (user.photo != null && user.photo.photo_small instanceof TLRPC.TL_fileLocation) {
+                        if (user.photo != null && !(user.photo.photo_small instanceof TLRPC.TL_fileLocationUnavailable)) {
                             avatar = user.photo.photo_small;
                         }
                     } else {
@@ -286,7 +286,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
                     TLRPC.Chat chat = chats.get(-did);
                     if (chat != null) {
                         builder.setTitle(chat.title);
-                        if (chat.photo != null && chat.photo.photo_small instanceof TLRPC.TL_fileLocation) {
+                        if (chat.photo != null && !(chat.photo.photo_small instanceof TLRPC.TL_fileLocationUnavailable)) {
                             avatar = chat.photo.photo_small;
                         }
                     } else {
@@ -470,7 +470,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
         long position = PlaybackState.PLAYBACK_POSITION_UNKNOWN;
         MessageObject playingMessageObject = MediaController.getInstance().getPlayingMessageObject();
         if (playingMessageObject != null) {
-            position = playingMessageObject.audioProgressSec * 1000;
+            position = playingMessageObject.audioProgressSec * 1000L;
         }
 
         PlaybackState.Builder stateBuilder = new PlaybackState.Builder().setActions(getAvailableActions());

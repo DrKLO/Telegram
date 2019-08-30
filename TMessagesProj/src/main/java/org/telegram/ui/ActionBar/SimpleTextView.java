@@ -24,6 +24,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 
@@ -65,6 +66,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
     public SimpleTextView(Context context) {
         super(context);
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
     }
 
     public void setTextColor(int color) {
@@ -134,12 +136,6 @@ public class SimpleTextView extends View implements Drawable.Callback {
             textWidth = (int) Math.ceil(layout.getLineWidth(0));
             textHeight = layout.getLineBottom(0);
 
-            if ((gravity & Gravity.VERTICAL_GRAVITY_MASK) == Gravity.CENTER_VERTICAL) {
-                offsetY = (getMeasuredHeight() - textHeight) / 2;
-            } else {
-                offsetY = 0;
-            }
-
             if ((gravity & Gravity.HORIZONTAL_GRAVITY_MASK) == Gravity.LEFT) {
                 offsetX = -(int) layout.getLineLeft(0);
             } else if (layout.getLineLeft(0) == 0) {
@@ -205,6 +201,12 @@ public class SimpleTextView extends View implements Drawable.Callback {
             finalHeight = textHeight;
         }
         setMeasuredDimension(width, finalHeight);
+
+        if ((gravity & Gravity.VERTICAL_GRAVITY_MASK) == Gravity.CENTER_VERTICAL) {
+            offsetY = (getMeasuredHeight() - textHeight) / 2;
+        } else {
+            offsetY = 0;
+        }
     }
 
     @Override
@@ -252,6 +254,10 @@ public class SimpleTextView extends View implements Drawable.Callback {
         }
     }
 
+    public Drawable getRightDrawable() {
+        return rightDrawable;
+    }
+
     public void setRightDrawable(Drawable drawable) {
         if (rightDrawable == drawable) {
             return;
@@ -268,12 +274,17 @@ public class SimpleTextView extends View implements Drawable.Callback {
         }
     }
 
+    public void setSideDrawablesColor(int color) {
+        Theme.setDrawableColor(rightDrawable, color);
+        Theme.setDrawableColor(leftDrawable, color);
+    }
+
     public boolean setText(CharSequence value) {
         return setText(value, false);
     }
 
     public boolean setText(CharSequence value, boolean force) {
-        if (text == null && value == null || !force && text != null && value != null && text.equals(value)) {
+        if (text == null && value == null || !force && text != null && text.equals(value)) {
             return false;
         }
         text = value;
@@ -295,7 +306,13 @@ public class SimpleTextView extends View implements Drawable.Callback {
 
     private boolean recreateLayoutMaybe() {
         if (wasLayout && getMeasuredHeight() != 0) {
-            return createLayout(getMeasuredWidth());
+            boolean result = createLayout(getMeasuredWidth() - getPaddingLeft() - getPaddingRight());
+            if ((gravity & Gravity.VERTICAL_GRAVITY_MASK) == Gravity.CENTER_VERTICAL) {
+                offsetY = (getMeasuredHeight() - textHeight) / 2;
+            } else {
+                offsetY = 0;
+            }
+            return result;
         } else {
             requestLayout();
         }
@@ -387,7 +404,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
             if (offsetX + textOffsetX != 0 || offsetY != 0 || scrollingOffset != 0) {
                 canvas.restore();
             }
-            if (scrollNonFitText && textDoesNotFit) {
+            if (scrollNonFitText && (textDoesNotFit || scrollingOffset != 0)) {
                 if (scrollingOffset < AndroidUtilities.dp(10)) {
                     fadeDrawable.setAlpha((int) (255 * (scrollingOffset / AndroidUtilities.dp(10))));
                 } else if (scrollingOffset > totalWidth + AndroidUtilities.dp(DIST_BETWEEN_SCROLLING_TEXT) - AndroidUtilities.dp(10)) {
@@ -419,7 +436,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
     }
 
     private void updateScrollAnimation() {
-        if (!scrollNonFitText || !textDoesNotFit) {
+        if (!scrollNonFitText || !textDoesNotFit && scrollingOffset == 0) {
             return;
         }
         long newUpdateTime = SystemClock.uptimeMillis();
@@ -462,5 +479,13 @@ public class SimpleTextView extends View implements Drawable.Callback {
     @Override
     public boolean hasOverlappingRendering() {
         return false;
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setVisibleToUser(true);
+        info.setClassName("android.widget.TextView");
+        info.setText(text);
     }
 }

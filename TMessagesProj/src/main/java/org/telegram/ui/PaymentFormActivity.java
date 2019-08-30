@@ -180,15 +180,17 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private ContextProgressView progressViewButton;
     private AnimatorSet doneItemAnimation;
     private WebView webView;
+    private String webViewUrl;
+    private boolean shouldNavigateBack;
     private ScrollView scrollView;
 
     private TextView textView;
-    private HeaderCell headerCell[] = new HeaderCell[3];
+    private HeaderCell[] headerCell = new HeaderCell[3];
     private ArrayList<View> dividers = new ArrayList<>();
-    private ShadowSectionCell sectionCell[] = new ShadowSectionCell[3];
+    private ShadowSectionCell[] sectionCell = new ShadowSectionCell[3];
     private TextCheckCell checkCell1;
-    private TextInfoPrivacyCell bottomCell[] = new TextInfoPrivacyCell[3];
-    private TextSettingsCell settingsCell[] = new TextSettingsCell[2];
+    private TextInfoPrivacyCell[] bottomCell = new TextInfoPrivacyCell[3];
+    private TextSettingsCell[] settingsCell = new TextSettingsCell[2];
     private FrameLayout androidPayContainer;
     private LinearLayout linearLayout2;
 
@@ -199,7 +201,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private TextView payTextView;
     private FrameLayout bottomLayout;
     private PaymentInfoCell paymentInfoCell;
-    private TextDetailSettingsCell detailSettingsCell[] = new TextDetailSettingsCell[7];
+    private TextDetailSettingsCell[] detailSettingsCell = new TextDetailSettingsCell[7];
 
     private TLRPC.TL_account_password currentPassword;
     private boolean waitingForEmail;
@@ -726,13 +728,13 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                         country = codesMap.get(sub);
                                         if (country != null) {
                                             ok = true;
-                                            textToSet = text.substring(a, text.length()) + inputFields[FIELD_PHONE].getText().toString();
+                                            textToSet = text.substring(a) + inputFields[FIELD_PHONE].getText().toString();
                                             inputFields[FIELD_PHONECODE].setText(text = sub);
                                             break;
                                         }
                                     }
                                     if (!ok) {
-                                        textToSet = text.substring(1, text.length()) + inputFields[FIELD_PHONE].getText().toString();
+                                        textToSet = text.substring(1) + inputFields[FIELD_PHONE].getText().toString();
                                         inputFields[FIELD_PHONECODE].setText(text = text.substring(0, 1));
                                     }
                                 }
@@ -804,7 +806,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                             String phoneChars = "0123456789";
                             String str = phoneField.getText().toString();
                             if (characterAction == 3) {
-                                str = str.substring(0, actionPosition) + str.substring(actionPosition + 1, str.length());
+                                str = str.substring(0, actionPosition) + str.substring(actionPosition + 1);
                                 start--;
                             }
                             StringBuilder builder = new StringBuilder(str.length());
@@ -1018,12 +1020,17 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 showEditDoneProgress(true, true);
                 progressView.setVisibility(View.VISIBLE);
                 doneItem.setEnabled(false);
-                doneItem.getImageView().setVisibility(View.INVISIBLE);
+                doneItem.getContentView().setVisibility(View.INVISIBLE);
                 webView = new WebView(context) {
                     @Override
                     public boolean onTouchEvent(MotionEvent event) {
-                        getParent().requestDisallowInterceptTouchEvent(true);
+                        ((ViewGroup) fragmentView).requestDisallowInterceptTouchEvent(true);
                         return super.onTouchEvent(event);
+                    }
+
+                    @Override
+                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
                     }
                 };
                 webView.getSettings().setJavaScriptEnabled(true);
@@ -1041,6 +1048,12 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     @Override
                     public void onLoadResource(WebView view, String url) {
                         super.onLoadResource(view, url);
+                    }
+
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                        shouldNavigateBack = !url.equals(webViewUrl);
+                        return super.shouldOverrideUrlLoading(view, url);
                     }
 
                     @Override
@@ -1238,7 +1251,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                 String phoneChars = "0123456789";
                                 String str = phoneField.getText().toString();
                                 if (characterAction == 3) {
-                                    str = str.substring(0, actionPosition) + str.substring(actionPosition + 1, str.length());
+                                    str = str.substring(0, actionPosition) + str.substring(actionPosition + 1);
                                     start--;
                                 }
                                 StringBuilder builder = new StringBuilder(str.length());
@@ -1254,7 +1267,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                 if (builder.length() > 0) {
                                     String currentString = builder.toString();
                                     for (int a = 0; a < 3; a++) {
-                                        String checkArr[];
+                                        String[] checkArr;
                                         String resultHint;
                                         int resultMaxLength;
                                         switch (a) {
@@ -1377,7 +1390,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                 String phoneChars = "0123456789";
                                 String str = phoneField.getText().toString();
                                 if (characterAction == 3) {
-                                    str = str.substring(0, actionPosition) + str.substring(actionPosition + 1, str.length());
+                                    str = str.substring(0, actionPosition) + str.substring(actionPosition + 1);
                                     start--;
                                 }
                                 StringBuilder builder = new StringBuilder(str.length());
@@ -1810,7 +1823,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 frameLayout.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 48));
 
                 doneItem.setEnabled(false);
-                doneItem.getImageView().setVisibility(View.INVISIBLE);
+                doneItem.getContentView().setVisibility(View.INVISIBLE);
 
                 webView = new WebView(context) {
                     @Override
@@ -2242,10 +2255,11 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             try {
                 ViewParent parent = webView.getParent();
                 if (parent != null) {
-                    ((FrameLayout) parent).removeView(webView);
+                    ((ViewGroup) parent).removeView(webView);
                 }
                 webView.stopLoading();
                 webView.loadUrl("about:blank");
+                webViewUrl = null;
                 webView.destroy();
                 webView = null;
             } catch (Exception e) {
@@ -2268,7 +2282,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         if (isOpen && !backward) {
             if (webView != null) {
                 if (currentStep != 4) {
-                    webView.loadUrl(paymentForm.url);
+                    webView.loadUrl(webViewUrl = paymentForm.url);
                 }
             } else if (currentStep == 2) {
                 inputFields[FIELD_CARD].requestFocus();
@@ -2595,13 +2609,13 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                 String country = codesMap.get(sub);
                                 if (country != null) {
                                     ok = true;
-                                    textToSet = number.substring(a, number.length());
+                                    textToSet = number.substring(a);
                                     inputFields[FIELD_PHONECODE].setText(sub);
                                     break;
                                 }
                             }
                             if (!ok) {
-                                textToSet = number.substring(1, number.length());
+                                textToSet = number.substring(1);
                                 inputFields[FIELD_PHONECODE].setText(number.substring(0, 1));
                             }
                         }
@@ -2691,7 +2705,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 }
                 int dot = email.lastIndexOf('.');
                 int dog = email.lastIndexOf('@');
-                if (dot < 0 || dog < 0 || dot < dog) {
+                if (dog < 0 || dot < dog) {
                     shakeField(FIELD_ENTERPASSWORDEMAIL);
                     return;
                 }
@@ -2796,7 +2810,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         Integer month;
         Integer year;
         String date = inputFields[FIELD_EXPIRE_DATE].getText().toString();
-        String args[] = date.split("/");
+        String[] args = date.split("/");
         if (args.length == 2) {
             month = Utilities.parseInt(args[0]);
             year = Utilities.parseInt(args[1]);
@@ -3019,7 +3033,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 if (response instanceof TLRPC.TL_payments_paymentResult) {
                     MessagesController.getInstance(currentAccount).processUpdates(((TLRPC.TL_payments_paymentResult) response).updates, false);
                     AndroidUtilities.runOnUIThread(this::goToNextStep);
-                } else if (response instanceof TLRPC.TL_payments_paymentVerficationNeeded) {
+                } else if (response instanceof TLRPC.TL_payments_paymentVerificationNeeded) {
                     AndroidUtilities.runOnUIThread(() -> {
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.paymentFinished);
                         setDonePressed(false);
@@ -3028,8 +3042,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         showEditDoneProgress(true, true);
                         progressView.setVisibility(View.VISIBLE);
                         doneItem.setEnabled(false);
-                        doneItem.getImageView().setVisibility(View.INVISIBLE);
-                        webView.loadUrl(((TLRPC.TL_payments_paymentVerficationNeeded) response).url);
+                        doneItem.getContentView().setVisibility(View.INVISIBLE);
+                        webView.loadUrl(webViewUrl = ((TLRPC.TL_payments_paymentVerificationNeeded) response).url);
                     });
                 }
             } else {
@@ -3100,7 +3114,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     byte[] passwordBytes = AndroidUtilities.getStringBytes(password);
 
                     Utilities.globalQueue.postRunnable(() -> {
-                        final byte x_bytes[];
+                        final byte[] x_bytes;
                         if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
                             TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
                             x_bytes = SRPHelper.getX(passwordBytes, algo);
@@ -3168,9 +3182,9 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 progressView.setVisibility(View.VISIBLE);
                 doneItem.setEnabled(false);
                 doneItemAnimation.playTogether(
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleX", 0.1f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleY", 0.1f),
-                        ObjectAnimator.ofFloat(doneItem.getImageView(), "alpha", 0.0f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 0.1f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 0.1f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 0.0f),
                         ObjectAnimator.ofFloat(progressView, "scaleX", 1.0f),
                         ObjectAnimator.ofFloat(progressView, "scaleY", 1.0f),
                         ObjectAnimator.ofFloat(progressView, "alpha", 1.0f));
@@ -3181,15 +3195,15 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                             ObjectAnimator.ofFloat(progressView, "scaleY", 0.1f),
                             ObjectAnimator.ofFloat(progressView, "alpha", 0.0f));
                 } else {
-                    doneItem.getImageView().setVisibility(View.VISIBLE);
+                    doneItem.getContentView().setVisibility(View.VISIBLE);
                     doneItem.setEnabled(true);
                     doneItemAnimation.playTogether(
                             ObjectAnimator.ofFloat(progressView, "scaleX", 0.1f),
                             ObjectAnimator.ofFloat(progressView, "scaleY", 0.1f),
                             ObjectAnimator.ofFloat(progressView, "alpha", 0.0f),
-                            ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleX", 1.0f),
-                            ObjectAnimator.ofFloat(doneItem.getImageView(), "scaleY", 1.0f),
-                            ObjectAnimator.ofFloat(doneItem.getImageView(), "alpha", 1.0f));
+                            ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 1.0f),
+                            ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 1.0f),
+                            ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 1.0f));
                 }
 
             }
@@ -3200,7 +3214,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         if (!show) {
                             progressView.setVisibility(View.INVISIBLE);
                         } else {
-                            doneItem.getImageView().setVisibility(View.INVISIBLE);
+                            doneItem.getContentView().setVisibility(View.INVISIBLE);
                         }
                     }
                 }
@@ -3264,6 +3278,11 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
     @Override
     public boolean onBackPressed() {
+        if (shouldNavigateBack) {
+            webView.loadUrl(webViewUrl);
+            shouldNavigateBack = false;
+            return false;
+        }
         return !donePressed;
     }
 
@@ -3366,6 +3385,6 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         arrayList.add(new ThemeDescription(bottomLayout, ThemeDescription.FLAG_SELECTORWHITE, null, null, null, null, Theme.key_windowBackgroundWhite));
         arrayList.add(new ThemeDescription(bottomLayout, ThemeDescription.FLAG_SELECTORWHITE, null, null, null, null, Theme.key_listSelector));
 
-        return arrayList.toArray(new ThemeDescription[arrayList.size()]);
+        return arrayList.toArray(new ThemeDescription[0]);
     }
 }

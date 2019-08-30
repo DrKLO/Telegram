@@ -17,8 +17,8 @@ package com.google.android.exoplayer2.source.dash;
 
 import android.net.Uri;
 import android.os.SystemClock;
-import android.support.annotation.CheckResult;
-import android.support.annotation.Nullable;
+import androidx.annotation.CheckResult;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.SeekParameters;

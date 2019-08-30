@@ -33,6 +33,8 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityManager;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -828,6 +830,16 @@ public class NumberPicker extends LinearLayout {
         mScrollState = scrollState;
         if (mOnScrollListener != null) {
             mOnScrollListener.onScrollStateChange(this, scrollState);
+        }
+        if (scrollState == OnScrollListener.SCROLL_STATE_IDLE) {
+            AccessibilityManager am = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
+            if(am.isTouchExplorationEnabled()){
+                String text=(mDisplayedValues==null) ? formatNumber(mValue) : mDisplayedValues[mValue-mMinValue];
+                AccessibilityEvent event = AccessibilityEvent.obtain();
+                event.setEventType(AccessibilityEvent.TYPE_ANNOUNCEMENT);
+                event.getText().add(text);
+                am.sendAccessibilityEvent(event);
+            }
         }
     }
 

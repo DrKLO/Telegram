@@ -50,6 +50,7 @@ public abstract class BaseCell extends ViewGroup {
     public BaseCell(Context context) {
         super(context);
         setWillNotDraw(false);
+        setFocusable(true);
     }
 
     public static void setDrawableBounds(Drawable drawable, int x, int y) {

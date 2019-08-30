@@ -13,7 +13,6 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
-import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
@@ -28,7 +27,6 @@ public class PlayingGameDrawable extends StatusDrawable {
 
     private long lastUpdateTime = 0;
     private boolean started = false;
-    private DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator();
     private RectF rect = new RectF();
     private float progress;
 
@@ -75,7 +73,7 @@ public class PlayingGameDrawable extends StatusDrawable {
             //y = AndroidUtilities.dp(9.3f) + getBounds().top;
         }
 
-        paint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
+        paint.setColor(Theme.getColor(Theme.key_chat_status));
         rect.set(0, y, size, y + size);
         int rad;
         if (progress < 0.5f) {
@@ -111,12 +109,7 @@ public class PlayingGameDrawable extends StatusDrawable {
             if (!NotificationCenter.getInstance(currentAccount).isAnimationInProgress()) {
                 update();
             } else {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        checkUpdate();
-                    }
-                }, 100);
+                AndroidUtilities.runOnUIThread(this::checkUpdate, 100);
             }
         }
     }

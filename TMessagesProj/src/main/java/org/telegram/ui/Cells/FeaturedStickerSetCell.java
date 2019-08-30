@@ -30,11 +30,14 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DataQuery;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
@@ -95,6 +98,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
 
         imageView = new BackupImageView(context);
         imageView.setAspectFit(true);
+        imageView.setLayerNum(1);
         addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
 
         addButton = new TextView(context) {
@@ -139,7 +143,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
         addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
-        addButton.setText(LocaleController.getString("Add", R.string.Add).toUpperCase());
+        addButton.setText(LocaleController.getString("Add", R.string.Add));
         addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
         addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? 14 : 0, 18, LocaleController.isRTL ? 0 : 14, 0));
 
@@ -225,19 +229,46 @@ public class FeaturedStickerSetCell extends FrameLayout {
         }
 
         valueTextView.setText(LocaleController.formatPluralString("Stickers", set.set.count));
-        TLRPC.PhotoSize thumb = set.cover != null ? FileLoader.getClosestPhotoSizeWithSize(set.cover.thumbs, 90) : null;
-        if (thumb != null && thumb.location != null) {
-            imageView.setImage(thumb, null, "webp", null, set);
+
+        TLRPC.Document sticker;
+        if (set.cover != null) {
+            sticker = set.cover;
+        } else if (!set.covers.isEmpty()) {
+            sticker = set.covers.get(0);
         } else {
-            thumb = !set.covers.isEmpty() ? FileLoader.getClosestPhotoSizeWithSize(set.covers.get(0).thumbs, 90) : null;
-            if (thumb != null) {
-                imageView.setImage(thumb, null, "webp", null, set);
+            sticker = null;
+        }
+        if (sticker != null) {
+            TLObject object;
+            if (set.set.thumb instanceof TLRPC.TL_photoSize) {
+                object = set.set.thumb;
+            } else {
+                object = sticker;
             }
+            ImageLocation imageLocation;
+
+            if (object instanceof TLRPC.Document) {
+                TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
+                imageLocation = ImageLocation.getForDocument(thumb, sticker);
+            } else {
+                TLRPC.PhotoSize thumb = (TLRPC.PhotoSize) object;
+                imageLocation = ImageLocation.getForSticker(thumb, sticker);
+            }
+
+            if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker)) {
+                imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", imageLocation, null, 0, set);
+            } else if (imageLocation != null && imageLocation.lottieAnimation) {
+                imageView.setImage(imageLocation, "50_50", "tgs", null, set);
+            } else {
+                imageView.setImage(imageLocation, "50_50", "webp", null, set);
+            }
+        } else {
+            imageView.setImage(null, null, "webp", null, set);
         }
 
         if (sameSet) {
             boolean wasInstalled = isInstalled;
-            if (isInstalled = DataQuery.getInstance(currentAccount).isStickerPackInstalled(set.set.id)) {
+            if (isInstalled = MediaDataController.getInstance(currentAccount).isStickerPackInstalled(set.set.id)) {
                 if (!wasInstalled) {
                     checkImage.setVisibility(VISIBLE);
                     addButton.setClickable(false);
@@ -297,7 +328,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
                 }
             }
         } else {
-            if (isInstalled = DataQuery.getInstance(currentAccount).isStickerPackInstalled(set.set.id)) {
+            if (isInstalled = MediaDataController.getInstance(currentAccount).isStickerPackInstalled(set.set.id)) {
                 addButton.setVisibility(INVISIBLE);
                 addButton.setClickable(false);
                 checkImage.setVisibility(VISIBLE);

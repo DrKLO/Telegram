@@ -38,10 +38,10 @@ import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.IntRange;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v7.graphics.Palette;
+import androidx.annotation.IntRange;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.palette.graphics.Palette;
 import android.text.Editable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -56,6 +56,8 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityManager;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -72,6 +74,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -190,7 +193,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                     }
                 }
             });
-            photoView.setImage(user.photo.photo_big, null, new ColorDrawable(0xFF000000), user);
+            photoView.setImage(ImageLocation.getForUser(user, true), null, new ColorDrawable(0xFF000000), user);
             photoView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         } else {
             photoView.setVisibility(View.GONE);
@@ -440,6 +443,16 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.closeInCallActivity);
         hintTextView.setText(LocaleController.formatString("CallEmojiKeyTooltip", R.string.CallEmojiKeyTooltip, user.first_name));
         emojiExpandedText.setText(LocaleController.formatString("CallEmojiKeyTooltip", R.string.CallEmojiKeyTooltip, user.first_name));
+
+        AccessibilityManager am=(AccessibilityManager) getSystemService(ACCESSIBILITY_SERVICE);
+        if(am.isTouchExplorationEnabled()){
+            nameText.postDelayed(new Runnable(){
+                @Override
+                public void run(){
+                    nameText.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_FOCUSED);
+                }
+            }, 500);
+        }
     }
 
     private View createContentView(){
@@ -564,6 +577,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         mic.setAlpha(204);
         mic.setImageDrawable(micIcon);
         mic.setScaleType(ImageView.ScaleType.CENTER);
+        mic.setContentDescription(LocaleController.getString("AccDescrMuteMic", R.string.AccDescrMuteMic));
         wrap=new FrameLayout(this);
         wrap.addView(micToggle=mic, LayoutHelper.createFrame(38, 38, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 10));
         buttons.addView(wrap, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
@@ -573,6 +587,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         chatIcon.setAlpha(204);
         chat.setImageDrawable(chatIcon);
         chat.setScaleType(ImageView.ScaleType.CENTER);
+        chat.setContentDescription(LocaleController.getString("AccDescrOpenChat", R.string.AccDescrOpenChat));
         wrap=new FrameLayout(this);
         wrap.addView(chatBtn=chat, LayoutHelper.createFrame(38, 38, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 10));
         buttons.addView(wrap, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
@@ -595,6 +610,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         speaker.setAlpha(204);
         speaker.setImageDrawable(speakerIcon);
         speaker.setScaleType(ImageView.ScaleType.CENTER);
+        speaker.setContentDescription(LocaleController.getString("VoipAudioRoutingSpeaker", R.string.VoipAudioRoutingSpeaker));
         wrap=new FrameLayout(this);
         wrap.addView(spkToggle=speaker, LayoutHelper.createFrame(38, 38, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 10));
         buttons.addView(wrap, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
@@ -605,10 +621,12 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
 
         CallSwipeView acceptSwipe=new CallSwipeView(this);
         acceptSwipe.setColor(0xFF45bc4d);
+        acceptSwipe.setContentDescription(LocaleController.getString("Accept", R.string.Accept));
         swipesWrap.addView(this.acceptSwipe=acceptSwipe, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 70, 1f, 4, 4, -35, 4));
 
         CallSwipeView declineSwipe=new CallSwipeView(this);
         declineSwipe.setColor(0xFFe61e44);
+        declineSwipe.setContentDescription(LocaleController.getString("Decline", R.string.Decline));
         swipesWrap.addView(this.declineSwipe=declineSwipe, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 70, 1f, -35, 4, 4, 4));
 
         content.addView(swipeViewsWrap=swipesWrap, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 20, 0, 20, 68));
@@ -645,6 +663,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         endInner.setScaleType(ImageView.ScaleType.CENTER);
         end.addView(endBtnIcon=endInner, LayoutHelper.createFrame(70, 70));
         end.setForeground(getResources().getDrawable(R.drawable.fab_highlight_dark));
+        end.setContentDescription(LocaleController.getString("VoipEndCall", R.string.VoipEndCall));
         content.addView(endBtn=end, LayoutHelper.createFrame(78, 78, Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL, 0, 0, 0, 68));
 
         ImageView cancelBtn=new ImageView(this);
@@ -655,6 +674,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         cancelBtn.setColorFilter(0x89000000);
         cancelBtn.setScaleType(ImageView.ScaleType.CENTER);
         cancelBtn.setVisibility(View.GONE);
+        cancelBtn.setContentDescription(LocaleController.getString("Cancel", R.string.Cancel));
         content.addView(this.cancelBtn=cancelBtn, LayoutHelper.createFrame(78, 78, Gravity.BOTTOM|Gravity.LEFT, 52, 0, 0, 68));
         
 
@@ -845,6 +865,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         byte[] sha256 = Utilities.computeSHA256(encryptedChat.auth_key, 0, encryptedChat.auth_key.length);
         String[] emoji=EncryptionKeyEmojifier.emojifyForCall(sha256);
         //keyEmojiText.setText(Emoji.replaceEmoji(TextUtils.join(" ", emoji), keyEmojiText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(32), false));
+        emojiWrap.setContentDescription(LocaleController.getString("EncryptionKey", R.string.EncryptionKey)+", "+TextUtils.join(", ", emoji));
         for(int i=0;i<4;i++) {
             Drawable drawable = Emoji.getEmojiDrawable(emoji[i]);
             if (drawable != null) {
@@ -1170,6 +1191,10 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
 							accountNameText.setVisibility(View.GONE);
 						}
                         getWindow().addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+						VoIPService svc=VoIPService.getSharedInstance();
+						if(svc!=null)
+							svc.startRingtoneAndVibration();
+						setTitle(LocaleController.getString("VoipIncoming", R.string.VoipIncoming));
                     } else {
                         swipeViewsWrap.setVisibility(View.GONE);
                         acceptBtn.setVisibility(View.GONE);
@@ -1228,6 +1253,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                         addMemberBtn.setEnabled(true);
                         addMemberBtn.setAlpha(1f);
                     }*/
+                    setTitle(null);
                     if(!wasFirstStateChange && state==VoIPService.STATE_ESTABLISHED){
                         int count= MessagesController.getGlobalMainSettings().getInt("call_emoji_tooltip_count", 0);
                         if(count<3){
@@ -1548,7 +1574,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                 prefs.getString("quick_reply_msg4", LocaleController.getString("QuickReplyDefault4", R.string.QuickReplyDefault4))};
         LinearLayout sheetView=new LinearLayout(this);
         sheetView.setOrientation(LinearLayout.VERTICAL);
-        final BottomSheet sheet=new BottomSheet(this, true);
+        final BottomSheet sheet=new BottomSheet(this, true, 0);
         if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.LOLLIPOP){
         	getWindow().setNavigationBarColor(0xff2b2b2b);
             sheet.setOnDismissListener(new DialogInterface.OnDismissListener(){

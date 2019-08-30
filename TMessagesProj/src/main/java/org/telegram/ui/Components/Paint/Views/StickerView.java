@@ -10,6 +10,7 @@ import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.LayoutHelper;
@@ -69,7 +70,7 @@ public class StickerView extends EntityView {
         centerImage.setInvalidateAll(true);
         centerImage.setParentView(containerView);
         TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
-        centerImage.setImage(sticker, null, thumb, null, "webp", parentObject, 1);
+        centerImage.setImage(ImageLocation.getForDocument(sticker), null, ImageLocation.getForDocument(thumb, sticker), null, "webp", parentObject, 1);
 
         updatePosition();
     }

@@ -11,9 +11,11 @@ package org.telegram.ui.Cells;
 import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -45,11 +47,9 @@ public class HeaderCell extends FrameLayout {
         textView = new TextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        textView.setLines(1);
-        textView.setMaxLines(1);
-        textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        textView.setMinHeight(AndroidUtilities.dp(height - topMargin));
         if (dialog) {
             textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
         } else {
@@ -66,7 +66,7 @@ public class HeaderCell extends FrameLayout {
     }
 
     public void setHeight(int value) {
-        height = value;
+        textView.setMinHeight(AndroidUtilities.dp(height) - ((LayoutParams) textView.getLayoutParams()).topMargin);
     }
 
     public void setEnabled(boolean value, ArrayList<Animator> animators) {
@@ -79,7 +79,7 @@ public class HeaderCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(height), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
     }
 
     public void setText(String text) {
@@ -95,5 +95,16 @@ public class HeaderCell extends FrameLayout {
 
     public SimpleTextView getTextView2() {
         return textView2;
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            AccessibilityNodeInfo.CollectionItemInfo collection = info.getCollectionItemInfo();
+            if (collection != null) {
+                info.setCollectionItemInfo(AccessibilityNodeInfo.CollectionItemInfo.obtain(collection.getRowIndex(), collection.getRowSpan(), collection.getColumnIndex(), collection.getColumnSpan(), true));
+            }
+        }
     }
 }

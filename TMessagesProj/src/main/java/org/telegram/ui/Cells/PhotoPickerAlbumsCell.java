@@ -9,6 +9,8 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -21,7 +23,6 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MediaController;
-import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -36,6 +37,7 @@ public class PhotoPickerAlbumsCell extends FrameLayout {
     private MediaController.AlbumEntry[] albumEntries;
     private int albumsCount;
     private PhotoPickerAlbumsCellDelegate delegate;
+    private Paint backgroundPaint = new Paint();
 
     private class AlbumView extends FrameLayout {
 
@@ -85,6 +87,14 @@ public class PhotoPickerAlbumsCell extends FrameLayout {
             }
             return super.onTouchEvent(event);
         }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (!imageView.getImageReceiver().hasNotThumb() || imageView.getImageReceiver().getCurrentAlpha() != 1.0f) {
+                backgroundPaint.setColor(Theme.getColor(Theme.key_chat_attachPhotoBackground));
+                canvas.drawRect(0, 0, imageView.getMeasuredWidth(), imageView.getMeasuredHeight(), backgroundPaint);
+            }
+        }
     }
 
     public PhotoPickerAlbumsCell(Context context) {
@@ -96,12 +106,9 @@ public class PhotoPickerAlbumsCell extends FrameLayout {
             addView(albumViews[a]);
             albumViews[a].setVisibility(INVISIBLE);
             albumViews[a].setTag(a);
-            albumViews[a].setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (delegate != null) {
-                        delegate.didSelectAlbum(albumEntries[(Integer) v.getTag()]);
-                    }
+            albumViews[a].setOnClickListener(v -> {
+                if (delegate != null) {
+                    delegate.didSelectAlbum(albumEntries[(Integer) v.getTag()]);
                 }
             });
         }
@@ -127,12 +134,12 @@ public class PhotoPickerAlbumsCell extends FrameLayout {
             if (albumEntry.coverPhoto != null && albumEntry.coverPhoto.path != null) {
                 albumView.imageView.setOrientation(albumEntry.coverPhoto.orientation, true);
                 if (albumEntry.coverPhoto.isVideo) {
-                    albumView.imageView.setImage("vthumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, getContext().getResources().getDrawable(R.drawable.nophotos));
+                    albumView.imageView.setImage("vthumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, Theme.chat_attachEmptyDrawable);
                 } else {
-                    albumView.imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, getContext().getResources().getDrawable(R.drawable.nophotos));
+                    albumView.imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, Theme.chat_attachEmptyDrawable);
                 }
             } else {
-                albumView.imageView.setImageResource(R.drawable.nophotos);
+                albumView.imageView.setImageDrawable(Theme.chat_attachEmptyDrawable);
             }
             albumView.nameTextView.setText(albumEntry.bucketName);
             albumView.countTextView.setText(String.format("%d", albumEntry.photos.size()));

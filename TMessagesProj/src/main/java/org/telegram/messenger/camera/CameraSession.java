@@ -38,23 +38,22 @@ public class CameraSession {
     private final Size previewSize;
     private final int pictureFormat;
     private boolean initied;
+    private int maxZoom;
     private boolean meteringAreaSupported;
     private int currentOrientation;
     private int diffOrientation;
     private int jpegOrientation;
     private boolean sameTakePictureOrientation;
     private boolean flipFront = true;
+    private float currentZoom;
 
     public static final int ORIENTATION_HYSTERESIS = 5;
 
-    private Camera.AutoFocusCallback autoFocusCallback = new Camera.AutoFocusCallback() {
-        @Override
-        public void onAutoFocus(boolean success, Camera camera) {
-            if (success) {
+    private Camera.AutoFocusCallback autoFocusCallback = (success, camera) -> {
+        if (success) {
 
-            } else {
+        } else {
 
-            }
         }
     };
 
@@ -335,6 +334,10 @@ public class CameraSession {
                     params.setPreviewSize(previewSize.getWidth(), previewSize.getHeight());
                     params.setPictureSize(pictureSize.getWidth(), pictureSize.getHeight());
                     params.setPictureFormat(pictureFormat);
+                    params.setJpegQuality(100);
+                    params.setJpegThumbnailQuality(100);
+                    maxZoom = params.getMaxZoom();
+                    params.setZoom((int) (currentZoom * maxZoom));
 
                     String desiredMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE;
                     if (params.getSupportedFocusModes().contains(desiredMode)) {
@@ -380,7 +383,6 @@ public class CameraSession {
         try {
             Camera camera = cameraInfo.camera;
             if (camera != null) {
-
                 camera.cancelAutoFocus();
                 Camera.Parameters parameters = null;
                 try {
@@ -412,6 +414,15 @@ public class CameraSession {
         } catch (Exception e) {
             FileLog.e(e);
         }
+    }
+
+    protected int getMaxZoom() {
+        return maxZoom;
+    }
+
+    protected void setZoom(float value) {
+        currentZoom = value;
+        configurePhotoCamera();
     }
 
     protected void configureRecorder(int quality, MediaRecorder recorder) {
@@ -509,9 +520,10 @@ public class CameraSession {
         cameraInfo.camera.setPreviewCallback(callback);
     }
 
-    public void setOneShotPreviewCallback(Camera.PreviewCallback callback){
-        if(cameraInfo!=null && cameraInfo.camera!=null)
-			cameraInfo.camera.setOneShotPreviewCallback(callback);
+    public void setOneShotPreviewCallback(Camera.PreviewCallback callback) {
+        if (cameraInfo != null && cameraInfo.camera != null) {
+            cameraInfo.camera.setOneShotPreviewCallback(callback);
+        }
     }
 
     public void destroy() {

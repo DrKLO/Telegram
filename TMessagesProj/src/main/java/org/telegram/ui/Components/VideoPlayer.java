@@ -75,6 +75,8 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     private boolean autoplay;
     private boolean mixedAudio;
 
+    private Uri currentUri;
+
     private boolean videoPlayerReady;
     private boolean audioPlayerReady;
     private boolean mixedPlayWhenReady;
@@ -235,6 +237,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     public void preparePlayer(Uri uri, String type) {
         videoPlayerReady = false;
         mixedAudio = false;
+        currentUri = uri;
         String scheme = uri.getScheme();
         isStreaming = scheme != null && !scheme.startsWith("file");
         ensurePleyaerCreated();
@@ -289,6 +292,10 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
 
     public int getPlaybackState() {
         return player.getPlaybackState();
+    }
+
+    public Uri getCurrentUri() {
+        return currentUri;
     }
 
     public void play() {

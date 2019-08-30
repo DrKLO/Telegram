@@ -15,7 +15,7 @@
  */
 package com.google.android.exoplayer2.text.cea;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.text.Layout.Alignment;
 import com.google.android.exoplayer2.text.Cue;
 

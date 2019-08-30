@@ -19,9 +19,10 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
-import android.support.annotation.Keep;
+import androidx.annotation.Keep;
 import android.text.TextPaint;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 
@@ -123,6 +124,10 @@ public class CheckBox extends View {
         if (size == 40) {
             textPaint.setTextSize(AndroidUtilities.dp(24));
         }
+    }
+
+    public void setStrokeWidth(int value) {
+        backgroundPaint.setStrokeWidth(value);
     }
 
     public float getProgress() {
@@ -276,5 +281,13 @@ public class CheckBox extends View {
 
             canvas.drawBitmap(checkBitmap, 0, 0, null);
         }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setClassName("android.widget.CheckBox");
+        info.setCheckable(true);
+        info.setChecked(isChecked);
     }
 }
