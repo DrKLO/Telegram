@@ -47,6 +47,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.ArchivedPullForegroundDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.RLottieDrawable;
@@ -116,6 +117,7 @@ public class DialogCell extends BaseCell {
     private boolean animatingArchiveAvatar;
     private float animatingArchiveAvatarProgress;
     private BounceInterpolator interpolator = new BounceInterpolator();
+    private ArchivedPullForegroundDrawable archivedChatsDrawable;
 
     private TLRPC.User user;
     private TLRPC.Chat chat;
@@ -306,6 +308,7 @@ public class DialogCell extends BaseCell {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        archivedChatsDrawable = DialogsActivity.archivedPullForegroundDrawable;
         avatarImage.onAttachedToWindow();
         archiveHidden = SharedConfig.archiveHidden;
         archiveBackgroundProgress = archiveHidden ? 0.0f : 1.0f;
@@ -994,6 +997,7 @@ public class DialogCell extends BaseCell {
             }
 
             if (currentDialogFolderId != 0) {
+                if(archivedChatsDrawable != null) archivedChatsDrawable.setView(this);
                 nameString = LocaleController.getString("ArchivedChats", R.string.ArchivedChats);
             } else {
                 if (chat != null) {
@@ -1578,6 +1582,7 @@ public class DialogCell extends BaseCell {
 
             if (currentDialogFolderId != 0) {
                 Theme.dialogs_archiveAvatarDrawable.setCallback(this);
+                if(archivedChatsDrawable != null) archivedChatsDrawable.setView(this);
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_ARCHIVED);
                 avatarImage.setImage(null, null, avatarDrawable, null, user, 0);
             } else {
@@ -1640,6 +1645,11 @@ public class DialogCell extends BaseCell {
     @Override
     protected void onDraw(Canvas canvas) {
         if (currentDialogId == 0 && customDialog == null) {
+            return;
+        }
+
+        if (currentDialogFolderId != 0 && archivedChatsDrawable != null && archivedChatsDrawable.outProgress == 0f && translationX == 0) {
+            archivedChatsDrawable.draw(canvas);
             return;
         }
 
@@ -2001,6 +2011,9 @@ public class DialogCell extends BaseCell {
         if (translationX != 0) {
             canvas.restore();
         }
+        if (currentDialogFolderId != 0 && translationX == 0 && archivedChatsDrawable != null) {
+            archivedChatsDrawable.draw(canvas);
+        }
 
         if (useSeparator) {
             int left;
@@ -2108,6 +2121,16 @@ public class DialogCell extends BaseCell {
         }
         if (needInvalidate) {
             invalidate();
+        }
+    }
+
+    public void startOutAnimation() {
+        if(archivedChatsDrawable != null) {
+            archivedChatsDrawable.outCy = avatarImage.getCenterY();
+            archivedChatsDrawable.outCx = avatarImage.getCenterX();
+            archivedChatsDrawable.outRadius = AndroidUtilities.dp(54) >> 1;
+            archivedChatsDrawable.outDrawable = avatarDrawable;
+            archivedChatsDrawable.startOutAnimation();
         }
     }
 
