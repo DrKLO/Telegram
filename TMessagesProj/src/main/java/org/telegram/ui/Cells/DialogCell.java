@@ -11,6 +11,7 @@ package org.telegram.ui.Cells;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
@@ -27,28 +28,33 @@ import android.view.HapticFeedbackConstants;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
+import android.view.animation.OvershootInterpolator;
+
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.FileLog;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -110,12 +116,21 @@ public class DialogCell extends BaseCell {
     private float currentRevealProgress;
     private float currentRevealBounceProgress;
     private float archiveBackgroundProgress;
+    private float archiveScrollProgress;
+    private boolean isArchiveScrolling;
 
     private ImageReceiver avatarImage = new ImageReceiver(this);
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
+    private BounceInterpolator interpolator = new BounceInterpolator();
+    private Interpolator hardOvershootInterpolator = new OvershootInterpolator(10f);
+    private Interpolator softOvershootInterpolator2 = new OvershootInterpolator(.5f);
+
     private boolean animatingArchiveAvatar;
     private float animatingArchiveAvatarProgress;
-    private BounceInterpolator interpolator = new BounceInterpolator();
+    private boolean isArchiveInTransition;
+    private float archiveTransitionProgress;
+    private float archiveOverlayArrowProgress;
+    private float archiveOverlayTextProgress;
 
     private TLRPC.User user;
     private TLRPC.Chat chat;
@@ -1402,6 +1417,23 @@ public class DialogCell extends BaseCell {
         invalidate();
     }
 
+    public void startArchiveTransition() {
+        if (avatarDrawable.getAvatarType() != AvatarDrawable.AVATAR_TYPE_ARCHIVED) {
+            return;
+        }
+        isArchiveScrolling = false;
+        isArchiveInTransition = true;
+        archiveTransitionProgress = 0f;
+        archiveOverlayTextProgress = 170f;
+        archiveOverlayArrowProgress = 250f;
+        Theme.dialogs_archiveAvatarDrawable.setProgress(0f);
+        Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
+        Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**",
+                Theme.getColor(Theme.key_chats_archiveSliderBackground));
+        Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
+        invalidate();
+    }
+
     public void setChecked(boolean checked, boolean animated) {
         if (checkBox == null) {
             return;
@@ -1953,14 +1985,16 @@ public class DialogCell extends BaseCell {
             Theme.dialogs_pinnedDrawable.draw(canvas);
         }
 
-        if (animatingArchiveAvatar) {
-            canvas.save();
-            float scale = 1.0f + interpolator.getInterpolation(animatingArchiveAvatarProgress / 170.0f);
-            canvas.scale(scale, scale, avatarImage.getCenterX(), avatarImage.getCenterY());
-        }
-        avatarImage.draw(canvas);
-        if (animatingArchiveAvatar) {
-            canvas.restore();
+        if (!isArchiveInTransition) {
+            if (animatingArchiveAvatar) {
+                canvas.save();
+                float scale = 1.0f + interpolator.getInterpolation(animatingArchiveAvatarProgress / 170.0f);
+                canvas.scale(scale, scale, avatarImage.getCenterX(), avatarImage.getCenterY());
+            }
+            avatarImage.draw(canvas);
+            if (animatingArchiveAvatar) {
+                canvas.restore();
+            }
         }
 
         if (user != null && isDialogCell && currentDialogFolderId == 0 && !MessagesController.isSupportUser(user) && !user.bot) {
@@ -2070,6 +2104,116 @@ public class DialogCell extends BaseCell {
             }
         }
 
+        if (currentDialogFolderId != 0 && (isArchiveScrolling || isArchiveInTransition)) {
+            float height = getHeight();
+            float sliderRadius = AndroidUtilities.dpf2(9f);
+            float sliderVertPadding = AndroidUtilities.dpf2(8f) + sliderRadius;
+            float sliderCenterX = AndroidUtilities.dpf2(10f) + avatarImage.getImageWidth() / 2f;
+            float sliderTopCenterY = sliderVertPadding - getTop();
+            float sliderBottomCenterY = height - sliderVertPadding;
+
+            if (sliderTopCenterY > sliderBottomCenterY) {
+                sliderTopCenterY = sliderBottomCenterY;
+            }
+
+            final float fraction = archiveTransitionProgress / 300f;
+            final int alpha = (int) Utilities.lerp(255f, 0f, Math.min(1f, fraction * 4f));
+            final float maxAlphaScroll = sliderVertPadding * 2f / getHeight();
+            final int scrollAlpha = (int) (255 * Utilities.lerp(0.2f, 1f,
+                    Math.min(1f, archiveScrollProgress / maxAlphaScroll)));
+
+            float bgRadius = 0;
+            if (!isArchiveInTransition) {
+                canvas.drawColor(Theme.getColor(Theme.key_avatar_backgroundArchivedHidden));
+            } else {
+                bgRadius = Utilities.lerp(getWidth() - avatarImage.getCenterX(), avatarImage.getImageWidth() / 2f,
+                        softOvershootInterpolator2.getInterpolation(fraction));
+                canvas.drawCircle(avatarImage.getCenterX(), avatarImage.getCenterY(),
+                        bgRadius, Theme.dialogs_archiveOverlayPaint);
+            }
+
+            Theme.dialogs_archiveOverlaySliderPaint.setAlpha(alpha);
+            canvas.drawRect(sliderCenterX - sliderRadius, sliderTopCenterY,
+                    sliderCenterX + sliderRadius, sliderBottomCenterY,
+                    Theme.dialogs_archiveOverlaySliderPaint);
+            rect.set(sliderCenterX - sliderRadius, sliderTopCenterY - sliderRadius,
+                    sliderCenterX + sliderRadius, sliderTopCenterY + sliderRadius);
+            canvas.drawArc(rect, -180f, 180f, true, Theme.dialogs_archiveOverlaySliderPaint);
+
+            if (!isArchiveInTransition) {
+                Theme.dialogs_archiveOverlaySliderIconBackgroundPaint.setAlpha(Math.min(alpha, scrollAlpha));
+                canvas.drawCircle(sliderCenterX, sliderBottomCenterY, sliderRadius,
+                        Theme.dialogs_archiveOverlaySliderIconBackgroundPaint);
+                Theme.dialogs_archiveArrowDrawable.setAlpha(alpha);
+                final float p = CubicBezierInterpolator.EASE_BOTH.getInterpolation(archiveOverlayArrowProgress / 250f);
+                final float dx = Theme.dialogs_archiveArrowDrawable.getIntrinsicWidth() / 2f;
+                final float dy = Theme.dialogs_archiveArrowDrawable.getIntrinsicHeight() / 2f;
+                canvas.save();
+                canvas.rotate((2f - p) * 180f + 180f, sliderCenterX, sliderBottomCenterY);
+                canvas.translate(0f, Utilities.lerp(0f, AndroidUtilities.dpf2(0.66f), p));
+                Theme.dialogs_archiveArrowDrawable.setBounds(
+                        (int) (sliderCenterX - dx), (int) (sliderBottomCenterY - dy),
+                        (int) (sliderCenterX + dx), (int) (sliderBottomCenterY + dy));
+                Theme.dialogs_archiveArrowDrawable.draw(canvas);
+                canvas.restore();
+            } else {
+                final int saveCount = canvas.save();
+                final int saveColor = avatarDrawable.getColor();
+
+                final float translateY = Utilities.lerp(sliderBottomCenterY - avatarImage.getCenterY(), 0f,
+                        CubicBezierInterpolator.DEFAULT.getInterpolation(fraction));
+                canvas.translate(0f, translateY);
+
+                float scale = Utilities.lerp(4.5f * sliderRadius / avatarImage.getImageWidth(), 1f,
+                        hardOvershootInterpolator.getInterpolation(fraction));
+                canvas.scale(scale, scale, avatarImage.getCenterX(), avatarImage.getCenterY());
+
+                Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
+                final int sliderColor = ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chats_archiveSliderBackground), alpha);
+                Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", ColorUtils.compositeColors(
+                        sliderColor, Theme.getColor(Theme.key_avatar_backgroundArchivedHidden)));
+                Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
+
+                avatarDrawable.setColor(Color.TRANSPARENT);
+                avatarImage.draw(canvas);
+                avatarDrawable.setColor(saveColor);
+                canvas.restoreToCount(saveCount);
+
+                canvas.clipRect(0, 0, sliderCenterX + bgRadius, getHeight());
+            }
+
+            if (archiveOverlayTextProgress < 170f) {
+                Theme.dialogs_archiveOverlayTextPaint.setAlpha(Math.min(scrollAlpha,
+                        Math.min(alpha, (int) (255f * (1f - archiveOverlayTextProgress / 170f)))));
+                final float dy;
+                if (archiveScrollProgress >= 0.8f) {
+                    dy = Utilities.lerp(0f, AndroidUtilities.dpf2(8f), CubicBezierInterpolator.EASE_OUT
+                            .getInterpolation(archiveOverlayTextProgress / 170f));
+                } else {
+                    dy = Utilities.lerp(AndroidUtilities.dpf2(8f), 0f, CubicBezierInterpolator.EASE_IN
+                            .getInterpolation(1f - (archiveOverlayTextProgress / 170f)));
+                }
+                canvas.drawText(LocaleController.getString("ArchiveSwipeDown", R.string.ArchiveSwipeDown),
+                        getWidth() / 2f, getHeight() - AndroidUtilities.dpf2(10.5f) + dy,
+                        Theme.dialogs_archiveOverlayTextPaint);
+            }
+
+            if (archiveOverlayTextProgress > 0f) {
+                Theme.dialogs_archiveOverlayTextPaint.setAlpha(Math.min(alpha, (int) (255f * archiveOverlayTextProgress / 170f)));
+                final float dy;
+                if (archiveScrollProgress >= 0.8f) {
+                    dy = Utilities.lerp(AndroidUtilities.dpf2(-8f), 0f, CubicBezierInterpolator.EASE_IN
+                            .getInterpolation(archiveOverlayTextProgress / 170f));
+                } else {
+                    dy = Utilities.lerp(0f, AndroidUtilities.dpf2(-8f), CubicBezierInterpolator.EASE_OUT
+                            .getInterpolation(1f - (archiveOverlayTextProgress / 170f)));
+                }
+                canvas.drawText(LocaleController.getString("ArchiveRelease", R.string.ArchiveRelease),
+                        getWidth() / 2f, getHeight() - AndroidUtilities.dpf2(10.5f) + dy,
+                        Theme.dialogs_archiveOverlayTextPaint);
+            }
+        }
+
         if (animatingArchiveAvatar) {
             animatingArchiveAvatarProgress += dt;
             if (animatingArchiveAvatarProgress >= 170.0f) {
@@ -2077,6 +2221,48 @@ public class DialogCell extends BaseCell {
                 animatingArchiveAvatar = false;
             }
             needInvalidate = true;
+        }
+        if (isArchiveInTransition) {
+            archiveTransitionProgress += dt;
+            if (archiveTransitionProgress >= 300f) {
+                archiveTransitionProgress = 300f;
+                isArchiveInTransition = false;
+                archiveOverlayArrowProgress = 0f;
+                archiveOverlayTextProgress = 0f;
+                Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
+                Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**",
+                        Theme.getColor(Theme.key_avatar_backgroundArchivedHidden));
+                Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
+            }
+            needInvalidate = true;
+        }
+        if (isArchiveScrolling) {
+            if (archiveScrollProgress >= 0.8f && archiveOverlayArrowProgress < 250f) {
+                archiveOverlayArrowProgress += dt;
+                if (archiveOverlayArrowProgress > 250f) {
+                    archiveOverlayArrowProgress = 250f;
+                }
+                needInvalidate = true;
+            } else if (archiveScrollProgress < 0.8f && archiveOverlayArrowProgress > 0f) {
+                archiveOverlayArrowProgress -= dt;
+                if (archiveOverlayArrowProgress < 0f) {
+                    archiveOverlayArrowProgress = 0f;
+                }
+                needInvalidate = true;
+            }
+            if (archiveScrollProgress >= 0.8f && archiveOverlayTextProgress < 170f) {
+                archiveOverlayTextProgress += dt;
+                if (archiveOverlayTextProgress > 170f) {
+                    archiveOverlayTextProgress = 170f;
+                }
+                needInvalidate = true;
+            } else if (archiveScrollProgress < 0.8f && archiveOverlayTextProgress > 0f) {
+                archiveOverlayTextProgress -= dt;
+                if (archiveOverlayTextProgress < 0f) {
+                    archiveOverlayTextProgress = 0f;
+                }
+                needInvalidate = true;
+            }
         }
         if (drawRevealBackground) {
             if (currentRevealBounceProgress < 1.0f) {
@@ -2106,6 +2292,7 @@ public class DialogCell extends BaseCell {
                 needInvalidate = true;
             }
         }
+
         if (needInvalidate) {
             invalidate();
         }
@@ -2231,6 +2418,18 @@ public class DialogCell extends BaseCell {
 
     public float getClipProgress() {
         return clipProgress;
+    }
+
+    public void setArchiveScrollProgress(float archiveScrollProgress) {
+        this.archiveScrollProgress = archiveScrollProgress;
+        isArchiveScrolling = archiveScrollProgress > 0f;
+        if (!isArchiveScrolling) {
+            archiveOverlayArrowProgress = 0f;
+            archiveOverlayTextProgress = 0f;
+        }
+        isArchiveInTransition = false;
+        archiveTransitionProgress = 0f;
+        invalidate();
     }
 
     public void setTopClip(int value) {

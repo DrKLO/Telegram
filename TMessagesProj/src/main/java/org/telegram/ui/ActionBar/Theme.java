@@ -257,6 +257,9 @@ public class Theme {
     public static Paint dialogs_countPaint;
     public static Paint dialogs_errorPaint;
     public static Paint dialogs_countGrayPaint;
+    public static Paint dialogs_archiveOverlayPaint;
+    public static Paint dialogs_archiveOverlaySliderPaint;
+    public static Paint dialogs_archiveOverlaySliderIconBackgroundPaint;
     public static TextPaint dialogs_namePaint;
     public static TextPaint dialogs_nameEncryptedPaint;
     public static TextPaint dialogs_searchNamePaint;
@@ -267,6 +270,7 @@ public class Theme {
     public static TextPaint dialogs_timePaint;
     public static TextPaint dialogs_countTextPaint;
     public static TextPaint dialogs_archiveTextPaint;
+    public static TextPaint dialogs_archiveOverlayTextPaint;
     public static TextPaint dialogs_onlinePaint;
     public static TextPaint dialogs_offlinePaint;
     public static Drawable dialogs_checkDrawable;
@@ -281,6 +285,7 @@ public class Theme {
     public static Drawable dialogs_muteDrawable;
     public static Drawable dialogs_verifiedDrawable;
     public static ScamDrawable dialogs_scamDrawable;
+    public static Drawable dialogs_archiveArrowDrawable;
     public static Drawable dialogs_verifiedCheckDrawable;
     public static Drawable dialogs_pinnedDrawable;
     public static Drawable dialogs_mentionDrawable;
@@ -642,10 +647,13 @@ public class Theme {
     public static final String key_chats_secretIcon = "chats_secretIcon";
     public static final String key_chats_nameIcon = "chats_nameIcon";
     public static final String key_chats_pinnedIcon = "chats_pinnedIcon";
+    public static final String key_chats_archiveSliderBackground = "chats_archiveSliderBackground";
+    public static final String key_chats_archiveSliderIconBackground = "chats_archiveSliderIconBackground";
     public static final String key_chats_archiveBackground = "chats_archiveBackground";
     public static final String key_chats_archivePinBackground = "chats_archivePinBackground";
     public static final String key_chats_archiveIcon = "chats_archiveIcon";
     public static final String key_chats_archiveText = "chats_archiveText";
+    public static final String key_chats_archiveOverlayText = "chats_archiveOverlayText";
     public static final String key_chats_message = "chats_message";
     public static final String key_chats_messageArchived = "chats_messageArchived";
     public static final String key_chats_message_threeLines = "chats_message_threeLines";
@@ -1261,10 +1269,13 @@ public class Theme {
         defaultColors.put(key_chats_unreadCounter, 0xff4ecc5e);
         defaultColors.put(key_chats_unreadCounterMuted, 0xffc6c9cc);
         defaultColors.put(key_chats_unreadCounterText, 0xffffffff);
+        defaultColors.put(key_chats_archiveSliderBackground, 0xffdddee0);
+        defaultColors.put(key_chats_archiveSliderIconBackground, 0xffffffff);
         defaultColors.put(key_chats_archiveBackground, 0xff66a9e0);
         defaultColors.put(key_chats_archivePinBackground, 0xff9faab3);
         defaultColors.put(key_chats_archiveIcon, 0xffffffff);
         defaultColors.put(key_chats_archiveText, 0xffffffff);
+        defaultColors.put(key_chats_archiveOverlayText, 0xffffffff);
         defaultColors.put(key_chats_name, 0xff222222);
         defaultColors.put(key_chats_nameArchived, 0xff525252);
         defaultColors.put(key_chats_secretName, 0xff00a60e);
@@ -1770,6 +1781,7 @@ public class Theme {
         fallbackKeys.put(key_chats_messageArchived, key_chats_message);
         fallbackKeys.put(key_avatar_backgroundArchived, key_chats_unreadCounterMuted);
         fallbackKeys.put(key_avatar_backgroundArchivedHidden, key_chats_unreadCounterMuted);
+        fallbackKeys.put(key_chats_archiveSliderBackground, key_windowBackgroundWhite);
         fallbackKeys.put(key_chats_archiveBackground, key_chats_actionBackground);
         fallbackKeys.put(key_chats_archivePinBackground, key_chats_unreadCounterMuted);
         fallbackKeys.put(key_chats_archiveIcon, key_chats_actionIcon);
@@ -3007,6 +3019,9 @@ public class Theme {
             dialogs_countTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             dialogs_archiveTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             dialogs_archiveTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            dialogs_archiveOverlayTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+            dialogs_archiveOverlayTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            dialogs_archiveOverlayTextPaint.setTextAlign(Paint.Align.CENTER);
             dialogs_onlinePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             dialogs_offlinePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
 
@@ -3015,6 +3030,9 @@ public class Theme {
             dialogs_onlineCirclePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             dialogs_countPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             dialogs_countGrayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            dialogs_archiveOverlayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            dialogs_archiveOverlaySliderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            dialogs_archiveOverlaySliderIconBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             dialogs_errorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
             dialogs_lockDrawable = resources.getDrawable(R.drawable.list_secret);
@@ -3028,6 +3046,7 @@ public class Theme {
             dialogs_muteDrawable = resources.getDrawable(R.drawable.list_mute).mutate();
             dialogs_verifiedDrawable = resources.getDrawable(R.drawable.verified_area);
             dialogs_scamDrawable = new ScamDrawable(11);
+            dialogs_archiveArrowDrawable = resources.getDrawable(R.drawable.archive_swipe);
             dialogs_verifiedCheckDrawable = resources.getDrawable(R.drawable.verified_check);
             dialogs_mentionDrawable = resources.getDrawable(R.drawable.mentionchatslist);
             dialogs_botDrawable = resources.getDrawable(R.drawable.list_bot);
@@ -3041,6 +3060,7 @@ public class Theme {
         dialogs_timePaint.setTextSize(AndroidUtilities.dp(13));
         dialogs_countTextPaint.setTextSize(AndroidUtilities.dp(13));
         dialogs_archiveTextPaint.setTextSize(AndroidUtilities.dp(13));
+        dialogs_archiveOverlayTextPaint.setTextSize(AndroidUtilities.dp(16));
         dialogs_onlinePaint.setTextSize(AndroidUtilities.dp(15));
         dialogs_offlinePaint.setTextSize(AndroidUtilities.dp(15));
         dialogs_searchNamePaint.setTextSize(AndroidUtilities.dp(16));
@@ -3062,9 +3082,13 @@ public class Theme {
         dialogs_timePaint.setColor(getColor(key_chats_date));
         dialogs_countTextPaint.setColor(getColor(key_chats_unreadCounterText));
         dialogs_archiveTextPaint.setColor(getColor(key_chats_archiveText));
+        dialogs_archiveOverlayTextPaint.setColor(getColor(key_chats_archiveOverlayText));
         dialogs_messagePrintingPaint.setColor(getColor(key_chats_actionMessage));
         dialogs_countPaint.setColor(getColor(key_chats_unreadCounter));
         dialogs_countGrayPaint.setColor(getColor(key_chats_unreadCounterMuted));
+        dialogs_archiveOverlayPaint.setColor(getColor(key_avatar_backgroundArchivedHidden));
+        dialogs_archiveOverlaySliderPaint.setColor(getColor(key_chats_archiveSliderBackground));
+        dialogs_archiveOverlaySliderIconBackgroundPaint.setColor(getColor(key_chats_archiveSliderIconBackground));
         dialogs_errorPaint.setColor(getColor(key_chats_sentError));
         dialogs_onlinePaint.setColor(getColor(key_windowBackgroundWhiteBlueText3));
         dialogs_offlinePaint.setColor(getColor(key_windowBackgroundWhiteGrayText3));
@@ -3085,6 +3109,7 @@ public class Theme {
         setDrawableColorByKey(dialogs_verifiedCheckDrawable, key_chats_verifiedCheck);
         setDrawableColorByKey(dialogs_holidayDrawable, key_actionBarDefaultTitle);
         setDrawableColorByKey(dialogs_scamDrawable, key_chats_draft);
+        setDrawableColorByKey(dialogs_archiveArrowDrawable, key_avatar_backgroundArchivedHidden);
     }
 
     public static void destroyResources() {

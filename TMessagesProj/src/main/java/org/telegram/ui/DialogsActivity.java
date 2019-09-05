@@ -35,12 +35,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
-
-import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScrollerMiddle;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -55,39 +49,51 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSmoothScrollerMiddle;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.XiaomiUtilities;
-import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.MenuDrawable;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.DialogsAdapter;
 import org.telegram.ui.Adapters.DialogsSearchAdapter;
 import org.telegram.ui.Cells.AccountSelectCell;
 import org.telegram.ui.Cells.ArchiveHintInnerCell;
+import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.DialogsEmptyCell;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.DrawerActionCell;
@@ -102,12 +108,6 @@ import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.MenuDrawable;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedArrowDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -116,8 +116,8 @@ import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.DialogsItemAnimator;
-import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.EmptyTextProgressView;
+import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.JoinGroupAlert;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
@@ -126,7 +126,6 @@ import org.telegram.ui.Components.ProxyDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.UndoView;
@@ -245,10 +244,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private final static int mute = 104;
     private final static int archive = 105;
 
+    private boolean allowShowHiddenView;
     private boolean allowScrollToHiddenView;
+    private boolean scrolledToHiddenView;
     private boolean scrollingManually;
-    private int totalConsumedAmount;
-    private boolean startedScrollAtTop;
 
     private class ContentView extends SizeNotifierFrameLayout {
 
@@ -386,16 +385,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         public boolean onInterceptTouchEvent(MotionEvent ev) {
             int action = ev.getActionMasked();
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                if (action == MotionEvent.ACTION_DOWN) {
-                    int currentPosition = layoutManager.findFirstVisibleItemPosition();
-                    startedScrollAtTop = currentPosition <= 1;
-                } else {
-                    if (actionBar.isActionModeShowed()) {
-                        allowMoving = true;
-                    }
+                if (action != MotionEvent.ACTION_DOWN && actionBar.isActionModeShowed()) {
+                    allowMoving = true;
                 }
-                totalConsumedAmount = 0;
-                allowScrollToHiddenView = false;
             }
             return super.onInterceptTouchEvent(ev);
         }
@@ -1046,21 +1038,29 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 boolean result = super.onTouchEvent(e);
                 if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                     if (allowScrollToHiddenView) {
-                        int currentPosition = layoutManager.findFirstVisibleItemPosition();
-                        if (currentPosition == 0) {
-                            View view = layoutManager.findViewByPosition(currentPosition);
-                            int height = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) / 4 * 3;
-                            int diff = view.getTop() + view.getMeasuredHeight();
-                            if (view != null) {
-                                if (diff < height) {
-                                    listView.smoothScrollBy(0, diff, CubicBezierInterpolator.EASE_OUT_QUINT);
-                                } else {
-                                    listView.smoothScrollBy(0, view.getTop(), CubicBezierInterpolator.EASE_OUT_QUINT);
+                        if (layoutManager.findFirstVisibleItemPosition() == 0) {
+                            DialogCell view = (DialogCell) layoutManager.findViewByPosition(0);
+                            if (!allowShowHiddenView) {
+                                final int dy = view.getTop() + view.getMeasuredHeight();
+                                if (dy != 0) {
+                                    waitingForScrollFinished = true;
+                                    listView.smoothScrollBy(0, dy, CubicBezierInterpolator.EASE_OUT_QUINT);
                                 }
+                            } else {
+                                final int dy = view.getTop();
+                                if (dy != 0) {
+                                    waitingForScrollFinished = true;
+                                    listView.smoothScrollBy(0, dy, CubicBezierInterpolator.EASE_OUT_QUINT);
+                                }
+                                view.startArchiveTransition();
                             }
                         }
+                        allowShowHiddenView = false;
                         allowScrollToHiddenView = false;
+                        scrolledToHiddenView = true;
                     }
+                } else if (action == MotionEvent.ACTION_DOWN && !allowScrollToHiddenView) {
+                    scrolledToHiddenView = false;
                 }
                 return result;
             }
@@ -1111,6 +1111,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         listView.setInstantClick(true);
         listView.setTag(4);
         layoutManager = new LinearLayoutManager(context) {
+
             @Override
             public void smoothScrollToPosition(RecyclerView recyclerView, RecyclerView.State state, int position) {
                 if (hasHiddenArchive() && position == 1) {
@@ -1124,7 +1125,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             @Override
             public int scrollVerticallyBy(int dy, RecyclerView.Recycler recycler, RecyclerView.State state) {
-                if (listView.getAdapter() == dialogsAdapter && dialogsType == 0 && !onlySelect && !allowScrollToHiddenView && folderId == 0 && dy < 0 && getMessagesController().hasHiddenArchive()) {
+                if (listView.getAdapter() == dialogsAdapter && dialogsType == 0 && !onlySelect && folderId == 0 && getMessagesController().hasHiddenArchive()) {
                     int currentPosition = layoutManager.findFirstVisibleItemPosition();
                     if (currentPosition == 0) {
                         View view = layoutManager.findViewByPosition(currentPosition);
@@ -1132,28 +1133,41 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             currentPosition = 1;
                         }
                     }
-                    if (currentPosition != 0 && currentPosition != RecyclerView.NO_POSITION) {
-                        View view = layoutManager.findViewByPosition(currentPosition);
-                        if (view != null) {
-                            int dialogHeight = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) + 1;
-                            int canScrollDy = -view.getTop() + (currentPosition - 1) * dialogHeight;
-                            int positiveDy = Math.abs(dy);
-                            if (canScrollDy < positiveDy) {
-                                totalConsumedAmount += Math.abs(dy);
-                                dy = -canScrollDy;
-                                if (startedScrollAtTop && totalConsumedAmount >= AndroidUtilities.dp(150)) {
+                    if (!allowScrollToHiddenView && dy < 0) {
+                        if (currentPosition != 0 && currentPosition != RecyclerView.NO_POSITION) {
+                            View view = layoutManager.findViewByPosition(currentPosition);
+                            if (view != null) {
+                                int dialogHeight = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) + 1;
+                                int canScrollDy = -view.getTop() + (currentPosition - 1) * dialogHeight;
+                                int positiveDy = Math.abs(dy);
+                                if (canScrollDy < positiveDy) {
+                                    dy = -canScrollDy;
                                     allowScrollToHiddenView = true;
-                                    try {
-                                        listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-                                    } catch (Exception ignore) {
-
-                                    }
                                 }
                             }
                         }
+                    } else if (allowScrollToHiddenView && currentPosition == 0) {
+                        DialogCell view = (DialogCell) layoutManager.findViewByPosition(0);
+                        float progress = 1f + (float) view.getTop() / view.getHeight();
+                        view.setArchiveScrollProgress(progress);
+                        setAllowShowHiddenView(progress >= 0.8f);
                     }
                 }
                 return super.scrollVerticallyBy(dy, recycler, state);
+            }
+
+            private void setAllowShowHiddenView(boolean allow) {
+                if (allowShowHiddenView != allow) {
+                    allowShowHiddenView = allow;
+                    // poor performance on pre-lollipop
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        try {
+                            listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP,
+                                    HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                        } catch (Exception ignore) {
+                        }
+                    }
+                }
             }
         };
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
@@ -1660,7 +1674,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         goingDown = firstVisibleItem > prevPosition;
                     }
                     if (changed && scrollUpdated && (goingDown || !goingDown && scrollingManually)) {
-                        hideFloatingButton(goingDown);
+                        if ((!allowScrollToHiddenView && !scrolledToHiddenView) ||
+                                (layoutManager.findFirstVisibleItemPosition() != 0 && scrollingManually)) {
+                            hideFloatingButton(goingDown);
+                        }
                     }
                     prevPosition = firstVisibleItem;
                     prevTop = firstViewTop;
@@ -3354,11 +3371,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, Theme.dialogs_countPaint, null, null, Theme.key_chats_unreadCounter));
         arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, Theme.dialogs_countGrayPaint, null, null, Theme.key_chats_unreadCounterMuted));
         arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, Theme.dialogs_countTextPaint, null, null, Theme.key_chats_unreadCounterText));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, Theme.dialogs_archiveOverlayPaint, null, null, Theme.key_avatar_backgroundArchivedHidden));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, Theme.dialogs_archiveOverlaySliderPaint, null, null, Theme.key_chats_archiveSliderBackground));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, Theme.dialogs_archiveOverlaySliderIconBackgroundPaint, null, null, Theme.key_chats_archiveSliderIconBackground));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, Theme.dialogs_archiveOverlayTextPaint, null, null, Theme.key_chats_archiveOverlayText));
         arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Paint[]{Theme.dialogs_namePaint, Theme.dialogs_searchNamePaint}, null, null, Theme.key_chats_name));
         arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Paint[]{Theme.dialogs_nameEncryptedPaint, Theme.dialogs_searchNameEncryptedPaint}, null, null, Theme.key_chats_secretName));
         arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_lockDrawable}, null, Theme.key_chats_secretIcon));
         arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_groupDrawable, Theme.dialogs_broadcastDrawable, Theme.dialogs_botDrawable}, null, Theme.key_chats_nameIcon));
         arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class, ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_scamDrawable}, null, Theme.key_chats_draft));
+        arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, null, new Drawable[]{Theme.dialogs_archiveArrowDrawable}, null, Theme.key_avatar_backgroundArchivedHidden));
         arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, null, new Drawable[]{Theme.dialogs_pinnedDrawable, Theme.dialogs_reorderDrawable}, null, Theme.key_chats_pinnedIcon));
         if (SharedConfig.useThreeLinesLayout) {
             arrayList.add(new ThemeDescription(listView, 0, new Class[]{DialogCell.class}, Theme.dialogs_messagePaint, null, null, Theme.key_chats_message_threeLines));
