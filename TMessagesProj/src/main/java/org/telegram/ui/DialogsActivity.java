@@ -487,6 +487,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         getUndoView().showWithAction(0, UndoView.ACTION_ARCHIVE_HIDDEN, null, null);
                     }
                     archivePullViewState = SharedConfig.archiveHidden ? ARCHIVE_ITEM_STATE_HIDDEN : ARCHIVE_ITEM_STATE_PINNED;
+                    archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
                     return;
                 }
 
@@ -1045,6 +1046,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     return false;
                 }
                 int action = e.getAction();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    listView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
+                }
                 if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                     if (!itemTouchhelper.isIdle() && swipeController.swipingFolder) {
                         swipeController.swipeFolderBack = true;
@@ -1052,6 +1056,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             SharedConfig.toggleArchiveHidden();
                             getUndoView().showWithAction(0, UndoView.ACTION_ARCHIVE_PINNED, null, null);
                             archivePullViewState = SharedConfig.archiveHidden ? ARCHIVE_ITEM_STATE_HIDDEN : ARCHIVE_ITEM_STATE_PINNED;
+                            archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
                         }
                     }
                 }
@@ -2004,6 +2009,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else {
             archivedPullForegroundDrawable.doNotShow();
         }
+        archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
 
         return fragmentView;
     }

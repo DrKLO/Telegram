@@ -2,6 +2,7 @@ package org.telegram.ui.Components;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -40,11 +41,19 @@ public class ArchivedPullForegroundDrawable {
     private float textSwappingProgress = 1f;
     private boolean animateToEndText = false;
     private ValueAnimator textSwipingAnimator;
-    private ValueAnimator outAnimator;
-    public float outProgress = 0f;
-    private boolean animateOut = false;
 
-    private int startPadding = AndroidUtilities.dp(32);
+    private float textInProgress = 1f;
+    private boolean animateToTextIn = false;
+    private ValueAnimator textIntAnimator;
+
+    private AnimatorSet outAnimator;
+    public float outProgress = 0f;
+    private float bounceProgress = 0f;
+    private boolean animateOut = false;
+    private boolean bounceIn = false;
+
+
+    private int startPadding = AndroidUtilities.dp(27);
     private int smallMargin = AndroidUtilities.dp(8);
     private int radius = AndroidUtilities.dp(9);
     private int diameter = AndroidUtilities.dp(18);
@@ -60,9 +69,17 @@ public class ArchivedPullForegroundDrawable {
 
     private String pullTooltip;
     private String releaseTooltip;
+    private boolean willDraw;
+
+    private boolean isOut = false;
 
     private ValueAnimator.AnimatorUpdateListener textSwappingUpdateListener = animation -> {
         textSwappingProgress = (float) animation.getAnimatedValue();
+        if (parent != null) parent.invalidate();
+    };
+
+    private ValueAnimator.AnimatorUpdateListener textInUpdateListener = animation -> {
+        textInProgress = (float) animation.getAnimatedValue();
         if (parent != null) parent.invalidate();
     };
 
@@ -91,9 +108,14 @@ public class ArchivedPullForegroundDrawable {
 
 
     public void draw(Canvas canvas) {
-        if (outProgress == 1f || parent == null) return;
-        int visibleHeight = (int) (parent.getHeight() * pullProgress);
+        if (!willDraw || isOut || parent == null) return;
 
+        int visibleHeight = (int) (parent.getHeight() * pullProgress);
+        int invisibleHeight = parent.getHeight() - visibleHeight;
+
+        float bounceP = bounceIn  ? (0.07f * bounceProgress) - 0.05f : 0.02f * bounceProgress;
+
+        //float bounceP = (0.1f * bounceProgress) - 0.1f;
         updateTextProgress(pullProgress);
 
         float outProgressHalf = outProgress * 2f;
@@ -106,7 +128,9 @@ public class ArchivedPullForegroundDrawable {
         if (outProgress == 0f) {
             canvas.drawPaint(backgroundPaint);
         } else {
-            float outBackgroundRadius = outRadius + (parent.getWidth() - outRadius) * (1f - outProgress);
+
+
+            float outBackgroundRadius = outRadius + (parent.getWidth() - outRadius) * (1f - outProgress) + (outRadius * bounceP);
             canvas.drawCircle(cX, cY, outBackgroundRadius, backgroundPaint);
 
             //clip rect work faster then clip path, and in this case users see no difference
@@ -144,13 +168,18 @@ public class ArchivedPullForegroundDrawable {
             canvas.restore();
         }
 
-        tooltipTextPaint.setAlpha((int) (255 * textSwappingProgress));
-        canvas.drawText(pullTooltip, parent.getWidth() / 2f - AndroidUtilities.dp(2), parent.getHeight() - AndroidUtilities.dp(10)
-                + AndroidUtilities.dp(12) * (1f - textSwappingProgress), tooltipTextPaint);
 
-        tooltipTextPaint.setAlpha(255 - (int) (255 * textSwappingProgress));
-        canvas.drawText(releaseTooltip, parent.getWidth() / 2f - AndroidUtilities.dp(2), parent.getHeight() - AndroidUtilities.dp(10)
-                - AndroidUtilities.dp(12) * (textSwappingProgress), tooltipTextPaint);
+        textIn(visibleHeight >= diameter + smallMargin * 2 - AndroidUtilities.dp(4));
+
+
+        float textY = invisibleHeight + (visibleHeight >> 1) + AndroidUtilities.dp(6);
+        tooltipTextPaint.setAlpha((int) (255 * textSwappingProgress * textInProgress));
+        canvas.drawText(pullTooltip, parent.getWidth() / 2f - AndroidUtilities.dp(2),
+                textY + AndroidUtilities.dp(16) * (1f - textSwappingProgress), tooltipTextPaint);
+
+        tooltipTextPaint.setAlpha((int) (255 * (1f - textSwappingProgress) * textInProgress));
+        canvas.drawText(releaseTooltip, parent.getWidth() / 2f - AndroidUtilities.dp(2),
+                textY - AndroidUtilities.dp(16) * (textSwappingProgress), tooltipTextPaint);
 
         canvas.restore();
 
@@ -164,14 +193,23 @@ public class ArchivedPullForegroundDrawable {
             int startCy = parent.getHeight() - smallMargin - radius;
 
             float scaleStart = (float) AndroidUtilities.dp(24) / iw;
-            float scale = scaleStart + (1f - scaleStart) * outProgress;
+            float scale = scaleStart + (1f - scaleStart) * outProgress + bounceP;
+
 
             int x = (int) cX;
             int y = (int) cY;
             canvas.translate((startCx - cX) * (1f - outProgress), (startCy - cY) * (1f - outProgress));
             canvas.scale(scale, scale, cX, cY);
 
-            Theme.dialogs_archiveAvatarDrawable.setProgress(0);
+
+            Theme.dialogs_archiveAvatarDrawable.setProgress(0f);
+            if (!Theme.dialogs_archiveAvatarDrawableRecolored) {
+                Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
+                Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", Theme.getColor(Theme.key_avatar_backgroundArchivedHidden));
+                Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", Theme.getColor(Theme.key_avatar_backgroundArchivedHidden));
+                Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
+                Theme.dialogs_archiveAvatarDrawableRecolored = true;
+            }
             Theme.dialogs_archiveAvatarDrawable.setBounds(
                     x - (iw >> 1), y - (ih >> 1),
                     x + (iw >> 1), y + (ih >> 1)
@@ -195,6 +233,18 @@ public class ArchivedPullForegroundDrawable {
         }
     }
 
+    private void textIn(boolean in) {
+        if (animateToTextIn != in) {
+            animateToTextIn = in;
+            if (textIntAnimator != null) textIntAnimator.cancel();
+            textIntAnimator = ValueAnimator.ofFloat(textInProgress, in ? 1f : 0f);
+            textIntAnimator.addUpdateListener(textInUpdateListener);
+            textIntAnimator.setInterpolator(new LinearInterpolator());
+            textIntAnimator.setDuration(150);
+            textIntAnimator.start();
+        }
+    }
+
     public void startOutAnimation() {
         if (animateOut) return;
         if (outAnimator != null) {
@@ -202,21 +252,59 @@ public class ArchivedPullForegroundDrawable {
             outAnimator.cancel();
         }
         animateOut = true;
-        outAnimator = ValueAnimator.ofFloat(0f, 1f);
-        outAnimator.addUpdateListener(animation -> {
+        bounceIn = true;
+        bounceProgress = 0f;
+        ValueAnimator out = ValueAnimator.ofFloat(0f, 1f);
+        out.addUpdateListener(animation -> {
             outProgress = (float) animation.getAnimatedValue();
             if (parent != null) parent.invalidate();
         });
 
+        out.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        out.setDuration(250);
+
+        ValueAnimator bounceIn =
+                ValueAnimator.ofFloat(0f, 1f);
+        bounceIn.addUpdateListener(animation -> {
+            bounceProgress = (float) animation.getAnimatedValue();
+            this.bounceIn = true;
+            if (parent != null) parent.invalidate();
+        });
+
+        bounceIn.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
+        bounceIn.setDuration(150);
+
+        ValueAnimator bounceOut =
+                ValueAnimator.ofFloat(1f, 0f);
+        bounceOut.addUpdateListener(animation -> {
+            bounceProgress = (float) animation.getAnimatedValue();
+            this.bounceIn = false;
+            if (parent != null) parent.invalidate();
+        });
+
+        bounceOut.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
+        bounceOut.setDuration(135);
+
+        outAnimator = new AnimatorSet();
         outAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
+                if (textSwipingAnimator != null) textSwipingAnimator.cancel();
                 textSwappingProgress = 1f;
                 animateToEndText = false;
+                animateToTextIn = false;
+                textInProgress = 0f;
+                isOut = true;
+
             }
         });
-        outAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
-        outAnimator.setDuration(250);
+
+
+        AnimatorSet bounce = new AnimatorSet();
+        bounce.playSequentially(bounceIn,bounceOut);
+        bounce.setStartDelay(200);
+       // bounceIn.setStartDelay(200);
+        outAnimator.playTogether(out, bounce);
         outAnimator.start();
     }
 
@@ -235,6 +323,7 @@ public class ArchivedPullForegroundDrawable {
             outAnimator.cancel();
         }
         outProgress = 0f;
+        isOut = false;
         animateOut = false;
     }
 
@@ -245,5 +334,14 @@ public class ArchivedPullForegroundDrawable {
             outAnimator.removeAllListeners();
             outAnimator.cancel();
         }
+    }
+
+    public boolean isDraw() {
+        return !(!willDraw || isOut || parent == null);
+    }
+
+
+    public void setWillDraw(boolean b) {
+        willDraw = b;
     }
 }

@@ -1968,7 +1968,14 @@ public class DialogCell extends BaseCell {
             float scale = 1.0f + interpolator.getInterpolation(animatingArchiveAvatarProgress / 170.0f);
             canvas.scale(scale, scale, avatarImage.getCenterX(), avatarImage.getCenterY());
         }
-        avatarImage.draw(canvas);
+
+
+        if(currentDialogFolderId != 0){
+            if(archivedChatsDrawable == null || !archivedChatsDrawable.isDraw()) avatarImage.draw(canvas);
+        } else {
+            avatarImage.draw(canvas);
+        }
+
         if (animatingArchiveAvatar) {
             canvas.restore();
         }
