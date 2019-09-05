@@ -8443,4 +8443,24 @@
     <string name="FilterNewChats">New chats</string>
     <!--FORK CLIENT-->
     <string name="BottomDialogs">Tap here to start a new chat.</string>
+    <string name="AnonymousForward">Anonymous Forward</string>
+    <string name="DateForward">Date</string>
+    <string name="ShowTitle">Show title</string>
+    <string name="HideTitle">Hide title</string>
+    <string name="RemoveFromHideMode">Remove from Hide Mode</string>
+    <string name="AddToHideMode">Add to Hide Mode</string>
+    <string name="PinOrderInfo">You can manage local order of pinned dialogs right here.</string>
+    <!--fork settings view-->
+    <string name="ForkSettingsTitle">Fork Client Settings</string>
+    <string name="SquareAvatars">Square Avatars</string>
+    <string name="SquareAvatarsInfo">Restart required</string>
+    <string name="InAppCamera">Enable In-App Camera</string>
+    <string name="InAppCameraInfo">In Attachments</string>
+    <string name="SyncPins">Sync Pinned Dialogs</string>
+    <string name="SyncPinsInfo">Sync off allows to pin unlimited amount of dialogs</string>
+    <string name="UnmutedOnTop">Unmuted Messages are Primary</string>
+    <string name="UnmutedOnTopInfo">Unmuted Messages will be under pinned dialogs</string>
+    <string name="PhotoHasSticker">Send Sticker Info in Photo</string>
+    <string name="PhotoHasStickerInfo">When using Stickers on Photo</string>
+    <string name="PinDialogsOrder">Pin Dialogs Order</string>
 </resources>
