@@ -48,6 +48,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int rearVideoMessages;
 
     private int emptyRow;
+    private int syncPinsRow;
 
     @Override
     public boolean onFragmentCreate() {
@@ -62,7 +63,22 @@ public class ForkSettingsActivity extends BaseFragment {
         unmutedOnTopRow = rowCount++;
         rearVideoMessages = rowCount++;
 
+        emptyRow = rowCount++;
+        syncPinsRow = rowCount++;
+
         return true;
+    }
+
+    public boolean toggleGlobalMainSetting(String option, View view, boolean byDefault) {
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        boolean optionBool = preferences.getBoolean(option, byDefault);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean(option, !optionBool);
+        editor.commit();
+        if (view instanceof TextCheckCell) {
+            ((TextCheckCell) view).setChecked(!optionBool);
+        }
+        return !optionBool;
     }
 
     @Override
@@ -103,14 +119,7 @@ public class ForkSettingsActivity extends BaseFragment {
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         listView.setOnItemClickListener((view, position, x, y) -> {
             if (position == squareAvatarsRow) {
-                SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                boolean squareAvatars = preferences.getBoolean("squareAvatars", true);
-                SharedPreferences.Editor editor = preferences.edit();
-                editor.putBoolean("squareAvatars", !squareAvatars);
-                editor.commit();
-                if (view instanceof TextCheckCell) {
-                    ((TextCheckCell) view).setChecked(!squareAvatars);
-                }
+                toggleGlobalMainSetting("squareAvatars", view, false);
             } else if (position == inappCameraRow) {
                 SharedConfig.toggleInappCamera();
                 if (view instanceof TextCheckCell) {
@@ -123,6 +132,8 @@ public class ForkSettingsActivity extends BaseFragment {
                 MessagesController.getInstance(currentAccount).sortDialogs(null);
             } else if (position == rearVideoMessages) {
                 toggleGlobalMainSetting("rearVideoMessages", view, false);
+            } else if (position == syncPinsRow) {
+                toggleGlobalMainSetting("syncPins", view, true);
             }
         });
 
@@ -163,7 +174,7 @@ public class ForkSettingsActivity extends BaseFragment {
                     if (position == squareAvatarsRow) {
                         String t = LocaleController.getString("SquareAvatars", R.string.SquareAvatars);
                         String info = LocaleController.getString("SquareAvatarsInfo", R.string.SquareAvatarsInfo);
-                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("squareAvatars", true), false, false);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("squareAvatars", false), false, false);
                     } else if (position == inappCameraRow) {
                         String t = LocaleController.getString("InAppCamera", R.string.InAppCamera);
                         String info = LocaleController.getString("InAppCameraInfo", R.string.InAppCameraInfo);
@@ -179,6 +190,10 @@ public class ForkSettingsActivity extends BaseFragment {
                     } else if (position == rearVideoMessages) {
                         String t = LocaleController.getString("RearVideoMessages", R.string.RearVideoMessages);
                         textCell.setTextAndCheck(t, preferences.getBoolean("rearVideoMessages", false), false);
+                    } else if (position == syncPinsRow) {
+                        String t = LocaleController.getString("SyncPins", R.string.SyncPins);
+                        String info = LocaleController.getString("SyncPinsInfo", R.string.SyncPinsInfo);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("syncPins", true), true, false);
                     }
                     break;
                 }
@@ -199,6 +214,7 @@ public class ForkSettingsActivity extends BaseFragment {
                         || position == inappCameraRow
                         || position == unmutedOnTopRow
                         || position == rearVideoMessages
+                        || position == syncPinsRow
                         || position == photoHasStickerRow;
             return fork;
         }
@@ -244,6 +260,7 @@ public class ForkSettingsActivity extends BaseFragment {
             } else if (position == squareAvatarsRow
                 || position == inappCameraRow
                 || position == unmutedOnTopRow
+                || position == syncPinsRow
                 || position == rearVideoMessages
                 || position == photoHasStickerRow) {
                 return 3;
