@@ -46,6 +46,7 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -108,15 +109,26 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
     public DrawerProfileCell(Context context, DrawerLayoutContainer drawerLayoutContainer) {
         super(context);
 
+        if (!SharedConfig.hideSensitiveData()) {
+            avatarSize = 64;
+            heightOfcell = 148;
+        }
+
         shadowView = new ImageView(context);
         shadowView.setVisibility(INVISIBLE);
         shadowView.setScaleType(ImageView.ScaleType.FIT_XY);
         shadowView.setImageResource(R.drawable.bottom_shadow);
         addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 70, Gravity.LEFT | Gravity.BOTTOM));
 
+
+
         avatarImageView = new BackupImageView(context);
         avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(32));
-        addView(avatarImageView, LayoutHelper.createFrame(avatarSize, avatarSize, Gravity.LEFT | Gravity.BOTTOM, heightOfcell - avatarSize - 2, 0, 0, (heightOfcell - avatarSize) / 2));
+        if (!SharedConfig.hideSensitiveData()) {
+            addView(avatarImageView, LayoutHelper.createFrame(64, 64, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
+        } else {
+            addView(avatarImageView, LayoutHelper.createFrame(avatarSize, avatarSize, Gravity.LEFT | Gravity.BOTTOM, heightOfcell - avatarSize - 2, 0, 0, (heightOfcell - avatarSize) / 2));
+        }
 
         nameTextView = new SimpleTextView(context) {
             @Override
@@ -182,6 +194,10 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         phoneTextView.setSingleLine(true);
         phoneTextView.setGravity(Gravity.LEFT);
         // addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 52, 9));
+
+        if (!SharedConfig.hideSensitiveData()) {
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 76, 28));
+        }
 
         arrowView = new ImageView(context);
         arrowView.setScaleType(ImageView.ScaleType.CENTER);

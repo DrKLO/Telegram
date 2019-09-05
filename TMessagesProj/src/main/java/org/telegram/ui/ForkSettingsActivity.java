@@ -41,6 +41,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int rowCount;
     private int sectionRow1;
 
+    private int hideSensitiveDataRow;
     private int squareAvatarsRow;
     private int inappCameraRow;
     private int photoHasStickerRow;
@@ -58,6 +59,7 @@ public class ForkSettingsActivity extends BaseFragment {
         rowCount = 0;
         
         sectionRow1 = rowCount++;
+        hideSensitiveDataRow = SharedConfig.isUserOwner() ? -1 : rowCount++;
         squareAvatarsRow = rowCount++;
         inappCameraRow = rowCount++;
         photoHasStickerRow = rowCount++;
@@ -138,6 +140,8 @@ public class ForkSettingsActivity extends BaseFragment {
                 toggleGlobalMainSetting("replaceForward", view, true);
             } else if (position == syncPinsRow) {
                 toggleGlobalMainSetting("syncPins", view, true);
+            } else if (position == hideSensitiveDataRow) {
+                toggleGlobalMainSetting("hideSensitiveData", view, false);
             }
         });
 
@@ -201,6 +205,10 @@ public class ForkSettingsActivity extends BaseFragment {
                         String t = LocaleController.getString("SyncPins", R.string.SyncPins);
                         String info = LocaleController.getString("SyncPinsInfo", R.string.SyncPinsInfo);
                         textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("syncPins", true), true, false);
+                    } else if (position == hideSensitiveDataRow) {
+                        String t = LocaleController.getString("HideSensitiveData", R.string.HideSensitiveData);
+                        String info = LocaleController.getString("SquareAvatarsInfo", R.string.SquareAvatarsInfo);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("hideSensitiveData", false), true, false);
                     }
                     break;
                 }
@@ -218,6 +226,7 @@ public class ForkSettingsActivity extends BaseFragment {
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
             boolean fork = position == squareAvatarsRow
+                        || position == hideSensitiveDataRow
                         || position == inappCameraRow
                         || position == unmutedOnTopRow
                         || position == rearVideoMessages
@@ -266,6 +275,7 @@ public class ForkSettingsActivity extends BaseFragment {
             } else if (0 == 1) {
                 return 2;
             } else if (position == squareAvatarsRow
+                || position == hideSensitiveDataRow
                 || position == inappCameraRow
                 || position == unmutedOnTopRow
                 || position == syncPinsRow
