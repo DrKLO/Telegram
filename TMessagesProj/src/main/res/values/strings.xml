@@ -8466,4 +8466,5 @@
     <string name="PhotoHasStickerInfo">When using Stickers on Photo</string>
     <string name="PinDialogsOrder">Pin Dialogs Order</string>
     <string name="RearVideoMessages">Rear camera in Video Messages</string>
+    <string name="ReplaceForward">Replace original Forward</string>
 </resources>

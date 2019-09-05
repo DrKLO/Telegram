@@ -46,6 +46,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int photoHasStickerRow;
     private int unmutedOnTopRow;
     private int rearVideoMessages;
+    private int replaceForward;
 
     private int emptyRow;
     private int syncPinsRow;
@@ -62,6 +63,7 @@ public class ForkSettingsActivity extends BaseFragment {
         photoHasStickerRow = rowCount++;
         unmutedOnTopRow = rowCount++;
         rearVideoMessages = rowCount++;
+        replaceForward = rowCount++;
 
         emptyRow = rowCount++;
         syncPinsRow = rowCount++;
@@ -132,6 +134,8 @@ public class ForkSettingsActivity extends BaseFragment {
                 MessagesController.getInstance(currentAccount).sortDialogs(null);
             } else if (position == rearVideoMessages) {
                 toggleGlobalMainSetting("rearVideoMessages", view, false);
+            } else if (position == replaceForward) {
+                toggleGlobalMainSetting("replaceForward", view, true);
             } else if (position == syncPinsRow) {
                 toggleGlobalMainSetting("syncPins", view, true);
             }
@@ -190,6 +194,9 @@ public class ForkSettingsActivity extends BaseFragment {
                     } else if (position == rearVideoMessages) {
                         String t = LocaleController.getString("RearVideoMessages", R.string.RearVideoMessages);
                         textCell.setTextAndCheck(t, preferences.getBoolean("rearVideoMessages", false), false);
+                    } else if (position == replaceForward) {
+                        String t = LocaleController.getString("ReplaceForward", R.string.ReplaceForward);
+                        textCell.setTextAndCheck(t, preferences.getBoolean("replaceForward", true), false);
                     } else if (position == syncPinsRow) {
                         String t = LocaleController.getString("SyncPins", R.string.SyncPins);
                         String info = LocaleController.getString("SyncPinsInfo", R.string.SyncPinsInfo);
@@ -214,6 +221,7 @@ public class ForkSettingsActivity extends BaseFragment {
                         || position == inappCameraRow
                         || position == unmutedOnTopRow
                         || position == rearVideoMessages
+                        || position == replaceForward
                         || position == syncPinsRow
                         || position == photoHasStickerRow;
             return fork;
@@ -262,6 +270,7 @@ public class ForkSettingsActivity extends BaseFragment {
                 || position == unmutedOnTopRow
                 || position == syncPinsRow
                 || position == rearVideoMessages
+                || position == replaceForward
                 || position == photoHasStickerRow) {
                 return 3;
             } else if (position == sectionRow1) {
