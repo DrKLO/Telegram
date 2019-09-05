@@ -666,7 +666,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private long dialog_id;
     private Long dialog_id_Long;
     private int lastLoadIndex = 1;
-    private SparseArray<MessageObject>[] selectedMessagesIds = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
+    private SparseArrayWithTouch<MessageObject>[] selectedMessagesIds = new SparseArrayWithTouch[]{
+        new SparseArrayWithTouch<MessageObject>(),
+        new SparseArrayWithTouch<MessageObject>()};
     private SparseArray<MessageObject>[] selectedMessagesCanCopyIds = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
     private SparseArray<MessageObject>[] selectedMessagesCanStarIds = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
     private boolean hasUnfavedSelected;
@@ -1449,6 +1451,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     MessagePreviewView forwardingPreviewView;
 
+    public class SparseArrayWithTouch<E> extends SparseArray<E> {
+        public ArrayList<Integer> withTouch = new ArrayList<>();
+
+        @Override
+        public void clear() {
+            withTouch.clear();
+            super.clear();
+        }
+    }
+
     private PhotoViewer.PhotoViewerProvider photoViewerProvider = new PhotoViewer.EmptyPhotoViewerProvider() {
 
         @Override
@@ -1513,6 +1525,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private final static int copy = 10;
     private final static int forward = 11;
     private final static int forward_anonym = 111;
+    private final static int select_between = 112;
     private final static int delete = 12;
     private final static int chat_enc_timer = 13;
     private final static int chat_menu_attach = 14;
@@ -3363,6 +3376,25 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         return;
                     }
                     createDeleteMessagesAlert(null, null);
+                } else if (id == select_between) {
+                    // For selecting messages between the first and the last.
+                    ArrayList<Integer> ids = new ArrayList<>();
+                    for (int a = 1; a >= 0; a--) {
+                        for (int b = 0; b < selectedMessagesIds[a].size(); b++) {
+                            ids.add(selectedMessagesIds[a].keyAt(b));
+                        }
+                    }
+                    Collections.sort(ids);
+                    Integer begin = ids.get(0);
+                    Integer end = ids.get(ids.size() - 1);
+                    for (int i = 0; i < messages.size(); i++) {
+                        Integer msgId = messages.get(i).getId();
+                        if (msgId > begin && msgId < end && !selectedMessagesIds[0].withTouch.contains(msgId)) {
+                            addToSelectedMessages(messages.get(i), false);
+                            updateActionModeTitle();
+                            updateVisibleRows();
+                        }
+                    }
                 } else if (id == forward) {
                     // IS_ANONYMOUS_FORWARD = id == forward_anonym;
                     openForward(true);
@@ -8835,6 +8867,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (getDialogId() == getUserConfig().getClientUserId() && (chatMode == 0 || chatMode == MODE_SAVED)) {
                 actionModeViews.add(actionMode.addItemWithWidth(tag_message, R.drawable.menu_tag_edit, AndroidUtilities.dp(54), LocaleController.getString(R.string.AccDescrTagMessage)));
             }
+            actionModeViews.add(actionMode.addItemWithWidth(select_between, R.drawable.profile_list, AndroidUtilities.dp(54), LocaleController.getString("Edit", R.string.Edit)));
             actionModeViews.add(actionMode.addItemWithWidth(star, R.drawable.msg_fave, AndroidUtilities.dp(54), LocaleController.getString(R.string.AddToFavorites)));
             actionModeViews.add(actionMode.addItemWithWidth(copy, R.drawable.msg_copy, AndroidUtilities.dp(54), LocaleController.getString(R.string.Copy)));
             if (!replaceForward) {
@@ -8849,6 +8882,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             actionModeViews.add(actionMode.addItemWithWidth(copy, R.drawable.msg_copy, AndroidUtilities.dp(54), LocaleController.getString(R.string.Copy)));
             actionModeViews.add(actionMode.addItemWithWidth(delete, R.drawable.msg_delete, AndroidUtilities.dp(54), LocaleController.getString(R.string.Delete)));
         }
+        updateMultipleSelection(actionMode);
         actionMode.setItemVisibility(edit, canEditMessagesCount == 1 && selectedMessagesIds[0].size() + selectedMessagesIds[1].size() == 1 ? View.VISIBLE : View.GONE);
         actionMode.setItemVisibility(copy, !getMessagesController().isChatNoForwards(currentChat) && selectedMessagesCanCopyIds[0].size() + selectedMessagesCanCopyIds[1].size() != 0 ? View.VISIBLE : View.GONE);
         actionMode.setItemVisibility(star, selectedMessagesCanStarIds[0].size() + selectedMessagesCanStarIds[1].size() != 0 ? View.VISIBLE : View.GONE);
@@ -17050,6 +17084,33 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             return;
         }
         addToSelectedMessages(message, outside);
+
+        // For selecting messages between the first and the last.
+        ArrayList<Integer> ids = new ArrayList<>();
+        for (int a = 1; a >= 0; a--) {
+            for (int b = 0; b < selectedMessagesIds[a].size(); b++) {
+                ids.add(selectedMessagesIds[a].keyAt(b));
+            }
+        }
+        Integer msgId = message.getId();
+        if (ids.contains(msgId)) {
+            if (!selectedMessagesIds[0].withTouch.contains(msgId)) {
+                ArrayList<Integer> sortIds = selectedMessagesIds[0].withTouch;
+                Collections.sort(sortIds);
+                // If there's a new extreme value,
+                // we should mark as 'withTouch' all selected messages.
+                if (sortIds.get(0) <= msgId || sortIds.get(sortIds.size() - 1) >= msgId) {
+                    selectedMessagesIds[0].withTouch.clear();
+                    for (Integer id : ids) {
+                        selectedMessagesIds[0].withTouch.add(id);
+                    }
+                } else {
+                    selectedMessagesIds[0].withTouch.add(msgId);
+                }
+            }
+        } else {
+            selectedMessagesIds[0].withTouch.remove(msgId);
+        }
         updateActionModeTitle();
         updateVisibleRows();
     }
@@ -17074,6 +17135,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 bottomOverlayChatText.setEnabled(true);
             }
         }
+        updateMultipleSelection(actionBar.createActionMode());
     }
 
     public void updateTitle(boolean animated) {
@@ -28362,6 +28424,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         animatorSet.start();
 
         addToSelectedMessages(message, listView);
+        selectedMessagesIds[0].withTouch.clear();
+        selectedMessagesIds[0].withTouch.add(message.getId());
+        updateMultipleSelection(actionMode);
 
         if (chatActivityEnterView != null) {
             chatActivityEnterView.preventInput = true;
@@ -28500,6 +28565,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             scrimViewAlphaAnimator.setDuration(150);
             scrimViewAlphaAnimator.start();
         }
+    }
+
+    private void updateMultipleSelection(ActionBarMenu actionMode) {
+        if (actionMode == null) {
+            return;
+        }
+        View item = actionMode.getItem(select_between);
+        if (item == null) {
+            return;
+        }
+        final boolean t = selectedMessagesIds[0].withTouch.size() > 1;
+        item.setVisibility(t ? View.VISIBLE : View.GONE);
     }
 
     Runnable updateReactionRunnable;
