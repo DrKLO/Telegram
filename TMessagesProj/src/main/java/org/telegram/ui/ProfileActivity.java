@@ -3579,6 +3579,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             } else if (position == addMemberRow) {
                 openAddMember();
             } else if (position == usernameRow) {
+                if (!processCopyUsername())
                 processOnClickOrPress(position, view, x, y);
             } else if (position == locationRow) {
                 if (chatInfo.location instanceof TLRPC.TL_channelLocation) {
@@ -5605,53 +5606,63 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         presentFragment(fragment);
     }
 
-    private boolean processOnClickOrPress(final int position, final View view, final float x, final float y) {
-        if (position == usernameRow || position == setUsernameRow) {
-            final String username;
-            if (userId != 0) {
-                final TLRPC.User user = getMessagesController().getUser(userId);
-                String username1 = UserObject.getPublicUsername(user);
-                if (user == null || username1 == null) {
-                    return false;
-                }
-                username = username1;
-            } else if (chatId != 0) {
-                final TLRPC.Chat chat = getMessagesController().getChat(chatId);
-                if (chat == null || topicId == 0 && !ChatObject.isPublic(chat)) {
-                    return false;
-                }
-                username = ChatObject.getPublicUsername(chat);
-            } else {
+    private boolean processCopyUsername() {
+        final String username;
+        if (userId != 0) {
+            final TLRPC.User user = getMessagesController().getUser(userId);
+            String username1 = UserObject.getPublicUsername(user);
+            if (user == null || username1 == null) {
                 return false;
             }
-            if (userId == 0) {
-                TLRPC.Chat chat = getMessagesController().getChat(chatId);
-                String link;
-                if (ChatObject.isPublic(chat)) {
-                    link = "https://" + getMessagesController().linkPrefix + "/" + ChatObject.getPublicUsername(chat) + (topicId != 0 ? "/" + topicId : "");
-                } else {
-                    link = "https://" + getMessagesController().linkPrefix + "/c/" + chat.id + (topicId != 0 ? "/" + topicId : "");
-                }
-                showDialog(new ShareAlert(getParentActivity(), null, link, false, link, false) {
-                    @Override
-                    protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic) {
-                        AndroidUtilities.runOnUIThread(() -> {
-                            BulletinFactory.createInviteSentBulletin(getParentActivity(), contentView, dids.size(), dids.size() == 1 ? dids.valueAt(0).id : 0, count, getThemedColor(Theme.key_undo_background), getThemedColor(Theme.key_undo_infoColor)).show();
-                        }, 250);
+            username = username1;
+        } else if (chatId != 0) {
+            final TLRPC.Chat chat = getMessagesController().getChat(chatId);
+            if (chat == null || !ChatObject.isPublic(chat)) {
+                return false;
+            }
+            username = chat.username;
+        } else {
+            return false;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setItems(new CharSequence[]{LocaleController.getString("Copy", R.string.Copy)}, (dialogInterface, i) -> {
+            if (i == 0) {
+                if (userId == 0) {
+                    TLRPC.Chat chat = getMessagesController().getChat(chatId);
+                    String link;
+                    if (ChatObject.isPublic(chat)) {
+                        link = "https://" + getMessagesController().linkPrefix + "/" + ChatObject.getPublicUsername(chat) + (topicId != 0 ? "/" + topicId : "");
+                    } else {
+                        link = "https://" + getMessagesController().linkPrefix + "/c/" + chat.id + (topicId != 0 ? "/" + topicId : "");
                     }
-                });
-            } else {
-                try {
-                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                    String text = "@" + username;
-                    BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("UsernameCopied", R.string.UsernameCopied), resourcesProvider).show();
-                    android.content.ClipData clip = android.content.ClipData.newPlainText("label", text);
-                    clipboard.setPrimaryClip(clip);
-                } catch (Exception e) {
-                    FileLog.e(e);
+                    showDialog(new ShareAlert(getParentActivity(), null, link, false, link, false) {
+                        @Override
+                        protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic) {
+                            AndroidUtilities.runOnUIThread(() -> {
+                                BulletinFactory.createInviteSentBulletin(getParentActivity(), contentView, dids.size(), dids.size() == 1 ? dids.valueAt(0).id : 0, count, getThemedColor(Theme.key_undo_background), getThemedColor(Theme.key_undo_infoColor)).show();
+                            }, 250);
+                        }
+                    });
+                } else {
+                    try {
+                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                        String text = "@" + username;
+                        BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("UsernameCopied", R.string.UsernameCopied), resourcesProvider).show();
+                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", text);
+                        clipboard.setPrimaryClip(clip);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
                 }
             }
-            return true;
+        }); 
+        showDialog(builder.create());
+        return true;
+    }
+
+    private boolean processOnClickOrPress(final int position, final View view, final float x, final float y) {
+        if (position == usernameRow || position == setUsernameRow) {
+            processCopyUsername();
         } else if (position == phoneRow || position == numberRow) {
             final TLRPC.User user = getMessagesController().getUser(userId);
             if (user == null || user.phone == null || user.phone.length() == 0 || getParentActivity() == null) {
