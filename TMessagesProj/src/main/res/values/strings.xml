@@ -2960,4 +2960,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <string name="formatDateScheduleDay">EEE MMM d</string>
+    <string name="SwipeForArchive">Swipe down for archive</string>
+    <string name="ReleaseForArchive">Release for archive</string>
 </resources>
