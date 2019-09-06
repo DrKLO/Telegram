@@ -240,6 +240,7 @@ public class DialogCell extends BaseCell {
         messageId = 0;
         update(0);
         checkOnline();
+        if (currentDialogFolderId != 0 && archivedChatsDrawable != null) archivedChatsDrawable.setView(this);
     }
 
     public void setDialogIndex(int i) {
@@ -308,7 +309,6 @@ public class DialogCell extends BaseCell {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        archivedChatsDrawable = DialogsActivity.archivedPullForegroundDrawable;
         avatarImage.onAttachedToWindow();
         archiveHidden = SharedConfig.archiveHidden;
         archiveBackgroundProgress = archiveHidden ? 0.0f : 1.0f;
@@ -997,7 +997,6 @@ public class DialogCell extends BaseCell {
             }
 
             if (currentDialogFolderId != 0) {
-                if(archivedChatsDrawable != null) archivedChatsDrawable.setView(this);
                 nameString = LocaleController.getString("ArchivedChats", R.string.ArchivedChats);
             } else {
                 if (chat != null) {
@@ -1582,7 +1581,6 @@ public class DialogCell extends BaseCell {
 
             if (currentDialogFolderId != 0) {
                 Theme.dialogs_archiveAvatarDrawable.setCallback(this);
-                if(archivedChatsDrawable != null) archivedChatsDrawable.setView(this);
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_ARCHIVED);
                 avatarImage.setImage(null, null, avatarDrawable, null, user, 0);
             } else {
@@ -2269,5 +2267,9 @@ public class DialogCell extends BaseCell {
 
     public void setBottomClip(int value) {
         bottomClip = value;
+    }
+
+    public void setArchivedPullAnimation(ArchivedPullForegroundDrawable archivedPullForegroundDrawable) {
+        this.archivedChatsDrawable = archivedPullForegroundDrawable;
     }
 }

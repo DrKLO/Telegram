@@ -253,9 +253,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private boolean scrollingManually;
     private int totalConsumedAmount;
     private boolean startedScrollAtTop;
-
-    //moved to static variable to prevent glitches when adapter.notifyDataChangesCalled
-    public static ArchivedPullForegroundDrawable archivedPullForegroundDrawable;
+    
+    public ArchivedPullForegroundDrawable archivedPullForegroundDrawable;
 
     private class ContentView extends SizeNotifierFrameLayout {
 
@@ -487,7 +486,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         getUndoView().showWithAction(0, UndoView.ACTION_ARCHIVE_HIDDEN, null, null);
                     }
                     archivePullViewState = SharedConfig.archiveHidden ? ARCHIVE_ITEM_STATE_HIDDEN : ARCHIVE_ITEM_STATE_PINNED;
-                    archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
+                    if (archivedPullForegroundDrawable != null)
+                        archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
                     return;
                 }
 
@@ -656,9 +656,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             messagesCount = arguments.getInt("messagesCount", 0);
         }
 
-        if (archivedPullForegroundDrawable == null && folderId == 0) {
-            archivedPullForegroundDrawable = new ArchivedPullForegroundDrawable();
-        }
 
         if (dialogsType == 0) {
             askAboutContacts = MessagesController.getGlobalNotificationsSettings().getBoolean("askAboutContacts", true);
@@ -1056,7 +1053,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             SharedConfig.toggleArchiveHidden();
                             getUndoView().showWithAction(0, UndoView.ACTION_ARCHIVE_PINNED, null, null);
                             archivePullViewState = SharedConfig.archiveHidden ? ARCHIVE_ITEM_STATE_HIDDEN : ARCHIVE_ITEM_STATE_PINNED;
-                            archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
+                            if (archivedPullForegroundDrawable != null)
+                                archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
                         }
                     }
                 }
@@ -1198,7 +1196,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                             }
                         }
-                        archivedPullForegroundDrawable.pullProgress = k;
+                        if (archivedPullForegroundDrawable != null)
+                            archivedPullForegroundDrawable.pullProgress = k;
                         dialogCell.invalidate();
                     } else {
                         canShow = false;
@@ -1722,6 +1721,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         });
 
+        archivePullViewState = SharedConfig.archiveHidden ? ARCHIVE_ITEM_STATE_HIDDEN : ARCHIVE_ITEM_STATE_PINNED;
+
+        if (archivedPullForegroundDrawable == null && folderId == 0) {
+            archivedPullForegroundDrawable = new ArchivedPullForegroundDrawable();
+
+            if (hasHiddenArchive()) {
+                archivedPullForegroundDrawable.showHidden();
+            } else {
+                archivedPullForegroundDrawable.doNotShow();
+            }
+            archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
+        }
+
         if (searchString == null) {
             dialogsAdapter = new DialogsAdapter(context, dialogsType, folderId, onlySelect) {
                 @Override
@@ -1733,6 +1745,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (AndroidUtilities.isTablet() && openedDialogId != 0) {
                 dialogsAdapter.setOpenedDialogId(openedDialogId);
             }
+            dialogsAdapter.setArchivedPullDrawable(archivedPullForegroundDrawable);
             listView.setAdapter(dialogsAdapter);
         }
         int type = 0;
@@ -2003,23 +2016,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             actionBar.setSearchTextColor(Theme.getColor(Theme.key_actionBarDefaultArchivedSearchPlaceholder), true);
         }
 
-        archivePullViewState = SharedConfig.archiveHidden ? ARCHIVE_ITEM_STATE_HIDDEN : ARCHIVE_ITEM_STATE_PINNED;
-        if (hasHiddenArchive()) {
-            archivedPullForegroundDrawable.showHidden();
-        } else {
-            archivedPullForegroundDrawable.doNotShow();
-        }
-        archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
-
         return fragmentView;
-    }
-
-    @Override
-    public void finishFragment() {
-        super.finishFragment();
-        if (archivedPullForegroundDrawable != null && folderId == 0) {
-            archivedPullForegroundDrawable.destroyView();
-        }
     }
 
     @Override
@@ -2088,6 +2085,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     .setNegativeButton(LocaleController.getString("ContactsPermissionAlertNotNow", R.string.ContactsPermissionAlertNotNow), (dialog, which) -> MessagesController.getGlobalNotificationsSettings().edit().putBoolean("askedAboutMiuiLockscreen", true).commit())
                     .create());
         }
+
 
         if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && layoutManager.findFirstVisibleItemPosition() == 0) {
             layoutManager.scrollToPositionWithOffset(1, 0);
@@ -3157,7 +3155,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         floatingHidden = hide;
         AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(ObjectAnimator.ofFloat(floatingButtonContainer, View.TRANSLATION_Y,  (floatingHidden ? AndroidUtilities.dp(100) : -additionalFloatingTranslation))/*,
+        animatorSet.playTogether(ObjectAnimator.ofFloat(floatingButtonContainer, View.TRANSLATION_Y, (floatingHidden ? AndroidUtilities.dp(100) : -additionalFloatingTranslation))/*,
                 ObjectAnimator.ofFloat(unreadFloatingButtonContainer, View.TRANSLATION_Y, floatingHidden ? AndroidUtilities.dp(74) : 0)*/);
         animatorSet.setDuration(300);
         animatorSet.setInterpolator(floatingInterpolator);

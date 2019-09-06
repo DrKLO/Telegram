@@ -113,7 +113,7 @@ public class ArchivedPullForegroundDrawable {
         int visibleHeight = (int) (parent.getHeight() * pullProgress);
         int invisibleHeight = parent.getHeight() - visibleHeight;
 
-        float bounceP = bounceIn  ? (0.07f * bounceProgress) - 0.05f : 0.02f * bounceProgress;
+        float bounceP = bounceIn ? (0.07f * bounceProgress) - 0.05f : 0.02f * bounceProgress;
 
         //float bounceP = (0.1f * bounceProgress) - 0.1f;
         updateTextProgress(pullProgress);
@@ -301,9 +301,9 @@ public class ArchivedPullForegroundDrawable {
 
 
         AnimatorSet bounce = new AnimatorSet();
-        bounce.playSequentially(bounceIn,bounceOut);
+        bounce.playSequentially(bounceIn, bounceOut);
         bounce.setStartDelay(200);
-       // bounceIn.setStartDelay(200);
+        // bounceIn.setStartDelay(200);
         outAnimator.playTogether(out, bounce);
         outAnimator.start();
     }
