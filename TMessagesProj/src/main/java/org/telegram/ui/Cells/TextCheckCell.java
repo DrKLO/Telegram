@@ -293,6 +293,10 @@ public class TextCheckCell extends FrameLayout {
         }
     }
 
+    public boolean isFakeEnabled() {
+        return textView.getAlpha() == 1.0f;
+    }
+
     public void setChecked(boolean checked) {
         checkBox.setChecked(checked, true);
     }
