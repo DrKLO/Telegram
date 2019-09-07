@@ -6,15 +6,18 @@ import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
+import android.graphics.Path;
+import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
+import android.view.ViewConfiguration;
 import android.view.animation.LinearInterpolator;
 
-import androidx.core.content.ContextCompat;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -28,6 +31,7 @@ import org.telegram.ui.Cells.DialogCell;
 public class ArchivedPullForegroundDrawable {
 
     public final static float SNAP_HEIGHT = 0.85f;
+    public int scrollDy;
 
 
     private Paint paintSecondary = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -35,16 +39,19 @@ public class ArchivedPullForegroundDrawable {
     private Paint backgroundPaint = new Paint();
     private RectF rectF = new RectF();
     private Paint tooltipTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-    private Drawable arrowDrawable;
+    private final ArrowDrawable arrowDrawable = new ArrowDrawable();
 
 
     private float textSwappingProgress = 1f;
+    private float arrowRotateProgress = 1f;
     private boolean animateToEndText = false;
+    private boolean arrowAnimateTo = false;
     private ValueAnimator textSwipingAnimator;
 
-    private float textInProgress = 1f;
+    private float textInProgress = 0f;
     private boolean animateToTextIn = false;
     private ValueAnimator textIntAnimator;
+    private ValueAnimator arrowRotateAnimator;
 
     private AnimatorSet outAnimator;
     public float outProgress = 0f;
@@ -73,6 +80,8 @@ public class ArchivedPullForegroundDrawable {
 
     private boolean isOut = false;
 
+    private float touchSlop;
+
     private ValueAnimator.AnimatorUpdateListener textSwappingUpdateListener = animation -> {
         textSwappingProgress = (float) animation.getAnimatedValue();
         if (parent != null) parent.invalidate();
@@ -87,6 +96,9 @@ public class ArchivedPullForegroundDrawable {
         tooltipTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         tooltipTextPaint.setTextAlign(Paint.Align.CENTER);
         tooltipTextPaint.setTextSize(AndroidUtilities.dp(16));
+
+        final ViewConfiguration vc = ViewConfiguration.get(ApplicationLoader.applicationContext);
+        touchSlop = vc.getScaledTouchSlop();
     }
 
     public void setView(DialogCell view) {
@@ -99,8 +111,7 @@ public class ArchivedPullForegroundDrawable {
         paintAccent.setColor(primaryColor);
         paintSecondary.setColor(ColorUtils.setAlphaComponent(primaryColor, 100));
         backgroundPaint.setColor(backgroundColor);
-        arrowDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.archive_swipe_arrow).mutate();
-        arrowDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor, PorterDuff.Mode.MULTIPLY));
+        arrowDrawable.setColor(backgroundColor);
 
         pullTooltip = LocaleController.getString("SwipeForArchive", R.string.SwipeForArchive);
         releaseTooltip = LocaleController.getString("ReleaseForArchive", R.string.ReleaseForArchive);
@@ -124,6 +135,9 @@ public class ArchivedPullForegroundDrawable {
         float cX = outCx;
         float cY = outCy;
 
+        float startPullProgress = visibleHeight > diameter + smallMargin * 2 ? 1f :
+                (float) visibleHeight / (diameter + smallMargin * 2);
+
         canvas.save();
         if (outProgress == 0f) {
             canvas.drawPaint(backgroundPaint);
@@ -141,7 +155,7 @@ public class ArchivedPullForegroundDrawable {
         }
 
         if (visibleHeight > diameter + smallMargin * 2) {
-            paintSecondary.setAlpha((int) ((1f - outProgressHalf) * 0.4f * 255));
+            paintSecondary.setAlpha((int) ((1f - outProgressHalf) * 0.4f * startPullProgress * 255));
             rectF.set(startPadding, parent.getHeight() - visibleHeight + smallMargin, startPadding + diameter, parent.getHeight() - smallMargin);
             canvas.drawRoundRect(rectF, radius, radius, paintSecondary);
         }
@@ -149,6 +163,7 @@ public class ArchivedPullForegroundDrawable {
         if (outProgress == 0f) {
             int x = startPadding + radius;
             int y = parent.getHeight() - smallMargin - radius;
+            paintAccent.setAlpha((int) (startPullProgress * 255));
             canvas.drawCircle(x, y, radius, paintAccent);
 
             int ih = arrowDrawable.getIntrinsicHeight();
@@ -159,28 +174,50 @@ public class ArchivedPullForegroundDrawable {
                     x + (iw >> 1), y + (ih >> 1)
             );
 
-            float rotateProgress = (float) (visibleHeight - (diameter + smallMargin * 2)) / (float) (parent.getHeight() - (diameter + smallMargin * 2));
+//            float rotateProgress = (float) (visibleHeight - (diameter + smallMargin * 2)) / (float) (parent.getHeight() - (diameter + smallMargin * 2));
+            float rotateProgress = 1f - arrowRotateProgress;
             if (rotateProgress < 0) rotateProgress = 0f;
             rotateProgress = 1f - rotateProgress;
             canvas.save();
             canvas.rotate(180 * rotateProgress, x, y);
+            canvas.translate(0, AndroidUtilities.dpf2(1f) * 1f - rotateProgress);
             arrowDrawable.draw(canvas);
             canvas.restore();
         }
 
 
-        textIn(visibleHeight >= diameter + smallMargin * 2 - AndroidUtilities.dp(4));
+        textIn();
 
+        float textY = parent.getMeasuredHeight() - ((diameter + smallMargin * 2) / 2f) + AndroidUtilities.dp(6);
+        tooltipTextPaint.setAlpha((int) (255 * textSwappingProgress * startPullProgress * textInProgress));
 
-        float textY = invisibleHeight + (visibleHeight >> 1) + AndroidUtilities.dp(6);
-        tooltipTextPaint.setAlpha((int) (255 * textSwappingProgress * textInProgress));
-        canvas.drawText(pullTooltip, parent.getWidth() / 2f - AndroidUtilities.dp(2),
+        float textCx = parent.getWidth() / 2f - AndroidUtilities.dp(2);
+
+        if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
+            canvas.save();
+            float scale = 0.8f + 0.2f * textSwappingProgress;
+            canvas.scale(scale, scale, textCx, textY + AndroidUtilities.dp(16) * (1f - textSwappingProgress));
+        }
+        canvas.drawText(pullTooltip, textCx,
                 textY + AndroidUtilities.dp(16) * (1f - textSwappingProgress), tooltipTextPaint);
 
-        tooltipTextPaint.setAlpha((int) (255 * (1f - textSwappingProgress) * textInProgress));
-        canvas.drawText(releaseTooltip, parent.getWidth() / 2f - AndroidUtilities.dp(2),
+        if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
+            canvas.restore();
+        }
+
+
+        if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
+            canvas.save();
+            float scale = 0.9f + 0.1f * (1f - textSwappingProgress);
+            canvas.scale(scale, scale, textCx, textY - AndroidUtilities.dp(16) * (textSwappingProgress));
+        }
+        tooltipTextPaint.setAlpha((int) (255 * (1f - textSwappingProgress) * startPullProgress * textInProgress));
+        canvas.drawText(releaseTooltip, textCx,
                 textY - AndroidUtilities.dp(16) * (textSwappingProgress), tooltipTextPaint);
 
+        if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
+            canvas.restore();
+        }
         canvas.restore();
 
 
@@ -220,28 +257,69 @@ public class ArchivedPullForegroundDrawable {
         }
     }
 
+
+
     private void updateTextProgress(float pullProgress) {
         boolean endText = pullProgress > SNAP_HEIGHT;
         if (animateToEndText != endText) {
             animateToEndText = endText;
-            if (textSwipingAnimator != null) textSwipingAnimator.cancel();
-            textSwipingAnimator = ValueAnimator.ofFloat(textSwappingProgress, endText ? 0f : 1f);
-            textSwipingAnimator.addUpdateListener(textSwappingUpdateListener);
-            textSwipingAnimator.setInterpolator(new LinearInterpolator());
-            textSwipingAnimator.setDuration(150);
-            textSwipingAnimator.start();
+            if (textInProgress == 0f) {
+                if (textSwipingAnimator != null) textSwipingAnimator.cancel();
+                textSwappingProgress = endText ? 0f : 1f;
+            } else {
+                if (textSwipingAnimator != null) textSwipingAnimator.cancel();
+                textSwipingAnimator = ValueAnimator.ofFloat(textSwappingProgress, endText ? 0f : 1f);
+                textSwipingAnimator.addUpdateListener(textSwappingUpdateListener);
+                textSwipingAnimator.setInterpolator(new LinearInterpolator());
+                textSwipingAnimator.setDuration(170);
+                textSwipingAnimator.start();
+            }
+        }
+
+
+        if (endText != arrowAnimateTo) {
+            arrowAnimateTo = endText;
+            if (arrowRotateAnimator != null) arrowRotateAnimator.cancel();
+            arrowRotateAnimator = ValueAnimator.ofFloat(arrowRotateProgress, arrowAnimateTo ? 0f : 1f);
+            arrowRotateAnimator.addUpdateListener(animation -> {
+                arrowRotateProgress = (float) animation.getAnimatedValue();
+                if (parent != null) parent.invalidate();
+            });
+            arrowRotateAnimator.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
+            arrowRotateAnimator.setDuration(250);
+            arrowRotateAnimator.start();
         }
     }
 
-    private void textIn(boolean in) {
-        if (animateToTextIn != in) {
-            animateToTextIn = in;
+    Runnable r = new Runnable() {
+        @Override
+        public void run() {
+            animateToTextIn = true;
+
             if (textIntAnimator != null) textIntAnimator.cancel();
-            textIntAnimator = ValueAnimator.ofFloat(textInProgress, in ? 1f : 0f);
+            textInProgress = 0f;
+            textIntAnimator = ValueAnimator.ofFloat(0f, 1f);
             textIntAnimator.addUpdateListener(textInUpdateListener);
             textIntAnimator.setInterpolator(new LinearInterpolator());
             textIntAnimator.setDuration(150);
             textIntAnimator.start();
+        }
+    };
+
+    boolean wasSendCallback = false;
+
+    private void textIn() {
+        if (!animateToTextIn) {
+            if (Math.abs(scrollDy) < touchSlop * 0.5f) {
+                if (!wasSendCallback) {
+                    textInProgress = 1f;
+                    animateToTextIn = true;
+                }
+            } else {
+                wasSendCallback = true;
+                parent.removeCallbacks(r);
+                parent.postDelayed(r, 120);
+            }
         }
     }
 
@@ -290,9 +368,13 @@ public class ArchivedPullForegroundDrawable {
             @Override
             public void onAnimationEnd(Animator animation) {
                 if (textSwipingAnimator != null) textSwipingAnimator.cancel();
+                if (textIntAnimator != null) textIntAnimator.cancel();
                 textSwappingProgress = 1f;
+                arrowRotateProgress = 1f;
                 animateToEndText = false;
+                arrowAnimateTo = false;
                 animateToTextIn = false;
+                wasSendCallback = false;
                 textInProgress = 0f;
                 isOut = true;
 
@@ -303,7 +385,7 @@ public class ArchivedPullForegroundDrawable {
         AnimatorSet bounce = new AnimatorSet();
         bounce.playSequentially(bounceIn, bounceOut);
         bounce.setStartDelay(200);
-        // bounceIn.setStartDelay(200);
+
         outAnimator.playTogether(out, bounce);
         outAnimator.start();
     }
@@ -343,5 +425,64 @@ public class ArchivedPullForegroundDrawable {
 
     public void setWillDraw(boolean b) {
         willDraw = b;
+    }
+
+    public void resetText() {
+        if (textIntAnimator != null) textIntAnimator.cancel();
+        textInProgress = 0f;
+        animateToTextIn = false;
+        wasSendCallback = false;
+    }
+
+    private class ArrowDrawable extends Drawable {
+
+        Path path = new Path();
+        Paint paint = new Paint();
+
+        public void setColor(int color){
+            paint.setColor(color);
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return AndroidUtilities.dp(18);
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return getIntrinsicHeight();
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            int h = AndroidUtilities.dp(18);
+            path.moveTo(h >> 1, AndroidUtilities.dpf2(4.58f));
+            path.lineTo(AndroidUtilities.dpf2(3.95f), AndroidUtilities.dpf2(9.66f));
+            path.lineTo(AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(9.66f));
+            path.lineTo(AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(11.6f));
+            path.lineTo(h - AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(11.6f));
+            path.lineTo(h - AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(9.66f));
+            path.lineTo(h - AndroidUtilities.dpf2(3.95f), AndroidUtilities.dpf2(9.66f));
+
+            canvas.save();
+            canvas.translate(getBounds().left,getBounds().top);
+            canvas.drawPath(path,paint);
+            canvas.restore();
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.UNKNOWN;
+        }
     }
 }

@@ -1177,9 +1177,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
 
-                if (archivePullViewState != ARCHIVE_ITEM_STATE_PINNED && hasHiddenArchive()) {
-                    int unusedDy = super.scrollVerticallyBy(dy, recycler, state);
 
+
+                if (archivePullViewState != ARCHIVE_ITEM_STATE_PINNED && hasHiddenArchive()) {
+                    int usedDy = super.scrollVerticallyBy(dy, recycler, state);
+
+                    if(archivedPullForegroundDrawable != null) archivedPullForegroundDrawable.scrollDy = usedDy;
                     int currentPosition = layoutManager.findFirstVisibleItemPosition();
                     if (currentPosition == 0) {
                         DialogCell dialogCell = (DialogCell) layoutManager.findViewByPosition(currentPosition);
@@ -1200,10 +1203,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             archivedPullForegroundDrawable.pullProgress = k;
                         dialogCell.invalidate();
                     } else {
+                        archivedPullForegroundDrawable.resetText();
                         canShow = false;
                         archivePullViewState = ARCHIVE_ITEM_STATE_HIDDEN;
                     }
-                    return unusedDy;
+                    return usedDy;
                 }
                 return super.scrollVerticallyBy(dy, recycler, state);
             }
