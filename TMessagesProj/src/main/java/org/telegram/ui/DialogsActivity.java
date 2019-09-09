@@ -1208,7 +1208,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             float k = 1f + (v.getTop() / (float) v.getMeasuredHeight());
                             if (k > 1f) k = 1f;
                             listView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-                            measuredDy *= 0.5f - 0.15f * k;
+                            measuredDy *= ArchivedPullForegroundDrawable.startPullParallax - ArchivedPullForegroundDrawable.endPullParallax * k;
                         }
                     }
                 }
@@ -1250,9 +1250,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && measuredDy - usedDy != 0 && dy < 0) {
                             float ty;
 
-                            float tk = (listView.getTranslationY() / AndroidUtilities.dp(100));
+                            float tk = (listView.getTranslationY() / ArchivedPullForegroundDrawable.maxOverScroll);
                             tk = 1f - tk;
-                            ty = (listView.getTranslationY() - (dy / 2f) * 0.35f * tk);
+                            ty = (listView.getTranslationY() - (dy / 2f) * ArchivedPullForegroundDrawable.startPullOverScroll * tk);
 
 
                             listView.setTranslationY(ty);

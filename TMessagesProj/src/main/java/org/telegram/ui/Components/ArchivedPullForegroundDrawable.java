@@ -31,6 +31,10 @@ import org.telegram.ui.ActionBar.Theme;
 public class ArchivedPullForegroundDrawable {
 
     public final static float SNAP_HEIGHT = 0.85f;
+    public final static float startPullParallax = 0.45f;
+    public final static float endPullParallax = 0.25f;
+    public final static float startPullOverScroll = 0.2f;
+    public final static float maxOverScroll = AndroidUtilities.dp(72);
     public int scrollDy;
 
 
