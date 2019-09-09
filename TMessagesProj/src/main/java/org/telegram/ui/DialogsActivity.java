@@ -14,6 +14,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -253,7 +254,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private boolean scrollingManually;
     private int totalConsumedAmount;
     private boolean startedScrollAtTop;
-    
+
     public ArchivedPullForegroundDrawable archivedPullForegroundDrawable;
 
     private class ContentView extends SizeNotifierFrameLayout {
@@ -262,6 +263,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         public ContentView(Context context) {
             super(context);
+            setWillNotDraw(false);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (archivedPullForegroundDrawable != null && listView.getTranslationY() != 0) {
+                archivedPullForegroundDrawable.drawOverScroll(canvas);
+            }
+
+            super.onDraw(canvas);
         }
 
         @Override
@@ -978,6 +989,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             private boolean ignoreLayout;
 
             @Override
+            public void setTranslationY(float translationY) {
+                contentView.invalidate();
+                super.setTranslationY(translationY);
+            }
+
+            @Override
             protected void dispatchDraw(Canvas canvas) {
                 super.dispatchDraw(canvas);
                 if (slidingView != null && pacmanAnimation != null) {
@@ -1078,6 +1095,17 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                     archivePullViewState = ARCHIVE_ITEM_STATE_SHOWED;
                                 }
                             }
+
+                            if (listView.getTranslationY() != 0) {
+                                ValueAnimator valueAnimator = ValueAnimator.ofFloat(listView.getTranslationY(), 0f);
+                                valueAnimator.addUpdateListener(animation -> {
+                                    listView.setTranslationY((float) animation.getAnimatedValue());
+                                });
+
+                                valueAnimator.setDuration(250);
+                                valueAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                                valueAnimator.start();
+                            }
                         }
                     }
                 }
@@ -1144,8 +1172,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
 
+            int lastTranslation = 0;
+
             @Override
             public int scrollVerticallyBy(int dy, RecyclerView.Recycler recycler, RecyclerView.State state) {
+                if (listView.getTranslationY() != 0) {
+                    //this hack needed for smooth translateY, recycler can't save translations for touches
+                    dy -= (listView.getTranslationY() - lastTranslation) * 2f;
+                }
+                lastTranslation = (int) listView.getTranslationY();
+                int measuredDy = dy;
                 if (listView.getAdapter() == dialogsAdapter && dialogsType == 0 && !onlySelect && folderId == 0 && dy < 0 && getMessagesController().hasHiddenArchive() && archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN) {
                     listView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
                     int currentPosition = layoutManager.findFirstVisibleItemPosition();
@@ -1164,7 +1200,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         int positiveDy = Math.abs(dy);
                         if (canScrollDy < positiveDy) {
                             totalConsumedAmount += Math.abs(dy);
-                            dy = -canScrollDy;
+                            measuredDy = -canScrollDy;
                         }
                     } else {
                         if (currentPosition == 0) {
@@ -1172,17 +1208,28 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             float k = 1f + (v.getTop() / (float) v.getMeasuredHeight());
                             if (k > 1f) k = 1f;
                             listView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-                            dy *= 0.5f - 0.15f * k;
+                            measuredDy *= 0.5f - 0.15f * k;
                         }
                     }
                 }
 
+                if (listView.getTranslationY() != 0 && dy > 0) {
+                    float ty = (int) listView.getTranslationY();
+                    ty -= dy / 2f;
+                    if (ty < 0) {
+                        measuredDy = (int) ty;
+                        ty = 0;
+                    } else {
+                        measuredDy = 0;
+                    }
+                    listView.setTranslationY(ty);
+                }
 
 
                 if (archivePullViewState != ARCHIVE_ITEM_STATE_PINNED && hasHiddenArchive()) {
-                    int usedDy = super.scrollVerticallyBy(dy, recycler, state);
-
-                    if(archivedPullForegroundDrawable != null) archivedPullForegroundDrawable.scrollDy = usedDy;
+                    int usedDy = super.scrollVerticallyBy(measuredDy, recycler, state);
+                    if (archivedPullForegroundDrawable != null)
+                        archivedPullForegroundDrawable.scrollDy = usedDy;
                     int currentPosition = layoutManager.findFirstVisibleItemPosition();
                     if (currentPosition == 0) {
                         DialogCell dialogCell = (DialogCell) layoutManager.findViewByPosition(currentPosition);
@@ -1199,8 +1246,23 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                             }
                         }
-                        if (archivedPullForegroundDrawable != null)
+
+                        if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && measuredDy - usedDy != 0 && dy < 0) {
+                            float ty;
+
+                            float tk = (listView.getTranslationY() / AndroidUtilities.dp(100));
+                            tk = 1f - tk;
+                            ty = (listView.getTranslationY() - (dy / 2f) * 0.35f * tk);
+
+
+                            listView.setTranslationY(ty);
+
+                        }
+
+                        if (archivedPullForegroundDrawable != null) {
                             archivedPullForegroundDrawable.pullProgress = k;
+                            archivedPullForegroundDrawable.setParentViews(contentView, listView);
+                        }
                         dialogCell.invalidate();
                     } else {
                         archivedPullForegroundDrawable.resetText();
@@ -1209,7 +1271,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                     return usedDy;
                 }
-                return super.scrollVerticallyBy(dy, recycler, state);
+                return super.scrollVerticallyBy(measuredDy, recycler, state);
             }
         };
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);

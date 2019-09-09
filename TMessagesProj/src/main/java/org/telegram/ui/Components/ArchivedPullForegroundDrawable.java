@@ -13,6 +13,7 @@ import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
+import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.animation.LinearInterpolator;
 
@@ -25,7 +26,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.DialogCell;
 
 
 public class ArchivedPullForegroundDrawable {
@@ -65,7 +65,9 @@ public class ArchivedPullForegroundDrawable {
     private int radius = AndroidUtilities.dp(9);
     private int diameter = AndroidUtilities.dp(18);
 
-    private DialogCell parent;
+    private View dialogCell;
+    private View contentView;
+    private View listView;
 
     public float pullProgress;
 
@@ -73,6 +75,7 @@ public class ArchivedPullForegroundDrawable {
     public float outCx;
     public int outRadius;
     public AvatarDrawable outDrawable;
+    public float outOverScroll;
 
     private String pullTooltip;
     private String releaseTooltip;
@@ -84,12 +87,12 @@ public class ArchivedPullForegroundDrawable {
 
     private ValueAnimator.AnimatorUpdateListener textSwappingUpdateListener = animation -> {
         textSwappingProgress = (float) animation.getAnimatedValue();
-        if (parent != null) parent.invalidate();
+        if (dialogCell != null) dialogCell.invalidate();
     };
 
     private ValueAnimator.AnimatorUpdateListener textInUpdateListener = animation -> {
         textInProgress = (float) animation.getAnimatedValue();
-        if (parent != null) parent.invalidate();
+        if (dialogCell != null) dialogCell.invalidate();
     };
 
     public ArchivedPullForegroundDrawable() {
@@ -101,8 +104,8 @@ public class ArchivedPullForegroundDrawable {
         touchSlop = vc.getScaledTouchSlop();
     }
 
-    public void setView(DialogCell view) {
-        parent = view;
+    public void setDialogCell(View view) {
+        dialogCell = view;
 
         int primaryColor = Color.WHITE;
         int backgroundColor = Theme.getColor(Theme.key_avatar_backgroundArchivedHidden);
@@ -117,14 +120,58 @@ public class ArchivedPullForegroundDrawable {
         releaseTooltip = LocaleController.getString("ReleaseForArchive", R.string.ReleaseForArchive);
     }
 
+    public void setParentViews(View contentView, View listView) {
+        this.contentView = contentView;
+        this.listView = listView;
+    }
+
+    public void drawOverScroll(Canvas canvas) {
+        int overscroll = (int) listView.getTranslationY();
+
+        float cX = outCx;
+        float cY = outCy + overscroll;
+
+        canvas.save();
+        canvas.clipRect(0, 0, contentView.getMeasuredWidth(), overscroll + 1);
+        if (outProgress == 0f) {
+            canvas.drawPaint(backgroundPaint);
+        } else {
+
+
+            float outBackgroundRadius = outRadius + (dialogCell.getWidth() - outRadius) * (1f - outProgress);
+            canvas.drawCircle(cX, cY, outBackgroundRadius, backgroundPaint);
+
+            //clip rect work faster then clip path, and in this case users see no difference
+            canvas.clipRect(
+                    cX - outBackgroundRadius, cY - outBackgroundRadius,
+                    cX + outBackgroundRadius, cY + outBackgroundRadius
+            );
+        }
+
+
+        float outProgressHalf = outProgress * 2f;
+        if (outProgressHalf > 1f) outProgressHalf = 1f;
+
+        paintSecondary.setAlpha((int) ((1f - outProgressHalf) * 0.4f * 255));
+        rectF.set(startPadding, smallMargin , startPadding + diameter, smallMargin + overscroll + radius);
+        canvas.drawRoundRect(rectF, radius, radius, paintSecondary);
+
+
+
+        canvas.restore();
+
+    }
+
 
     public void draw(Canvas canvas) {
-        if (!willDraw || isOut || parent == null) return;
+        if (!willDraw || isOut || dialogCell == null) return;
 
-        int visibleHeight = (int) (parent.getHeight() * pullProgress);
-        int invisibleHeight = parent.getHeight() - visibleHeight;
+        int overscroll = (int) listView.getTranslationY();
+        int visibleHeight = (int) (dialogCell.getHeight() * pullProgress);
+        int invisibleHeight = dialogCell.getHeight() - visibleHeight;
 
         float bounceP = bounceIn ? (0.07f * bounceProgress) - 0.05f : 0.02f * bounceProgress;
+        bounceP += bounceP * outOverScroll;
 
         //float bounceP = (0.1f * bounceProgress) - 0.1f;
         updateTextProgress(pullProgress);
@@ -144,7 +191,7 @@ public class ArchivedPullForegroundDrawable {
         } else {
 
 
-            float outBackgroundRadius = outRadius + (parent.getWidth() - outRadius) * (1f - outProgress) + (outRadius * bounceP);
+            float outBackgroundRadius = outRadius + (dialogCell.getWidth() - outRadius) * (1f - outProgress) + (outRadius * bounceP);
             canvas.drawCircle(cX, cY, outBackgroundRadius, backgroundPaint);
 
             //clip rect work faster then clip path, and in this case users see no difference
@@ -156,13 +203,14 @@ public class ArchivedPullForegroundDrawable {
 
         if (visibleHeight > diameter + smallMargin * 2) {
             paintSecondary.setAlpha((int) ((1f - outProgressHalf) * 0.4f * startPullProgress * 255));
-            rectF.set(startPadding, parent.getHeight() - visibleHeight + smallMargin, startPadding + diameter, parent.getHeight() - smallMargin);
+            rectF.set(startPadding, dialogCell.getHeight() - visibleHeight + smallMargin - overscroll,
+                    startPadding + diameter, dialogCell.getHeight() - smallMargin);
             canvas.drawRoundRect(rectF, radius, radius, paintSecondary);
         }
 
         if (outProgress == 0f) {
             int x = startPadding + radius;
-            int y = parent.getHeight() - smallMargin - radius;
+            int y = dialogCell.getMeasuredHeight() - smallMargin - radius;
             paintAccent.setAlpha((int) (startPullProgress * 255));
             canvas.drawCircle(x, y, radius, paintAccent);
 
@@ -174,7 +222,6 @@ public class ArchivedPullForegroundDrawable {
                     x + (iw >> 1), y + (ih >> 1)
             );
 
-//            float rotateProgress = (float) (visibleHeight - (diameter + smallMargin * 2)) / (float) (parent.getHeight() - (diameter + smallMargin * 2));
             float rotateProgress = 1f - arrowRotateProgress;
             if (rotateProgress < 0) rotateProgress = 0f;
             rotateProgress = 1f - rotateProgress;
@@ -188,10 +235,10 @@ public class ArchivedPullForegroundDrawable {
 
         textIn();
 
-        float textY = parent.getMeasuredHeight() - ((diameter + smallMargin * 2) / 2f) + AndroidUtilities.dp(6);
+        float textY = dialogCell.getHeight() - ((diameter + smallMargin * 2) / 2f) + AndroidUtilities.dp(6);
         tooltipTextPaint.setAlpha((int) (255 * textSwappingProgress * startPullProgress * textInProgress));
 
-        float textCx = parent.getWidth() / 2f - AndroidUtilities.dp(2);
+        float textCx = dialogCell.getWidth() / 2f - AndroidUtilities.dp(2);
 
         if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
             canvas.save();
@@ -199,7 +246,7 @@ public class ArchivedPullForegroundDrawable {
             canvas.scale(scale, scale, textCx, textY + AndroidUtilities.dp(16) * (1f - textSwappingProgress));
         }
         canvas.drawText(pullTooltip, textCx,
-                textY + AndroidUtilities.dp(16) * (1f - textSwappingProgress), tooltipTextPaint);
+                textY + AndroidUtilities.dp(8) * (1f - textSwappingProgress), tooltipTextPaint);
 
         if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
             canvas.restore();
@@ -209,11 +256,12 @@ public class ArchivedPullForegroundDrawable {
         if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
             canvas.save();
             float scale = 0.9f + 0.1f * (1f - textSwappingProgress);
-            canvas.scale(scale, scale, textCx, textY - AndroidUtilities.dp(16) * (textSwappingProgress));
+            canvas.scale(scale, scale, textCx,
+                    textY - AndroidUtilities.dp(8) * (textSwappingProgress));
         }
         tooltipTextPaint.setAlpha((int) (255 * (1f - textSwappingProgress) * startPullProgress * textInProgress));
         canvas.drawText(releaseTooltip, textCx,
-                textY - AndroidUtilities.dp(16) * (textSwappingProgress), tooltipTextPaint);
+                textY - AndroidUtilities.dp(8) * (textSwappingProgress), tooltipTextPaint);
 
         if (textSwappingProgress > 0 && textSwappingProgress < 1f) {
             canvas.restore();
@@ -227,7 +275,7 @@ public class ArchivedPullForegroundDrawable {
             int iw = Theme.dialogs_archiveAvatarDrawable.getIntrinsicWidth();
 
             int startCx = startPadding + radius;
-            int startCy = parent.getHeight() - smallMargin - radius;
+            int startCy = dialogCell.getHeight() - smallMargin - radius;
 
             float scaleStart = (float) AndroidUtilities.dp(24) / iw;
             float scale = scaleStart + (1f - scaleStart) * outProgress + bounceP;
@@ -258,7 +306,6 @@ public class ArchivedPullForegroundDrawable {
     }
 
 
-
     private void updateTextProgress(float pullProgress) {
         boolean endText = pullProgress > SNAP_HEIGHT;
         if (animateToEndText != endText) {
@@ -283,7 +330,7 @@ public class ArchivedPullForegroundDrawable {
             arrowRotateAnimator = ValueAnimator.ofFloat(arrowRotateProgress, arrowAnimateTo ? 0f : 1f);
             arrowRotateAnimator.addUpdateListener(animation -> {
                 arrowRotateProgress = (float) animation.getAnimatedValue();
-                if (parent != null) parent.invalidate();
+                if (dialogCell != null) dialogCell.invalidate();
             });
             arrowRotateAnimator.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
             arrowRotateAnimator.setDuration(250);
@@ -317,8 +364,8 @@ public class ArchivedPullForegroundDrawable {
                 }
             } else {
                 wasSendCallback = true;
-                parent.removeCallbacks(r);
-                parent.postDelayed(r, 120);
+                dialogCell.removeCallbacks(r);
+                dialogCell.postDelayed(r, 120);
             }
         }
     }
@@ -332,10 +379,11 @@ public class ArchivedPullForegroundDrawable {
         animateOut = true;
         bounceIn = true;
         bounceProgress = 0f;
+        outOverScroll = listView.getTranslationY() / AndroidUtilities.dp(100);
         ValueAnimator out = ValueAnimator.ofFloat(0f, 1f);
         out.addUpdateListener(animation -> {
             outProgress = (float) animation.getAnimatedValue();
-            if (parent != null) parent.invalidate();
+            if (dialogCell != null) dialogCell.invalidate();
         });
 
         out.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -346,7 +394,7 @@ public class ArchivedPullForegroundDrawable {
         bounceIn.addUpdateListener(animation -> {
             bounceProgress = (float) animation.getAnimatedValue();
             this.bounceIn = true;
-            if (parent != null) parent.invalidate();
+            if (dialogCell != null) dialogCell.invalidate();
         });
 
         bounceIn.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
@@ -357,7 +405,7 @@ public class ArchivedPullForegroundDrawable {
         bounceOut.addUpdateListener(animation -> {
             bounceProgress = (float) animation.getAnimatedValue();
             this.bounceIn = false;
-            if (parent != null) parent.invalidate();
+            if (dialogCell != null) dialogCell.invalidate();
         });
 
         bounceOut.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
@@ -380,7 +428,6 @@ public class ArchivedPullForegroundDrawable {
 
             }
         });
-
 
         AnimatorSet bounce = new AnimatorSet();
         bounce.playSequentially(bounceIn, bounceOut);
@@ -410,7 +457,7 @@ public class ArchivedPullForegroundDrawable {
     }
 
     public void destroyView() {
-        parent = null;
+        dialogCell = null;
         if (textSwipingAnimator != null) textSwipingAnimator.cancel();
         if (outAnimator != null) {
             outAnimator.removeAllListeners();
@@ -419,7 +466,7 @@ public class ArchivedPullForegroundDrawable {
     }
 
     public boolean isDraw() {
-        return !(!willDraw || isOut || parent == null);
+        return !(!willDraw || isOut || dialogCell == null);
     }
 
 
@@ -434,12 +481,27 @@ public class ArchivedPullForegroundDrawable {
         wasSendCallback = false;
     }
 
+    public Paint getBackgroundPaint() {
+        return backgroundPaint;
+    }
+
     private class ArrowDrawable extends Drawable {
 
         Path path = new Path();
         Paint paint = new Paint();
 
-        public void setColor(int color){
+        public ArrowDrawable() {
+            int h = AndroidUtilities.dp(18);
+            path.moveTo(h >> 1, AndroidUtilities.dpf2(4.58f));
+            path.lineTo(AndroidUtilities.dpf2(3.95f), AndroidUtilities.dpf2(9.66f));
+            path.lineTo(AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(9.66f));
+            path.lineTo(AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(11.6f));
+            path.lineTo(h - AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(11.6f));
+            path.lineTo(h - AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(9.66f));
+            path.lineTo(h - AndroidUtilities.dpf2(3.95f), AndroidUtilities.dpf2(9.66f));
+        }
+
+        public void setColor(int color) {
             paint.setColor(color);
         }
 
@@ -455,18 +517,9 @@ public class ArchivedPullForegroundDrawable {
 
         @Override
         public void draw(@NonNull Canvas canvas) {
-            int h = AndroidUtilities.dp(18);
-            path.moveTo(h >> 1, AndroidUtilities.dpf2(4.58f));
-            path.lineTo(AndroidUtilities.dpf2(3.95f), AndroidUtilities.dpf2(9.66f));
-            path.lineTo(AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(9.66f));
-            path.lineTo(AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(11.6f));
-            path.lineTo(h - AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(11.6f));
-            path.lineTo(h - AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(9.66f));
-            path.lineTo(h - AndroidUtilities.dpf2(3.95f), AndroidUtilities.dpf2(9.66f));
-
             canvas.save();
-            canvas.translate(getBounds().left,getBounds().top);
-            canvas.drawPath(path,paint);
+            canvas.translate(getBounds().left, getBounds().top);
+            canvas.drawPath(path, paint);
             canvas.restore();
         }
 

@@ -240,7 +240,7 @@ public class DialogCell extends BaseCell {
         messageId = 0;
         update(0);
         checkOnline();
-        if (currentDialogFolderId != 0 && archivedChatsDrawable != null) archivedChatsDrawable.setView(this);
+        if (currentDialogFolderId != 0 && archivedChatsDrawable != null) archivedChatsDrawable.setDialogCell(this);
     }
 
     public void setDialogIndex(int i) {
